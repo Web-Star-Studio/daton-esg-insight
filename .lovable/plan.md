@@ -1,69 +1,170 @@
 
-## Plano: Corrigir Cache de Funcionários no Modal de Programa de Treinamento
+## Plano: Corrigir Problema de Timezone na Gestao de Treinamentos
 
 ### Problema Identificado
 
-Funcionarios recém-cadastrados não aparecem no modal "Novo Programa de Treinamento" porque:
-
-1. **Cache global de 5 minutos**: O `QueryClient` em `App.tsx` (linha 208) define `staleTime: 1000 * 60 * 5` (5 minutos) para todas as queries
-2. **A query `employees-for-training-modal`** (linha 107 em `TrainingProgramModal.tsx`) não sobrescreve esse comportamento
-3. **Resultado**: A lista de funcionários fica em cache por 5 minutos, mostrando dados desatualizados
+O mesmo problema de timezone encontrado nos funcionarios tambem afeta a gestao de treinamentos. Quando o JavaScript interpreta datas no formato `"YYYY-MM-DD"` usando `new Date()`, ele assume **meia-noite UTC**, que no Brasil (UTC-3) corresponde a **21:00 do dia anterior**, causando o deslocamento de 1 dia.
 
 ---
 
-### Solucao
+### Arquivos Afetados
 
-Adicionar `staleTime: 0` na query de funcionários do modal para que ela sempre busque dados frescos quando o modal for aberto.
+| Arquivo | Linhas | Problema |
+|---------|--------|----------|
+| `src/utils/trainingStatusCalculator.ts` | 31-32 | `new Date(training.start_date)` e `new Date(training.end_date)` |
+| `src/components/EmployeeTrainingModal.tsx` | 153 | `new Date(training.completion_date)` |
+| `src/components/TrainingReportsModal.tsx` | 54, 93, 245 | `new Date(training.completion_date)` em filtros e formatacao |
+| `src/components/TrainingComplianceMatrix.tsx` | 80, 93 | `new Date(training.completion_date)` no calculo de expiracao |
+| `src/pages/GestaoTreinamentos.tsx` | 791 | `format(new Date(training.completion_date), ...)` |
+| `src/components/AddEmployeeTrainingDialog.tsx` | 92, 271 | `new Date(formData.completion_date)` |
+| `src/components/EditEmployeeTrainingDialog.tsx` | 287 | `new Date(calculateExpirationDate()!)` |
 
 ---
 
-### Alteracoes Tecnicas
+### Correcoes Necessarias
 
-#### Arquivo: `src/components/TrainingProgramModal.tsx`
+#### 1. `src/utils/trainingStatusCalculator.ts`
 
-**Linhas 106-121** - Adicionar `staleTime: 0` para forcar refetch:
+Adicionar import e usar `parseDateSafe`:
 
 ```typescript
-// Query para buscar funcionários ativos (case-insensitive e múltiplos status)
-const { data: employees = [] } = useQuery({
-  queryKey: ["employees-for-training-modal"],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("employees")
-      .select("id, full_name, employee_code, department, status")
-      .order("full_name");
-    if (error) throw error;
-    // Filtrar localmente para ser case-insensitive e incluir múltiplos status válidos
-    const activeStatuses = ['ativo', 'férias', 'ferias', 'licença', 'licenca'];
-    return (data || []).filter(emp => 
-      emp.status && activeStatuses.includes(emp.status.toLowerCase())
-    );
-  },
-  enabled: open,
-  staleTime: 0, // NOVO: Sempre buscar dados frescos ao abrir o modal
-});
+import { parseDateSafe } from '@/utils/dateUtils';
+
+// Linhas 31-32:
+const startDate = training.start_date ? parseDateSafe(training.start_date) : null;
+const endDate = training.end_date ? parseDateSafe(training.end_date) : null;
 ```
 
 ---
 
-### Comportamento Apos Correcao
+#### 2. `src/components/EmployeeTrainingModal.tsx`
 
-| Cenario | Antes | Depois |
-|---------|-------|--------|
-| Abrir modal 1min apos cadastrar funcionario | Nao aparece (cache) | Aparece imediatamente |
-| Abrir modal 10min apos cadastrar funcionario | Aparece (cache expirou) | Aparece imediatamente |
-| Performance | Menos requisicoes | 1 requisicao extra por abertura do modal |
+Adicionar import e usar no reset do form:
 
----
+```typescript
+import { parseDateSafe } from '@/utils/dateUtils';
 
-### Arquivos a Modificar
-
-| Arquivo | Alteracao |
-|---------|-----------|
-| `src/components/TrainingProgramModal.tsx` | Adicionar `staleTime: 0` na query de funcionarios (linha 120) |
+// Linha 153:
+completion_date: training.completion_date ? parseDateSafe(training.completion_date) ?? undefined : undefined,
+```
 
 ---
 
-### Justificativa
+#### 3. `src/components/TrainingReportsModal.tsx`
 
-O custo de uma requisicao extra ao abrir o modal eh insignificante comparado a experiencia negativa do usuario ao nao encontrar o funcionario que acabou de cadastrar. A query ja esta filtrada para retornar apenas colunas necessarias, minimizando o payload.
+Adicionar import e corrigir tres locais:
+
+```typescript
+import { parseDateSafe } from '@/utils/dateUtils';
+
+// Linha 54 - filtro:
+const completionDate = parseDateSafe(training.completion_date);
+if (!completionDate) return true;
+
+// Linha 93 - CSV:
+completionDate: training.completion_date 
+  ? format(parseDateSafe(training.completion_date) || new Date(), 'dd/MM/yyyy') 
+  : 'N/A',
+
+// Linha 245 - exibicao:
+{training.completion_date 
+  ? `Concluido em ${format(parseDateSafe(training.completion_date) || new Date(), 'dd/MM/yyyy', { locale: ptBR })}` 
+  : 'Em andamento'}
+```
+
+---
+
+#### 4. `src/components/TrainingComplianceMatrix.tsx`
+
+Adicionar import e corrigir funcoes `isExpiringSoon` e `isExpired`:
+
+```typescript
+import { parseDateSafe } from '@/utils/dateUtils';
+
+// Linha 80 (isExpiringSoon):
+const completionDate = parseDateSafe(training.completion_date);
+if (!completionDate) return false;
+const expirationDate = new Date(completionDate);
+
+// Linha 93 (isExpired):
+const completionDate = parseDateSafe(training.completion_date);
+if (!completionDate) return false;
+const expirationDate = new Date(completionDate);
+```
+
+---
+
+#### 5. `src/pages/GestaoTreinamentos.tsx`
+
+Adicionar import e usar na exibicao:
+
+```typescript
+import { parseDateSafe } from '@/utils/dateUtils';
+import { formatDateDisplay } from '@/utils/dateUtils';
+
+// Linha 791:
+Concluido em {formatDateDisplay(training.completion_date) || 'N/A'}
+```
+
+---
+
+#### 6. `src/components/AddEmployeeTrainingDialog.tsx`
+
+Adicionar import e corrigir calculo de expiracao:
+
+```typescript
+import { parseDateSafe } from '@/utils/dateUtils';
+
+// Linha 92 (calculateExpirationDate):
+const completionDate = parseDateSafe(formData.completion_date);
+if (!completionDate) return null;
+const expirationDate = addMonths(completionDate, selectedProgram.valid_for_months);
+
+// Linha 271:
+{calculateExpirationDate() 
+  ? format(parseDateSafe(calculateExpirationDate()!) || new Date(), 'dd/MM/yyyy')
+  : '-'}
+```
+
+---
+
+#### 7. `src/components/EditEmployeeTrainingDialog.tsx`
+
+Adicionar import e corrigir formatacao:
+
+```typescript
+import { parseDateSafe } from '@/utils/dateUtils';
+
+// Linha 287:
+{calculateExpirationDate() 
+  ? format(parseDateSafe(calculateExpirationDate()!) || new Date(), 'dd/MM/yyyy')
+  : '-'}
+```
+
+---
+
+### Resumo das Alteracoes
+
+| Arquivo | Tipo de Alteracao |
+|---------|-------------------|
+| `src/utils/trainingStatusCalculator.ts` | Import + 2 linhas |
+| `src/components/EmployeeTrainingModal.tsx` | Import + 1 linha |
+| `src/components/TrainingReportsModal.tsx` | Import + 3 linhas |
+| `src/components/TrainingComplianceMatrix.tsx` | Import + 2 funcoes |
+| `src/pages/GestaoTreinamentos.tsx` | Import + 1 linha |
+| `src/components/AddEmployeeTrainingDialog.tsx` | Import + 2 locais |
+| `src/components/EditEmployeeTrainingDialog.tsx` | Import + 1 linha |
+
+**Total: 7 arquivos, ~15 alteracoes**
+
+---
+
+### Resultado Esperado
+
+Apos as correcoes:
+- Data de inicio/fim do programa exibida corretamente
+- Data de conclusao de treinamentos exibida corretamente  
+- Calculo de status automatico correto (Planejado/Em Andamento/Concluido)
+- Calculo de expiracao de certificados correto
+- Filtros por data funcionando corretamente
+- Exportacao CSV com datas corretas
