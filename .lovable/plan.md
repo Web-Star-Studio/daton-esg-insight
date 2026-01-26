@@ -1,185 +1,153 @@
 
-## Plano: Corrigir Importação de Avaliações por Unidade para Legislações Existentes
+## Plano: Corrigir Problema de Timezone nas Datas de Funcionários
 
 ### Problema Identificado
 
-A importação de legislações via Excel **não está atualizando as avaliações por unidade** porque:
+As datas de admissão (`hire_date`) e nascimento (`birth_date`) estão sendo exibidas **um dia antes** do valor inserido devido ao problema clássico de timezone do JavaScript:
 
-1. **O código atual pula legislações existentes**: Quando uma legislação já existe no sistema (identificada por `Tipo + Número` ou `Título`), a importação apenas adiciona evidências e executa `continue;` na linha 888, ignorando completamente a lógica de criar/atualizar `unit_compliance`.
+- Quando o JavaScript interpreta `"2026-01-26"` como `new Date("2026-01-26")`, ele assume **meia-noite UTC**
+- No fuso horário do Brasil (UTC-3), meia-noite UTC corresponde a **21:00 do dia anterior**
+- Resultado: `2026-01-26` vira `25/01/2026` na exibição
 
-2. **Mapeamento de valores incorreto**: O mapeamento atual trata **1/2/3 como status de conformidade**, mas o usuário confirmou que esses valores representam **Aplicabilidade**:
-   - `1` = Real (Aplicável)
-   - `2` = Potencial (Provável)
-   - `3` = Pendente/Não avaliada
+O projeto já possui funções utilitárias em `src/utils/dateUtils.ts` (`parseDateSafe`, `formatDateDisplay`) que resolvem este problema, mas **não estão sendo usadas** em todos os locais necessários.
 
 ---
 
-### Alterações Necessárias
+### Locais Afetados
 
-#### 1. Atualizar Mapeamento de Valores `mapUnitValue()`
+| Arquivo | Linha | Problema |
+|---------|-------|----------|
+| `src/components/EmployeesList.tsx` | 317 | `new Date(employee.hire_date).toLocaleDateString('pt-BR')` |
+| `src/components/EmployeeDetailModal.tsx` | 154-157 | Função `formatDate` usa `new Date(dateStr)` |
+| `src/components/EmployeeDetailModal.tsx` | 118-128 | Função `calculateAge` usa `new Date(birthDate)` |
+| `src/components/EmployeeDetailModal.tsx` | 136-152 | Função `calculateTenure` usa `new Date(hireDate)` |
+| `src/components/EmployeeModal.tsx` | 212 | Inicialização: `new Date().toISOString().split('T')[0]` |
 
-**Arquivo:** `src/services/legislationImport.ts` (linhas 432-478)
+---
 
-Corrigir o mapeamento para refletir que 1/2/3 representam **Aplicabilidade**:
+### Correções Necessárias
 
-| Valor | Significado Atual (errado) | Novo Significado (correto) |
-|-------|---------------------------|---------------------------|
-| 1 | N.A (applicability: 'na') | Real (applicability: 'real') |
-| 2 | OK/Conforme | Potencial (applicability: 'potential') |
-| 3 | Não Conforme/Adequação | Pendente (applicability: 'pending') |
+#### 1. `src/components/EmployeesList.tsx`
 
-Novo mapeamento:
+**Linha 317** - Substituir:
 ```typescript
-case '1':
-  // Real (Aplicável)
-  return { 
-    applicability: 'real', 
-    complianceStatus: 'pending'  // Status será avaliado separadamente
-  };
-case '2':
-  // Potencial (Provável)
-  return { 
-    applicability: 'potential', 
-    complianceStatus: 'pending' 
-  };
-case '3':
-  // Pendente/Não avaliada
-  return { 
-    applicability: 'pending', 
-    complianceStatus: 'pending' 
-  };
+// ANTES
+Admitido em: {new Date(employee.hire_date).toLocaleDateString('pt-BR')}
+
+// DEPOIS
+Admitido em: {formatDateDisplay(employee.hire_date)}
+```
+
+Adicionar import no topo:
+```typescript
+import { formatDateDisplay } from '@/utils/dateUtils';
 ```
 
 ---
 
-#### 2. Adicionar Lógica de Unit Compliance para Legislações Existentes
+#### 2. `src/components/EmployeeDetailModal.tsx`
 
-**Arquivo:** `src/services/legislationImport.ts` (linhas 845-888)
-
-**Problema atual:**
+**Linha 154-157** - Atualizar função `formatDate`:
 ```typescript
-if (existingLegislation) {
-  // Só adiciona evidência
-  // continue; <-- PULA unit_compliance!
-}
+// ANTES
+const formatDate = (dateStr: string | undefined | null) => {
+  if (!dateStr) return 'Não informado';
+  return new Date(dateStr).toLocaleDateString('pt-BR');
+};
+
+// DEPOIS
+const formatDate = (dateStr: string | undefined | null) => {
+  if (!dateStr) return 'Não informado';
+  const formatted = formatDateDisplay(dateStr);
+  return formatted || 'Data inválida';
+};
 ```
 
-**Solução:** Após adicionar a evidência, também criar/atualizar os registros de `unit_compliance`:
-
+**Linhas 118-128** - Atualizar função `calculateAge`:
 ```typescript
-if (existingLegislation) {
-  let unitComplianceMessage = '';
-  
-  // Adicionar evidência (código existente)
-  if (leg.evidence_text && leg.evidence_text.trim()) {
-    // ... lógica existente de evidência ...
-  }
-  
-  // NOVO: Criar/atualizar unit compliance para legislação existente
-  if (options.unitMappings && leg.unitEvaluations && leg.unitEvaluations.length > 0) {
-    const complianceRecords = [];
-    
-    for (const evaluation of leg.unitEvaluations) {
-      const mapping = options.unitMappings.find(m => 
-        m.excelCode.toUpperCase() === evaluation.unitCode.toUpperCase()
-      );
-      
-      if (mapping?.branchId) {
-        complianceRecords.push({
-          legislation_id: existingLegislation.id,
-          branch_id: mapping.branchId,
-          company_id: companyId,
-          applicability: evaluation.applicability,
-          compliance_status: evaluation.complianceStatus,
-          evidence_notes: leg.evidence_text?.trim() || null,
-          evaluated_at: new Date().toISOString(),
-          evaluated_by: profile.id,
-        });
-        
-        const branchName = mapping.branchName || mapping.excelCode;
-        result.unitsByBranch[branchName] = (result.unitsByBranch[branchName] || 0) + 1;
-      }
-    }
-    
-    if (complianceRecords.length > 0) {
-      const { error: complianceError } = await supabase
-        .from('legislation_unit_compliance')
-        .upsert(complianceRecords, { onConflict: 'legislation_id,branch_id' });
-      
-      if (!complianceError) {
-        result.unitCompliancesCreated += complianceRecords.length;
-        unitComplianceMessage = ` + ${complianceRecords.length} avaliação(ões) por unidade`;
-      }
-    }
-  }
-  
-  result.details.push({
-    rowNumber: leg.rowNumber,
-    title: leg.title,
-    status: 'updated',
-    message: 'Atualizado' + evidenceMessage + unitComplianceMessage,
-  });
-  
-  continue;
-}
+// ANTES
+const calculateAge = (birthDate: string) => {
+  if (!birthDate) return null;
+  const today = new Date();
+  const birth = new Date(birthDate);
+  ...
+};
+
+// DEPOIS
+const calculateAge = (birthDate: string) => {
+  if (!birthDate) return null;
+  const today = new Date();
+  const birth = parseDateSafe(birthDate);
+  if (!birth) return null;
+  ...
+};
+```
+
+**Linhas 136-152** - Atualizar função `calculateTenure`:
+```typescript
+// ANTES
+const calculateTenure = (hireDate: string | undefined | null) => {
+  if (!hireDate) return 'Não informado';
+  const hire = new Date(hireDate);
+  if (isNaN(hire.getTime())) return 'Data inválida';
+  ...
+};
+
+// DEPOIS
+const calculateTenure = (hireDate: string | undefined | null) => {
+  if (!hireDate) return 'Não informado';
+  const hire = parseDateSafe(hireDate);
+  if (!hire) return 'Data inválida';
+  ...
+};
+```
+
+Adicionar import no topo:
+```typescript
+import { parseDateSafe, formatDateDisplay } from '@/utils/dateUtils';
+```
+
+---
+
+#### 3. `src/components/EmployeeModal.tsx`
+
+**Linha 212** - Inicialização da data atual (opcional, mas mais robusto):
+```typescript
+// ANTES
+const today = new Date().toISOString().split('T')[0];
+
+// DEPOIS
+import { formatDateForDB } from '@/utils/dateUtils';
+const today = formatDateForDB(new Date()) || '';
 ```
 
 ---
 
 ### Arquivos a Modificar
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/services/legislationImport.ts` | 1. Corrigir `mapUnitValue()` (linhas 438-477) |
-| `src/services/legislationImport.ts` | 2. Adicionar lógica de unit_compliance para legislações existentes (linhas 846-888) |
-
----
-
-### Fluxo Corrigido
-
-```text
-Importação de Planilha
-        │
-        ▼
-┌─────────────────────────────────┐
-│  Legislação já existe?          │
-├─────────────────────────────────┤
-│     SIM               NÃO       │
-│      │                 │        │
-│      ▼                 ▼        │
-│  Adicionar         Criar nova   │
-│  evidência         legislação   │
-│      │                 │        │
-│      ▼                 ▼        │
-│  NOVO: Criar/      Criar        │
-│  atualizar         unit_        │
-│  unit_compliance   compliance   │
-│      │                 │        │
-│      ▼                 ▼        │
-│    continue         Adicionar   │
-│                     evidência   │
-└─────────────────────────────────┘
-```
+| Arquivo | Modificações |
+|---------|--------------|
+| `src/components/EmployeesList.tsx` | Importar `formatDateDisplay`, usar na linha 317 |
+| `src/components/EmployeeDetailModal.tsx` | Importar `parseDateSafe` e `formatDateDisplay`, atualizar 3 funções |
+| `src/components/EmployeeModal.tsx` | Usar `formatDateForDB` para inicialização (já importado) |
 
 ---
 
 ### Resultado Esperado
 
-Após a correção:
-1. Importar a planilha FPLAN_003-GERAL.xlsx
-2. O sistema identificará legislações existentes (por Tipo+Número ou Título)
-3. Para cada unidade mapeada (POA, PIR, GO, etc.), criará registros em `legislation_unit_compliance`
-4. A tela "Avaliação por Unidade" mostrará os status importados
-5. Substituirá avaliações existentes (upsert) conforme solicitado
+Após as correções:
+- Data inserida: `26/01/2026`
+- Data exibida na lista: `26/01/2026` (correto)
+- Data exibida no modal de detalhes: `26/01/2026` (correto)
+- Cálculo de idade: correto (sem desvio de 1 dia)
+- Cálculo de tempo de empresa: correto
 
 ---
 
-### Comportamento do Mapeamento
+### Verificação
 
-| Valor na Planilha | Aplicabilidade | Status de Conformidade |
-|-------------------|----------------|------------------------|
-| 1 | Real | Pendente (a avaliar) |
-| 2 | Potencial | Pendente |
-| 3 | Pendente | Pendente |
-| x | Pendente | Pendente |
-| z | (ignorar) | (ignorar) |
+Para confirmar a correção, criar/editar um funcionário com:
+- Data de Nascimento: `15/02/1999`
+- Data de Admissão: `26/01/2026`
+
+E verificar que as datas exibidas na lista e no modal são idênticas às inseridas.
