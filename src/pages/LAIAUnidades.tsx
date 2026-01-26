@@ -42,7 +42,7 @@ export default function LAIAUnidades() {
     };
   };
 
-  const activeBranches = branches?.filter(b => b.status === 'Ativo') || [];
+  const activeBranches = branches?.filter(b => ['Ativo', 'Ativa'].includes(b.status)) || [];
 
   // Extract unique cities
   const uniqueCities = useMemo(() => {
