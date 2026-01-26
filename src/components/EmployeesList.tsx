@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatDateDisplay } from '@/utils/dateUtils';
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -314,7 +315,7 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
                       
                       <div className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        Admitido em: {new Date(employee.hire_date).toLocaleDateString('pt-BR')}
+                        Admitido em: {formatDateDisplay(employee.hire_date)}
                       </div>
                     </div>
                     
