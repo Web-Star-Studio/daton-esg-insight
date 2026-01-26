@@ -117,7 +117,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         emp.status && activeStatuses.includes(emp.status.toLowerCase())
       );
     },
-    enabled: open, // Funciona tanto na criação quanto na edição
+    enabled: open,
+    staleTime: 0, // Sempre buscar dados frescos ao abrir o modal
   });
 
   // Departamentos únicos para filtro
