@@ -29,7 +29,7 @@ export default function LAIAUnidades() {
   const [cityFilter, setCityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "headquarters" | "branch">("all");
   const [sortBy, setSortBy] = useState<"name" | "total" | "criticos" | "significativos">("name");
-  const [quickFilter, setQuickFilter] = useState<"criticos" | "sem_aspectos" | null>(null);
+  const [quickFilter, setQuickFilter] = useState<"criticos" | "sem_aspectos" | "com_codigo" | null>(null);
 
   const isLoading = branchesLoading || statsLoading;
 
@@ -82,6 +82,8 @@ export default function LAIAUnidades() {
       result = result.filter(b => getStatsForBranch(b.id).criticos > 0);
     } else if (quickFilter === "sem_aspectos") {
       result = result.filter(b => getStatsForBranch(b.id).total === 0);
+    } else if (quickFilter === "com_codigo") {
+      result = result.filter(b => !!b.code);
     }
 
     // Sorting
