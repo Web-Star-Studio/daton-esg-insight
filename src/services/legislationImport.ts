@@ -22,6 +22,7 @@ export interface ParsedLegislation {
   full_text_url: string;
   review_frequency_days: number;
   observations: string;
+  evidence_text: string;           // Campo "Evidências" para conciliação
   // Campos extras do formato Gabardo
   compliance_details: string;      // "Observações como é atendido"
   general_notes: string;           // "Observações gerais, envios datas e responsáveis"
@@ -40,12 +41,14 @@ export interface LegislationValidation {
 export interface LegislationImportResult {
   success: boolean;
   imported: number;
+  updated: number;
+  evidencesAdded: number;
   errors: number;
   warnings: number;
   details: Array<{
     rowNumber: number;
     title: string;
-    status: 'success' | 'error' | 'warning';
+    status: 'success' | 'error' | 'warning' | 'updated';
     message: string;
   }>;
   createdEntities: {
@@ -417,6 +420,7 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
             full_text_url: getColumnValue(row, 'URL Texto Integral', 'URL', 'Link', 'LINK'),
             review_frequency_days: parseInt(reviewDaysRaw) || 365,
             observations: getColumnValue(row, 'Observações', 'Observacoes', 'OBSERVAÇÕES', 'OBSERVACOES', 'Notas', 'NOTAS'),
+            evidence_text: getColumnValue(row, 'Evidências', 'Evidencias', 'EVIDÊNCIAS', 'EVIDENCIAS'),
             // Campos extras
             compliance_details: complianceDetails,
             general_notes: generalNotes,
@@ -527,6 +531,8 @@ export async function importLegislations(
   const result: LegislationImportResult = {
     success: true,
     imported: 0,
+    updated: 0,
+    evidencesAdded: 0,
     errors: 0,
     warnings: 0,
     details: [],
@@ -548,15 +554,30 @@ export async function importLegislations(
     
     const themeMap = new Map((existingThemes || []).map(t => [t.name.toLowerCase(), t.id]));
     
-    // Get existing legislations for duplicate check
+    // Get existing legislations for duplicate check (incluindo ID para conciliação)
     const { data: existingLegislations } = await supabase
       .from('legislations')
-      .select('title, norm_number')
+      .select('id, title, norm_type, norm_number')
       .eq('company_id', companyId);
     
-    const existingSet = new Set(
-      (existingLegislations || []).map(l => `${l.title?.toLowerCase()}|${l.norm_number?.toLowerCase()}`)
-    );
+    // Map para encontrar legislações existentes por chave
+    const existingMap = new Map<string, { id: string; title: string }>();
+    (existingLegislations || []).forEach(l => {
+      // Chave primária: norm_type + norm_number
+      if (l.norm_type && l.norm_number) {
+        const key = `${l.norm_type.toLowerCase()}|${l.norm_number.toLowerCase()}`;
+        existingMap.set(key, { id: l.id, title: l.title });
+      }
+      // Chave secundária: título (fallback)
+      if (l.title) {
+        const titleKey = `title:${l.title.toLowerCase()}`;
+        if (!existingMap.has(titleKey)) {
+          existingMap.set(titleKey, { id: l.id, title: l.title });
+        }
+      }
+    });
+    
+    // Nota: existingMap é utilizado para conciliação de legislações
     
     // Subtheme map by theme_id
     const subthemeMap = new Map<string, Map<string, string>>();
@@ -594,19 +615,64 @@ export async function importLegislations(
           continue;
         }
         
-        // Check duplicate
-        const key = `${leg.title.toLowerCase()}|${leg.norm_number?.toLowerCase()}`;
-        if (existingSet.has(key)) {
-          if (options.skipExisting) {
+        // Check for existing legislation (conciliação)
+        // Primeiro tenta por norm_type + norm_number, depois por título
+        let existingLegislation: { id: string; title: string } | null = null;
+        
+        if (leg.norm_type && leg.norm_number) {
+          const typeNumberKey = `${leg.norm_type.toLowerCase()}|${leg.norm_number.toLowerCase()}`;
+          existingLegislation = existingMap.get(typeNumberKey) || null;
+        }
+        
+        if (!existingLegislation && leg.title) {
+          const titleKey = `title:${leg.title.toLowerCase()}`;
+          existingLegislation = existingMap.get(titleKey) || null;
+        }
+        
+        // Se encontrou legislação existente, adicionar evidência se houver
+        if (existingLegislation) {
+          if (leg.evidence_text && leg.evidence_text.trim()) {
+            // Adicionar evidência à legislação existente
+            const { error: evidenceError } = await supabase
+              .from('legislation_evidences')
+              .insert({
+                legislation_id: existingLegislation.id,
+                company_id: companyId,
+                title: 'Evidência importada via planilha',
+                description: leg.evidence_text.trim(),
+                type: 'documento',
+                uploaded_by: profile.id
+              });
+            
+            if (!evidenceError) {
+              result.evidencesAdded++;
+              result.updated++;
+              result.details.push({
+                rowNumber: leg.rowNumber,
+                title: leg.title,
+                status: 'updated',
+                message: 'Evidência adicionada à legislação existente',
+              });
+            } else {
+              result.warnings++;
+              result.details.push({
+                rowNumber: leg.rowNumber,
+                title: leg.title,
+                status: 'warning',
+                message: `Legislação existe, mas erro ao adicionar evidência: ${evidenceError.message}`,
+              });
+            }
+          } else {
+            // Legislação já existe, sem evidência para adicionar
             result.warnings++;
             result.details.push({
               rowNumber: leg.rowNumber,
               title: leg.title,
               status: 'warning',
-              message: 'Legislação já existe - ignorada',
+              message: 'Legislação já existe - sem evidência para adicionar',
             });
-            continue;
           }
+          continue;
         }
         
         // Handle theme
@@ -701,13 +767,52 @@ export async function importLegislations(
           throw insertError;
         }
         
-        existingSet.add(key);
+        // Adicionar ao mapa para evitar duplicatas no mesmo lote
+        if (leg.norm_type && leg.norm_number) {
+          const newKey = `${leg.norm_type.toLowerCase()}|${leg.norm_number.toLowerCase()}`;
+          existingMap.set(newKey, { id: 'new', title: leg.title });
+        }
+        
         result.imported++;
+        
+        // Se nova legislação tem evidência, criar também
+        let evidenceMessage = '';
+        if (leg.evidence_text && leg.evidence_text.trim()) {
+          // Buscar ID da legislação recém criada
+          const { data: newLeg } = await supabase
+            .from('legislations')
+            .select('id')
+            .eq('company_id', companyId)
+            .eq('norm_type', leg.norm_type)
+            .eq('title', leg.title)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          if (newLeg) {
+            const { error: evidenceError } = await supabase
+              .from('legislation_evidences')
+              .insert({
+                legislation_id: newLeg.id,
+                company_id: companyId,
+                title: 'Evidência importada via planilha',
+                description: leg.evidence_text.trim(),
+                type: 'documento',
+                uploaded_by: profile.id
+              });
+            
+            if (!evidenceError) {
+              result.evidencesAdded++;
+              evidenceMessage = ' + evidência adicionada';
+            }
+          }
+        }
+        
         result.details.push({
           rowNumber: leg.rowNumber,
           title: leg.title,
           status: 'success',
-          message: 'Importado com sucesso',
+          message: 'Importado com sucesso' + evidenceMessage,
         });
         
       } catch (error) {
@@ -762,7 +867,7 @@ export function downloadLegislationTemplate() {
       'Status': 'conforme',
       'URL Texto Integral': 'https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12305.htm',
       'Frequência Revisão (dias)': '365',
-      'Observações': '',
+      'Evidências': 'Licença ambiental emitida conforme requisitos',
     },
     {
       'Tipo de Norma': 'Resolução',
@@ -780,7 +885,7 @@ export function downloadLegislationTemplate() {
       'Status': 'adequacao',
       'URL Texto Integral': '',
       'Frequência Revisão (dias)': '180',
-      'Observações': 'Verificar atualizações',
+      'Evidências': 'Processo de adequação em andamento - prazo: 30/06/2026',
     },
     {
       'Tipo de Norma': 'NBR',
@@ -798,7 +903,7 @@ export function downloadLegislationTemplate() {
       'Status': 'pending',
       'URL Texto Integral': '',
       'Frequência Revisão (dias)': '365',
-      'Observações': 'Avaliar aplicabilidade',
+      'Evidências': '',
     },
   ];
   
@@ -818,7 +923,7 @@ export function downloadLegislationTemplate() {
     { 'Coluna': 'Status', 'Obrigatório': 'Não', 'Valores Aceitos': VALID_STATUSES.join(', ') + ' (padrão: pending)' },
     { 'Coluna': 'URL Texto Integral', 'Obrigatório': 'Não', 'Valores Aceitos': 'URL válida começando com http:// ou https://' },
     { 'Coluna': 'Frequência Revisão (dias)', 'Obrigatório': 'Não', 'Valores Aceitos': 'Número inteiro (padrão: 365)' },
-    { 'Coluna': 'Observações', 'Obrigatório': 'Não', 'Valores Aceitos': 'Texto livre' },
+    { 'Coluna': 'Evidências', 'Obrigatório': 'Não', 'Valores Aceitos': 'Texto com evidências de conformidade (será adicionado à seção de evidências da legislação)' },
   ];
   
   const workbook = XLSX.utils.book_new();

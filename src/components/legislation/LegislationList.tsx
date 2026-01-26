@@ -93,7 +93,6 @@ export const LegislationList: React.FC<LegislationListProps> = ({
               <TableHead>Ementa</TableHead>
               <TableHead className="w-[120px]">Macrotema</TableHead>
               <TableHead className="w-[100px]">Jurisdição</TableHead>
-              <TableHead className="w-[100px]">Aplicabilidade</TableHead>
               <TableHead className="w-[120px]">Status</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
@@ -145,12 +144,6 @@ export const LegislationList: React.FC<LegislationListProps> = ({
                 </TableCell>
                 <TableCell>
                   <JurisdictionBadge value={legislation.jurisdiction} />
-                </TableCell>
-                <TableCell>
-                  <LegislationStatusBadge 
-                    type="applicability" 
-                    value={legislation.overall_applicability} 
-                  />
                 </TableCell>
                 <TableCell>
                   <LegislationStatusBadge 
