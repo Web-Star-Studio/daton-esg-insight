@@ -1,63 +1,72 @@
 
-## Plano: Corrigir Exibição de Filiais no LAIA
+## Plano: Adicionar Filtro "Apenas com Código"
 
-### Diagnóstico
+### Objetivo
 
-A investigação revelou uma **inconsistência nos dados do banco de dados**:
-
-| Status no Banco | Filiais |
-|-----------------|---------|
-| `Ativa` | Filiais oficiais (com código e CNPJ) - Ex: MATRIZ, CHUÍ, PE, SC, etc. |
-| `Ativo` | Filiais criadas incorretamente (sem código, sem CNPJ) - Ex: Filial ANAPOLIS, Filial CC |
-| `Inativa` | Filiais desativadas |
-
-O código atual em `LAIAUnidades.tsx` (linha 45) filtra apenas por `status === 'Ativo'`, excluindo as filiais oficiais que têm `status = 'Ativa'`.
-
-### Solução Proposta
-
-Atualizar o filtro para aceitar **ambas as variações** do status ativo, garantindo que todas as filiais ativas sejam exibidas corretamente.
+Adicionar um botão de filtro rápido para exibir apenas filiais que possuem código cadastrado, ajudando a ocultar filiais incompletas ou criadas incorretamente.
 
 ---
 
 ### Mudanças Técnicas
 
+#### 1. Atualizar Componente de Filtros
+
+**Arquivo:** `src/components/laia/LAIAUnidadesFilters.tsx`
+
+| Localização | Ação |
+|-------------|------|
+| Interface `LAIAUnidadesFiltersProps` | Expandir tipo de `activeQuickFilter` para incluir `"com_codigo"` |
+| Linha ~102-112 | Adicionar novo botão de filtro "Com código" após os existentes |
+
+**Novo botão:**
+```tsx
+<Button
+  variant={activeQuickFilter === "com_codigo" ? "default" : "outline"}
+  size="sm"
+  onClick={() => onQuickFilter(activeQuickFilter === "com_codigo" ? null : "com_codigo")}
+  className={activeQuickFilter === "com_codigo" ? "bg-blue-600 hover:bg-blue-700" : ""}
+>
+  <Hash className="h-4 w-4 mr-1" />
+  Com código
+</Button>
+```
+
+**Import adicional:** `Hash` de `lucide-react`
+
+---
+
+#### 2. Atualizar Página LAIAUnidades
+
 **Arquivo:** `src/pages/LAIAUnidades.tsx`
 
-| Linha | De | Para |
-|-------|-----|------|
-| 45 | `b.status === 'Ativo'` | `['Ativo', 'Ativa'].includes(b.status)` |
+| Localização | Ação |
+|-------------|------|
+| Linha 32 | Expandir tipo do estado `quickFilter` para `"criticos" \| "sem_aspectos" \| "com_codigo" \| null` |
+| Linhas 80-85 | Adicionar lógica de filtro para `"com_codigo"` |
 
-**Código atualizado:**
+**Lógica de filtro adicional:**
 ```tsx
-// Antes
-const activeBranches = branches?.filter(b => b.status === 'Ativo') || [];
-
-// Depois
-const activeBranches = branches?.filter(b => ['Ativo', 'Ativa'].includes(b.status)) || [];
+// Quick filters
+if (quickFilter === "criticos") {
+  result = result.filter(b => getStatsForBranch(b.id).criticos > 0);
+} else if (quickFilter === "sem_aspectos") {
+  result = result.filter(b => getStatsForBranch(b.id).total === 0);
+} else if (quickFilter === "com_codigo") {
+  result = result.filter(b => !!b.code);  // Novo filtro
+}
 ```
 
 ---
 
-### Consideração Adicional
+### Resultado Visual
 
-Idealmente, o banco de dados deveria ser normalizado para usar um único valor de status (por exemplo, sempre "Ativo" ou sempre "Ativa"). Isso exigiria:
+Os botões de filtro rápido ficarão assim:
 
-1. Uma migration SQL para atualizar todos os registros existentes
-2. Validação no formulário de criação/edição de filiais
-
-No entanto, a solução imediata de aceitar ambos os valores garante que o sistema funcione corretamente com os dados existentes, sem risco de quebrar funcionalidades que dependem do valor atual.
-
----
-
-### Resultado Esperado
-
-Após a correção, a página `/laia` exibirá as filiais oficiais cadastradas na gestão de filiais:
-
-- **MATRIZ** - CNPJ: 92.644.483/0001-85 (Porto Alegre)
-- **CHUÍ** - CNPJ: 92.644.483/0019-04
-- **PE** - CNPJ: 92.644.483/0023-90 (Cabo de Santo Agostinho)
-- **SC** - CNPJ: 92.644.483/0005-09 (Palhoça)
-- E demais filiais com código e CNPJ cadastrados
+```text
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│ ⚠ Com críticos│  │ ✕ Sem aspectos│  │ # Com código  │  ← NOVO
+└───────────────┘  └───────────────┘  └───────────────┘
+```
 
 ---
 
@@ -65,4 +74,14 @@ Após a correção, a página `/laia` exibirá as filiais oficiais cadastradas n
 
 | Arquivo | Ação |
 |---------|------|
-| `src/pages/LAIAUnidades.tsx` | Atualizar filtro de status na linha 45 |
+| `src/components/laia/LAIAUnidadesFilters.tsx` | Adicionar botão "Com código", atualizar tipos |
+| `src/pages/LAIAUnidades.tsx` | Atualizar tipo do estado e lógica de filtro |
+
+---
+
+### Comportamento Esperado
+
+1. Ao clicar em "Com código", apenas filiais com `code` preenchido serão exibidas
+2. Filiais sem código (Ex: "Filial ANAPOLIS", "Filial CC") serão ocultadas
+3. O contador de resultados será atualizado (ex: "10 de 15 unidades")
+4. Clicar novamente desativa o filtro
