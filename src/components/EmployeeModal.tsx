@@ -209,7 +209,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       } else {
         // Clear form and pending items for creation mode
         // Pre-fill hire_date with current date for new employees
-        const today = new Date().toISOString().split('T')[0];
+        const today = formatDateForDB(new Date()) || '';
         setFormData({
           cpf: '',
           full_name: '',

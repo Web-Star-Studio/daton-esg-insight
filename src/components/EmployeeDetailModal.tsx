@@ -5,6 +5,7 @@ import { Badge } from './ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Avatar, AvatarFallback } from './ui/avatar';
+import { parseDateSafe, formatDateDisplay } from '@/utils/dateUtils';
 
 import { Separator } from './ui/separator';
 import { 
@@ -118,7 +119,8 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return null;
     const today = new Date();
-    const birth = new Date(birthDate);
+    const birth = parseDateSafe(birthDate);
+    if (!birth) return null;
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
@@ -136,8 +138,8 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
   const calculateTenure = (hireDate: string | undefined | null) => {
     if (!hireDate) return 'Não informado';
     
-    const hire = new Date(hireDate);
-    if (isNaN(hire.getTime())) return 'Data inválida';
+    const hire = parseDateSafe(hireDate);
+    if (!hire) return 'Data inválida';
     
     const today = new Date();
     const diffTime = Math.abs(today.getTime() - hire.getTime());
@@ -153,7 +155,8 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
 
   const formatDate = (dateStr: string | undefined | null) => {
     if (!dateStr) return 'Não informado';
-    return new Date(dateStr).toLocaleDateString('pt-BR');
+    const formatted = formatDateDisplay(dateStr);
+    return formatted || 'Data inválida';
   };
 
   const formatCurrency = (value: number | undefined | null) => {
@@ -255,7 +258,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                                 <p className="text-sm font-medium">Data de Nascimento</p>
                                 <p className="text-sm text-muted-foreground">
                                   {employee.birth_date 
-                                    ? `${new Date(employee.birth_date).toLocaleDateString('pt-BR')}${calculateAge(employee.birth_date) ? ` (${calculateAge(employee.birth_date)} anos)` : ''}`
+                                    ? `${formatDateDisplay(employee.birth_date)}${calculateAge(employee.birth_date) ? ` (${calculateAge(employee.birth_date)} anos)` : ''}`
                                     : 'Não informado'
                                   }
                                 </p>
@@ -333,10 +336,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                               <div>
                                 <p className="text-sm font-medium">Data de Contratação</p>
                                 <p className="text-sm text-muted-foreground">
-                                  {isValidDate(employee.hire_date) 
-                                    ? new Date(employee.hire_date!).toLocaleDateString('pt-BR')
-                                    : 'Não informado'
-                                  }
+                                  {formatDateDisplay(employee.hire_date) || 'Não informado'}
                                 </p>
                               </div>
                             </div>
