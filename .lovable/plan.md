@@ -1,121 +1,63 @@
 
+## Plano: Corrigir Exibição de Filiais no LAIA
 
-## Plano: Ajustar Exibição de Filiais no LAIA
+### Diagnóstico
 
-### Contexto
+A investigação revelou uma **inconsistência nos dados do banco de dados**:
 
-A página LAIA (`/laia`) já utiliza o hook `useBranches()` para listar as filiais, garantindo que exibe as mesmas unidades cadastradas na Gestão de Filiais. No entanto, a exibição atual prioriza o **nome** da filial como identificador principal, quando deveria priorizar o **código** e o **CNPJ**.
+| Status no Banco | Filiais |
+|-----------------|---------|
+| `Ativa` | Filiais oficiais (com código e CNPJ) - Ex: MATRIZ, CHUÍ, PE, SC, etc. |
+| `Ativo` | Filiais criadas incorretamente (sem código, sem CNPJ) - Ex: Filial ANAPOLIS, Filial CC |
+| `Inativa` | Filiais desativadas |
+
+O código atual em `LAIAUnidades.tsx` (linha 45) filtra apenas por `status === 'Ativo'`, excluindo as filiais oficiais que têm `status = 'Ativa'`.
+
+### Solução Proposta
+
+Atualizar o filtro para aceitar **ambas as variações** do status ativo, garantindo que todas as filiais ativas sejam exibidas corretamente.
 
 ---
 
-### Mudanças Propostas
-
-#### 1. Reorganizar Card de Filial
+### Mudanças Técnicas
 
 **Arquivo:** `src/pages/LAIAUnidades.tsx`
 
-**De (atual - linhas 206-221):**
+| Linha | De | Para |
+|-------|-----|------|
+| 45 | `b.status === 'Ativo'` | `['Ativo', 'Ativa'].includes(b.status)` |
+
+**Código atualizado:**
 ```tsx
-<div className="flex items-center gap-2">
-  <Building2 className="h-5 w-5" />
-  <CardTitle className="text-lg">{branch.name}</CardTitle>
-</div>
-{branch.is_headquarters && <Badge>Matriz</Badge>}
-{(branch.city || branch.state) && (
-  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-    <MapPin className="h-3 w-3" />
-    {[branch.city, branch.state].filter(Boolean).join(", ")}
-  </div>
-)}
-```
+// Antes
+const activeBranches = branches?.filter(b => b.status === 'Ativo') || [];
 
-**Para (nova estrutura):**
-```tsx
-<div className="flex items-start justify-between">
-  <div className="space-y-1">
-    {/* Identificador Principal: Código */}
-    <div className="flex items-center gap-2">
-      <Building2 className="h-5 w-5 text-primary" />
-      <CardTitle className="text-lg">
-        {branch.code || "Sem código"}
-      </CardTitle>
-      {branch.is_headquarters && <Badge variant="secondary">Matriz</Badge>}
-    </div>
-    
-    {/* CNPJ (formatado) */}
-    {branch.cnpj && (
-      <p className="text-sm font-medium text-muted-foreground">
-        CNPJ: {formatCNPJ(branch.cnpj)}
-      </p>
-    )}
-    
-    {/* Nome (secundário) */}
-    <p className="text-sm text-muted-foreground">
-      {branch.name}
-    </p>
-    
-    {/* Localização */}
-    {(branch.city || branch.state) && (
-      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-        <MapPin className="h-3 w-3" />
-        {[branch.city, branch.state].filter(Boolean).join(", ")}
-      </div>
-    )}
-  </div>
-</div>
-```
-
-#### 2. Atualizar Busca para Incluir Código e CNPJ
-
-**Arquivo:** `src/pages/LAIAUnidades.tsx` (linhas 56-62)
-
-Atualizar o filtro de busca para também pesquisar por código e CNPJ:
-
-```tsx
-if (searchTerm) {
-  const term = searchTerm.toLowerCase();
-  result = result.filter(b => 
-    b.name.toLowerCase().includes(term) ||
-    b.code?.toLowerCase().includes(term) ||
-    b.cnpj?.replace(/\D/g, '').includes(term.replace(/\D/g, '')) ||
-    b.city?.toLowerCase().includes(term)
-  );
-}
-```
-
-#### 3. Importar Função de Formatação
-
-Adicionar import da função `formatCNPJ`:
-
-```tsx
-import { formatCNPJ } from "@/utils/formValidation";
+// Depois
+const activeBranches = branches?.filter(b => ['Ativo', 'Ativa'].includes(b.status)) || [];
 ```
 
 ---
 
-### Resultado Visual Esperado
+### Consideração Adicional
 
-**Antes:**
-```text
-┌────────────────────────────────┐
-│ 🏢 TRANSPORTES GABARDO LTDA   │  ← Nome principal
-│ 📍 Porto Alegre, RS           │
-│ ─────────────────────────────── │
-│ Total: 15  │  Críticos: 2     │
-└────────────────────────────────┘
-```
+Idealmente, o banco de dados deveria ser normalizado para usar um único valor de status (por exemplo, sempre "Ativo" ou sempre "Ativa"). Isso exigiria:
 
-**Depois:**
-```text
-┌────────────────────────────────┐
-│ 🏢 MATRIZ          [Matriz]   │  ← Código principal
-│ CNPJ: 92.644.483/0001-85      │  ← CNPJ em destaque
-│ TRANSPORTES GABARDO LTDA      │  ← Nome secundário
-│ 📍 Porto Alegre, RS           │
-│ ─────────────────────────────── │
-│ Total: 15  │  Críticos: 2     │
-└────────────────────────────────┘
-```
+1. Uma migration SQL para atualizar todos os registros existentes
+2. Validação no formulário de criação/edição de filiais
+
+No entanto, a solução imediata de aceitar ambos os valores garante que o sistema funcione corretamente com os dados existentes, sem risco de quebrar funcionalidades que dependem do valor atual.
+
+---
+
+### Resultado Esperado
+
+Após a correção, a página `/laia` exibirá as filiais oficiais cadastradas na gestão de filiais:
+
+- **MATRIZ** - CNPJ: 92.644.483/0001-85 (Porto Alegre)
+- **CHUÍ** - CNPJ: 92.644.483/0019-04
+- **PE** - CNPJ: 92.644.483/0023-90 (Cabo de Santo Agostinho)
+- **SC** - CNPJ: 92.644.483/0005-09 (Palhoça)
+- E demais filiais com código e CNPJ cadastrados
 
 ---
 
@@ -123,14 +65,4 @@ import { formatCNPJ } from "@/utils/formValidation";
 
 | Arquivo | Ação |
 |---------|------|
-| `src/pages/LAIAUnidades.tsx` | Reorganizar exibição do card, adicionar import de `formatCNPJ`, atualizar busca |
-
----
-
-### Tratamento de Dados Incompletos
-
-Para filiais que não possuem código ou CNPJ cadastrado:
-- **Sem código:** Exibir "Sem código" em texto esmaecido
-- **Sem CNPJ:** Ocultar linha do CNPJ
-- O nome sempre será exibido como fallback
-
+| `src/pages/LAIAUnidades.tsx` | Atualizar filtro de status na linha 45 |
