@@ -1,244 +1,210 @@
 
+## Plano: Corrigir Parser para Formato FPLAN Gabardo
 
-## Plano: Importação de Legislações com Avaliações por Unidade
+### Problema Identificado
 
-### Objetivo
+O parser de importação de legislações não está reconhecendo a planilha FPLAN_003-GERAL.xlsx porque:
 
-Estender o sistema de importação de legislações para suportar o formato FPLAN_003-GERAL.xlsx da Gabardo, que inclui:
-- Avaliações individuais por unidade (POA, PIR, GO, PREAL, SBC, SJP, DUC, IRA, SC, ES, CE, CHUÍ)
-- Valores numéricos/letras (1, 2, 3, x, z) representando status de conformidade
-- Evidências de atendimento que devem ser vinculadas às avaliações
-
----
-
-### Estrutura da Planilha
-
-**Legenda dos valores por unidade:**
-
-| Valor | Significado | Mapeamento no Sistema |
-|-------|-------------|----------------------|
-| 1 | N.A (Não Aplicável) | `applicability: "na"` |
-| 2 | OK (Conforme) | `applicability: "real"`, `status: "conforme"` |
-| 3 | NÃO (Não Conforme) | `applicability: "real"`, `status: "adequacao"` |
-| x | S/AV (Sem Avaliação) | `applicability: "pending"` |
-| z | n/p (Não Presente) | Ignorar - unidade não avalia esta legislação |
-
-**Colunas de unidades identificadas:** POA, PIR, GO, PREAL, SBC, SJP, DUC, IRA, SC, ES, CE, CHUÍ
+1. **Sheet errado**: O parser lê apenas a primeira aba (estatísticas), enquanto as legislações estão na segunda aba
+2. **Colunas não reconhecidas**: O formato Gabardo usa nomes diferentes:
+   - `TIPO` ao invés de `TIPO DE NORMA`
+   - `Nº` ao invés de `Número`
+   - `RESUMO E TÍTULO` ao invés de `Título/Ementa`
+   - `DATA DA PUBLICAÇÃO` ao invés de `Data Publicação`
+   - `TEMÁTICA` ao invés de `Tema`
+   - `FONTE` ao invés de `URL`
 
 ---
 
-### Arquitetura da Solução
+### Estrutura Real da Planilha
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    FLUXO DE IMPORTAÇÃO                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  1. UPLOAD           2. MAPEAMENTO         3. PREVIEW           │
-│  ┌─────────┐         ┌─────────────┐       ┌──────────────┐     │
-│  │ Excel   │ ──────▶ │ Vincular    │ ────▶ │ Legislações  │     │
-│  │ FPLAN   │         │ POA → Filial│       │ + Avaliações │     │
-│  └─────────┘         │ PIR → Filial│       │ por unidade  │     │
-│                      │ ...         │       └──────────────┘     │
-│                      └─────────────┘              │              │
-│                                                   ▼              │
-│  4. IMPORTAÇÃO                         5. RESULTADO             │
-│  ┌──────────────────────────┐          ┌──────────────────┐     │
-│  │ Para cada legislação:    │          │ 850 legislações  │     │
-│  │ • Inserir/atualizar leg. │ ───────▶ │ 10.200 avaliações│     │
-│  │ • Criar unit_compliance  │          │ 850 evidências   │     │
-│  │   para cada unidade      │          └──────────────────┘     │
-│  │ • Adicionar evidências   │                                   │
-│  └──────────────────────────┘                                   │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+Sheet 1: Estatísticas e legenda (não contém legislações)
+Sheet 2: Legislações com colunas:
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│ TEMÁTICA | SUBTEMA | TIPO | Nº | DATA DA PUBLICAÇÃO | RESUMO E TÍTULO | POA | PIR │
+│   ...    |   ...   |  ... | .. |        ...         |       ...       |  2  |  1  │
+└─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ### Mudanças Técnicas
 
-#### 1. Atualizar Parser da Planilha
+#### 1. Atualizar Função de Detecção de Sheet
 
 **Arquivo:** `src/services/legislationImport.ts`
 
-Adicionar parsing das colunas de unidades:
+Adicionar lógica para encontrar o sheet correto:
 
 ```typescript
-// Novas interfaces
-interface UnitEvaluation {
-  unitCode: string;      // POA, PIR, GO, etc.
-  value: string;         // 1, 2, 3, x, z
-  applicability: 'real' | 'potential' | 'na' | 'pending';
-  complianceStatus: 'conforme' | 'adequacao' | 'pending' | 'na';
-}
-
-interface ParsedLegislationWithUnits extends ParsedLegislation {
-  unitEvaluations: UnitEvaluation[];
-}
-
-// Função para detectar colunas de unidades automaticamente
-function detectUnitColumns(headers: string[]): string[] {
-  const knownUnitCodes = ['POA', 'PIR', 'GO', 'PREAL', 'SBC', 'SJP', 'DUC', 'IRA', 'SC', 'ES', 'CE', 'CHUÍ'];
-  return headers.filter(h => 
-    knownUnitCodes.includes(h.toUpperCase()) || 
-    (h.length <= 6 && /^[A-Z]{2,6}$/.test(h.toUpperCase()))
-  );
-}
-
-// Mapear valor numérico para status
-function mapUnitValue(value: string): UnitEvaluation | null {
-  const normalized = String(value).trim().toLowerCase();
-  
-  switch (normalized) {
-    case '1':
-      return { applicability: 'na', complianceStatus: 'na' };
-    case '2':
-      return { applicability: 'real', complianceStatus: 'conforme' };
-    case '3':
-      return { applicability: 'real', complianceStatus: 'adequacao' };
-    case 'x':
-      return { applicability: 'pending', complianceStatus: 'pending' };
-    case 'z':
-      return null; // Ignorar - unidade não presente
-    default:
-      return null;
-  }
-}
-```
-
----
-
-#### 2. Criar Wizard de Mapeamento de Unidades
-
-**Novo arquivo:** `src/components/legislation/UnitMappingStep.tsx`
-
-Componente para vincular códigos da planilha às branches do sistema:
-
-```typescript
-interface UnitMapping {
-  excelCode: string;     // POA
-  branchId: string | null;  // UUID da branch
-  branchName?: string;   // Nome para exibição
-}
-
-// UI: Lista de códigos detectados com dropdown para selecionar branch
-// Sugestão automática baseada em nome/código similar
-```
-
----
-
-#### 3. Atualizar Dialog de Importação
-
-**Arquivo:** `src/components/legislation/LegislationImportDialog.tsx`
-
-Adicionar novo estágio "mapping" entre upload e preview:
-
-| Estágio Atual | Novo Fluxo |
-|---------------|------------|
-| upload → preview → importing → result | upload → **mapping** → preview → importing → result |
-
-**Mudanças:**
-- Novo estado `unitMappings: UnitMapping[]`
-- Novo estado `detectedUnitColumns: string[]`
-- Renderização condicional do `UnitMappingStep`
-- Atualização da lógica de importação para criar `unit_compliance`
-
----
-
-#### 4. Atualizar Lógica de Importação
-
-**Arquivo:** `src/services/legislationImport.ts`
-
-Na função `importLegislations`, após inserir a legislação:
-
-```typescript
-// Após inserir legislação com sucesso
-if (newLegislationId && leg.unitEvaluations && unitMappings) {
-  for (const evaluation of leg.unitEvaluations) {
-    const mapping = unitMappings.find(m => m.excelCode === evaluation.unitCode);
-    if (mapping?.branchId && evaluation.applicability !== 'pending') {
-      await supabase.from('legislation_unit_compliance').upsert({
-        legislation_id: newLegislationId,
-        branch_id: mapping.branchId,
-        company_id: companyId,
-        applicability: evaluation.applicability,
-        compliance_status: evaluation.complianceStatus,
-        evidence_notes: leg.evidence_text, // Evidência geral
-        evaluated_at: new Date().toISOString(),
-      }, { onConflict: 'legislation_id,branch_id' });
+// Nova função para encontrar sheet com legislações
+function findLegislationsSheet(workbook: XLSX.WorkBook): string {
+  // Tentar encontrar sheet que contém headers de legislação
+  for (const sheetName of workbook.SheetNames) {
+    const worksheet = workbook.Sheets[sheetName];
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    
+    for (let row = 0; row <= Math.min(range.e.r, 15); row++) {
+      const values: string[] = [];
+      for (let col = range.s.c; col <= Math.min(range.e.c, 30); col++) {
+        const cell = worksheet[XLSX.utils.encode_cell({ r: row, c: col })];
+        if (cell?.v) values.push(String(cell.v).toUpperCase().trim());
+      }
+      
+      // Verificar padrões do formato Gabardo
+      const hasTipo = values.some(v => v === 'TIPO' || v.includes('TIPO'));
+      const hasNumero = values.some(v => v === 'Nº' || v === 'N°' || v.includes('NÚMERO'));
+      const hasTematica = values.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
+      const hasResumo = values.some(v => v.includes('RESUMO') || v.includes('TÍTULO'));
+      
+      // Se encontrar colunas-chave, este é o sheet correto
+      if ((hasTipo && hasNumero) || (hasTematica && hasResumo)) {
+        return sheetName;
+      }
     }
   }
+  
+  // Fallback: primeiro sheet
+  return workbook.SheetNames[0];
 }
 ```
 
 ---
 
-#### 5. Atualizar Interface de Resultado
+#### 2. Atualizar Função de Detecção de Header
 
-Exibir estatísticas de avaliações importadas:
+**Arquivo:** `src/services/legislationImport.ts` (função `findHeaderRow`)
+
+Expandir os padrões reconhecidos:
+
+| Antes | Depois |
+|-------|--------|
+| `TIPO NORMA` | `TIPO NORMA` \| `TIPO` sozinho |
+| `TÍTULO` | `TÍTULO` \| `RESUMO E TÍTULO` \| `RESUMO` |
+| - | `TEMÁTICA` como alternativa |
+| - | `Nº` ou `N°` como alternativa |
+
+Nova lógica:
+```typescript
+function findHeaderRow(worksheet: XLSX.WorkSheet): number {
+  // ...
+  for (let row = range.s.r; row <= Math.min(range.e.r, 15); row++) {
+    // ...
+    
+    // Padrões originais
+    const hasTipoNorma = cellValues.some(v => v.includes('TIPO') && v.includes('NORMA'));
+    const hasTitulo = cellValues.some(v => v.includes('TÍTULO') || v.includes('TITULO') || v.includes('EMENTA'));
+    
+    // Novos padrões para formato Gabardo FPLAN
+    const hasTipoSimples = cellValues.some(v => v === 'TIPO');
+    const hasNumero = cellValues.some(v => v === 'Nº' || v === 'N°' || v === 'NUMERO' || v === 'NÚMERO');
+    const hasTematica = cellValues.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
+    const hasResumoTitulo = cellValues.some(v => v.includes('RESUMO E TÍTULO') || v.includes('RESUMO'));
+    
+    // Condição expandida
+    const hasValidPattern = 
+      (hasTipoNorma && hasTitulo) ||                    // Formato original
+      (hasTipoSimples && hasNumero && hasTematica) ||   // Formato Gabardo FPLAN
+      (hasTematica && hasResumoTitulo);                 // Formato Gabardo alternativo
+      
+    if (hasValidPattern) {
+      return row;
+    }
+  }
+  
+  return 0;
+}
+```
+
+---
+
+#### 3. Atualizar Mapeamento de Colunas
+
+**Arquivo:** `src/services/legislationImport.ts` (função `parseLegislationExcelWithUnits`)
+
+Adicionar nomes alternativos das colunas:
+
+| Campo | Nomes Atuais | Adicionar |
+|-------|--------------|-----------|
+| norm_type | `Tipo de Norma`, `Tipo` | ✓ já existe |
+| norm_number | `Número`, `Numero` | `Nº`, `N°` |
+| title | `Título/Ementa`, `Título` | `RESUMO E TÍTULO`, `Resumo e Título` |
+| theme_name | `Macrotema`, `Tema` | `TEMÁTICA`, `Tematica` |
+| publication_date | `Data Publicação` | `DATA DA PUBLICAÇÃO` |
+| full_text_url | `URL Texto Integral`, `URL` | `FONTE`, `Fonte` |
+| evidence_text | `Evidências` | `EVIDÊNCIA DE ATENDIMENTO` |
+| overall_applicability | `Aplicabilidade` | ✓ já existe |
+| overall_status | `Status`, `Situação` | `ATENDIMENTO` |
+
+---
+
+#### 4. Atualizar Parser Principal
+
+**Arquivo:** `src/services/legislationImport.ts`
+
+Atualizar `parseLegislationExcelWithUnits` para:
 
 ```typescript
-interface LegislationImportResult {
-  // Campos existentes...
-  unitCompliancesCreated: number;  // NOVO
-  unitsByBranch: Record<string, number>;  // NOVO
+export async function parseLegislationExcelWithUnits(file: File): Promise<ParseLegislationResult> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
+        
+        // NOVO: Encontrar sheet com legislações
+        const sheetName = findLegislationsSheet(workbook);
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // ... resto do código
+      }
+    };
+  });
 }
 ```
 
 ---
 
-### Arquivos a Criar/Modificar
+### Arquivos a Modificar
 
 | Arquivo | Ação |
 |---------|------|
-| `src/services/legislationImport.ts` | Estender parser para detectar e extrair colunas de unidades |
-| `src/components/legislation/UnitMappingStep.tsx` | **NOVO** - Wizard para mapear códigos às branches |
-| `src/components/legislation/LegislationImportDialog.tsx` | Adicionar estágio de mapeamento e lógica de unit_compliance |
-| `src/hooks/data/useBranches.ts` | Verificar se já existe hook para buscar branches |
+| `src/services/legislationImport.ts` | Adicionar `findLegislationsSheet`, atualizar `findHeaderRow`, expandir mapeamento de colunas |
 
 ---
 
-### Fluxo do Usuário
+### Fluxo Corrigido
 
-1. **Upload:** Usuário faz upload da planilha FPLAN_003-GERAL.xlsx
-2. **Detecção Automática:** Sistema identifica colunas POA, PIR, GO, etc.
-3. **Mapeamento:** Usuário vincula cada código a uma filial cadastrada
-   - Sistema sugere automaticamente baseado em nome/código similar
-   - Opção de "ignorar" colunas não desejadas
-4. **Preview:** Exibe legislações + contagem de avaliações por unidade
-5. **Importação:** 
-   - Cria/atualiza legislações
-   - Cria registros em `legislation_unit_compliance` para cada combinação legislação/unidade
-   - Adiciona evidências
-6. **Resultado:** Resumo com estatísticas por unidade
-
----
-
-### Comportamento Esperado
-
-| Cenário | Resultado |
-|---------|-----------|
-| Planilha com 850 legislações e 12 unidades | Até 10.200 registros de `unit_compliance` |
-| Valor "2" em coluna POA | `unit_compliance` com `applicability: real`, `status: conforme` |
-| Valor "z" em coluna SC | Nenhum registro criado para esta combinação |
-| Coluna não mapeada | Valores ignorados (com aviso) |
-| Branch já tem avaliação | Atualiza via upsert (onConflict) |
+```text
+1. Upload FPLAN_003-GERAL.xlsx
+2. Parser escaneia todas as abas
+3. Encontra Sheet 2 com colunas TEMÁTICA/TIPO/Nº
+4. Identifica header na linha correta
+5. Mapeia colunas:
+   - TEMÁTICA → theme_name
+   - SUBTEMA → subtheme_name  
+   - TIPO → norm_type
+   - Nº → norm_number
+   - DATA DA PUBLICAÇÃO → publication_date
+   - RESUMO E TÍTULO → title
+   - POA/PIR/GO... → unitEvaluations
+   - APLICABILIDADE → overall_applicability
+   - ATENDIMENTO → overall_status
+   - EVIDÊNCIA DE ATENDIMENTO → evidence_text
+   - FONTE → full_text_url
+6. Retorna ~850 legislações com avaliações por unidade
+```
 
 ---
 
-### Considerações de Performance
+### Testes Esperados
 
-- **Batch insert:** Acumular avaliações e inserir em lotes de 50
-- **Progress callback:** Atualizar a cada 5 legislações processadas
-- **Transação implícita:** Cada legislação + suas avaliações como unidade atômica
-
----
-
-### Compatibilidade
-
-A solução mantém compatibilidade total com:
-- Template atual de importação (sem colunas de unidades)
-- Planilhas com subconjunto de colunas de unidades
-- Importação sem etapa de mapeamento (se nenhuma coluna de unidade detectada)
-
+| Cenário | Resultado Esperado |
+|---------|-------------------|
+| Upload FPLAN_003-GERAL.xlsx | ~850 legislações detectadas |
+| Colunas POA, PIR, GO detectadas | Sim, 12 colunas de unidades |
+| Título preenchido corretamente | "Art. 227. É dever da família..." |
+| Tema/Subtema mapeados | "RH" / "Programa na Mão Certa" |
