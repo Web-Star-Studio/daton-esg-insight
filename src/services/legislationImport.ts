@@ -4,6 +4,14 @@ import { formErrorHandler } from '@/utils/formErrorHandler';
 
 // ============= Types =============
 
+// Unit evaluation from Excel column (POA, PIR, GO, etc.)
+export interface UnitEvaluation {
+  unitCode: string;      // POA, PIR, GO, etc.
+  value: string;         // 1, 2, 3, x, z
+  applicability: 'real' | 'potential' | 'na' | 'pending';
+  complianceStatus: 'conforme' | 'adequacao' | 'pending' | 'na';
+}
+
 export interface ParsedLegislation {
   rowNumber: number;
   norm_type: string;
@@ -28,6 +36,16 @@ export interface ParsedLegislation {
   general_notes: string;           // "Observações gerais, envios datas e responsáveis"
   states_list: string;             // UFs múltiplos
   municipalities_list: string;     // Municípios múltiplos (formato SP)
+  // Avaliações por unidade
+  unitEvaluations: UnitEvaluation[];
+}
+
+// Unit mapping for import
+export interface UnitMapping {
+  excelCode: string;
+  branchId: string | null;
+  branchName?: string;
+  autoMatched: boolean;
 }
 
 export interface LegislationValidation {
@@ -43,6 +61,7 @@ export interface LegislationImportResult {
   imported: number;
   updated: number;
   evidencesAdded: number;
+  unitCompliancesCreated: number;  // NEW: unit compliance records created
   errors: number;
   warnings: number;
   details: Array<{
@@ -55,6 +74,7 @@ export interface LegislationImportResult {
     themes: string[];
     subthemes: string[];
   };
+  unitsByBranch: Record<string, number>;  // NEW: count by branch name
 }
 
 export interface LegislationImportProgress {
@@ -342,9 +362,83 @@ function getColumnValue(row: any, ...possibleNames: string[]): string {
   return '';
 }
 
+// ============= Unit Detection & Mapping =============
+
+// Known unit codes from Gabardo format
+const KNOWN_UNIT_CODES = ['POA', 'PIR', 'GO', 'PREAL', 'SBC', 'SJP', 'DUC', 'IRA', 'SC', 'ES', 'CE', 'CHUÍ', 'CHUI', 'BA', 'PE', 'RJ'];
+
+// Detect unit columns from headers
+export function detectUnitColumns(headers: string[]): string[] {
+  return headers.filter(h => {
+    const normalized = h.toUpperCase().trim();
+    // Match known codes or short uppercase codes
+    return KNOWN_UNIT_CODES.includes(normalized) || 
+           (normalized.length <= 6 && /^[A-Z]{2,6}$/.test(normalized) && 
+            !['UF', 'ID', 'URL', 'OK', 'NA', 'NR', 'NBR'].includes(normalized));
+  });
+}
+
+// Map unit value (1, 2, 3, x, z) to applicability and status
+export function mapUnitValue(value: string): UnitEvaluation | null {
+  if (!value) return null;
+  
+  const normalized = String(value).trim().toLowerCase();
+  
+  switch (normalized) {
+    case '1':
+      // N.A (Não Aplicável)
+      return { 
+        unitCode: '', 
+        value: '1', 
+        applicability: 'na', 
+        complianceStatus: 'na' 
+      };
+    case '2':
+      // OK (Conforme)
+      return { 
+        unitCode: '', 
+        value: '2', 
+        applicability: 'real', 
+        complianceStatus: 'conforme' 
+      };
+    case '3':
+      // NÃO (Não Conforme / Adequação)
+      return { 
+        unitCode: '', 
+        value: '3', 
+        applicability: 'real', 
+        complianceStatus: 'adequacao' 
+      };
+    case 'x':
+      // S/AV (Sem Avaliação)
+      return { 
+        unitCode: '', 
+        value: 'x', 
+        applicability: 'pending', 
+        complianceStatus: 'pending' 
+      };
+    case 'z':
+      // n/p (Não Presente) - ignore
+      return null;
+    default:
+      // Unknown value - ignore
+      return null;
+  }
+}
+
 // ============= Main Functions =============
 
+export interface ParseLegislationResult {
+  legislations: ParsedLegislation[];
+  detectedUnitColumns: string[];
+}
+
 export async function parseLegislationExcel(file: File): Promise<ParsedLegislation[]> {
+  const result = await parseLegislationExcelWithUnits(file);
+  return result.legislations;
+}
+
+export async function parseLegislationExcelWithUnits(file: File): Promise<ParseLegislationResult> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -360,6 +454,11 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
           raw: false,
           range: headerRow
         });
+        
+        // Get headers from first data row to detect unit columns
+        const firstRow = jsonData[0] as any;
+        const headers = firstRow ? Object.keys(firstRow) : [];
+        const detectedUnitColumns = detectUnitColumns(headers);
         
         const legislations: ParsedLegislation[] = jsonData.map((row: any, index) => {
           const jurisdictionRaw = getColumnValue(row, 'Jurisdição', 'Jurisdicao', 'JURISDIÇÃO', 'JURISDICAO');
@@ -402,6 +501,19 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
           const municipalityRaw = getColumnValue(row, 'Município', 'Municipio', 'MUNICÍPIO', 'MUNICIPIO', 'Cidade', 'CIDADE');
           const { municipality, municipalitiesList } = parseMunicipality(municipalityRaw);
           
+          // Parse unit evaluations from detected columns
+          const unitEvaluations: UnitEvaluation[] = [];
+          for (const unitCol of detectedUnitColumns) {
+            const cellValue = row[unitCol];
+            if (cellValue !== undefined && cellValue !== null && cellValue !== '') {
+              const evaluation = mapUnitValue(String(cellValue));
+              if (evaluation) {
+                evaluation.unitCode = unitCol.toUpperCase();
+                unitEvaluations.push(evaluation);
+              }
+            }
+          }
+          
           return {
             rowNumber: headerRow + index + 2,
             norm_type: getColumnValue(row, 'Tipo de Norma', 'Tipo', 'TIPO DE NORMA', 'TIPO'),
@@ -426,13 +538,15 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
             general_notes: generalNotes,
             states_list: statesList,
             municipalities_list: municipalitiesList,
+            // Avaliações por unidade
+            unitEvaluations,
           };
         });
         
         // Filter out completely empty rows
         const filtered = legislations.filter(leg => leg.title || leg.norm_type || leg.norm_number);
         
-        resolve(filtered);
+        resolve({ legislations: filtered, detectedUnitColumns });
       } catch (error) {
         reject(new Error('Erro ao processar arquivo Excel: ' + (error as Error).message));
       }
@@ -525,6 +639,7 @@ export async function importLegislations(
   options: {
     skipExisting: boolean;
     createMissingThemes: boolean;
+    unitMappings?: UnitMapping[];  // NEW: mappings for unit columns
     onProgress?: (progress: LegislationImportProgress) => void;
   } = { skipExisting: true, createMissingThemes: true }
 ): Promise<LegislationImportResult> {
@@ -533,6 +648,7 @@ export async function importLegislations(
     imported: 0,
     updated: 0,
     evidencesAdded: 0,
+    unitCompliancesCreated: 0,
     errors: 0,
     warnings: 0,
     details: [],
@@ -540,6 +656,7 @@ export async function importLegislations(
       themes: [],
       subthemes: [],
     },
+    unitsByBranch: {},
   };
   
   try {
@@ -775,21 +892,23 @@ export async function importLegislations(
         
         result.imported++;
         
-        // Se nova legislação tem evidência, criar também
+        // Buscar ID da legislação recém criada (needed for evidence and unit compliance)
+        const { data: newLeg } = await supabase
+          .from('legislations')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('norm_type', leg.norm_type)
+          .eq('title', leg.title)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
         let evidenceMessage = '';
-        if (leg.evidence_text && leg.evidence_text.trim()) {
-          // Buscar ID da legislação recém criada
-          const { data: newLeg } = await supabase
-            .from('legislations')
-            .select('id')
-            .eq('company_id', companyId)
-            .eq('norm_type', leg.norm_type)
-            .eq('title', leg.title)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          
-          if (newLeg) {
+        let unitComplianceMessage = '';
+        
+        if (newLeg) {
+          // Se nova legislação tem evidência, criar também
+          if (leg.evidence_text && leg.evidence_text.trim()) {
             const { error: evidenceError } = await supabase
               .from('legislation_evidences')
               .insert({
@@ -803,7 +922,58 @@ export async function importLegislations(
             
             if (!evidenceError) {
               result.evidencesAdded++;
-              evidenceMessage = ' + evidência adicionada';
+              evidenceMessage = ' + evidência';
+            }
+          }
+          
+          // Criar unit compliance para cada avaliação mapeada
+          if (options.unitMappings && leg.unitEvaluations && leg.unitEvaluations.length > 0) {
+            let unitCount = 0;
+            const complianceRecords: Array<{
+              legislation_id: string;
+              branch_id: string;
+              company_id: string;
+              applicability: string;
+              compliance_status: string;
+              evidence_notes: string | null;
+              evaluated_at: string;
+              evaluated_by: string;
+            }> = [];
+            
+            for (const evaluation of leg.unitEvaluations) {
+              const mapping = options.unitMappings.find(m => 
+                m.excelCode.toUpperCase() === evaluation.unitCode.toUpperCase()
+              );
+              
+              if (mapping?.branchId) {
+                complianceRecords.push({
+                  legislation_id: newLeg.id,
+                  branch_id: mapping.branchId,
+                  company_id: companyId,
+                  applicability: evaluation.applicability,
+                  compliance_status: evaluation.complianceStatus,
+                  evidence_notes: leg.evidence_text?.trim() || null,
+                  evaluated_at: new Date().toISOString(),
+                  evaluated_by: profile.id,
+                });
+                
+                // Track by branch name
+                const branchName = mapping.branchName || mapping.excelCode;
+                result.unitsByBranch[branchName] = (result.unitsByBranch[branchName] || 0) + 1;
+                unitCount++;
+              }
+            }
+            
+            // Batch insert compliance records
+            if (complianceRecords.length > 0) {
+              const { error: complianceError } = await supabase
+                .from('legislation_unit_compliance')
+                .upsert(complianceRecords, { onConflict: 'legislation_id,branch_id' });
+              
+              if (!complianceError) {
+                result.unitCompliancesCreated += complianceRecords.length;
+                unitComplianceMessage = ` + ${unitCount} unidade(s)`;
+              }
             }
           }
         }
@@ -812,7 +982,7 @@ export async function importLegislations(
           rowNumber: leg.rowNumber,
           title: leg.title,
           status: 'success',
-          message: 'Importado com sucesso' + evidenceMessage,
+          message: 'Importado com sucesso' + evidenceMessage + unitComplianceMessage,
         });
         
       } catch (error) {

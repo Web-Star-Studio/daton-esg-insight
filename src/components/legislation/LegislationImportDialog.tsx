@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   Dialog,
@@ -31,11 +31,14 @@ import {
   XCircle,
   AlertTriangle,
   Loader2,
+  Building2,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranches } from "@/services/branches";
 import {
-  parseLegislationExcel,
+  parseLegislationExcelWithUnits,
   validateLegislations,
   importLegislations,
   downloadLegislationTemplate,
@@ -43,7 +46,9 @@ import {
   LegislationValidation,
   LegislationImportResult,
   LegislationImportProgress,
+  UnitMapping,
 } from "@/services/legislationImport";
+import { UnitMappingStep, createInitialMappings } from "./UnitMappingStep";
 
 interface LegislationImportDialogProps {
   open: boolean;
@@ -51,7 +56,7 @@ interface LegislationImportDialogProps {
   onImportComplete?: () => void;
 }
 
-type ImportStage = 'upload' | 'preview' | 'importing' | 'result';
+type ImportStage = 'upload' | 'mapping' | 'preview' | 'importing' | 'result';
 
 export function LegislationImportDialog({
   open,
@@ -59,8 +64,12 @@ export function LegislationImportDialog({
   onImportComplete,
 }: LegislationImportDialogProps) {
   const { user } = useAuth();
+  const { data: branches = [] } = useBranches();
+  
   const [stage, setStage] = useState<ImportStage>('upload');
   const [parsedData, setParsedData] = useState<ParsedLegislation[]>([]);
+  const [detectedUnitColumns, setDetectedUnitColumns] = useState<string[]>([]);
+  const [unitMappings, setUnitMappings] = useState<UnitMapping[]>([]);
   const [validations, setValidations] = useState<LegislationValidation[]>([]);
   const [importResult, setImportResult] = useState<LegislationImportResult | null>(null);
   const [progress, setProgress] = useState<LegislationImportProgress | null>(null);
@@ -73,6 +82,8 @@ export function LegislationImportDialog({
   const resetState = () => {
     setStage('upload');
     setParsedData([]);
+    setDetectedUnitColumns([]);
+    setUnitMappings([]);
     setValidations([]);
     setImportResult(null);
     setProgress(null);
@@ -95,29 +106,38 @@ export function LegislationImportDialog({
 
     setIsProcessing(true);
     try {
-      const parsed = await parseLegislationExcel(file);
+      const result = await parseLegislationExcelWithUnits(file);
       
-      if (parsed.length === 0) {
+      if (result.legislations.length === 0) {
         toast.error("Nenhuma legislação encontrada no arquivo");
         setIsProcessing(false);
         return;
       }
 
-      setParsedData(parsed);
+      setParsedData(result.legislations);
+      setDetectedUnitColumns(result.detectedUnitColumns);
 
-      if (user?.company?.id) {
-        const validationResults = await validateLegislations(parsed, user.company.id);
-        setValidations(validationResults);
+      // If unit columns detected, go to mapping step
+      if (result.detectedUnitColumns.length > 0) {
+        const initialMappings = createInitialMappings(result.detectedUnitColumns, branches);
+        setUnitMappings(initialMappings);
+        setStage('mapping');
+        toast.success(`${result.legislations.length} legislações encontradas com ${result.detectedUnitColumns.length} colunas de unidades`);
+      } else {
+        // No unit columns, go directly to preview
+        if (user?.company?.id) {
+          const validationResults = await validateLegislations(result.legislations, user.company.id);
+          setValidations(validationResults);
+        }
+        setStage('preview');
+        toast.success(`${result.legislations.length} legislações encontradas`);
       }
-
-      setStage('preview');
-      toast.success(`${parsed.length} legislações encontradas`);
     } catch (error) {
       toast.error(`Erro ao processar arquivo: ${(error as Error).message}`);
     } finally {
       setIsProcessing(false);
     }
-  }, [user?.company?.id]);
+  }, [user?.company?.id, branches]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -128,6 +148,21 @@ export function LegislationImportDialog({
     maxFiles: 1,
     disabled: isProcessing,
   });
+
+  const handleContinueFromMapping = async () => {
+    setIsProcessing(true);
+    try {
+      if (user?.company?.id) {
+        const validationResults = await validateLegislations(parsedData, user.company.id);
+        setValidations(validationResults);
+      }
+      setStage('preview');
+    } catch (error) {
+      toast.error(`Erro ao validar: ${(error as Error).message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleImport = async () => {
     if (!user?.company?.id) {
@@ -150,6 +185,7 @@ export function LegislationImportDialog({
       const result = await importLegislations(validLegislations, {
         skipExisting,
         createMissingThemes,
+        unitMappings: unitMappings.filter(m => m.branchId), // Only mapped units
         onProgress: setProgress,
       });
 
@@ -157,7 +193,10 @@ export function LegislationImportDialog({
       setStage('result');
 
       if (result.success) {
-        toast.success(`${result.imported} legislações importadas com sucesso!`);
+        const unitMsg = result.unitCompliancesCreated > 0 
+          ? ` e ${result.unitCompliancesCreated} avaliações por unidade`
+          : '';
+        toast.success(`${result.imported} legislações importadas${unitMsg}!`);
         onImportComplete?.();
       } else {
         toast.warning(`Importação concluída com ${result.errors} erro(s)`);
@@ -173,6 +212,12 @@ export function LegislationImportDialog({
   const validCount = validations.filter(v => v.isValid).length;
   const errorCount = validations.filter(v => !v.isValid).length;
   const warningCount = validations.filter(v => v.isValid && v.warnings.length > 0).length;
+  const mappedUnitsCount = unitMappings.filter(m => m.branchId).length;
+
+  // Count total unit evaluations in parsed data
+  const totalUnitEvaluations = useMemo(() => {
+    return parsedData.reduce((sum, leg) => sum + (leg.unitEvaluations?.length || 0), 0);
+  }, [parsedData]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -184,6 +229,7 @@ export function LegislationImportDialog({
           </DialogTitle>
           <DialogDescription>
             {stage === 'upload' && "Faça upload de um arquivo Excel com as legislações a importar"}
+            {stage === 'mapping' && "Mapeie as colunas de unidades para as filiais do sistema"}
             {stage === 'preview' && "Revise os dados antes de confirmar a importação"}
             {stage === 'importing' && "Importando legislações..."}
             {stage === 'result' && "Resultado da importação"}
@@ -231,6 +277,16 @@ export function LegislationImportDialog({
             </div>
           )}
 
+          {/* Mapping Stage */}
+          {stage === 'mapping' && (
+            <UnitMappingStep
+              detectedUnits={detectedUnitColumns}
+              branches={branches}
+              mappings={unitMappings}
+              onMappingsChange={setUnitMappings}
+            />
+          )}
+
           {/* Preview Stage */}
           {stage === 'preview' && (
             <div className="space-y-4">
@@ -254,6 +310,12 @@ export function LegislationImportDialog({
                   <Badge variant="secondary" className="text-sm py-1 px-3 bg-yellow-500 text-white">
                     <AlertTriangle className="h-4 w-4 mr-1" />
                     {warningCount} com avisos
+                  </Badge>
+                )}
+                {mappedUnitsCount > 0 && (
+                  <Badge variant="secondary" className="text-sm py-1 px-3 bg-blue-600 text-white">
+                    <Building2 className="h-4 w-4 mr-1" />
+                    {mappedUnitsCount} unidades mapeadas ({totalUnitEvaluations} avaliações)
                   </Badge>
                 )}
               </div>
@@ -288,12 +350,14 @@ export function LegislationImportDialog({
                       <TableHead className="w-[100px]">Tipo</TableHead>
                       <TableHead>Título/Ementa</TableHead>
                       <TableHead className="w-[100px]">Jurisdição</TableHead>
+                      <TableHead className="w-[80px]">Unidades</TableHead>
                       <TableHead>Observações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {parsedData.slice(0, 50).map((leg, idx) => {
                       const validation = validations[idx];
+                      const unitCount = leg.unitEvaluations?.length || 0;
                       return (
                         <TableRow key={idx} className={!validation?.isValid ? 'bg-destructive/10' : ''}>
                           <TableCell className="font-mono text-sm">{leg.rowNumber}</TableCell>
@@ -313,6 +377,15 @@ export function LegislationImportDialog({
                             {leg.title}
                           </TableCell>
                           <TableCell className="text-sm capitalize">{leg.jurisdiction}</TableCell>
+                          <TableCell className="text-sm">
+                            {unitCount > 0 ? (
+                              <Badge variant="outline" className="text-xs">
+                                {unitCount}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {validation?.errors?.join('; ') || validation?.warnings?.join('; ')}
                           </TableCell>
@@ -361,11 +434,29 @@ export function LegislationImportDialog({
                   )}
                   <span>
                     {importResult.imported} legislações importadas
+                    {importResult.unitCompliancesCreated > 0 && `, ${importResult.unitCompliancesCreated} avaliações por unidade`}
                     {importResult.errors > 0 && `, ${importResult.errors} erros`}
                     {importResult.warnings > 0 && `, ${importResult.warnings} avisos`}
                   </span>
                 </AlertDescription>
               </Alert>
+
+              {/* Unit compliance by branch */}
+              {Object.keys(importResult.unitsByBranch).length > 0 && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
+                  <p className="font-medium mb-2 flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Avaliações importadas por unidade:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(importResult.unitsByBranch).map(([branch, count]) => (
+                      <Badge key={branch} variant="secondary">
+                        {branch}: {count}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Created entities */}
               {(importResult.createdEntities.themes.length > 0 || importResult.createdEntities.subthemes.length > 0) && (
@@ -406,6 +497,7 @@ export function LegislationImportDialog({
                         <TableCell className="font-mono text-sm">{detail.rowNumber}</TableCell>
                         <TableCell>
                           {detail.status === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                          {detail.status === 'updated' && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
                           {detail.status === 'error' && <XCircle className="h-4 w-4 text-destructive" />}
                           {detail.status === 'warning' && <AlertTriangle className="h-4 w-4 text-yellow-500" />}
                         </TableCell>
@@ -429,9 +521,34 @@ export function LegislationImportDialog({
             </Button>
           )}
 
-          {stage === 'preview' && (
+          {stage === 'mapping' && (
             <>
               <Button variant="outline" onClick={resetState}>
+                Voltar
+              </Button>
+              <Button
+                onClick={handleContinueFromMapping}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                )}
+                Continuar ({mappedUnitsCount} unidades mapeadas)
+              </Button>
+            </>
+          )}
+
+          {stage === 'preview' && (
+            <>
+              <Button variant="outline" onClick={() => {
+                if (detectedUnitColumns.length > 0) {
+                  setStage('mapping');
+                } else {
+                  resetState();
+                }
+              }}>
                 Voltar
               </Button>
               <Button
