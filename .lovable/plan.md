@@ -1,72 +1,171 @@
 
-## Plano: Adicionar Filtro "Apenas com Código"
+
+## Plano: Suporte a Múltiplos Filtros Simultâneos
 
 ### Objetivo
 
-Adicionar um botão de filtro rápido para exibir apenas filiais que possuem código cadastrado, ajudando a ocultar filiais incompletas ou criadas incorretamente.
+Permitir que o usuário ative múltiplos filtros rápidos ao mesmo tempo (ex: "Com código" **E** "Com críticos"), aplicando-os de forma cumulativa (AND lógico).
 
 ---
 
 ### Mudanças Técnicas
 
-#### 1. Atualizar Componente de Filtros
+#### 1. Atualizar Estado e Tipos
+
+**Arquivo:** `src/pages/LAIAUnidades.tsx`
+
+| Localização | De | Para |
+|-------------|-----|------|
+| Linha 32 | `useState<"criticos" \| "sem_aspectos" \| "com_codigo" \| null>(null)` | `useState<Set<string>>(new Set())` |
+
+**Novo estado:**
+```tsx
+const [quickFilters, setQuickFilters] = useState<Set<string>>(new Set());
+```
+
+---
+
+#### 2. Atualizar Lógica de Filtro
+
+**Arquivo:** `src/pages/LAIAUnidades.tsx` (linhas 80-87)
+
+**De (filtro exclusivo):**
+```tsx
+if (quickFilter === "criticos") {
+  result = result.filter(b => getStatsForBranch(b.id).criticos > 0);
+} else if (quickFilter === "sem_aspectos") {
+  result = result.filter(b => getStatsForBranch(b.id).total === 0);
+} else if (quickFilter === "com_codigo") {
+  result = result.filter(b => !!b.code);
+}
+```
+
+**Para (filtros cumulativos):**
+```tsx
+if (quickFilters.has("criticos")) {
+  result = result.filter(b => getStatsForBranch(b.id).criticos > 0);
+}
+if (quickFilters.has("sem_aspectos")) {
+  result = result.filter(b => getStatsForBranch(b.id).total === 0);
+}
+if (quickFilters.has("com_codigo")) {
+  result = result.filter(b => !!b.code);
+}
+```
+
+---
+
+#### 3. Atualizar Função de Toggle
+
+**Arquivo:** `src/pages/LAIAUnidades.tsx`
+
+Nova função para adicionar/remover filtros:
+```tsx
+const toggleQuickFilter = (filter: string) => {
+  setQuickFilters(prev => {
+    const newSet = new Set(prev);
+    if (newSet.has(filter)) {
+      newSet.delete(filter);
+    } else {
+      newSet.add(filter);
+    }
+    return newSet;
+  });
+};
+```
+
+---
+
+#### 4. Atualizar Verificação de Filtros Ativos
+
+**Arquivo:** `src/pages/LAIAUnidades.tsx` (linhas 109-112)
+
+**De:**
+```tsx
+const hasActiveFilters = searchTerm !== "" || 
+  cityFilter !== "all" || 
+  typeFilter !== "all" || 
+  quickFilter !== null;
+```
+
+**Para:**
+```tsx
+const hasActiveFilters = searchTerm !== "" || 
+  cityFilter !== "all" || 
+  typeFilter !== "all" || 
+  quickFilters.size > 0;
+```
+
+---
+
+#### 5. Atualizar Função de Limpar Filtros
+
+**Arquivo:** `src/pages/LAIAUnidades.tsx` (linha 118)
+
+**De:** `setQuickFilter(null);`
+**Para:** `setQuickFilters(new Set());`
+
+---
+
+#### 6. Atualizar Interface do Componente de Filtros
 
 **Arquivo:** `src/components/laia/LAIAUnidadesFilters.tsx`
 
-| Localização | Ação |
-|-------------|------|
-| Interface `LAIAUnidadesFiltersProps` | Expandir tipo de `activeQuickFilter` para incluir `"com_codigo"` |
-| Linha ~102-112 | Adicionar novo botão de filtro "Com código" após os existentes |
+**Tipos atualizados (linhas 26-27):**
+```tsx
+onQuickFilter: (filter: string) => void;
+activeQuickFilters: Set<string>;
+```
 
-**Novo botão:**
+---
+
+#### 7. Atualizar Botões de Filtro
+
+**Arquivo:** `src/components/laia/LAIAUnidadesFilters.tsx`
+
+Alterar verificação de estado ativo e onClick:
+
 ```tsx
 <Button
-  variant={activeQuickFilter === "com_codigo" ? "default" : "outline"}
+  variant={activeQuickFilters.has("criticos") ? "default" : "outline"}
   size="sm"
-  onClick={() => onQuickFilter(activeQuickFilter === "com_codigo" ? null : "com_codigo")}
-  className={activeQuickFilter === "com_codigo" ? "bg-blue-600 hover:bg-blue-700" : ""}
+  onClick={() => onQuickFilter("criticos")}
+  className={activeQuickFilters.has("criticos") ? "bg-red-600 hover:bg-red-700" : ""}
+>
+  <AlertCircle className="h-4 w-4 mr-1" />
+  Com críticos
+</Button>
+
+<Button
+  variant={activeQuickFilters.has("sem_aspectos") ? "default" : "outline"}
+  size="sm"
+  onClick={() => onQuickFilter("sem_aspectos")}
+>
+  <FileX className="h-4 w-4 mr-1" />
+  Sem aspectos
+</Button>
+
+<Button
+  variant={activeQuickFilters.has("com_codigo") ? "default" : "outline"}
+  size="sm"
+  onClick={() => onQuickFilter("com_codigo")}
+  className={activeQuickFilters.has("com_codigo") ? "bg-blue-600 hover:bg-blue-700" : ""}
 >
   <Hash className="h-4 w-4 mr-1" />
   Com código
 </Button>
 ```
 
-**Import adicional:** `Hash` de `lucide-react`
-
 ---
 
-#### 2. Atualizar Página LAIAUnidades
+### Comportamento Esperado
 
-**Arquivo:** `src/pages/LAIAUnidades.tsx`
-
-| Localização | Ação |
-|-------------|------|
-| Linha 32 | Expandir tipo do estado `quickFilter` para `"criticos" \| "sem_aspectos" \| "com_codigo" \| null` |
-| Linhas 80-85 | Adicionar lógica de filtro para `"com_codigo"` |
-
-**Lógica de filtro adicional:**
-```tsx
-// Quick filters
-if (quickFilter === "criticos") {
-  result = result.filter(b => getStatsForBranch(b.id).criticos > 0);
-} else if (quickFilter === "sem_aspectos") {
-  result = result.filter(b => getStatsForBranch(b.id).total === 0);
-} else if (quickFilter === "com_codigo") {
-  result = result.filter(b => !!b.code);  // Novo filtro
-}
-```
-
----
-
-### Resultado Visual
-
-Os botões de filtro rápido ficarão assim:
-
-```text
-┌───────────────┐  ┌───────────────┐  ┌───────────────┐
-│ ⚠ Com críticos│  │ ✕ Sem aspectos│  │ # Com código  │  ← NOVO
-└───────────────┘  └───────────────┘  └───────────────┘
-```
+| Cenário | Resultado |
+|---------|-----------|
+| Usuário clica em "Com código" | Exibe apenas unidades com código |
+| Usuário clica em "Com críticos" (mantendo "Com código") | Exibe apenas unidades com código **E** com aspectos críticos |
+| Usuário clica em "Sem aspectos" | Adiciona filtro (se compatível, exibiria unidades sem aspectos) |
+| Usuário clica em filtro ativo | Remove o filtro da seleção |
 
 ---
 
@@ -74,14 +173,21 @@ Os botões de filtro rápido ficarão assim:
 
 | Arquivo | Ação |
 |---------|------|
-| `src/components/laia/LAIAUnidadesFilters.tsx` | Adicionar botão "Com código", atualizar tipos |
-| `src/pages/LAIAUnidades.tsx` | Atualizar tipo do estado e lógica de filtro |
+| `src/pages/LAIAUnidades.tsx` | Alterar estado para Set, atualizar lógica de filtros cumulativos |
+| `src/components/laia/LAIAUnidadesFilters.tsx` | Atualizar tipos e verificações de estado ativo |
 
 ---
 
-### Comportamento Esperado
+### Resultado Visual
 
-1. Ao clicar em "Com código", apenas filiais com `code` preenchido serão exibidas
-2. Filiais sem código (Ex: "Filial ANAPOLIS", "Filial CC") serão ocultadas
-3. O contador de resultados será atualizado (ex: "10 de 15 unidades")
-4. Clicar novamente desativa o filtro
+Os botões funcionarão como toggles independentes:
+
+```text
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│ ⚠ Com críticos│  │ ✕ Sem aspectos│  │ # Com código  │
+│   [ATIVO]     │  │               │  │   [ATIVO]     │  ← Múltiplos ativos
+└───────────────┘  └───────────────┘  └───────────────┘
+```
+
+O contador de resultados refletirá a interseção de todos os filtros ativos.
+
