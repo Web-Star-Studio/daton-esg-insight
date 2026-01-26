@@ -141,6 +141,43 @@ export const COMMON_ISSUING_BODIES = [
 
 // ============= Helpers =============
 
+// Find the sheet containing legislations (for multi-sheet files like FPLAN)
+function findLegislationsSheet(workbook: XLSX.WorkBook): string {
+  // Try to find sheet that contains legislation headers
+  for (const sheetName of workbook.SheetNames) {
+    const worksheet = workbook.Sheets[sheetName];
+    if (!worksheet['!ref']) continue;
+    
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    
+    // Scan first 15 rows for header patterns
+    for (let row = 0; row <= Math.min(range.e.r, 15); row++) {
+      const values: string[] = [];
+      for (let col = range.s.c; col <= Math.min(range.e.c, 30); col++) {
+        const cell = worksheet[XLSX.utils.encode_cell({ r: row, c: col })];
+        if (cell?.v) values.push(String(cell.v).toUpperCase().trim());
+      }
+      
+      // Check for Gabardo FPLAN format patterns
+      const hasTipo = values.some(v => v === 'TIPO' || v.includes('TIPO DE NORMA'));
+      const hasNumero = values.some(v => v === 'Nº' || v === 'N°' || v === 'NÚMERO' || v === 'NUMERO');
+      const hasTematica = values.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
+      const hasResumo = values.some(v => v.includes('RESUMO') || v.includes('TÍTULO'));
+      const hasData = values.some(v => v.includes('DATA') && v.includes('PUBLICAÇÃO'));
+      
+      // If we find key columns, this is the correct sheet
+      if ((hasTipo && hasNumero) || (hasTematica && hasResumo) || (hasTipo && hasData)) {
+        console.log(`[findLegislationsSheet] Found legislation sheet: "${sheetName}" at row ${row}`);
+        return sheetName;
+      }
+    }
+  }
+  
+  // Fallback: first sheet
+  console.log(`[findLegislationsSheet] Using fallback: first sheet "${workbook.SheetNames[0]}"`);
+  return workbook.SheetNames[0];
+}
+
 function findHeaderRow(worksheet: XLSX.WorkSheet): number {
   const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
   
@@ -155,12 +192,26 @@ function findHeaderRow(worksheet: XLSX.WorkSheet): number {
       }
     }
     
-    // Look for key columns
-    const hasTipo = cellValues.some(v => v.includes('TIPO') && v.includes('NORMA'));
+    // Original patterns
+    const hasTipoNorma = cellValues.some(v => v.includes('TIPO') && v.includes('NORMA'));
     const hasTitulo = cellValues.some(v => v.includes('TÍTULO') || v.includes('TITULO') || v.includes('EMENTA'));
     const hasJurisdicao = cellValues.some(v => v.includes('JURISD'));
     
-    if ((hasTipo || hasTitulo) && (hasTitulo || hasJurisdicao)) {
+    // NEW: Gabardo FPLAN format patterns
+    const hasTipoSimples = cellValues.some(v => v === 'TIPO');
+    const hasNumero = cellValues.some(v => v === 'Nº' || v === 'N°' || v === 'NUMERO' || v === 'NÚMERO');
+    const hasTematica = cellValues.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
+    const hasResumoTitulo = cellValues.some(v => v.includes('RESUMO E TÍTULO') || v.includes('RESUMO'));
+    const hasDataPublicacao = cellValues.some(v => v.includes('DATA') && v.includes('PUBLICAÇÃO'));
+    
+    // Expanded condition
+    const hasOriginalPattern = (hasTipoNorma || hasTitulo) && (hasTitulo || hasJurisdicao);
+    const hasGabardoPattern = (hasTipoSimples && hasNumero && hasTematica) || 
+                              (hasTematica && hasResumoTitulo) ||
+                              (hasTipoSimples && hasDataPublicacao);
+    
+    if (hasOriginalPattern || hasGabardoPattern) {
+      console.log(`[findHeaderRow] Found header at row ${row}, columns: ${cellValues.slice(0, 10).join(', ')}`);
       return row;
     }
   }
@@ -446,18 +497,27 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
       try {
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
-        const sheetName = workbook.SheetNames[0];
+        
+        // NEW: Find the correct sheet with legislations
+        const sheetName = findLegislationsSheet(workbook);
         const worksheet = workbook.Sheets[sheetName];
         
+        console.log(`[parseLegislationExcelWithUnits] Using sheet: "${sheetName}" from ${workbook.SheetNames.length} sheets`);
+        
         const headerRow = findHeaderRow(worksheet);
+        console.log(`[parseLegislationExcelWithUnits] Header found at row: ${headerRow}`);
+        
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
           raw: false,
           range: headerRow
         });
         
+        console.log(`[parseLegislationExcelWithUnits] Parsed ${jsonData.length} rows`);
+        
         // Get headers from first data row to detect unit columns
         const firstRow = jsonData[0] as any;
         const headers = firstRow ? Object.keys(firstRow) : [];
+        console.log(`[parseLegislationExcelWithUnits] Headers: ${headers.slice(0, 15).join(', ')}`);
         const detectedUnitColumns = detectUnitColumns(headers);
         
         const legislations: ParsedLegislation[] = jsonData.map((row: any, index) => {
@@ -494,7 +554,8 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
           const subthemeName = parseSubtheme(subthemeRaw);
           
           // Normalizar número da norma (corrigir vírgulas do Excel)
-          const normNumberRaw = getColumnValue(row, 'Número', 'Numero', 'NÚMERO', 'NUMERO');
+          // NEW: Added 'Nº' and 'N°' for Gabardo format
+          const normNumberRaw = getColumnValue(row, 'Número', 'Numero', 'NÚMERO', 'NUMERO', 'Nº', 'N°');
           const normNumber = normalizeNormNumber(normNumberRaw);
           
           // Parse múltiplos municípios (formato SP)
@@ -514,25 +575,60 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
             }
           }
           
+          // NEW: Get title from multiple possible column names including Gabardo format
+          const title = getColumnValue(row, 
+            'Título/Ementa', 'Título', 'Titulo', 'Ementa', 
+            'TÍTULO', 'TITULO', 'EMENTA',
+            'RESUMO E TÍTULO', 'Resumo e Título', 'RESUMO E TITULO'
+          );
+          
+          // NEW: Get theme from multiple possible column names including Gabardo format  
+          const themeName = getColumnValue(row, 
+            'Macrotema', 'Tema', 'MACROTEMA', 'TEMA',
+            'TEMÁTICA', 'Temática', 'TEMATICA', 'Tematica'
+          );
+          
+          // NEW: Get publication date from multiple possible column names
+          const publicationDate = parseDate(getColumnValue(row, 
+            'Data Publicação', 'Data de Publicação', 'Publicação', 'DATA PUBLICAÇÃO',
+            'DATA DA PUBLICAÇÃO', 'Data da Publicação', 'DATA DA PUBLICACAO'
+          ));
+          
+          // NEW: Get URL from multiple possible column names including Gabardo format
+          const fullTextUrl = getColumnValue(row, 
+            'URL Texto Integral', 'URL', 'Link', 'LINK',
+            'FONTE', 'Fonte', 'URL TEXTO INTEGRAL'
+          );
+          
+          // NEW: Get evidence from multiple possible column names
+          const evidenceText = getColumnValue(row, 
+            'Evidências', 'Evidencias', 'EVIDÊNCIAS', 'EVIDENCIAS',
+            'EVIDÊNCIA DE ATENDIMENTO', 'Evidência de Atendimento'
+          );
+          
+          // NEW: Get status from multiple possible column names including Gabardo format
+          const statusFromAtendimento = getColumnValue(row, 'ATENDIMENTO', 'Atendimento');
+          const finalStatus = statusRaw || statusFromAtendimento;
+          
           return {
             rowNumber: headerRow + index + 2,
             norm_type: getColumnValue(row, 'Tipo de Norma', 'Tipo', 'TIPO DE NORMA', 'TIPO'),
             norm_number: normNumber,
-            title: getColumnValue(row, 'Título/Ementa', 'Título', 'Titulo', 'Ementa', 'TÍTULO', 'TITULO', 'EMENTA'),
+            title,
             summary: cleanHtmlFromText(getColumnValue(row, 'Resumo', 'RESUMO', 'Descrição', 'DESCRIÇÃO')),
             issuing_body: getColumnValue(row, 'Órgão Emissor', 'Orgão Emissor', 'Órgão', 'ÓRGÃO EMISSOR', 'ÓRGÃO'),
-            publication_date: parseDate(getColumnValue(row, 'Data Publicação', 'Data de Publicação', 'Publicação', 'DATA PUBLICAÇÃO')),
+            publication_date: publicationDate,
             jurisdiction,
             state,
             municipality,
-            theme_name: getColumnValue(row, 'Macrotema', 'Tema', 'MACROTEMA', 'TEMA'),
+            theme_name: themeName,
             subtheme_name: subthemeName,
             overall_applicability: normalizeApplicability(applicabilityRaw),
-            overall_status: normalizeStatus(statusRaw),
-            full_text_url: getColumnValue(row, 'URL Texto Integral', 'URL', 'Link', 'LINK'),
+            overall_status: normalizeStatus(finalStatus),
+            full_text_url: fullTextUrl,
             review_frequency_days: parseInt(reviewDaysRaw) || 365,
             observations: getColumnValue(row, 'Observações', 'Observacoes', 'OBSERVAÇÕES', 'OBSERVACOES', 'Notas', 'NOTAS'),
-            evidence_text: getColumnValue(row, 'Evidências', 'Evidencias', 'EVIDÊNCIAS', 'EVIDENCIAS'),
+            evidence_text: evidenceText,
             // Campos extras
             compliance_details: complianceDetails,
             general_notes: generalNotes,
