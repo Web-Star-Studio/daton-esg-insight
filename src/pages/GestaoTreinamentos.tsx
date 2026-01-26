@@ -38,6 +38,7 @@ import { cn } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatDateDisplay } from '@/utils/dateUtils';
 import { useToast } from '@/hooks/use-toast';
 
 // Import components
@@ -788,7 +789,7 @@ export default function GestaoTreinamentos() {
                             {training.training_program?.name || 'N/A'}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Concluído em {training.completion_date ? format(new Date(training.completion_date), "dd/MM/yyyy", { locale: ptBR }) : 'N/A'}
+                            Concluído em {formatDateDisplay(training.completion_date) || 'N/A'}
                           </p>
                         </div>
                       </div>
