@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, X, AlertCircle, FileX } from "lucide-react";
+import { Search, X, AlertCircle, FileX, Hash } from "lucide-react";
 
 interface LAIAUnidadesFiltersProps {
   searchTerm: string;
@@ -23,8 +23,8 @@ interface LAIAUnidadesFiltersProps {
   onClearFilters: () => void;
   hasActiveFilters: boolean;
   stats: { total: number; filtered: number };
-  onQuickFilter: (filter: "criticos" | "sem_aspectos" | null) => void;
-  activeQuickFilter: "criticos" | "sem_aspectos" | null;
+  onQuickFilter: (filter: "criticos" | "sem_aspectos" | "com_codigo" | null) => void;
+  activeQuickFilter: "criticos" | "sem_aspectos" | "com_codigo" | null;
 }
 
 export function LAIAUnidadesFilters({
@@ -120,6 +120,16 @@ export function LAIAUnidadesFilters({
           >
             <FileX className="h-4 w-4 mr-1" />
             Sem aspectos
+          </Button>
+
+          <Button
+            variant={activeQuickFilter === "com_codigo" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onQuickFilter(activeQuickFilter === "com_codigo" ? null : "com_codigo")}
+            className={activeQuickFilter === "com_codigo" ? "bg-blue-600 hover:bg-blue-700" : ""}
+          >
+            <Hash className="h-4 w-4 mr-1" />
+            Com código
           </Button>
 
           {hasActiveFilters && (
