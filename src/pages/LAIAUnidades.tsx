@@ -29,7 +29,19 @@ export default function LAIAUnidades() {
   const [cityFilter, setCityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "headquarters" | "branch">("all");
   const [sortBy, setSortBy] = useState<"name" | "total" | "criticos" | "significativos">("name");
-  const [quickFilter, setQuickFilter] = useState<"criticos" | "sem_aspectos" | "com_codigo" | null>(null);
+  const [quickFilters, setQuickFilters] = useState<Set<string>>(new Set());
+
+  const toggleQuickFilter = (filter: string) => {
+    setQuickFilters(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(filter)) {
+        newSet.delete(filter);
+      } else {
+        newSet.add(filter);
+      }
+      return newSet;
+    });
+  };
 
   const isLoading = branchesLoading || statsLoading;
 
@@ -77,12 +89,14 @@ export default function LAIAUnidades() {
       result = result.filter(b => !b.is_headquarters);
     }
 
-    // Quick filters
-    if (quickFilter === "criticos") {
+    // Quick filters (cumulative AND logic)
+    if (quickFilters.has("criticos")) {
       result = result.filter(b => getStatsForBranch(b.id).criticos > 0);
-    } else if (quickFilter === "sem_aspectos") {
+    }
+    if (quickFilters.has("sem_aspectos")) {
       result = result.filter(b => getStatsForBranch(b.id).total === 0);
-    } else if (quickFilter === "com_codigo") {
+    }
+    if (quickFilters.has("com_codigo")) {
       result = result.filter(b => !!b.code);
     }
 
@@ -104,18 +118,18 @@ export default function LAIAUnidades() {
     });
 
     return result;
-  }, [activeBranches, searchTerm, cityFilter, typeFilter, sortBy, quickFilter, branchStats]);
+  }, [activeBranches, searchTerm, cityFilter, typeFilter, sortBy, quickFilters, branchStats]);
 
   const hasActiveFilters = searchTerm !== "" || 
     cityFilter !== "all" || 
     typeFilter !== "all" || 
-    quickFilter !== null;
+    quickFilters.size > 0;
 
   const clearFilters = () => {
     setSearchTerm("");
     setCityFilter("all");
     setTypeFilter("all");
-    setQuickFilter(null);
+    setQuickFilters(new Set());
     setSortBy("name");
   };
 
@@ -156,8 +170,8 @@ export default function LAIAUnidades() {
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
             stats={{ total: activeBranches.length, filtered: filteredBranches.length }}
-            onQuickFilter={setQuickFilter}
-            activeQuickFilter={quickFilter}
+            onQuickFilter={toggleQuickFilter}
+            activeQuickFilters={quickFilters}
           />
         )}
 
