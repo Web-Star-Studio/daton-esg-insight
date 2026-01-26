@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useBranches } from "@/services/branches";
 import { useLAIABranchStats } from "@/hooks/useLAIA";
 import { LAIAUnidadesFilters } from "@/components/laia/LAIAUnidadesFilters";
+import { formatCNPJ } from "@/utils/formValidation";
 import { 
   Building2, 
   Leaf, 
@@ -52,11 +53,14 @@ export default function LAIAUnidades() {
   const filteredBranches = useMemo(() => {
     let result = activeBranches;
 
-    // Search filter
+    // Search filter (code, CNPJ, name, city)
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
+      const termDigits = term.replace(/\D/g, '');
       result = result.filter(b => 
         b.name.toLowerCase().includes(term) ||
+        b.code?.toLowerCase().includes(term) ||
+        (termDigits && b.cnpj?.replace(/\D/g, '').includes(termDigits)) ||
         b.city?.toLowerCase().includes(term)
       );
     }
@@ -205,20 +209,39 @@ export default function LAIAUnidades() {
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-5 w-5 text-muted-foreground" />
-                        <CardTitle className="text-lg">{branch.name}</CardTitle>
+                      <div className="space-y-1">
+                        {/* Identificador Principal: Código */}
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-5 w-5 text-primary" />
+                          <CardTitle className="text-lg">
+                            {branch.code || <span className="text-muted-foreground">Sem código</span>}
+                          </CardTitle>
+                          {branch.is_headquarters && (
+                            <Badge variant="secondary">Matriz</Badge>
+                          )}
+                        </div>
+                        
+                        {/* CNPJ (formatado) */}
+                        {branch.cnpj && (
+                          <p className="text-sm font-medium text-muted-foreground">
+                            CNPJ: {formatCNPJ(branch.cnpj)}
+                          </p>
+                        )}
+                        
+                        {/* Nome (secundário) */}
+                        <p className="text-sm text-muted-foreground">
+                          {branch.name}
+                        </p>
+                        
+                        {/* Localização */}
+                        {(branch.city || branch.state) && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            {[branch.city, branch.state].filter(Boolean).join(", ")}
+                          </div>
+                        )}
                       </div>
-                      {branch.is_headquarters && (
-                        <Badge variant="secondary">Matriz</Badge>
-                      )}
                     </div>
-                    {(branch.city || branch.state) && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        {[branch.city, branch.state].filter(Boolean).join(", ")}
-                      </div>
-                    )}
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Stats Grid */}
