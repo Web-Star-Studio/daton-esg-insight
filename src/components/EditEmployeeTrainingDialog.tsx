@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addMonths, format } from 'date-fns';
+import { parseDateSafe } from '@/utils/dateUtils';
 import { calculateTrainingStatus, getTrainingStatusColor } from '@/utils/trainingStatusCalculator';
 import { Badge } from './ui/badge';
 
@@ -109,7 +110,8 @@ export function EditEmployeeTrainingDialog({
     if (!formData.completion_date || !selectedProgram?.valid_for_months) {
       return null;
     }
-    const completionDate = new Date(formData.completion_date);
+    const completionDate = parseDateSafe(formData.completion_date);
+    if (!completionDate) return null;
     const expirationDate = addMonths(completionDate, selectedProgram.valid_for_months);
     return format(expirationDate, 'yyyy-MM-dd');
   };
@@ -284,7 +286,7 @@ export function EditEmployeeTrainingDialog({
               <p className="text-sm">
                 <strong>Data de Validade:</strong>{' '}
                 {calculateExpirationDate() 
-                  ? format(new Date(calculateExpirationDate()!), 'dd/MM/yyyy')
+                  ? format(parseDateSafe(calculateExpirationDate()!) || new Date(), 'dd/MM/yyyy')
                   : '-'}
               </p>
             </div>

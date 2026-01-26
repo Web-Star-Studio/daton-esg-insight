@@ -45,6 +45,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { EmployeeTraining, createEmployeeTraining, updateEmployeeTraining, checkExistingEnrollments } from "@/services/trainingPrograms";
 import { useToast } from "@/hooks/use-toast";
+import { parseDateSafe } from "@/utils/dateUtils";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -150,7 +151,7 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
       form.reset({
         employee_id: training.employee_id,
         training_program_id: training.training_program_id,
-        completion_date: training.completion_date ? new Date(training.completion_date) : undefined,
+        completion_date: training.completion_date ? parseDateSafe(training.completion_date) ?? undefined : undefined,
         score: training.score || undefined,
         status: training.status,
         trainer: training.trainer || "",

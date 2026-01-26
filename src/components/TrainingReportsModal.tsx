@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseDateSafe } from "@/utils/dateUtils";
 import { useQuery } from "@tanstack/react-query";
 import { getEmployeeTrainings, getTrainingMetrics } from "@/services/trainingPrograms";
 import { DateRange } from "react-day-picker";
@@ -51,7 +52,8 @@ export function TrainingReportsModal({ open, onOpenChange }: TrainingReportsModa
   // Filter trainings by date range
   const filteredTrainings = employeeTrainings.filter(training => {
     if (!dateRange?.from || !training.completion_date) return true;
-    const completionDate = new Date(training.completion_date);
+    const completionDate = parseDateSafe(training.completion_date);
+    if (!completionDate) return true;
     const fromDate = dateRange.from;
     const toDate = dateRange.to || new Date();
     
@@ -90,7 +92,7 @@ export function TrainingReportsModal({ open, onOpenChange }: TrainingReportsModa
       employeeCode: training.employee?.employee_code || 'N/A',
       program: training.training_program?.name || 'N/A',
       category: training.training_program?.category || 'N/A',
-      completionDate: training.completion_date ? format(new Date(training.completion_date), 'dd/MM/yyyy') : 'N/A',
+      completionDate: training.completion_date ? format(parseDateSafe(training.completion_date) || new Date(), 'dd/MM/yyyy') : 'N/A',
       score: training.score || 'N/A',
       status: training.status,
       instructor: training.trainer || 'N/A',
@@ -242,7 +244,7 @@ export function TrainingReportsModal({ open, onOpenChange }: TrainingReportsModa
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {training.completion_date 
-                              ? `Concluído em ${format(new Date(training.completion_date), 'dd/MM/yyyy', { locale: ptBR })}` 
+                              ? `Concluído em ${format(parseDateSafe(training.completion_date) || new Date(), 'dd/MM/yyyy', { locale: ptBR })}` 
                               : 'Em andamento'
                             }
                           </div>

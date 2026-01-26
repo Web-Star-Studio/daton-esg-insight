@@ -1,3 +1,5 @@
+import { parseDateSafe } from '@/utils/dateUtils';
+
 /**
  * Calculates the automatic status for training programs based on dates.
  * 
@@ -28,8 +30,8 @@ export function calculateTrainingStatus(training: TrainingForStatusCalculation):
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const startDate = training.start_date ? new Date(training.start_date) : null;
-  const endDate = training.end_date ? new Date(training.end_date) : null;
+  const startDate = training.start_date ? parseDateSafe(training.start_date) : null;
+  const endDate = training.end_date ? parseDateSafe(training.end_date) : null;
   const requiresEfficacy = !!training.efficacy_evaluation_deadline;
   const hasEfficacyEvaluation = training.hasEfficacyEvaluation || false;
 

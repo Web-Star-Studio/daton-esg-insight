@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { parseDateSafe } from "@/utils/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -77,7 +78,8 @@ export function TrainingComplianceMatrix({ onRegisterTraining }: TrainingComplia
   const isExpiringSoon = (training: any, program: any) => {
     if (!training?.completion_date || !program.valid_for_months) return false;
     
-    const completionDate = new Date(training.completion_date);
+    const completionDate = parseDateSafe(training.completion_date);
+    if (!completionDate) return false;
     const expirationDate = new Date(completionDate);
     expirationDate.setMonth(expirationDate.getMonth() + program.valid_for_months);
     
@@ -90,7 +92,8 @@ export function TrainingComplianceMatrix({ onRegisterTraining }: TrainingComplia
   const isExpired = (training: any, program: any) => {
     if (!training?.completion_date || !program.valid_for_months) return false;
     
-    const completionDate = new Date(training.completion_date);
+    const completionDate = parseDateSafe(training.completion_date);
+    if (!completionDate) return false;
     const expirationDate = new Date(completionDate);
     expirationDate.setMonth(expirationDate.getMonth() + program.valid_for_months);
     
