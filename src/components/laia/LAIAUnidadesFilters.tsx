@@ -23,8 +23,8 @@ interface LAIAUnidadesFiltersProps {
   onClearFilters: () => void;
   hasActiveFilters: boolean;
   stats: { total: number; filtered: number };
-  onQuickFilter: (filter: "criticos" | "sem_aspectos" | "com_codigo" | null) => void;
-  activeQuickFilter: "criticos" | "sem_aspectos" | "com_codigo" | null;
+  onQuickFilter: (filter: string) => void;
+  activeQuickFilters: Set<string>;
 }
 
 export function LAIAUnidadesFilters({
@@ -41,7 +41,7 @@ export function LAIAUnidadesFilters({
   hasActiveFilters,
   stats,
   onQuickFilter,
-  activeQuickFilter,
+  activeQuickFilters,
 }: LAIAUnidadesFiltersProps) {
   return (
     <div className="space-y-4">
@@ -104,29 +104,29 @@ export function LAIAUnidadesFilters({
         <div className="flex flex-wrap items-center gap-2">
           {/* Quick Filter Buttons */}
           <Button
-            variant={activeQuickFilter === "criticos" ? "default" : "outline"}
+            variant={activeQuickFilters.has("criticos") ? "default" : "outline"}
             size="sm"
-            onClick={() => onQuickFilter(activeQuickFilter === "criticos" ? null : "criticos")}
-            className={activeQuickFilter === "criticos" ? "bg-red-600 hover:bg-red-700" : ""}
+            onClick={() => onQuickFilter("criticos")}
+            className={activeQuickFilters.has("criticos") ? "bg-red-600 hover:bg-red-700" : ""}
           >
             <AlertCircle className="h-4 w-4 mr-1" />
             Com críticos
           </Button>
           
           <Button
-            variant={activeQuickFilter === "sem_aspectos" ? "default" : "outline"}
+            variant={activeQuickFilters.has("sem_aspectos") ? "default" : "outline"}
             size="sm"
-            onClick={() => onQuickFilter(activeQuickFilter === "sem_aspectos" ? null : "sem_aspectos")}
+            onClick={() => onQuickFilter("sem_aspectos")}
           >
             <FileX className="h-4 w-4 mr-1" />
             Sem aspectos
           </Button>
 
           <Button
-            variant={activeQuickFilter === "com_codigo" ? "default" : "outline"}
+            variant={activeQuickFilters.has("com_codigo") ? "default" : "outline"}
             size="sm"
-            onClick={() => onQuickFilter(activeQuickFilter === "com_codigo" ? null : "com_codigo")}
-            className={activeQuickFilter === "com_codigo" ? "bg-blue-600 hover:bg-blue-700" : ""}
+            onClick={() => onQuickFilter("com_codigo")}
+            className={activeQuickFilters.has("com_codigo") ? "bg-blue-600 hover:bg-blue-700" : ""}
           >
             <Hash className="h-4 w-4 mr-1" />
             Com código
