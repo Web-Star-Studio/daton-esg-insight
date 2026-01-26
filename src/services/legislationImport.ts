@@ -430,6 +430,7 @@ export function detectUnitColumns(headers: string[]): string[] {
 }
 
 // Map unit value (1, 2, 3, x, z) to applicability and status
+// 1 = Real (Aplicável), 2 = Potencial (Provável), 3 = Pendente (Não avaliada)
 export function mapUnitValue(value: string): UnitEvaluation | null {
   if (!value) return null;
   
@@ -437,31 +438,31 @@ export function mapUnitValue(value: string): UnitEvaluation | null {
   
   switch (normalized) {
     case '1':
-      // N.A (Não Aplicável)
+      // Real (Aplicável) - status de conformidade será avaliado separadamente
       return { 
         unitCode: '', 
         value: '1', 
-        applicability: 'na', 
-        complianceStatus: 'na' 
+        applicability: 'real', 
+        complianceStatus: 'pending' 
       };
     case '2':
-      // OK (Conforme)
+      // Potencial (Provável)
       return { 
         unitCode: '', 
         value: '2', 
-        applicability: 'real', 
-        complianceStatus: 'conforme' 
+        applicability: 'potential', 
+        complianceStatus: 'pending' 
       };
     case '3':
-      // NÃO (Não Conforme / Adequação)
+      // Pendente (Não avaliada)
       return { 
         unitCode: '', 
         value: '3', 
-        applicability: 'real', 
-        complianceStatus: 'adequacao' 
+        applicability: 'pending', 
+        complianceStatus: 'pending' 
       };
     case 'x':
-      // S/AV (Sem Avaliação)
+      // S/AV (Sem Avaliação) - também pendente
       return { 
         unitCode: '', 
         value: 'x', 
@@ -842,10 +843,13 @@ export async function importLegislations(
           existingLegislation = existingMap.get(titleKey) || null;
         }
         
-        // Se encontrou legislação existente, adicionar evidência se houver
+        // Se encontrou legislação existente, adicionar evidência e unit compliance
         if (existingLegislation) {
+          let evidenceMessage = '';
+          let unitComplianceMessage = '';
+          
+          // Adicionar evidência se houver
           if (leg.evidence_text && leg.evidence_text.trim()) {
-            // Adicionar evidência à legislação existente
             const { error: evidenceError } = await supabase
               .from('legislation_evidences')
               .insert({
@@ -859,30 +863,75 @@ export async function importLegislations(
             
             if (!evidenceError) {
               result.evidencesAdded++;
-              result.updated++;
-              result.details.push({
-                rowNumber: leg.rowNumber,
-                title: leg.title,
-                status: 'updated',
-                message: 'Evidência adicionada à legislação existente',
-              });
-            } else {
-              result.warnings++;
-              result.details.push({
-                rowNumber: leg.rowNumber,
-                title: leg.title,
-                status: 'warning',
-                message: `Legislação existe, mas erro ao adicionar evidência: ${evidenceError.message}`,
-              });
+              evidenceMessage = ' + evidência adicionada';
             }
+          }
+          
+          // NOVO: Criar/atualizar unit compliance para legislação existente
+          if (options.unitMappings && leg.unitEvaluations && leg.unitEvaluations.length > 0) {
+            const complianceRecords: Array<{
+              legislation_id: string;
+              branch_id: string;
+              company_id: string;
+              applicability: string;
+              compliance_status: string;
+              evidence_notes: string | null;
+              evaluated_at: string;
+              evaluated_by: string;
+            }> = [];
+            
+            for (const evaluation of leg.unitEvaluations) {
+              const mapping = options.unitMappings.find(m => 
+                m.excelCode.toUpperCase() === evaluation.unitCode.toUpperCase()
+              );
+              
+              if (mapping?.branchId) {
+                complianceRecords.push({
+                  legislation_id: existingLegislation.id,
+                  branch_id: mapping.branchId,
+                  company_id: companyId,
+                  applicability: evaluation.applicability,
+                  compliance_status: evaluation.complianceStatus,
+                  evidence_notes: leg.evidence_text?.trim() || null,
+                  evaluated_at: new Date().toISOString(),
+                  evaluated_by: profile.id,
+                });
+                
+                const branchName = mapping.branchName || mapping.excelCode;
+                result.unitsByBranch[branchName] = (result.unitsByBranch[branchName] || 0) + 1;
+              }
+            }
+            
+            if (complianceRecords.length > 0) {
+              const { error: complianceError } = await supabase
+                .from('legislation_unit_compliance')
+                .upsert(complianceRecords, { onConflict: 'legislation_id,branch_id' });
+              
+              if (!complianceError) {
+                result.unitCompliancesCreated += complianceRecords.length;
+                unitComplianceMessage = ` + ${complianceRecords.length} avaliação(ões) por unidade`;
+              } else {
+                console.error('Erro ao atualizar unit compliance:', complianceError);
+              }
+            }
+          }
+          
+          // Registrar resultado
+          if (evidenceMessage || unitComplianceMessage) {
+            result.updated++;
+            result.details.push({
+              rowNumber: leg.rowNumber,
+              title: leg.title,
+              status: 'updated',
+              message: 'Legislação atualizada' + evidenceMessage + unitComplianceMessage,
+            });
           } else {
-            // Legislação já existe, sem evidência para adicionar
             result.warnings++;
             result.details.push({
               rowNumber: leg.rowNumber,
               title: leg.title,
               status: 'warning',
-              message: 'Legislação já existe - sem evidência para adicionar',
+              message: 'Legislação já existe - sem dados para atualizar',
             });
           }
           continue;
