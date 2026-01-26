@@ -1,89 +1,120 @@
 
 
-## Plano: Ajustes na Gestão de Legislações
+## Plano: Ajustar Exibição de Filiais no LAIA
 
 ### Contexto
 
-Duas mudanças importantes são necessárias:
-
-1. O campo "Aplicabilidade" na tabela de legislações pode confundir usuários, pois a aplicabilidade é definida **por unidade** (cada filial/site pode ter uma aplicabilidade diferente para a mesma legislação). Mostrar um valor único na tabela dá a impressão errada de que se aplica a todas as unidades.
-
-2. O template de importação tem um campo "Observações" que na prática é usado para registrar **evidências** de conformidade. Ao reimportar planilhas, o sistema deve:
-   - Identificar legislações já existentes (conciliação por tipo + número + título)
-   - Adicionar o conteúdo do campo "Evidências" na seção de evidências da legislação correspondente
+A página LAIA (`/laia`) já utiliza o hook `useBranches()` para listar as filiais, garantindo que exibe as mesmas unidades cadastradas na Gestão de Filiais. No entanto, a exibição atual prioriza o **nome** da filial como identificador principal, quando deveria priorizar o **código** e o **CNPJ**.
 
 ---
 
-### Mudança 1: Remover Coluna "Aplicabilidade" da Tabela
+### Mudanças Propostas
 
-**Arquivo:** `src/components/legislation/LegislationList.tsx`
+#### 1. Reorganizar Card de Filial
 
-| Localização | Ação |
-|-------------|------|
-| Linha 96 (header) | Remover `<TableHead className="w-[100px]">Aplicabilidade</TableHead>` |
-| Linhas 149-153 (célula) | Remover célula com `LegislationStatusBadge type="applicability"` |
+**Arquivo:** `src/pages/LAIAUnidades.tsx`
 
-**Resultado:** A tabela mostrará apenas o status de conformidade, sem a aplicabilidade que é definida individualmente por unidade.
+**De (atual - linhas 206-221):**
+```tsx
+<div className="flex items-center gap-2">
+  <Building2 className="h-5 w-5" />
+  <CardTitle className="text-lg">{branch.name}</CardTitle>
+</div>
+{branch.is_headquarters && <Badge>Matriz</Badge>}
+{(branch.city || branch.state) && (
+  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+    <MapPin className="h-3 w-3" />
+    {[branch.city, branch.state].filter(Boolean).join(", ")}
+  </div>
+)}
+```
 
-#### Nova Estrutura de Colunas:
-| Tipo/Número | Data | Ementa | Macrotema | Jurisdição | Status | Ações |
-|-------------|------|--------|-----------|------------|--------|-------|
+**Para (nova estrutura):**
+```tsx
+<div className="flex items-start justify-between">
+  <div className="space-y-1">
+    {/* Identificador Principal: Código */}
+    <div className="flex items-center gap-2">
+      <Building2 className="h-5 w-5 text-primary" />
+      <CardTitle className="text-lg">
+        {branch.code || "Sem código"}
+      </CardTitle>
+      {branch.is_headquarters && <Badge variant="secondary">Matriz</Badge>}
+    </div>
+    
+    {/* CNPJ (formatado) */}
+    {branch.cnpj && (
+      <p className="text-sm font-medium text-muted-foreground">
+        CNPJ: {formatCNPJ(branch.cnpj)}
+      </p>
+    )}
+    
+    {/* Nome (secundário) */}
+    <p className="text-sm text-muted-foreground">
+      {branch.name}
+    </p>
+    
+    {/* Localização */}
+    {(branch.city || branch.state) && (
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <MapPin className="h-3 w-3" />
+        {[branch.city, branch.state].filter(Boolean).join(", ")}
+      </div>
+    )}
+  </div>
+</div>
+```
+
+#### 2. Atualizar Busca para Incluir Código e CNPJ
+
+**Arquivo:** `src/pages/LAIAUnidades.tsx` (linhas 56-62)
+
+Atualizar o filtro de busca para também pesquisar por código e CNPJ:
+
+```tsx
+if (searchTerm) {
+  const term = searchTerm.toLowerCase();
+  result = result.filter(b => 
+    b.name.toLowerCase().includes(term) ||
+    b.code?.toLowerCase().includes(term) ||
+    b.cnpj?.replace(/\D/g, '').includes(term.replace(/\D/g, '')) ||
+    b.city?.toLowerCase().includes(term)
+  );
+}
+```
+
+#### 3. Importar Função de Formatação
+
+Adicionar import da função `formatCNPJ`:
+
+```tsx
+import { formatCNPJ } from "@/utils/formValidation";
+```
 
 ---
 
-### Mudança 2: Atualizar Sistema de Importação
+### Resultado Visual Esperado
 
-#### 2.1. Renomear Campo no Template
-
-**Arquivo:** `src/services/legislationImport.ts`
-
-- Renomear coluna "Observações" → "Evidências" no template Excel (linha ~765)
-- Atualizar sheet de instruções (linha ~821)
-- Atualizar `ParsedLegislation` interface para incluir `evidence_text` 
-
-#### 2.2. Conciliação Automática de Legislações
-
-Atualizar lógica em `importLegislations()` para:
-
-1. **Identificar legislação existente** usando critérios:
-   - `norm_type` + `norm_number` (combinação única)
-   - Fallback: `title` similar (caso não tenha número)
-
-2. **Se legislação existe E há texto de evidência:**
-   - Criar registro em `legislation_evidences` vinculado à legislação
-   - Título: "Evidência importada via planilha"
-   - Tipo: "documento" 
-   - Descrição: conteúdo do campo "Evidências" da planilha
-
-3. **Atualizar resultado da importação:**
-   - Novo contador: `evidencesAdded`
-   - Status "updated" para legislações que receberam evidências
-
-#### 2.3. Fluxo de Conciliação
-
+**Antes:**
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│  Arquivo Excel                                                  │
-│  ┌─────────┬──────────┬─────────────┬────────────────────────┐ │
-│  │ Tipo    │ Número   │ Título      │ Evidências             │ │
-│  ├─────────┼──────────┼─────────────┼────────────────────────┤ │
-│  │ Lei     │ 12.305   │ PNRS        │ Licença ambiental OK   │ │
-│  └─────────┴──────────┴─────────────┴────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│  Buscar legislação existente                                    │
-│  WHERE norm_type = 'Lei' AND norm_number = '12.305'             │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-         ┌────────────────────┴────────────────────┐
-         ↓                                         ↓
-    [ENCONTROU]                              [NÃO ENCONTROU]
-         ↓                                         ↓
- ┌───────────────────────┐               ┌───────────────────────┐
- │ Adicionar evidência   │               │ Criar nova legislação │
- │ legislation_evidences │               │ + evidência (se houver│
- └───────────────────────┘               └───────────────────────┘
+┌────────────────────────────────┐
+│ 🏢 TRANSPORTES GABARDO LTDA   │  ← Nome principal
+│ 📍 Porto Alegre, RS           │
+│ ─────────────────────────────── │
+│ Total: 15  │  Críticos: 2     │
+└────────────────────────────────┘
+```
+
+**Depois:**
+```text
+┌────────────────────────────────┐
+│ 🏢 MATRIZ          [Matriz]   │  ← Código principal
+│ CNPJ: 92.644.483/0001-85      │  ← CNPJ em destaque
+│ TRANSPORTES GABARDO LTDA      │  ← Nome secundário
+│ 📍 Porto Alegre, RS           │
+│ ─────────────────────────────── │
+│ Total: 15  │  Críticos: 2     │
+└────────────────────────────────┘
 ```
 
 ---
@@ -92,38 +123,14 @@ Atualizar lógica em `importLegislations()` para:
 
 | Arquivo | Ação |
 |---------|------|
-| `src/components/legislation/LegislationList.tsx` | Remover coluna e célula de Aplicabilidade |
-| `src/services/legislationImport.ts` | Renomear "Observações" → "Evidências", implementar conciliação e criação de evidências |
+| `src/pages/LAIAUnidades.tsx` | Reorganizar exibição do card, adicionar import de `formatCNPJ`, atualizar busca |
 
 ---
 
-### Interface Atualizada - Tabela de Legislações
+### Tratamento de Dados Incompletos
 
-Antes:
-| Tipo/Número | Data | Ementa | Macrotema | Jurisdição | **Aplicabilidade** | Status | Ações |
-
-Depois:
-| Tipo/Número | Data | Ementa | Macrotema | Jurisdição | Status | Ações |
-
----
-
-### Template de Importação Atualizado
-
-| Coluna | Obrigatório | Descrição |
-|--------|-------------|-----------|
-| Tipo de Norma | Sim | Lei, Resolução, NBR, etc. |
-| Número | Não | Número da norma |
-| Título/Ementa | Sim | Descrição da legislação |
-| ... | ... | (demais campos) |
-| **Evidências** | Não | Texto será adicionado como evidência (tipo "documento") |
-
----
-
-### Resultado da Reimportação
-
-Quando o usuário reimportar uma planilha:
-
-1. Legislações existentes **não serão duplicadas**
-2. Textos do campo "Evidências" serão automaticamente adicionados à seção de evidências
-3. Feedback claro: "X legislações atualizadas, Y evidências adicionadas"
+Para filiais que não possuem código ou CNPJ cadastrado:
+- **Sem código:** Exibir "Sem código" em texto esmaecido
+- **Sem CNPJ:** Ocultar linha do CNPJ
+- O nome sempre será exibido como fallback
 
