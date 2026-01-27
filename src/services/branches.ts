@@ -173,93 +173,166 @@ export const deleteBranch = async (id: string) => {
 
 /**
  * Exclui uma filial com todos os dados vinculados (cascade manual)
- * - Remove programas de treinamento e dependências
+ * - Remove programas de treinamento e dependências (incluindo participantes de agenda)
  * - Remove avaliações LAIA
  * - Remove perfis de compliance de legislação
  * - Desvincula colaboradores (branch_id = NULL)
+ * 
+ * IMPORTANTE: Cada etapa valida erros para evitar falhas silenciosas
  */
 export const deleteBranchWithDependencies = async (id: string) => {
+  console.log(`[deleteBranch] Iniciando exclusão da filial ${id}`);
+
   // 1. Buscar training_programs da filial
-  const { data: programs } = await supabase
+  const { data: programs, error: programsError } = await supabase
     .from('training_programs')
     .select('id')
     .eq('branch_id', id);
   
+  if (programsError) {
+    throw new Error(`Falha ao buscar programas de treinamento: ${programsError.message}`);
+  }
+  
   const programIds = programs?.map(p => p.id) || [];
+  console.log(`[deleteBranch] Encontrados ${programIds.length} programas de treinamento`);
   
   if (programIds.length > 0) {
-    // 2. Buscar employee_trainings desses programas
-    const { data: trainings } = await supabase
-      .from('employee_trainings')
+    // 2. Buscar training_schedules desses programas
+    const { data: schedules, error: schedulesError } = await supabase
+      .from('training_schedules')
       .select('id')
       .in('training_program_id', programIds);
     
-    const trainingIds = trainings?.map(t => t.id) || [];
-    
-    // 3. Deletar efficacy evaluations
-    if (trainingIds.length > 0) {
-      await supabase
-        .from('training_efficacy_evaluations')
-        .delete()
-        .in('employee_training_id', trainingIds);
+    if (schedulesError) {
+      throw new Error(`Falha ao buscar agendamentos: ${schedulesError.message}`);
     }
     
-    // 4. Deletar employee_trainings
-    await supabase
-      .from('employee_trainings')
-      .delete()
-      .in('training_program_id', programIds);
+    const scheduleIds = schedules?.map(s => s.id) || [];
+    console.log(`[deleteBranch] Encontrados ${scheduleIds.length} agendamentos`);
     
-    // 5. Deletar training_documents
-    await supabase
-      .from('training_documents')
-      .delete()
-      .in('training_program_id', programIds);
+    // 3. Deletar training_schedule_participants pelos schedule_id
+    if (scheduleIds.length > 0) {
+      const { error: participantsError } = await supabase
+        .from('training_schedule_participants')
+        .delete()
+        .in('schedule_id', scheduleIds);
+      
+      if (participantsError) {
+        throw new Error(`Falha ao remover participantes de agendamentos: ${participantsError.message}`);
+      }
+      console.log(`[deleteBranch] Participantes de agendamentos removidos`);
+    }
     
-    // 6. Deletar training_schedules
-    await supabase
+    // 4. Deletar training_schedules
+    const { error: delSchedulesError } = await supabase
       .from('training_schedules')
       .delete()
       .in('training_program_id', programIds);
     
-    // 7. Deletar training_programs
-    await supabase
+    if (delSchedulesError) {
+      throw new Error(`Falha ao remover agendamentos: ${delSchedulesError.message}`);
+    }
+    console.log(`[deleteBranch] Agendamentos removidos`);
+    
+    // 5. Deletar training_efficacy_evaluations por training_program_id (mais direto)
+    const { error: evalError } = await supabase
+      .from('training_efficacy_evaluations')
+      .delete()
+      .in('training_program_id', programIds);
+    
+    if (evalError) {
+      throw new Error(`Falha ao remover avaliações de eficácia: ${evalError.message}`);
+    }
+    console.log(`[deleteBranch] Avaliações de eficácia removidas`);
+    
+    // 6. Deletar employee_trainings
+    const { error: empTrainingsError } = await supabase
+      .from('employee_trainings')
+      .delete()
+      .in('training_program_id', programIds);
+    
+    if (empTrainingsError) {
+      throw new Error(`Falha ao remover registros de treinamento: ${empTrainingsError.message}`);
+    }
+    console.log(`[deleteBranch] Registros de treinamento removidos`);
+    
+    // 7. Deletar training_documents
+    const { error: docsError } = await supabase
+      .from('training_documents')
+      .delete()
+      .in('training_program_id', programIds);
+    
+    if (docsError) {
+      throw new Error(`Falha ao remover documentos de treinamento: ${docsError.message}`);
+    }
+    console.log(`[deleteBranch] Documentos de treinamento removidos`);
+    
+    // 8. Deletar training_programs
+    const { error: delProgramsError } = await supabase
       .from('training_programs')
       .delete()
       .eq('branch_id', id);
+    
+    if (delProgramsError) {
+      throw new Error(`Falha ao remover programas de treinamento: ${delProgramsError.message}`);
+    }
+    console.log(`[deleteBranch] Programas de treinamento removidos`);
   }
   
-  // 8. Deletar laia_assessments
-  await supabase
+  // 9. Deletar laia_assessments
+  const { error: laiaError } = await supabase
     .from('laia_assessments')
     .delete()
     .eq('branch_id', id);
   
-  // 9. Deletar legislation_unit_compliance
-  await supabase
+  if (laiaError) {
+    throw new Error(`Falha ao remover avaliações LAIA: ${laiaError.message}`);
+  }
+  console.log(`[deleteBranch] Avaliações LAIA removidas`);
+  
+  // 10. Deletar legislation_unit_compliance
+  const { error: unitCompError } = await supabase
     .from('legislation_unit_compliance')
     .delete()
     .eq('branch_id', id);
   
-  // 10. Deletar legislation_compliance_profiles
-  await supabase
+  if (unitCompError) {
+    throw new Error(`Falha ao remover compliance de unidade: ${unitCompError.message}`);
+  }
+  console.log(`[deleteBranch] Compliance de unidade removido`);
+  
+  // 11. Deletar legislation_compliance_profiles
+  const { error: compProfilesError } = await supabase
     .from('legislation_compliance_profiles')
     .delete()
     .eq('branch_id', id);
   
-  // 11. Desvincular colaboradores (não deletar)
-  await supabase
+  if (compProfilesError) {
+    throw new Error(`Falha ao remover perfis de compliance: ${compProfilesError.message}`);
+  }
+  console.log(`[deleteBranch] Perfis de compliance removidos`);
+  
+  // 12. Desvincular colaboradores (não deletar)
+  const { error: empUpdateError } = await supabase
     .from('employees')
     .update({ branch_id: null })
     .eq('branch_id', id);
   
-  // 12. Deletar a filial
-  const { error } = await supabase
+  if (empUpdateError) {
+    throw new Error(`Falha ao desvincular colaboradores: ${empUpdateError.message}`);
+  }
+  console.log(`[deleteBranch] Colaboradores desvinculados`);
+  
+  // 13. Deletar a filial
+  const { error: branchError } = await supabase
     .from('branches')
     .delete()
     .eq('id', id);
   
-  if (error) throw error;
+  if (branchError) {
+    throw new Error(`Falha ao remover filial: ${branchError.message}`);
+  }
+  console.log(`[deleteBranch] Filial ${id} removida com sucesso`);
 };
 
 // React Query Hooks
