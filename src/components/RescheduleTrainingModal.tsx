@@ -139,7 +139,7 @@ export function RescheduleTrainingModal({
 
   // Fetch all employees for adding
   const { data: allEmployees = [] } = useQuery({
-    queryKey: ["employees-for-training"],
+    queryKey: ["employees-for-reschedule"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
@@ -151,6 +151,7 @@ export function RescheduleTrainingModal({
       return data;
     },
     enabled: open,
+    staleTime: 0, // Sempre buscar dados frescos
   });
 
   // Reset modal when program changes or closes
