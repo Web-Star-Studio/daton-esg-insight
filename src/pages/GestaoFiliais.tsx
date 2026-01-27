@@ -246,7 +246,10 @@ export default function GestaoFiliais() {
 
   const handleDelete = () => {
     if (branchToDelete) {
-      deleteMutation.mutate(branchToDelete.id, {
+      deleteMutation.mutate({
+        id: branchToDelete.id,
+        isHeadquarters: branchToDelete.is_headquarters
+      }, {
         onSuccess: () => setBranchToDelete(null),
       });
     }
@@ -330,7 +333,6 @@ export default function GestaoFiliais() {
             variant="ghost"
             size="icon"
             onClick={() => setBranchToDelete(branch)}
-            disabled={branch.is_headquarters}
           >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
@@ -558,11 +560,27 @@ export default function GestaoFiliais() {
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>
-                  Esta ação não pode ser desfeita. Ao excluir a filial <strong>"{branchToDelete?.name}"</strong>,
-                  os seguintes dados vinculados também serão removidos:
-                </p>
+                {branchToDelete?.is_headquarters ? (
+                  <>
+                    <p className="text-destructive font-medium">
+                      ⚠️ ATENÇÃO: Você está excluindo uma MATRIZ!
+                    </p>
+                    <p>
+                      Ao excluir a matriz <strong>"{branchToDelete?.name}"</strong>,
+                      <strong> TODAS as filiais vinculadas</strong> também serão excluídas,
+                      junto com todos os seus dados:
+                    </p>
+                  </>
+                ) : (
+                  <p>
+                    Esta ação não pode ser desfeita. Ao excluir a filial <strong>"{branchToDelete?.name}"</strong>,
+                    os seguintes dados vinculados também serão removidos:
+                  </p>
+                )}
                 <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+                  {branchToDelete?.is_headquarters && (
+                    <li className="text-destructive font-medium">Todas as filiais vinculadas a esta matriz</li>
+                  )}
                   <li>Programas de treinamento e registros de participantes</li>
                   <li>Avaliações LAIA</li>
                   <li>Perfis de compliance de legislações</li>

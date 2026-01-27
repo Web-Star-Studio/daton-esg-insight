@@ -335,6 +335,38 @@ export const deleteBranchWithDependencies = async (id: string) => {
   console.log(`[deleteBranch] Filial ${id} removida com sucesso`);
 };
 
+/**
+ * Exclui uma MATRIZ e todas as filiais vinculadas a ela (parent_branch_id)
+ * Executa deleteBranchWithDependencies para cada filial-filha e depois para a matriz
+ */
+export const deleteHeadquartersWithChildren = async (id: string) => {
+  console.log(`[deleteHQ] Iniciando exclusão da matriz ${id} com filiais vinculadas`);
+  
+  // 1. Buscar todas as filiais vinculadas a esta matriz
+  const { data: childBranches, error: childError } = await supabase
+    .from('branches')
+    .select('id, name')
+    .eq('parent_branch_id', id);
+  
+  if (childError) {
+    throw new Error(`Falha ao buscar filiais vinculadas: ${childError.message}`);
+  }
+  
+  console.log(`[deleteHQ] Encontradas ${childBranches?.length || 0} filiais vinculadas`);
+  
+  // 2. Excluir cada filial-filha com suas dependências
+  for (const child of (childBranches || [])) {
+    console.log(`[deleteHQ] Excluindo filial-filha: ${child.name} (${child.id})`);
+    await deleteBranchWithDependencies(child.id);
+  }
+  
+  // 3. Excluir a matriz com suas dependências
+  console.log(`[deleteHQ] Excluindo matriz com dependências`);
+  await deleteBranchWithDependencies(id);
+  
+  console.log(`[deleteHQ] Matriz ${id} e ${childBranches?.length || 0} filiais excluídas com sucesso`);
+};
+
 // React Query Hooks
 export const useBranches = () => {
   return useQuery({
@@ -402,17 +434,22 @@ export const useDeleteBranch = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: deleteBranchWithDependencies,
+    mutationFn: async ({ id, isHeadquarters }: { id: string; isHeadquarters: boolean }) => {
+      if (isHeadquarters) {
+        return deleteHeadquartersWithChildren(id);
+      }
+      return deleteBranchWithDependencies(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branches'] });
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['training-programs'] });
-      unifiedToast.success('Filial removida com sucesso', {
-        description: 'Todos os dados vinculados foram removidos e colaboradores desvinculados.'
+      unifiedToast.success('Unidade removida com sucesso', {
+        description: 'Todos os dados vinculados foram removidos.'
       });
     },
     onError: (error: any) => {
-      unifiedToast.error('Erro ao remover filial', {
+      unifiedToast.error('Erro ao remover unidade', {
         description: error.message
       });
     },
