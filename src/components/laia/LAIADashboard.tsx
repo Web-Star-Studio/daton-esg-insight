@@ -12,11 +12,18 @@ import {
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 
-const CATEGORY_COLORS = {
-  desprezivel: "#22c55e",
-  moderado: "#eab308",
-  critico: "#ef4444",
-};
+const SECTOR_COLORS = [
+  "#3b82f6", // blue
+  "#22c55e", // green
+  "#eab308", // yellow
+  "#ef4444", // red
+  "#8b5cf6", // purple
+  "#f97316", // orange
+  "#14b8a6", // teal
+  "#ec4899", // pink
+  "#6366f1", // indigo
+  "#84cc16", // lime
+];
 
 interface LAIADashboardProps {
   branchId?: string;
@@ -49,16 +56,11 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
     );
   }
 
-  const categoryData = [
-    { name: "Desprezível", value: stats.despreziveis, color: CATEGORY_COLORS.desprezivel },
-    { name: "Moderado", value: stats.moderados, color: CATEGORY_COLORS.moderado },
-    { name: "Crítico", value: stats.criticos, color: CATEGORY_COLORS.critico },
-  ].filter(d => d.value > 0);
-
-  const significanceData = [
-    { name: "Significativo", value: stats.significativos, color: "#ef4444" },
-    { name: "Não Significativo", value: stats.nao_significativos, color: "#22c55e" },
-  ].filter(d => d.value > 0);
+  const sectorChartData = stats.by_sector.map((s, i) => ({
+    name: s.sector_name,
+    value: s.count,
+    color: SECTOR_COLORS[i % SECTOR_COLORS.length],
+  }));
 
   return (
     <div className="space-y-6">
@@ -119,35 +121,33 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
 
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Category Distribution */}
+        {/* Sector Distribution - Bar Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Distribuição por Categoria
+              Distribuição por Setor
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {categoryData.length > 0 ? (
+            {sectorChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {categoryData.map((entry, index) => (
+                <BarChart data={sectorChartData} layout="vertical">
+                  <XAxis type="number" />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    width={120}
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => value.length > 15 ? `${value.slice(0, 15)}...` : value}
+                  />
+                  <Tooltip />
+                  <Bar dataKey="value" name="Aspectos" radius={[0, 4, 4, 0]}>
+                    {sectorChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex h-[250px] items-center justify-center text-muted-foreground">
@@ -157,20 +157,20 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
           </CardContent>
         </Card>
 
-        {/* Significance Distribution */}
+        {/* Sector Proportion - Pie Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Distribuição por Significância
+              Proporção por Setor
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {significanceData.length > 0 ? (
+            {sectorChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
-                    data={significanceData}
+                    data={sectorChartData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -179,7 +179,7 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
                     dataKey="value"
                     label={({ name, value }) => `${name}: ${value}`}
                   >
-                    {significanceData.map((entry, index) => (
+                    {sectorChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -195,25 +195,6 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
           </CardContent>
         </Card>
       </div>
-
-      {/* By Sector */}
-      {stats.by_sector.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Aspectos por Setor</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.by_sector} layout="vertical">
-                <XAxis type="number" />
-                <YAxis dataKey="sector_name" type="category" width={150} />
-                <Tooltip />
-                <Bar dataKey="count" fill="hsl(var(--primary))" name="Aspectos" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
