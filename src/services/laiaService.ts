@@ -335,7 +335,7 @@ export async function getLAIADashboardStats(branchId?: string): Promise<LAIADash
       id,
       category,
       significance,
-      sector:laia_sectors(name)
+      activity_operation
     `)
     .eq("company_id", profile.company_id)
     .eq("status", "ativo");
@@ -358,7 +358,7 @@ export async function getLAIADashboardStats(branchId?: string): Promise<LAIADash
     by_sector: [],
   };
 
-  const sectorCounts: Record<string, number> = {};
+  const activityCounts: Record<string, number> = {};
 
   assessments?.forEach((a) => {
     if (a.significance === "significativo") stats.significativos++;
@@ -368,11 +368,11 @@ export async function getLAIADashboardStats(branchId?: string): Promise<LAIADash
     else if (a.category === "moderado") stats.moderados++;
     else stats.despreziveis++;
 
-    const sectorName = (a.sector as { name: string } | null)?.name ?? "Sem Setor";
-    sectorCounts[sectorName] = (sectorCounts[sectorName] ?? 0) + 1;
+    const activityName = a.activity_operation || "Não especificada";
+    activityCounts[activityName] = (activityCounts[activityName] ?? 0) + 1;
   });
 
-  stats.by_sector = Object.entries(sectorCounts)
+  stats.by_sector = Object.entries(activityCounts)
     .map(([sector_name, count]) => ({ sector_name, count }))
     .sort((a, b) => b.count - a.count);
 
