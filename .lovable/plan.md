@@ -1,84 +1,218 @@
 
-## Objetivo
-Corrigir definitivamente o erro ao apagar uma filial (ex.: `training_programs_branch_id_fkey`), garantindo que a exclusão “inteligente” realmente remova todos os dados dependentes em ordem correta e depois delete a filial, enquanto **desvincula colaboradores** (branch_id = NULL).
+# Plano: Permitir Exclusao de Matrizes com Cascata para Filiais Vinculadas
 
-## O que está acontecendo agora (diagnóstico)
-Mesmo com `deleteBranchWithDependencies`, o erro de FK continua porque a limpeza não está completa/garantida:
+## Problema Identificado
 
-1) A função **não valida erros** das deleções intermediárias.  
-   - Se qualquer `delete()` falhar por RLS/FK, a execução segue e, no final, a exclusão da filial falha com a FK.
-2) Existe uma tabela dependente **que não está sendo removida**: `training_schedule_participants`.  
-   - Ela referencia `training_schedules`. Se houver participantes, a deleção de `training_schedules` falha, o que impede a deleção de `training_programs`, e então a deleção de `branches` falha.
+1. **Botao desabilitado**: Atualmente, o botao de excluir esta desabilitado para matrizes (`disabled={branch.is_headquarters}` na linha 333).
 
-Pelo schema (`src/integrations/supabase/types.ts`) há FK:
-- `training_schedule_participants.schedule_id -> training_schedules.id`
-- `training_schedules.training_program_id -> training_programs.id`
-- `training_programs.branch_id -> branches.id`
+2. **Erro de FK persiste**: Mesmo com `deleteBranchWithDependencies`, ao tentar excluir uma matriz que tem filiais vinculadas ou dados (training_programs), o erro de chave estrangeira ocorre porque:
+   - A funcao atual so limpa dependencias da filial sendo excluida
+   - Nao exclui as **filiais-filhas** vinculadas (`parent_branch_id`)
+   - Nao limpa os dados das filiais-filhas antes de excluir
 
-## Mudanças planejadas (frontend) – sem mexer no banco
-Vamos ajustar a exclusão para:
-- Remover também `training_schedule_participants`
-- Checar e tratar `error` em cada etapa, com mensagens mais claras
-- Opcionalmente: melhorar robustez removendo avaliações por `training_program_id` (e não só por `employee_training_id`)
+3. **Comportamento desejado** (confirmado pelo usuario): Ao excluir uma matriz, **excluir tambem todas as filiais vinculadas** e seus dados dependentes.
 
-### 1) Ajustar `deleteBranchWithDependencies` em `src/services/branches.ts`
-#### Nova ordem (mais completa)
-1. Buscar `training_programs` da filial: ids
-2. Buscar `training_schedules` desses programas: ids
-3. Deletar `training_schedule_participants` pelos `schedule_id`
-4. Deletar `training_schedules` pelos `training_program_id`
-5. (Recomendado) Deletar `training_efficacy_evaluations` por `training_program_id` (mais direto)  
-6. Deletar `employee_trainings` por `training_program_id`
-7. Deletar `training_documents` por `training_program_id`
-8. Deletar `training_programs` por `branch_id`
-9. Deletar `laia_assessments` por `branch_id`
-10. Deletar `legislation_unit_compliance` por `branch_id`
-11. Deletar `legislation_compliance_profiles` por `branch_id`
-12. Desvincular `employees`: `update branch_id = null` por `branch_id`
-13. Deletar `branches` por `id`
+---
 
-#### Validação de erros (crítico)
-Em cada chamada `await supabase.from(...).delete()/update()/select()`, capturar `{ error }` e:
-- Se `error`, lançar `throw new Error("Falha ao remover [ETAPA]: " + error.message)`
-- Isso evita “seguir adiante” e só descobrir no final.
+## Solucao Proposta
 
-#### Logs/telemetria (para debug)
-Adicionar logs com contagens (qtd de programas, schedules, participantes) antes de deletar, para ficar fácil diagnosticar em caso de RLS ou registros inesperados.
+### Fluxo de Exclusao de Matriz
 
-### 2) Ajustes menores no hook `useDeleteBranch`
-Manter o hook como está, mas garantir que o erro exibido no toast seja o novo erro “da etapa”, e não apenas o FK final.
-Opcional: invalidar queries adicionais (ex.: `training-schedules`, `training-documents`) se existirem chaves no projeto.
+```text
+MATRIZ
+  |
+  +-- Filial A (parent_branch_id = matriz.id)
+  |     +-- training_programs, laia_assessments, etc.
+  |
+  +-- Filial B (parent_branch_id = matriz.id)
+  |     +-- training_programs, laia_assessments, etc.
+  |
+  +-- (dados proprios da matriz: training_programs, etc.)
+```
 
-### 3) (Opcional) Melhorar o diálogo de confirmação em `GestaoFiliais.tsx`
-Já existe aviso; podemos acrescentar a linha “participantes de agenda” para ficar totalmente transparente:
-- “Agendamentos e participantes de agendamentos” dentro dos itens de treinamento.
+**Ordem de exclusao:**
+1. Para cada filial-filha vinculada a matriz:
+   - Executar `deleteBranchWithDependencies(filial.id)`
+2. Executar `deleteBranchWithDependencies(matriz.id)` para limpar dados da propria matriz
 
-## Alternativa mais robusta (se ainda houver bloqueio por RLS)
-Se após corrigir a cascata ainda falhar por RLS (por exemplo, se o usuário não tiver permissão de deletar em alguma tabela), aí o caminho certo é mover a operação para o banco:
+---
 
-- Criar uma função SQL `public.safe_delete_branch(branch_id uuid)` com `security definer` que:
-  - Executa a mesma cascata em transação
-  - Desvincula employees
-  - Deleta a branch
-- O frontend chama `supabase.rpc('safe_delete_branch', { branch_id: id })`
+## Alteracoes Tecnicas
 
-Essa alternativa é a mais confiável para “deleção atômica” e evita inconsistências, mas exige migration (mudança de schema/DB).
+### Arquivo 1: `src/services/branches.ts`
 
-## Critérios de aceite (como validar)
-1) Escolher uma filial que hoje dá erro ao excluir.
-2) Clicar em excluir e confirmar.
-3) Resultado esperado:
-   - Toast de sucesso
-   - Filial some da listagem
-   - Não deve existir nenhum `training_programs` com `branch_id` daquela filial
-   - Colaboradores antes vinculados continuam existindo, com `branch_id = NULL`
-4) Caso falhe:
-   - Toast deve indicar exatamente a etapa (ex.: “Falha ao remover participantes de agenda: …”)
+**Criar nova funcao `deleteHeadquartersWithChildren`:**
 
-## Arquivos que serão alterados (previsto)
-- `src/services/branches.ts` (principal: completar cascata + checar erros)
-- `src/pages/GestaoFiliais.tsx` (opcional: texto do alerta)
+```typescript
+export const deleteHeadquartersWithChildren = async (id: string) => {
+  console.log(`[deleteHQ] Iniciando exclusao da matriz ${id} com filiais`);
+  
+  // 1. Buscar todas as filiais vinculadas a esta matriz
+  const { data: childBranches, error: childError } = await supabase
+    .from('branches')
+    .select('id, name')
+    .eq('parent_branch_id', id);
+  
+  if (childError) {
+    throw new Error(`Falha ao buscar filiais vinculadas: ${childError.message}`);
+  }
+  
+  console.log(`[deleteHQ] Encontradas ${childBranches?.length || 0} filiais vinculadas`);
+  
+  // 2. Excluir cada filial-filha com suas dependencias
+  for (const child of (childBranches || [])) {
+    console.log(`[deleteHQ] Excluindo filial-filha: ${child.name}`);
+    await deleteBranchWithDependencies(child.id);
+  }
+  
+  // 3. Excluir a matriz com suas dependencias
+  console.log(`[deleteHQ] Excluindo matriz com dependencias`);
+  await deleteBranchWithDependencies(id);
+  
+  console.log(`[deleteHQ] Matriz ${id} e filiais excluidas com sucesso`);
+};
+```
 
-## Riscos e mitigação
-- Risco: existirem outras tabelas novas no futuro referenciando `training_programs`/`branches`.
-  - Mitigação: mensagens por etapa + logs + (opcional) migrar para RPC transacional no banco.
+**Atualizar hook `useDeleteBranch`:**
+
+Modificar para receber um parametro `isHeadquarters` e chamar a funcao apropriada:
+
+```typescript
+export const useDeleteBranch = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, isHeadquarters }: { id: string; isHeadquarters: boolean }) => {
+      if (isHeadquarters) {
+        return deleteHeadquartersWithChildren(id);
+      }
+      return deleteBranchWithDependencies(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['training-programs'] });
+      unifiedToast.success('Unidade removida com sucesso', {
+        description: 'Todos os dados vinculados foram removidos.'
+      });
+    },
+    onError: (error: any) => {
+      unifiedToast.error('Erro ao remover unidade', {
+        description: error.message
+      });
+    },
+  });
+};
+```
+
+---
+
+### Arquivo 2: `src/pages/GestaoFiliais.tsx`
+
+**1. Remover bloqueio do botao de excluir matriz (linha 333):**
+
+```diff
+- disabled={branch.is_headquarters}
++ (remover completamente a propriedade disabled)
+```
+
+**2. Atualizar `handleDelete` (linha 247-253):**
+
+```typescript
+const handleDelete = () => {
+  if (branchToDelete) {
+    deleteMutation.mutate({
+      id: branchToDelete.id,
+      isHeadquarters: branchToDelete.is_headquarters
+    }, {
+      onSuccess: () => setBranchToDelete(null),
+    });
+  }
+};
+```
+
+**3. Melhorar dialogo de confirmacao (linhas 559-575):**
+
+Adicionar aviso diferenciado quando for matriz:
+
+```tsx
+<AlertDialogDescription asChild>
+  <div className="space-y-3">
+    {branchToDelete?.is_headquarters ? (
+      <>
+        <p className="text-destructive font-medium">
+          ATENCAO: Voce esta excluindo uma MATRIZ!
+        </p>
+        <p>
+          Ao excluir a matriz <strong>"{branchToDelete?.name}"</strong>,
+          <strong> TODAS as filiais vinculadas</strong> tambem serao excluidas,
+          junto com todos os seus dados:
+        </p>
+      </>
+    ) : (
+      <p>
+        Esta acao nao pode ser desfeita. Ao excluir a filial <strong>"{branchToDelete?.name}"</strong>,
+        os seguintes dados vinculados tambem serao removidos:
+      </p>
+    )}
+    <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+      {branchToDelete?.is_headquarters && (
+        <li className="text-destructive">Todas as filiais vinculadas a esta matriz</li>
+      )}
+      <li>Programas de treinamento e registros de participantes</li>
+      <li>Avaliacoes LAIA</li>
+      <li>Perfis de compliance de legislacoes</li>
+    </ul>
+    <p className="font-medium text-foreground">
+      Colaboradores vinculados serao mantidos, porem sem filial associada.
+    </p>
+  </div>
+</AlertDialogDescription>
+```
+
+---
+
+### Arquivo 3: `src/components/branches/BranchDeduplication.tsx`
+
+**Atualizar chamada do deleteMutation (linhas 165 e 208):**
+
+```typescript
+// Linha 165
+await deleteMutation.mutateAsync({ id: branch.id, isHeadquarters: branch.is_headquarters });
+
+// Linha 208
+await deleteMutation.mutateAsync({ id: branch.id, isHeadquarters: branch.is_headquarters });
+```
+
+---
+
+## Resumo das Alteracoes
+
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/services/branches.ts` | Nova funcao `deleteHeadquartersWithChildren` + atualizar hook |
+| `src/pages/GestaoFiliais.tsx` | Remover bloqueio, atualizar handleDelete, melhorar dialogo |
+| `src/components/branches/BranchDeduplication.tsx` | Atualizar chamadas do deleteMutation |
+
+**Total: 3 arquivos, ~60 linhas adicionadas/modificadas**
+
+---
+
+## Resultado Esperado
+
+1. **Botao de excluir habilitado** para matrizes
+2. **Dialogo diferenciado** avisando que filiais vinculadas serao excluidas
+3. **Exclusao em cascata** funcional:
+   - Matriz "MATRIZ" -> exclui Filial POA, Filial CHUÍ, etc.
+   - Cada filial tem seus dados limpos antes da exclusao
+4. **Colaboradores preservados** (apenas desvinculados)
+
+---
+
+## Riscos e Mitigacao
+
+- **Risco**: Exclusao acidental de muitos dados
+  - **Mitigacao**: Dialogo de confirmacao com aviso em vermelho sobre ser matriz e listar filiais
+  
+- **Risco**: Timeout em matrizes com muitas filiais
+  - **Mitigacao**: Logs detalhados para debug; se necessario, criar RPC no banco futuramente
