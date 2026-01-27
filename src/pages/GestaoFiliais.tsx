@@ -556,8 +556,21 @@ export default function GestaoFiliais() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir a filial "{branchToDelete?.name}"? Esta ação não pode ser desfeita.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Esta ação não pode ser desfeita. Ao excluir a filial <strong>"{branchToDelete?.name}"</strong>,
+                  os seguintes dados vinculados também serão removidos:
+                </p>
+                <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+                  <li>Programas de treinamento e registros de participantes</li>
+                  <li>Avaliações LAIA</li>
+                  <li>Perfis de compliance de legislações</li>
+                </ul>
+                <p className="font-medium text-foreground">
+                  Colaboradores vinculados serão mantidos, porém sem filial associada.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -566,7 +579,7 @@ export default function GestaoFiliais() {
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Excluir
+              Excluir Filial
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
