@@ -1,170 +1,103 @@
 
-## Plano: Corrigir Problema de Timezone na Gestao de Treinamentos
+## Plano: Corrigir Cache de Funcionarios em Todos os Modais de Treinamento
 
 ### Problema Identificado
 
-O mesmo problema de timezone encontrado nos funcionarios tambem afeta a gestao de treinamentos. Quando o JavaScript interpreta datas no formato `"YYYY-MM-DD"` usando `new Date()`, ele assume **meia-noite UTC**, que no Brasil (UTC-3) corresponde a **21:00 do dia anterior**, causando o deslocamento de 1 dia.
+Funcionarios recem-cadastrados nao aparecem imediatamente na lista de participantes porque varios modais de treinamento estao usando o cache global de 5 minutos. A correcao feita anteriormente no `TrainingProgramModal.tsx` resolveu o problema para aquele modal especifico, mas existem outros 3 modais de treinamento que apresentam o mesmo problema:
 
----
-
-### Arquivos Afetados
-
-| Arquivo | Linhas | Problema |
-|---------|--------|----------|
-| `src/utils/trainingStatusCalculator.ts` | 31-32 | `new Date(training.start_date)` e `new Date(training.end_date)` |
-| `src/components/EmployeeTrainingModal.tsx` | 153 | `new Date(training.completion_date)` |
-| `src/components/TrainingReportsModal.tsx` | 54, 93, 245 | `new Date(training.completion_date)` em filtros e formatacao |
-| `src/components/TrainingComplianceMatrix.tsx` | 80, 93 | `new Date(training.completion_date)` no calculo de expiracao |
-| `src/pages/GestaoTreinamentos.tsx` | 791 | `format(new Date(training.completion_date), ...)` |
-| `src/components/AddEmployeeTrainingDialog.tsx` | 92, 271 | `new Date(formData.completion_date)` |
-| `src/components/EditEmployeeTrainingDialog.tsx` | 287 | `new Date(calculateExpirationDate()!)` |
+| Modal | Arquivo | Linha | Query Key | staleTime |
+|-------|---------|-------|-----------|-----------|
+| Novo Programa | `TrainingProgramModal.tsx` | 106-122 | `employees-for-training-modal` | **0 (ja corrigido)** |
+| Agendar Sessao | `TrainingScheduleModal.tsx` | 108-111 | `employees` | 5 min (problema) |
+| Registro Individual | `EmployeeTrainingModal.tsx` | 104-116 | `employees` | 5 min (problema) |
+| Reagendar | `RescheduleTrainingModal.tsx` | 141-154 | `employees-for-training` | 5 min (problema) |
 
 ---
 
 ### Correcoes Necessarias
 
-#### 1. `src/utils/trainingStatusCalculator.ts`
+#### 1. `src/components/TrainingScheduleModal.tsx`
 
-Adicionar import e usar `parseDateSafe`:
+**Linhas 107-111** - Adicionar `staleTime: 0`:
 
 ```typescript
-import { parseDateSafe } from '@/utils/dateUtils';
-
-// Linhas 31-32:
-const startDate = training.start_date ? parseDateSafe(training.start_date) : null;
-const endDate = training.end_date ? parseDateSafe(training.end_date) : null;
+// Fetch employees
+const { data: employees = [] } = useQuery({
+  queryKey: ['employees-for-schedule'],
+  queryFn: getEmployees,
+  staleTime: 0, // Sempre buscar dados frescos
+});
 ```
 
 ---
 
 #### 2. `src/components/EmployeeTrainingModal.tsx`
 
-Adicionar import e usar no reset do form:
+**Linhas 103-116** - Adicionar `staleTime: 0`:
 
 ```typescript
-import { parseDateSafe } from '@/utils/dateUtils';
-
-// Linha 153:
-completion_date: training.completion_date ? parseDateSafe(training.completion_date) ?? undefined : undefined,
+// Fetch employees
+const { data: employees = [] } = useQuery({
+  queryKey: ["employees-for-training-modal-2"],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("employees")
+      .select("id, full_name, employee_code, department")
+      .eq("status", "Ativo")
+      .order("full_name");
+    
+    if (error) throw error;
+    return data;
+  },
+  staleTime: 0, // Sempre buscar dados frescos
+});
 ```
 
 ---
 
-#### 3. `src/components/TrainingReportsModal.tsx`
+#### 3. `src/components/RescheduleTrainingModal.tsx`
 
-Adicionar import e corrigir tres locais:
-
-```typescript
-import { parseDateSafe } from '@/utils/dateUtils';
-
-// Linha 54 - filtro:
-const completionDate = parseDateSafe(training.completion_date);
-if (!completionDate) return true;
-
-// Linha 93 - CSV:
-completionDate: training.completion_date 
-  ? format(parseDateSafe(training.completion_date) || new Date(), 'dd/MM/yyyy') 
-  : 'N/A',
-
-// Linha 245 - exibicao:
-{training.completion_date 
-  ? `Concluido em ${format(parseDateSafe(training.completion_date) || new Date(), 'dd/MM/yyyy', { locale: ptBR })}` 
-  : 'Em andamento'}
-```
-
----
-
-#### 4. `src/components/TrainingComplianceMatrix.tsx`
-
-Adicionar import e corrigir funcoes `isExpiringSoon` e `isExpired`:
+**Linhas 140-154** - Adicionar `staleTime: 0`:
 
 ```typescript
-import { parseDateSafe } from '@/utils/dateUtils';
-
-// Linha 80 (isExpiringSoon):
-const completionDate = parseDateSafe(training.completion_date);
-if (!completionDate) return false;
-const expirationDate = new Date(completionDate);
-
-// Linha 93 (isExpired):
-const completionDate = parseDateSafe(training.completion_date);
-if (!completionDate) return false;
-const expirationDate = new Date(completionDate);
-```
-
----
-
-#### 5. `src/pages/GestaoTreinamentos.tsx`
-
-Adicionar import e usar na exibicao:
-
-```typescript
-import { parseDateSafe } from '@/utils/dateUtils';
-import { formatDateDisplay } from '@/utils/dateUtils';
-
-// Linha 791:
-Concluido em {formatDateDisplay(training.completion_date) || 'N/A'}
-```
-
----
-
-#### 6. `src/components/AddEmployeeTrainingDialog.tsx`
-
-Adicionar import e corrigir calculo de expiracao:
-
-```typescript
-import { parseDateSafe } from '@/utils/dateUtils';
-
-// Linha 92 (calculateExpirationDate):
-const completionDate = parseDateSafe(formData.completion_date);
-if (!completionDate) return null;
-const expirationDate = addMonths(completionDate, selectedProgram.valid_for_months);
-
-// Linha 271:
-{calculateExpirationDate() 
-  ? format(parseDateSafe(calculateExpirationDate()!) || new Date(), 'dd/MM/yyyy')
-  : '-'}
-```
-
----
-
-#### 7. `src/components/EditEmployeeTrainingDialog.tsx`
-
-Adicionar import e corrigir formatacao:
-
-```typescript
-import { parseDateSafe } from '@/utils/dateUtils';
-
-// Linha 287:
-{calculateExpirationDate() 
-  ? format(parseDateSafe(calculateExpirationDate()!) || new Date(), 'dd/MM/yyyy')
-  : '-'}
+// Fetch all employees for adding
+const { data: allEmployees = [] } = useQuery({
+  queryKey: ["employees-for-reschedule"],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("employees")
+      .select("id, full_name, employee_code, department")
+      .eq("status", "Ativo")
+      .order("full_name");
+    
+    if (error) throw error;
+    return data;
+  },
+  enabled: open,
+  staleTime: 0, // Sempre buscar dados frescos
+});
 ```
 
 ---
 
 ### Resumo das Alteracoes
 
-| Arquivo | Tipo de Alteracao |
-|---------|-------------------|
-| `src/utils/trainingStatusCalculator.ts` | Import + 2 linhas |
-| `src/components/EmployeeTrainingModal.tsx` | Import + 1 linha |
-| `src/components/TrainingReportsModal.tsx` | Import + 3 linhas |
-| `src/components/TrainingComplianceMatrix.tsx` | Import + 2 funcoes |
-| `src/pages/GestaoTreinamentos.tsx` | Import + 1 linha |
-| `src/components/AddEmployeeTrainingDialog.tsx` | Import + 2 locais |
-| `src/components/EditEmployeeTrainingDialog.tsx` | Import + 1 linha |
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/components/TrainingScheduleModal.tsx` | Adicionar `staleTime: 0` na query de funcionarios |
+| `src/components/EmployeeTrainingModal.tsx` | Adicionar `staleTime: 0` na query de funcionarios |
+| `src/components/RescheduleTrainingModal.tsx` | Adicionar `staleTime: 0` na query de funcionarios |
 
-**Total: 7 arquivos, ~15 alteracoes**
+**Total: 3 arquivos, 3 alteracoes simples**
 
 ---
 
 ### Resultado Esperado
 
-Apos as correcoes:
-- Data de inicio/fim do programa exibida corretamente
-- Data de conclusao de treinamentos exibida corretamente  
-- Calculo de status automatico correto (Planejado/Em Andamento/Concluido)
-- Calculo de expiracao de certificados correto
-- Filtros por data funcionando corretamente
-- Exportacao CSV com datas corretas
+Apos as correcoes, ao abrir qualquer modal de treinamento:
+- **Novo Programa**: Lista atualizada (ja funcionando)
+- **Agendar Sessao**: Lista atualizada (sera corrigido)
+- **Registro Individual**: Lista atualizada (sera corrigido)
+- **Reagendar**: Lista atualizada (sera corrigido)
+
+O custo de performance e minimo (1 requisicao extra por abertura de modal) comparado ao beneficio de sempre ter dados atualizados.
