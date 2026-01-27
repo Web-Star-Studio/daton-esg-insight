@@ -183,6 +183,33 @@ export const deleteBranch = async (id: string) => {
 export const deleteBranchWithDependencies = async (id: string) => {
   console.log(`[deleteBranch] Iniciando exclusão da filial ${id}`);
 
+  // Validar que a filial pertence à empresa do usuário atual
+  const companyId = await getUserCompanyId();
+  if (!companyId) {
+    throw new Error('Usuário não autenticado');
+  }
+
+  const { data: branch, error: checkError } = await supabase
+    .from('branches')
+    .select('id, company_id, name')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (checkError) {
+    throw new Error(`Erro ao verificar filial: ${checkError.message}`);
+  }
+
+  if (!branch) {
+    throw new Error('Filial não encontrada');
+  }
+
+  if (branch.company_id !== companyId) {
+    throw new Error(
+      `Você não tem permissão para excluir a filial "${branch.name}". ` +
+      `Ela pertence a outra organização.`
+    );
+  }
+
   // 1. Buscar training_programs da filial
   const { data: programs, error: programsError } = await supabase
     .from('training_programs')
