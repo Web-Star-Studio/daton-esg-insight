@@ -1,181 +1,141 @@
 
+# Plano: Corrigir Graficos LAIA para Agrupar por Atividade/Operacao
 
-## Plano: Exclusao Inteligente de Filiais com Limpeza de Vinculos
+## Contexto do Problema
 
-### Problema Identificado
+Ao importar planilhas LAIA (como `asp.imp_CHUI.xlsx`), o sistema atualmente:
 
-Ao tentar excluir filiais sem codigo/localizacao pela interface `/gestao-filiais`, o sistema retorna erro de constraint de chave estrangeira:
+1. Cria setores genericos como "Setor 1", "Setor 2" baseado nos codigos numericos da coluna `COD SET`
+2. O campo **Atividade/Operacao** (coluna 3) contem os valores descritivos reais: "PATIO EXTERNO", "OFICINA", "FROTA - TRANSPORTE", "COPA", etc.
+3. Os graficos do dashboard mostram distribuicao por "Setor 1", "Setor 2" - o que nao e informativo
 
-```
-update or delete on table "branches" violates foreign key constraint
-"training_programs_branch_id_fkey" on table "training_programs"
-```
-
-Isso ocorre porque existem dados vinculados (programas de treinamento, assessments LAIA, compliance profiles) que precisam ser removidos antes da exclusao da filial.
+**Solicitacao:** Os graficos devem mostrar distribuicao por **Atividade/Operacao** ao inves de por Setor generico.
 
 ---
 
-### Solucao Proposta
+## Solucao Proposta
 
-Implementar uma funcao `deleteBranchWithDependencies` que:
-
-1. **Remove dados vinculados** em ordem correta (respeitando foreign keys)
-2. **Desvincula colaboradores** (set `branch_id = NULL`) ao inves de deletar
-3. **Deleta a filial** apos limpeza completa
+Alterar o servico e dashboard LAIA para agrupar estatisticas por `activity_operation` ao inves de por `sector.name`.
 
 ---
 
-### Tabelas Afetadas (ordem de exclusao)
+## Alteracoes Tecnicas
 
-```text
-1. training_efficacy_evaluations (via employee_trainings)
-2. employee_trainings (vinculado a training_programs)
-3. training_documents (vinculado a training_programs)
-4. training_schedules (vinculado a training_programs)
-5. training_programs (branch_id)
-6. laia_assessments (branch_id)
-7. legislation_unit_compliance (branch_id)
-8. legislation_compliance_profiles (branch_id)
-9. employees (SET branch_id = NULL)
-10. branches (DELETE)
-```
+### Arquivo 1: `src/services/laiaService.ts`
 
----
+**Funcao `getLAIADashboardStats` (linhas 320-380)**
 
-### Alteracoes Tecnicas
-
-#### Arquivo 1: `src/services/branches.ts`
-
-Criar nova funcao `deleteBranchWithDependencies`:
+Modificar para agrupar por `activity_operation`:
 
 ```typescript
-export const deleteBranchWithDependencies = async (id: string) => {
-  // 1. Buscar training_programs da filial
-  const { data: programs } = await supabase
-    .from('training_programs')
-    .select('id')
-    .eq('branch_id', id);
-  
-  const programIds = programs?.map(p => p.id) || [];
-  
-  if (programIds.length > 0) {
-    // 2. Buscar employee_trainings desses programas
-    const { data: trainings } = await supabase
-      .from('employee_trainings')
-      .select('id')
-      .in('training_program_id', programIds);
-    
-    const trainingIds = trainings?.map(t => t.id) || [];
-    
-    // 3. Deletar efficacy evaluations
-    if (trainingIds.length > 0) {
-      await supabase
-        .from('training_efficacy_evaluations')
-        .delete()
-        .in('employee_training_id', trainingIds);
-    }
-    
-    // 4. Deletar employee_trainings
-    await supabase
-      .from('employee_trainings')
-      .delete()
-      .in('training_program_id', programIds);
-    
-    // 5. Deletar training_documents
-    await supabase
-      .from('training_documents')
-      .delete()
-      .in('training_program_id', programIds);
-    
-    // 6. Deletar training_schedules
-    await supabase
-      .from('training_schedules')
-      .delete()
-      .in('training_program_id', programIds);
-    
-    // 7. Deletar training_programs
-    await supabase
-      .from('training_programs')
-      .delete()
-      .eq('branch_id', id);
-  }
-  
-  // 8. Deletar laia_assessments
-  await supabase
-    .from('laia_assessments')
-    .delete()
-    .eq('branch_id', id);
-  
-  // 9. Deletar legislation_unit_compliance
-  await supabase
-    .from('legislation_unit_compliance')
-    .delete()
-    .eq('branch_id', id);
-  
-  // 10. Deletar legislation_compliance_profiles
-  await supabase
-    .from('legislation_compliance_profiles')
-    .delete()
-    .eq('branch_id', id);
-  
-  // 11. Desvincular colaboradores (nao deletar)
-  await supabase
-    .from('employees')
-    .update({ branch_id: null })
-    .eq('branch_id', id);
-  
-  // 12. Deletar a filial
-  const { error } = await supabase
-    .from('branches')
-    .delete()
-    .eq('id', id);
-  
-  if (error) throw error;
-};
+// Antes (linhas 359-377):
+const sectorCounts: Record<string, number> = {};
+assessments?.forEach((a) => {
+  // ...
+  const sectorName = (a.sector as { name: string } | null)?.name ?? "Sem Setor";
+  sectorCounts[sectorName] = (sectorCounts[sectorName] ?? 0) + 1;
+});
+stats.by_sector = Object.entries(sectorCounts)
+  .map(([sector_name, count]) => ({ sector_name, count }))
+  .sort((a, b) => b.count - a.count);
+
+// Depois:
+const activityCounts: Record<string, number> = {};
+assessments?.forEach((a) => {
+  // ...
+  const activityName = a.activity_operation || "Nao especificada";
+  activityCounts[activityName] = (activityCounts[activityName] ?? 0) + 1;
+});
+stats.by_sector = Object.entries(activityCounts)
+  .map(([sector_name, count]) => ({ sector_name, count }))
+  .sort((a, b) => b.count - a.count);
 ```
 
-Atualizar hook `useDeleteBranch` para usar a nova funcao.
+**Nota:** Mantemos o nome do campo `by_sector` para compatibilidade, mas agora representa "por atividade".
 
----
+**Query da funcao** - adicionar `activity_operation` ao select:
 
-#### Arquivo 2: `src/pages/GestaoFiliais.tsx`
-
-Aprimorar o dialogo de confirmacao para informar ao usuario sobre os dados que serao removidos:
-
-**Linha ~540-565**: Atualizar `AlertDialogDescription` para mostrar aviso sobre limpeza de dados:
-
-```tsx
-<AlertDialogDescription>
-  Esta acao nao pode ser desfeita. Ao excluir a filial "{branchToDelete?.name}",
-  os seguintes dados vinculados tambem serao removidos:
-  <ul className="list-disc list-inside mt-2 text-sm">
-    <li>Programas de treinamento e registros de participantes</li>
-    <li>Avaliacoes LAIA</li>
-    <li>Perfis de compliance de legislacoes</li>
-  </ul>
-  <p className="mt-2 font-medium">
-    Colaboradores vinculados serao mantidos, porem sem filial associada.
-  </p>
-</AlertDialogDescription>
+```typescript
+// Linha 334-341
+let query = supabase
+  .from("laia_assessments")
+  .select(`
+    id,
+    category,
+    significance,
+    activity_operation,
+    sector:laia_sectors(name)
+  `)
 ```
 
 ---
 
-### Resumo das Alteracoes
+### Arquivo 2: `src/components/laia/LAIADashboard.tsx`
+
+**Atualizar titulos dos graficos (linhas 124-165)**
+
+Alterar os labels para refletir que a distribuicao e por atividade/operacao:
+
+```typescript
+// Linha 128-129
+<CardTitle className="flex items-center gap-2">
+  <BarChart3 className="h-5 w-5" />
+  Distribuicao por Atividade/Operacao
+</CardTitle>
+
+// Linha 162-164
+<CardTitle className="flex items-center gap-2">
+  <TrendingUp className="h-5 w-5" />
+  Proporcao por Atividade
+</CardTitle>
+```
+
+---
+
+### Arquivo 3: `src/types/laia.ts`
+
+**Opcional:** Renomear o campo no tipo `LAIADashboardStats` para maior clareza semantica:
+
+```typescript
+// Linha ~35
+export interface LAIADashboardStats {
+  total: number;
+  significativos: number;
+  nao_significativos: number;
+  criticos: number;
+  moderados: number;
+  despreziveis: number;
+  by_sector: { sector_name: string; count: number }[];  // Manter por compatibilidade
+  // Alternativa: by_activity: { activity_name: string; count: number }[];
+}
+```
+
+---
+
+## Resumo das Alteracoes
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/services/branches.ts` | Nova funcao `deleteBranchWithDependencies` + atualizar hook |
-| `src/pages/GestaoFiliais.tsx` | Melhorar dialogo de confirmacao com lista de dados afetados |
+| `src/services/laiaService.ts` | Agrupar por `activity_operation` ao inves de `sector.name` |
+| `src/components/laia/LAIADashboard.tsx` | Atualizar titulos dos graficos |
+| `src/types/laia.ts` | Opcional: atualizar tipo para clareza |
 
-**Total: 2 arquivos, ~80 linhas adicionadas/modificadas**
+**Total: 2-3 arquivos, ~15 linhas modificadas**
 
 ---
 
-### Beneficios
+## Resultado Esperado
 
-- **Exclusao segura**: Respeita ordem de foreign keys
-- **Preserva colaboradores**: Apenas remove vinculo (branch_id = NULL)
-- **Transparencia**: Usuario ve claramente o que sera deletado antes de confirmar
-- **Sem erros de constraint**: Funciona para qualquer filial com dados vinculados
+Antes:
+- Grafico mostra: "Setor 1: 5", "Setor 2: 3", "Setor 3: 8"
 
+Depois:
+- Grafico mostra: "PATIO EXTERNO: 5", "OFICINA: 3", "FROTA - TRANSPORTE: 8"
+
+---
+
+## Beneficios
+
+- **Informacao util:** Usuario ve exatamente quais atividades tem mais aspectos ambientais
+- **Alinhamento com planilha:** Os valores correspondem diretamente ao que foi importado na coluna "ATIVIDADE/OPERACAO"
+- **Decisoes melhores:** Permite identificar areas operacionais que requerem mais atencao ambiental
