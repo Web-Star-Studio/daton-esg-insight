@@ -106,8 +106,9 @@ export function TrainingScheduleModal({
 
   // Fetch employees
   const { data: employees = [] } = useQuery({
-    queryKey: ['employees'],
+    queryKey: ['employees-for-schedule'],
     queryFn: getEmployees,
+    staleTime: 0, // Sempre buscar dados frescos
   });
 
   React.useEffect(() => {

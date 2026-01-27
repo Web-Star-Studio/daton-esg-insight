@@ -102,7 +102,7 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
 
   // Fetch employees
   const { data: employees = [] } = useQuery({
-    queryKey: ["employees"],
+    queryKey: ["employees-for-training-modal-2"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
@@ -113,6 +113,7 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
       if (error) throw error;
       return data;
     },
+    staleTime: 0, // Sempre buscar dados frescos
   });
 
   // Fetch training programs
