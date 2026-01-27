@@ -171,6 +171,97 @@ export const deleteBranch = async (id: string) => {
   if (error) throw error;
 };
 
+/**
+ * Exclui uma filial com todos os dados vinculados (cascade manual)
+ * - Remove programas de treinamento e dependências
+ * - Remove avaliações LAIA
+ * - Remove perfis de compliance de legislação
+ * - Desvincula colaboradores (branch_id = NULL)
+ */
+export const deleteBranchWithDependencies = async (id: string) => {
+  // 1. Buscar training_programs da filial
+  const { data: programs } = await supabase
+    .from('training_programs')
+    .select('id')
+    .eq('branch_id', id);
+  
+  const programIds = programs?.map(p => p.id) || [];
+  
+  if (programIds.length > 0) {
+    // 2. Buscar employee_trainings desses programas
+    const { data: trainings } = await supabase
+      .from('employee_trainings')
+      .select('id')
+      .in('training_program_id', programIds);
+    
+    const trainingIds = trainings?.map(t => t.id) || [];
+    
+    // 3. Deletar efficacy evaluations
+    if (trainingIds.length > 0) {
+      await supabase
+        .from('training_efficacy_evaluations')
+        .delete()
+        .in('employee_training_id', trainingIds);
+    }
+    
+    // 4. Deletar employee_trainings
+    await supabase
+      .from('employee_trainings')
+      .delete()
+      .in('training_program_id', programIds);
+    
+    // 5. Deletar training_documents
+    await supabase
+      .from('training_documents')
+      .delete()
+      .in('training_program_id', programIds);
+    
+    // 6. Deletar training_schedules
+    await supabase
+      .from('training_schedules')
+      .delete()
+      .in('training_program_id', programIds);
+    
+    // 7. Deletar training_programs
+    await supabase
+      .from('training_programs')
+      .delete()
+      .eq('branch_id', id);
+  }
+  
+  // 8. Deletar laia_assessments
+  await supabase
+    .from('laia_assessments')
+    .delete()
+    .eq('branch_id', id);
+  
+  // 9. Deletar legislation_unit_compliance
+  await supabase
+    .from('legislation_unit_compliance')
+    .delete()
+    .eq('branch_id', id);
+  
+  // 10. Deletar legislation_compliance_profiles
+  await supabase
+    .from('legislation_compliance_profiles')
+    .delete()
+    .eq('branch_id', id);
+  
+  // 11. Desvincular colaboradores (não deletar)
+  await supabase
+    .from('employees')
+    .update({ branch_id: null })
+    .eq('branch_id', id);
+  
+  // 12. Deletar a filial
+  const { error } = await supabase
+    .from('branches')
+    .delete()
+    .eq('id', id);
+  
+  if (error) throw error;
+};
+
 // React Query Hooks
 export const useBranches = () => {
   return useQuery({
@@ -238,10 +329,14 @@ export const useDeleteBranch = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: deleteBranch,
+    mutationFn: deleteBranchWithDependencies,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branches'] });
-      unifiedToast.success('Filial removida com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['training-programs'] });
+      unifiedToast.success('Filial removida com sucesso', {
+        description: 'Todos os dados vinculados foram removidos e colaboradores desvinculados.'
+      });
     },
     onError: (error: any) => {
       unifiedToast.error('Erro ao remover filial', {
