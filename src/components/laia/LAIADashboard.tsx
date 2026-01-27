@@ -126,7 +126,7 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Distribuição por Setor
+              Distribuição por Atividade/Operação
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -162,7 +162,7 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Proporção por Setor
+              Proporção por Atividade
             </CardTitle>
           </CardHeader>
           <CardContent>
