@@ -162,7 +162,7 @@ export function BranchDeduplication() {
     try {
       // Delete duplicates
       for (const branch of toDelete) {
-        await deleteMutation.mutateAsync(branch.id);
+        await deleteMutation.mutateAsync({ id: branch.id, isHeadquarters: branch.is_headquarters });
       }
 
       unifiedToast.success("Duplicatas removidas!", {
@@ -205,7 +205,7 @@ export function BranchDeduplication() {
         const toDelete = sorted.slice(1);
 
         for (const branch of toDelete) {
-          await deleteMutation.mutateAsync(branch.id);
+          await deleteMutation.mutateAsync({ id: branch.id, isHeadquarters: branch.is_headquarters });
           deletedCount++;
         }
       }
