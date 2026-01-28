@@ -20,6 +20,7 @@ import { getUserAndCompany, type UserWithCompany } from "@/utils/auth"
 import { sanitizeFormData } from "@/utils/inputSanitizer"
 import { useAuth } from "@/contexts/AuthContext"
 import { AIProcessingSettings } from "@/components/settings/AIProcessingSettings"
+import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection"
 import { useUserManagement, type UserProfile } from "@/hooks/data/useUserManagement"
 import { UserListTable } from "@/components/users/UserListTable"
 import { UserFormModal } from "@/components/users/UserFormModal"
@@ -583,6 +584,10 @@ export default function Configuracao() {
                 </Button>
               </CardContent>
             </Card>
+          )}
+
+          {activeSection === "perfil" && (
+            <DeleteAccountSection />
           )}
 
           {activeSection === "empresa" && (
