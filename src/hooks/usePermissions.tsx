@@ -30,7 +30,7 @@ interface Permission {
 }
 
 export const usePermissions = () => {
-  const { data: user } = useQuery({
+  const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['current-user'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -38,7 +38,7 @@ export const usePermissions = () => {
     }
   });
 
-  const { data: userRole } = useQuery({
+  const { data: userRole, isLoading: roleLoading } = useQuery({
     queryKey: ['user-role', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -54,7 +54,7 @@ export const usePermissions = () => {
     enabled: !!user?.id
   });
 
-  const { data: rolePermissions } = useQuery({
+  const { data: rolePermissions, isLoading: permissionsLoading } = useQuery({
     queryKey: ['role-permissions', userRole],
     queryFn: async () => {
       if (!userRole) return [];
@@ -69,7 +69,7 @@ export const usePermissions = () => {
     enabled: !!userRole
   });
 
-  const { data: customPermissions } = useQuery({
+  const { data: customPermissions, isLoading: customLoading } = useQuery({
     queryKey: ['custom-permissions', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -83,6 +83,9 @@ export const usePermissions = () => {
     },
     enabled: !!user?.id
   });
+
+  // Combined loading state
+  const isLoading = userLoading || roleLoading || permissionsLoading || customLoading;
 
   const hasPermission = (permissionCode: PermissionCode): boolean => {
     // Platform admin and Super admin have all permissions
@@ -117,6 +120,7 @@ export const usePermissions = () => {
     hasAllPermissions,
     isAdmin: userRole === 'platform_admin' || userRole === 'super_admin' || userRole === 'admin',
     isSuperAdmin: userRole === 'super_admin',
-    isPlatformAdmin: userRole === 'platform_admin'
+    isPlatformAdmin: userRole === 'platform_admin',
+    isLoading
   };
 };
