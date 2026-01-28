@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Mail, Lock, User, FileText } from 'lucide-react';
+import { Building2, Mail, Lock, User, FileText, Info } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal';
@@ -191,6 +192,14 @@ export default function Auth() {
                 <CardDescription className="text-center">
                   Registre sua empresa na plataforma Daton
                 </CardDescription>
+
+                {/* Info box para usuários convidados */}
+                <Alert className="mt-4 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <AlertDescription className="text-blue-800 dark:text-blue-200">
+                    <strong>Recebeu um convite?</strong> Use o link enviado por email para definir sua senha. Não é necessário criar uma nova conta.
+                  </AlertDescription>
+                </Alert>
 
                 <form onSubmit={handleRegister} className="space-y-4 mt-6">
                   {/* Dados da Empresa */}

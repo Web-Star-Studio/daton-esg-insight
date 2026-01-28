@@ -214,8 +214,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.error('Registration failed', error, 'auth', { companyName: data.company_name });
       
       let errorMessage = "Erro ao criar conta.";
+      let errorTitle = "Erro no registro";
       
-      if (error.message?.includes('duplicate key')) {
+      // Tratamento especial para usuário já registrado (convite)
+      if (error.message?.includes('already been registered') || 
+          error.message?.includes('already registered') ||
+          error.message?.includes('User already registered')) {
+        errorTitle = "Email já cadastrado";
+        errorMessage = "Este email já está registrado. Se você recebeu um convite, verifique seu email e clique no link para definir sua senha. Ou tente fazer login.";
+      } else if (error.message?.includes('duplicate key')) {
         errorMessage = "Esta empresa ou email já está cadastrado.";
       } else if (error.message?.includes('invalid email')) {
         errorMessage = "Email inválido.";
@@ -227,7 +234,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       toast({
         variant: "destructive",
-        title: "Erro no registro",
+        title: errorTitle,
         description: errorMessage,
       });
       throw error;
