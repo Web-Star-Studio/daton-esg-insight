@@ -390,13 +390,55 @@ serve(async (req) => {
       .from('profiles')
       .select('id, full_name, company_id, created_at')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      console.error('Profile not found:', profileError);
+    // Handle orphaned user (exists in auth but not in profiles)
+    if (!profile) {
+      console.log('Orphaned user detected (no profile), deleting auth user only...');
+      
+      // Clear any assigned_by references this user might have
+      const { error: assignedByError } = await supabaseAdmin
+        .from('user_roles')
+        .update({ assigned_by_user_id: null })
+        .eq('assigned_by_user_id', userId);
+      
+      if (assignedByError) {
+        console.warn('Error clearing assigned_by_user_id for orphaned user:', assignedByError);
+      }
+      
+      // Delete any user_roles for this orphaned user
+      const { error: roleDeleteError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (roleDeleteError) {
+        console.warn('Error deleting roles for orphaned user:', roleDeleteError);
+      }
+      
+      // Delete the auth user directly
+      const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      
+      if (deleteAuthError) {
+        console.error('Error deleting orphaned auth user:', deleteAuthError);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Erro ao excluir conta',
+            message: deleteAuthError.message 
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log('Orphaned user deleted successfully');
       return new Response(
-        JSON.stringify({ error: 'Perfil não encontrado' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true,
+          message: 'Conta excluída com sucesso',
+          deletedUsers: 1,
+          deletedTables: 0
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
