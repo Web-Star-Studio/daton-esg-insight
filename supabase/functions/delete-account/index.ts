@@ -478,6 +478,19 @@ serve(async (req) => {
       const userIds = companyUsers?.map(u => u.id) || [];
       console.log(`Found ${userIds.length} users to delete`);
 
+      // Clear assigned_by_user_id references for all users being deleted
+      // This prevents FK constraint violations when deleting auth users
+      for (const uid of userIds) {
+        const { error: assignedByError } = await supabaseAdmin
+          .from('user_roles')
+          .update({ assigned_by_user_id: null })
+          .eq('assigned_by_user_id', uid);
+        
+        if (assignedByError) {
+          console.warn(`Error clearing assigned_by_user_id for ${uid}:`, assignedByError);
+        }
+      }
+
       // Delete all user_roles for company
       const { error: rolesError } = await supabaseAdmin
         .from('user_roles')
@@ -539,6 +552,17 @@ serve(async (req) => {
     } else {
       // Delete only user data
       console.log(`Deleting user ${userId} data...`);
+
+      // Clear assigned_by_user_id references before deleting user
+      // This prevents FK constraint violations when deleting auth user
+      const { error: assignedByError } = await supabaseAdmin
+        .from('user_roles')
+        .update({ assigned_by_user_id: null })
+        .eq('assigned_by_user_id', userId);
+
+      if (assignedByError) {
+        console.warn('Error clearing assigned_by_user_id:', assignedByError);
+      }
 
       // Delete user_role
       const { error: roleDeleteError } = await supabaseAdmin
