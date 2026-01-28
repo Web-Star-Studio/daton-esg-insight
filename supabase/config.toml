@@ -189,3 +189,6 @@ verify_jwt = true
 
 [functions.nc-action-suggestions]
 verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = false
