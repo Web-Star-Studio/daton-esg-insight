@@ -136,7 +136,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const siteUrl = Deno.env.get("SUPABASE_URL")?.includes("localhost")
       ? "http://localhost:5173"
-      : "https://dqlvioijqzlvnvvajmft.lovableproject.com";
+      : "https://daton-esg-insight.lovable.app";
 
     // Handle resend invite flow
     if (isResend && user_id) {
