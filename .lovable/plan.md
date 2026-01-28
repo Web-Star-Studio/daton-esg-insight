@@ -1,110 +1,122 @@
 
-# Plano: Corrigir Fluxo de Convite de Usuario
+# Plano: Corrigir Loading State no Sistema de Permissoes
 
 ## Diagnostico
 
-O problema tem duas partes:
+O `PermissionGate` mostra "Voce nao tem permissao" porque renderiza **antes** das queries de permissoes terminarem:
 
-### Problema 1: URL errada no magic link
-
-A edge function `invite-user` usa uma URL hardcoded:
-```javascript
-const siteUrl = "https://dqlvioijqzlvnvvajmft.lovableproject.com";
 ```
-
-Mas a URL publicada do app e:
+Usuario acessa /gestao-usuarios
+         |
+         v
+   PermissionGate verifica hasPermission('users.view')
+         |
+         v
+   usePermissions.rolePermissions = [] (ainda carregando!)
+         |
+         v
+   hasPermission retorna false
+         |
+         v
+   Mostra "Sem permissao" (ERRO!)
+         |
+   [...]
+         v
+   Query termina - rolePermissions = [28 permissoes]
+         |
+   (mas o componente ja mostrou erro)
 ```
-https://daton-esg-insight.lovable.app
-```
-
-O usuario recebe o email com link apontando para a URL errada.
-
-### Problema 2: Usuario tenta signup normal
-
-1. Admin convida usuario via edge function
-2. Usuario e criado no auth.users com `email_confirm: false`
-3. Usuario recebe email mas vai para `/auth` e tenta criar conta
-4. Supabase retorna "User already registered" (erro 422)
-5. Usuario fica travado
-
----
 
 ## Solucao
 
-### Parte 1: Corrigir URL na Edge Function
+Adicionar estados de loading ao hook `usePermissions` e fazer o `PermissionGate` aguardar o carregamento.
 
-**Arquivo:** `supabase/functions/invite-user/index.ts`
+---
 
-Atualizar `siteUrl` para usar a URL publicada:
+## Alteracoes
 
-```typescript
-// DE:
-const siteUrl = Deno.env.get("SUPABASE_URL")?.includes("localhost")
-  ? "http://localhost:5173"
-  : "https://dqlvioijqzlvnvvajmft.lovableproject.com";
+### Arquivo 1: `src/hooks/usePermissions.tsx`
 
-// PARA:
-const siteUrl = Deno.env.get("SUPABASE_URL")?.includes("localhost")
-  ? "http://localhost:5173"
-  : "https://daton-esg-insight.lovable.app";
-```
-
-### Parte 2: Melhorar Mensagem de Erro no Signup
-
-**Arquivo:** `src/contexts/AuthContext.tsx`
-
-Quando usuario tenta signup e recebe "already registered", mostrar mensagem mais clara:
+Adicionar retorno de estados `isLoading`:
 
 ```typescript
-// No tratamento de erro do signup:
-if (error.message?.includes("already been registered") || 
-    error.message?.includes("already registered")) {
-  toast({
-    variant: "destructive",
-    title: "Email ja cadastrado",
-    description: "Este email ja esta registrado. Se voce recebeu um convite, verifique seu email e clique no link de acesso. Ou tente fazer login.",
+export const usePermissions = () => {
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ['current-user'],
+    // ...
   });
-  return;
-}
+
+  const { data: userRole, isLoading: roleLoading } = useQuery({
+    queryKey: ['user-role', user?.id],
+    // ...
+  });
+
+  const { data: rolePermissions, isLoading: permissionsLoading } = useQuery({
+    queryKey: ['role-permissions', userRole],
+    // ...
+  });
+
+  // Estado de loading combinado
+  const isLoading = userLoading || roleLoading || permissionsLoading;
+
+  return {
+    // ... outros retornos existentes
+    isLoading,
+  };
+};
 ```
 
-### Parte 3: Adicionar aviso na pagina de Auth
+### Arquivo 2: `src/components/permissions/PermissionGate.tsx`
 
-**Arquivo:** `src/pages/Auth.tsx`
+Adicionar tratamento de loading:
 
-Adicionar info box na aba de "Criar Conta" informando sobre convites:
+```typescript
+export const PermissionGate = ({ 
+  permission, 
+  requireAll = false,
+  fallback,
+  showAlert = false,
+  children 
+}: PermissionGateProps) => {
+  const { hasPermission, hasAnyPermission, hasAllPermissions, isLoading } = usePermissions();
 
-```tsx
-<div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-  <p className="text-sm text-blue-800">
-    <strong>Recebeu um convite?</strong> Use o link enviado por email 
-    para definir sua senha. Nao e necessario criar uma nova conta.
-  </p>
-</div>
+  // Mostrar loading enquanto verifica permissoes
+  if (isLoading) {
+    if (showAlert) {
+      return (
+        <div className="flex items-center justify-center p-4">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          <span className="text-sm text-muted-foreground">Verificando permissoes...</span>
+        </div>
+      );
+    }
+    return null; // ou fallback silencioso
+  }
+
+  const hasAccess = Array.isArray(permission)
+    ? requireAll 
+      ? hasAllPermissions(permission)
+      : hasAnyPermission(permission)
+    : hasPermission(permission);
+
+  // ... resto do codigo
+};
 ```
 
 ---
 
-## Arquivos a Modificar
+## Resumo das Alteracoes
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `supabase/functions/invite-user/index.ts` | Atualizar `siteUrl` para URL publicada |
-| `src/contexts/AuthContext.tsx` | Melhorar mensagem de erro "already registered" |
-| `src/pages/Auth.tsx` | Adicionar aviso sobre convites na aba de registro |
+| `src/hooks/usePermissions.tsx` | Adicionar `isLoading` baseado nas 3 queries |
+| `src/components/permissions/PermissionGate.tsx` | Mostrar loading enquanto verifica permissoes |
 
 ---
 
 ## Resultado Esperado
 
-1. Novos convites terao o link correto para `https://daton-esg-insight.lovable.app/set-password`
-2. Usuarios que tentarem signup normal verao mensagem clara direcionando para o email
-3. Aba de registro tera aviso preventivo sobre convites
-
----
-
-## Acao Imediata para Usuario Atual
-
-Para o usuario que ja foi convidado e esta travado, o admin pode:
-1. Usar o botao "Reenviar Convite" na gestao de usuarios
-2. O novo link sera gerado com a URL correta
+1. Enquanto queries carregam: mostra spinner "Verificando permissoes..."
+2. Apos queries terminarem: mostra conteudo ou mensagem de erro real
+3. Admins verao a lista de usuarios corretamente
+4. Nao mostrara mais "sem permissao" falsamente durante o carregamento
