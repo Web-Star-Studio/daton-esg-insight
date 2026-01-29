@@ -39,6 +39,7 @@ export default function GestaoFuncionarios() {
 
   const handleModalSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['employees'] });
+    queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
     queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
   };
 

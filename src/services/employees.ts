@@ -349,6 +349,8 @@ export const useCreateEmployee = () => {
     mutationFn: createEmployee,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
     },
   });
 };
@@ -360,6 +362,8 @@ export const useUpdateEmployee = () => {
       updateEmployee(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
     },
   });
 };
@@ -370,6 +374,8 @@ export const useDeleteEmployee = () => {
     mutationFn: deleteEmployee,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
     },
   });
 };

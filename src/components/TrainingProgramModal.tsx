@@ -556,7 +556,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                               )}
                               disabled={categoriesLoading}
                             >
-                              {categoriesLoading ? "Carregando..." : field.value || "Selecione ou crie uma categoria"}
+                              {categoriesLoading ? "Carregando..." : field.value || "Digite para criar ou selecione..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
