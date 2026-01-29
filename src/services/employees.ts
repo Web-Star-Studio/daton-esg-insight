@@ -218,12 +218,46 @@ export const updateEmployee = async (id: string, updates: Partial<Employee>) => 
 };
 
 export const deleteEmployee = async (id: string) => {
+  // Deletar registros relacionados primeiro (cascade manual)
+  // Isso evita erros de foreign key constraint
+  try {
+    // Deletar experiências
+    await supabase.from('employee_experiences').delete().eq('employee_id', id);
+  } catch (e) {
+    console.warn('Aviso ao limpar employee_experiences:', e);
+  }
+
+  try {
+    // Deletar educação/formação
+    await supabase.from('employee_education').delete().eq('employee_id', id);
+  } catch (e) {
+    console.warn('Aviso ao limpar employee_education:', e);
+  }
+
+  try {
+    // Deletar inscrições em benefícios
+    await supabase.from('benefit_enrollments').delete().eq('employee_id', id);
+  } catch (e) {
+    console.warn('Aviso ao limpar benefit_enrollments:', e);
+  }
+
+  try {
+    // Deletar treinamentos
+    await supabase.from('employee_trainings').delete().eq('employee_id', id);
+  } catch (e) {
+    console.warn('Aviso ao limpar employee_trainings:', e);
+  }
+
+  // Agora deletar o funcionário
   const { error } = await supabase
     .from('employees')
     .delete()
     .eq('id', id);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Erro ao excluir funcionário:', error);
+    throw new Error(error.message || 'Não foi possível excluir o funcionário');
+  }
 };
 
 export const getEmployeesStats = async () => {
@@ -376,6 +410,10 @@ export const useDeleteEmployee = () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
+    },
+    onError: (error: Error) => {
+      console.error('Erro na mutação de exclusão:', error);
+      // O erro será propagado para o componente tratar
     },
   });
 };
