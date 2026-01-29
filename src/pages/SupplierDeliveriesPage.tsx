@@ -384,13 +384,27 @@ export default function SupplierDeliveriesPage() {
                     <SelectValue placeholder="Selecione o fornecedor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {suppliers.map(s => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.person_type === "PJ" ? s.company_name : s.full_name}
+                    {suppliers.length === 0 ? (
+                      <SelectItem value="_empty" disabled>
+                        Nenhum fornecedor cadastrado
                       </SelectItem>
-                    ))}
+                    ) : (
+                      suppliers.map(s => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.person_type === "PJ" ? s.company_name : s.full_name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                {suppliers.length === 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    <a href="/fornecedores/cadastro" className="text-primary hover:underline">
+                      Cadastre um fornecedor
+                    </a>{" "}
+                    para continuar.
+                  </p>
+                )}
               </div>
               <div>
                 <Label>Tipo de Fornecedor</Label>

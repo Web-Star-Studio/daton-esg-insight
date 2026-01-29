@@ -223,13 +223,27 @@ export default function SupplierFailuresPage() {
                       <SelectValue placeholder="Selecione o fornecedor" />
                     </SelectTrigger>
                     <SelectContent>
-                      {(suppliers as any[] || []).map((s: any) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.company_name || s.full_name}
+                      {(suppliers as any[] || []).length === 0 ? (
+                        <SelectItem value="_empty" disabled>
+                          Nenhum fornecedor ativo
                         </SelectItem>
-                      ))}
+                      ) : (
+                        (suppliers as any[] || []).map((s: any) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.company_name || s.full_name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
+                  {(suppliers as any[] || []).length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      <a href="/fornecedores/cadastro" className="text-primary hover:underline">
+                        Cadastre um fornecedor
+                      </a>{" "}
+                      para continuar.
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
