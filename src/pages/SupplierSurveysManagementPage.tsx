@@ -114,8 +114,8 @@ export default function SupplierSurveysManagementPage() {
       const data = {
         title: formData.title,
         description: formData.description || null,
-        custom_form_id: formData.custom_form_id || null,
-        category_id: formData.category_id || null,
+        custom_form_id: formData.custom_form_id === 'none' ? null : (formData.custom_form_id || null),
+        category_id: formData.category_id === 'all' ? null : (formData.category_id || null),
         is_mandatory: formData.is_mandatory,
         due_days: formData.due_days ? parseInt(formData.due_days) : null,
         is_active: formData.is_active,
@@ -135,8 +135,9 @@ export default function SupplierSurveysManagementPage() {
       setIsDialogOpen(false);
       loadData();
     } catch (error) {
-      console.error('Error saving:', error);
-      toast({ title: 'Erro', description: 'Erro ao salvar', variant: 'destructive' });
+      console.error('Error saving survey:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast({ title: 'Erro ao salvar', description: errorMessage, variant: 'destructive' });
     } finally {
       setIsSaving(false);
     }
@@ -292,7 +293,7 @@ export default function SupplierSurveysManagementPage() {
                     <SelectValue placeholder="Selecione um formulário" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="none">Nenhum</SelectItem>
                     {customForms.map((form) => (
                       <SelectItem key={form.id} value={form.id}>{form.title}</SelectItem>
                     ))}
@@ -307,7 +308,7 @@ export default function SupplierSurveysManagementPage() {
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas</SelectItem>
+                    <SelectItem value="all">Todas</SelectItem>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                     ))}
