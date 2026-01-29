@@ -1,78 +1,107 @@
 
-# Plano: Melhorar Visibilidade da Seleção de Tipos de Fornecedor
+# Plano: Corrigir Erro ao Salvar Pesquisa de Fornecedores
 
 ## Diagnóstico
 
-O usuário reportou que ao criar um fornecedor em `/fornecedores/cadastro`, aparece a mensagem "Selecione pelo menos um tipo de fornecedor", mas o formulário não mostra opção para selecionar tipo.
+O usuário reportou que ao criar uma pesquisa em `/fornecedores/pesquisas`, aparece "erro ao salvar". Analisando o código, identifiquei o problema:
 
-### Problemas Identificados
+### Problema Principal: SelectItem com value=""
 
-1. **Seção de Tipos Escondida**: A seção "Tipos de Fornecedor" existe no formulário (linhas 781-841 de `SupplierRegistration.tsx`), mas está localizada no **final do modal**, após todos os campos de endereço e telefone. O modal tem `max-h-[90vh] overflow-y-auto`, então o usuário precisa rolar para ver a seção.
+O componente `Select` do Radix UI **não suporta valores vazios** (`value=""`). Quando se usa `value=""`, o componente apresenta comportamento inconsistente e pode falhar silenciosamente.
 
-2. **Possível Confusão de Módulos**: A mensagem de erro exata ("Selecione pelo menos um tipo de fornecedor") vem do módulo de **Fornecedores de Resíduos** (`WasteSupplierModal.tsx`), não do módulo de **Gestão de Fornecedores** (`SupplierRegistration.tsx`). Pode haver confusão entre os dois módulos ou um toast antigo.
+No arquivo `SupplierSurveysManagementPage.tsx`:
 
-3. **Dados Existentes**: O usuário tem categoria e tipo cadastrados no banco de dados, então a seção de checkboxes deveria aparecer (não o alerta de "Nenhum tipo cadastrado").
+```typescript
+// Linha 295 - PROBLEMA
+<SelectItem value="">Nenhum</SelectItem>
+
+// Linha 310 - PROBLEMA
+<SelectItem value="">Todas</SelectItem>
+```
+
+Quando o usuário seleciona "Nenhum" ou "Todas", o valor `""` é armazenado no estado. Depois, na função `handleSave`, o código faz:
+
+```typescript
+custom_form_id: formData.custom_form_id || null,
+category_id: formData.category_id || null,
+```
+
+A conversão de `""` para `null` funciona em JavaScript, mas o problema ocorre **antes** disso - o Select pode não estar funcionando corretamente com `value=""`, causando estados inconsistentes ou erros de renderização que impedem o submit.
+
+### Verificação
+
+- A tabela `supplier_surveys` existe e tem registros anteriores funcionando
+- A RLS policy está configurada corretamente
+- O schema mostra que `category_id` e `custom_form_id` são nullable (opcionais)
+- O problema está no componente Select, não no banco
 
 ---
 
 ## Solução
 
-Reorganizar o formulário para que a seção de **Tipos de Fornecedor** fique mais visível, movendo-a para uma posição anterior no formulário (logo após os dados básicos e antes do endereço).
+Substituir os valores vazios (`""`) por valores sentinela claros (como `"none"` e `"all"`) que o Radix UI Select consegue manipular corretamente.
 
 ---
 
 ## Alterações
 
-### Arquivo: `src/pages/SupplierRegistration.tsx`
+### Arquivo: `src/pages/SupplierSurveysManagementPage.tsx`
 
-**Mudança 1**: Mover a seção de Tipos de Fornecedor para logo após os campos básicos (PF/PJ)
+**Mudança 1**: Atualizar o SelectItem de "Nenhum" (linha 295)
 
-Atualmente a ordem é:
-1. Tabs PJ/PF (dados básicos)
-2. Endereço
-3. Telefones
-4. Apelido
-5. **Tipos de Fornecedor** (escondido no final)
+Antes:
+```typescript
+<SelectItem value="">Nenhum</SelectItem>
+```
 
-Nova ordem:
-1. Tabs PJ/PF (dados básicos)
-2. **Tipos de Fornecedor** (movido para cima)
-3. Endereço
-4. Telefones
-5. Apelido
+Depois:
+```typescript
+<SelectItem value="none">Nenhum</SelectItem>
+```
 
-**Mudança 2**: Adicionar indicador visual de scroll se houver mais conteúdo
+**Mudança 2**: Atualizar o SelectItem de "Todas" (linha 310)
 
-Adicionar uma sombra sutil no topo do modal quando houver conteúdo scrollável acima.
+Antes:
+```typescript
+<SelectItem value="">Todas</SelectItem>
+```
 
----
+Depois:
+```typescript
+<SelectItem value="all">Todas</SelectItem>
+```
 
-## Código a Modificar
+**Mudança 3**: Atualizar a função handleSave para converter os valores sentinela
 
-### Mover seção de tipos (linhas 781-841 movidas para ~linhas 677)
+Antes (linhas 117-118):
+```typescript
+custom_form_id: formData.custom_form_id || null,
+category_id: formData.category_id || null,
+```
 
-A seção de "Tipos de Fornecedor" será movida de após todos os campos de endereço para logo após a seção de Tabs (PJ/PF):
+Depois:
+```typescript
+custom_form_id: formData.custom_form_id === 'none' ? null : (formData.custom_form_id || null),
+category_id: formData.category_id === 'all' ? null : (formData.category_id || null),
+```
 
-```text
-[Antes]
-- DialogContent
-  - Tabs PJ/PF
-  - Campos de Endereço (30+ linhas)
-  - Campos de Telefone
-  - Campo Apelido
-  - Seção Tipos de Fornecedor  ← difícil de ver
-  - Seção Status (só edição)
-  - Footer com botões
+**Mudança 4**: Melhorar log de erro para facilitar debug futuro
 
-[Depois]
-- DialogContent
-  - Tabs PJ/PF
-  - Seção Tipos de Fornecedor  ← mais visível
-  - Campos de Endereço
-  - Campos de Telefone
-  - Campo Apelido
-  - Seção Status (só edição)
-  - Footer com botões
+Antes (linha 138-139):
+```typescript
+console.error('Error saving:', error);
+toast({ title: 'Erro', description: 'Erro ao salvar', variant: 'destructive' });
+```
+
+Depois:
+```typescript
+console.error('Error saving survey:', error);
+const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+toast({ 
+  title: 'Erro ao salvar', 
+  description: errorMessage, 
+  variant: 'destructive' 
+});
 ```
 
 ---
@@ -81,9 +110,9 @@ A seção de "Tipos de Fornecedor" será movida de após todos os campos de ende
 
 | Cenário | Antes | Depois |
 |---------|-------|--------|
-| Usuário abre modal | Tipos escondidos no final | Tipos visíveis logo após dados básicos |
-| Tipos cadastrados | Precisa scroll para ver | Visível sem scroll na maioria das telas |
-| Sem tipos cadastrados | Alerta escondido | Alerta visível com orientação clara |
+| Criar pesquisa com "Nenhum" formulário | Erro silencioso | Salva corretamente |
+| Criar pesquisa com "Todas" categorias | Erro silencioso | Salva corretamente |
+| Erro de banco de dados | Mensagem genérica | Mensagem detalhada |
 
 ---
 
@@ -91,4 +120,6 @@ A seção de "Tipos de Fornecedor" será movida de após todos os campos de ende
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/pages/SupplierRegistration.tsx` | Reordenar seções do modal para colocar Tipos de Fornecedor em posição mais visível |
+| `src/pages/SupplierSurveysManagementPage.tsx` | Substituir `value=""` por valores sentinela (`none`, `all`) |
+| `src/pages/SupplierSurveysManagementPage.tsx` | Converter valores sentinela para null no handleSave |
+| `src/pages/SupplierSurveysManagementPage.tsx` | Melhorar mensagem de erro com detalhes |
