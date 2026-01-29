@@ -1240,9 +1240,12 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                     setConfirmDeleteEmployee(false);
                     onSuccess();
                     onClose();
-                  } catch (error) {
+                  } catch (error: any) {
                     console.error('Erro ao excluir funcionário:', error);
-                    toast.error('Erro ao excluir funcionário');
+                    const errorMessage = error?.message || 'Erro desconhecido ao excluir funcionário';
+                    toast.error('Erro ao excluir funcionário', {
+                      description: errorMessage,
+                    });
                   }
                 }
               }}
