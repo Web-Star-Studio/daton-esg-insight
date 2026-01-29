@@ -223,20 +223,73 @@ export const updateCareerDevelopmentPlan = async (id: string, updates: Partial<C
 
 // Succession Plans
 export const getSuccessionPlans = async () => {
-  const { data, error } = await supabase
+  // Buscar planos de sucessão (sem FKs definidas, usamos queries separadas)
+  const { data: plans, error } = await supabase
     .from('succession_plans')
-    .select(`
-      *,
-      current_holder:employees!current_holder_id(id, full_name),
-      candidates:succession_candidates(
-        *,
-        employee:employees!employee_id(id, full_name)
-      )
-    `)
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+  if (!plans || plans.length === 0) return [];
+
+  // Buscar current_holders
+  const holderIds = plans
+    .map(p => p.current_holder_id)
+    .filter(Boolean) as string[];
+  
+  let holders: Record<string, { id: string; full_name: string }> = {};
+  if (holderIds.length > 0) {
+    const { data: holdersData } = await supabase
+      .from('employees')
+      .select('id, full_name')
+      .in('id', holderIds);
+    
+    holders = (holdersData || []).reduce((acc, h) => {
+      acc[h.id] = h;
+      return acc;
+    }, {} as Record<string, { id: string; full_name: string }>);
+  }
+
+  // Buscar candidates
+  const planIds = plans.map(p => p.id);
+  const { data: candidatesData } = await supabase
+    .from('succession_candidates')
+    .select('*')
+    .in('succession_plan_id', planIds);
+
+  // Buscar employees dos candidates
+  const candidateEmployeeIds = (candidatesData || [])
+    .map(c => c.employee_id)
+    .filter(Boolean) as string[];
+  
+  let candidateEmployees: Record<string, { id: string; full_name: string }> = {};
+  if (candidateEmployeeIds.length > 0) {
+    const { data: empData } = await supabase
+      .from('employees')
+      .select('id, full_name')
+      .in('id', candidateEmployeeIds);
+    
+    candidateEmployees = (empData || []).reduce((acc, e) => {
+      acc[e.id] = e;
+      return acc;
+    }, {} as Record<string, { id: string; full_name: string }>);
+  }
+
+  // Montar resultado com relacionamentos manuais
+  return plans.map(plan => ({
+    ...plan,
+    current_holder: plan.current_holder_id 
+      ? holders[plan.current_holder_id] || null 
+      : null,
+    candidates: (candidatesData || [])
+      .filter(c => c.succession_plan_id === plan.id)
+      .map(c => ({
+        ...c,
+        employee: c.employee_id 
+          ? candidateEmployees[c.employee_id] || null 
+          : null
+      }))
+  }));
 };
 
 export const createSuccessionPlan = async (plan: Omit<SuccessionPlan, 'id' | 'created_at' | 'updated_at'>) => {
