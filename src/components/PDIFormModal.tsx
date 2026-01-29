@@ -27,14 +27,18 @@ const pdiSchema = z.object({
   target_date: z.string().min(1, "Data meta é obrigatória"),
   status: z.string().min(1, "Status é obrigatório"),
   progress_percentage: z.number().min(0).max(100),
-  mentor_id: z.string().uuid("ID do mentor inválido").nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  mentor_id: z.union([
+    z.string().uuid("ID do mentor inválido"),
+    z.literal(''),
+    z.null()
+  ]).transform(val => (val === '' || val === null) ? null : val).nullable(),
   notes: z.string().max(2000, "Observações muito longas").nullable(),
   goals: z.array(z.any()),
   skills_to_develop: z.array(z.any()),
   development_activities: z.array(z.any()),
   created_by_user_id: z.string().uuid("ID do usuário inválido"),
-}).refine(data => new Date(data.target_date) > new Date(data.start_date), {
-  message: "A data meta deve ser posterior à data de início",
+}).refine(data => new Date(data.target_date) >= new Date(data.start_date), {
+  message: "A data meta deve ser igual ou posterior à data de início",
   path: ["target_date"]
 });
 
