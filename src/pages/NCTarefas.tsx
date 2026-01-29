@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -199,8 +198,7 @@ export default function NCTarefas() {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold">Minhas Tarefas de NC</h1>
@@ -362,7 +360,6 @@ export default function NCTarefas() {
             )}
           </CardContent>
         </Card>
-      </div>
-    </MainLayout>
+    </div>
   );
 }
