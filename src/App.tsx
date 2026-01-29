@@ -177,6 +177,7 @@ const SeguracaTrabalho = lazy(() => import("./pages/SeguracaTrabalho"));
 const PontoFrequencia = lazy(() => import("./pages/PontoFrequencia"));
 const DesenvolvimentoCarreira = lazy(() => import("./pages/DesenvolvimentoCarreira"));
 const OuvidoriaClientes = lazy(() => import("./pages/OuvidoriaClientes"));
+const AvaliacaoEficacia = lazy(() => import("./pages/AvaliacaoEficacia"));
 
 // Lazy loading para páginas de configuração
 const GestaoUsuarios = lazy(() => import("./pages/GestaoUsuarios"));
@@ -688,6 +689,7 @@ const AppContent = () => {
             <Route path="/descricao-cargos" element={<ProtectedLazyPageWrapper><DescricaoCargos /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-funcionarios" element={<ProtectedLazyPageWrapper><GestaoFuncionarios /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-treinamentos" element={<ProtectedLazyPageWrapper><GestaoTreinamentos /></ProtectedLazyPageWrapper>} />
+            <Route path="/avaliacao-eficacia" element={<ProtectedLazyPageWrapper><AvaliacaoEficacia /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-desempenho" element={<ProtectedLazyPageWrapper><GestaoDesempenho /></ProtectedLazyPageWrapper>} />
             <Route path="/beneficios-remuneracao" element={<ProtectedLazyPageWrapper><BeneficiosRemuneracao /></ProtectedLazyPageWrapper>} />
             <Route path="/recrutamento" element={<ProtectedLazyPageWrapper><Recrutamento /></ProtectedLazyPageWrapper>} />
