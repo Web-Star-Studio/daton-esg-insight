@@ -236,7 +236,7 @@ export const getOrganizationalChart = async (): Promise<OrganizationalChartNode[
     .from('organizational_chart')
     .select(`
       *,
-      employee:employees(id, full_name, email, position),
+      employee:employees!organizational_chart_employee_id_fkey(id, full_name, email, position),
       position:positions(id, title),
       department:departments(id, name)
     `)
@@ -277,7 +277,7 @@ export const createOrganizationalChartNode = async (node: Omit<OrganizationalCha
       .insert([nodeData])
       .select(`
         *,
-        employee:employees(id, full_name, email, position),
+        employee:employees!organizational_chart_employee_id_fkey(id, full_name, email, position),
         position:positions(id, title),
         department:departments(id, name)
       `)
@@ -305,7 +305,7 @@ export const updateOrganizationalChartNode = async (id: string, updates: Partial
     .eq('id', id)
     .select(`
       *,
-      employee:employees(id, full_name, email, position),
+      employee:employees!organizational_chart_employee_id_fkey(id, full_name, email, position),
       position:positions(id, title),
       department:departments(id, name)
     `)
