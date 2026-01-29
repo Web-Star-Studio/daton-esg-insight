@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -319,11 +321,8 @@ export default function SupplierRegistration() {
       return;
     }
 
-    // Validar se pelo menos um tipo está selecionado
-    if (selectedTypes.length === 0 && !editingSupplier) {
-      toast.error("Selecione pelo menos um tipo de fornecedor");
-      return;
-    }
+    // Tipo de fornecedor agora é opcional
+    // O fornecedor ficará como "Pendente" na coluna Vinculação e pode ser vinculado depois
 
     // Verificar duplicidade de CNPJ/CPF (usando valor limpo)
     setIsValidating(true);
@@ -780,45 +779,66 @@ export default function SupplierRegistration() {
             </div>
 
             {/* Types Selection - Agrupados por Categoria */}
-            {typesGrouped.length > 0 && (
-              <div className="space-y-2 pt-4 border-t">
-                <Label>Tipos de Fornecedor {!editingSupplier && '*'}</Label>
-                <p className="text-xs text-muted-foreground">
-                  Selecione pelo menos um tipo. A categoria é inferida automaticamente do tipo selecionado.
-                </p>
-                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-4">
-                  {typesGrouped.map(({ category, types }) => (
-                    <div key={category.id}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="text-xs">
-                          {category.name}
-                        </Badge>
+            <div className="space-y-2 pt-4 border-t">
+              <Label>Tipos de Fornecedor</Label>
+              
+              {typesGrouped.length === 0 ? (
+                <Alert className="bg-muted/50">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Nenhum tipo cadastrado</AlertTitle>
+                  <AlertDescription className="text-sm">
+                    Para vincular fornecedores a tipos, primeiro cadastre{' '}
+                    <Link to="/fornecedores/categorias" className="underline font-medium text-primary hover:text-primary/80">
+                      categorias
+                    </Link>{' '}e{' '}
+                    <Link to="/fornecedores/tipos" className="underline font-medium text-primary hover:text-primary/80">
+                      tipos de fornecedor
+                    </Link>.
+                    <br />
+                    <span className="text-muted-foreground">
+                      Você pode criar o fornecedor agora e vincular depois.
+                    </span>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione os tipos desejados. A categoria é inferida automaticamente do tipo selecionado.
+                  </p>
+                  <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-4">
+                    {typesGrouped.map(({ category, types }) => (
+                      <div key={category.id}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className="text-xs">
+                            {category.name}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pl-2">
+                          {types.map((type) => (
+                            <div key={type.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={type.id}
+                                checked={selectedTypes.includes(type.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedTypes([...selectedTypes, type.id]);
+                                  } else {
+                                    setSelectedTypes(selectedTypes.filter((id) => id !== type.id));
+                                  }
+                                }}
+                              />
+                              <label htmlFor={type.id} className="text-sm cursor-pointer">
+                                {type.name}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 pl-2">
-                        {types.map((type) => (
-                          <div key={type.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={type.id}
-                              checked={selectedTypes.includes(type.id)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedTypes([...selectedTypes, type.id]);
-                                } else {
-                                  setSelectedTypes(selectedTypes.filter((id) => id !== type.id));
-                                }
-                              }}
-                            />
-                            <label htmlFor={type.id} className="text-sm cursor-pointer">
-                              {type.name}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* Seção de Status - Apenas para Edição */}
             {editingSupplier && (
@@ -889,7 +909,10 @@ export default function SupplierRegistration() {
                 {(createMutation.isPending || updateMutation.isPending || isValidating) && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
-                {editingSupplier ? "Salvar" : "Cadastrar"}
+                {editingSupplier 
+                  ? "Salvar" 
+                  : (selectedTypes.length === 0 ? "Cadastrar sem Vinculação" : "Cadastrar")
+                }
               </Button>
             </DialogFooter>
           </DialogContent>
