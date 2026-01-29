@@ -1,125 +1,137 @@
 
-# Plano: Corrigir Erro ao Salvar Pesquisa de Fornecedores
+# Plano: Unificar Sistema de Fornecedores e Corrigir Selects Vazios
 
-## Diagnóstico
+## Diagnostico
 
-O usuário reportou que ao criar uma pesquisa em `/fornecedores/pesquisas`, aparece "erro ao salvar". Analisando o código, identifiquei o problema:
+O projeto possui **dois sistemas de fornecedores paralelos** que causam confusao e erros:
 
-### Problema Principal: SelectItem com value=""
+### Sistema 1: Tabela `suppliers` (antigo)
+- Usado por: `GestaoFornecedores.tsx`, `SupplierEvaluationModal.tsx`
+- Service: `src/services/supplierService.ts`
+- Avaliacao: `supplier_evaluations` (referencia `suppliers.id`)
 
-O componente `Select` do Radix UI **não suporta valores vazios** (`value=""`). Quando se usa `value=""`, o componente apresenta comportamento inconsistente e pode falhar silenciosamente.
+### Sistema 2: Tabela `supplier_management` (novo e mais completo)
+- Usado por: `SupplierRegistration.tsx`, `SupplierDeliveriesPage.tsx`, `SupplierFailuresPage.tsx`, `SupplierEvaluations.tsx`
+- Service: `src/services/supplierManagementService.ts`
+- Estrutura mais completa com PF/PJ, status, tipos, etc.
 
-No arquivo `SupplierSurveysManagementPage.tsx`:
+### Problema Identificado
 
-```typescript
-// Linha 295 - PROBLEMA
-<SelectItem value="">Nenhum</SelectItem>
+1. **Fornecimentos (`/fornecedores/fornecimento`)**: O Select de fornecedores usa `getManagedSuppliers()` (sistema novo). Se nao houver fornecedores cadastrados no sistema novo, aparece vazio.
 
-// Linha 310 - PROBLEMA
-<SelectItem value="">Todas</SelectItem>
-```
+2. **Avaliacoes (`/fornecedores/avaliacao`)**: A pagina `SupplierEvaluations.tsx` lista fornecedores do sistema novo, mas o modal `SupplierEvaluationModal.tsx` usa o sistema antigo (`suppliers`).
 
-Quando o usuário seleciona "Nenhum" ou "Todas", o valor `""` é armazenado no estado. Depois, na função `handleSave`, o código faz:
+3. **Falhas (`/fornecedores/falhas`)**: Usa `getActiveSuppliers()` que consulta `supplier_management` corretamente.
 
-```typescript
-custom_form_id: formData.custom_form_id || null,
-category_id: formData.category_id || null,
-```
+4. **A imagem enviada mostra "Programa de Mentoria"** - este e outro modulo, nao relacionado a fornecedores.
 
-A conversão de `""` para `null` funciona em JavaScript, mas o problema ocorre **antes** disso - o Select pode não estar funcionando corretamente com `value=""`, causando estados inconsistentes ou erros de renderização que impedem o submit.
+### Causa Raiz
 
-### Verificação
-
-- A tabela `supplier_surveys` existe e tem registros anteriores funcionando
-- A RLS policy está configurada corretamente
-- O schema mostra que `category_id` e `custom_form_id` são nullable (opcionais)
-- O problema está no componente Select, não no banco
+O usuario pode ter fornecedores cadastrados apenas no sistema antigo (`suppliers`), nao no novo (`supplier_management`). Ou vice-versa. Quando ele tenta usar as telas novas, nao encontra os fornecedores.
 
 ---
 
-## Solução
+## Solucao
 
-Substituir os valores vazios (`""`) por valores sentinela claros (como `"none"` e `"all"`) que o Radix UI Select consegue manipular corretamente.
+Migrar os modulos que ainda usam o sistema antigo (`supplierService.ts`) para usar o sistema novo (`supplierManagementService.ts`), unificando tudo em `supplier_management`.
 
----
+### Alteracoes Necessarias
 
-## Alterações
+#### 1. Atualizar `SupplierEvaluationModal.tsx`
 
-### Arquivo: `src/pages/SupplierSurveysManagementPage.tsx`
+Mudar de usar `suppliers` para usar `supplier_management`:
 
-**Mudança 1**: Atualizar o SelectItem de "Nenhum" (linha 295)
-
-Antes:
+**Antes:**
 ```typescript
-<SelectItem value="">Nenhum</SelectItem>
+import { Supplier, createSupplierEvaluation } from "@/services/supplierService";
 ```
 
-Depois:
+**Depois:**
 ```typescript
-<SelectItem value="none">Nenhum</SelectItem>
+import { ManagedSupplierWithTypeCount } from "@/services/supplierManagementService";
+import { createSupplierEvaluation } from "@/services/supplierService";
 ```
 
-**Mudança 2**: Atualizar o SelectItem de "Todas" (linha 310)
-
-Antes:
+E ajustar o mapeamento de nomes:
 ```typescript
-<SelectItem value="">Todas</SelectItem>
+// Antes: supplier.name
+// Depois: supplier.person_type === 'PJ' ? supplier.company_name : supplier.full_name
 ```
 
-Depois:
+#### 2. Atualizar `GestaoFornecedores.tsx`
+
+Mudar para usar `getManagedSuppliers` ao inves de `getSuppliers`:
+
+**Antes:**
 ```typescript
-<SelectItem value="all">Todas</SelectItem>
-```
-
-**Mudança 3**: Atualizar a função handleSave para converter os valores sentinela
-
-Antes (linhas 117-118):
-```typescript
-custom_form_id: formData.custom_form_id || null,
-category_id: formData.category_id || null,
-```
-
-Depois:
-```typescript
-custom_form_id: formData.custom_form_id === 'none' ? null : (formData.custom_form_id || null),
-category_id: formData.category_id === 'all' ? null : (formData.category_id || null),
-```
-
-**Mudança 4**: Melhorar log de erro para facilitar debug futuro
-
-Antes (linha 138-139):
-```typescript
-console.error('Error saving:', error);
-toast({ title: 'Erro', description: 'Erro ao salvar', variant: 'destructive' });
-```
-
-Depois:
-```typescript
-console.error('Error saving survey:', error);
-const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-toast({ 
-  title: 'Erro ao salvar', 
-  description: errorMessage, 
-  variant: 'destructive' 
+import { getSuppliers, createSupplier } from "@/services/supplierService";
+const { data: suppliers = [] } = useQuery({
+  queryKey: ["suppliers"],
+  queryFn: getSuppliers,
 });
 ```
 
+**Depois:**
+```typescript
+import { getManagedSuppliers, createManagedSupplier } from "@/services/supplierManagementService";
+const { data: suppliers = [] } = useQuery({
+  queryKey: ["managed-suppliers"],
+  queryFn: getManagedSuppliers,
+});
+```
+
+E redirecionar o botao "Novo Fornecedor" para `/fornecedores/cadastro`.
+
+#### 3. Adicionar Verificacao de Lista Vazia nos Selects
+
+Em `SupplierDeliveriesPage.tsx`, `SupplierFailuresPage.tsx`, adicionar mensagem quando a lista de fornecedores estiver vazia:
+
+```typescript
+{suppliers.length === 0 ? (
+  <SelectItem value="_empty" disabled>
+    Nenhum fornecedor cadastrado
+  </SelectItem>
+) : (
+  suppliers.map(s => (...))
+)}
+```
+
+#### 4. Adicionar Link para Cadastro
+
+Nos modais, adicionar link "Cadastrar fornecedor" quando a lista estiver vazia:
+
+```typescript
+{suppliers.length === 0 && (
+  <p className="text-sm text-muted-foreground">
+    <Link to="/fornecedores/cadastro">Cadastre um fornecedor</Link> para continuar
+  </p>
+)}
+```
+
 ---
 
-## Resultado Esperado
+## Resumo das Alteracoes
 
-| Cenário | Antes | Depois |
-|---------|-------|--------|
-| Criar pesquisa com "Nenhum" formulário | Erro silencioso | Salva corretamente |
-| Criar pesquisa com "Todas" categorias | Erro silencioso | Salva corretamente |
-| Erro de banco de dados | Mensagem genérica | Mensagem detalhada |
-
----
-
-## Resumo das Alterações
-
-| Arquivo | Alteração |
+| Arquivo | Alteracao |
 |---------|-----------|
-| `src/pages/SupplierSurveysManagementPage.tsx` | Substituir `value=""` por valores sentinela (`none`, `all`) |
-| `src/pages/SupplierSurveysManagementPage.tsx` | Converter valores sentinela para null no handleSave |
-| `src/pages/SupplierSurveysManagementPage.tsx` | Melhorar mensagem de erro com detalhes |
+| `src/pages/GestaoFornecedores.tsx` | Migrar de `suppliers` para `supplier_management` |
+| `src/components/SupplierEvaluationModal.tsx` | Aceitar `ManagedSupplierWithTypeCount` ao inves de `Supplier` |
+| `src/pages/SupplierDeliveriesPage.tsx` | Adicionar estado vazio com link para cadastro |
+| `src/pages/SupplierFailuresPage.tsx` | Adicionar estado vazio com link para cadastro |
+
+---
+
+## Consideracoes Tecnicas
+
+### Tabela de Avaliacoes
+
+A tabela `supplier_evaluations` tem FK para `suppliers.id`. Para suportar o sistema novo, seria necessario criar uma tabela equivalente referenciando `supplier_management.id` ou migrar avaliacoes existentes. Como isso e uma mudanca maior de banco de dados, sugiro:
+
+1. **Fase 1 (este plano)**: Unificar os Selects e cadastros
+2. **Fase 2 (futura)**: Migrar sistema de avaliacoes para `supplier_management`
+
+### Resultado Esperado
+
+- Usuario cadastra fornecedor em `/fornecedores/cadastro`
+- Fornecedor aparece em todos os Selects das telas de fornecimento, falhas e avaliacoes
+- Nao ha mais confusao entre os dois sistemas
