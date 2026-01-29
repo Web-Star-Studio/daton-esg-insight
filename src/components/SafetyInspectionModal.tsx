@@ -143,22 +143,23 @@ export default function SafetyInspectionModal({
       .map(item => `- ${item.item}${item.observation ? `: ${item.observation}` : ''}`)
       .join('\n');
 
-    const submissionData = {
+    const baseData = {
       ...formData,
       checklist_items: checklistItems,
       score,
       non_conformities: formData.non_conformities || nonConformities || undefined,
-      company_id: '',
     };
 
     try {
       if (isEditing && inspection) {
+        // Don't include company_id in updates - it shouldn't change
         await updateMutation.mutateAsync({
           id: inspection.id,
-          updates: submissionData,
+          updates: baseData,
         });
       } else {
-        await createMutation.mutateAsync(submissionData as any);
+        // Only include company_id for new inspections (will be set by the service)
+        await createMutation.mutateAsync({ ...baseData, company_id: '' } as any);
       }
       onClose();
     } catch (error) {
