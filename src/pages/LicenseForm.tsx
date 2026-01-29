@@ -88,13 +88,15 @@ const LicenseForm = () => {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    mode: "onSubmit",
+    mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
       nome: "",
       tipo: "",
       orgaoEmissor: "",
       numeroProcesso: "",
+      dataEmissao: undefined,
+      dataVencimento: undefined,
       status: "",
       responsavel: "",
       condicionantes: "",
@@ -236,9 +238,12 @@ const LicenseForm = () => {
                 onSubmit={form.handleSubmit(
                   onSubmit,
                   (errors) => {
-                    console.error('Validation errors:', errors);
-                    toast.error('Preencha todos os campos obrigatórios corretamente', {
-                      description: 'Verifique os campos destacados em vermelho'
+                    console.error('Form validation errors:', errors);
+                    const errorMessages = Object.entries(errors)
+                      .map(([key, error]) => `${key}: ${error?.message}`)
+                      .join(', ');
+                    toast.error('Erro de validação', {
+                      description: errorMessages || 'Verifique os campos destacados em vermelho'
                     });
                   }
                 )} 
@@ -535,6 +540,11 @@ const LicenseForm = () => {
           <Button 
             type="submit" 
             disabled={isSubmitting || createLicenseMutation.isPending || updateLicenseMutation.isPending}
+            onClick={() => {
+              console.log('Submit button clicked');
+              console.log('Form values:', form.getValues());
+              console.log('Form errors:', form.formState.errors);
+            }}
             className={cn(
               "min-w-[150px]",
               Object.keys(form.formState.errors).length > 0 && "ring-2 ring-destructive ring-offset-2"
