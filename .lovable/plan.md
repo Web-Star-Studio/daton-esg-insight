@@ -1,106 +1,80 @@
 
-
-# Plano: Resolver Dependencia de Tipos para Criar Fornecedores
+# Plano: Corrigir Duplicacao de Layout na Pagina NC Tarefas
 
 ## Diagnostico
 
-O sistema de fornecedores possui uma **hierarquia obrigatoria**:
+### Problema 1: Duplicacao de Layout em NC Tarefas
 
-```
-Categoria -> Tipo -> Fornecedor
-```
+A pagina `/nc-tarefas` esta duplicando o layout completo da aplicacao (sidebar, header, breadcrumbs) porque:
 
-Atualmente, para cadastrar um fornecedor em `/fornecedores/cadastro`, e obrigatorio selecionar pelo menos um **Tipo de Fornecedor**. Se a empresa nao tem tipos cadastrados, o dropdown fica vazio e o fornecedor nao pode ser criado.
+1. O **ProtectedRoute** (usado via `ProtectedLazyPageWrapper`) ja envolve o conteudo com `<MainLayout>`
+2. A propria pagina **NCTarefas.tsx** tambem usa `<MainLayout>` diretamente
 
-**Consequencia cascata**: Sem fornecedores, as telas de Conexoes, Fornecimentos, Avaliacoes e Falhas ficam inutilizaveis (dropdowns vazios).
+**Resultado**: Dois layouts aninhados aparecem na tela (como mostrado na screenshot).
+
+### Problema 2: Criacao de Registro NC
+
+A criacao de NC parece estar funcional baseado no codigo analisado. Se houver erro especifico, precisaremos de mais detalhes do usuario.
 
 ---
 
 ## Solucao
 
-Duas abordagens serao implementadas:
+### Alteracao no arquivo: `src/pages/NCTarefas.tsx`
 
-### Abordagem 1: Tornar a selecao de tipo **opcional** na criacao
+Remover o wrapper `<MainLayout>` que esta duplicado, mantendo apenas o conteudo interno.
 
-Modificar a validacao para permitir criar fornecedores sem tipos associados. O fornecedor ficara com status "Pendente" (coluna Vinculacao) e podera ser vinculado posteriormente.
-
-### Abordagem 2: Adicionar **orientacao ao usuario**
-
-Quando nao houver tipos cadastrados, mostrar um aviso com link direto para cadastrar tipos/categorias.
-
----
-
-## Alteracoes
-
-### Arquivo: `src/pages/SupplierRegistration.tsx`
-
-**Mudanca 1**: Remover validacao obrigatoria de tipos (linha ~322-326)
-
-Antes:
+**Antes (linhas 201-367):**
 ```typescript
-if (selectedTypes.length === 0 && !editingSupplier) {
-  toast.error("Selecione pelo menos um tipo de fornecedor");
-  return;
-}
+return (
+  <MainLayout>
+    <div className="space-y-6">
+      ...
+    </div>
+  </MainLayout>
+);
 ```
 
-Depois:
+**Depois:**
 ```typescript
-// Tipo de fornecedor agora e opcional
-// O fornecedor ficara como "Pendente" na coluna Vinculacao
+return (
+  <div className="space-y-6">
+    ...
+  </div>
+);
 ```
 
-**Mudanca 2**: Adicionar aviso quando nao ha tipos disponveis (nova secao no formulario)
+Tambem sera necessario remover o import do MainLayout:
 
-Adicionar um alerta informativo na secao de selecao de tipos:
-
+**Remover da linha 3:**
 ```typescript
-{typesGrouped.length === 0 && (
-  <Alert className="mb-4">
-    <AlertCircle className="h-4 w-4" />
-    <AlertTitle>Nenhum tipo cadastrado</AlertTitle>
-    <AlertDescription>
-      Para vincular fornecedores a tipos, primeiro cadastre 
-      <Link to="/fornecedores/categorias" className="underline ml-1">categorias</Link> e 
-      <Link to="/fornecedores/tipos" className="underline ml-1">tipos de fornecedor</Link>.
-      Voce pode criar o fornecedor agora e vincular depois.
-    </AlertDescription>
-  </Alert>
-)}
+import { MainLayout } from "@/components/MainLayout";
 ```
-
-**Mudanca 3**: Ajustar texto do botao de confirmacao
-
-Quando nao houver tipos selecionados, mudar o texto do botao:
-- "Cadastrar" -> "Cadastrar sem Vinculacao"
-
----
-
-## Fluxo Apos Correcao
-
-1. Usuario abre `/fornecedores/cadastro`
-2. Se nao ha tipos, ve aviso explicativo com links
-3. Pode criar fornecedor mesmo sem vincular tipos
-4. Fornecedor aparece com "Pendente" na coluna Vinculacao
-5. Pode editar depois para vincular tipos
 
 ---
 
 ## Resultado Esperado
 
-| Cenario | Antes | Depois |
-|---------|-------|--------|
-| Sem tipos cadastrados | Nao consegue criar fornecedor | Cria e vincula depois |
-| Com tipos cadastrados | Obrigatorio selecionar | Opcional, mas recomendado |
-| Conexoes/Fornecimentos | Dropdowns vazios | Dropdowns mostram fornecedores |
+| Antes | Depois |
+|-------|--------|
+| Layout duplicado (2x sidebar, 2x header) | Layout unico, interface limpa |
+| Scrollbars duplicadas | Scroll normal |
+| Espaco desperdicado | Conteudo ocupa area correta |
 
 ---
 
 ## Resumo das Alteracoes
 
-| Arquivo | Linha | Alteracao |
-|---------|-------|-----------|
-| `src/pages/SupplierRegistration.tsx` | ~322-326 | Remover validacao obrigatoria de tipos |
-| `src/pages/SupplierRegistration.tsx` | Secao tipos | Adicionar Alert informativo com links |
-| `src/pages/SupplierRegistration.tsx` | Botao submit | Texto dinamico baseado em tipos selecionados |
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/pages/NCTarefas.tsx` | Remover import e uso do `<MainLayout>` |
+
+---
+
+## Observacao sobre Criacao de NC
+
+O codigo de criacao de NC em `NaoConformidades.tsx` esta implementado corretamente. Se houver um problema especifico com a criacao, por favor descreva:
+- Qual mensagem de erro aparece?
+- O formulario abre corretamente?
+- Os campos estao sendo preenchidos?
 
