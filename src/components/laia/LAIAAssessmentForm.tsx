@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useLAIASectors, useCreateLAIAAssessment } from "@/hooks/useLAIA";
 import {
@@ -236,6 +237,20 @@ export function LAIAAssessmentForm({ branchId, onSuccess, onCancel }: LAIAAssess
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Identificação</h3>
             
+            {/* Alert when no sectors are available */}
+            {(!sectors || sectors.filter(s => s.is_active).length === 0) && (
+              <Alert variant="destructive" className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-800 dark:text-amber-200">
+                  Nenhum setor cadastrado
+                </AlertTitle>
+                <AlertDescription className="text-amber-700 dark:text-amber-300">
+                  Para criar avaliações LAIA, é necessário cadastrar ao menos um setor.
+                  Use a aba <strong>"Setores"</strong> para criar setores antes de continuar.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="sector">Setor *</Label>
               <Select
@@ -243,7 +258,13 @@ export function LAIAAssessmentForm({ branchId, onSuccess, onCancel }: LAIAAssess
                 onValueChange={(v) => updateField("sector_id", v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o setor" />
+                  <SelectValue 
+                    placeholder={
+                      sectors?.filter(s => s.is_active).length 
+                        ? "Selecione o setor" 
+                        : "Nenhum setor disponível - cadastre na aba Setores"
+                    } 
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {sectors?.filter(s => s.is_active).map((s) => (
