@@ -137,6 +137,7 @@ const menuSections: MenuSection[] = [
         subItems: [
           { id: "social-dashboard", title: "Dashboard Social", icon: Users, path: "/social-esg", description: "Visão geral consolidada dos aspectos sociais" },
           { id: "job-descriptions", title: "Gestão de Cargos", icon: Briefcase, path: "/descricao-cargos", description: "Gestão completa de cargos e funções" },
+          { id: "organizational-structure", title: "Estrutura Organizacional", icon: Building2, path: "/estrutura-organizacional", description: "Organograma, departamentos e hierarquia" },
           { id: "employee-management", title: "Gestão de Colaboradores", icon: UserCheck, path: "/gestao-funcionarios", description: "Gestão completa de recursos humanos" },
           { id: "health-safety", title: "Segurança do Trabalho", icon: Heart, path: "/seguranca-trabalho", description: "SST e bem-estar dos colaboradores" },
           { id: "training-management", title: "Treinamentos", icon: GraduationCap, path: "/gestao-treinamentos", description: "Gestão de capacitação e treinamentos" },
