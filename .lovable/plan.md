@@ -1,149 +1,94 @@
 
-# Plano: Corrigir Criacao de Licencas em /licenciamento/novo
+# Plano: Melhorar Visibilidade da Seleção de Tipos de Fornecedor
 
-## Diagnostico
+## Diagnóstico
 
-O usuario reportou que ao clicar no botao "Criar Licenca" **nada acontece**. Analisando o codigo, identifiquei multiplos problemas que podem causar esse comportamento:
+O usuário reportou que ao criar um fornecedor em `/fornecedores/cadastro`, aparece a mensagem "Selecione pelo menos um tipo de fornecedor", mas o formulário não mostra opção para selecionar tipo.
 
-### Problema Principal: defaultValues Incompletos
+### Problemas Identificados
 
-O formulario usa `react-hook-form` com validacao Zod. Os campos de data sao obrigatorios:
+1. **Seção de Tipos Escondida**: A seção "Tipos de Fornecedor" existe no formulário (linhas 781-841 de `SupplierRegistration.tsx`), mas está localizada no **final do modal**, após todos os campos de endereço e telefone. O modal tem `max-h-[90vh] overflow-y-auto`, então o usuário precisa rolar para ver a seção.
 
-```typescript
-dataEmissao: z.date({ message: "Data de emissão é obrigatória" }),
-dataVencimento: z.date({ message: "Data de vencimento é obrigatória" }),
-```
+2. **Possível Confusão de Módulos**: A mensagem de erro exata ("Selecione pelo menos um tipo de fornecedor") vem do módulo de **Fornecedores de Resíduos** (`WasteSupplierModal.tsx`), não do módulo de **Gestão de Fornecedores** (`SupplierRegistration.tsx`). Pode haver confusão entre os dois módulos ou um toast antigo.
 
-Porem, os `defaultValues` nao incluem esses campos:
-
-```typescript
-defaultValues: {
-  nome: "",
-  tipo: "",
-  orgaoEmissor: "",
-  numeroProcesso: "",
-  status: "",
-  responsavel: "",
-  condicionantes: "",
-  // FALTAM: dataEmissao e dataVencimento
-}
-```
-
-Quando o `react-hook-form` valida campos sem `defaultValue` definido, pode haver comportamento inconsistente.
-
-### Problema Secundario: Validacao de Campos Select
-
-O schema Zod exige `z.string().min(1)` para `tipo` e `status`, mas os valores iniciais sao strings vazias. Se os Selects nao estiverem propagando os valores corretamente, a validacao pode falhar silenciosamente.
-
-### Problema Terciario: Toast de Erro Pode Nao Aparecer
-
-O callback de erro do `handleSubmit` deveria mostrar um toast, mas se o erro ocorrer antes (por exemplo, na fase de parsing), o toast nao e exibido.
+3. **Dados Existentes**: O usuário tem categoria e tipo cadastrados no banco de dados, então a seção de checkboxes deveria aparecer (não o alerta de "Nenhum tipo cadastrado").
 
 ---
 
-## Solucao
+## Solução
 
-### 1. Corrigir defaultValues para Incluir Datas
-
-Adicionar `dataEmissao` e `dataVencimento` como `undefined` explicitamente nos defaultValues.
-
-### 2. Melhorar Feedback de Validacao
-
-Adicionar validacao visual imediata (`mode: "all"` ou `mode: "onBlur"`) para que o usuario veja erros antes de clicar no botao.
-
-### 3. Adicionar Console Log no Botao
-
-Adicionar um `onClick` ao botao para diagnosticar se o evento esta sendo capturado.
-
-### 4. Garantir que Toast de Erro Apareca
-
-Verificar que o callback de erro esta sendo chamado e o toast esta configurado corretamente.
+Reorganizar o formulário para que a seção de **Tipos de Fornecedor** fique mais visível, movendo-a para uma posição anterior no formulário (logo após os dados básicos e antes do endereço).
 
 ---
 
-## Alteracoes
+## Alterações
 
-### Arquivo: `src/pages/LicenseForm.tsx`
+### Arquivo: `src/pages/SupplierRegistration.tsx`
 
-**Mudanca 1**: Atualizar defaultValues (linhas 89-102)
+**Mudança 1**: Mover a seção de Tipos de Fornecedor para logo após os campos básicos (PF/PJ)
 
-```typescript
-const form = useForm<z.infer<typeof formSchema>>({
-  resolver: zodResolver(formSchema),
-  mode: "onBlur", // Validar ao sair do campo
-  reValidateMode: "onChange",
-  defaultValues: {
-    nome: "",
-    tipo: "",
-    orgaoEmissor: "",
-    numeroProcesso: "",
-    dataEmissao: undefined,
-    dataVencimento: undefined,
-    status: "",
-    responsavel: "",
-    condicionantes: "",
-  },
-})
-```
+Atualmente a ordem é:
+1. Tabs PJ/PF (dados básicos)
+2. Endereço
+3. Telefones
+4. Apelido
+5. **Tipos de Fornecedor** (escondido no final)
 
-**Mudanca 2**: Adicionar onClick ao botao para debug (linhas 535-554)
+Nova ordem:
+1. Tabs PJ/PF (dados básicos)
+2. **Tipos de Fornecedor** (movido para cima)
+3. Endereço
+4. Telefones
+5. Apelido
 
-```typescript
-<Button 
-  type="submit" 
-  disabled={isSubmitting || createLicenseMutation.isPending || updateLicenseMutation.isPending}
-  onClick={() => {
-    console.log('Submit button clicked');
-    console.log('Form values:', form.getValues());
-    console.log('Form errors:', form.formState.errors);
-  }}
-  className={cn(
-    "min-w-[150px]",
-    Object.keys(form.formState.errors).length > 0 && "ring-2 ring-destructive ring-offset-2"
-  )}
->
-```
+**Mudança 2**: Adicionar indicador visual de scroll se houver mais conteúdo
 
-**Mudanca 3**: Melhorar mensagem de erro no handleSubmit
+Adicionar uma sombra sutil no topo do modal quando houver conteúdo scrollável acima.
 
-Tornar a mensagem de erro mais especifica e garantir que seja exibida:
+---
 
-```typescript
-<form 
-  id="licenca-form" 
-  onSubmit={form.handleSubmit(
-    onSubmit,
-    (errors) => {
-      console.error('Form validation errors:', errors);
-      const errorMessages = Object.entries(errors)
-        .map(([key, error]) => `${key}: ${error?.message}`)
-        .join(', ');
-      toast.error('Erro de validação', {
-        description: errorMessages || 'Verifique os campos destacados em vermelho'
-      });
-    }
-  )} 
-  className="space-y-6"
->
+## Código a Modificar
+
+### Mover seção de tipos (linhas 781-841 movidas para ~linhas 677)
+
+A seção de "Tipos de Fornecedor" será movida de após todos os campos de endereço para logo após a seção de Tabs (PJ/PF):
+
+```text
+[Antes]
+- DialogContent
+  - Tabs PJ/PF
+  - Campos de Endereço (30+ linhas)
+  - Campos de Telefone
+  - Campo Apelido
+  - Seção Tipos de Fornecedor  ← difícil de ver
+  - Seção Status (só edição)
+  - Footer com botões
+
+[Depois]
+- DialogContent
+  - Tabs PJ/PF
+  - Seção Tipos de Fornecedor  ← mais visível
+  - Campos de Endereço
+  - Campos de Telefone
+  - Campo Apelido
+  - Seção Status (só edição)
+  - Footer com botões
 ```
 
 ---
 
 ## Resultado Esperado
 
-| Cenario | Antes | Depois |
+| Cenário | Antes | Depois |
 |---------|-------|--------|
-| Clicar em Criar sem preencher | Nada acontece | Toast de erro com campos invalidos |
-| Campos de data vazios | Falha silenciosa | Mensagem clara "Data de emissao e obrigatoria" |
-| Debug | Sem logs | Logs detalhados no console |
+| Usuário abre modal | Tipos escondidos no final | Tipos visíveis logo após dados básicos |
+| Tipos cadastrados | Precisa scroll para ver | Visível sem scroll na maioria das telas |
+| Sem tipos cadastrados | Alerta escondido | Alerta visível com orientação clara |
 
 ---
 
-## Resumo das Alteracoes
+## Resumo das Alterações
 
-| Arquivo | Alteracao |
+| Arquivo | Alteração |
 |---------|-----------|
-| `src/pages/LicenseForm.tsx` | Adicionar defaultValues para campos de data |
-| `src/pages/LicenseForm.tsx` | Mudar mode para "onBlur" para validacao mais cedo |
-| `src/pages/LicenseForm.tsx` | Adicionar onClick com logs no botao submit |
-| `src/pages/LicenseForm.tsx` | Melhorar callback de erro do handleSubmit |
+| `src/pages/SupplierRegistration.tsx` | Reordenar seções do modal para colocar Tipos de Fornecedor em posição mais visível |
