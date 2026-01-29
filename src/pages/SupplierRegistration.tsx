@@ -674,6 +674,68 @@ export default function SupplierRegistration() {
               </TabsContent>
             </Tabs>
 
+            {/* Types Selection - Agrupados por Categoria - MOVIDO PARA POSIÇÃO MAIS VISÍVEL */}
+            <div className="space-y-2 pt-4 border-t">
+              <Label className="text-base font-medium">Tipos de Fornecedor</Label>
+              
+              {typesGrouped.length === 0 ? (
+                <Alert className="bg-amber-50 border-amber-200">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="text-amber-800">Nenhum tipo cadastrado</AlertTitle>
+                  <AlertDescription className="text-sm text-amber-700">
+                    Para vincular fornecedores a tipos, primeiro cadastre{' '}
+                    <Link to="/fornecedores/categorias" className="underline font-medium text-primary hover:text-primary/80">
+                      categorias
+                    </Link>{' '}e{' '}
+                    <Link to="/fornecedores/tipos" className="underline font-medium text-primary hover:text-primary/80">
+                      tipos de fornecedor
+                    </Link>.
+                    <br />
+                    <span className="text-muted-foreground">
+                      Você pode criar o fornecedor agora e vincular depois.
+                    </span>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione os tipos desejados. A categoria é inferida automaticamente do tipo selecionado.
+                  </p>
+                  <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-4 bg-muted/20">
+                    {typesGrouped.map(({ category, types }) => (
+                      <div key={category.id}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className="text-xs">
+                            {category.name}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pl-2">
+                          {types.map((type) => (
+                            <div key={type.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={type.id}
+                                checked={selectedTypes.includes(type.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedTypes([...selectedTypes, type.id]);
+                                  } else {
+                                    setSelectedTypes(selectedTypes.filter((id) => id !== type.id));
+                                  }
+                                }}
+                              />
+                              <label htmlFor={type.id} className="text-sm cursor-pointer">
+                                {type.name}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Campos de Endereço - Separados */}
             <div className="space-y-4 pt-4 border-t">
               <h3 className="font-medium text-sm">Endereço *</h3>
@@ -778,67 +840,6 @@ export default function SupplierRegistration() {
               )}
             </div>
 
-            {/* Types Selection - Agrupados por Categoria */}
-            <div className="space-y-2 pt-4 border-t">
-              <Label>Tipos de Fornecedor</Label>
-              
-              {typesGrouped.length === 0 ? (
-                <Alert className="bg-muted/50">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Nenhum tipo cadastrado</AlertTitle>
-                  <AlertDescription className="text-sm">
-                    Para vincular fornecedores a tipos, primeiro cadastre{' '}
-                    <Link to="/fornecedores/categorias" className="underline font-medium text-primary hover:text-primary/80">
-                      categorias
-                    </Link>{' '}e{' '}
-                    <Link to="/fornecedores/tipos" className="underline font-medium text-primary hover:text-primary/80">
-                      tipos de fornecedor
-                    </Link>.
-                    <br />
-                    <span className="text-muted-foreground">
-                      Você pode criar o fornecedor agora e vincular depois.
-                    </span>
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  <p className="text-xs text-muted-foreground">
-                    Selecione os tipos desejados. A categoria é inferida automaticamente do tipo selecionado.
-                  </p>
-                  <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-4">
-                    {typesGrouped.map(({ category, types }) => (
-                      <div key={category.id}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className="text-xs">
-                            {category.name}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 pl-2">
-                          {types.map((type) => (
-                            <div key={type.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={type.id}
-                                checked={selectedTypes.includes(type.id)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedTypes([...selectedTypes, type.id]);
-                                  } else {
-                                    setSelectedTypes(selectedTypes.filter((id) => id !== type.id));
-                                  }
-                                }}
-                              />
-                              <label htmlFor={type.id} className="text-sm cursor-pointer">
-                                {type.name}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
 
             {/* Seção de Status - Apenas para Edição */}
             {editingSupplier && (
