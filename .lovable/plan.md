@@ -1,84 +1,131 @@
 
-# Plano: Resolver Dependencia de Setores para Criar Avaliacoes LAIA
+# Plano: Corrigir Criacao de Licencas em /licenciamento/novo
 
 ## Diagnostico
 
-Ao criar uma nova avaliacao LAIA (`/laia/unidade/:id` -> Nova Avaliacao), o campo **Setor** e obrigatorio. Se nao existem setores cadastrados, o dropdown fica vazio e o usuario nao consegue prosseguir no wizard.
+O usuario reportou que ao clicar no botao "Criar Licenca" **nada acontece**. Analisando o codigo, identifiquei multiplos problemas que podem causar esse comportamento:
 
-```
-Hierarquia: Setor -> Avaliacao LAIA
+### Problema Principal: defaultValues Incompletos
+
+O formulario usa `react-hook-form` com validacao Zod. Os campos de data sao obrigatorios:
+
+```typescript
+dataEmissao: z.date({ message: "Data de emissão é obrigatória" }),
+dataVencimento: z.date({ message: "Data de vencimento é obrigatória" }),
 ```
 
-A aba "Setores" para cadastrar setores existe na mesma pagina, mas o usuario nao e informado sobre isso quando o dropdown esta vazio.
+Porem, os `defaultValues` nao incluem esses campos:
+
+```typescript
+defaultValues: {
+  nome: "",
+  tipo: "",
+  orgaoEmissor: "",
+  numeroProcesso: "",
+  status: "",
+  responsavel: "",
+  condicionantes: "",
+  // FALTAM: dataEmissao e dataVencimento
+}
+```
+
+Quando o `react-hook-form` valida campos sem `defaultValue` definido, pode haver comportamento inconsistente.
+
+### Problema Secundario: Validacao de Campos Select
+
+O schema Zod exige `z.string().min(1)` para `tipo` e `status`, mas os valores iniciais sao strings vazias. Se os Selects nao estiverem propagando os valores corretamente, a validacao pode falhar silenciosamente.
+
+### Problema Terciario: Toast de Erro Pode Nao Aparecer
+
+O callback de erro do `handleSubmit` deveria mostrar um toast, mas se o erro ocorrer antes (por exemplo, na fase de parsing), o toast nao e exibido.
 
 ---
 
 ## Solucao
 
-Adicionar um alerta informativo no Step 1 do formulario `LAIAAssessmentForm.tsx` quando nao houver setores ativos disponveis, com link direto para a aba de setores.
+### 1. Corrigir defaultValues para Incluir Datas
+
+Adicionar `dataEmissao` e `dataVencimento` como `undefined` explicitamente nos defaultValues.
+
+### 2. Melhorar Feedback de Validacao
+
+Adicionar validacao visual imediata (`mode: "all"` ou `mode: "onBlur"`) para que o usuario veja erros antes de clicar no botao.
+
+### 3. Adicionar Console Log no Botao
+
+Adicionar um `onClick` ao botao para diagnosticar se o evento esta sendo capturado.
+
+### 4. Garantir que Toast de Erro Apareca
+
+Verificar que o callback de erro esta sendo chamado e o toast esta configurado corretamente.
 
 ---
 
 ## Alteracoes
 
-### Arquivo: `src/components/laia/LAIAAssessmentForm.tsx`
+### Arquivo: `src/pages/LicenseForm.tsx`
 
-**Mudanca 1**: Adicionar import do Alert e Link
-
-```typescript
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-```
-
-**Mudanca 2**: Adicionar alerta quando nao ha setores ativos (linhas ~236-256)
-
-Na secao do Step 1, apos o titulo "Identificacao", adicionar um alerta condicional:
+**Mudanca 1**: Atualizar defaultValues (linhas 89-102)
 
 ```typescript
-{currentStep === 1 && (
-  <div className="space-y-4">
-    <h3 className="text-lg font-medium">Identificação</h3>
-    
-    {/* Novo alerta quando não há setores */}
-    {(!sectors || sectors.filter(s => s.is_active).length === 0) && (
-      <Alert variant="destructive" className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
-        <AlertTriangle className="h-4 w-4 text-amber-600" />
-        <AlertTitle className="text-amber-800 dark:text-amber-200">
-          Nenhum setor cadastrado
-        </AlertTitle>
-        <AlertDescription className="text-amber-700 dark:text-amber-300">
-          Para criar avaliações LAIA, é necessário cadastrar ao menos um setor.
-          Use a aba <strong>"Setores"</strong> para criar setores antes de continuar.
-        </AlertDescription>
-      </Alert>
-    )}
-    
-    <div className="space-y-2">
-      <Label htmlFor="sector">Setor *</Label>
-      {/* ... resto do codigo ... */}
+const form = useForm<z.infer<typeof formSchema>>({
+  resolver: zodResolver(formSchema),
+  mode: "onBlur", // Validar ao sair do campo
+  reValidateMode: "onChange",
+  defaultValues: {
+    nome: "",
+    tipo: "",
+    orgaoEmissor: "",
+    numeroProcesso: "",
+    dataEmissao: undefined,
+    dataVencimento: undefined,
+    status: "",
+    responsavel: "",
+    condicionantes: "",
+  },
+})
 ```
 
-**Mudanca 3**: Melhorar o placeholder do Select quando vazio
-
-Atualizar o SelectTrigger para mostrar mensagem mais clara:
+**Mudanca 2**: Adicionar onClick ao botao para debug (linhas 535-554)
 
 ```typescript
-<SelectValue 
-  placeholder={
-    sectors?.filter(s => s.is_active).length 
-      ? "Selecione o setor" 
-      : "Nenhum setor disponível - cadastre na aba Setores"
-  } 
-/>
+<Button 
+  type="submit" 
+  disabled={isSubmitting || createLicenseMutation.isPending || updateLicenseMutation.isPending}
+  onClick={() => {
+    console.log('Submit button clicked');
+    console.log('Form values:', form.getValues());
+    console.log('Form errors:', form.formState.errors);
+  }}
+  className={cn(
+    "min-w-[150px]",
+    Object.keys(form.formState.errors).length > 0 && "ring-2 ring-destructive ring-offset-2"
+  )}
+>
 ```
 
----
+**Mudanca 3**: Melhorar mensagem de erro no handleSubmit
 
-## Fluxo Apos Correcao
+Tornar a mensagem de erro mais especifica e garantir que seja exibida:
 
-1. Usuario abre `/laia/unidade/:id` e clica "Nova Avaliação"
-2. Se nao ha setores cadastrados, ve alerta explicativo
-3. Alerta orienta a ir para aba "Setores" para cadastrar
-4. Usuario cria setor e volta para criar avaliacao normalmente
+```typescript
+<form 
+  id="licenca-form" 
+  onSubmit={form.handleSubmit(
+    onSubmit,
+    (errors) => {
+      console.error('Form validation errors:', errors);
+      const errorMessages = Object.entries(errors)
+        .map(([key, error]) => `${key}: ${error?.message}`)
+        .join(', ');
+      toast.error('Erro de validação', {
+        description: errorMessages || 'Verifique os campos destacados em vermelho'
+      });
+    }
+  )} 
+  className="space-y-6"
+>
+```
 
 ---
 
@@ -86,9 +133,9 @@ Atualizar o SelectTrigger para mostrar mensagem mais clara:
 
 | Cenario | Antes | Depois |
 |---------|-------|--------|
-| Sem setores cadastrados | Dropdown vazio, sem explicacao | Alerta claro com instrucoes |
-| Com setores cadastrados | Funciona normalmente | Continua funcionando normalmente |
-| UX geral | Usuario confuso | Orientacao clara sobre hierarquia |
+| Clicar em Criar sem preencher | Nada acontece | Toast de erro com campos invalidos |
+| Campos de data vazios | Falha silenciosa | Mensagem clara "Data de emissao e obrigatoria" |
+| Debug | Sem logs | Logs detalhados no console |
 
 ---
 
@@ -96,5 +143,7 @@ Atualizar o SelectTrigger para mostrar mensagem mais clara:
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/components/laia/LAIAAssessmentForm.tsx` | Adicionar Alert informativo quando nao ha setores ativos |
-| `src/components/laia/LAIAAssessmentForm.tsx` | Melhorar placeholder do dropdown de setores |
+| `src/pages/LicenseForm.tsx` | Adicionar defaultValues para campos de data |
+| `src/pages/LicenseForm.tsx` | Mudar mode para "onBlur" para validacao mais cedo |
+| `src/pages/LicenseForm.tsx` | Adicionar onClick com logs no botao submit |
+| `src/pages/LicenseForm.tsx` | Melhorar callback de erro do handleSubmit |
