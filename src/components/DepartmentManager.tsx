@@ -322,15 +322,16 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
                   </div>
 
                   <div>
-                    <Label htmlFor="parent_department_id">Departamento Pai</Label>
+                    <Label htmlFor="parent_department_id">Departamento Pai (opcional)</Label>
                     <Select
-                      value={formData.parent_department_id}
-                      onValueChange={(value) => setFormData({ ...formData, parent_department_id: value })}
+                      value={formData.parent_department_id || 'none'}
+                      onValueChange={(value) => setFormData({ ...formData, parent_department_id: value === 'none' ? '' : value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione o departamento pai" />
+                        <SelectValue placeholder="Selecione o departamento pai (opcional)" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="none">Nenhum (departamento raiz)</SelectItem>
                         {flattenDepartments(departments)
                           .filter(dept => dept.id !== editingDepartment?.id)
                           .map((department) => (
@@ -343,20 +344,27 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
                   </div>
 
                   <div>
-                    <Label htmlFor="manager_employee_id">Gerente</Label>
+                    <Label htmlFor="manager_employee_id">Gerente (opcional)</Label>
                     <Select
-                      value={formData.manager_employee_id}
-                      onValueChange={(value) => setFormData({ ...formData, manager_employee_id: value })}
+                      value={formData.manager_employee_id || 'none'}
+                      onValueChange={(value) => setFormData({ ...formData, manager_employee_id: value === 'none' ? '' : value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione o gerente" />
+                        <SelectValue placeholder="Selecione o gerente (opcional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        {employees.map((employee) => (
-                          <SelectItem key={employee.id} value={employee.id}>
-                            {employee.full_name} - {employee.position || employee.department}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        {employees.length > 0 ? (
+                          employees.map((employee) => (
+                            <SelectItem key={employee.id} value={employee.id}>
+                              {employee.full_name} - {employee.position || employee.department || 'Sem cargo'}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="py-2 px-3 text-sm text-muted-foreground">
+                            Nenhum funcionário cadastrado
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
