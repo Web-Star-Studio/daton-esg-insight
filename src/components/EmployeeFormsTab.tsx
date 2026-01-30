@@ -18,7 +18,7 @@ interface EmployeeFormsTabProps {
 interface FormSubmission {
   id: string;
   form_id: string;
-  submission_data: Record<string, any>;
+  submission_data: Record<string, unknown>;
   submitted_at: string;
   form?: {
     id: string;
@@ -26,7 +26,7 @@ interface FormSubmission {
     description?: string;
   };
   submitted_by?: {
-    id: string;
+    id?: string;
     full_name: string;
   };
 }

@@ -158,11 +158,11 @@ export function WaterfallChart({ data, period, metric }: WaterfallChartProps) {
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => formatDate(value as string)}
-                  formatter={(value: any, name: string) => {
-                    if (name === 'value') {
-                      return [formatMetric(value), 'Valor']
+                  formatter={(value, name) => {
+                    if (String(name) === 'value') {
+                      return [formatMetric(value as number), 'Valor']
                     }
-                    return [value, name]
+                    return [value as number, String(name)]
                   }}
                 />
               }

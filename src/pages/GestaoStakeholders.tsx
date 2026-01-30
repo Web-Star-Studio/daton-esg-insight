@@ -87,14 +87,14 @@ export default function GestaoStakeholders() {
     },
   });
 
-  const handleSave = async (stakeholderData: Omit<Stakeholder, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleSave = async (stakeholderData: Omit<Stakeholder, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
     if (selectedStakeholder) {
       await updateMutation.mutateAsync({
         id: selectedStakeholder.id,
         updates: stakeholderData,
       });
     } else {
-      await createMutation.mutateAsync(stakeholderData);
+      await createMutation.mutateAsync(stakeholderData as Omit<Stakeholder, 'id' | 'created_at' | 'updated_at'>);
     }
     setSelectedStakeholder(null);
   };

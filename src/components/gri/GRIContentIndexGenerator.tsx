@@ -52,7 +52,7 @@ export function GRIContentIndexGenerator({ reportId, onGenerated }: GRIContentIn
       logger.error('Erro ao gerar índice GRI', error, 'gri');
       toast({
         title: 'Erro ao gerar índice',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive'
       });
     } finally {

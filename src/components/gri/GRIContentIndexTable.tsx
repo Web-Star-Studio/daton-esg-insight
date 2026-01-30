@@ -69,7 +69,7 @@ export function GRIContentIndexTable({ reportId, refreshTrigger }: GRIContentInd
     } catch (error) {
       toast({
         title: 'Erro ao carregar índice',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive'
       });
     } finally {
@@ -104,7 +104,7 @@ export function GRIContentIndexTable({ reportId, refreshTrigger }: GRIContentInd
     } catch (error) {
       toast({
         title: 'Erro ao remover item',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive'
       });
     }
@@ -124,7 +124,7 @@ export function GRIContentIndexTable({ reportId, refreshTrigger }: GRIContentInd
     } catch (error) {
       toast({
         title: 'Erro ao exportar',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive'
       });
     } finally {

@@ -410,7 +410,7 @@ export class GHG2025FactorsService {
 
       } catch (error) {
         console.error(`Erro ao processar fator ${factor.name}:`, error);
-        errors.push(`${factor.name}: ${error.message}`);
+        errors.push(`${factor.name}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         errorCount++;
       }
     }
