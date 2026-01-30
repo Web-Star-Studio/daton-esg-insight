@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 export interface FactorImportResult {
   success: number;
@@ -13,7 +14,7 @@ export class UnifiedFactorImportService {
    * Import complete GHG Protocol Brasil 2025.0.1 factor database
    */
   static async importCompleteDatabase(): Promise<FactorImportResult> {
-    console.log('Iniciando importação completa da base GHG Protocol Brasil 2025.0.1');
+    logger.info('Iniciando importação completa da base GHG Protocol Brasil 2025.0.1', 'import');
     
     let totalSuccess = 0;
     let totalErrors = 0;
@@ -64,7 +65,7 @@ export class UnifiedFactorImportService {
       };
 
     } catch (error) {
-      console.error('Erro na importação completa:', error);
+      logger.error('Erro na importação completa:', error, 'import');
       return {
         success: totalSuccess,
         errors: totalErrors + 1,
@@ -514,13 +515,13 @@ export class UnifiedFactorImportService {
           });
 
         if (error) {
-          console.error(`Erro ao inserir fator ${factor.name}:`, error);
+          logger.error(`Erro ao inserir fator ${factor.name}:`, error, 'import');
           errors++;
         } else {
           success++;
         }
       } catch (error) {
-        console.error(`Erro ao processar fator ${factor.name}:`, error);
+        logger.error(`Erro ao processar fator ${factor.name}:`, error, 'import');
         errors++;
       }
     }

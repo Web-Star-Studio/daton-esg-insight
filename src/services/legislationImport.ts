@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { supabase } from "@/integrations/supabase/client";
 import { formErrorHandler } from '@/utils/formErrorHandler';
+import { logger } from '@/utils/logger';
 
 // ============= Types =============
 
@@ -167,14 +168,14 @@ function findLegislationsSheet(workbook: XLSX.WorkBook): string {
       
       // If we find key columns, this is the correct sheet
       if ((hasTipo && hasNumero) || (hasTematica && hasResumo) || (hasTipo && hasData)) {
-        console.log(`[findLegislationsSheet] Found legislation sheet: "${sheetName}" at row ${row}`);
+        logger.debug(`Found legislation sheet: "${sheetName}" at row ${row}`, 'import');
         return sheetName;
       }
     }
   }
   
   // Fallback: first sheet
-  console.log(`[findLegislationsSheet] Using fallback: first sheet "${workbook.SheetNames[0]}"`);
+  logger.debug(`Using fallback: first sheet "${workbook.SheetNames[0]}"`, 'import');
   return workbook.SheetNames[0];
 }
 
@@ -211,7 +212,7 @@ function findHeaderRow(worksheet: XLSX.WorkSheet): number {
                               (hasTipoSimples && hasDataPublicacao);
     
     if (hasOriginalPattern || hasGabardoPattern) {
-      console.log(`[findHeaderRow] Found header at row ${row}, columns: ${cellValues.slice(0, 10).join(', ')}`);
+      logger.debug(`Found header at row ${row}, columns: ${cellValues.slice(0, 10).join(', ')}`, 'import');
       return row;
     }
   }
@@ -503,22 +504,22 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
         const sheetName = findLegislationsSheet(workbook);
         const worksheet = workbook.Sheets[sheetName];
         
-        console.log(`[parseLegislationExcelWithUnits] Using sheet: "${sheetName}" from ${workbook.SheetNames.length} sheets`);
+        logger.debug(`Using sheet: "${sheetName}" from ${workbook.SheetNames.length} sheets`, 'import');
         
         const headerRow = findHeaderRow(worksheet);
-        console.log(`[parseLegislationExcelWithUnits] Header found at row: ${headerRow}`);
+        logger.debug(`Header found at row: ${headerRow}`, 'import');
         
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
           raw: false,
           range: headerRow
         });
         
-        console.log(`[parseLegislationExcelWithUnits] Parsed ${jsonData.length} rows`);
+        logger.debug(`Parsed ${jsonData.length} rows`, 'import');
         
         // Get headers from first data row to detect unit columns
         const firstRow = jsonData[0] as any;
         const headers = firstRow ? Object.keys(firstRow) : [];
-        console.log(`[parseLegislationExcelWithUnits] Headers: ${headers.slice(0, 15).join(', ')}`);
+        logger.debug(`Headers: ${headers.slice(0, 15).join(', ')}`, 'import');
         const detectedUnitColumns = detectUnitColumns(headers);
         
         const legislations: ParsedLegislation[] = jsonData.map((row: any, index) => {

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 export interface EmissionSource {
   id: string;
@@ -46,7 +47,7 @@ export async function getEmissionSources(): Promise<EmissionSource[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Erro ao buscar fontes de emissão:', error);
+    logger.error('Erro ao buscar fontes de emissão:', error, 'emission');
     throw error;
   }
 
@@ -81,7 +82,7 @@ export async function createEmissionSource(sourceData: CreateEmissionSourceData)
     .single();
 
   if (error) {
-    console.error('Erro ao criar fonte de emissão:', error);
+    logger.error('Erro ao criar fonte de emissão:', error, 'emission');
     throw error;
   }
 
@@ -98,7 +99,7 @@ export async function updateEmissionSource(id: string, updateData: Partial<Creat
     .maybeSingle();
 
   if (error) {
-    console.error('Erro ao atualizar fonte de emissão:', error);
+    logger.error('Erro ao atualizar fonte de emissão:', error, 'emission');
     throw error;
   }
 
@@ -117,7 +118,7 @@ export async function deleteEmissionSource(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) {
-    console.error('Erro ao deletar fonte de emissão:', error);
+    logger.error('Erro ao deletar fonte de emissão:', error, 'emission');
     throw error;
   }
 }
@@ -156,10 +157,10 @@ export const updateActivityData = async (id: string, activityData: {
       
       if (factor) {
         finalActivityData.unit = factor.activity_unit; // Override with factor's unit
-        console.info('Unidade sobrescrita pelo fator:', factor.activity_unit);
+        logger.info('Unidade sobrescrita pelo fator:', 'emission', factor.activity_unit);
       }
     } catch (error) {
-      console.warn('Erro ao buscar unidade do fator:', error);
+      logger.warn('Erro ao buscar unidade do fator:', 'emission', error);
     }
   }
 
@@ -171,7 +172,7 @@ export const updateActivityData = async (id: string, activityData: {
     .maybeSingle();
 
   if (error) {
-    console.error('Erro ao atualizar dados de atividade:', error);
+    logger.error('Erro ao atualizar dados de atividade:', error, 'emission');
     throw error;
   }
 
@@ -221,10 +222,10 @@ export const addActivityData = async (activityData: {
       
       if (factor) {
         finalActivityData.unit = factor.activity_unit; // Override with factor's unit
-        console.info('Unidade sobrescrita pelo fator:', factor.activity_unit);
+        logger.info('Unidade sobrescrita pelo fator:', 'emission', factor.activity_unit);
       }
     } catch (error) {
-      console.warn('Erro ao buscar unidade do fator:', error);
+      logger.warn('Erro ao buscar unidade do fator:', 'emission', error);
     }
   }
 
@@ -235,7 +236,7 @@ export const addActivityData = async (activityData: {
     .maybeSingle();
 
   if (error) {
-    console.error('Erro ao adicionar dados de atividade:', error);
+    logger.error('Erro ao adicionar dados de atividade:', error, 'emission');
     throw error;
   }
 
@@ -259,20 +260,20 @@ async function calculateEmissionsForActivityData(activityDataId: string) {
       .maybeSingle();
 
     if (activity?.emission_factor_id) {
-      console.info('Calculando com fator específico:', activity.emission_factor_id);
+      logger.info('Calculando com fator específico:', 'emission', activity.emission_factor_id);
       await calculateEmissions(activityDataId, activity.emission_factor_id);
     } else {
-      console.info('Calculando automaticamente por unidade');
+      logger.info('Calculando automaticamente por unidade', 'emission');
       await tryAutoCalculateEmissions(activityDataId, activity?.emission_source_id);
     }
   } catch (error) {
-    console.error('Erro no cálculo de emissões:', error);
+    logger.error('Erro no cálculo de emissões:', error, 'emission');
   }
 }
 
 async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceId: string) {
   try {
-    console.log('Tentando calcular emissões para activity:', activityDataId);
+    logger.debug(`Tentando calcular emissões para activity: ${activityDataId}`, 'emission');
     
     // Buscar fonte de emissão para obter categoria
     const { data: source, error: sourceError } = await supabase
@@ -282,11 +283,11 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
       .maybeSingle();
 
     if (sourceError || !source) {
-      console.error('Erro ao buscar fonte de emissão:', sourceError);
+      logger.error('Erro ao buscar fonte de emissão:', sourceError, 'emission');
       return;
     }
 
-    console.log('Categoria da fonte:', source.category);
+    logger.debug(`Categoria da fonte: ${source.category}`, 'emission');
 
     // Mapeamento de categorias para compatibilidade
     const categoryMapping: Record<string, string[]> = {
@@ -298,7 +299,7 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
     };
 
     const searchCategories = categoryMapping[source.category] || [source.category];
-    console.log('Buscando fatores para categorias:', searchCategories);
+    logger.debug(`Buscando fatores para categorias: ${searchCategories.join(', ')}`, 'emission');
 
     // Buscar activity data para obter unidade
     const { data: activityData, error: activityError } = await supabase
@@ -308,11 +309,11 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
       .maybeSingle();
 
     if (activityError || !activityData) {
-      console.error('Erro ao buscar dados de atividade:', activityError);
+      logger.error('Erro ao buscar dados de atividade:', activityError, 'emission');
       return;
     }
 
-    console.log('Unidade da atividade:', activityData.unit);
+    logger.debug(`Unidade da atividade: ${activityData.unit}`, 'emission');
 
     // Buscar fator de emissão compatível com melhor compatibilidade de unidades
     const { data: factors, error: factorsError } = await supabase
@@ -321,11 +322,11 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
       .in('category', searchCategories);
 
     if (factorsError) {
-      console.error('Erro ao buscar fatores:', factorsError);
+      logger.error('Erro ao buscar fatores:', factorsError, 'emission');
       return;
     }
 
-    console.log('Fatores encontrados:', factors?.length || 0);
+    logger.debug(`Fatores encontrados: ${factors?.length || 0}`, 'emission');
 
     // Find compatible factor with improved unit matching
     const compatibleFactor = factors?.find(factor => {
@@ -351,17 +352,17 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
     });
 
     if (!compatibleFactor) {
-      console.warn('Nenhum fator compatível encontrado para unidade:', activityData.unit);
+      logger.warn(`Nenhum fator compatível encontrado para unidade: ${activityData.unit}`, 'emission');
       return;
     }
 
-    console.log('Fator compatível encontrado:', compatibleFactor.name);
+    logger.debug(`Fator compatível encontrado: ${compatibleFactor.name}`, 'emission');
 
     // Calcular emissões automaticamente
     await calculateEmissions(activityDataId, compatibleFactor.id);
-    console.log('Emissões calculadas com sucesso!');
+    logger.info('Emissões calculadas com sucesso!', 'emission');
   } catch (error) {
-    console.error('Erro no cálculo automático:', error);
+    logger.error('Erro no cálculo automático:', error, 'emission');
     // Não propagar erro para não afetar a inserção dos dados
   }
 }
@@ -383,7 +384,7 @@ export async function getEmissionStats() {
     `);
 
   if (emissionsError) {
-    console.error('Erro ao obter estatísticas de emissões:', emissionsError);
+    logger.error('Erro ao obter estatísticas de emissões:', emissionsError, 'emission');
   }
 
   // Calculate totals by scope
@@ -428,7 +429,7 @@ export async function getEmissionSourcesWithEmissions() {
     .order('created_at', { ascending: false });
 
   if (sourcesError) {
-    console.error('Erro ao buscar fontes de emissão:', sourcesError);
+    logger.error('Erro ao buscar fontes de emissão:', sourcesError, 'emission');
     throw sourcesError;
   }
 
@@ -469,7 +470,7 @@ export async function getEmissionSourcesWithEmissions() {
 // Calculate emissions using simple direct formula: Emissions = Activity × Factor
 export async function calculateEmissions(activityDataId: string, emissionFactorId: string) {
   try {
-    console.log(`Calculating emissions for activity ${activityDataId} with factor ${emissionFactorId}`);
+    logger.debug(`Calculating emissions for activity ${activityDataId} with factor ${emissionFactorId}`, 'emission');
     
     // Fetch activity data and emission factor
     const [activityResponse, factorResponse] = await Promise.all([
@@ -542,13 +543,13 @@ export async function calculateEmissions(activityDataId: string, emissionFactorI
       throw new Error(`Save error: ${saveError.message}`);
     }
 
-    console.log(`Emissions calculated successfully: ${calculationResult.total_co2e_tonnes} tCO2e`);
+    logger.info(`Emissions calculated successfully: ${calculationResult.total_co2e_tonnes} tCO2e`, 'emission');
     return {
       total_co2e: calculationResult.total_co2e_tonnes,
       details: calculationResult
     };
   } catch (error) {
-    console.error('Error calculating emissions:', error);
+    logger.error('Error calculating emissions:', error, 'emission');
     throw error;
   }
 }
@@ -567,7 +568,7 @@ export async function getEmissionFactors(category?: string) {
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching emission factors:', error);
+    logger.error('Error fetching emission factors:', error, 'emission');
     throw error;
   }
 

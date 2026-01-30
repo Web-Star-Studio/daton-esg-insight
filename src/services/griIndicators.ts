@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 // Interfaces using Database types
 export interface GRIIndicatorMapping {
@@ -108,7 +109,7 @@ export async function getIndicatorMappings(companyId?: string): Promise<GRIIndic
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching indicator mappings:', error);
+    logger.error('Error fetching indicator mappings:', error, 'gri');
     throw error;
   }
 
@@ -123,7 +124,7 @@ export async function createIndicatorMapping(mapping: Partial<GRIIndicatorMappin
     .maybeSingle();
 
   if (error) {
-    console.error('Error creating indicator mapping:', error);
+    logger.error('Error creating indicator mapping:', error, 'gri');
     throw new Error(`Erro ao criar mapeamento de indicador: ${error.message}`);
   }
   if (!data) throw new Error('Não foi possível criar mapeamento de indicador');
@@ -140,7 +141,7 @@ export async function updateIndicatorMapping(id: string, updates: Partial<GRIInd
     .maybeSingle();
 
   if (error) {
-    console.error('Error updating indicator mapping:', error);
+    logger.error('Error updating indicator mapping:', error, 'gri');
     throw new Error(`Erro ao atualizar mapeamento de indicador: ${error.message}`);
   }
   if (!data) throw new Error('Mapeamento de indicador não encontrado');
@@ -155,7 +156,7 @@ export async function deleteIndicatorMapping(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) {
-    console.error('Error deleting indicator mapping:', error);
+    logger.error('Error deleting indicator mapping:', error, 'gri');
     throw error;
   }
 }
@@ -174,7 +175,7 @@ export async function getIndicatorTargets(indicatorId?: string): Promise<GRIIndi
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching indicator targets:', error);
+    logger.error('Error fetching indicator targets:', error, 'gri');
     throw error;
   }
 
@@ -198,7 +199,7 @@ export async function createIndicatorTarget(target: Partial<GRIIndicatorTarget>)
     .maybeSingle();
 
   if (error) {
-    console.error('Error creating indicator target:', error);
+    logger.error('Error creating indicator target:', error, 'gri');
     throw new Error(`Erro ao criar meta de indicador: ${error.message}`);
   }
   if (!data) throw new Error('Não foi possível criar meta de indicador');
@@ -215,7 +216,7 @@ export async function updateIndicatorTarget(id: string, updates: Partial<GRIIndi
     .maybeSingle();
 
   if (error) {
-    console.error('Error updating indicator target:', error);
+    logger.error('Error updating indicator target:', error, 'gri');
     throw new Error(`Erro ao atualizar meta de indicador: ${error.message}`);
   }
   if (!data) throw new Error('Meta de indicador não encontrada');
@@ -230,7 +231,7 @@ export async function deleteIndicatorTarget(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) {
-    console.error('Error deleting indicator target:', error);
+    logger.error('Error deleting indicator target:', error, 'gri');
     throw error;
   }
 }
@@ -253,7 +254,7 @@ export async function getIndicatorBenchmarks(indicatorId?: string, sector?: stri
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching indicator benchmarks:', error);
+    logger.error('Error fetching indicator benchmarks:', error, 'gri');
     throw error;
   }
 
@@ -269,7 +270,7 @@ export async function getIndicatorEvidence(indicatorDataId: string): Promise<GRI
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching indicator evidence:', error);
+    logger.error('Error fetching indicator evidence:', error, 'gri');
     throw error;
   }
 
@@ -293,7 +294,7 @@ export async function createIndicatorEvidence(evidence: Partial<GRIIndicatorEvid
     .maybeSingle();
 
   if (error) {
-    console.error('Error creating indicator evidence:', error);
+    logger.error('Error creating indicator evidence:', error, 'gri');
     throw new Error(`Erro ao criar evidência de indicador: ${error.message}`);
   }
   if (!data) throw new Error('Não foi possível criar evidência de indicador');
@@ -310,7 +311,7 @@ export async function getIndicatorHistory(indicatorDataId: string): Promise<GRII
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching indicator history:', error);
+    logger.error('Error fetching indicator history:', error, 'gri');
     throw error;
   }
 
@@ -335,7 +336,7 @@ export async function createIndicatorHistory(history: Partial<GRIIndicatorHistor
     .maybeSingle();
 
   if (error) {
-    console.error('Error creating indicator history:', error);
+    logger.error('Error creating indicator history:', error, 'gri');
     throw new Error(`Erro ao criar histórico de indicador: ${error.message}`);
   }
   if (!data) throw new Error('Não foi possível criar histórico de indicador');
@@ -352,13 +353,13 @@ export async function getSuggestedValue(indicatorCode: string): Promise<any> {
     });
 
     if (error) {
-      console.error('Error getting suggested value:', error);
+      logger.error('Error getting suggested value:', error, 'gri');
       return null;
     }
 
     return data;
   } catch (error) {
-    console.error('Error calling suggested value function:', error);
+    logger.error('Error calling suggested value function:', error, 'gri');
     return null;
   }
 }
@@ -393,7 +394,7 @@ export async function getIndicatorCompletionStats(): Promise<{
       completion_percentage
     };
   } catch (error) {
-    console.error('Error getting completion stats:', error);
+    logger.error('Error getting completion stats:', error, 'gri');
     return {
       total: 0,
       completed: 0,
@@ -427,7 +428,7 @@ export async function getIndicatorsByCategory(): Promise<Record<string, any[]>> 
 
     return categorized;
   } catch (error) {
-    console.error('Error getting indicators by category:', error);
+    logger.error('Error getting indicators by category:', error, 'gri');
     return {};
   }
 }
