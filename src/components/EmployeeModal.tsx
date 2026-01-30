@@ -416,6 +416,14 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         return;
       }
     }
+
+    // Validar CPF se preenchido (com 11 dígitos)
+    if (formData.cpf && formData.cpf.replace(/\D/g, '').length === 11) {
+      if (!validateCPF(formData.cpf)) {
+        toast.error('CPF inválido. Verifique os dígitos informados.');
+        return;
+      }
+    }
     
     // 2. DEPOIS: Sanitizar para enviar ao banco (converter "" para null)
     const sanitizedData = {

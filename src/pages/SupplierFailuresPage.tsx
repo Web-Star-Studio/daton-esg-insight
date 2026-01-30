@@ -59,7 +59,7 @@ import { supabase } from "@/integrations/supabase/client";
 async function getActiveSuppliers() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
-  const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).single();
+  const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle();
   if (!profile?.company_id) return [];
   const { data } = await supabase.from('supplier_management').select('id, company_name, full_name').eq('company_id', profile.company_id).eq('status', 'Ativo');
   return data || [];
