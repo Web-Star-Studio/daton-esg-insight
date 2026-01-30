@@ -15675,6 +15675,50 @@ export type Database = {
         }
         Relationships: []
       }
+      login_history: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          failure_reason: string | null
+          id: string
+          ip_address: string | null
+          location_info: Json | null
+          login_success: boolean | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          location_info?: Json | null
+          login_success?: boolean | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          location_info?: Json | null
+          login_success?: boolean | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mailing_list_contacts: {
         Row: {
           company_name: string | null
@@ -18472,6 +18516,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           company_id: string
           created_at: string
           dashboard_preferences: Json | null
@@ -18483,8 +18528,10 @@ export type Database = {
           job_title: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role_type"]
+          username: string | null
         }
         Insert: {
+          avatar_url?: string | null
           company_id: string
           created_at?: string
           dashboard_preferences?: Json | null
@@ -18496,8 +18543,10 @@ export type Database = {
           job_title?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role_type"]
+          username?: string | null
         }
         Update: {
+          avatar_url?: string | null
           company_id?: string
           created_at?: string
           dashboard_preferences?: Json | null
@@ -18509,6 +18558,7 @@ export type Database = {
           job_title?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role_type"]
+          username?: string | null
         }
         Relationships: [
           {
@@ -23789,6 +23839,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_sessions: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          device_info: Json | null
+          expires_at: string | null
+          id: string
+          ip_address: string | null
+          is_current: boolean | null
+          last_active_at: string | null
+          session_token: string
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          device_info?: Json | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          last_active_at?: string | null
+          session_token: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          device_info?: Json | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          last_active_at?: string | null
+          session_token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"

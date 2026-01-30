@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useNavigate } from "react-router-dom"
-import { User, Building2, Users, CreditCard, Settings, MoreHorizontal, Plus, Lock, Eye, EyeOff } from "lucide-react"
+import { User, Building2, Users, CreditCard, Settings, MoreHorizontal, Plus, Lock, Eye, EyeOff, Check, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,6 +24,7 @@ import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection
 import { useUserManagement, type UserProfile } from "@/hooks/data/useUserManagement"
 import { UserListTable } from "@/components/users/UserListTable"
 import { UserFormModal } from "@/components/users/UserFormModal"
+import { passwordSchema, getPasswordRequirementChecks } from "@/utils/passwordValidation"
 
 const perfilSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -33,7 +34,7 @@ const perfilSchema = z.object({
 
 const senhaSchema = z.object({
   senhaAtual: z.string().min(1, "Senha atual é obrigatória"),
-  novaSenha: z.string().min(6, "A nova senha deve ter pelo menos 6 caracteres"),
+  novaSenha: passwordSchema,
   confirmarSenha: z.string().min(1, "Confirme sua nova senha"),
 }).refine((data) => data.novaSenha === data.confirmarSenha, {
   message: "As senhas não coincidem",
@@ -478,7 +479,7 @@ export default function Configuracao() {
                             <div className="relative">
                               <Input 
                                 type={showNewPassword ? "text" : "password"} 
-                                placeholder="Mínimo 6 caracteres"
+                                placeholder="Mínimo 8 caracteres com complexidade"
                                 {...field} 
                               />
                               <Button
@@ -496,6 +497,29 @@ export default function Configuracao() {
                               </Button>
                             </div>
                           </FormControl>
+                          {/* Password requirements indicators */}
+                          {field.value && (
+                            <div className="mt-2 space-y-1.5">
+                              <p className="text-xs font-medium text-muted-foreground mb-2">
+                                Requisitos da senha:
+                              </p>
+                              {getPasswordRequirementChecks(field.value).map((req, index) => (
+                                <div
+                                  key={index}
+                                  className={`flex items-center gap-2 text-xs transition-colors ${
+                                    req.met ? "text-green-600 dark:text-green-500" : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {req.met ? (
+                                    <Check className="h-3.5 w-3.5 flex-shrink-0" />
+                                  ) : (
+                                    <X className="h-3.5 w-3.5 flex-shrink-0" />
+                                  )}
+                                  <span>{req.label}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <FormMessage />
                         </FormItem>
                       )}
