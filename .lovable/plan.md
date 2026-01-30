@@ -1,355 +1,490 @@
 
-# Fase 2 - Batch 3 (Continuação): Migração de Services Restantes
+# Fase 2 - Batch 4: Services Críticos
 
-## Resumo do Estado Atual
+## Análise dos Services com Maior Impacto
 
-**Já migrados neste Batch:**
-- ✅ `customerComplaints.ts` - Logger + tipos
-- ✅ `supplierPortalService.ts` - Logger + tipos
-- ✅ `branches.ts` - Logger + tipos
+Baseado na análise detalhada, identifiquei os **12 services mais críticos** que precisam de migração urgente devido ao alto número de `console` calls e tipos `any`.
 
-**Pendentes neste Batch (9 services):**
-
-| Arquivo | Console Calls | Types `any` | Categoria |
-|---------|---------------|-------------|-----------|
-| `trainingSchedules.ts` | 2 | 0 | `training` |
-| `dataExport.ts` | 6 | 7 | `service` |
-| `griReports.ts` | 4 | 4 | `gri` |
-| `supplierDashboard.ts` | 3 | 1 | `supplier` |
-| `licenseActivityHistory.ts` | 1 | 4 | `compliance` |
-| `energyManagement.ts` | 1 | 0 | `emission` |
-| `esg.ts` | 3 | 0 | `api` |
-| `ghgReports.ts` | 0 | 3 | `emission` |
-| `factorExport.ts` | 0 | 7 | `emission` |
+| Service | Console Calls | Types `any` | Categoria Logger | Prioridade |
+|---------|---------------|-------------|------------------|------------|
+| `documents.ts` | ~35 | 3 | `document` | **CRÍTICO** |
+| `projectManagement.ts` | ~18 | 0 | `project` | **ALTA** |
+| `licenseAI.ts` | ~10 | 3 | `compliance` | **ALTA** |
+| `careerDevelopment.ts` | 0 | ~15 | `service` | **ALTA** (types) |
+| `unifiedQualityService.ts` | ~12 | ~20 | `quality` | **CRÍTICO** |
+| `riskOccurrences.ts` | 5 | 6 | `quality` | **MÉDIA** |
+| `predictiveAnalytics.ts` | 4 | 1 | `emission` | **MÉDIA** |
+| `wasteManagement.ts` | 3 | 1 | `emission` | **MÉDIA** |
+| `analyticsService.ts` | 1 | 0 | `analytics` | **BAIXA** |
 
 ---
 
 ## Parte 1: Migração de Console.log para Logger
 
-### 1.1 trainingSchedules.ts (2 console calls)
+### 1.1 documents.ts (~35 console calls → logger)
+
+Este é o service com mais logs no projeto. Categorias a aplicar:
 
 ```typescript
-// Linha 72
-console.error('Error getting company ID:', error);
-→ logger.error('Error getting company ID', error, 'training');
+import { logger } from '@/utils/logger';
 
-// Linha 171
-console.error('Erro ao adicionar participantes:', participantsError);
-→ logger.error('Erro ao adicionar participantes', participantsError, 'training');
+// ANTES
+console.log('Fetching folder hierarchy...');
+console.error('Error fetching folders:', error);
+console.log('📤 Uploading document:', file.name);
+console.error('❌ Storage upload error:', uploadError);
+console.log('✅ File uploaded to storage:', uploadData.path);
+
+// DEPOIS
+logger.debug('Fetching folder hierarchy', 'document');
+logger.error('Error fetching folders', error, 'document');
+logger.debug(`Uploading document: ${file.name}`, 'document');
+logger.error('Storage upload error', uploadError, 'document');
+logger.debug(`File uploaded to storage: ${uploadData.path}`, 'document');
 ```
 
-### 1.2 dataExport.ts (6 console calls)
+### 1.2 projectManagement.ts (18 console calls → logger)
 
 ```typescript
-// Linha 206
-console.error('Erro ao exportar dados de água:', error);
-→ logger.error('Erro ao exportar dados de água', error, 'service');
+import { logger } from '@/utils/logger';
 
-// Linha 388
-console.error('Erro ao exportar dados de energia:', error);
-→ logger.error('Erro ao exportar dados de energia', error, 'service');
+// ANTES (linha 112, 127, 157, etc.)
+console.error('Error fetching projects:', error);
+console.error('Error creating project:', error);
 
-// Linha 517
-console.error('Erro ao exportar consolidado ESG:', error);
-→ logger.error('Erro ao exportar consolidado ESG', error, 'service');
-
-// Linha 582
-console.error('Erro ao exportar dados de emissões:', error);
-→ logger.error('Erro ao exportar dados de emissões', error, 'service');
-
-// Linha 647
-console.error('Erro ao exportar dados de resíduos:', error);
-→ logger.error('Erro ao exportar dados de resíduos', error, 'service');
+// DEPOIS
+logger.error('Error fetching projects', error, 'project');
+logger.error('Error creating project', error, 'project');
 ```
 
-### 1.3 griReports.ts (4 console calls)
+### 1.3 licenseAI.ts (10 console calls → logger)
 
 ```typescript
-// Linha 185
-console.error('Erro ao criar relatório GRI:', error);
-→ logger.error('Erro ao criar relatório GRI', error, 'gri');
+import { logger } from '@/utils/logger';
 
-// Linha 193
-console.error('Erro em createGRIReport:', error);
-→ logger.error('Erro em createGRIReport', error, 'gri');
+// ANTES (linhas 74, 91, 107, 124, 142, 158, 216, 240)
+console.error('Error analyzing license:', error);
+console.error('Error fetching license analyses:', error);
 
-// Linha 482
-console.error('Erro ao recalcular conclusão do relatório:', error);
-→ logger.error('Erro ao recalcular conclusão do relatório', error, 'gri');
-
-// Linha 487
-console.error('Exceção em calculateReportCompletion:', e);
-→ logger.error('Exceção em calculateReportCompletion', e, 'gri');
+// DEPOIS
+logger.error('Error analyzing license', error, 'compliance');
+logger.error('Error fetching license analyses', error, 'compliance');
 ```
 
-### 1.4 supplierDashboard.ts (3 console calls)
+### 1.4 unifiedQualityService.ts (12 console calls → logger)
+
+Alguns já usam logger, mas muitos ainda usam console:
 
 ```typescript
-// Linha 117
-console.error('Error fetching supplier dashboard data:', error);
-→ logger.error('Error fetching supplier dashboard data', error, 'supplier');
+// ANTES (linhas 261, 307, 326, 359, 430, 533, 542, etc.)
+console.error('Error fetching quality indicators list:', error);
+console.error('Error creating quality indicator:', error);
+console.error('Error in predictive analysis:', error);
+console.log('🔍 getRiskMatrix: Fetching for matrix ID:', id);
 
-// Linha 170
-console.error('Error updating supplier performance metrics:', error);
-→ logger.error('Error updating supplier performance metrics', error, 'supplier');
-
-// Linha 210
-console.error('Error fetching suppliers overview:', error);
-→ logger.error('Error fetching suppliers overview', error, 'supplier');
+// DEPOIS
+logger.error('Error fetching quality indicators list', error, 'quality');
+logger.error('Error creating quality indicator', error, 'quality');
+logger.error('Error in predictive analysis', error, 'quality');
+logger.debug(`getRiskMatrix: Fetching for matrix ID: ${id}`, 'quality');
 ```
 
-### 1.5 licenseActivityHistory.ts (1 console call)
+### 1.5 riskOccurrences.ts (5 console calls → logger)
 
 ```typescript
-// Linha 51
-if (error) console.error('Error logging action:', error);
-→ if (error) logger.error('Error logging action', error, 'compliance');
+import { logger } from '@/utils/logger';
+
+// ANTES (linhas 49, 64, 92, 108, 122)
+console.error('Error fetching risk occurrences:', error);
+console.error('Error creating risk occurrence:', error);
+
+// DEPOIS
+logger.error('Error fetching risk occurrences', error, 'quality');
+logger.error('Error creating risk occurrence', error, 'quality');
 ```
 
-### 1.6 energyManagement.ts (1 console call)
+### 1.6 predictiveAnalytics.ts (4 console calls → logger)
 
 ```typescript
-// Linha 81
-console.warn(`Unidade não reconhecida: ${unit}. Usando valor sem conversão.`);
-→ logger.warn(`Unidade de energia não reconhecida: ${unit}`, 'emission');
+// ANTES (linhas 45, 55, 70, 73)
+console.log('📡 [PredictiveAnalytics] Calling edge function:', { analysisType, months });
+console.error('❌ [PredictiveAnalytics] Edge function error:', error);
+
+// DEPOIS
+logger.debug('Calling predictive analytics edge function', 'emission', { analysisType, months });
+logger.error('Predictive analytics edge function error', error, 'emission');
 ```
 
-### 1.7 esg.ts (3 console calls)
+### 1.7 wasteManagement.ts (3 console calls → logger)
 
 ```typescript
-// Linha 26
-console.log('Calling ESG dashboard edge function...');
-→ logger.debug('Calling ESG dashboard edge function', 'api');
+import { logger } from '@/utils/logger';
 
-// Linha 33
-console.error('Error calling ESG dashboard function:', error);
-→ logger.error('Error calling ESG dashboard function', error, 'api');
+// ANTES (linhas 40, 225, 497)
+console.warn(`Unidade não reconhecida: ${unit}. Assumindo toneladas.`);
+console.log('Dados do ano anterior não disponíveis');
 
-// Linha 37
-console.log('ESG dashboard data received:', data);
-→ logger.debug('ESG dashboard data received', 'api', { data });
-
-// Linha 40
-console.error('ESG dashboard service error:', error);
-→ logger.error('ESG dashboard service error', error, 'api');
+// DEPOIS
+logger.warn(`Unidade de resíduo não reconhecida: ${unit}`, 'emission');
+logger.debug('Dados do ano anterior não disponíveis', 'emission');
 ```
 
 ---
 
 ## Parte 2: Correção de Types `any`
 
-### 2.1 dataExport.ts (7 any types)
+### 2.1 unifiedQualityService.ts (~20 any types)
 
 ```typescript
-// Linha 18 - convertToCSV parameter
-const convertToCSV = (data: any[], headers: string[]): string
-→ type ExportDataRow = Record<string, string | number | boolean>;
-→ const convertToCSV = (data: ExportDataRow[], headers: string[]): string
+// ANTES (linhas 126, 435, 521-531, 552, 585-665)
+private log(message: string, context?: any)
+private async generateQualityInsights(dashboardData: any)
+async getQualityTrends(period: string = '30d'): Promise<any[]>
+async getTeamPerformance(): Promise<any[]>
+async getRiskMatrix(id: string): Promise<any>
+const matrix: any[] = [];
+async getProcessEfficiency(): Promise<any[]>
+async createStrategicMap(data: any): Promise<any>
+async createBSCPerspective(data: any): Promise<any>
+async createProcessMap(data: any): Promise<any>
+async getRiskMatrices(): Promise<any[]>
+async createRiskMatrix(data: any): Promise<any>
+async getNonConformities(): Promise<any[]>
+async createNonConformity(data: any): Promise<any>
 
-// Linhas 78, 231, 400, 529, 594 - exportData arrays
-const exportData: any[] = [];
-→ const exportData: ExportDataRow[] = [];
-```
-
-### 2.2 griReports.ts (4 any types)
-
-```typescript
-// Linhas 17-19 - interface fields
-materiality_assessment?: any;
-stakeholder_engagement?: any;
-template_config?: any;
-→ 
-interface MaterialityAssessment {
-  topics?: string[];
-  stakeholder_input?: Record<string, unknown>;
-  methodology?: string;
+// DEPOIS - Definir interfaces específicas
+interface LogContext {
+  [key: string]: unknown;
 }
-interface StakeholderEngagement {
-  groups?: string[];
-  methods?: string[];
-  frequency?: string;
+
+interface RiskMatrixCell {
+  probability: string;
+  impact: string;
+  risks: RiskAssessment[];
+  count: number;
 }
-→ materiality_assessment?: MaterialityAssessment;
-→ stakeholder_engagement?: StakeholderEngagement;
-→ template_config?: Record<string, unknown>;
 
-// Linha 180 - insert cast
-} as any])
-→ Remover cast, usar tipo correto
+interface RiskCounts {
+  total: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
 
-// Linha 192 - catch block
-catch (error: any)
-→ catch (error: unknown)
+interface RiskMatrixResult {
+  matrix: RiskMatrixCell[];
+  riskCounts: RiskCounts;
+}
 
-// Linhas 397, 442 - insert casts
-.insert([topic as any])
-.insert([alignment as any])
-→ Manter JSON assertion necessária para Supabase
+private log(message: string, context?: LogContext)
+private async generateQualityInsights(dashboardData: Partial<QualityDashboard>)
+async getQualityTrends(period: string = '30d'): Promise<unknown[]>
+async getRiskMatrix(id: string): Promise<RiskMatrixResult>
+const matrix: RiskMatrixCell[] = [];
 ```
 
-### 2.3 supplierDashboard.ts (1 any type)
+### 2.2 careerDevelopment.ts (~15 any types)
 
 ```typescript
-// Linha 131
-metricsData?: any;
-→ metricsData?: Record<string, number | string | boolean>;
+// ANTES (linhas 16-18, 61, 81, 107-108, 143-146, 191)
+goals: any[] | any;
+skills_to_develop: any[] | any;
+development_activities: any[] | any;
+development_needs: any[];
+objectives: any[];
+requirements: any[];
+benefits: any[];
+const cleanDataForSupabase = (data: Record<string, any>): Record<string, any>
+const withNormalizedFields: Record<string, any> = { ... };
+
+// DEPOIS - Definir interfaces específicas
+interface CareerGoal {
+  title: string;
+  description?: string;
+  target_date?: string;
+  status?: string;
+}
+
+interface SkillDevelopment {
+  skill_name: string;
+  current_level?: string;
+  target_level?: string;
+}
+
+interface DevelopmentActivity {
+  activity_type: string;
+  description: string;
+  scheduled_date?: string;
+  completed?: boolean;
+}
+
+interface DevelopmentNeed {
+  area: string;
+  priority?: 'low' | 'medium' | 'high';
+  action_plan?: string;
+}
+
+interface JobRequirement {
+  requirement: string;
+  is_mandatory?: boolean;
+}
+
+interface JobBenefit {
+  benefit: string;
+  description?: string;
+}
+
+goals: CareerGoal[];
+skills_to_develop: SkillDevelopment[];
+development_activities: DevelopmentActivity[];
+development_needs: DevelopmentNeed[];
+objectives: string[];
+requirements: JobRequirement[];
+benefits: JobBenefit[];
 ```
 
-### 2.4 licenseActivityHistory.ts (4 any types)
+### 2.3 licenseAI.ts (3 any types)
 
 ```typescript
-// Linhas 12-13, 26-27
-old_values?: any;
-new_values?: any;
-→ 
-type ActionValues = Record<string, unknown>;
-old_values?: ActionValues;
-new_values?: ActionValues;
-```
+// ANTES (linhas 7, 41, 73)
+ai_insights: any;
+metadata: any;
+} catch (error: any) {
 
-### 2.5 ghgReports.ts (3 any types)
-
-```typescript
-// Linha 18
-report_data: any;
-→ report_data: ReportData | Record<string, unknown>;
-
-// Linha 70
-[key: string]: any;
-→ [key: string]: unknown;
-
-// Linha 329
-const uniqueFactors = factors?.reduce((acc: any[], curr) => {
-→ 
-interface UsedEmissionFactor {
-  source: string;
+// DEPOIS
+interface AIInsight {
   category: string;
-  factor_value: number;
-  unit: string;
+  finding: string;
+  confidence: number;
+  recommendation?: string;
 }
-const uniqueFactors = factors?.reduce((acc: UsedEmissionFactor[], curr) => {
+
+interface AlertMetadata {
+  source?: string;
+  related_condition_id?: string;
+  auto_generated?: boolean;
+  [key: string]: unknown;
+}
+
+ai_insights: AIInsight[] | Record<string, unknown>;
+metadata: AlertMetadata;
+} catch (error: unknown) {
 ```
 
-### 2.6 factorExport.ts (7 any types)
+### 2.4 riskOccurrences.ts (6 any types)
 
 ```typescript
-// Linhas 28, 98
-const row: any = {};
-→ type FactorExportRow = Record<string, string | number>;
-→ const row: FactorExportRow = {};
+// ANTES (linhas 41, 58, 82, 101, 127, 175)
+.from('risk_occurrences' as any)
+async getOccurrenceMetrics(): Promise<any>
+async getRiskOccurrenceTrend(): Promise<any[]>
 
-// Linhas 172, 175, 186, 189, 199
-const grouped: { [key: string]: any[] } = {};
-const result: any[] = [];
-const headerRow: any = {};
-const emptyRow: any = {};
-→ 
-const grouped: Record<string, FactorExportRow[]> = {};
-const result: FactorExportRow[] = [];
-const headerRow: FactorExportRow = {};
-const emptyRow: FactorExportRow = {};
+// DEPOIS - Usar tipos específicos
+interface OccurrenceMetrics {
+  total: number;
+  thisYear: number;
+  open: number;
+  inTreatment: number;
+  resolved: number;
+  closed: number;
+  byImpact: Record<string, number>;
+  totalFinancialImpact: number;
+  avgResolutionDays: number;
+}
+
+interface OccurrenceTrendPoint {
+  month: string;
+  count: number;
+  highImpact: number;
+  financialImpact: number;
+}
+
+async getOccurrenceMetrics(): Promise<OccurrenceMetrics>
+async getRiskOccurrenceTrend(): Promise<OccurrenceTrendPoint[]>
+```
+
+### 2.5 documents.ts (3 any types)
+
+```typescript
+// ANTES (linha 560, 646)
+rows?: any[];
+const rows = parseResult.data as Record<string, any>[];
+
+// DEPOIS
+type CSVRow = Record<string, string | number | null>;
+
+rows?: CSVRow[];
+const rows = parseResult.data as CSVRow[];
+```
+
+### 2.6 wasteManagement.ts (1 any type)
+
+```typescript
+// ANTES (linha 286)
+const result: any = {};
+
+// DEPOIS
+interface WasteIntensityResult {
+  [key: string]: number | string;
+}
+const result: WasteIntensityResult = {};
 ```
 
 ---
 
-## Arquivos a Modificar
+## Parte 3: Novos Tipos de Entidade
 
-### Services com Logger + Types (7 arquivos)
-1. `trainingSchedules.ts` - 2 console
-2. `dataExport.ts` - 6 console + 7 any
-3. `griReports.ts` - 4 console + 4 any
-4. `supplierDashboard.ts` - 3 console + 1 any
-5. `licenseActivityHistory.ts` - 1 console + 4 any
-6. `energyManagement.ts` - 1 console
-7. `esg.ts` - 3 console
-
-### Services com Types Only (2 arquivos)
-1. `ghgReports.ts` - 3 any types
-2. `factorExport.ts` - 7 any types
-
----
-
-## Tipos a Adicionar/Atualizar
-
-### Em `src/types/entities/index.ts` - atualizar barrel exports
-
-### Em arquivos individuais - tipos inline:
+### Novo: `src/types/entities/career.ts`
 
 ```typescript
-// dataExport.ts
-type ExportDataRow = Record<string, string | number | boolean>;
+export interface CareerGoal {
+  title: string;
+  description?: string;
+  target_date?: string;
+  status?: 'not_started' | 'in_progress' | 'completed' | 'cancelled';
+}
 
-// griReports.ts  
-interface MaterialityAssessment { ... }
-interface StakeholderEngagement { ... }
+export interface SkillDevelopment {
+  skill_name: string;
+  current_level?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  target_level?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+}
 
-// ghgReports.ts
-interface UsedEmissionFactor { ... }
+export interface DevelopmentActivity {
+  activity_type: 'training' | 'mentoring' | 'project' | 'certification' | 'other';
+  description: string;
+  scheduled_date?: string;
+  completed?: boolean;
+}
 
-// factorExport.ts
-type FactorExportRow = Record<string, string | number>;
+export interface DevelopmentNeed {
+  area: string;
+  priority?: 'low' | 'medium' | 'high';
+  action_plan?: string;
+}
 
-// licenseActivityHistory.ts
-type ActionValues = Record<string, unknown>;
+export interface JobRequirement {
+  requirement: string;
+  is_mandatory?: boolean;
+}
+
+export interface JobBenefit {
+  benefit: string;
+  description?: string;
+}
+```
+
+### Novo: `src/types/entities/quality.ts`
+
+```typescript
+export interface RiskMatrixCell {
+  probability: string;
+  impact: string;
+  risks: unknown[];
+  count: number;
+}
+
+export interface RiskCounts {
+  total: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export interface RiskMatrixResult {
+  matrix: RiskMatrixCell[];
+  riskCounts: RiskCounts;
+}
+
+export interface OccurrenceMetrics {
+  total: number;
+  thisYear: number;
+  open: number;
+  inTreatment: number;
+  resolved: number;
+  closed: number;
+  byImpact: Record<string, number>;
+  totalFinancialImpact: number;
+  avgResolutionDays: number;
+}
+
+export interface OccurrenceTrendPoint {
+  month: string;
+  count: number;
+  highImpact: number;
+  financialImpact: number;
+}
 ```
 
 ---
 
 ## Ordem de Execução
 
-1. Migrar `trainingSchedules.ts` (simples, 2 logs)
-2. Migrar `energyManagement.ts` (simples, 1 log)
-3. Migrar `esg.ts` (simples, 3 logs)
-4. Migrar `licenseActivityHistory.ts` (1 log + 4 types)
-5. Migrar `supplierDashboard.ts` (3 logs + 1 type)
-6. Migrar `dataExport.ts` (6 logs + 7 types)
-7. Migrar `griReports.ts` (4 logs + 4 types)
-8. Corrigir types em `ghgReports.ts` (3 types)
-9. Corrigir types em `factorExport.ts` (7 types)
+1. **Criar novos arquivos de tipos** (`career.ts`, `quality.ts`)
+2. **Atualizar barrel export** (`src/types/entities/index.ts`)
+3. **Migrar services críticos** (documents, projectManagement, licenseAI)
+4. **Migrar unifiedQualityService** (maior complexidade)
+5. **Migrar services restantes** (riskOccurrences, careerDevelopment, predictiveAnalytics, wasteManagement)
 
 ---
 
-## Métricas Esperadas deste Batch
+## Métricas Esperadas
 
-| Métrica | Antes | Depois |
-|---------|-------|--------|
-| Services migrados | 21 | 30 |
-| Console logs removidos | ~70 | ~90 |
-| `any` types corrigidos | ~15 | ~50 |
+| Métrica | Antes | Depois deste Batch |
+|---------|-------|-------------------|
+| Services migrados | 30 | 38 |
+| Console logs removidos | ~90 | ~180 |
+| `any` types corrigidos | ~50 | ~100 |
+| Arquivos de tipos | 7 | 9 |
 
 ---
 
-## Notas Técnicas
+## Arquivos a Modificar
 
-### Padrão de Migração Logger
+### Services (8 arquivos)
+1. `documents.ts` - 35 console + 3 any
+2. `projectManagement.ts` - 18 console
+3. `licenseAI.ts` - 10 console + 3 any
+4. `unifiedQualityService.ts` - 12 console + 20 any
+5. `riskOccurrences.ts` - 5 console + 6 any
+6. `careerDevelopment.ts` - 15 any types
+7. `predictiveAnalytics.ts` - 4 console + 1 any
+8. `wasteManagement.ts` - 3 console + 1 any
+
+### Novos Arquivos de Tipos (2 arquivos)
+1. `src/types/entities/career.ts`
+2. `src/types/entities/quality.ts`
+
+### Atualização de Barrel (1 arquivo)
+1. `src/types/entities/index.ts`
+
+---
+
+## Detalhes Técnicos
+
+### Padrão de Logger por Categoria
+
+| Service | Categoria | Justificativa |
+|---------|-----------|---------------|
+| documents.ts | `document` | Gestão de documentos |
+| projectManagement.ts | `project` | Nova categoria para projetos |
+| licenseAI.ts | `compliance` | Análise de licenças |
+| unifiedQualityService.ts | `quality` | Nova categoria para qualidade |
+| riskOccurrences.ts | `quality` | Riscos são parte do SGQ |
+| careerDevelopment.ts | `service` | Serviço genérico de RH |
+| predictiveAnalytics.ts | `emission` | Predições de emissões |
+| wasteManagement.ts | `emission` | Gestão de resíduos |
+
+### Atualização do Logger
+
+Adicionar novas categorias ao logger:
 
 ```typescript
-// Adicionar import no topo
-import { logger } from '@/utils/logger';
-
-// console.error → logger.error
-console.error('Message:', error);
-→ logger.error('Message', error, 'category');
-
-// console.log → logger.debug
-console.log('Message:', data);
-→ logger.debug('Message', 'category', { data });
-
-// console.warn → logger.warn
-console.warn('Message');
-→ logger.warn('Message', 'category');
+// src/utils/logger.ts
+type LogCategory = 
+  | 'api' | 'auth' | 'service' | 'training' | 'compliance'
+  | 'document' | 'emission' | 'supplier' | 'gri' | 'import'
+  | 'quality' | 'project';  // Novas categorias
 ```
-
-### Categorias do Logger Utilizadas
-
-| Service | Categoria |
-|---------|-----------|
-| trainingSchedules | `training` |
-| dataExport | `service` |
-| griReports | `gri` |
-| supplierDashboard | `supplier` |
-| licenseActivityHistory | `compliance` |
-| energyManagement | `emission` |
-| esg | `api` |
-| ghgReports | `emission` |
-| factorExport | `emission` |
