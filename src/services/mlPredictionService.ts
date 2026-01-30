@@ -1,5 +1,6 @@
 import { apiGateway } from './apiGateway'
 import { analyticsService } from './analyticsService'
+import { logger } from '@/utils/logger'
 
 interface PredictionModel {
   id: string
@@ -18,7 +19,7 @@ interface PredictionRequest {
 }
 
 interface PredictionResult {
-  prediction: any
+  prediction: number | string | Record<string, number>
   confidence: number
   probability?: number
   explanation: string[]
@@ -173,7 +174,7 @@ class MLPredictionService {
     })
 
     // Enhanced ESG analysis
-    const score = Math.max(0, Math.min(100, prediction.prediction))
+    const score = Math.max(0, Math.min(100, prediction.prediction as number))
     const trend = this.calculateTrend(features)
     const factors = this.identifyESGFactors(features, prediction.featureImportance)
     const recommendations = this.generateESGRecommendations(features, score)
@@ -311,7 +312,7 @@ class MLPredictionService {
   }
 
   // Private helper methods
-  private async simulatePrediction(model: PredictionModel, features: Record<string, any>): Promise<PredictionResult> {
+  private async simulatePrediction(model: PredictionModel, features: Record<string, number | string>): Promise<PredictionResult> {
     // Simulate ML prediction processing
     await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200))
 
@@ -334,7 +335,7 @@ class MLPredictionService {
     }
   }
 
-  private generateSimulatedPrediction(model: PredictionModel, features: Record<string, any>): any {
+  private generateSimulatedPrediction(model: PredictionModel, features: Record<string, number | string>): number | string {
     switch (model.type) {
       case 'regression':
         return Math.max(0, Math.min(100, 50 + (Math.random() - 0.5) * 60))
@@ -347,7 +348,7 @@ class MLPredictionService {
     }
   }
 
-  private calculateFeatureImportance(modelFeatures: string[], features: Record<string, any>): Record<string, number> {
+  private calculateFeatureImportance(modelFeatures: string[], features: Record<string, number | string>): Record<string, number> {
     const importance: Record<string, number> = {}
     modelFeatures.forEach(feature => {
       importance[feature] = Math.random()
@@ -355,7 +356,7 @@ class MLPredictionService {
     return importance
   }
 
-  private generateExplanation(model: PredictionModel, prediction: any, importance: Record<string, number>): string[] {
+  private generateExplanation(model: PredictionModel, prediction: number | string, importance: Record<string, number>): string[] {
     const topFeatures = Object.entries(importance)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 3)
@@ -392,7 +393,7 @@ class MLPredictionService {
   }
 
   private identifyESGFactors(features: Record<string, number>, importance: Record<string, number>) {
-    const factors = []
+    const factors: Array<{ category: 'environmental' | 'social' | 'governance'; impact: number; description: string }> = []
     const categories = ['environmental', 'social', 'governance'] as const
     
     Object.entries(importance).forEach(([feature, impact], index) => {
@@ -480,7 +481,7 @@ class MLPredictionService {
     ]
   }
 
-  private identifyUrgentActions(riskCategories: any[]): string[] {
+  private identifyUrgentActions(riskCategories: Array<{ risk: number; mitigationSteps: string[] }>): string[] {
     return riskCategories
       .filter(cat => cat.risk > 70)
       .flatMap(cat => cat.mitigationSteps)
@@ -529,13 +530,13 @@ class MLPredictionService {
   }
 
   // Model management
-  async retrainModel(modelId: string, trainingData: any[]): Promise<void> {
+  async retrainModel(modelId: string, trainingData: unknown[]): Promise<void> {
     // Simulate model retraining
     const model = this.models.get(modelId)
     if (model) {
       model.lastTrained = new Date()
       model.accuracy = Math.max(0.7, Math.min(0.99, model.accuracy + (Math.random() - 0.5) * 0.1))
-      console.log(`Model ${modelId} retrained with accuracy: ${model.accuracy}`)
+      logger.debug(`Model ${modelId} retrained`, 'api', { accuracy: model.accuracy })
     }
   }
 

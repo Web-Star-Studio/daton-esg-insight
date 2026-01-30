@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export interface GHGInventorySummary {
   id?: string;
@@ -20,7 +21,7 @@ export interface GHGInventorySummary {
   verification_body?: string;
   verification_date?: string;
   
-  [key: string]: any;
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 export interface EmissionsByScope {
@@ -340,7 +341,7 @@ export const generateInventorySummary = async (
     else if (num === 9) summary.scope_3_downstream_transport = catData.emissions;
     else if (num === 11) summary.scope_3_product_use = catData.emissions;
     else if (num === 12) summary.scope_3_end_of_life = catData.emissions;
-    else summary.scope_3_other = (summary.scope_3_other || 0) + catData.emissions;
+    else summary.scope_3_other = ((summary.scope_3_other as number) || 0) + catData.emissions;
   });
   
   const savedSummary = await saveGHGInventorySummary(summary);
@@ -356,7 +357,7 @@ export const generateInventorySummary = async (
       try {
         await updateGHGGoalProgress(goal.id);
       } catch (error) {
-        console.error(`Erro ao atualizar meta ${goal.id}:`, error);
+        logger.error(`Erro ao atualizar meta ${goal.id}`, error, 'emission');
       }
     }
   }

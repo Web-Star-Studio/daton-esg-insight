@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
+import type { Json } from "@/integrations/supabase/types";
 
-// Types
+// Types - Using Json for Supabase compatibility
 export interface TrainingCourse {
   id: string;
   company_id: string;
@@ -11,8 +13,8 @@ export interface TrainingCourse {
   estimated_duration_hours: number;
   thumbnail_url?: string;
   is_mandatory: boolean;
-  prerequisites: any;
-  learning_objectives: any;
+  prerequisites: Json;
+  learning_objectives: Json;
   status: string;
   created_by_user_id: string;
   created_at: string;
@@ -66,8 +68,8 @@ export interface AssessmentQuestion {
   order_index: number;
   explanation?: string;
   media_url?: string;
-  options: any;
-  correct_answer: any;
+  options: Json;
+  correct_answer: Json;
   created_at: string;
 }
 
@@ -117,7 +119,7 @@ export interface AssessmentAttempt {
   percentage?: number;
   status: string;
   time_taken_minutes?: number;
-  answers: any;
+  answers: Json;
   created_at: string;
 }
 
@@ -126,7 +128,7 @@ export interface LearningPath {
   company_id: string;
   title: string;
   description?: string;
-  courses: any;
+  courses: Json;
   created_by_user_id: string;
   created_at: string;
   updated_at: string;
@@ -135,7 +137,7 @@ export interface LearningPath {
 class LMSService {
   // Training Courses
   async getCourses(): Promise<TrainingCourse[]> {
-    console.log('Fetching training courses...');
+    logger.debug('Fetching training courses', 'training');
     
     const { data, error } = await supabase
       .from('training_courses')
@@ -152,16 +154,16 @@ class LMSService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching courses:', error);
+      logger.error('Error fetching courses', error, 'training');
       throw new Error(`Erro ao buscar cursos: ${error.message}`);
     }
 
-    console.log('Courses fetched successfully:', data?.length || 0);
+    logger.debug('Courses fetched successfully', 'training', { count: data?.length || 0 });
     return data || [];
   }
 
   async createCourse(courseData: Partial<TrainingCourse>): Promise<TrainingCourse> {
-    console.log('Creating course:', courseData);
+    logger.debug('Creating course', 'training', { courseData });
     
     try {
       const { data: userResponse } = await supabase.auth.getUser();
@@ -201,20 +203,15 @@ class LMSService {
         .maybeSingle();
 
       if (error) {
-        console.error('Error creating course:', error);
+        logger.error('Error creating course', error, 'training');
         throw new Error(`Erro ao criar curso: ${error.message}`);
       }
       if (!data) throw new Error('Não foi possível criar o curso');
 
-      if (error) {
-        console.error('Error creating course:', error);
-        throw new Error(`Erro ao criar curso: ${error.message}`);
-      }
-
-      console.log('Course created successfully:', data);
+      logger.debug('Course created successfully', 'training', { courseId: data.id });
       return data;
     } catch (error) {
-      console.error('Detailed course creation error:', error);
+      logger.error('Detailed course creation error', error, 'training');
       throw error;
     }
   }
@@ -440,7 +437,7 @@ class LMSService {
 
       return data;
     } catch (error) {
-      console.error('Error enrolling employee:', error);
+      logger.error('Error enrolling employee', error, 'training');
       throw error;
     }
   }
@@ -526,7 +523,7 @@ class LMSService {
     return data;
   }
 
-  async submitAssessmentAttempt(attemptId: string, answers: Record<string, any>): Promise<AssessmentAttempt> {
+  async submitAssessmentAttempt(attemptId: string, answers: Json): Promise<AssessmentAttempt> {
     const { data, error } = await supabase
       .from('assessment_attempts')
       .update({
@@ -591,7 +588,7 @@ class LMSService {
 
       return data;
     } catch (error) {
-      console.error('Error creating learning path:', error);
+      logger.error('Error creating learning path', error, 'training');
       throw error;
     }
   }

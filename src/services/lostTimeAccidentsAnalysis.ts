@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 export interface LostTimeAccidentsByType {
   type: string;
@@ -243,7 +244,7 @@ export const calculateLostTimeAccidentsMetrics = async (
       calculation_date: new Date().toISOString(),
     };
   } catch (error) {
-    console.error('Error calculating lost time accidents metrics:', error);
+    logger.error('Error calculating lost time accidents metrics', error, 'service');
     throw error;
   }
 };
