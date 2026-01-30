@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addDays, differenceInDays } from 'date-fns';
+import { logger } from '@/utils/logger';
 import type { RenewalSchedule, RenewalFormData, RenewalSuggestion } from '@/types/licenseRenewal';
 
 export async function calculateRenewalSuggestion(
@@ -82,7 +83,7 @@ export async function scheduleRenewal(
     toast.success('Renovação agendada com sucesso!');
     return data as RenewalSchedule;
   } catch (error) {
-    console.error('Error scheduling renewal:', error);
+    logger.error('Error scheduling renewal', error, 'compliance');
     toast.error('Erro ao agendar renovação');
     throw error;
   }
@@ -145,7 +146,7 @@ export async function getRenewalSchedule(licenseId: string): Promise<RenewalSche
     if (error) throw error;
     return data as RenewalSchedule | null;
   } catch (error) {
-    console.error('Error fetching renewal schedule:', error);
+    logger.error('Error fetching renewal schedule', error, 'compliance');
     return null;
   }
 }
@@ -163,7 +164,7 @@ export async function updateRenewalStatus(
     if (error) throw error;
     toast.success('Status atualizado com sucesso');
   } catch (error) {
-    console.error('Error updating renewal status:', error);
+    logger.error('Error updating renewal status', error, 'compliance');
     toast.error('Erro ao atualizar status');
     throw error;
   }

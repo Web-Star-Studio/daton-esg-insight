@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/useDebounce';
+import { logger } from '@/utils/logger';
 
 interface ValidationResult {
   isChecking: boolean;
@@ -80,7 +81,7 @@ export const useEmployeeCodeValidation = (code: string, companyId: string | null
           suggestedCode,
         });
       } catch (error) {
-        console.error('Error validating employee code:', error);
+        logger.error('Error validating employee code', error, 'service');
         setResult({
           isChecking: false,
           isAvailable: true,

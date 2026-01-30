@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 interface ContextualInsight {
   id: string;
@@ -10,20 +11,39 @@ interface ContextualInsight {
   confidence: number;
   priority: 'low' | 'medium' | 'high' | 'critical';
   actionable: boolean;
-  relatedData: any;
+  relatedData: Record<string, unknown>;
   suggestedActions?: string[];
   estimatedImpact?: string;
   deadline?: Date;
+}
+
+interface RecentActivityMetrics {
+  emissionsCount: number;
+  licensesExpiring: number;
+  activeAssets: number;
+  [key: string]: unknown;
+}
+
+interface Goal {
+  id: string;
+  name?: string;
+  title?: string;
+  deadline?: string;
+  deadline_date?: string;
+  created_at: string;
+  current_progress?: number;
+  [key: string]: unknown;
 }
 
 interface BusinessContext {
   industryType: string;
   companySize: 'small' | 'medium' | 'large';
   locations: string[];
-  currentGoals: any[];
-  recentActivity: any;
+  currentGoals: Goal[];
+  recentActivity: RecentActivityMetrics;
   complianceStatus: string;
   riskLevel: string;
+  [key: string]: unknown;
 }
 
 export const useContextualAI = () => {
@@ -70,7 +90,15 @@ export const useContextualAI = () => {
       industryType: company?.sector || 'Industrial',
       companySize: assets.length > 50 ? 'large' : assets.length > 10 ? 'medium' : 'small',
       locations: [...new Set(assets.map(a => a.location).filter(Boolean))],
-      currentGoals: goals,
+      currentGoals: goals.map(g => ({
+        id: g.id,
+        title: g.name || 'Meta sem nome',
+        name: g.name,
+        deadline: g.deadline_date,
+        deadline_date: g.deadline_date,
+        created_at: g.created_at,
+        current_progress: 0, // Could be calculated from actual progress
+      })) as Goal[],
       recentActivity: {
         emissionsCount: emissions.length,
         licensesExpiring: licenses.filter(l => {
@@ -175,7 +203,7 @@ export const useContextualAI = () => {
       }));
 
     } catch (error) {
-      console.error('Error generating contextual insights:', error);
+      logger.error('Error generating contextual insights', error, 'api');
     } finally {
       setIsAnalyzing(false);
     }

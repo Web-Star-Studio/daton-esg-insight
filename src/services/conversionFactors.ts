@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 export interface ConversionFactor {
   id: string;
@@ -28,7 +29,7 @@ export async function getConversionFactors(): Promise<ConversionFactor[]> {
     .order('from_unit', { ascending: true });
 
   if (error) {
-    console.error('Erro ao buscar fatores de conversão:', error);
+    logger.error('Erro ao buscar fatores de conversão', error, 'emission');
     throw error;
   }
 
@@ -44,7 +45,7 @@ export async function getConversionFactorsByCategory(category: string): Promise<
     .order('from_unit', { ascending: true });
 
   if (error) {
-    console.error('Erro ao buscar fatores de conversão por categoria:', error);
+    logger.error('Erro ao buscar fatores de conversão por categoria', error, 'emission');
     throw error;
   }
 
@@ -70,7 +71,7 @@ export async function getConversionFactor(
   const { data, error } = await query.maybeSingle();
 
   if (error) {
-    console.error('Erro ao buscar fator de conversão:', error);
+    logger.error('Erro ao buscar fator de conversão', error, 'emission');
     throw new Error(`Erro ao buscar fator de conversão: ${error.message}`);
   }
   
@@ -93,7 +94,7 @@ export async function createConversionFactor(factorData: CreateConversionFactorD
     .maybeSingle();
 
   if (error) {
-    console.error('Erro ao criar fator de conversão:', error);
+    logger.error('Erro ao criar fator de conversão', error, 'emission');
     throw new Error(`Erro ao criar fator de conversão: ${error.message}`);
   }
   
@@ -142,7 +143,7 @@ export async function importConversionFactors(
       }
       successCount++;
     } catch (error) {
-      console.error('Erro ao importar fator:', factor, error);
+      logger.error('Erro ao importar fator', error, 'emission', { factor });
       errorCount++;
     }
   }
@@ -158,7 +159,7 @@ export async function getConversionCategories(): Promise<string[]> {
     .order('category', { ascending: true });
 
   if (error) {
-    console.error('Erro ao buscar categorias de conversão:', error);
+    logger.error('Erro ao buscar categorias de conversão', error, 'emission');
     throw error;
   }
 

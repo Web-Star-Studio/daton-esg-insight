@@ -61,7 +61,7 @@ export interface UserProfile {
   role: string | null;
   avatar_url?: string | null;
   has_completed_onboarding: boolean;
-  created_at: string;
+  created_at?: string;
   updated_at?: string;
 }
 

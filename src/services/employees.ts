@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formErrorHandler } from "@/utils/formErrorHandler";
+import { logger } from '@/utils/logger';
 
 export interface Employee {
   id: string;
@@ -224,28 +225,28 @@ export const deleteEmployee = async (id: string) => {
     // Deletar experiências
     await supabase.from('employee_experiences').delete().eq('employee_id', id);
   } catch (e) {
-    console.warn('Aviso ao limpar employee_experiences:', e);
+    logger.warn('Aviso ao limpar employee_experiences', 'service', e);
   }
 
   try {
     // Deletar educação/formação
     await supabase.from('employee_education').delete().eq('employee_id', id);
   } catch (e) {
-    console.warn('Aviso ao limpar employee_education:', e);
+    logger.warn('Aviso ao limpar employee_education', 'service', e);
   }
 
   try {
     // Deletar inscrições em benefícios
     await supabase.from('benefit_enrollments').delete().eq('employee_id', id);
   } catch (e) {
-    console.warn('Aviso ao limpar benefit_enrollments:', e);
+    logger.warn('Aviso ao limpar benefit_enrollments', 'service', e);
   }
 
   try {
     // Deletar treinamentos
     await supabase.from('employee_trainings').delete().eq('employee_id', id);
   } catch (e) {
-    console.warn('Aviso ao limpar employee_trainings:', e);
+    logger.warn('Aviso ao limpar employee_trainings', 'service', e);
   }
 
   // Agora deletar o funcionário
@@ -255,7 +256,7 @@ export const deleteEmployee = async (id: string) => {
     .eq('id', id);
 
   if (error) {
-    console.error('Erro ao excluir funcionário:', error);
+    logger.error('Erro ao excluir funcionário', error, 'service');
     throw new Error(error.message || 'Não foi possível excluir o funcionário');
   }
 };
@@ -412,7 +413,7 @@ export const useDeleteEmployee = () => {
       queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
     },
     onError: (error: Error) => {
-      console.error('Erro na mutação de exclusão:', error);
+      logger.error('Erro na mutação de exclusão', error, 'service');
       // O erro será propagado para o componente tratar
     },
   });
@@ -435,9 +436,9 @@ export const getEmployeesAsOptions = async (): Promise<Array<{value: string; lab
     return employees?.map(employee => ({
       value: employee.id,
       label: employee.full_name
-    })) || [];
+      })) || [];
   } catch (error) {
-    console.error('Error loading employees as options:', error);
+    logger.error('Error loading employees as options', error, 'service');
     return [];
   }
 };

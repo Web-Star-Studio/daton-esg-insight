@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ExecutionService, ItemResponse, ItemAttachment, AuditOccurrence } from "@/services/audit/execution";
 import { toast } from "sonner";
+import { logger } from '@/utils/logger';
 
 export const executionKeys = {
   all: ['audit-execution'] as const,
@@ -52,7 +53,7 @@ export function useSaveResponse() {
       toast.success("Resposta salva com sucesso");
     },
     onError: (error) => {
-      console.error("Error saving response:", error);
+      logger.error("Error saving response", error, 'audit');
       toast.error("Erro ao salvar resposta");
     },
   });
@@ -70,7 +71,7 @@ export function useDeleteResponse() {
       toast.success("Resposta removida");
     },
     onError: (error) => {
-      console.error("Error deleting response:", error);
+      logger.error("Error deleting response", error, 'audit');
       toast.error("Erro ao remover resposta");
     },
   });
@@ -105,7 +106,7 @@ export function useAddAttachment() {
       toast.success("Anexo adicionado");
     },
     onError: (error) => {
-      console.error("Error adding attachment:", error);
+      logger.error("Error adding attachment", error, 'audit');
       toast.error("Erro ao adicionar anexo");
     },
   });
@@ -123,7 +124,7 @@ export function useDeleteAttachment() {
       toast.success("Anexo removido");
     },
     onError: (error) => {
-      console.error("Error deleting attachment:", error);
+      logger.error("Error deleting attachment", error, 'audit');
       toast.error("Erro ao remover anexo");
     },
   });
@@ -158,7 +159,7 @@ export function useCreateOccurrence() {
       toast.success(`Ocorrência ${data.occurrence_number} criada`);
     },
     onError: (error) => {
-      console.error("Error creating occurrence:", error);
+      logger.error("Error creating occurrence", error, 'audit');
       toast.error("Erro ao criar ocorrência");
     },
   });
@@ -176,7 +177,7 @@ export function useUpdateOccurrence() {
       toast.success("Ocorrência atualizada");
     },
     onError: (error) => {
-      console.error("Error updating occurrence:", error);
+      logger.error("Error updating occurrence", error, 'audit');
       toast.error("Erro ao atualizar ocorrência");
     },
   });
@@ -194,7 +195,7 @@ export function useDeleteOccurrence() {
       toast.success("Ocorrência removida");
     },
     onError: (error) => {
-      console.error("Error deleting occurrence:", error);
+      logger.error("Error deleting occurrence", error, 'audit');
       toast.error("Erro ao remover ocorrência");
     },
   });
@@ -213,7 +214,7 @@ export function useCloseOccurrence() {
       toast.success("Ocorrência fechada");
     },
     onError: (error) => {
-      console.error("Error closing occurrence:", error);
+      logger.error("Error closing occurrence", error, 'audit');
       toast.error("Erro ao fechar ocorrência");
     },
   });

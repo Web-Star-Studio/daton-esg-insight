@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { formErrorHandler } from "@/utils/formErrorHandler";
+import { logger } from '@/utils/logger';
 
 export interface Department {
   id: string;
@@ -89,7 +90,7 @@ export const getDepartments = async (): Promise<Department[]> => {
     if (error) throw error;
     return (data as any) || [];
   } catch (error) {
-    console.warn('Error fetching departments with relations, falling back to simple query:', error);
+    logger.warn('Error fetching departments, falling back to simple query', 'service', error);
     // Fallback to simple query without relations
     const { data, error: simpleError } = await supabase
       .from('departments')
@@ -120,7 +121,7 @@ export const createDepartment = async (department: Omit<Department, 'id' | 'crea
         .single();
 
       if (error) {
-        console.error('Error creating department:', error);
+        logger.error('Error creating department', error, 'service');
         throw error;
       }
       
@@ -165,7 +166,7 @@ export const getPositions = async (): Promise<Position[]> => {
     if (error) throw error;
     return (data as any) || [];
   } catch (error) {
-    console.warn('Error fetching positions with relations, falling back to simple query:', error);
+    logger.warn('Error fetching positions, falling back to simple query', 'service', error);
     // Fallback to simple query without relations
     const { data, error: simpleError } = await supabase
       .from('positions')
@@ -196,7 +197,7 @@ export const createPosition = async (position: Omit<Position, 'id' | 'created_at
         .single();
 
       if (error) {
-        console.error('Error creating position:', error);
+        logger.error('Error creating position', error, 'service');
         throw error;
       }
       
@@ -283,17 +284,17 @@ export const createOrganizationalChartNode = async (node: Omit<OrganizationalCha
       `)
       .single();
 
-    if (error) {
-      console.error('Error creating organizational chart node:', error);
-      if (error.code === 'PGRST116') {
-        throw new Error('Você não tem permissão para criar nós no organograma.');
+      if (error) {
+        logger.error('Error creating organizational chart node', error, 'service');
+        if (error.code === 'PGRST116') {
+          throw new Error('Você não tem permissão para criar nós no organograma.');
+        }
+        throw error;
       }
-      throw error;
-    }
-    
-    return data as any;
-  } catch (error: any) {
-    console.error('Create organizational chart node error:', error);
+      
+      return data as any;
+  } catch (error: unknown) {
+    logger.error('Create organizational chart node error', error, 'service');
     throw error;
   }
 };
