@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 export interface TrainingStatus {
   id: string;
@@ -21,7 +22,7 @@ export async function getTrainingStatuses(companyId?: string): Promise<TrainingS
   const { data, error } = await query;
 
   if (error) {
-    console.error("Error fetching training statuses:", error);
+    logger.error("Error fetching training statuses", error, "training");
     throw error;
   }
 
@@ -44,7 +45,7 @@ export async function createTrainingStatus(
     .single();
 
   if (error) {
-    console.error("Error creating training status:", error);
+    logger.error("Error creating training status", error, "training");
     throw error;
   }
 
@@ -58,7 +59,7 @@ export async function deleteTrainingStatus(id: string): Promise<void> {
     .eq("id", id);
 
   if (error) {
-    console.error("Error deleting training status:", error);
+    logger.error("Error deleting training status", error, "training");
     throw error;
   }
 }

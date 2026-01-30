@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { calculateAdjustedFuelFactor, getElectricityFactorSIN } from "./variableFactors";
 import { getConversionFactor } from "./conversionFactors";
+import { logger } from "@/utils/logger";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface EmissionFactor {
   id: string;
@@ -16,7 +18,7 @@ export interface EmissionFactor {
   company_id: string | null;
   created_at: string;
   validation_status?: string;
-  details_json?: any;
+  details_json?: Json;
 }
 
 export interface CreateEmissionFactorData {
@@ -28,7 +30,7 @@ export interface CreateEmissionFactorData {
   n2o_factor?: number;
   source: string;
   year_of_validity?: number;
-  details_json?: any;
+  details_json?: Json;
 }
 
 // Obter todos os fatores de emissão (sistema + customizados da empresa)
@@ -40,7 +42,7 @@ export async function getEmissionFactors(): Promise<EmissionFactor[]> {
     .order('name', { ascending: true });
 
   if (error) {
-    console.error('Erro ao buscar fatores de emissão:', error);
+    logger.error('Erro ao buscar fatores de emissão', error, 'emission');
     throw error;
   }
 
@@ -56,7 +58,7 @@ export async function getEmissionFactorsByCategory(category: string): Promise<Em
     .order('name', { ascending: true });
 
   if (error) {
-    console.error('Erro ao buscar fatores por categoria:', error);
+    logger.error('Erro ao buscar fatores por categoria', error, 'emission');
     throw error;
   }
 
@@ -92,7 +94,7 @@ export async function createCustomEmissionFactor(factorData: CreateEmissionFacto
     .single();
 
   if (error) {
-    console.error('Erro ao criar fator de emissão:', error);
+    logger.error('Erro ao criar fator de emissão', error, 'emission');
     throw error;
   }
 
@@ -110,7 +112,7 @@ export async function updateCustomEmissionFactor(id: string, updateData: Partial
     .maybeSingle();
 
   if (error) {
-    console.error('Erro ao atualizar fator de emissão:', error);
+    logger.error('Erro ao atualizar fator de emissão', error, 'emission');
     throw error;
   }
 
@@ -130,7 +132,7 @@ export async function deleteCustomEmissionFactor(id: string): Promise<void> {
     .eq('type', 'custom'); // Só permite deletar fatores customizados
 
   if (error) {
-    console.error('Erro ao deletar fator de emissão:', error);
+    logger.error('Erro ao deletar fator de emissão', error, 'emission');
     throw error;
   }
 }
@@ -143,7 +145,7 @@ export async function getEmissionCategories(): Promise<string[]> {
     .order('category');
 
   if (error) {
-    console.error('Erro ao buscar categorias:', error);
+    logger.error('Erro ao buscar categorias', error, 'emission');
     throw error;
   }
 
@@ -155,7 +157,7 @@ export async function getEmissionCategories(): Promise<string[]> {
 // Recalcular emissões para dados existentes
 export async function recalculateExistingEmissions(): Promise<void> {
   try {
-    console.log('Iniciando recálculo de emissões existentes...');
+    logger.info('Iniciando recálculo de emissões existentes...', 'emission');
     
     // Get all activity data that doesn't have calculated emissions
     const { data: activityData, error: activityError } = await supabase
@@ -169,12 +171,12 @@ export async function recalculateExistingEmissions(): Promise<void> {
       `);
 
     if (activityError) {
-      console.error('Erro ao buscar dados de atividade:', activityError);
+      logger.error('Erro ao buscar dados de atividade', activityError, 'emission');
       return;
     }
 
     if (!activityData?.length) {
-      console.log('Nenhum dado de atividade encontrado');
+      logger.debug('Nenhum dado de atividade encontrado', 'emission');
       return;
     }
 
@@ -190,7 +192,7 @@ export async function recalculateExistingEmissions(): Promise<void> {
           .limit(1);
 
         if (existingCalculation?.length) {
-          console.log(`Activity ${activity.id} já tem emissões calculadas`);
+          logger.debug(`Activity ${activity.id} já tem emissões calculadas`, 'emission');
           continue;
         }
 
@@ -216,7 +218,7 @@ export async function recalculateExistingEmissions(): Promise<void> {
           .limit(1);
 
         if (!factors?.length) {
-          console.warn(`Nenhum fator encontrado para categoria: ${category}`);
+          logger.warn(`Nenhum fator encontrado para categoria: ${category}`, 'emission');
           continue;
         }
 
@@ -225,16 +227,16 @@ export async function recalculateExistingEmissions(): Promise<void> {
         await calculateEmissions(activity.id, factors[0].id);
         calculatedCount++;
         
-        console.log(`Emissões calculadas para activity ${activity.id}`);
+        logger.debug(`Emissões calculadas para activity ${activity.id}`, 'emission');
         
       } catch (error) {
-        console.error(`Erro ao calcular emissões para activity ${activity.id}:`, error);
+        logger.error(`Erro ao calcular emissões para activity ${activity.id}`, error, 'emission');
       }
     }
 
-    console.log(`Recálculo concluído. ${calculatedCount} emissões calculadas.`);
+    logger.info(`Recálculo concluído. ${calculatedCount} emissões calculadas.`, 'emission');
     
   } catch (error) {
-    console.error('Erro no recálculo de emissões:', error);
+    logger.error('Erro no recálculo de emissões', error, 'emission');
   }
 }

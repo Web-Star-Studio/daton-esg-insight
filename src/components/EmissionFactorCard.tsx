@@ -30,8 +30,9 @@ export function EmissionFactorCard({ factor, onDelete, onEdit }: EmissionFactorC
   // Calculate CO₂ equivalent automatically
   const calculateCO2Equivalent = () => {
     // Check if this is a refrigerant gas with direct GWP
-    const gwpDirect = factor.details_json?.gwp_direct;
-    if (gwpDirect) {
+    const details = factor.details_json as Record<string, unknown> | null;
+    const gwpDirect = details?.gwp_direct;
+    if (typeof gwpDirect === 'number') {
       // For refrigerant gases, 1 kg of gas = gwp_direct kg CO₂e
       return gwpDirect;
     }
@@ -99,16 +100,20 @@ export function EmissionFactorCard({ factor, onDelete, onEdit }: EmissionFactorC
             <span className="font-medium text-sm">CO₂ Equivalente</span>
           </div>
           <div className="text-lg font-mono font-bold text-primary">
-            {factor.details_json?.gwp_direct ? 
-              `${co2Equivalent.toLocaleString()} kg CO₂e/${factor.activity_unit}` :
-              `${co2Equivalent.toFixed(6)} kg CO₂e/${factor.activity_unit}`
-            }
+            {(() => {
+              const details = factor.details_json as Record<string, unknown> | null;
+              return details?.gwp_direct ? 
+                `${co2Equivalent.toLocaleString()} kg CO₂e/${factor.activity_unit}` :
+                `${co2Equivalent.toFixed(6)} kg CO₂e/${factor.activity_unit}`;
+            })()}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {factor.details_json?.gwp_direct ? 
-              `GWP direto (${factor.details_json.gwp_source})` :
-              "Calculado com GWP do IPCC AR6 (100 anos)"
-            }
+            {(() => {
+              const details = factor.details_json as Record<string, unknown> | null;
+              return details?.gwp_direct ? 
+                `GWP direto (${details.gwp_source})` :
+                "Calculado com GWP do IPCC AR6 (100 anos)";
+            })()}
           </p>
         </div>
 
