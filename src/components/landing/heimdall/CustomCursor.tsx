@@ -1,51 +1,37 @@
 /**
  * CustomCursor - Follows mouse with mix-blend-mode difference
- * 
- * Features:
- * - Small white circle (10px) follows mouse
- * - On hover over links/buttons: scales to 40px
- * - mix-blend-mode: difference (inverts colors underneath)
- * - Pointer-events: none
+ * Refactored to use framer-motion instead of gsap
  */
-import { useEffect, useRef, useState } from 'react';
-import { gsap } from 'gsap';
+import { useEffect, useState } from 'react';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import './heimdall.css';
 
 export function CustomCursor() {
-    const cursorRef = useRef<HTMLDivElement>(null);
     const [isHovering, setIsHovering] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
 
-    useEffect(() => {
-        const cursor = cursorRef.current;
-        if (!cursor) return;
+    const cursorX = useMotionValue(0);
+    const cursorY = useMotionValue(0);
+    const springX = useSpring(cursorX, { stiffness: 300, damping: 30 });
+    const springY = useSpring(cursorY, { stiffness: 300, damping: 30 });
 
-        // Mouse move handler
+    useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!isVisible) setIsVisible(true);
-
-            gsap.to(cursor, {
-                x: e.clientX,
-                y: e.clientY,
-                duration: 0.15,
-                ease: 'power2.out',
-            });
+            cursorX.set(e.clientX);
+            cursorY.set(e.clientY);
         };
 
-        // Mouse enter/leave window
         const handleMouseEnter = () => setIsVisible(true);
         const handleMouseLeave = () => setIsVisible(false);
 
-        // Hover detection for interactive elements
         const handleElementEnter = () => setIsHovering(true);
         const handleElementLeave = () => setIsHovering(false);
 
-        // Add mouse listeners
         window.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseenter', handleMouseEnter);
         document.addEventListener('mouseleave', handleMouseLeave);
 
-        // Add hover listeners to all interactive elements
         const interactiveElements = document.querySelectorAll(
             'a, button, [role="button"], input, textarea, select, .interactive'
         );
@@ -55,7 +41,6 @@ export function CustomCursor() {
             el.addEventListener('mouseleave', handleElementLeave);
         });
 
-        // MutationObserver to handle dynamically added elements
         const observer = new MutationObserver(() => {
             const newElements = document.querySelectorAll(
                 'a, button, [role="button"], input, textarea, select, .interactive'
@@ -80,7 +65,7 @@ export function CustomCursor() {
             });
             observer.disconnect();
         };
-    }, [isVisible]);
+    }, [isVisible, cursorX, cursorY]);
 
     // Don't show on touch devices
     if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
@@ -88,23 +73,25 @@ export function CustomCursor() {
     }
 
     return (
-        <div
-            ref={cursorRef}
+        <motion.div
             style={{
                 position: 'fixed',
                 top: 0,
                 left: 0,
-                width: isHovering ? '40px' : '10px',
-                height: isHovering ? '40px' : '10px',
+                width: isHovering ? 40 : 10,
+                height: isHovering ? 40 : 10,
                 background: '#ffffff',
                 borderRadius: '50%',
                 pointerEvents: 'none',
                 zIndex: 9999,
                 mixBlendMode: 'difference',
-                transform: 'translate(-50%, -50%)',
-                transition: 'width 0.2s ease, height 0.2s ease',
+                x: springX,
+                y: springY,
+                translateX: '-50%',
+                translateY: '-50%',
                 opacity: isVisible ? 1 : 0,
             }}
+            transition={{ width: { duration: 0.2 }, height: { duration: 0.2 } }}
         />
     );
 }
