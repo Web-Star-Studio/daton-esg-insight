@@ -7,54 +7,16 @@
  * - Custom cursor
  * - All sections composed together
  */
-import { useEffect, useRef } from 'react';
-import Lenis from '@studio-freight/lenis';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { HeimdallNavbar } from './HeimdallNavbar';
 import { HeroSection } from './HeroSection';
 import { NewsTicker } from './NewsTicker';
 import { TechStack3D } from './TechStack3D';
-
 import { StatsGrid } from './StatsGrid';
 import { HeimdallFooter } from './HeimdallFooter';
 import { CustomCursor } from './CustomCursor';
 import './heimdall.css';
 
-gsap.registerPlugin(ScrollTrigger);
-
 export function HeimdallLanding() {
-    const lenisRef = useRef<Lenis | null>(null);
-
-    useEffect(() => {
-        // Initialize Lenis with physics-based smooth scrolling
-        const lenis = new Lenis({
-            duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-            orientation: 'vertical',
-            gestureOrientation: 'vertical',
-            smoothWheel: true,
-            touchMultiplier: 2,
-        });
-
-        lenisRef.current = lenis;
-
-        // Connect Lenis to GSAP ScrollTrigger
-        lenis.on('scroll', ScrollTrigger.update);
-
-        gsap.ticker.add((time) => {
-            lenis.raf(time * 1000);
-        });
-
-        gsap.ticker.lagSmoothing(0);
-
-        // Cleanup
-        return () => {
-            lenis.destroy();
-            gsap.ticker.remove(lenis.raf);
-        };
-    }, []);
-
     return (
         <div className="heimdall-page">
             {/* Custom Cursor */}
