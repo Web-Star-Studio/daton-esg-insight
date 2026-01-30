@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 // Types
 export interface TrainingSchedule {
@@ -69,7 +70,7 @@ const getUserCompanyId = async (): Promise<string> => {
   const { data: companyId, error } = await supabase.rpc('get_user_company_id');
   
   if (error) {
-    console.error('Error getting company ID:', error);
+    logger.error('Error getting company ID', error, 'training');
     throw new Error('Erro ao obter empresa do usuário');
   }
   
@@ -168,7 +169,7 @@ export const createTrainingSchedule = async (
       );
 
     if (participantsError) {
-      console.error('Erro ao adicionar participantes:', participantsError);
+      logger.error('Erro ao adicionar participantes', participantsError, 'training');
       // Don't throw - schedule was created successfully
     }
   }

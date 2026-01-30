@@ -3,6 +3,13 @@ import { getEmissionStats } from "./emissions";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+interface UsedEmissionFactor {
+  source: string;
+  category: string;
+  factor_value: number;
+  unit: string;
+}
+
 export interface GHGReport {
   id: string;
   company_id: string;
@@ -15,7 +22,7 @@ export interface GHGReport {
   biogenic_co2: number;
   methodology_version: string;
   verification_status: 'not_verified' | 'third_party' | 'internal' | 'limited_assurance' | 'reasonable_assurance';
-  report_data: any;
+  report_data: ReportData | Record<string, unknown>;
   generated_at: string;
   created_at: string;
   updated_at: string;
@@ -67,7 +74,7 @@ export interface ReportData {
       comparison_metric: string;
     };
   };
-  [key: string]: any; // Allow index signature for Json compatibility
+  [key: string]: unknown;
 }
 
 // Gerar relatório anual completo
@@ -326,7 +333,7 @@ async function getUsedEmissionFactors() {
       )
     `);
 
-  const uniqueFactors = factors?.reduce((acc: any[], curr) => {
+  const uniqueFactors = factors?.reduce((acc: UsedEmissionFactor[], curr) => {
     const factor = curr.emission_factors;
     if (!factor) return acc;
 

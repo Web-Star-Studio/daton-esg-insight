@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getWasteSuppliers } from "./wasteSuppliers";
 import { getSupplierContracts } from "./supplierContracts";
+import { logger } from "@/utils/logger";
 
 export interface SupplierDashboardData {
   id: string;
@@ -114,7 +115,7 @@ export const getSupplierDashboardData = async (supplierId: string): Promise<Supp
 
     return dashboardData;
   } catch (error) {
-    console.error('Error fetching supplier dashboard data:', error);
+    logger.error('Error fetching supplier dashboard data', error, 'supplier');
     return null;
   }
 };
@@ -128,7 +129,7 @@ export const updateSupplierPerformanceMetrics = async (
     serviceLevelScore?: number;
     periodStart: string;
     periodEnd: string;
-    metricsData?: any;
+    metricsData?: Record<string, number | string | boolean>;
   }
 ) => {
   try {
@@ -167,7 +168,7 @@ export const updateSupplierPerformanceMetrics = async (
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Error updating supplier performance metrics:', error);
+    logger.error('Error updating supplier performance metrics', error, 'supplier');
     throw error;
   }
 };
@@ -207,7 +208,7 @@ export const getSuppliersOverview = async () => {
 
     return { overview, stats };
   } catch (error) {
-    console.error('Error fetching suppliers overview:', error);
+    logger.error('Error fetching suppliers overview', error, 'supplier');
     throw error;
   }
 };

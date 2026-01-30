@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { GRI_SECTION_KEYS, type GRISectionKey, GRI_SECTION_METADATA } from "@/types/gri";
+import { logger } from "@/utils/logger";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface GRIReport {
   id: string;
@@ -14,9 +16,9 @@ export interface GRIReport {
   executive_summary?: string;
   ceo_message?: string;
   methodology?: string;
-  materiality_assessment?: any;
-  stakeholder_engagement?: any;
-  template_config?: any;
+  materiality_assessment?: Json;
+  stakeholder_engagement?: Json;
+  template_config?: Json;
   completion_percentage: number;
   created_at: string;
   updated_at: string;
@@ -182,15 +184,15 @@ export async function createGRIReport(report: Partial<GRIReport>): Promise<GRIRe
       .maybeSingle();
 
     if (error) {
-      console.error('Erro ao criar relatório GRI:', error);
+      logger.error('Erro ao criar relatório GRI', error, 'gri');
       throw new Error(`Falha ao criar relatório: ${error.message}`);
     }
     
     if (!data) throw new Error('Não foi possível criar relatório GRI');
     
     return data;
-  } catch (error: any) {
-    console.error('Erro em createGRIReport:', error);
+  } catch (error: unknown) {
+    logger.error('Erro em createGRIReport', error, 'gri');
     throw error;
   }
 }
@@ -479,12 +481,12 @@ export async function calculateReportCompletion(reportId: string): Promise<numbe
     });
 
     if (error) {
-      console.error('Erro ao recalcular conclusão do relatório:', error);
+      logger.error('Erro ao recalcular conclusão do relatório', error, 'gri');
       return 0;
     }
     return data || 0;
-  } catch (e) {
-    console.error('Exceção em calculateReportCompletion:', e);
+  } catch (e: unknown) {
+    logger.error('Exceção em calculateReportCompletion', e, 'gri');
     return 0;
   }
 }
