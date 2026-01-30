@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 export interface EfficacyEvaluationItem {
   training_program_id: string;
@@ -25,7 +26,7 @@ export interface EfficacyDashboardMetrics {
 export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[]> => {
   const { data: userData, error: authError } = await supabase.auth.getUser();
   if (authError || !userData?.user) {
-    console.error('User not authenticated');
+    logger.warn('User not authenticated', 'training');
     return [];
   }
 
@@ -49,7 +50,7 @@ export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[
 
   // Se o usuário não está vinculado a nenhum employee, não mostrar avaliações
   if (!linkedEmployee) {
-    console.log('User is not linked to any employee record');
+    logger.debug('User is not linked to any employee record', 'training');
     return [];
   }
 

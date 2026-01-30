@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 import { CreateEmissionFactorData } from "./emissionFactors";
+import type { Json } from "@/integrations/supabase/types";
 
 // Fatores de emissão atualizados do GHG Protocol Brasil 2025 baseados no PDF
 export interface GHG2025EmissionFactor extends CreateEmissionFactorData {
@@ -347,7 +349,7 @@ export class GHG2025FactorsService {
     let errorCount = 0;
     const errors: string[] = [];
 
-    console.log(`Iniciando importação de ${ALL_GHG_2025_FACTORS.length} fatores GHG Protocol Brasil 2025...`);
+    logger.info(`Iniciando importação de ${ALL_GHG_2025_FACTORS.length} fatores GHG Protocol Brasil 2025...`, 'import');
 
     for (const factor of ALL_GHG_2025_FACTORS) {
       try {
@@ -380,7 +382,7 @@ export class GHG2025FactorsService {
             .eq('id', existingFactor.id);
 
           if (updateError) throw updateError;
-          console.log(`✓ Atualizado: ${factor.name}`);
+          logger.debug(`Atualizado: ${factor.name}`, 'import');
         } else {
           // Inserir novo fator
           const { error: insertError } = await supabase
@@ -403,23 +405,23 @@ export class GHG2025FactorsService {
             });
 
           if (insertError) throw insertError;
-          console.log(`✓ Criado: ${factor.name}`);
+          logger.debug(`Criado: ${factor.name}`, 'import');
         }
 
         successCount++;
 
       } catch (error) {
-        console.error(`Erro ao processar fator ${factor.name}:`, error);
+        logger.error(`Erro ao processar fator ${factor.name}`, error, 'import');
         errors.push(`${factor.name}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         errorCount++;
       }
     }
 
     const message = `Importação concluída: ${successCount} fatores processados com sucesso, ${errorCount} erros.`;
-    console.log(message);
+    logger.info(message, 'import');
 
     if (errors.length > 0) {
-      console.error('Erros encontrados:', errors);
+      logger.error('Erros encontrados na importação', { errors }, 'import');
     }
 
     return {
@@ -438,7 +440,7 @@ export class GHG2025FactorsService {
       .order('name');
 
     if (error) {
-      console.error('Erro ao buscar fatores por ano:', error);
+      logger.error('Erro ao buscar fatores por ano', error, 'emission');
       throw error;
     }
 
@@ -453,7 +455,7 @@ export class GHG2025FactorsService {
       .order('year_of_validity', { ascending: false });
 
     if (error) {
-      console.error('Erro ao buscar anos disponíveis:', error);
+      logger.error('Erro ao buscar anos disponíveis', error, 'emission');
       throw error;
     }
 
@@ -474,7 +476,7 @@ export class GHG2025FactorsService {
     const { data, error } = await query.order('name');
 
     if (error) {
-      console.error('Erro ao buscar fatores por categoria:', error);
+      logger.error('Erro ao buscar fatores por categoria', error, 'emission');
       throw error;
     }
 

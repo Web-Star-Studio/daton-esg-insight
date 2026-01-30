@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export interface DocumentApprovalLogEntry {
   preview_id?: string;
@@ -43,7 +44,7 @@ export async function createDocumentApprovalLog(entry: DocumentApprovalLogEntry)
     });
 
   if (error) {
-    console.error('Error creating approval log:', error);
+    logger.error('Error creating approval log', error, 'document');
     throw new Error(`Failed to create approval log: ${error.message}`);
   }
 }
