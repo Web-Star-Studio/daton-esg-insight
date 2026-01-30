@@ -127,26 +127,32 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get user from auth header if provided
+    // SECURITY: Validate JWT token for authenticated operations
     let userId: string | null = null;
     let companyId: string | null = null;
     
     const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
+    if (authHeader?.startsWith('Bearer ')) {
       try {
-        const { data: { user } } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
-        if (user) {
-          userId = user.id;
+        const token = authHeader.replace('Bearer ', '');
+        const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+        
+        if (claimsError || !claimsData?.claims) {
+          console.log('JWT validation failed:', claimsError?.message || 'Invalid claims');
+        } else {
+          userId = claimsData.claims.sub as string;
+          
           // Get user's company
           const { data: profile } = await supabaseClient
             .from('profiles')
             .select('company_id')
-            .eq('id', user.id)
+            .eq('id', userId)
             .single();
           companyId = profile?.company_id;
+          console.log('User authenticated:', { userId, companyId });
         }
       } catch (authError) {
-        console.log('Auth optional, continuing without user context');
+        console.log('Auth optional, continuing without user context:', authError);
       }
     }
 

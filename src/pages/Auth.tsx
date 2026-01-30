@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Mail, Lock, User, FileText, Info } from 'lucide-react';
+import { Building2, Mail, Lock, User, FileText, Info, CheckCircle2, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal';
+import { validatePassword, getPasswordRequirementChecks } from '@/utils/passwordValidation';
 
 export default function Auth() {
   const { login, register, isLoading, user } = useAuth();
@@ -62,6 +63,17 @@ export default function Auth() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate password strength
+    const passwordValidation = validatePassword(registerData.password);
+    if (!passwordValidation.valid) {
+      toast({
+        variant: "destructive",
+        title: "Senha não atende aos requisitos",
+        description: passwordValidation.errors[0],
+      });
+      return;
+    }
     
     if (registerData.password !== registerData.confirmPassword) {
       toast({
@@ -286,6 +298,23 @@ export default function Auth() {
                           required
                         />
                       </div>
+                      {/* Password Requirements Feedback */}
+                      {registerData.password && (
+                        <div className="mt-2 space-y-1">
+                          {getPasswordRequirementChecks(registerData.password).map((req, idx) => (
+                            <div key={idx} className="flex items-center gap-2 text-xs">
+                              {req.met ? (
+                                <CheckCircle2 className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <XCircle className="h-3 w-3 text-muted-foreground" />
+                              )}
+                              <span className={req.met ? 'text-green-600' : 'text-muted-foreground'}>
+                                {req.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">

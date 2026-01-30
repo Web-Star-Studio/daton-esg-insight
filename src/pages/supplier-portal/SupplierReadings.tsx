@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Loader2, FileText, CheckCircle, ExternalLink, Eye } from 'lucide-react';
 import { getSupplierReadings, confirmReading } from '@/services/supplierPortalService';
 import { useToast } from '@/hooks/use-toast';
+import { sanitizeRichText } from '@/utils/sanitize';
 
 export default function SupplierReadings() {
   const navigate = useNavigate();
@@ -177,7 +178,7 @@ export default function SupplierReadings() {
             
             <div className="py-4">
               {selectedReading?.content ? (
-                <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: selectedReading.content }} />
+                <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeRichText(selectedReading.content) }} />
               ) : selectedReading?.file_path ? (
                 <div className="border rounded-lg p-6 text-center">
                   <FileText className="h-12 w-12 mx-auto text-blue-600 mb-4" />
