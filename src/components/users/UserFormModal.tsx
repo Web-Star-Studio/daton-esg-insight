@@ -1,14 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserProfile } from "@/hooks/data/useUserManagement";
-import { Loader2, Mail, UserPlus, RefreshCw } from "lucide-react";
+import { Loader2, Mail, UserPlus, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 import { logFormSubmission, logFormValidation, createPerformanceLogger } from '@/utils/formLogging';
 
 // System roles with correct values
@@ -28,9 +29,15 @@ const userFormSchema = z.object({
   email: z.string()
     .email("Email inválido")
     .max(255, "Email deve ter no máximo 255 caracteres"),
+  username: z.string()
+    .optional()
+    .refine((val) => !val || /^[a-zA-Z0-9_-]{3,30}$/.test(val), {
+      message: "Username deve ter 3-30 caracteres (letras, números, _ e -)"
+    }),
   role: z.enum(['admin', 'manager', 'analyst', 'operator', 'viewer', 'auditor']),
   department: z.string().optional(),
   phone: z.string().optional(),
+  is_active: z.boolean().optional(),
 });
 
 type UserFormData = z.infer<typeof userFormSchema>;
@@ -43,10 +50,26 @@ interface UserFormModalProps {
   isLoading?: boolean;
   onResendInvite?: (user: UserProfile) => void;
   isResending?: boolean;
+  checkEmailUnique?: (email: string, excludeId?: string) => Promise<boolean>;
+  checkUsernameUnique?: (username: string, excludeId?: string) => Promise<boolean>;
 }
 
-export function UserFormModal({ open, onOpenChange, user, onSave, isLoading, onResendInvite, isResending }: UserFormModalProps) {
+export function UserFormModal({ 
+  open, 
+  onOpenChange, 
+  user, 
+  onSave, 
+  isLoading, 
+  onResendInvite, 
+  isResending,
+  checkEmailUnique,
+  checkUsernameUnique,
+}: UserFormModalProps) {
   const isEditing = !!user;
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   
   const {
     register,
@@ -55,43 +78,112 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading, onR
     setValue,
     watch,
     reset,
+    getValues,
   } = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
       full_name: '',
       email: '',
+      username: '',
       role: 'viewer',
       department: '',
       phone: '',
+      is_active: true,
     },
   });
 
   // Reset form when modal opens or user changes
   useEffect(() => {
     if (open) {
+      setEmailStatus('idle');
+      setUsernameStatus('idle');
+      setEmailError(null);
+      setUsernameError(null);
+      
       if (user) {
         reset({
           full_name: user.full_name || '',
           email: user.email || '',
+          username: user.username || '',
           role: (user.role as UserFormData['role']) || 'viewer',
           department: user.department || '',
           phone: user.phone || '',
+          is_active: user.is_active !== false,
         });
       } else {
         reset({
           full_name: '',
           email: '',
+          username: '',
           role: 'viewer',
           department: '',
           phone: '',
+          is_active: true,
         });
       }
     }
   }, [user, open, reset]);
 
   const roleValue = watch('role');
+  const isActiveValue = watch('is_active');
+
+  // Check email uniqueness on blur
+  const handleEmailBlur = async () => {
+    if (!checkEmailUnique) return;
+    
+    const email = getValues('email');
+    if (!email || errors.email) return;
+    
+    setEmailStatus('checking');
+    setEmailError(null);
+    
+    try {
+      const isUnique = await checkEmailUnique(email, user?.id);
+      if (isUnique) {
+        setEmailStatus('valid');
+      } else {
+        setEmailStatus('invalid');
+        setEmailError('Este email já está em uso');
+      }
+    } catch {
+      setEmailStatus('idle');
+    }
+  };
+
+  // Check username uniqueness on blur
+  const handleUsernameBlur = async () => {
+    if (!checkUsernameUnique) return;
+    
+    const username = getValues('username');
+    if (!username) {
+      setUsernameStatus('idle');
+      return;
+    }
+    
+    if (errors.username) return;
+    
+    setUsernameStatus('checking');
+    setUsernameError(null);
+    
+    try {
+      const isUnique = await checkUsernameUnique(username, user?.id);
+      if (isUnique) {
+        setUsernameStatus('valid');
+      } else {
+        setUsernameStatus('invalid');
+        setUsernameError('Este username já está em uso');
+      }
+    } catch {
+      setUsernameStatus('idle');
+    }
+  };
 
   const onSubmit = (data: UserFormData) => {
+    // Prevent submission if email/username validation failed
+    if (emailStatus === 'invalid' || usernameStatus === 'invalid') {
+      return;
+    }
+    
     const perfLogger = createPerformanceLogger('UserFormSubmission');
     
     try {
@@ -120,6 +212,19 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading, onR
   const handleCancel = () => {
     reset();
     onOpenChange(false);
+  };
+
+  const getValidationIcon = (status: 'idle' | 'checking' | 'valid' | 'invalid') => {
+    switch (status) {
+      case 'checking':
+        return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
+      case 'valid':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'invalid':
+        return <AlertCircle className="h-4 w-4 text-destructive" />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -168,13 +273,20 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading, onR
             <Label htmlFor="email">
               Email <span className="text-destructive">*</span>
             </Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="joao.silva@empresa.com"
-              {...register('email')}
-              disabled={isLoading || isEditing}
-            />
+            <div className="relative">
+              <Input
+                id="email"
+                type="email"
+                placeholder="joao.silva@empresa.com"
+                {...register('email')}
+                onBlur={handleEmailBlur}
+                disabled={isLoading || isEditing}
+                className="pr-8"
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                {getValidationIcon(emailStatus)}
+              </div>
+            </div>
             {isEditing && (
               <p className="text-xs text-muted-foreground">
                 Email não pode ser alterado
@@ -182,6 +294,36 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading, onR
             )}
             {errors.email && (
               <p className="text-sm text-destructive">{errors.email.message}</p>
+            )}
+            {emailError && (
+              <p className="text-sm text-destructive">{emailError}</p>
+            )}
+          </div>
+
+          {/* Username */}
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <div className="relative">
+              <Input
+                id="username"
+                placeholder="joao.silva"
+                {...register('username')}
+                onBlur={handleUsernameBlur}
+                disabled={isLoading}
+                className="pr-8"
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                {getValidationIcon(usernameStatus)}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Opcional. Apenas letras, números, _ e - (3-30 caracteres)
+            </p>
+            {errors.username && (
+              <p className="text-sm text-destructive">{errors.username.message}</p>
+            )}
+            {usernameError && (
+              <p className="text-sm text-destructive">{usernameError}</p>
             )}
           </div>
 
@@ -215,6 +357,24 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading, onR
               <p className="text-sm text-destructive">{errors.role.message}</p>
             )}
           </div>
+
+          {/* Status (apenas em edição) */}
+          {isEditing && (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="is_active">Status do Usuário</Label>
+                <p className="text-xs text-muted-foreground">
+                  {isActiveValue ? 'Usuário ativo e pode acessar o sistema' : 'Usuário desativado'}
+                </p>
+              </div>
+              <Switch
+                id="is_active"
+                checked={isActiveValue}
+                onCheckedChange={(checked) => setValue('is_active', checked)}
+                disabled={isLoading}
+              />
+            </div>
+          )}
 
           {/* Departamento */}
           <div className="space-y-2">
@@ -276,7 +436,10 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading, onR
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                disabled={isLoading || emailStatus === 'invalid' || usernameStatus === 'invalid'}
+              >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? 'Salvar Alterações' : 'Enviar Convite'}
               </Button>
