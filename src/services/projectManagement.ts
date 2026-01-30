@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 export interface Project {
   id: string;
@@ -109,7 +110,7 @@ export async function getProjects() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching projects:', error);
+    logger.error('Error fetching projects', error, 'service');
     throw error;
   }
 
@@ -124,7 +125,7 @@ export async function getProject(id: string) {
     .single();
 
   if (error) {
-    console.error('Error fetching project:', error);
+    logger.error('Error fetching project', error, 'service');
     throw error;
   }
 
@@ -154,7 +155,7 @@ export async function createProject(project: Omit<Project, 'id' | 'created_at' |
     .single();
 
   if (error) {
-    console.error('Error creating project:', error);
+    logger.error('Error creating project', error, 'service');
     throw error;
   }
 
@@ -170,7 +171,7 @@ export async function updateProject(id: string, updates: Partial<Project>) {
     .single();
 
   if (error) {
-    console.error('Error updating project:', error);
+    logger.error('Error updating project', error, 'service');
     throw error;
   }
 
@@ -184,7 +185,7 @@ export async function deleteProject(id: string) {
     .eq('id', id);
 
   if (error) {
-    console.error('Error deleting project:', error);
+    logger.error('Error deleting project', error, 'service');
     throw error;
   }
 }
@@ -198,7 +199,7 @@ export async function getProjectTasks(projectId: string) {
     .order('created_at', { ascending: true });
 
   if (error) {
-    console.error('Error fetching project tasks:', error);
+    logger.error('Error fetching project tasks', error, 'service');
     throw error;
   }
 
@@ -219,7 +220,7 @@ export async function createProjectTask(task: Omit<ProjectTask, 'id' | 'created_
     .single();
 
   if (error) {
-    console.error('Error creating project task:', error);
+    logger.error('Error creating project task', error, 'service');
     throw error;
   }
 
@@ -235,7 +236,7 @@ export async function updateProjectTask(id: string, updates: Partial<ProjectTask
     .single();
 
   if (error) {
-    console.error('Error updating project task:', error);
+    logger.error('Error updating project task', error, 'service');
     throw error;
   }
 
@@ -249,7 +250,7 @@ export async function deleteProjectTask(id: string) {
     .eq('id', id);
 
   if (error) {
-    console.error('Error deleting project task:', error);
+    logger.error('Error deleting project task', error, 'service');
     throw error;
   }
 }
@@ -263,7 +264,7 @@ export async function getProjectMilestones(projectId: string) {
     .order('target_date', { ascending: true });
 
   if (error) {
-    console.error('Error fetching milestones:', error);
+    logger.error('Error fetching milestones', error, 'service');
     throw error;
   }
 
@@ -278,7 +279,7 @@ export async function createProjectMilestone(milestone: Omit<ProjectMilestone, '
     .single();
 
   if (error) {
-    console.error('Error creating milestone:', error);
+    logger.error('Error creating milestone', error, 'service');
     throw error;
   }
 
@@ -294,7 +295,7 @@ export async function updateProjectMilestone(id: string, updates: Partial<Projec
     .single();
 
   if (error) {
-    console.error('Error updating milestone:', error);
+    logger.error('Error updating milestone', error, 'service');
     throw error;
   }
 
@@ -310,7 +311,7 @@ export async function getProjectResources(projectId: string) {
     .order('created_at', { ascending: true });
 
   if (error) {
-    console.error('Error fetching project resources:', error);
+    logger.error('Error fetching project resources', error, 'service');
     throw error;
   }
 
@@ -325,7 +326,7 @@ export async function createProjectResource(resource: Omit<ProjectResource, 'id'
     .single();
 
   if (error) {
-    console.error('Error creating project resource:', error);
+    logger.error('Error creating project resource', error, 'service');
     throw error;
   }
 
@@ -341,7 +342,7 @@ export async function getBurndownData(projectId: string) {
     .order('date', { ascending: true });
 
   if (error) {
-    console.error('Error fetching burndown data:', error);
+    logger.error('Error fetching burndown data', error, 'service');
     throw error;
   }
 
@@ -360,7 +361,7 @@ export async function updateBurndownData(projectId: string, date: string, burndo
     });
 
   if (error) {
-    console.error('Error updating burndown data:', error);
+    logger.error('Error updating burndown data', error, 'service');
     throw error;
   }
 }
@@ -374,7 +375,7 @@ export async function getScopeChanges(projectId: string) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching scope changes:', error);
+    logger.error('Error fetching scope changes', error, 'service');
     throw error;
   }
 
@@ -395,7 +396,7 @@ export async function createScopeChange(change: Omit<ScopeChange, 'id' | 'create
     .single();
 
   if (error) {
-    console.error('Error creating scope change:', error);
+    logger.error('Error creating scope change', error, 'service');
     throw error;
   }
 

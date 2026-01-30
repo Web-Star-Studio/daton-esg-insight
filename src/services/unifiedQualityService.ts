@@ -120,12 +120,14 @@ export interface PredictiveAnalysis {
   }>;
 }
 
+import type { RiskMatrixCell, RiskMatrixResult, LogContext } from "@/types/entities/quality";
+
 class UnifiedQualityService {
   private debugMode = true; // Enable debug logging
 
-  private log(message: string, context?: any) {
+  private log(message: string, context?: LogContext) {
     if (this.debugMode) {
-      logger.debug(`[QualityService] ${message}`, 'api', context);
+      logger.debug(`[QualityService] ${message}`, 'quality', context);
     }
   }
 
@@ -258,7 +260,7 @@ class UnifiedQualityService {
       .order('name', { ascending: true });
 
     if (error) {
-      console.error('Error fetching quality indicators list:', error);
+      logger.error('Error fetching quality indicators list', error, 'quality');
       throw error;
     }
 
@@ -304,7 +306,7 @@ class UnifiedQualityService {
       .single();
 
     if (error) {
-      console.error('Error creating quality indicator:', error);
+      logger.error('Error creating quality indicator', error, 'quality');
       throw error;
     }
 
@@ -323,7 +325,7 @@ class UnifiedQualityService {
       .order('measurement_date', { ascending: false });
 
     if (error) {
-      console.error('Error fetching indicator measurements:', error);
+      logger.error('Error fetching indicator measurements', error, 'quality');
       throw error;
     }
 
@@ -356,7 +358,7 @@ class UnifiedQualityService {
       .single();
 
     if (error) {
-      console.error('Error adding indicator measurement:', error);
+      logger.error('Error adding indicator measurement', error, 'quality');
       throw error;
     }
 
@@ -427,12 +429,12 @@ class UnifiedQualityService {
         recommendations
       };
     } catch (error) {
-      console.error('Error in predictive analysis:', error);
+      logger.error('Error in predictive analysis', error, 'quality');
       throw error;
     }
   }
 
-  private async generateQualityInsights(dashboardData: any): Promise<QualityInsight[]> {
+  private async generateQualityInsights(dashboardData: Partial<QualityDashboard>): Promise<QualityInsight[]> {
     const insights: QualityInsight[] = [];
 
     // Critical issues insight
@@ -518,19 +520,19 @@ class UnifiedQualityService {
     return this.generateQualityInsights({ metrics });
   }
 
-  async getQualityTrends(period: string = '30d'): Promise<any[]> {
+  async getQualityTrends(_period: string = '30d'): Promise<Array<{ qualityScore?: number; date?: string }>> {
     // Mock trend data for now
     return [];
   }
 
-  async getTeamPerformance(): Promise<any[]> {
+  async getTeamPerformance(): Promise<Array<{ id?: string; name?: string }>> {
     // Mock team performance data for now
     return [];
   }
 
-  async getRiskMatrix(id: string): Promise<any> {
+  async getRiskMatrix(id: string): Promise<RiskMatrixResult> {
     try {
-      console.log('🔍 getRiskMatrix: Fetching for matrix ID:', id);
+      logger.debug(`getRiskMatrix: Fetching for matrix ID: ${id}`, 'quality');
 
       const { data: risks, error } = await supabase
         .from('risk_assessments')
@@ -539,17 +541,17 @@ class UnifiedQualityService {
         .eq('status', 'Ativo');
 
       if (error) {
-        console.error('❌ getRiskMatrix: Supabase error', error);
+        logger.error('getRiskMatrix: Supabase error', error, 'quality');
         throw error;
       }
 
-      console.log('✅ getRiskMatrix: Found', risks?.length || 0, 'active risk assessments');
+      logger.debug(`getRiskMatrix: Found ${risks?.length || 0} active risk assessments`, 'quality');
 
       // Organizar riscos em matriz 5x5
       const probabilityLevels = ['Muito Baixa', 'Baixa', 'Média', 'Alta', 'Muito Alta'];
       const impactLevels = ['Muito Baixo', 'Baixo', 'Médio', 'Alto', 'Muito Alto'];
       
-      const matrix: any[] = [];
+      const matrix: RiskMatrixCell[] = [];
       probabilityLevels.forEach(prob => {
         impactLevels.forEach(imp => {
           const cellRisks = (risks || []).filter(
@@ -573,52 +575,52 @@ class UnifiedQualityService {
         low: (risks || []).filter(r => r.risk_level === 'Baixo' || r.risk_level === 'Muito Baixo').length
       };
 
-      console.log('✅ getRiskMatrix: Risk counts', riskCounts);
+      logger.debug('getRiskMatrix: Risk counts', 'quality', riskCounts);
 
       return { matrix, riskCounts };
     } catch (error) {
-      console.error('❌ getRiskMatrix: Unexpected error', error);
+      logger.error('getRiskMatrix: Unexpected error', error, 'quality');
       return { matrix: [], riskCounts: { total: 0, critical: 0, high: 0, medium: 0, low: 0 } };
     }
   }
 
-  async getProcessEfficiency(): Promise<any[]> {
+  async getProcessEfficiency(): Promise<unknown[]> {
     return [];
   }
 
-  async getStrategicMaps(): Promise<any[]> {
+  async getStrategicMaps(): Promise<unknown[]> {
     return [];
   }
 
-  async createStrategicMap(data: any): Promise<any> {
+  async createStrategicMap(_data: Record<string, unknown>): Promise<Record<string, unknown>> {
     return {};
   }
 
-  async getBSCPerspectives(id: string): Promise<any[]> {
+  async getBSCPerspectives(_id: string): Promise<unknown[]> {
     return [];
   }
 
-  async createBSCPerspective(data: any): Promise<any> {
+  async createBSCPerspective(_data: Record<string, unknown>): Promise<Record<string, unknown>> {
     return {};
   }
 
-  async getProcessMaps(): Promise<any[]> {
+  async getProcessMaps(): Promise<Array<{ id: string; name: string }>> {
     return [];
   }
 
-  async createProcessMap(data: any): Promise<any> {
+  async createProcessMap(_data: Record<string, unknown>): Promise<Record<string, unknown>> {
     return {};
   }
 
-  async getRiskMatrices(): Promise<any[]> {
+  async getRiskMatrices(): Promise<Array<{ id: string; name: string; [key: string]: unknown }>> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.error('❌ getRiskMatrices: User not authenticated');
+        logger.error('getRiskMatrices: User not authenticated', new Error('Not authenticated'), 'quality');
         throw new Error('User not authenticated');
       }
 
-      console.log('✅ getRiskMatrices: User authenticated', user.id);
+      logger.debug(`getRiskMatrices: User authenticated ${user.id}`, 'quality');
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -627,11 +629,11 @@ class UnifiedQualityService {
         .single();
 
       if (!profile?.company_id) {
-        console.error('❌ getRiskMatrices: Company not found for user', user.id);
+        logger.error('getRiskMatrices: Company not found for user', new Error('Company not found'), 'quality');
         throw new Error('Company not found');
       }
 
-      console.log('✅ getRiskMatrices: Company found', profile.company_id);
+      logger.debug(`getRiskMatrices: Company found ${profile.company_id}`, 'quality');
 
       const { data, error } = await supabase
         .from('risk_matrices')
@@ -640,27 +642,27 @@ class UnifiedQualityService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ getRiskMatrices: Supabase error', error);
+        logger.error('getRiskMatrices: Supabase error', error, 'quality');
         throw error;
       }
 
-      console.log('✅ getRiskMatrices: Found', data?.length || 0, 'matrices');
+      logger.debug(`getRiskMatrices: Found ${data?.length || 0} matrices`, 'quality');
       return data || [];
     } catch (error) {
-      console.error('❌ getRiskMatrices: Unexpected error', error);
+      logger.error('getRiskMatrices: Unexpected error', error, 'quality');
       return [];
     }
   }
 
-  async createRiskMatrix(data: any): Promise<any> {
+  async createRiskMatrix(_data: Record<string, unknown>): Promise<Record<string, unknown>> {
     return {};
   }
 
-  async getNonConformities(): Promise<any[]> {
+  async getNonConformities(): Promise<unknown[]> {
     return [];
   }
 
-  async createNonConformity(data: any): Promise<any> {
+  async createNonConformity(_data: Record<string, unknown>): Promise<Record<string, unknown>> {
     return {};
   }
 }

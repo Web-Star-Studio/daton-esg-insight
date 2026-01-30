@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
+import type { OccurrenceMetrics, OccurrenceTrendPoint } from "@/types/entities/quality";
 
 export interface RiskOccurrence {
     id: string;
@@ -38,7 +40,7 @@ export interface CreateRiskOccurrenceData {
 class RiskOccurrencesService {
     async getOccurrences(): Promise<RiskOccurrence[]> {
         const { data, error } = await supabase
-            .from('risk_occurrences' as any)
+            .from('risk_occurrences' as 'risk_occurrences')
             .select(`
                 *,
                 esg_risks!inner(risk_title)
@@ -46,7 +48,7 @@ class RiskOccurrencesService {
             .order('occurrence_date', { ascending: false });
 
         if (error) {
-            console.error('Error fetching risk occurrences:', error);
+            logger.error('Error fetching risk occurrences', error, 'quality');
             throw new Error(error.message);
         }
 
@@ -55,13 +57,13 @@ class RiskOccurrencesService {
 
     async getOccurrencesByRisk(riskId: string): Promise<RiskOccurrence[]> {
         const { data, error } = await supabase
-            .from('risk_occurrences' as any)
+            .from('risk_occurrences' as 'risk_occurrences')
             .select('*')
             .eq('risk_id', riskId)
             .order('occurrence_date', { ascending: false });
 
         if (error) {
-            console.error('Error fetching occurrences by risk:', error);
+            logger.error('Error fetching occurrences by risk', error, 'quality');
             throw new Error(error.message);
         }
 
@@ -79,7 +81,7 @@ class RiskOccurrencesService {
             .single();
 
         const { data, error } = await supabase
-            .from('risk_occurrences' as any)
+            .from('risk_occurrences' as 'risk_occurrences')
             .insert({
                 ...occurrence,
                 company_id: profile?.company_id,
@@ -89,7 +91,7 @@ class RiskOccurrencesService {
             .single();
 
         if (error) {
-            console.error('Error creating risk occurrence:', error);
+            logger.error('Error creating risk occurrence', error, 'quality');
             throw new Error(error.message);
         }
 
@@ -98,14 +100,14 @@ class RiskOccurrencesService {
 
     async updateOccurrence(id: string, updates: Partial<CreateRiskOccurrenceData>): Promise<RiskOccurrence> {
         const { data, error } = await supabase
-            .from('risk_occurrences' as any)
+            .from('risk_occurrences' as 'risk_occurrences')
             .update(updates)
             .eq('id', id)
             .select()
             .single();
 
         if (error) {
-            console.error('Error updating risk occurrence:', error);
+            logger.error('Error updating risk occurrence', error, 'quality');
             throw new Error(error.message);
         }
 
@@ -114,17 +116,17 @@ class RiskOccurrencesService {
 
     async deleteOccurrence(id: string): Promise<void> {
         const { error } = await supabase
-            .from('risk_occurrences' as any)
+            .from('risk_occurrences' as 'risk_occurrences')
             .delete()
             .eq('id', id);
 
         if (error) {
-            console.error('Error deleting risk occurrence:', error);
+            logger.error('Error deleting risk occurrence', error, 'quality');
             throw new Error(error.message);
         }
     }
 
-    async getOccurrenceMetrics(): Promise<any> {
+    async getOccurrenceMetrics(): Promise<OccurrenceMetrics> {
         const occurrences = await this.getOccurrences();
         const currentYear = new Date().getFullYear();
         
@@ -172,9 +174,9 @@ class RiskOccurrencesService {
         };
     }
 
-    async getRiskOccurrenceTrend(): Promise<any[]> {
+    async getRiskOccurrenceTrend(): Promise<OccurrenceTrendPoint[]> {
         const occurrences = await this.getOccurrences();
-        const last6Months = [];
+        const last6Months: OccurrenceTrendPoint[] = [];
         
         for (let i = 5; i >= 0; i--) {
             const date = new Date();
