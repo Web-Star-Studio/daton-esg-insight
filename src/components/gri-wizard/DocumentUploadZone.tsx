@@ -43,6 +43,22 @@ export function DocumentUploadZone({ reportId }: DocumentUploadZoneProps) {
           tags: ['gri-report']
         });
 
+        // Get user and profile info first
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error('Usuário não autenticado');
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!profile?.company_id) {
+          throw new Error('Erro ao identificar empresa');
+        }
+
         // Read file content for AI processing
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -75,7 +91,7 @@ export function DocumentUploadZone({ reportId }: DocumentUploadZoneProps) {
           // Save document metadata
           await supabase.from('gri_document_uploads').insert({
             report_id: reportId,
-            company_id: (await supabase.from('profiles').select('company_id').eq('id', (await supabase.auth.getUser()).data.user?.id).single()).data?.company_id,
+            company_id: profile.company_id,
             file_name: fileObj.file.name,
             file_path: uploadedDoc.file_path,
             file_type: fileObj.file.name.split('.').pop() || 'unknown',
@@ -86,7 +102,7 @@ export function DocumentUploadZone({ reportId }: DocumentUploadZoneProps) {
             suggested_indicators: data.analysis.suggested_indicators,
             confidence_score: data.analysis.confidence_score,
             processing_status: 'completed',
-            uploaded_by_user_id: (await supabase.auth.getUser()).data.user?.id,
+            uploaded_by_user_id: user.id,
             processed_at: new Date().toISOString(),
           });
 

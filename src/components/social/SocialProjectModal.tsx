@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createSocialProject, updateSocialProject, SocialProject } from "@/services/socialProjects";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { createSocialProject, updateSocialProject, deleteSocialProject, SocialProject } from "@/services/socialProjects";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formErrorHandler } from "@/utils/formErrorHandler";
 
@@ -42,6 +43,8 @@ interface SocialProjectModalProps {
 export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: SocialProjectModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
@@ -181,6 +184,24 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
     }
   };
 
+  const handleDelete = async () => {
+    if (!project) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteSocialProject(project.id);
+      toast.success('Projeto excluído com sucesso!');
+      onSuccess();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast.error('Erro ao excluir projeto');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -296,16 +317,59 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {project ? "Atualizar" : "Criar"} Projeto
-            </Button>
+          <DialogFooter className="flex justify-between">
+            {project && (
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isSubmitting || isDeleting}
+                className="mr-auto"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir
+              </Button>
+            )}
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting || isDeleting}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting || isDeleting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {project ? "Atualizar" : "Criar"} Projeto
+              </Button>
+            </div>
           </DialogFooter>
         </form>
+
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir o projeto "{project?.name}"? 
+                Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  'Excluir Projeto'
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
