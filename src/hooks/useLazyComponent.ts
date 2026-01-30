@@ -23,7 +23,7 @@ export function createLazyComponent<T = {}>(
 // Hook for dynamic imports with loading states
 export function useDynamicImport<T>(
   importFn: () => Promise<T>,
-  deps: any[] = []
+  deps: React.DependencyList = []
 ) {
   const [state, setState] = useState<{
     loading: boolean;

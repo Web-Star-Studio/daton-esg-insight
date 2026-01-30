@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { AppSidebar } from "@/components/AppSidebar"
 import { AppHeader } from "@/components/AppHeader"
@@ -12,6 +12,7 @@ import { ChatAssistant } from "@/components/tools/ChatAssistant"
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs"
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications"
 import { useAutoRetryProcessor } from "@/hooks/useAutoRetryProcessor"
+import { logger } from "@/utils/logger"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -26,30 +27,36 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Ativar processamento automático de retries para jobs que falharam
   useAutoRetryProcessor();
   
+  // Use ref to prevent excessive re-logging
+  const lastLoggedRef = useRef<string | null>(null);
+  
   // Force check if onboarding should be shown on mount
   useEffect(() => {
     if (user?.id && !isLoading) {
-      console.log('🔍 MainLayout: Checking onboarding status...', {
-        shouldShowOnboarding,
-        userId: user.id
-      });
+      const logKey = `${user.id}-${shouldShowOnboarding}`;
+      if (lastLoggedRef.current !== logKey) {
+        logger.debug('MainLayout: Checking onboarding status', 'ui', {
+          shouldShowOnboarding,
+          userId: user.id
+        });
+        lastLoggedRef.current = logKey;
+      }
     }
   }, [user?.id, isLoading, shouldShowOnboarding]);
 
-  // Failsafe: Previne body scroll bloqueado permanentemente
+  // Failsafe: Prevents permanently blocked body scroll
   useEffect(() => {
     const checkScroll = () => {
       const bodyOverflow = document.body.style.overflow;
       const isChatExpanded = document.querySelector('[data-chat-expanded="true"]');
       
-      // Se body está bloqueado mas chat não está expandido, corrige
+      // If body is blocked but chat is not expanded, fix it
       if (bodyOverflow === 'hidden' && !isChatExpanded) {
-        console.warn('⚠️ Body scroll was blocked, fixing...');
+        logger.warn('Body scroll was blocked unexpectedly, fixing', 'ui');
         document.body.style.overflow = '';
       }
     };
     
-    // Verifica a cada 2 segundos
     const interval = setInterval(checkScroll, 2000);
     
     return () => clearInterval(interval);

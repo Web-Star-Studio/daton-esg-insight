@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from "react";
 import { HelmetProvider } from 'react-helmet-async';
+import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -202,15 +203,15 @@ const PlatformAdminDashboard = lazy(() => import("./pages/PlatformAdminDashboard
 // Backward-compat alias
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
 
-// Query client otimizado com cache inteligente
+// Query client with optimized cache and retry logic
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
-      retry: (failureCount: number, error: Error) => {
-        // Não retentar em erros de autenticação
-        const errorObj = error as any;
+      retry: (failureCount: number, error: unknown) => {
+        // Don't retry on authentication errors
+        const errorObj = error as { status?: number; code?: string } | null;
         if (errorObj?.status === 401 || errorObj?.code === 'PGRST116') return false;
         return failureCount < 2;
       },
@@ -762,26 +763,28 @@ const AppContent = () => {
 const App = () => (
   <HelmetProvider>
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <CompanyProvider>
-            <TooltipProvider>
-              <SmartToastProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter
-                  future={{
-                    v7_startTransition: true,
-                    v7_relativeSplatPath: true
-                  }}
-                >
-                  <AppContent />
-                </BrowserRouter>
-              </SmartToastProvider>
-            </TooltipProvider>
-          </CompanyProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <CompanyProvider>
+              <TooltipProvider>
+                <SmartToastProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter
+                    future={{
+                      v7_startTransition: true,
+                      v7_relativeSplatPath: true
+                    }}
+                  >
+                    <AppContent />
+                  </BrowserRouter>
+                </SmartToastProvider>
+              </TooltipProvider>
+            </CompanyProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   </HelmetProvider>
 );
