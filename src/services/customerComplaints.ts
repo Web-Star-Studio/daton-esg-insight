@@ -1,4 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
+import type { CommunicationLogEntry } from "@/types/entities/complaint";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface CustomerComplaint {
   id: string;
@@ -20,8 +23,8 @@ export interface CustomerComplaint {
   resolution_description?: string;
   customer_satisfaction_rating?: number;
   customer_satisfaction_feedback?: string;
-  communication_log?: any;
-  attachments?: any;
+  communication_log?: CommunicationLogEntry[];
+  attachments?: Json;
   sla_met?: boolean;
   escalated: boolean;
   escalation_reason?: string;
@@ -40,7 +43,7 @@ export interface CreateCustomerComplaintData {
   subject: string;
   description: string;
   assigned_to_user_id?: string;
-  attachments?: any;
+  attachments?: Json;
 }
 
 export const getCustomerComplaints = async (filters?: {
@@ -67,9 +70,9 @@ export const getCustomerComplaints = async (filters?: {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as unknown as CustomerComplaint[];
   } catch (error) {
-    console.error('Error fetching customer complaints:', error);
+    logger.error('Error fetching customer complaints', error, 'quality');
     throw error;
   }
 };
@@ -83,9 +86,9 @@ export const getCustomerComplaintById = async (id: string): Promise<CustomerComp
       .maybeSingle();
 
     if (error) throw new Error(`Erro ao buscar reclamação: ${error.message}`);
-    return data;
+    return data as unknown as CustomerComplaint | null;
   } catch (error) {
-    console.error('Error fetching customer complaint:', error);
+    logger.error('Error fetching customer complaint by ID', error, 'quality');
     throw error;
   }
 };
@@ -108,45 +111,53 @@ export const createCustomerComplaint = async (complaintData: CreateCustomerCompl
       throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     }
 
+    const initialLog = {
+      date: new Date().toISOString(),
+      type: 'creation',
+      message: 'Reclamação registrada no sistema',
+      user_id: null
+    };
+
     const { data, error } = await supabase
       .from('customer_complaints')
       .insert({
         ...complaintData,
         complaint_number,
         company_id: profile?.company_id,
-        communication_log: [{
-          date: new Date().toISOString(),
-          type: 'creation',
-          message: 'Reclamação registrada no sistema',
-          user_id: null
-        }]
+        communication_log: [initialLog] as unknown as Json
       })
       .select()
       .maybeSingle();
 
     if (error) throw new Error(`Erro ao criar reclamação: ${error.message}`);
     if (!data) throw new Error('Não foi possível criar a reclamação');
-    return data;
+    return data as unknown as CustomerComplaint;
   } catch (error) {
-    console.error('Error creating customer complaint:', error);
+    logger.error('Error creating customer complaint', error, 'quality');
     throw error;
   }
 };
 
 export const updateCustomerComplaint = async (id: string, updates: Partial<CustomerComplaint>): Promise<CustomerComplaint> => {
   try {
+    // Convert updates to a format compatible with Supabase
+    const supabaseUpdates = {
+      ...updates,
+      communication_log: updates.communication_log as unknown as Json
+    };
+
     const { data, error } = await supabase
       .from('customer_complaints')
-      .update(updates)
+      .update(supabaseUpdates)
       .eq('id', id)
       .select()
       .maybeSingle();
 
     if (error) throw new Error(`Erro ao atualizar reclamação: ${error.message}`);
     if (!data) throw new Error('Reclamação não encontrada');
-    return data;
+    return data as unknown as CustomerComplaint;
   } catch (error) {
-    console.error('Error updating customer complaint:', error);
+    logger.error('Error updating customer complaint', error, 'quality');
     throw error;
   }
 };
@@ -157,16 +168,17 @@ export const addCommunicationLog = async (id: string, message: string, userId?: 
     if (!complaint) throw new Error('Complaint not found');
 
     const communication_log = complaint.communication_log || [];
-    communication_log.push({
+    const newEntry: CommunicationLogEntry = {
       date: new Date().toISOString(),
       type: 'communication',
       message,
       user_id: userId
-    });
+    };
+    communication_log.push(newEntry);
 
     return await updateCustomerComplaint(id, { communication_log });
   } catch (error) {
-    console.error('Error adding communication log:', error);
+    logger.error('Error adding communication log', error, 'quality');
     throw error;
   }
 };
@@ -190,7 +202,7 @@ export const resolveComplaint = async (
 
     return resolvedComplaint;
   } catch (error) {
-    console.error('Error resolving complaint:', error);
+    logger.error('Error resolving complaint', error, 'quality');
     throw error;
   }
 };
@@ -211,7 +223,7 @@ export const escalateComplaint = async (id: string, reason: string, userId?: str
 
     return escalatedComplaint;
   } catch (error) {
-    console.error('Error escalating complaint:', error);
+    logger.error('Error escalating complaint', error, 'quality');
     throw error;
   }
 };
@@ -229,7 +241,7 @@ export const rateComplaintResolution = async (
 
     return await updateCustomerComplaint(id, updates);
   } catch (error) {
-    console.error('Error rating complaint resolution:', error);
+    logger.error('Error rating complaint resolution', error, 'quality');
     throw error;
   }
 };
@@ -243,7 +255,7 @@ const getComplaintsCount = async (): Promise<number> => {
     if (error) throw error;
     return count || 0;
   } catch (error) {
-    console.error('Error getting complaints count:', error);
+    logger.error('Error getting complaints count', error, 'quality');
     return 0;
   }
 };
@@ -281,7 +293,7 @@ export const getComplaintsStats = async () => {
 
     return stats;
   } catch (error) {
-    console.error('Error calculating complaints stats:', error);
+    logger.error('Error calculating complaints stats', error, 'quality');
     throw error;
   }
 };

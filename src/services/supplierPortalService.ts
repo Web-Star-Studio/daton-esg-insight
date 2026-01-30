@@ -1,4 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
+import { 
+  ReadingConfirmationBasic, 
+  TrainingProgressRecord,
+  TrainingProgressUpdate 
+} from '@/types/entities/supplier-portal';
 
 // Types
 export interface MandatoryReading {
@@ -67,7 +73,7 @@ export async function getMandatoryReadings(companyId: string): Promise<Mandatory
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching mandatory readings:', error);
+    logger.error('Error fetching mandatory readings', error, 'supplier');
     throw error;
   }
 
@@ -82,7 +88,7 @@ export async function createMandatoryReading(reading: Omit<MandatoryReading, 'id
     .single();
 
   if (error) {
-    console.error('Error creating mandatory reading:', error);
+    logger.error('Error creating mandatory reading', error, 'supplier');
     throw error;
   }
 
@@ -98,7 +104,7 @@ export async function updateMandatoryReading(id: string, updates: Partial<Mandat
     .single();
 
   if (error) {
-    console.error('Error updating mandatory reading:', error);
+    logger.error('Error updating mandatory reading', error, 'supplier');
     throw error;
   }
 
@@ -112,7 +118,7 @@ export async function deleteMandatoryReading(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) {
-    console.error('Error deleting mandatory reading:', error);
+    logger.error('Error deleting mandatory reading', error, 'supplier');
     throw error;
   }
 }
@@ -125,7 +131,7 @@ export async function getReadingConfirmations(readingId: string): Promise<Readin
     .order('confirmed_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching reading confirmations:', error);
+    logger.error('Error fetching reading confirmations', error, 'supplier');
     throw error;
   }
 
@@ -148,7 +154,7 @@ export async function getSupplierSurveys(companyId: string): Promise<SupplierSur
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching supplier surveys:', error);
+    logger.error('Error fetching supplier surveys', error, 'supplier');
     throw error;
   }
 
@@ -163,7 +169,7 @@ export async function createSupplierSurvey(survey: Omit<SupplierSurvey, 'id' | '
     .single();
 
   if (error) {
-    console.error('Error creating supplier survey:', error);
+    logger.error('Error creating supplier survey', error, 'supplier');
     throw error;
   }
 
@@ -179,7 +185,7 @@ export async function updateSupplierSurvey(id: string, updates: Partial<Supplier
     .single();
 
   if (error) {
-    console.error('Error updating supplier survey:', error);
+    logger.error('Error updating supplier survey', error, 'supplier');
     throw error;
   }
 
@@ -193,7 +199,7 @@ export async function deleteSupplierSurvey(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) {
-    console.error('Error deleting supplier survey:', error);
+    logger.error('Error deleting supplier survey', error, 'supplier');
     throw error;
   }
 }
@@ -206,7 +212,7 @@ export async function getSurveyResponses(surveyId: string): Promise<SurveyRespon
     .order('completed_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching survey responses:', error);
+    logger.error('Error fetching survey responses', error, 'supplier');
     throw error;
   }
 
@@ -225,7 +231,7 @@ async function getSupplierCategoryIds(supplierId: string): Promise<string[]> {
     .eq('supplier_id', supplierId);
   
   if (error) {
-    console.error('Error fetching supplier categories:', error);
+    logger.error('Error fetching supplier categories', error, 'supplier');
     return [];
   }
   
@@ -258,7 +264,7 @@ export async function getSupplierReadings(supplierId: string, companyId: string)
 
   if (confError) throw confError;
 
-  const confirmedIds = new Set((confirmations as any[] || []).map(c => c.reading_id));
+  const confirmedIds = new Set((confirmations || []).map((c: ReadingConfirmationBasic) => c.reading_id));
 
   return (readings || []).map(reading => ({
     ...reading,
@@ -275,6 +281,10 @@ export async function confirmReading(supplierId: string, readingId: string): Pro
     });
 
   if (error) throw error;
+}
+
+interface SurveyResponseBasic {
+  survey_id: string;
 }
 
 export async function getSupplierSurveysForPortal(supplierId: string, companyId: string): Promise<(SupplierSurvey & { response?: SurveyResponse })[]> {
@@ -303,7 +313,7 @@ export async function getSupplierSurveysForPortal(supplierId: string, companyId:
 
   if (respError) throw respError;
 
-  const responseMap = new Map((responses as any[] || []).map(r => [r.survey_id, r as SurveyResponse]));
+  const responseMap = new Map((responses || []).map(r => [r.survey_id, r as unknown as SurveyResponse]));
 
   return (surveys || []).map(survey => ({
     ...survey,
@@ -389,7 +399,7 @@ export async function getSupplierTrainingsForPortal(supplierId: string, companyI
 
   if (progError) throw progError;
 
-  const progressMap = new Map((progress as any[] || []).map(p => [p.training_material_id, p]));
+  const progressMap = new Map((progress || []).map(p => [p.training_material_id, p]));
 
   return filteredTrainings.map(training => ({
     ...training,
@@ -403,30 +413,48 @@ export async function updateTrainingProgress(
   status: 'Não Iniciado' | 'Em Andamento' | 'Concluído',
   score?: number
 ): Promise<void> {
-  const updateData: any = {
-    supplier_id: supplierId,
-    training_material_id: trainingId,
+  // Get company_id from training material
+  const { data: training } = await supabase
+    .from('supplier_training_materials')
+    .select('company_id')
+    .eq('id', trainingId)
+    .single();
+
+  if (!training?.company_id) throw new Error('Training material not found');
+
+  const baseData = {
     status,
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    ...(status === 'Em Andamento' && { started_at: new Date().toISOString() }),
+    ...(status === 'Concluído' && { 
+      completed_at: new Date().toISOString(),
+      ...(score !== undefined && { score })
+    })
   };
 
-  if (status === 'Em Andamento') {
-    updateData.started_at = new Date().toISOString();
-  }
-
-  if (status === 'Concluído') {
-    updateData.completed_at = new Date().toISOString();
-    if (score !== undefined) {
-      updateData.score = score;
-    }
-  }
-
-  const { error } = await supabase
+  // Check if record exists
+  const { data: existing } = await supabase
     .from('supplier_training_progress')
-    .upsert(updateData, {
-      onConflict: 'supplier_id,training_material_id'
-    });
+    .select('id')
+    .eq('supplier_id', supplierId)
+    .eq('training_material_id', trainingId)
+    .maybeSingle();
 
-  if (error) throw error;
+  if (existing) {
+    const { error } = await supabase
+      .from('supplier_training_progress')
+      .update(baseData)
+      .eq('id', existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from('supplier_training_progress')
+      .insert([{
+        supplier_id: supplierId,
+        training_material_id: trainingId,
+        company_id: training.company_id,
+        ...baseData
+      }]);
+    if (error) throw error;
+  }
 }
-
