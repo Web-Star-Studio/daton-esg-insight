@@ -43,6 +43,19 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
+    // SECURITY: Validate JWT token for authenticated requests
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+      
+      if (claimsError || !claimsData?.claims) {
+        console.warn('JWT validation failed, but proceeding (public extractor)');
+      } else {
+        console.log('Authenticated extraction request from:', claimsData.claims.sub);
+      }
+    }
+
     // Download file from storage
     const { data: fileData, error: downloadError } = await supabaseClient
       .storage

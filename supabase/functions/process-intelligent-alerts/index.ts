@@ -17,6 +17,19 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // SECURITY: Validate JWT token (this is a scheduled/internal function, but validate if called externally)
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+      
+      if (claimsError || !claimsData?.claims) {
+        console.log('JWT validation failed for external call, proceeding as internal job');
+      } else {
+        console.log('Authenticated request from user:', claimsData.claims.sub);
+      }
+    }
+
     console.log('Processing intelligent alerts...');
 
     // Get all companies

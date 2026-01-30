@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, Building2, CheckCircle } from 'lucide-react';
+import { Lock, Building2, CheckCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { validatePassword, getPasswordRequirementChecks } from '@/utils/passwordValidation';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -50,20 +51,22 @@ export default function ResetPassword() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      toast({
+        variant: "destructive",
+        title: "Senha não atende aos requisitos",
+        description: passwordValidation.errors[0],
+      });
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast({
         variant: "destructive",
         title: "Senhas não conferem",
         description: "As senhas digitadas não são iguais.",
-      });
-      return;
-    }
-
-    if (password.length < 6) {
-      toast({
-        variant: "destructive",
-        title: "Senha muito curta",
-        description: "A senha deve ter pelo menos 6 caracteres.",
       });
       return;
     }
@@ -157,10 +160,27 @@ export default function ResetPassword() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      minLength={6}
+                      minLength={8}
                       autoFocus
                     />
                   </div>
+                  {/* Password Requirements Feedback */}
+                  {password && (
+                    <div className="mt-2 space-y-1">
+                      {getPasswordRequirementChecks(password).map((req, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs">
+                          {req.met ? (
+                            <CheckCircle2 className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-muted-foreground" />
+                          )}
+                          <span className={req.met ? 'text-green-600' : 'text-muted-foreground'}>
+                            {req.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

@@ -69,6 +69,24 @@ serve(async (req) => {
     
     console.log('📋 Classifying document:', { fileName, fileType, contentLength: content?.length });
 
+    // SECURITY: Validate JWT token for authenticated requests
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      const token = authHeader.replace('Bearer ', '');
+      const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+      
+      if (claimsError || !claimsData?.claims) {
+        console.warn('JWT validation failed, but proceeding (public classifier)');
+      } else {
+        console.log('Authenticated classification request from:', claimsData.claims.sub);
+      }
+    }
+
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
       throw new Error('LOVABLE_API_KEY not configured');

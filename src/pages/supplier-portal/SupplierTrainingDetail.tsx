@@ -10,6 +10,7 @@ import { Loader2, ArrowLeft, CheckCircle, ExternalLink, FileText, Video, Play } 
 import { supabase } from '@/integrations/supabase/client';
 import { updateTrainingProgress } from '@/services/supplierPortalService';
 import { useToast } from '@/hooks/use-toast';
+import { sanitizeRichText } from '@/utils/sanitize';
 
 export default function SupplierTrainingDetail() {
   const { id } = useParams<{ id: string }>();
@@ -162,7 +163,7 @@ export default function SupplierTrainingDetail() {
         if (training.content_text) {
           return (
             <div className="prose max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: training.content_text }} />
+              <div dangerouslySetInnerHTML={{ __html: sanitizeRichText(training.content_text) }} />
             </div>
           );
         }
