@@ -77,8 +77,8 @@ export const LazyComponents = {
     'IntelligentReportingDashboard'
   ),
   
-  MaterialityInteractiveMatrix: createLazyComponent(
-    () => import('@/components/MaterialityInteractiveMatrix').then(module => ({ default: module.MaterialityInteractiveMatrix })), 
+  MaterialityInteractiveMatrix: createLazyComponent<Record<string, unknown>>(
+    () => import('@/components/MaterialityInteractiveMatrix').then(module => ({ default: module.MaterialityInteractiveMatrix })) as Promise<{ default: React.ComponentType<Record<string, unknown>> }>, 
     'MaterialityInteractiveMatrix'
   )
 };

@@ -200,7 +200,7 @@ export default function BibliotecaFatores() {
       console.error('Erro ao atualizar GHG 2025:', error);
       toast({
         title: "❌ Erro na atualização",
-        description: error.message || "Erro ao importar fatores GHG Protocol Brasil 2025",
+        description: error instanceof Error ? error.message : "Erro ao importar fatores GHG Protocol Brasil 2025",
         variant: "destructive",
       });
     } finally {

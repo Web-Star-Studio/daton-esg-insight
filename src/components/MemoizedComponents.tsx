@@ -42,9 +42,7 @@ const OptimizedListItemComponent = <T,>({
   return <>{renderItem(item, index)}</>;
 };
 
-export const OptimizedListItem = memo(OptimizedListItemComponent, (prevProps, nextProps) => {
-  return prevProps.item === nextProps.item && prevProps.index === nextProps.index;
-});
+export const OptimizedListItem = memo(OptimizedListItemComponent) as typeof OptimizedListItemComponent;
 
 // Lista virtualizada simples para grandes datasets
 interface VirtualizedListProps<T> {

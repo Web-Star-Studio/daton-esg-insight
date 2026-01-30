@@ -127,7 +127,7 @@ export function PostOnboardingValidation({
         updateCheckStatus(check.id, 'success', 'Verificação concluída com sucesso');
       } catch (error) {
         console.error(`Validation error for ${check.id}:`, error);
-        updateCheckStatus(check.id, 'error', error.message || 'Erro na verificação');
+        updateCheckStatus(check.id, 'error', error instanceof Error ? error.message : 'Erro na verificação');
       }
       
       completedChecks++;

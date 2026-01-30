@@ -63,7 +63,7 @@ export function GRIContentIndexItemModal({
     } catch (error) {
       toast({
         title: 'Erro ao atualizar',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {

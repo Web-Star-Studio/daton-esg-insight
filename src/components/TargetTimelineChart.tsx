@@ -122,18 +122,19 @@ export function TargetTimelineChart({ data, milestones }: TargetTimelineChartPro
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => formatDate(value as string)}
-                  formatter={(value: any, name: string, props: any) => {
-                    if (props.payload.isMilestone) {
+                  formatter={(value, name, props) => {
+                    const payload = (props as { payload?: { isMilestone?: boolean; description?: string } }).payload;
+                    if (payload?.isMilestone) {
                       return [
                         <div key="milestone" className="space-y-1">
-                          <div className="font-medium">Marco: {formatValue(value)}</div>
+                          <div className="font-medium">Marco: {formatValue(value as number)}</div>
                           <div className="text-xs text-muted-foreground">
-                            {props.payload.description}
+                            {payload.description}
                           </div>
                         </div>
                       ]
                     }
-                    return [formatValue(value), 'Valor Atual']
+                    return [formatValue(value as number), 'Valor Atual']
                   }}
                 />
               }

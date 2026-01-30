@@ -269,16 +269,17 @@ export const StationaryCombustionModal = ({
       console.error('Erro ao adicionar dados:', error);
       
       // More specific error handling
-      if (error.message?.includes('violates row-level security')) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      if (errorMessage.includes('violates row-level security')) {
         toast.error("❌ Erro de permissão: Verifique se você tem acesso à fonte de emissão selecionada");
-      } else if (error.message?.includes('duplicate key')) {
+      } else if (errorMessage.includes('duplicate key')) {
         toast.error("❌ Dados duplicados: Já existem dados para este período");
-      } else if (error.message?.includes('invalid input syntax')) {
+      } else if (errorMessage.includes('invalid input syntax')) {
         toast.error("❌ Erro de formato: Verifique os dados inseridos");
-      } else if (error.message?.includes('not-null violation')) {
+      } else if (errorMessage.includes('not-null violation')) {
         toast.error("❌ Campo obrigatório não preenchido");
       } else {
-        toast.error(`❌ Erro ao adicionar dados: ${error.message || 'Erro desconhecido'}`);
+        toast.error(`❌ Erro ao adicionar dados: ${errorMessage}`);
       }
     } finally {
       setIsSubmitting(false);
