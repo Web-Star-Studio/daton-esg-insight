@@ -6,6 +6,14 @@ export interface DashboardPreferences {
   widgets: string[];
   layout: 'default' | 'compact' | 'expanded';
   pinnedModules?: string[];
+  theme?: 'light' | 'dark' | 'system';
+  timezone?: string;
+  notifications?: {
+    inApp: boolean;
+    email: boolean;
+    emailWeeklySummary: boolean;
+    systemUpdates: boolean;
+  };
 }
 
 export const useDashboardPreferences = () => {
@@ -38,6 +46,9 @@ export const useDashboardPreferences = () => {
         widgets: (rawPrefs as any).widgets || ['onboarding', 'tasks', 'goals', 'intelligence'],
         layout: (rawPrefs as any).layout || 'default',
         pinnedModules: (rawPrefs as any).pinnedModules,
+        theme: (rawPrefs as any).theme,
+        timezone: (rawPrefs as any).timezone,
+        notifications: (rawPrefs as any).notifications,
       } as DashboardPreferences;
     },
   });
@@ -84,6 +95,14 @@ export const useDashboardPreferences = () => {
     preferences: preferences || {
       widgets: ['onboarding', 'tasks', 'goals', 'intelligence'],
       layout: 'default' as const,
+      theme: 'system' as const,
+      timezone: 'America/Sao_Paulo',
+      notifications: {
+        inApp: true,
+        email: true,
+        emailWeeklySummary: false,
+        systemUpdates: true,
+      },
     },
     isLoading,
     updatePreferences: updatePreferencesMutation.mutate,
