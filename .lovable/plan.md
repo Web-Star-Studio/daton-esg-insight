@@ -1,490 +1,619 @@
 
-# Fase 2 - Batch 4: Services Críticos
+# Fase 2 - Batch 5: Migração de 20 Services
 
-## Análise dos Services com Maior Impacto
+## Resumo da Análise
 
-Baseado na análise detalhada, identifiquei os **12 services mais críticos** que precisam de migração urgente devido ao alto número de `console` calls e tipos `any`.
+Baseado na análise dos arquivos, identifiquei **20 services** que precisam de migração para o logger centralizado e/ou correção de tipos `any`.
 
-| Service | Console Calls | Types `any` | Categoria Logger | Prioridade |
-|---------|---------------|-------------|------------------|------------|
-| `documents.ts` | ~35 | 3 | `document` | **CRÍTICO** |
-| `projectManagement.ts` | ~18 | 0 | `project` | **ALTA** |
-| `licenseAI.ts` | ~10 | 3 | `compliance` | **ALTA** |
-| `careerDevelopment.ts` | 0 | ~15 | `service` | **ALTA** (types) |
-| `unifiedQualityService.ts` | ~12 | ~20 | `quality` | **CRÍTICO** |
-| `riskOccurrences.ts` | 5 | 6 | `quality` | **MÉDIA** |
-| `predictiveAnalytics.ts` | 4 | 1 | `emission` | **MÉDIA** |
-| `wasteManagement.ts` | 3 | 1 | `emission` | **MÉDIA** |
-| `analyticsService.ts` | 1 | 0 | `analytics` | **BAIXA** |
+### Services a Migrar
+
+| # | Arquivo | Console Calls | Types `any` | Categoria Logger |
+|---|---------|---------------|-------------|------------------|
+| 1 | `documentAI.ts` | 8 | 5 | `document` |
+| 2 | `lmsService.ts` | 12 | 6 | `training` |
+| 3 | `audit.ts` | 22 | 2 | `audit` |
+| 4 | `gedDocuments.ts` | 0 | 18 | `document` |
+| 5 | `advancedAnalytics.ts` | 0 | 8 | `emission` |
+| 6 | `licenses.ts` | 12 | 6 | `compliance` |
+| 7 | `approvalWorkflows.ts` | 0 | 1 | `service` |
+| 8 | `dataCollection.ts` | 0 | 4 | `service` |
+| 9 | `ghgInventory.ts` | 1 | 1 | `emission` |
+| 10 | `mlPredictionService.ts` | 1 | 1 | `api` |
+| 11 | `esgRecommendedIndicators.ts` | 0 | 3 | `emission` |
+| 12 | `waterManagement.ts` | 0 | 2 | `emission` |
+| 13 | `lostTimeAccidentsAnalysis.ts` | 1 | 0 | `service` |
+| 14 | `indicatorManagement.ts` | ~5 | 3 | `service` |
+| 15 | `integratedReports.ts` | ~4 | 5 | `gri` |
+| 16 | `knowledgeBase.ts` | ~3 | 2 | `service` |
+| 17 | `materialityService.ts` | ~4 | 3 | `gri` |
+| 18 | `operationalMetrics.ts` | ~3 | 2 | `emission` |
+| 19 | `processAutomation.ts` | ~2 | 4 | `service` |
+| 20 | `stakeholders.ts` | ~3 | 3 | `gri` |
+
+**Total estimado: ~80 console calls + ~90 types `any`**
 
 ---
 
 ## Parte 1: Migração de Console.log para Logger
 
-### 1.1 documents.ts (~35 console calls → logger)
-
-Este é o service com mais logs no projeto. Categorias a aplicar:
+### 1.1 documentAI.ts (8 console.error → logger.error)
 
 ```typescript
 import { logger } from '@/utils/logger';
 
-// ANTES
-console.log('Fetching folder hierarchy...');
-console.error('Error fetching folders:', error);
-console.log('📤 Uploading document:', file.name);
-console.error('❌ Storage upload error:', uploadError);
-console.log('✅ File uploaded to storage:', uploadData.path);
+// Linhas 93, 116, 138, 175, 203, 225, 248
+console.error('Error processing document:', error);
+→ logger.error('Error processing document', error, 'document');
 
-// DEPOIS
-logger.debug('Fetching folder hierarchy', 'document');
-logger.error('Error fetching folders', error, 'document');
-logger.debug(`Uploading document: ${file.name}`, 'document');
-logger.error('Storage upload error', uploadError, 'document');
-logger.debug(`File uploaded to storage: ${uploadData.path}`, 'document');
+console.error('Error fetching extraction jobs:', error);
+→ logger.error('Error fetching extraction jobs', error, 'document');
+
+console.error('Error fetching pending extractions:', error);
+→ logger.error('Error fetching pending extractions', error, 'document');
+
+console.error('Error fetching AI processing stats:', error);
+→ logger.error('Error fetching AI processing stats', error, 'document');
+
+console.error('Error approving extracted data:', error);
+→ logger.error('Error approving extracted data', error, 'document');
+
+console.error('Error rejecting extracted data:', error);
+→ logger.error('Error rejecting extracted data', error, 'document');
+
+console.error('Error fetching extraction job status:', error);
+→ logger.error('Error fetching extraction job status', error, 'document');
 ```
 
-### 1.2 projectManagement.ts (18 console calls → logger)
+### 1.2 lmsService.ts (12 console calls → logger)
 
 ```typescript
 import { logger } from '@/utils/logger';
 
-// ANTES (linha 112, 127, 157, etc.)
-console.error('Error fetching projects:', error);
-console.error('Error creating project:', error);
+// Linhas 138, 155, 159, 164, 204, 210, 214, 217, 443, 594
+console.log('Fetching training courses...');
+→ logger.debug('Fetching training courses', 'training');
 
-// DEPOIS
-logger.error('Error fetching projects', error, 'project');
-logger.error('Error creating project', error, 'project');
+console.error('Error fetching courses:', error);
+→ logger.error('Error fetching courses', error, 'training');
+
+console.log('Courses fetched successfully:', data?.length || 0);
+→ logger.debug('Courses fetched successfully', 'training', { count: data?.length || 0 });
+
+console.log('Creating course:', courseData);
+→ logger.debug('Creating course', 'training', { courseData });
+
+console.error('Error creating course:', error);
+→ logger.error('Error creating course', error, 'training');
+
+console.error('Error enrolling employee:', error);
+→ logger.error('Error enrolling employee', error, 'training');
+
+console.error('Error creating learning path:', error);
+→ logger.error('Error creating learning path', error, 'training');
 ```
 
-### 1.3 licenseAI.ts (10 console calls → logger)
+### 1.3 audit.ts (22 console calls → logger)
+
+Este serviço já importa o logger mas ainda usa console em várias funções.
+
+```typescript
+// Linhas 102, 107, 119, 135, 144, 152, 162, 168, 177, 181, 186, 195, 204, 212, 223, 229, 271, 281, 289, 294, 303, 307, 332, 335, 340, 374, 379, 390, 394
+console.log('Creating audit:', auditData);
+→ logger.debug('Creating audit', 'audit', { auditData });
+
+console.log('Current user:', userResponse.user?.id);
+→ logger.debug('Getting current user', 'audit', { userId: userResponse.user?.id });
+
+console.log('Profile data:', profile);
+→ logger.debug('Profile data retrieved', 'audit');
+
+console.error('Error creating audit:', error);
+→ logger.error('Error creating audit', error, 'audit');
+
+console.log('Audit created successfully:', data);
+→ logger.debug('Audit created successfully', 'audit', { auditId: data.id });
+
+console.error('Detailed audit creation error:', error);
+→ logger.error('Detailed audit creation error', error, 'audit');
+
+// Similar para todas as outras funções: getAuditFindings, createAuditFinding, 
+// updateAudit, updateAuditFinding, getActivityLogs, logActivity, getAuditTrail, getAllFindings
+```
+
+### 1.4 licenses.ts (12 console.error → logger.error)
 
 ```typescript
 import { logger } from '@/utils/logger';
 
-// ANTES (linhas 74, 91, 107, 124, 142, 158, 216, 240)
-console.error('Error analyzing license:', error);
-console.error('Error fetching license analyses:', error);
+// Linhas 174, 181, 197, 215, 224, 267, 279, 305, 317, 331, 339, 361, 420, 452, 483, 500
+console.error('Error fetching licenses:', error);
+→ logger.error('Error fetching licenses', error, 'compliance');
 
-// DEPOIS
-logger.error('Error analyzing license', error, 'compliance');
-logger.error('Error fetching license analyses', error, 'compliance');
+console.error('Error in getLicenses:', error);
+→ logger.error('Error in getLicenses', error, 'compliance');
+
+console.error('Error fetching license:', licenseError);
+→ logger.error('Error fetching license', licenseError, 'compliance');
+
+console.error('Error creating license:', error);
+→ logger.error('Error creating license', error, 'compliance');
+
+console.error('Error updating license:', error);
+→ logger.error('Error updating license', error, 'compliance');
+
+console.error('Error deleting license:', error);
+→ logger.error('Error deleting license', error, 'compliance');
+
+console.error('Error uploading file:', uploadError);
+→ logger.error('Error uploading file', uploadError, 'compliance');
+
+console.error('Error fetching license stats:', error);
+→ logger.error('Error fetching license stats', error, 'compliance');
 ```
 
-### 1.4 unifiedQualityService.ts (12 console calls → logger)
-
-Alguns já usam logger, mas muitos ainda usam console:
-
-```typescript
-// ANTES (linhas 261, 307, 326, 359, 430, 533, 542, etc.)
-console.error('Error fetching quality indicators list:', error);
-console.error('Error creating quality indicator:', error);
-console.error('Error in predictive analysis:', error);
-console.log('🔍 getRiskMatrix: Fetching for matrix ID:', id);
-
-// DEPOIS
-logger.error('Error fetching quality indicators list', error, 'quality');
-logger.error('Error creating quality indicator', error, 'quality');
-logger.error('Error in predictive analysis', error, 'quality');
-logger.debug(`getRiskMatrix: Fetching for matrix ID: ${id}`, 'quality');
-```
-
-### 1.5 riskOccurrences.ts (5 console calls → logger)
-
-```typescript
-import { logger } from '@/utils/logger';
-
-// ANTES (linhas 49, 64, 92, 108, 122)
-console.error('Error fetching risk occurrences:', error);
-console.error('Error creating risk occurrence:', error);
-
-// DEPOIS
-logger.error('Error fetching risk occurrences', error, 'quality');
-logger.error('Error creating risk occurrence', error, 'quality');
-```
-
-### 1.6 predictiveAnalytics.ts (4 console calls → logger)
-
-```typescript
-// ANTES (linhas 45, 55, 70, 73)
-console.log('📡 [PredictiveAnalytics] Calling edge function:', { analysisType, months });
-console.error('❌ [PredictiveAnalytics] Edge function error:', error);
-
-// DEPOIS
-logger.debug('Calling predictive analytics edge function', 'emission', { analysisType, months });
-logger.error('Predictive analytics edge function error', error, 'emission');
-```
-
-### 1.7 wasteManagement.ts (3 console calls → logger)
+### 1.5 ghgInventory.ts (1 console.error → logger.error)
 
 ```typescript
 import { logger } from '@/utils/logger';
 
-// ANTES (linhas 40, 225, 497)
-console.warn(`Unidade não reconhecida: ${unit}. Assumindo toneladas.`);
-console.log('Dados do ano anterior não disponíveis');
+// Linha 359
+console.error(`Erro ao atualizar meta ${goal.id}:`, error);
+→ logger.error(`Erro ao atualizar meta ${goal.id}`, error, 'emission');
+```
 
-// DEPOIS
-logger.warn(`Unidade de resíduo não reconhecida: ${unit}`, 'emission');
-logger.debug('Dados do ano anterior não disponíveis', 'emission');
+### 1.6 mlPredictionService.ts (1 console.log → logger.debug)
+
+```typescript
+import { logger } from '@/utils/logger';
+
+// Linha 538
+console.log(`Model ${modelId} retrained with accuracy: ${model.accuracy}`);
+→ logger.debug(`Model ${modelId} retrained`, 'api', { accuracy: model.accuracy });
+```
+
+### 1.7 lostTimeAccidentsAnalysis.ts (1 console.error → logger.error)
+
+```typescript
+import { logger } from '@/utils/logger';
+
+// Linha 246
+console.error('Error calculating lost time accidents metrics:', error);
+→ logger.error('Error calculating lost time accidents metrics', error, 'service');
 ```
 
 ---
 
 ## Parte 2: Correção de Types `any`
 
-### 2.1 unifiedQualityService.ts (~20 any types)
+### 2.1 documentAI.ts (5 any types)
 
 ```typescript
-// ANTES (linhas 126, 435, 521-531, 552, 585-665)
-private log(message: string, context?: any)
-private async generateQualityInsights(dashboardData: any)
-async getQualityTrends(period: string = '30d'): Promise<any[]>
-async getTeamPerformance(): Promise<any[]>
-async getRiskMatrix(id: string): Promise<any>
-const matrix: any[] = [];
-async getProcessEfficiency(): Promise<any[]>
-async createStrategicMap(data: any): Promise<any>
-async createBSCPerspective(data: any): Promise<any>
-async createProcessMap(data: any): Promise<any>
-async getRiskMatrices(): Promise<any[]>
-async createRiskMatrix(data: any): Promise<any>
-async getNonConformities(): Promise<any[]>
-async createNonConformity(data: any): Promise<any>
+// Linhas 24, 35, 55, 59, 189
+pipeline?: any[];
+result_data?: any;
+extracted_fields: Record<string, any>;
+suggested_mappings?: Record<string, any>;
+editedData?: Record<string, any>
 
-// DEPOIS - Definir interfaces específicas
-interface LogContext {
-  [key: string]: unknown;
+// DEPOIS
+interface PipelineStep {
+  step: string;
+  status: string;
+  duration_ms?: number;
+  result?: unknown;
 }
 
-interface RiskMatrixCell {
-  probability: string;
-  impact: string;
-  risks: RiskAssessment[];
-  count: number;
+interface ExtractedField {
+  value: string | number | boolean | null;
+  confidence?: number;
+  source?: string;
 }
 
-interface RiskCounts {
-  total: number;
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
+interface SuggestedMapping {
+  target_field: string;
+  confidence: number;
+  transform?: string;
 }
 
-interface RiskMatrixResult {
-  matrix: RiskMatrixCell[];
-  riskCounts: RiskCounts;
-}
-
-private log(message: string, context?: LogContext)
-private async generateQualityInsights(dashboardData: Partial<QualityDashboard>)
-async getQualityTrends(period: string = '30d'): Promise<unknown[]>
-async getRiskMatrix(id: string): Promise<RiskMatrixResult>
-const matrix: RiskMatrixCell[] = [];
+pipeline?: PipelineStep[];
+result_data?: Record<string, unknown>;
+extracted_fields: Record<string, ExtractedField | string | number>;
+suggested_mappings?: Record<string, SuggestedMapping>;
+editedData?: Record<string, string | number | boolean | null>
 ```
 
-### 2.2 careerDevelopment.ts (~15 any types)
+### 2.2 lmsService.ts (6 any types)
 
 ```typescript
-// ANTES (linhas 16-18, 61, 81, 107-108, 143-146, 191)
-goals: any[] | any;
-skills_to_develop: any[] | any;
-development_activities: any[] | any;
-development_needs: any[];
-objectives: any[];
-requirements: any[];
-benefits: any[];
-const cleanDataForSupabase = (data: Record<string, any>): Record<string, any>
-const withNormalizedFields: Record<string, any> = { ... };
+// Linhas 14, 15, 69, 70, 120, 129
+prerequisites: any;
+learning_objectives: any;
+options: any;
+correct_answer: any;
+answers: any;
+courses: any;
 
-// DEPOIS - Definir interfaces específicas
-interface CareerGoal {
+// DEPOIS
+interface LearningObjective {
   title: string;
   description?: string;
-  target_date?: string;
-  status?: string;
 }
 
-interface SkillDevelopment {
-  skill_name: string;
-  current_level?: string;
-  target_level?: string;
+interface QuestionOption {
+  id: string;
+  text: string;
+  is_correct?: boolean;
 }
 
-interface DevelopmentActivity {
-  activity_type: string;
-  description: string;
-  scheduled_date?: string;
-  completed?: boolean;
-}
-
-interface DevelopmentNeed {
-  area: string;
-  priority?: 'low' | 'medium' | 'high';
-  action_plan?: string;
-}
-
-interface JobRequirement {
-  requirement: string;
-  is_mandatory?: boolean;
-}
-
-interface JobBenefit {
-  benefit: string;
-  description?: string;
-}
-
-goals: CareerGoal[];
-skills_to_develop: SkillDevelopment[];
-development_activities: DevelopmentActivity[];
-development_needs: DevelopmentNeed[];
-objectives: string[];
-requirements: JobRequirement[];
-benefits: JobBenefit[];
+prerequisites: string[] | null;
+learning_objectives: LearningObjective[] | string[];
+options: QuestionOption[];
+correct_answer: string | string[] | Record<string, unknown>;
+answers: Record<string, string | string[]>;
+courses: string[] | Array<{ course_id: string; order?: number }>;
 ```
 
-### 2.3 licenseAI.ts (3 any types)
+### 2.3 audit.ts (2 any types)
 
 ```typescript
-// ANTES (linhas 7, 41, 73)
-ai_insights: any;
-metadata: any;
-} catch (error: any) {
+// Linhas 10, 311
+details_json?: any;
+async logActivity(actionType: string, description: string, detailsJson?: any)
 
 // DEPOIS
-interface AIInsight {
+details_json?: Record<string, unknown>;
+async logActivity(actionType: string, description: string, detailsJson?: Record<string, unknown>)
+```
+
+### 2.4 gedDocuments.ts (18 any types)
+
+Este é o serviço com mais tipos `any`. Principais correções:
+
+```typescript
+// Linhas 16, 35, 66, 124-125, 176, 187, 202, 266, 290, 311, 330, 347, 374, 562-563
+metadata?: any;
+steps: any;
+distribution_list: any;
+old_values?: any;
+new_values?: any;
+async getWorkflows(): Promise<any[]>
+async createWorkflow(workflow: any): Promise<any>
+async updateWorkflow(id: string, updates: any): Promise<any>
+async getPendingApprovals(): Promise<any[]>
+const updates: any = { ... }
+async getMasterList(): Promise<any[]>
+async addToMasterList(item: any): Promise<any>
+async updateMasterListItem(id: string, updates: any): Promise<any>
+async generateMasterListReport(): Promise<any>
+oldValues?: any, newValues?: any
+
+// DEPOIS - Usar tipos específicos ou Record<string, unknown>
+import type { Json } from '@/integrations/supabase/types';
+
+type DocumentMetadata = Record<string, unknown>;
+type ActionValues = Record<string, unknown>;
+
+metadata?: DocumentMetadata;
+steps: ApprovalStep[] | Json;
+distribution_list: string[] | Json;
+old_values?: ActionValues;
+new_values?: ActionValues;
+async getWorkflows(): Promise<ApprovalWorkflow[]>
+async createWorkflow(workflow: Partial<ApprovalWorkflow>): Promise<ApprovalWorkflow>
+async updateWorkflow(id: string, updates: Partial<ApprovalWorkflow>): Promise<ApprovalWorkflow>
+```
+
+### 2.5 advancedAnalytics.ts (8 any types)
+
+```typescript
+// Linhas 96, 107, 113, 208, 236, 237
+function processEmissionData(emissionData: any[], ...): AnalyticsData
+source.activity_data?.reduce((sum: number, activity: any) => {
+calculations.reduce((calcSum: number, calc: any) => {
+function generateInsights(data: any): string[]
+function generateRecommendations(data: any)
+const recommendations: any[] = [];
+
+// DEPOIS
+interface EmissionSourceData {
+  id: string;
+  name: string;
+  scope: number;
   category: string;
-  finding: string;
-  confidence: number;
-  recommendation?: string;
+  subcategory?: string;
+  scope_3_category_number?: number;
+  company_id: string;
 }
 
-interface AlertMetadata {
+interface ActivityDataItem {
+  calculated_emissions?: CalculatedEmission | CalculatedEmission[];
+  period_start_date: string;
+  period_end_date: string;
+  emission_sources?: EmissionSourceData;
+}
+
+interface CalculatedEmission {
+  total_co2e: number;
+  biogenic_co2_kg?: number;
+}
+
+interface AnalyticsContext {
+  totalEmissions: number;
+  scope1Total: number;
+  scope2Total: number;
+  scope3Total: number;
+  categoryBreakdown: CategoryBreakdown[];
+  topSources: TopSource[];
+}
+
+interface Recommendation {
+  title: string;
+  description: string;
+  potential_reduction?: number;
+  priority: 'high' | 'medium' | 'low';
+}
+
+function processEmissionData(emissionData: EmissionSourceData[], ...): AnalyticsData
+function generateInsights(data: AnalyticsContext): string[]
+function generateRecommendations(data: AnalyticsContext): Recommendation[]
+const recommendations: Recommendation[] = [];
+```
+
+### 2.6 licenses.ts (6 any types)
+
+```typescript
+// Linhas 33, 53, 119, 161, 254, 258, 287
+partial_data?: any;
+ai_extracted_data?: any;
+ai_extracted_data?: any;
+query = query.eq('status', filters.status as any)
+type: licenseData.type as any,
+status: licenseData.status as any,
+const updateData: any = { ...updates }
+
+// DEPOIS
+import type { Json } from '@/integrations/supabase/types';
+
+interface PartialExtractedData {
+  fields?: Record<string, string | number>;
+  confidence?: number;
+  errors?: string[];
+}
+
+partial_data?: PartialExtractedData;
+ai_extracted_data?: ExtractedLicenseFormData | Record<string, unknown>;
+
+// Remover casts desnecessários - usar tipos corretos
+const updateData: UpdateLicenseData & { issue_date?: string; expiration_date?: string } = { ...updates };
+```
+
+### 2.7 approvalWorkflows.ts (1 any type)
+
+```typescript
+// Linha 9
+steps: any;
+
+// DEPOIS
+import type { Json } from '@/integrations/supabase/types';
+
+interface WorkflowStep {
+  step_number: number;
+  name: string;
+  approver_ids: string[];
+  required_approvals?: number;
+}
+
+steps: WorkflowStep[] | Json;
+```
+
+### 2.8 dataCollection.ts (4 any types)
+
+```typescript
+// Linhas 16, 34, 180
+metadata: any;
+log: any;
+async getTemplate(type: string): Promise<{ data: any[]; fileName: string }>
+
+// DEPOIS
+interface TaskMetadata {
   source?: string;
-  related_condition_id?: string;
-  auto_generated?: boolean;
+  target_table?: string;
+  field_mappings?: Record<string, string>;
   [key: string]: unknown;
 }
 
-ai_insights: AIInsight[] | Record<string, unknown>;
-metadata: AlertMetadata;
-} catch (error: unknown) {
-```
-
-### 2.4 riskOccurrences.ts (6 any types)
-
-```typescript
-// ANTES (linhas 41, 58, 82, 101, 127, 175)
-.from('risk_occurrences' as any)
-async getOccurrenceMetrics(): Promise<any>
-async getRiskOccurrenceTrend(): Promise<any[]>
-
-// DEPOIS - Usar tipos específicos
-interface OccurrenceMetrics {
-  total: number;
-  thisYear: number;
-  open: number;
-  inTreatment: number;
-  resolved: number;
-  closed: number;
-  byImpact: Record<string, number>;
-  totalFinancialImpact: number;
-  avgResolutionDays: number;
+interface ImportLog {
+  entries: Array<{ timestamp: string; message: string; level: string }>;
+  errors?: string[];
+  warnings?: string[];
 }
 
-interface OccurrenceTrendPoint {
-  month: string;
-  count: number;
-  highImpact: number;
-  financialImpact: number;
+interface TemplateRow {
+  [key: string]: string | number | boolean | null;
 }
 
-async getOccurrenceMetrics(): Promise<OccurrenceMetrics>
-async getRiskOccurrenceTrend(): Promise<OccurrenceTrendPoint[]>
+metadata: TaskMetadata;
+log: ImportLog;
+async getTemplate(type: string): Promise<{ data: TemplateRow[]; fileName: string }>
 ```
 
-### 2.5 documents.ts (3 any types)
+### 2.9 ghgInventory.ts (1 any type - index signature)
 
 ```typescript
-// ANTES (linha 560, 646)
-rows?: any[];
-const rows = parseResult.data as Record<string, any>[];
+// Linha 23
+[key: string]: any;
 
 // DEPOIS
-type CSVRow = Record<string, string | number | null>;
-
-rows?: CSVRow[];
-const rows = parseResult.data as CSVRow[];
+[key: string]: string | number | boolean | null | undefined;
 ```
 
-### 2.6 wasteManagement.ts (1 any type)
+### 2.10 mlPredictionService.ts (1 any type)
 
 ```typescript
-// ANTES (linha 286)
-const result: any = {};
+// Linha 21
+prediction: any
 
 // DEPOIS
-interface WasteIntensityResult {
-  [key: string]: number | string;
+prediction: number | string | Record<string, number>;
+```
+
+### 2.11 esgRecommendedIndicators.ts (3 any types)
+
+```typescript
+// Linhas 24, 557
+metadata?: any;
+const totalConsumption = waterData.reduce((sum: number, log: any) => {
+
+// DEPOIS
+interface IndicatorMetadata {
+  calculation_method?: string;
+  data_source?: string;
+  last_verified?: string;
+  [key: string]: unknown;
 }
-const result: WasteIntensityResult = {};
+
+interface WaterLogEntry {
+  quantity: number | string;
+  unit?: string;
+  source_type?: string;
+}
+
+metadata?: IndicatorMetadata;
+const totalConsumption = waterData.reduce((sum: number, log: WaterLogEntry) => {
+```
+
+### 2.12 waterManagement.ts (2 any types)
+
+```typescript
+// Linhas 239, 248
+const result: any = { ... };
+}, {} as any);
+
+// DEPOIS
+interface WaterIntensityMetrics {
+  total_water_m3: number;
+  per_unit_m3?: number;
+  per_revenue_m3?: number;
+  production_volume?: number;
+  production_unit?: string;
+  revenue_brl?: number;
+}
+
+interface AggregatedMetrics {
+  production_volume: number;
+  production_unit: string;
+  revenue_brl: number;
+}
+
+const result: WaterIntensityMetrics = { ... };
+}, {} as AggregatedMetrics);
 ```
 
 ---
 
-## Parte 3: Novos Tipos de Entidade
+## Parte 3: Novas Categorias do Logger
 
-### Novo: `src/types/entities/career.ts`
-
-```typescript
-export interface CareerGoal {
-  title: string;
-  description?: string;
-  target_date?: string;
-  status?: 'not_started' | 'in_progress' | 'completed' | 'cancelled';
-}
-
-export interface SkillDevelopment {
-  skill_name: string;
-  current_level?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  target_level?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-}
-
-export interface DevelopmentActivity {
-  activity_type: 'training' | 'mentoring' | 'project' | 'certification' | 'other';
-  description: string;
-  scheduled_date?: string;
-  completed?: boolean;
-}
-
-export interface DevelopmentNeed {
-  area: string;
-  priority?: 'low' | 'medium' | 'high';
-  action_plan?: string;
-}
-
-export interface JobRequirement {
-  requirement: string;
-  is_mandatory?: boolean;
-}
-
-export interface JobBenefit {
-  benefit: string;
-  description?: string;
-}
-```
-
-### Novo: `src/types/entities/quality.ts`
-
-```typescript
-export interface RiskMatrixCell {
-  probability: string;
-  impact: string;
-  risks: unknown[];
-  count: number;
-}
-
-export interface RiskCounts {
-  total: number;
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
-}
-
-export interface RiskMatrixResult {
-  matrix: RiskMatrixCell[];
-  riskCounts: RiskCounts;
-}
-
-export interface OccurrenceMetrics {
-  total: number;
-  thisYear: number;
-  open: number;
-  inTreatment: number;
-  resolved: number;
-  closed: number;
-  byImpact: Record<string, number>;
-  totalFinancialImpact: number;
-  avgResolutionDays: number;
-}
-
-export interface OccurrenceTrendPoint {
-  month: string;
-  count: number;
-  highImpact: number;
-  financialImpact: number;
-}
-```
+O logger já possui todas as categorias necessárias:
+- `document` (para documentAI, gedDocuments)
+- `training` (para lmsService)
+- `audit` (para audit.ts)
+- `compliance` (para licenses)
+- `emission` (para ghgInventory, advancedAnalytics, waterManagement, esgRecommendedIndicators)
+- `api` (para mlPredictionService)
+- `service` (para dataCollection, lostTimeAccidentsAnalysis, approvalWorkflows)
+- `gri` (para integratedReports, materiality, stakeholders)
 
 ---
 
 ## Ordem de Execução
 
-1. **Criar novos arquivos de tipos** (`career.ts`, `quality.ts`)
-2. **Atualizar barrel export** (`src/types/entities/index.ts`)
-3. **Migrar services críticos** (documents, projectManagement, licenseAI)
-4. **Migrar unifiedQualityService** (maior complexidade)
-5. **Migrar services restantes** (riskOccurrences, careerDevelopment, predictiveAnalytics, wasteManagement)
+### Fase A: Services com mais console calls (maior impacto)
+1. `audit.ts` - 22 console calls + 2 any
+2. `lmsService.ts` - 12 console calls + 6 any
+3. `licenses.ts` - 12 console calls + 6 any
+4. `documentAI.ts` - 8 console calls + 5 any
 
----
+### Fase B: Services com muitos types any
+5. `gedDocuments.ts` - 18 any types (maior concentração)
+6. `advancedAnalytics.ts` - 8 any types
+7. `dataCollection.ts` - 4 any types
 
-## Métricas Esperadas
+### Fase C: Services restantes
+8. `approvalWorkflows.ts` - 1 any
+9. `ghgInventory.ts` - 1 console + 1 any
+10. `mlPredictionService.ts` - 1 console + 1 any
+11. `esgRecommendedIndicators.ts` - 3 any
+12. `waterManagement.ts` - 2 any
+13. `lostTimeAccidentsAnalysis.ts` - 1 console
 
-| Métrica | Antes | Depois deste Batch |
-|---------|-------|-------------------|
-| Services migrados | 30 | 38 |
-| Console logs removidos | ~90 | ~180 |
-| `any` types corrigidos | ~50 | ~100 |
-| Arquivos de tipos | 7 | 9 |
+### Fase D: Services adicionais (se tempo permitir)
+14-20. `indicatorManagement.ts`, `integratedReports.ts`, `knowledgeBase.ts`, `materiality.ts`, `operationalMetrics.ts`, `processAutomation.ts`, `stakeholders.ts`
 
 ---
 
 ## Arquivos a Modificar
 
-### Services (8 arquivos)
-1. `documents.ts` - 35 console + 3 any
-2. `projectManagement.ts` - 18 console
-3. `licenseAI.ts` - 10 console + 3 any
-4. `unifiedQualityService.ts` - 12 console + 20 any
-5. `riskOccurrences.ts` - 5 console + 6 any
-6. `careerDevelopment.ts` - 15 any types
-7. `predictiveAnalytics.ts` - 4 console + 1 any
-8. `wasteManagement.ts` - 3 console + 1 any
+### Services (13 arquivos principais)
+1. `src/services/audit.ts`
+2. `src/services/lmsService.ts`
+3. `src/services/licenses.ts`
+4. `src/services/documentAI.ts`
+5. `src/services/gedDocuments.ts`
+6. `src/services/advancedAnalytics.ts`
+7. `src/services/dataCollection.ts`
+8. `src/services/approvalWorkflows.ts`
+9. `src/services/ghgInventory.ts`
+10. `src/services/mlPredictionService.ts`
+11. `src/services/esgRecommendedIndicators.ts`
+12. `src/services/waterManagement.ts`
+13. `src/services/lostTimeAccidentsAnalysis.ts`
 
-### Novos Arquivos de Tipos (2 arquivos)
-1. `src/types/entities/career.ts`
-2. `src/types/entities/quality.ts`
+---
 
-### Atualização de Barrel (1 arquivo)
-1. `src/types/entities/index.ts`
+## Métricas Esperadas
+
+| Métrica | Antes (Batch 4) | Depois (Batch 5) |
+|---------|-----------------|------------------|
+| Services migrados | 38 | 51+ |
+| Console logs removidos | ~180 | ~260 |
+| `any` types corrigidos | ~100 | ~190 |
 
 ---
 
 ## Detalhes Técnicos
 
-### Padrão de Logger por Categoria
-
-| Service | Categoria | Justificativa |
-|---------|-----------|---------------|
-| documents.ts | `document` | Gestão de documentos |
-| projectManagement.ts | `project` | Nova categoria para projetos |
-| licenseAI.ts | `compliance` | Análise de licenças |
-| unifiedQualityService.ts | `quality` | Nova categoria para qualidade |
-| riskOccurrences.ts | `quality` | Riscos são parte do SGQ |
-| careerDevelopment.ts | `service` | Serviço genérico de RH |
-| predictiveAnalytics.ts | `emission` | Predições de emissões |
-| wasteManagement.ts | `emission` | Gestão de resíduos |
-
-### Atualização do Logger
-
-Adicionar novas categorias ao logger:
+### Padrão de Migração
 
 ```typescript
-// src/utils/logger.ts
-type LogCategory = 
-  | 'api' | 'auth' | 'service' | 'training' | 'compliance'
-  | 'document' | 'emission' | 'supplier' | 'gri' | 'import'
-  | 'quality' | 'project';  // Novas categorias
+// Import no topo
+import { logger } from '@/utils/logger';
+
+// console.log → logger.debug
+console.log('Message:', data);
+→ logger.debug('Message', 'category', { data });
+
+// console.error → logger.error
+console.error('Error:', error);
+→ logger.error('Error message', error, 'category');
+
+// console.warn → logger.warn
+console.warn('Warning');
+→ logger.warn('Warning message', 'category');
+```
+
+### Padrão para Types Any
+
+```typescript
+// Para campos JSON do Supabase
+import type { Json } from '@/integrations/supabase/types';
+field: SomeInterface | Json;
+
+// Para objetos genéricos
+field: Record<string, unknown>;
+
+// Para arrays com estrutura conhecida
+field: SpecificInterface[];
+
+// Para callbacks/reducers
+array.reduce((acc: SpecificType, item: ItemType) => { ... }, initialValue as SpecificType);
 ```
