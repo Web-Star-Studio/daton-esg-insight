@@ -1,619 +1,417 @@
 
-# Fase 2 - Batch 5: Migração de 20 Services
+# Validação Técnica de Stack - Lovable
 
 ## Resumo da Análise
 
-Baseado na análise dos arquivos, identifiquei **20 services** que precisam de migração para o logger centralizado e/ou correção de tipos `any`.
+Após análise detalhada do codebase, identifiquei áreas de força e oportunidades de otimização em cada categoria crítica.
 
-### Services a Migrar
+## 1. React e Hooks - Estado Atual
 
-| # | Arquivo | Console Calls | Types `any` | Categoria Logger |
-|---|---------|---------------|-------------|------------------|
-| 1 | `documentAI.ts` | 8 | 5 | `document` |
-| 2 | `lmsService.ts` | 12 | 6 | `training` |
-| 3 | `audit.ts` | 22 | 2 | `audit` |
-| 4 | `gedDocuments.ts` | 0 | 18 | `document` |
-| 5 | `advancedAnalytics.ts` | 0 | 8 | `emission` |
-| 6 | `licenses.ts` | 12 | 6 | `compliance` |
-| 7 | `approvalWorkflows.ts` | 0 | 1 | `service` |
-| 8 | `dataCollection.ts` | 0 | 4 | `service` |
-| 9 | `ghgInventory.ts` | 1 | 1 | `emission` |
-| 10 | `mlPredictionService.ts` | 1 | 1 | `api` |
-| 11 | `esgRecommendedIndicators.ts` | 0 | 3 | `emission` |
-| 12 | `waterManagement.ts` | 0 | 2 | `emission` |
-| 13 | `lostTimeAccidentsAnalysis.ts` | 1 | 0 | `service` |
-| 14 | `indicatorManagement.ts` | ~5 | 3 | `service` |
-| 15 | `integratedReports.ts` | ~4 | 5 | `gri` |
-| 16 | `knowledgeBase.ts` | ~3 | 2 | `service` |
-| 17 | `materialityService.ts` | ~4 | 3 | `gri` |
-| 18 | `operationalMetrics.ts` | ~3 | 2 | `emission` |
-| 19 | `processAutomation.ts` | ~2 | 4 | `service` |
-| 20 | `stakeholders.ts` | ~3 | 3 | `gri` |
+### Pontos Fortes
+- `useDebounce` implementado corretamente com cleanup function
+- `useLazyComponent` usa IntersectionObserver com cleanup adequado
+- `useOptimizedRealtime` implementa debouncing e cleanup de subscriptions
+- `usePrefetch` usa useCallback corretamente para memoização
+- `AuthContext` usa useRef corretamente para evitar re-inicializações
 
-**Total estimado: ~80 console calls + ~90 types `any`**
+### Problemas Identificados
 
----
+| Arquivo | Problema | Severidade |
+|---------|----------|------------|
+| `MainLayout.tsx:32-35` | console.log em useEffect (produção) | Média |
+| `MainLayout.tsx:40-56` | setInterval sem cleanup otimizado | Baixa |
+| `useLazyComponent.ts:26` | deps: any[] - tipo fraco | Baixa |
+| `usePermissions.tsx:67,96` | cast `as any` em mapeamentos | Média |
+| `useOptimizedRealtime.ts:9,21` | filter.value: any | Média |
 
-## Parte 1: Migração de Console.log para Logger
-
-### 1.1 documentAI.ts (8 console.error → logger.error)
+### Otimizações Propostas
 
 ```typescript
-import { logger } from '@/utils/logger';
+// 1. MainLayout.tsx - Migrar console para logger
+useEffect(() => {
+  if (user?.id && !isLoading) {
+    logger.debug('MainLayout: Checking onboarding status', 'ui', {
+      shouldShowOnboarding,
+      userId: user.id
+    });
+  }
+}, [user?.id, isLoading, shouldShowOnboarding]);
 
-// Linhas 93, 116, 138, 175, 203, 225, 248
-console.error('Error processing document:', error);
-→ logger.error('Error processing document', error, 'document');
-
-console.error('Error fetching extraction jobs:', error);
-→ logger.error('Error fetching extraction jobs', error, 'document');
-
-console.error('Error fetching pending extractions:', error);
-→ logger.error('Error fetching pending extractions', error, 'document');
-
-console.error('Error fetching AI processing stats:', error);
-→ logger.error('Error fetching AI processing stats', error, 'document');
-
-console.error('Error approving extracted data:', error);
-→ logger.error('Error approving extracted data', error, 'document');
-
-console.error('Error rejecting extracted data:', error);
-→ logger.error('Error rejecting extracted data', error, 'document');
-
-console.error('Error fetching extraction job status:', error);
-→ logger.error('Error fetching extraction job status', error, 'document');
-```
-
-### 1.2 lmsService.ts (12 console calls → logger)
-
-```typescript
-import { logger } from '@/utils/logger';
-
-// Linhas 138, 155, 159, 164, 204, 210, 214, 217, 443, 594
-console.log('Fetching training courses...');
-→ logger.debug('Fetching training courses', 'training');
-
-console.error('Error fetching courses:', error);
-→ logger.error('Error fetching courses', error, 'training');
-
-console.log('Courses fetched successfully:', data?.length || 0);
-→ logger.debug('Courses fetched successfully', 'training', { count: data?.length || 0 });
-
-console.log('Creating course:', courseData);
-→ logger.debug('Creating course', 'training', { courseData });
-
-console.error('Error creating course:', error);
-→ logger.error('Error creating course', error, 'training');
-
-console.error('Error enrolling employee:', error);
-→ logger.error('Error enrolling employee', error, 'training');
-
-console.error('Error creating learning path:', error);
-→ logger.error('Error creating learning path', error, 'training');
-```
-
-### 1.3 audit.ts (22 console calls → logger)
-
-Este serviço já importa o logger mas ainda usa console em várias funções.
-
-```typescript
-// Linhas 102, 107, 119, 135, 144, 152, 162, 168, 177, 181, 186, 195, 204, 212, 223, 229, 271, 281, 289, 294, 303, 307, 332, 335, 340, 374, 379, 390, 394
-console.log('Creating audit:', auditData);
-→ logger.debug('Creating audit', 'audit', { auditData });
-
-console.log('Current user:', userResponse.user?.id);
-→ logger.debug('Getting current user', 'audit', { userId: userResponse.user?.id });
-
-console.log('Profile data:', profile);
-→ logger.debug('Profile data retrieved', 'audit');
-
-console.error('Error creating audit:', error);
-→ logger.error('Error creating audit', error, 'audit');
-
-console.log('Audit created successfully:', data);
-→ logger.debug('Audit created successfully', 'audit', { auditId: data.id });
-
-console.error('Detailed audit creation error:', error);
-→ logger.error('Detailed audit creation error', error, 'audit');
-
-// Similar para todas as outras funções: getAuditFindings, createAuditFinding, 
-// updateAudit, updateAuditFinding, getActivityLogs, logActivity, getAuditTrail, getAllFindings
-```
-
-### 1.4 licenses.ts (12 console.error → logger.error)
-
-```typescript
-import { logger } from '@/utils/logger';
-
-// Linhas 174, 181, 197, 215, 224, 267, 279, 305, 317, 331, 339, 361, 420, 452, 483, 500
-console.error('Error fetching licenses:', error);
-→ logger.error('Error fetching licenses', error, 'compliance');
-
-console.error('Error in getLicenses:', error);
-→ logger.error('Error in getLicenses', error, 'compliance');
-
-console.error('Error fetching license:', licenseError);
-→ logger.error('Error fetching license', licenseError, 'compliance');
-
-console.error('Error creating license:', error);
-→ logger.error('Error creating license', error, 'compliance');
-
-console.error('Error updating license:', error);
-→ logger.error('Error updating license', error, 'compliance');
-
-console.error('Error deleting license:', error);
-→ logger.error('Error deleting license', error, 'compliance');
-
-console.error('Error uploading file:', uploadError);
-→ logger.error('Error uploading file', uploadError, 'compliance');
-
-console.error('Error fetching license stats:', error);
-→ logger.error('Error fetching license stats', error, 'compliance');
-```
-
-### 1.5 ghgInventory.ts (1 console.error → logger.error)
-
-```typescript
-import { logger } from '@/utils/logger';
-
-// Linha 359
-console.error(`Erro ao atualizar meta ${goal.id}:`, error);
-→ logger.error(`Erro ao atualizar meta ${goal.id}`, error, 'emission');
-```
-
-### 1.6 mlPredictionService.ts (1 console.log → logger.debug)
-
-```typescript
-import { logger } from '@/utils/logger';
-
-// Linha 538
-console.log(`Model ${modelId} retrained with accuracy: ${model.accuracy}`);
-→ logger.debug(`Model ${modelId} retrained`, 'api', { accuracy: model.accuracy });
-```
-
-### 1.7 lostTimeAccidentsAnalysis.ts (1 console.error → logger.error)
-
-```typescript
-import { logger } from '@/utils/logger';
-
-// Linha 246
-console.error('Error calculating lost time accidents metrics:', error);
-→ logger.error('Error calculating lost time accidents metrics', error, 'service');
+// 2. usePermissions.tsx - Eliminar any casts
+const permissions = data?.map(rp => {
+  const perm = rp as { permissions: Permission | null };
+  return perm.permissions;
+}).filter((p): p is Permission => p !== null) || [];
 ```
 
 ---
 
-## Parte 2: Correção de Types `any`
+## 2. Roteamento - Estado Atual
 
-### 2.1 documentAI.ts (5 any types)
+### Pontos Fortes
+- Lazy loading implementado em 100+ páginas
+- `ProtectedRoute` verifica autenticação corretamente
+- `ProtectedLazyPageWrapper` combina auth + suspense + error boundary
+- `RoleGuard` implementa hierarquia de roles
+- `ENABLED_MODULES` permite desabilitar módulos
+- `PageTransition` com AnimatePresence para transições suaves
 
-```typescript
-// Linhas 24, 35, 55, 59, 189
-pipeline?: any[];
-result_data?: any;
-extracted_fields: Record<string, any>;
-suggested_mappings?: Record<string, any>;
-editedData?: Record<string, any>
+### Arquitetura de Proteção
 
-// DEPOIS
-interface PipelineStep {
-  step: string;
-  status: string;
-  duration_ms?: number;
-  result?: unknown;
-}
-
-interface ExtractedField {
-  value: string | number | boolean | null;
-  confidence?: number;
-  source?: string;
-}
-
-interface SuggestedMapping {
-  target_field: string;
-  confidence: number;
-  transform?: string;
-}
-
-pipeline?: PipelineStep[];
-result_data?: Record<string, unknown>;
-extracted_fields: Record<string, ExtractedField | string | number>;
-suggested_mappings?: Record<string, SuggestedMapping>;
-editedData?: Record<string, string | number | boolean | null>
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                         App.tsx                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐   ┌───────────────────┐   ┌───────────────┐  │
+│  │ LazyPage     │   │ ProtectedLazyPage │   │ RoleGuard     │  │
+│  │ Wrapper      │   │ Wrapper           │   │               │  │
+│  │ (público)    │   │ (autenticado)     │   │ (com role)    │  │
+│  └──────┬───────┘   └────────┬──────────┘   └───────┬───────┘  │
+│         │                    │                      │           │
+│         v                    v                      v           │
+│  ┌──────────────┐   ┌───────────────────┐   ┌───────────────┐  │
+│  │ Suspense     │   │ ProtectedRoute    │──►│ hasRole()     │  │
+│  │ +ErrorBound  │   │ (verifica auth)   │   │ (hierarquia)  │  │
+│  └──────────────┘   └────────┬──────────┘   └───────────────┘  │
+│                              │                                  │
+│                              v                                  │
+│                     ┌───────────────────┐                       │
+│                     │ MainLayout        │                       │
+│                     │ (sidebar+header)  │                       │
+│                     └───────────────────┘                       │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 lmsService.ts (6 any types)
+### Problemas Identificados
+
+| Problema | Arquivo | Impacto |
+|----------|---------|---------|
+| Rotas admin sem RoleGuard | App.tsx | Segurança |
+| Prefetch de rotas não implementado | performanceConfig | Performance |
+| Route preloading manual ausente | usePrefetch | UX |
+
+### Otimizações Propostas
 
 ```typescript
-// Linhas 14, 15, 69, 70, 120, 129
-prerequisites: any;
-learning_objectives: any;
-options: any;
-correct_answer: any;
-answers: any;
-courses: any;
+// 1. Adicionar RoleGuard em rotas administrativas
+<Route path="/gestao-usuarios" element={
+  <ProtectedLazyPageWrapper requiredRole="Admin">
+    <RoleGuard requiredRole="admin">
+      <GestaoUsuarios />
+    </RoleGuard>
+  </ProtectedLazyPageWrapper>
+} />
 
-// DEPOIS
-interface LearningObjective {
-  title: string;
-  description?: string;
+// 2. Implementar preload em hover para rotas frequentes
+// src/hooks/useRoutePreload.ts
+export function useRoutePreload(routes: string[]) {
+  const preloadRoute = useCallback((route: string) => {
+    const routeModules: Record<string, () => Promise<unknown>> = {
+      '/dashboard': () => import('../pages/Dashboard'),
+      '/inventario-gee': () => import('../pages/InventarioGEE'),
+      '/licenciamento': () => import('../pages/Licenciamento'),
+    };
+    
+    if (routeModules[route]) {
+      routeModules[route]();
+    }
+  }, []);
+  
+  return { preloadRoute };
 }
-
-interface QuestionOption {
-  id: string;
-  text: string;
-  is_correct?: boolean;
-}
-
-prerequisites: string[] | null;
-learning_objectives: LearningObjective[] | string[];
-options: QuestionOption[];
-correct_answer: string | string[] | Record<string, unknown>;
-answers: Record<string, string | string[]>;
-courses: string[] | Array<{ course_id: string; order?: number }>;
-```
-
-### 2.3 audit.ts (2 any types)
-
-```typescript
-// Linhas 10, 311
-details_json?: any;
-async logActivity(actionType: string, description: string, detailsJson?: any)
-
-// DEPOIS
-details_json?: Record<string, unknown>;
-async logActivity(actionType: string, description: string, detailsJson?: Record<string, unknown>)
-```
-
-### 2.4 gedDocuments.ts (18 any types)
-
-Este é o serviço com mais tipos `any`. Principais correções:
-
-```typescript
-// Linhas 16, 35, 66, 124-125, 176, 187, 202, 266, 290, 311, 330, 347, 374, 562-563
-metadata?: any;
-steps: any;
-distribution_list: any;
-old_values?: any;
-new_values?: any;
-async getWorkflows(): Promise<any[]>
-async createWorkflow(workflow: any): Promise<any>
-async updateWorkflow(id: string, updates: any): Promise<any>
-async getPendingApprovals(): Promise<any[]>
-const updates: any = { ... }
-async getMasterList(): Promise<any[]>
-async addToMasterList(item: any): Promise<any>
-async updateMasterListItem(id: string, updates: any): Promise<any>
-async generateMasterListReport(): Promise<any>
-oldValues?: any, newValues?: any
-
-// DEPOIS - Usar tipos específicos ou Record<string, unknown>
-import type { Json } from '@/integrations/supabase/types';
-
-type DocumentMetadata = Record<string, unknown>;
-type ActionValues = Record<string, unknown>;
-
-metadata?: DocumentMetadata;
-steps: ApprovalStep[] | Json;
-distribution_list: string[] | Json;
-old_values?: ActionValues;
-new_values?: ActionValues;
-async getWorkflows(): Promise<ApprovalWorkflow[]>
-async createWorkflow(workflow: Partial<ApprovalWorkflow>): Promise<ApprovalWorkflow>
-async updateWorkflow(id: string, updates: Partial<ApprovalWorkflow>): Promise<ApprovalWorkflow>
-```
-
-### 2.5 advancedAnalytics.ts (8 any types)
-
-```typescript
-// Linhas 96, 107, 113, 208, 236, 237
-function processEmissionData(emissionData: any[], ...): AnalyticsData
-source.activity_data?.reduce((sum: number, activity: any) => {
-calculations.reduce((calcSum: number, calc: any) => {
-function generateInsights(data: any): string[]
-function generateRecommendations(data: any)
-const recommendations: any[] = [];
-
-// DEPOIS
-interface EmissionSourceData {
-  id: string;
-  name: string;
-  scope: number;
-  category: string;
-  subcategory?: string;
-  scope_3_category_number?: number;
-  company_id: string;
-}
-
-interface ActivityDataItem {
-  calculated_emissions?: CalculatedEmission | CalculatedEmission[];
-  period_start_date: string;
-  period_end_date: string;
-  emission_sources?: EmissionSourceData;
-}
-
-interface CalculatedEmission {
-  total_co2e: number;
-  biogenic_co2_kg?: number;
-}
-
-interface AnalyticsContext {
-  totalEmissions: number;
-  scope1Total: number;
-  scope2Total: number;
-  scope3Total: number;
-  categoryBreakdown: CategoryBreakdown[];
-  topSources: TopSource[];
-}
-
-interface Recommendation {
-  title: string;
-  description: string;
-  potential_reduction?: number;
-  priority: 'high' | 'medium' | 'low';
-}
-
-function processEmissionData(emissionData: EmissionSourceData[], ...): AnalyticsData
-function generateInsights(data: AnalyticsContext): string[]
-function generateRecommendations(data: AnalyticsContext): Recommendation[]
-const recommendations: Recommendation[] = [];
-```
-
-### 2.6 licenses.ts (6 any types)
-
-```typescript
-// Linhas 33, 53, 119, 161, 254, 258, 287
-partial_data?: any;
-ai_extracted_data?: any;
-ai_extracted_data?: any;
-query = query.eq('status', filters.status as any)
-type: licenseData.type as any,
-status: licenseData.status as any,
-const updateData: any = { ...updates }
-
-// DEPOIS
-import type { Json } from '@/integrations/supabase/types';
-
-interface PartialExtractedData {
-  fields?: Record<string, string | number>;
-  confidence?: number;
-  errors?: string[];
-}
-
-partial_data?: PartialExtractedData;
-ai_extracted_data?: ExtractedLicenseFormData | Record<string, unknown>;
-
-// Remover casts desnecessários - usar tipos corretos
-const updateData: UpdateLicenseData & { issue_date?: string; expiration_date?: string } = { ...updates };
-```
-
-### 2.7 approvalWorkflows.ts (1 any type)
-
-```typescript
-// Linha 9
-steps: any;
-
-// DEPOIS
-import type { Json } from '@/integrations/supabase/types';
-
-interface WorkflowStep {
-  step_number: number;
-  name: string;
-  approver_ids: string[];
-  required_approvals?: number;
-}
-
-steps: WorkflowStep[] | Json;
-```
-
-### 2.8 dataCollection.ts (4 any types)
-
-```typescript
-// Linhas 16, 34, 180
-metadata: any;
-log: any;
-async getTemplate(type: string): Promise<{ data: any[]; fileName: string }>
-
-// DEPOIS
-interface TaskMetadata {
-  source?: string;
-  target_table?: string;
-  field_mappings?: Record<string, string>;
-  [key: string]: unknown;
-}
-
-interface ImportLog {
-  entries: Array<{ timestamp: string; message: string; level: string }>;
-  errors?: string[];
-  warnings?: string[];
-}
-
-interface TemplateRow {
-  [key: string]: string | number | boolean | null;
-}
-
-metadata: TaskMetadata;
-log: ImportLog;
-async getTemplate(type: string): Promise<{ data: TemplateRow[]; fileName: string }>
-```
-
-### 2.9 ghgInventory.ts (1 any type - index signature)
-
-```typescript
-// Linha 23
-[key: string]: any;
-
-// DEPOIS
-[key: string]: string | number | boolean | null | undefined;
-```
-
-### 2.10 mlPredictionService.ts (1 any type)
-
-```typescript
-// Linha 21
-prediction: any
-
-// DEPOIS
-prediction: number | string | Record<string, number>;
-```
-
-### 2.11 esgRecommendedIndicators.ts (3 any types)
-
-```typescript
-// Linhas 24, 557
-metadata?: any;
-const totalConsumption = waterData.reduce((sum: number, log: any) => {
-
-// DEPOIS
-interface IndicatorMetadata {
-  calculation_method?: string;
-  data_source?: string;
-  last_verified?: string;
-  [key: string]: unknown;
-}
-
-interface WaterLogEntry {
-  quantity: number | string;
-  unit?: string;
-  source_type?: string;
-}
-
-metadata?: IndicatorMetadata;
-const totalConsumption = waterData.reduce((sum: number, log: WaterLogEntry) => {
-```
-
-### 2.12 waterManagement.ts (2 any types)
-
-```typescript
-// Linhas 239, 248
-const result: any = { ... };
-}, {} as any);
-
-// DEPOIS
-interface WaterIntensityMetrics {
-  total_water_m3: number;
-  per_unit_m3?: number;
-  per_revenue_m3?: number;
-  production_volume?: number;
-  production_unit?: string;
-  revenue_brl?: number;
-}
-
-interface AggregatedMetrics {
-  production_volume: number;
-  production_unit: string;
-  revenue_brl: number;
-}
-
-const result: WaterIntensityMetrics = { ... };
-}, {} as AggregatedMetrics);
 ```
 
 ---
 
-## Parte 3: Novas Categorias do Logger
+## 3. State Management - Estado Atual
 
-O logger já possui todas as categorias necessárias:
-- `document` (para documentAI, gedDocuments)
-- `training` (para lmsService)
-- `audit` (para audit.ts)
-- `compliance` (para licenses)
-- `emission` (para ghgInventory, advancedAnalytics, waterManagement, esgRecommendedIndicators)
-- `api` (para mlPredictionService)
-- `service` (para dataCollection, lostTimeAccidentsAnalysis, approvalWorkflows)
-- `gri` (para integratedReports, materiality, stakeholders)
+### Pontos Fortes
+- React Query configurado com staleTime/gcTime otimizados
+- `useOptimizedQuery` com cache por prioridade
+- `PERFORMANCE_CONFIG` centraliza configurações
+- AuthContext e CompanyContext bem estruturados
+- Prefetch inteligente implementado em `usePrefetch`
+
+### Arquitetura Atual
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                    State Management                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌─────────────┐   ┌─────────────────┐   ┌─────────────────┐   │
+│  │ AuthContext │   │ CompanyContext  │   │ TutorialContext │   │
+│  │ (user,auth) │   │ (company)       │   │ (onboarding)    │   │
+│  └──────┬──────┘   └────────┬────────┘   └────────┬────────┘   │
+│         │                   │                     │             │
+│         └───────────────────┼─────────────────────┘             │
+│                             │                                    │
+│                             v                                    │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                    React Query                            │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐               │   │
+│  │  │ critical │  │ standard │  │ static   │               │   │
+│  │  │ 2min     │  │ 5min     │  │ 30min    │               │   │
+│  │  └──────────┘  └──────────┘  └──────────┘               │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Problemas Identificados
+
+| Problema | Localização | Impacto |
+|----------|-------------|---------|
+| Prop drilling em forms complexos | Componentes de formulário | Manutenibilidade |
+| Falta sincronização cross-tab | AuthContext | UX |
+| Cache não invalidado em logout | AuthContext | Segurança |
+
+### Otimizações Propostas
+
+```typescript
+// 1. Adicionar invalidação de cache no logout
+const logout = async () => {
+  try {
+    await authService.logout();
+    setUser(null);
+    setSession(null);
+    
+    // Limpar cache do React Query
+    queryClient.clear();
+    
+    toast({
+      title: "Logout realizado com sucesso!",
+    });
+  } catch (error: unknown) {
+    // ...
+  }
+};
+
+// 2. Sincronização cross-tab para auth
+useEffect(() => {
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === 'sb-dqlvioijqzlvnvvajmft-auth-token' && !e.newValue) {
+      // Token removido em outra aba - fazer logout
+      setUser(null);
+      setSession(null);
+    }
+  };
+  
+  window.addEventListener('storage', handleStorageChange);
+  return () => window.removeEventListener('storage', handleStorageChange);
+}, []);
+```
 
 ---
 
-## Ordem de Execução
+## 4. HTTP Client - Estado Atual
 
-### Fase A: Services com mais console calls (maior impacto)
-1. `audit.ts` - 22 console calls + 2 any
-2. `lmsService.ts` - 12 console calls + 6 any
-3. `licenses.ts` - 12 console calls + 6 any
-4. `documentAI.ts` - 8 console calls + 5 any
+### Pontos Fortes
+- `apiGateway.ts` implementa:
+  - Rate limiting
+  - Request caching com TTL
+  - Retry logic com exponential backoff
+  - Request queue management
+  - Timeout configurável
+- Error handler centralizado com mapeamento de erros
+- Supabase client pré-configurado com auto-refresh
 
-### Fase B: Services com muitos types any
-5. `gedDocuments.ts` - 18 any types (maior concentração)
-6. `advancedAnalytics.ts` - 8 any types
-7. `dataCollection.ts` - 4 any types
+### Arquitetura HTTP
 
-### Fase C: Services restantes
-8. `approvalWorkflows.ts` - 1 any
-9. `ghgInventory.ts` - 1 console + 1 any
-10. `mlPredictionService.ts` - 1 console + 1 any
-11. `esgRecommendedIndicators.ts` - 3 any
-12. `waterManagement.ts` - 2 any
-13. `lostTimeAccidentsAnalysis.ts` - 1 console
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                      HTTP Layer                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────────┐   ┌──────────────────────────────┐   │
+│  │    Supabase Client   │   │      ApiGateway              │   │
+│  │    (auth, db, rpc)   │   │    (external APIs)           │   │
+│  └──────────┬───────────┘   └──────────────┬───────────────┘   │
+│             │                              │                    │
+│             v                              v                    │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │                   Error Handler                           │  │
+│  │  - Mapeamento de erros para mensagens user-friendly      │  │
+│  │  - Classificação por severidade                          │  │
+│  │  - Toast automático baseado em severidade                │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### Fase D: Services adicionais (se tempo permitir)
-14-20. `indicatorManagement.ts`, `integratedReports.ts`, `knowledgeBase.ts`, `materiality.ts`, `operationalMetrics.ts`, `processAutomation.ts`, `stakeholders.ts`
+### Problemas Identificados
+
+| Problema | Arquivo | Impacto |
+|----------|---------|---------|
+| `data?: any` em ApiRequest | apiGateway.ts:6 | Tipagem |
+| `additionalData?: any` | errorHandler.ts:7 | Tipagem |
+| console.log em queue | apiGateway.ts:124 | Produção |
+| Falta interceptor de refresh token | apiGateway | Auth |
+
+### Otimizações Propostas
+
+```typescript
+// 1. Tipos refinados para apiGateway
+interface ApiRequest<T = unknown> {
+  endpoint: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  data?: T;
+  headers?: Record<string, string>;
+  retries?: number;
+  timeout?: number;
+}
+
+// 2. Interceptor de refresh token
+private async executeWithRetry<T>(
+  requestFn: () => Promise<Response>,
+  retries = 3
+): Promise<Response> {
+  // ...existing code...
+  
+  // Check for 401 and attempt token refresh
+  if (response.status === 401) {
+    const { data: { session } } = await supabase.auth.refreshSession();
+    if (session) {
+      // Retry with new token
+      return requestFn();
+    }
+  }
+  
+  return response;
+}
+
+// 3. Migrar console para logger
+logger.error('Queue request failed', error, 'api');
+```
+
+---
+
+## 5. Estilização - Estado Atual
+
+### Pontos Fortes
+- Design tokens completos em `index.css`
+- Sistema de cores HSL consistente
+- Variáveis CSS para temas (light implícito, dark parcial)
+- Sistema de spacing em grid de 8px
+- Sombras e transições padronizadas
+- next-themes instalado (usado em sonner.tsx)
+
+### Análise de Inline Styles
+
+**Total encontrado**: 1495 ocorrências em 104 arquivos
+
+| Categoria | Ocorrências | Justificativa |
+|-----------|-------------|---------------|
+| Cores dinâmicas (charts) | ~500 | Necessário para recharts |
+| Animações (framer-motion) | ~300 | Necessário para motion |
+| Larguras dinâmicas | ~200 | Legítimo para layouts responsivos |
+| Estilos estáticos removíveis | ~495 | **Candidatos a refatoração** |
+
+### Problemas Identificados
+
+| Problema | Impacto |
+|----------|---------|
+| Tema dark incompleto | UX/Acessibilidade |
+| ThemeProvider não configurado no App | Funcionalidade |
+| Inline styles para cores estáticas | Manutenibilidade |
+| Landing pages com estilos inline | Performance |
+
+### Otimizações Propostas
+
+```typescript
+// 1. Adicionar ThemeProvider no App.tsx
+import { ThemeProvider } from 'next-themes';
+
+function App() {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <QueryClientProvider client={queryClient}>
+        {/* ...existing providers... */}
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
+
+// 2. Completar tema dark em index.css
+.dark {
+  --background: 224 71% 4%;
+  --foreground: 213 31% 91%;
+  --card: 224 71% 7%;
+  --card-foreground: 213 31% 91%;
+  --primary: 151 100% 45%;
+  --primary-foreground: 0 0% 9%;
+  /* ... resto das variáveis ... */
+}
+
+// 3. Substituir inline styles por classes utilitárias
+// ANTES
+<div style={{ backgroundColor: SCOPE_COLORS.scope_1 }}>
+
+// DEPOIS - Criar classes dinâmicas
+const scopeColorClasses = {
+  scope_1: 'bg-scope-1',
+  scope_2: 'bg-scope-2',
+  scope_3: 'bg-scope-3',
+};
+```
+
+---
+
+## Plano de Implementação
+
+### Fase 1: Correções Críticas (Segurança/Tipagem)
+1. Adicionar RoleGuard em rotas administrativas
+2. Implementar cache invalidation no logout
+3. Adicionar sincronização cross-tab para auth
+4. Corrigir tipos `any` em hooks críticos (usePermissions, useOptimizedRealtime)
+
+### Fase 2: Otimizações de Performance
+5. Migrar console.logs restantes para logger centralizado
+6. Implementar route preloading em hover
+7. Adicionar cleanup otimizado no MainLayout
+8. Refinar tipos em apiGateway e errorHandler
+
+### Fase 3: Estilização e UX
+9. Configurar ThemeProvider no App.tsx
+10. Completar tema dark em index.css
+11. Criar utility classes para cores dinâmicas de charts
+12. Testar transições light/dark
+
+### Fase 4: Documentação
+13. Documentar padrões de hooks
+14. Criar guia de design tokens
+15. Atualizar README com arquitetura
 
 ---
 
 ## Arquivos a Modificar
 
-### Services (13 arquivos principais)
-1. `src/services/audit.ts`
-2. `src/services/lmsService.ts`
-3. `src/services/licenses.ts`
-4. `src/services/documentAI.ts`
-5. `src/services/gedDocuments.ts`
-6. `src/services/advancedAnalytics.ts`
-7. `src/services/dataCollection.ts`
-8. `src/services/approvalWorkflows.ts`
-9. `src/services/ghgInventory.ts`
-10. `src/services/mlPredictionService.ts`
-11. `src/services/esgRecommendedIndicators.ts`
-12. `src/services/waterManagement.ts`
-13. `src/services/lostTimeAccidentsAnalysis.ts`
+### Fase 1 (8 arquivos)
+- `src/App.tsx` - RoleGuard em rotas admin
+- `src/contexts/AuthContext.tsx` - Cache invalidation + cross-tab sync
+- `src/hooks/usePermissions.tsx` - Remover any casts
+- `src/hooks/useOptimizedRealtime.ts` - Tipar filter.value
+
+### Fase 2 (5 arquivos)
+- `src/components/MainLayout.tsx` - Console para logger + cleanup
+- `src/services/apiGateway.ts` - Tipos + logger + refresh interceptor
+- `src/utils/errorHandler.ts` - Remover any
+- `src/hooks/useRoutePreload.ts` - Novo hook de preload
+- `src/hooks/useLazyComponent.ts` - Tipar deps
+
+### Fase 3 (3 arquivos)
+- `src/App.tsx` - ThemeProvider wrapper
+- `src/index.css` - Variáveis dark mode completas
+- `tailwind.config.ts` - Classes para cores de scopes
 
 ---
 
-## Métricas Esperadas
+## Métricas de Sucesso
 
-| Métrica | Antes (Batch 4) | Depois (Batch 5) |
-|---------|-----------------|------------------|
-| Services migrados | 38 | 51+ |
-| Console logs removidos | ~180 | ~260 |
-| `any` types corrigidos | ~100 | ~190 |
-
----
-
-## Detalhes Técnicos
-
-### Padrão de Migração
-
-```typescript
-// Import no topo
-import { logger } from '@/utils/logger';
-
-// console.log → logger.debug
-console.log('Message:', data);
-→ logger.debug('Message', 'category', { data });
-
-// console.error → logger.error
-console.error('Error:', error);
-→ logger.error('Error message', error, 'category');
-
-// console.warn → logger.warn
-console.warn('Warning');
-→ logger.warn('Warning message', 'category');
-```
-
-### Padrão para Types Any
-
-```typescript
-// Para campos JSON do Supabase
-import type { Json } from '@/integrations/supabase/types';
-field: SomeInterface | Json;
-
-// Para objetos genéricos
-field: Record<string, unknown>;
-
-// Para arrays com estrutura conhecida
-field: SpecificInterface[];
-
-// Para callbacks/reducers
-array.reduce((acc: SpecificType, item: ItemType) => { ... }, initialValue as SpecificType);
-```
+| Métrica | Antes | Depois Esperado |
+|---------|-------|-----------------|
+| Types `any` em hooks | ~15 | 0 |
+| Console.logs em produção | ~50 | 0 |
+| Rotas admin sem RoleGuard | ~5 | 0 |
+| Cobertura tema dark | ~60% | 100% |
+| Route preload implementado | 0 | 6 rotas críticas |
