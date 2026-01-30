@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/utils/logger';
 
-interface CacheEntry {
-  data: any;
+interface CacheEntry<T = unknown> {
+  data: T;
   timestamp: number;
   priority: 'high' | 'medium' | 'low';
   usage: number;
@@ -26,7 +27,7 @@ const TTL_CONFIG = {
 
 export function useIntelligentCache() {
   const queryClient = useQueryClient();
-  const [cache, setCache] = useState<Map<string, CacheEntry>>(new Map());
+  const [cache, setCache] = useState<Map<string, CacheEntry<unknown>>>(new Map());
   const [metrics, setMetrics] = useState<CacheMetrics>({
     hitRate: 0,
     memoryUsage: 0,
@@ -72,12 +73,12 @@ export function useIntelligentCache() {
       }
     }
 
-    console.log(`🧹 Cache eviction: removed ${evicted} entries`);
+    logger.debug(`Cache eviction: removed ${evicted} entries`, 'service');
     return evicted;
   }, [cache, calculateCacheSize, queryClient]);
 
   // Get priority weight for scoring
-  const getPriorityWeight = (priority: CacheEntry['priority']): number => {
+  const getPriorityWeight = (priority: CacheEntry<unknown>['priority']): number => {
     switch (priority) {
       case 'high': return 3;
       case 'medium': return 2;
@@ -86,10 +87,10 @@ export function useIntelligentCache() {
   };
 
   // Smart cache storage
-  const setInCache = useCallback((
+  const setInCache = useCallback(<T>(
     key: string, 
-    data: any, 
-    priority: CacheEntry['priority'] = 'medium'
+    data: T, 
+    priority: CacheEntry<T>['priority'] = 'medium'
   ) => {
     const size = JSON.stringify(data).length * 2; // Approximate size in bytes
     const currentSize = calculateCacheSize();
@@ -99,7 +100,7 @@ export function useIntelligentCache() {
       evictLeastUseful();
     }
 
-    const entry: CacheEntry = {
+    const entry: CacheEntry<T> = {
       data,
       timestamp: Date.now(),
       priority,
@@ -107,14 +108,14 @@ export function useIntelligentCache() {
       size,
     };
 
-    setCache(prev => new Map(prev.set(key, entry)));
+    setCache(prev => new Map(prev.set(key, entry as CacheEntry<unknown>)));
     
     // Store in React Query cache with TTL
     queryClient.setQueryData([key], data, {
       updatedAt: Date.now(),
     });
 
-    console.log(`💾 Cached "${key}" (${priority} priority, ${(size / 1024).toFixed(1)}KB)`);
+    logger.debug(`Cached "${key}" (${priority} priority, ${(size / 1024).toFixed(1)}KB)`, 'service');
   }, [calculateCacheSize, evictLeastUseful, queryClient]);
 
   // Smart cache retrieval
@@ -154,15 +155,15 @@ export function useIntelligentCache() {
       hitRate: ((prev.cacheHits + 1) / (prev.totalQueries + 1)) * 100,
     }));
 
-    console.log(`⚡ Cache hit for "${key}" (usage: ${entry.usage})`);
+    logger.debug(`Cache hit for "${key}" (usage: ${entry.usage})`, 'service');
     return entry.data;
   }, [cache, queryClient]);
 
   // Prefetch based on user behavior patterns
-  const prefetchData = useCallback(async (
+  const prefetchData = useCallback(async <T>(
     keys: string[], 
-    fetchFn: (key: string) => Promise<any>,
-    priority: CacheEntry['priority'] = 'low'
+    fetchFn: (key: string) => Promise<T>,
+    priority: CacheEntry<T>['priority'] = 'low'
   ) => {
     const prefetchPromises = keys.map(async (key) => {
       if (!cache.has(key)) {
@@ -170,13 +171,13 @@ export function useIntelligentCache() {
           const data = await fetchFn(key);
           setInCache(key, data, priority);
         } catch (error) {
-          console.warn(`Failed to prefetch ${key}:`, error);
+          logger.warn(`Failed to prefetch ${key}`, 'service', error);
         }
       }
     });
 
     await Promise.allSettled(prefetchPromises);
-    console.log(`🔮 Prefetched ${keys.length} items`);
+    logger.debug(`Prefetched ${keys.length} items`, 'service');
   }, [cache, setInCache]);
 
   // Clear expired entries periodically
@@ -195,7 +196,7 @@ export function useIntelligentCache() {
       });
 
       if (cleaned > 0) {
-        console.log(`🧹 Cleaned ${cleaned} expired cache entries`);
+        logger.debug(`Cleaned ${cleaned} expired cache entries`, 'service');
       }
 
       // Update memory usage metric
@@ -219,7 +220,7 @@ export function useIntelligentCache() {
       cacheHits: 0,
       cacheMisses: 0,
     });
-    console.log('🗑️ Cache cleared');
+    logger.debug('Cache cleared', 'service');
   }, [queryClient]);
 
   return {

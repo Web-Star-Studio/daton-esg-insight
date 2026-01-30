@@ -362,14 +362,14 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
     try {
       // Check cache for similar questions
       const cacheKey = `ai-response:${messageText.toLowerCase()}`;
-      let aiResponse = getFromCache(cacheKey);
+      let aiResponse = getFromCache(cacheKey) as AIMessage | null;
 
       if (!aiResponse) {
         aiResponse = await generateAIResponse(messageText);
         setInCache(cacheKey, aiResponse, 'medium');
       }
 
-      setMessages(prev => [...prev, aiResponse]);
+      setMessages(prev => [...prev, aiResponse!]);
     } catch (error) {
       console.error('AI response error:', error);
       const errorResponse: AIMessage = {

@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
+import type { User } from '@supabase/supabase-js';
+import type { UserProfile } from '@/types/supabase-helpers';
 
 interface AuthStatus {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: any;
-  profile: any;
+  user: User | null;
+  profile: UserProfile | null;
   error: Error | null;
 }
 
@@ -70,7 +73,7 @@ export function useAuthCheck() {
         });
 
       } catch (error) {
-        console.error('Erro na verificação de autenticação:', error);
+        logger.error('Erro na verificação de autenticação', error, 'auth');
         setAuthStatus({
           isAuthenticated: false,
           isLoading: false,

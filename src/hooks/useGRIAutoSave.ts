@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { updateGRIReport, type GRIReport } from '@/services/griReports';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface UseGRIAutoSaveOptions {
   report: GRIReport;
@@ -23,7 +24,7 @@ export function useGRIAutoSave({
 
   const save = useCallback(async (updates: Partial<GRIReport>) => {
     if (isSavingRef.current) {
-      console.log('Save already in progress, skipping...');
+      logger.debug('Save already in progress, skipping', 'gri');
       return;
     }
 
@@ -33,12 +34,12 @@ export function useGRIAutoSave({
       
       const currentState = JSON.stringify(updates);
       if (currentState === lastSavedRef.current) {
-        console.log('No changes detected, skipping save');
+        logger.debug('No changes detected, skipping save', 'gri');
         setSaveStatus('saved');
         return;
       }
 
-      console.log('Auto-saving GRI report...', { reportId: report.id });
+      logger.debug('Auto-saving GRI report', 'gri', { reportId: report.id });
       
       await updateGRIReport(report.id, {
         ...updates,
@@ -53,12 +54,12 @@ export function useGRIAutoSave({
         onSaveSuccess();
       }
       
-      console.log('GRI report auto-saved successfully');
+      logger.debug('GRI report auto-saved successfully', 'gri');
       
       // Reset status after 3 seconds
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (error) {
-      console.error('Failed to auto-save GRI report', error);
+      logger.error('Failed to auto-save GRI report', error, 'gri');
       setSaveStatus('error');
       
       if (onSaveError) {

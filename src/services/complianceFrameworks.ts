@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 // Camada 1: Frameworks de Relato e Divulgação
 export interface ReportingFramework {
@@ -88,7 +89,7 @@ class ComplianceFrameworksService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching IFRS disclosures:', error);
+      logger.error('Error fetching IFRS disclosures', error, 'compliance');
       return [];
     }
 
@@ -115,7 +116,7 @@ class ComplianceFrameworksService {
       .eq('disclosure_id', disclosure.requirement_code);
 
     if (error) {
-      console.error('Error updating IFRS disclosure:', error);
+      logger.error('Error updating IFRS disclosure', error, 'compliance');
       throw error;
     }
   }
@@ -136,7 +137,7 @@ class ComplianceFrameworksService {
       .order('code');
 
     if (error) {
-      console.error('Error fetching GRI indicators:', error);
+      logger.error('Error fetching GRI indicators', error, 'gri');
       return [];
     }
 
@@ -174,7 +175,7 @@ class ComplianceFrameworksService {
       .order('metric_code');
 
     if (error) {
-      console.error('Error fetching SASB metrics:', error);
+      logger.error('Error fetching SASB metrics', error, 'compliance');
       return [];
     }
 
@@ -202,7 +203,7 @@ class ComplianceFrameworksService {
       .eq('industry_code', metric.industry_code);
 
     if (error) {
-      console.error('Error updating SASB metric:', error);
+      logger.error('Error updating SASB metric', error, 'compliance');
       throw error;
     }
   }
@@ -215,7 +216,7 @@ class ComplianceFrameworksService {
       .order('pillar', { ascending: true });
 
     if (error) {
-      console.error('Error fetching TCFD disclosures:', error);
+      logger.error('Error fetching TCFD disclosures', error, 'compliance');
       return [];
     }
 
@@ -248,7 +249,7 @@ class ComplianceFrameworksService {
       .order('esrs_standard', { ascending: true });
 
     if (error) {
-      console.error('Error fetching ESRS disclosures:', error);
+      logger.error('Error fetching ESRS disclosures', error, 'compliance');
       return [];
     }
 

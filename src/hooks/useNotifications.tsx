@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 export interface Notification {
   id: string;
@@ -15,7 +16,7 @@ export interface Notification {
   action_url?: string | null;
   is_read: boolean;
   read_at?: string | null;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -36,10 +37,11 @@ export function useNotifications() {
 
       if (error) throw error;
 
-      setNotifications((data || []) as unknown as Notification[]);
-      setUnreadCount((data || []).filter((n: any) => !n.is_read).length);
+      const notificationsList = (data || []) as unknown as Notification[];
+      setNotifications(notificationsList);
+      setUnreadCount(notificationsList.filter((n) => !n.is_read).length);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      logger.error('Error fetching notifications', error, 'notification');
     } finally {
       setLoading(false);
     }
@@ -62,7 +64,7 @@ export function useNotifications() {
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      logger.error('Error marking notification as read', error, 'notification');
     }
   };
 
@@ -91,7 +93,7 @@ export function useNotifications() {
         title: "Todas as notificações foram marcadas como lidas",
       });
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      logger.error('Error marking all as read', error, 'notification');
       toast({
         title: "Erro ao marcar notificações",
         variant: "destructive",
