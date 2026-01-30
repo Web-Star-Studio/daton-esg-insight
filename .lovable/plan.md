@@ -1,343 +1,322 @@
 
-# Auditoria de Estrutura de Producao - Relatorio Completo
+# Fase 2: Migração para Logger Centralizado e Correção de Types
 
-## Resumo Executivo
+## Resumo do Escopo
 
-A analise identificou 12 areas criticas que requerem atencao para preparar o sistema para producao:
-
-| Categoria | Severidade | Itens Identificados |
-|-----------|------------|---------------------|
-| TypeScript Strict Mode | **CRITICA** | 6 configuracoes desabilitadas |
-| Console Logs | **ALTA** | 10.682 ocorrencias em 479 arquivos |
-| any Types | **ALTA** | 8.344 ocorrencias em 564 arquivos |
-| Dependencias Nao Utilizadas | **MEDIA** | 8 pacotes identificados |
-| ESLint Permissivo | **MEDIA** | 4 regras criticas desabilitadas |
-| Mock Data | **BAIXA** | 33 arquivos com referencias |
+| Área | Quantidade | Prioridade |
+|------|------------|------------|
+| console.log em services/ | 3.391 ocorrências (104 arquivos) | ALTA |
+| console.log em hooks/ | ~200 ocorrências (15 arquivos) | ALTA |
+| console.log em components/ | ~1.500 ocorrências (~100 arquivos) | MÉDIA |
+| `any` types em services/ | 1.199 ocorrências (91 arquivos) | ALTA |
+| `any` types em hooks/ | 161 ocorrências (15 arquivos) | ALTA |
+| Componentes desorganizados | 424 arquivos na raiz | MÉDIA |
 
 ---
 
-## 1. Configuracao TypeScript (CRITICO)
+## Parte 1: Migração Console.log para Logger
 
-### Problemas Identificados
+### 1.1 Aprimorar o Logger Centralizado
 
-**tsconfig.json** (raiz):
-```json
-{
-  "noImplicitAny": false,        // DESABILITADO
-  "noUnusedParameters": false,   // DESABILITADO
-  "noUnusedLocals": false,       // DESABILITADO
-  "strictNullChecks": false      // DESABILITADO
-}
-```
+O logger atual em `src/utils/logger.ts` já está funcional, mas precisa de melhorias:
 
-**tsconfig.app.json**:
-```json
-{
-  "strict": false,                   // DESABILITADO
-  "noUnusedLocals": false,           // DESABILITADO
-  "noUnusedParameters": false,       // DESABILITADO
-  "noImplicitAny": false,            // DESABILITADO
-  "noFallthroughCasesInSwitch": false // DESABILITADO
-}
-```
-
-### Correcao Recomendada
-
-Atualizar `tsconfig.json`:
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
-  }
-}
-```
-
-### Plano de Migracao (Modo Gradual)
-
-Para evitar quebra de build, implementar em 3 fases:
-
-**Fase 1**: `noImplicitAny: true` (corrigir ~8.344 any types)
-**Fase 2**: `strictNullChecks: true` (corrigir null/undefined checks)
-**Fase 3**: `strict: true` (habilitar todas as verificacoes)
-
----
-
-## 2. Console Logs em Producao (ALTA PRIORIDADE)
-
-### Estatisticas
-
-- **Total**: 10.682 ocorrencias
-- **Arquivos afetados**: 479
-- **Tipos**:
-  - `console.log`: ~6.500 ocorrencias
-  - `console.error`: ~3.200 ocorrencias
-  - `console.warn`: ~800 ocorrencias
-  - `console.debug`: ~180 ocorrencias
-
-### Arquivos Criticos (Exemplos)
-
-| Arquivo | Ocorrencias |
-|---------|-------------|
-| `src/services/legislationImport.ts` | 15+ logs |
-| `src/hooks/useDataReconciliation.ts` | 8 logs |
-| `src/utils/auth.ts` | 4 logs |
-| Edge functions (supabase/) | 50+ logs |
-
-### Correcao Recomendada
-
-1. Adicionar regra ESLint:
-```javascript
-rules: {
-  "no-console": ["error", { allow: ["warn", "error"] }]
-}
-```
-
-2. Substituir por sistema de logging condicional:
 ```typescript
-// utils/logger.ts ja existe no projeto
+// Adicionar novas categorias específicas
+type LogCategory = 
+  | 'auth' | 'api' | 'ui' | 'database' | 'service' | 'general'
+  | 'emission' | 'training' | 'supplier' | 'document' | 'gri';
+
+// Adicionar log de performance
+perf(operation: string, duration: number) { ... }
+
+// Adicionar log estruturado para debugging
+trace(message: string, data: object) { ... }
+```
+
+### 1.2 Padrões de Migração
+
+**Serviços (Prioridade Alta - 104 arquivos)**
+
+Padrão atual problemático:
+```typescript
+console.log('📤 Uploading file:', file.name);
+console.error('Error fetching data:', error);
+```
+
+Padrão corrigido:
+```typescript
 import { logger } from '@/utils/logger';
-logger.info('message'); // Automaticamente silenciado em producao
+
+logger.debug('Uploading file', 'service', { fileName: file.name });
+logger.error('Error fetching data', error, 'database');
 ```
 
----
+**Arquivos prioritários para migração:**
 
-## 3. Tipos any (ALTA PRIORIDADE)
+| Arquivo | Logs | Categoria |
+|---------|------|-----------|
+| `src/services/legislationImport.ts` | 15+ | `service` |
+| `src/services/unifiedFactorImport.ts` | 20+ | `service` |
+| `src/services/documentExtraction.ts` | 10+ | `document` |
+| `src/services/griIndicators.ts` | 15+ | `gri` |
+| `src/services/emissions.ts` | 12+ | `emission` |
+| `src/services/notificationTriggers.ts` | 8+ | `service` |
 
-### Estatisticas
+### 1.3 Script de Migração Automatizada
 
-- **Total**: 8.344 ocorrencias
-- **Arquivos afetados**: 564
-
-### Padroes Mais Comuns
-
-| Padrao | Ocorrencias | Correcao |
-|--------|-------------|----------|
-| `error: any` em catch blocks | ~2.000 | Usar `unknown` e type guards |
-| `data: any` em APIs | ~1.500 | Criar interfaces tipadas |
-| `row: any` em tabelas | ~800 | Usar generics do TanStack |
-| `props: any` em componentes | ~500 | Definir interfaces de props |
-| Callbacks `(result: any)` | ~400 | Inferir tipos do contexto |
-
-### Exemplos de Correcao
-
-**Antes:**
+Criar um script de migração:
 ```typescript
-mutationFn: ({ id, data }: { id: string; data: any }) => updateTrainingMaterial(id, data)
+// scripts/migrate-console-to-logger.ts
+// Padrões de substituição:
+// console.log('message') → logger.debug('message', 'general')
+// console.error('message', error) → logger.error('message', error, 'general')
+// console.warn('message') → logger.warn('message', 'general')
 ```
 
-**Depois:**
+---
+
+## Parte 2: Correção de Tipos `any`
+
+### 2.1 Priorização por Impacto
+
+**Tier 1 - Crítico (Corrigir primeiro)**
+- Catch blocks com `error: any` → usar `unknown` + type guards
+- Callbacks de API com `data: any` → criar interfaces tipadas
+- Props de componentes com `any` → definir interfaces
+
+**Tier 2 - Alto Impacto**
+- Retornos de hooks com `any` → tipar corretamente
+- Parâmetros de funções utilitárias → usar generics
+
+**Tier 3 - Manutenção**
+- Tipos internos de objetos temporários
+- Tipos de bibliotecas externas
+
+### 2.2 Interfaces Comuns a Criar
+
 ```typescript
-interface UpdateTrainingMaterialData {
-  title?: string;
-  description?: string;
-  file_url?: string;
+// src/types/api.ts
+export interface ApiResponse<T> {
+  data: T | null;
+  error: Error | null;
+  status: number;
 }
-mutationFn: ({ id, data }: { id: string; data: UpdateTrainingMaterialData }) => 
-  updateTrainingMaterial(id, data)
-```
 
----
+// src/types/supabase-helpers.ts
+export interface SupabaseError {
+  message: string;
+  code: string;
+  details?: string;
+}
 
-## 4. Dependencias Nao Utilizadas
+// src/types/common.ts
+export interface BaseEntity {
+  id: string;
+  created_at: string;
+  updated_at?: string;
+}
 
-### Pacotes Sem Uso Identificado
-
-| Pacote | Motivo | Acao |
-|--------|--------|------|
-| `@react-three/drei` | Nenhum import encontrado | Remover |
-| `@react-three/fiber` | Nenhum import encontrado | Remover |
-| `three` | Nenhum import encontrado | Remover |
-| `@studio-freight/lenis` | Nenhum import encontrado | Remover |
-| `gsap` | Nenhum import encontrado | Remover |
-| `fabric` | Nenhum import encontrado | Remover |
-| `csv-parser` | Nenhum import encontrado | Remover |
-| `pdf-parse` | Nenhum import encontrado (Node.js only) | Remover |
-
-### Dependencias em Local Incorreto
-
-Estes pacotes estao em `dependencies` mas deveriam estar em `devDependencies`:
-
-| Pacote | Tipo |
-|--------|------|
-| `@testing-library/jest-dom` | Test only |
-| `@testing-library/react` | Test only |
-| `@testing-library/user-event` | Test only |
-| `@vitejs/plugin-react` | Build only |
-| `@vitest/ui` | Test only |
-| `vitest` | Test only |
-| `jsdom` | Test only |
-
----
-
-## 5. Configuracao ESLint (MEDIA PRIORIDADE)
-
-### Regras Desabilitadas Problematicas
-
-```javascript
-rules: {
-  "@typescript-eslint/no-unused-vars": "off",  // PROBLEMA
+export interface PaginatedResponse<T> {
+  data: T[];
+  count: number;
+  page: number;
+  pageSize: number;
 }
 ```
 
-### Configuracao Recomendada para Producao
+### 2.3 Arquivos Prioritários para Refatoração
 
-```javascript
-rules: {
-  ...reactHooks.configs.recommended.rules,
-  "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-  
-  // TypeScript
-  "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-  "@typescript-eslint/no-explicit-any": "warn",
-  "@typescript-eslint/explicit-function-return-type": "off",
-  
-  // Producao
-  "no-console": ["error", { allow: ["warn", "error"] }],
-  "no-debugger": "error",
-  
-  // React
-  "react-hooks/rules-of-hooks": "error",
-  "react-hooks/exhaustive-deps": "warn",
+**Hooks (15 arquivos - 161 any types)**
+
+| Arquivo | Any Types | Correção |
+|---------|-----------|----------|
+| `useAuthCheck.ts` | `user: any, profile: any` | Importar tipos do Supabase |
+| `useNotifications.tsx` | `metadata?: any` | Criar interface NotificationMetadata |
+| `useIntelligentCache.ts` | `data: any` | Usar generics `<T>` |
+| `useChatAssistant.tsx` | 10+ any | Criar interfaces de AI Response |
+
+**Services (91 arquivos - 1.199 any types)**
+
+| Arquivo | Any Types | Correção |
+|---------|-----------|----------|
+| `calibrationManagement.ts` | `tolerance_range: any` | Interface ToleranceRange |
+| `equipmentMaintenance.ts` | `parts_replaced: any[]` | Interface MaintenancePart[] |
+| `gedDocuments.ts` | `steps: any` | Interface WorkflowStep[] |
+| `advancedAnalytics.ts` | `emissionData: any[]` | Interface EmissionDataPoint[] |
+
+### 2.4 Type Guards Utilities
+
+Expandir `src/utils/typeGuards.ts`:
+```typescript
+export function isSupabaseError(error: unknown): error is SupabaseError {
+  return isObject(error) && 'message' in error && 'code' in error;
+}
+
+export function isApiResponse<T>(
+  response: unknown, 
+  validator: (data: unknown) => data is T
+): response is ApiResponse<T> {
+  return isObject(response) && 'data' in response;
 }
 ```
 
 ---
 
-## 6. Organizacao de Componentes
+## Parte 3: Reorganização de Componentes
 
-### Estrutura Atual
+### 3.1 Estrutura Proposta
 
 ```text
 src/components/
-├── 424 arquivos no diretorio raiz (PROBLEMA)
-├── LexicalEditor/
-├── accessibility/
-├── audit/
-├── dashboard/
-├── ...50+ subdiretorios
-└── ui/
-```
-
-### Problemas
-
-1. **Componentes Soltos**: 424 arquivos diretamente em `src/components/` sem organizacao por feature
-2. **Inconsistencia**: Alguns modulos em subdiretorios, outros na raiz
-3. **Duplicacao Potencial**: Multiplos modais com funcionalidades similares
-
-### Organizacao Recomendada
-
-```text
-src/components/
-├── common/           # Componentes reutilizaveis
-├── features/
-│   ├── suppliers/   # Tudo relacionado a fornecedores
-│   ├── emissions/   # Tudo relacionado a emissoes
-│   ├── training/    # Tudo relacionado a treinamentos
+├── common/                    # Componentes reutilizáveis genéricos
+│   ├── EmptyState.tsx
+│   ├── LoadingFallback.tsx
+│   ├── ErrorBoundary.tsx
+│   └── FilterBar.tsx
+│
+├── features/                  # Componentes por domínio
+│   ├── emissions/            # Todos os 50+ componentes de emissões
+│   │   ├── StationaryCombustionModal.tsx
+│   │   ├── MobileCombustionModal.tsx
+│   │   ├── FugitiveEmissionsModal.tsx
+│   │   └── index.ts
+│   │
+│   ├── training/             # Componentes de treinamento
+│   │   ├── TrainingCalendar.tsx
+│   │   ├── TrainingProgramModal.tsx
+│   │   └── index.ts
+│   │
+│   ├── suppliers/            # Componentes de fornecedores
+│   ├── documents/            # Componentes de documentos
+│   ├── gri/                  # (já organizado)
+│   ├── governance/           # (já organizado)
 │   └── ...
-├── layout/          # Header, Sidebar, Footer
-└── ui/              # shadcn/ui components
+│
+├── layout/                    # (já organizado)
+└── ui/                        # (já organizado - shadcn)
+```
+
+### 3.2 Componentes a Mover (Por Domínio)
+
+| Domínio | Componentes na Raiz | Destino |
+|---------|---------------------|---------|
+| Emissions | ~25 arquivos (Modal, Chart, etc) | `features/emissions/` |
+| Training | ~20 arquivos | `features/training/` |
+| Suppliers | ~15 arquivos | `features/suppliers/` |
+| Documents | ~15 arquivos | `features/documents/` |
+| Quality | ~20 arquivos | `features/quality/` |
+| HR/Employees | ~15 arquivos | `features/employees/` |
+| AI/Analytics | ~10 arquivos | `features/ai/` |
+
+### 3.3 Barrel Exports
+
+Criar `index.ts` em cada diretório:
+```typescript
+// src/components/features/emissions/index.ts
+export { StationaryCombustionModal } from './StationaryCombustionModal';
+export { MobileCombustionModal } from './MobileCombustionModal';
+export { FugitiveEmissionsModal } from './FugitiveEmissionsModal';
+// ...
 ```
 
 ---
 
-## 7. Variaveis de Ambiente
+## Plano de Execução
 
-### Configuracao Atual (.env)
+### Sprint 1: Logger Migration (Semana 1-2)
 
-```bash
-VITE_SUPABASE_PROJECT_ID="..."
-VITE_SUPABASE_PUBLISHABLE_KEY="..."
-VITE_SUPABASE_URL="..."
-```
+**Dias 1-2**: Aprimorar logger.ts
+- Adicionar novas categorias
+- Adicionar método `perf()` e `trace()`
+- Criar helper de migração
 
-### Variaveis Referenciadas no Codigo mas Ausentes
+**Dias 3-5**: Migrar services/ (104 arquivos)
+- Priorizar arquivos críticos primeiro
+- Manter padrão consistente
 
-| Variavel | Arquivo | Status |
-|----------|---------|--------|
-| `VITE_SUPABASE_ANON_KEY` | healthCheck.ts | **AUSENTE** |
-| `VITE_IOT_WEBSOCKET_URL` | iotConnectorService.ts | Opcional (fallback existe) |
+**Dias 6-7**: Migrar hooks/ (15 arquivos)
 
-### Recomendacao
+**Dias 8-10**: Migrar components/ (batch de 50 por dia)
 
-Criar arquivo `.env.example` documentando todas as variaveis:
-```bash
-# Required
-VITE_SUPABASE_URL=
-VITE_SUPABASE_PUBLISHABLE_KEY=
+### Sprint 2: Type Safety (Semana 3-4)
 
-# Optional
-VITE_IOT_WEBSOCKET_URL=ws://localhost:3001/iot
-```
+**Dias 1-3**: Criar interfaces base
+- `src/types/api.ts`
+- `src/types/entities/`
+- Expandir type guards
 
----
+**Dias 4-7**: Refatorar hooks/ (15 arquivos)
+- Foco em hooks críticos primeiro
 
-## 8. Codigo Morto Potencial
+**Dias 8-14**: Refatorar services/ (91 arquivos)
+- Processar 10-15 arquivos por dia
+- Priorizar por uso
 
-### Arquivos de Exemplo/Demo
+### Sprint 3: Component Reorganization (Semana 5-6)
 
-| Arquivo | Acao |
-|---------|------|
-| `src/examples/ProductionUtilsIntegration.tsx` | Remover ou mover para docs/ |
+**Dias 1-3**: Criar estrutura de diretórios
+- Criar pastas em `features/`
+- Criar barrel exports
 
-### Routes Duplicadas
+**Dias 4-10**: Mover componentes
+- Mover por domínio
+- Atualizar imports
+- Testar build a cada batch
 
-O arquivo `src/routes/lazyRoutes.tsx` define exports que **nao sao importados** em lugar nenhum. O `App.tsx` define seus proprios lazy imports duplicados.
-
-### Servicos Potencialmente Duplicados
-
-| Servico 1 | Servico 2 | Status |
-|-----------|-----------|--------|
-| `supplierService.ts` | `supplierManagementService.ts` | JA UNIFICADOS (ultimo commit) |
+**Dias 11-14**: Limpeza final
+- Remover arquivos vazios
+- Atualizar documentação
+- Validar build final
 
 ---
 
-## 9. Plano de Acoes
+## Métricas de Sucesso
 
-### Fase 1: Correcoes Criticas (Imediato)
-
-1. **tsconfig.json**: Habilitar strict mode gradualmente
-2. **eslint.config.js**: Adicionar regras de producao
-3. **package.json**: Mover devDependencies, remover pacotes nao utilizados
-
-### Fase 2: Limpeza de Codigo (1-2 Semanas)
-
-4. Remover console.logs (usar logger centralizado)
-5. Corrigir any types mais criticos (services, hooks)
-6. Remover arquivos de exemplo
-
-### Fase 3: Reorganizacao (2-4 Semanas)
-
-7. Reorganizar componentes por feature
-8. Consolidar routes em arquivo unico
-9. Criar .env.example
+| Métrica | Antes | Meta Sprint 1 | Meta Sprint 2 | Meta Final |
+|---------|-------|---------------|---------------|------------|
+| Console logs | ~5.000 | 0 | 0 | 0 |
+| `any` types | ~8.000 | ~7.500 | ~500 | <100 |
+| Componentes na raiz | 424 | 424 | 424 | <50 |
+| Build warnings | ~200 | ~150 | ~50 | <10 |
 
 ---
 
-## Arquivos a Modificar
+## Arquivos a Criar
 
-| Arquivo | Alteracao |
+| Arquivo | Propósito |
 |---------|-----------|
-| `tsconfig.json` | Habilitar opcoes strict |
-| `tsconfig.app.json` | Habilitar opcoes strict |
-| `eslint.config.js` | Adicionar regras de producao |
-| `package.json` | Reorganizar dependencias, remover nao utilizadas |
-| `.env.example` | Criar arquivo de template |
-| `src/routes/lazyRoutes.tsx` | Remover (nao utilizado) |
-| `src/examples/` | Remover diretorio |
+| `src/types/api.ts` | Interfaces de API genéricas |
+| `src/types/entities/index.ts` | Export central de entidades |
+| `src/types/supabase-helpers.ts` | Helpers para tipos Supabase |
+| `src/components/features/*/index.ts` | Barrel exports por domínio |
+
+## Arquivos a Modificar (Principais)
+
+| Categoria | Quantidade | Alteração |
+|-----------|------------|-----------|
+| Services | 104 | Migrar console → logger |
+| Hooks | 15 | Migrar console + fix any |
+| Components | ~150 | Migrar console |
+| Components | ~300 | Mover para features/ |
 
 ---
 
-## Metricas de Sucesso
+## Notas Técnicas
 
-| Metrica | Antes | Meta |
-|---------|-------|------|
-| Console logs | 10.682 | 0 (producao) |
-| any types | 8.344 | <500 |
-| Build warnings | ~200 | <10 |
-| Bundle size | ~2.5MB | <1.5MB |
-| TypeScript errors (strict) | ~8.000 | 0 |
+### Ordem de Execução Recomendada
+
+1. **Logger primeiro** - permite que outras mudanças usem o novo padrão
+2. **Types depois** - melhora a qualidade do código migrado
+3. **Reorganização por último** - não quebra funcionalidade existente
+
+### Rollback Strategy
+
+- Commits atômicos por arquivo/módulo
+- Feature branch separada para reorganização
+- Build CI/CD em cada PR
+
+### Compatibilidade
+
+- Manter exports em locais antigos temporariamente (re-exports)
+- Deprecar gradualmente imports diretos
+- Usar path aliases consistentes
