@@ -1,10 +1,11 @@
 import { toast } from "sonner";
+import { logger } from "@/utils/logger";
 
 export interface ErrorContext {
   component?: string;
   function?: string;
   userId?: string;
-  additionalData?: any;
+  additionalData?: Record<string, unknown>;
 }
 
 export class AppError extends Error {
@@ -50,18 +51,19 @@ export const errorHandler = {
       timestamp: new Date().toISOString()
     };
 
+    // Log using centralized logger with appropriate severity
     switch (appError.severity) {
       case 'critical':
-        console.error('🔴 CRITICAL ERROR:', logData);
+        logger.error('CRITICAL ERROR', appError, 'service', logData);
         break;
       case 'high':
-        console.error('🟠 HIGH SEVERITY ERROR:', logData);
+        logger.error('HIGH SEVERITY ERROR', appError, 'service', logData);
         break;
       case 'medium':
-        console.warn('🟡 MEDIUM SEVERITY ERROR:', logData);
+        logger.warn('MEDIUM SEVERITY ERROR', 'service', logData);
         break;
       case 'low':
-        console.info('🟢 LOW SEVERITY ERROR:', logData);
+        logger.info('LOW SEVERITY ERROR', 'service', logData);
         break;
     }
 
@@ -154,22 +156,25 @@ export const errorHandler = {
   },
 
   // Validate and handle API responses
-  validateApiResponse<T>(response: any, expectedShape?: Partial<T>): T {
-    if (!response) {
+  validateApiResponse<T>(response: unknown, expectedShape?: Partial<T>): T {
+    if (!response || typeof response !== 'object') {
       throw new AppError('Resposta vazia da API', 'EMPTY_RESPONSE');
     }
 
-    if (response.error) {
+    const responseObj = response as Record<string, unknown>;
+    
+    if (responseObj.error && typeof responseObj.error === 'object') {
+      const errorObj = responseObj.error as Record<string, unknown>;
       throw new AppError(
-        response.error.message || 'Erro da API',
-        response.error.code,
-        { additionalData: response.error }
+        (errorObj.message as string) || 'Erro da API',
+        errorObj.code as string | undefined,
+        { additionalData: errorObj }
       );
     }
 
     if (expectedShape) {
       const missingFields = Object.keys(expectedShape).filter(
-        key => !(key in response)
+        key => !(key in responseObj)
       );
       
       if (missingFields.length > 0) {
@@ -180,7 +185,7 @@ export const errorHandler = {
       }
     }
 
-    return response;
+    return response as T;
   }
 };
 

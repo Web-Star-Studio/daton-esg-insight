@@ -64,10 +64,20 @@ export const usePermissions = () => {
         .select('permission_id, permissions(code, name, description, category)')
         .eq('role', userRole);
       
-      return data?.map(rp => (rp as any).permissions).filter(Boolean) || [];
+      // Type-safe mapping - extract permissions objects
+      if (!data) return [];
+      return data
+        .map(rp => rp.permissions)
+        .filter((p): p is { code: string; name: string; description: string; category: string } => p !== null)
+        .map(p => ({ ...p, id: '' } as Permission));
     },
     enabled: !!userRole
   });
+
+  interface CustomPermissionRow {
+    granted: boolean;
+    permissions: { code: string; name: string; description: string; category: string } | null;
+  }
 
   const { data: customPermissions, isLoading: customLoading } = useQuery({
     queryKey: ['custom-permissions', user?.id],
@@ -79,7 +89,8 @@ export const usePermissions = () => {
         .select('granted, permissions(code, name, description, category)')
         .eq('user_id', user.id);
       
-      return data || [];
+      // Type-safe return
+      return (data as CustomPermissionRow[] | null) || [];
     },
     enabled: !!user?.id
   });
@@ -91,10 +102,11 @@ export const usePermissions = () => {
     // Platform admin and Super admin have all permissions
     if (userRole === 'platform_admin' || userRole === 'super_admin') return true;
 
-    // Check custom permissions first (overrides)
-    const customPerm = customPermissions?.find(
-      cp => (cp as any).permissions?.code === permissionCode
-    );
+    // Check custom permissions first (overrides) - type-safe access
+    const customPerm = customPermissions?.find(cp => {
+      const typedCp = cp as CustomPermissionRow;
+      return typedCp.permissions?.code === permissionCode;
+    });
     if (customPerm) {
       return customPerm.granted;
     }

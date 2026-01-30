@@ -4,6 +4,7 @@ import { authService, type AuthUser, type RegisterCompanyData } from '@/services
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
+  const queryClient = useQueryClient();
   
   // CRITICAL: useRef MUST be at component level, not inside useEffect
   const isInitializingRef = useRef(false);
@@ -248,18 +250,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await authService.logout();
       setUser(null);
       setSession(null);
+      setShouldShowOnboarding(false);
+      
+      // Clear React Query cache to prevent stale data on next login
+      queryClient.clear();
+      logger.info('Logout completed, cache cleared', 'auth');
       
       toast({
         title: "Logout realizado com sucesso!",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         variant: "destructive",
         title: "Erro no logout",
-        description: error.message,
+        description: errorMessage,
       });
     }
   };
+
+  // Cross-tab synchronization for auth state
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      // Detect if Supabase auth token was removed in another tab
+      if (e.key?.includes('auth-token') && !e.newValue && e.oldValue) {
+        logger.info('Auth token removed in another tab, logging out', 'auth');
+        setUser(null);
+        setSession(null);
+        setShouldShowOnboarding(false);
+        queryClient.clear();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [queryClient]);
 
   const refreshUser = async () => {
     try {

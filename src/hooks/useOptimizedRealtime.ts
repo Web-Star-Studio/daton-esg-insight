@@ -3,14 +3,23 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PERFORMANCE_CONFIG } from '@/config/performanceConfig';
 
+interface RealtimePayload<T = Record<string, unknown>> {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  new: T;
+  old: T;
+  schema: string;
+  table: string;
+  commit_timestamp: string;
+}
+
 interface RealtimeConfig {
   table: string;
   queryKey: string[];
-  filter?: { column: string; value: any };
+  filter?: { column: string; value: string | number | boolean };
   enabled?: boolean;
-  onInsert?: (payload: any) => void;
-  onUpdate?: (payload: any) => void;
-  onDelete?: (payload: any) => void;
+  onInsert?: (payload: RealtimePayload) => void;
+  onUpdate?: (payload: RealtimePayload) => void;
+  onDelete?: (payload: RealtimePayload) => void;
 }
 
 /**
@@ -18,7 +27,7 @@ interface RealtimeConfig {
  */
 export function useOptimizedRealtime(configs: RealtimeConfig[]) {
   const queryClient = useQueryClient();
-  const channelsRef = useRef<any[]>([]);
+  const channelsRef = useRef<ReturnType<typeof supabase.channel>[]>([]);
   const debounceTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   useEffect(() => {
@@ -31,7 +40,7 @@ export function useOptimizedRealtime(configs: RealtimeConfig[]) {
       PERFORMANCE_CONFIG.realtime.maxSubscriptions
     );
 
-    const channels: any[] = [];
+    const channels: ReturnType<typeof supabase.channel>[] = [];
 
     limitedConfigs.forEach((config, index) => {
       const channelName = `realtime-${config.table}-${index}`;
