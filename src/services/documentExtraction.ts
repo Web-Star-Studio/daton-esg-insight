@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 export interface FileRecord {
   id: string;
@@ -44,7 +45,7 @@ export interface ExtractionStatus {
 
 class DocumentExtractionService {
   async uploadFile(file: File): Promise<FileRecord> {
-    console.log('📤 DocumentExtraction: Uploading file:', file.name);
+    logger.debug(`Uploading file: ${file.name}`, 'document');
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
@@ -63,7 +64,7 @@ class DocumentExtractionService {
     const randomId = crypto.randomUUID().substring(0, 8);
     const storagePath = `${session.user.id}/${randomId}/${sanitizedName}`;
 
-    console.log('📁 Storage path:', storagePath);
+    logger.debug(`Storage path: ${storagePath}`, 'document');
 
     // Create file record first
     const { data: fileRecord, error: fileError } = await supabase
@@ -80,11 +81,11 @@ class DocumentExtractionService {
       .single();
 
     if (fileError || !fileRecord) {
-      console.error('❌ Failed to create file record:', fileError);
+      logger.error('Failed to create file record:', fileError, 'document');
       throw new Error(`Failed to create file record: ${fileError?.message}`);
     }
 
-    console.log('💾 File record created:', fileRecord.id);
+    logger.debug(`File record created: ${fileRecord.id}`, 'document');
 
     // Upload file to storage
     const { error: uploadError } = await supabase.storage
@@ -96,13 +97,13 @@ class DocumentExtractionService {
       });
 
     if (uploadError) {
-      console.error('❌ Storage upload error:', uploadError);
+      logger.error('Storage upload error:', uploadError, 'document');
       // Clean up file record if upload fails
       await supabase.from('files').delete().eq('id', fileRecord.id);
       throw new Error(`Failed to upload file: ${uploadError.message}`);
     }
 
-    console.log('✅ File uploaded successfully to storage');
+    logger.info('File uploaded successfully to storage', 'document');
     return fileRecord as FileRecord;
   }
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import * as fabric from 'fabric';
 import { Canvas as FabricCanvas, Circle, Rect, Text, Triangle, Path, Line } from 'fabric';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -130,10 +131,11 @@ export const ProcessFlowEditor = ({
   }, [fabricCanvas, readOnly]);
 
   // Canvas event handlers
-  const handleCanvasClick = useCallback((e: any) => {
+  const handleCanvasClick = useCallback((e: fabric.TPointerEventInfo<fabric.TPointerEvent>) => {
     if (activeTool === 'select' || readOnly) return;
     
-    const pointer = fabricCanvas?.getPointer(e.e);
+    // Use the pointer from the event directly since getPointer was removed in fabric v6+
+    const pointer = e.scenePoint || e.viewportPoint;
     if (pointer) {
       addElement(activeTool, pointer.x, pointer.y);
       setActiveTool('select');

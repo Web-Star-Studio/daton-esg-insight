@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification, createNotificationForUser, triggerSmartNotifications } from "./notifications";
 import { toast } from "sonner";
+import { logger } from '@/utils/logger';
 
 export interface BusinessEvent {
   type: 'emission_data_added' | 'goal_updated' | 'license_expiring' | 'audit_finding_created' | 
@@ -26,7 +27,7 @@ class NotificationTriggersService {
   // Main trigger function for business events
   async triggerEvent(event: BusinessEvent): Promise<void> {
     try {
-      console.log('Triggering notification event:', event);
+      logger.debug('Triggering notification event:', 'notification', event);
       
       // Generate appropriate notification based on event type
       const notification = await this.generateNotificationForEvent(event);
@@ -47,7 +48,7 @@ class NotificationTriggersService {
         await triggerSmartNotifications(event.type);
       }
     } catch (error) {
-      console.error('Error triggering notification event:', error);
+      logger.error('Error triggering notification event:', error, 'notification');
     }
   }
 
@@ -371,7 +372,7 @@ class NotificationTriggersService {
       )
       .subscribe();
 
-    console.log('Real-time notification monitoring setup complete');
+    logger.info('Real-time notification monitoring setup complete', 'notification');
   }
 
   // License expiration checker (to be run periodically)
@@ -411,7 +412,7 @@ class NotificationTriggersService {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.error('Error checking license expirations:', error);
+      logger.error('Error checking license expirations:', error, 'notification');
       return { 
         checked: 0, 
         expiring: 0, 
@@ -455,7 +456,7 @@ class NotificationTriggersService {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.error('Error checking overdue tasks:', error);
+      logger.error('Error checking overdue tasks:', error, 'notification');
       return { 
         checked: 0, 
         overdue: 0, 
@@ -476,7 +477,7 @@ class NotificationTriggersService {
         .not('efficacy_evaluator_employee_id', 'is', null); // Apenas com responsável definido
 
       if (trainingsError) {
-        console.error('Error fetching training programs:', trainingsError);
+        logger.error('Error fetching training programs:', trainingsError, 'training');
         return { 
           checked: 0, 
           pending: 0,
@@ -557,7 +558,7 @@ class NotificationTriggersService {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.error('Error checking training efficacy deadlines:', error);
+      logger.error('Error checking training efficacy deadlines:', error, 'training');
       return { 
         checked: 0, 
         pending: 0, 
