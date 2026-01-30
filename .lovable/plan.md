@@ -1,549 +1,355 @@
 
-# Fase 2 - Batch 3: Migração de 20 Services e Correção de Types
+# Fase 2 - Batch 3 (Continuação): Migração de Services Restantes
 
-## Resumo da Análise
+## Resumo do Estado Atual
 
-| Arquivo | Console Calls | Types `any` | Categoria Logger | Prioridade |
-|---------|---------------|-------------|------------------|------------|
-| `customerComplaints.ts` | 12 | 3 | `quality` | ALTA |
-| `supplierPortalService.ts` | 13 | 4 | `supplier` | ALTA |
-| `brazilianFactorsTransform.ts` | 2 | 0 | `import` | MÉDIA |
-| `trainingSchedules.ts` | 2 | 0 | `training` | MÉDIA |
-| `branches.ts` | 15+ | 3 | `service` | ALTA |
-| `dataExport.ts` | 6 | 7 | `service` | ALTA |
-| `valueChainMapping.ts` | 0 | 15 | `service` | MÉDIA (types) |
-| `griReports.ts` | 3 | 4 | `gri` | ALTA |
-| `ghgReports.ts` | 0 | 3 | `emission` | MÉDIA (types) |
-| `factorExport.ts` | 0 | 7 | `emission` | MÉDIA (types) |
-| `deduplication.ts` | 5 | 2 | `service` | MÉDIA |
-| `supplierDashboard.ts` | 3 | 1 | `supplier` | MÉDIA |
-| `licenseActivityHistory.ts` | 1 | 4 | `compliance` | MÉDIA |
-| `energyManagement.ts` | 1 | 0 | `emission` | BAIXA |
-| `isoRequirements.ts` | 0 | 0 | `compliance` | (OK) |
-| `employeeService.ts` | 0 | 0 | `service` | (OK) |
-| `favorites.ts` | 0 | 0 | `service` | (OK) |
-| `extractionApprovalLog.ts` | 0 | 0 | `document` | (OK - já migrado) |
-| `esg.ts` | 3 | 0 | `api` | BAIXA |
-| `trainingStatuses.ts` | 0 | 0 | `training` | (OK - já migrado) |
+**Já migrados neste Batch:**
+- ✅ `customerComplaints.ts` - Logger + tipos
+- ✅ `supplierPortalService.ts` - Logger + tipos
+- ✅ `branches.ts` - Logger + tipos
+
+**Pendentes neste Batch (9 services):**
+
+| Arquivo | Console Calls | Types `any` | Categoria |
+|---------|---------------|-------------|-----------|
+| `trainingSchedules.ts` | 2 | 0 | `training` |
+| `dataExport.ts` | 6 | 7 | `service` |
+| `griReports.ts` | 4 | 4 | `gri` |
+| `supplierDashboard.ts` | 3 | 1 | `supplier` |
+| `licenseActivityHistory.ts` | 1 | 4 | `compliance` |
+| `energyManagement.ts` | 1 | 0 | `emission` |
+| `esg.ts` | 3 | 0 | `api` |
+| `ghgReports.ts` | 0 | 3 | `emission` |
+| `factorExport.ts` | 0 | 7 | `emission` |
 
 ---
 
 ## Parte 1: Migração de Console.log para Logger
 
-### 1.1 customerComplaints.ts (12 console.error → logger.error)
+### 1.1 trainingSchedules.ts (2 console calls)
 
 ```typescript
-// ANTES (linhas 72, 88, 131, 149, 169, 193, 214, 232, 246, 284)
-console.error('Error fetching customer complaints:', error);
-console.error('Error creating customer complaint:', error);
-console.error('Error resolving complaint:', error);
-
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-logger.error('Error fetching customer complaints', error, 'quality');
-logger.error('Error creating customer complaint', error, 'quality');
-logger.error('Error resolving complaint', error, 'quality');
-```
-
-### 1.2 supplierPortalService.ts (13 console.error → logger.error)
-
-```typescript
-// ANTES (linhas 70, 85, 101, 115, 128, 151, 166, 182, 196, 209, 228)
-console.error('Error fetching mandatory readings:', error);
-console.error('Error creating mandatory reading:', error);
-console.error('Error fetching supplier surveys:', error);
-
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-logger.error('Error fetching mandatory readings', error, 'supplier');
-logger.error('Error creating mandatory reading', error, 'supplier');
-logger.error('Error fetching supplier surveys', error, 'supplier');
-```
-
-### 1.3 branches.ts (15+ console.log/warn → logger.debug/warn)
-
-```typescript
-// ANTES (linhas 52, 68, 86, 117, 184, 224, 238, 251, 262, 273, 285, 296, 306, 318, 329, 340, 351, 362, 370, 382, 386, 391, 394)
-console.warn('[branches] getUserCompanyId: No authenticated user');
-console.log(`[deleteBranch] Iniciando exclusão da filial ${id}`);
-console.log(`[deleteBranch] Participantes de agendamentos removidos`);
-
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-logger.warn('getUserCompanyId: No authenticated user after retries', 'auth');
-logger.debug(`Iniciando exclusão da filial ${id}`, 'service');
-logger.debug('Participantes de agendamentos removidos', 'service');
-```
-
-### 1.4 trainingSchedules.ts (2 console.error → logger.error)
-
-```typescript
-// ANTES (linhas 72, 171)
+// Linha 72
 console.error('Error getting company ID:', error);
+→ logger.error('Error getting company ID', error, 'training');
+
+// Linha 171
 console.error('Erro ao adicionar participantes:', participantsError);
-
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-logger.error('Error getting company ID', error, 'training');
-logger.error('Erro ao adicionar participantes', participantsError, 'training');
+→ logger.error('Erro ao adicionar participantes', participantsError, 'training');
 ```
 
-### 1.5 brazilianFactorsTransform.ts (2 console.error → logger.error)
+### 1.2 dataExport.ts (6 console calls)
 
 ```typescript
-// ANTES (linhas 191, 203)
-console.error('Erro ao importar fator:', factor.name, error);
-console.error('Erro no processo de importação:', error);
-
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-logger.error('Erro ao importar fator', error, 'import', { factorName: factor.name });
-logger.error('Erro no processo de importação', error, 'import');
-```
-
-### 1.6 dataExport.ts (6 console.error → logger.error)
-
-```typescript
-// ANTES (linhas 206, 388, etc.)
+// Linha 206
 console.error('Erro ao exportar dados de água:', error);
+→ logger.error('Erro ao exportar dados de água', error, 'service');
+
+// Linha 388
 console.error('Erro ao exportar dados de energia:', error);
+→ logger.error('Erro ao exportar dados de energia', error, 'service');
 
-// DEPOIS
-import { logger } from '@/utils/logger';
+// Linha 517
+console.error('Erro ao exportar consolidado ESG:', error);
+→ logger.error('Erro ao exportar consolidado ESG', error, 'service');
 
-logger.error('Erro ao exportar dados de água', error, 'service');
-logger.error('Erro ao exportar dados de energia', error, 'service');
+// Linha 582
+console.error('Erro ao exportar dados de emissões:', error);
+→ logger.error('Erro ao exportar dados de emissões', error, 'service');
+
+// Linha 647
+console.error('Erro ao exportar dados de resíduos:', error);
+→ logger.error('Erro ao exportar dados de resíduos', error, 'service');
 ```
 
-### 1.7 griReports.ts (3 console.error → logger.error)
+### 1.3 griReports.ts (4 console calls)
 
 ```typescript
-// ANTES (linhas 185, 193, 482, 487)
+// Linha 185
 console.error('Erro ao criar relatório GRI:', error);
+→ logger.error('Erro ao criar relatório GRI', error, 'gri');
+
+// Linha 193
 console.error('Erro em createGRIReport:', error);
+→ logger.error('Erro em createGRIReport', error, 'gri');
+
+// Linha 482
 console.error('Erro ao recalcular conclusão do relatório:', error);
+→ logger.error('Erro ao recalcular conclusão do relatório', error, 'gri');
 
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-logger.error('Erro ao criar relatório GRI', error, 'gri');
-logger.error('Error in createGRIReport', error, 'gri');
-logger.error('Erro ao recalcular conclusão do relatório', error, 'gri');
+// Linha 487
+console.error('Exceção em calculateReportCompletion:', e);
+→ logger.error('Exceção em calculateReportCompletion', e, 'gri');
 ```
 
-### 1.8 deduplication.ts (5 console.error → logger.error)
+### 1.4 supplierDashboard.ts (3 console calls)
 
 ```typescript
-// ANTES (linhas 50, 70, 112, 138, 155)
-console.error('Error fetching deduplication rules:', error);
-console.error('Error creating deduplication rule:', error);
-
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-logger.error('Error fetching deduplication rules', error, 'service');
-logger.error('Error creating deduplication rule', error, 'service');
-```
-
-### 1.9 supplierDashboard.ts (3 console.error → logger.error)
-
-```typescript
-// ANTES (linhas 117, 170, 210)
+// Linha 117
 console.error('Error fetching supplier dashboard data:', error);
+→ logger.error('Error fetching supplier dashboard data', error, 'supplier');
+
+// Linha 170
 console.error('Error updating supplier performance metrics:', error);
+→ logger.error('Error updating supplier performance metrics', error, 'supplier');
+
+// Linha 210
 console.error('Error fetching suppliers overview:', error);
-
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-logger.error('Error fetching supplier dashboard data', error, 'supplier');
-logger.error('Error updating supplier performance metrics', error, 'supplier');
-logger.error('Error fetching suppliers overview', error, 'supplier');
+→ logger.error('Error fetching suppliers overview', error, 'supplier');
 ```
 
-### 1.10 licenseActivityHistory.ts (1 console.error → logger.error)
+### 1.5 licenseActivityHistory.ts (1 console call)
 
 ```typescript
-// ANTES (linha 51)
+// Linha 51
 if (error) console.error('Error logging action:', error);
-
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-if (error) logger.error('Error logging action', error, 'compliance');
+→ if (error) logger.error('Error logging action', error, 'compliance');
 ```
 
-### 1.11 energyManagement.ts (1 console.warn → logger.warn)
+### 1.6 energyManagement.ts (1 console call)
 
 ```typescript
-// ANTES (linha 81)
+// Linha 81
 console.warn(`Unidade não reconhecida: ${unit}. Usando valor sem conversão.`);
-
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-logger.warn(`Unidade de energia não reconhecida: ${unit}`, 'emission');
+→ logger.warn(`Unidade de energia não reconhecida: ${unit}`, 'emission');
 ```
 
-### 1.12 esg.ts (3 console.log/error → logger)
+### 1.7 esg.ts (3 console calls)
 
 ```typescript
-// ANTES (linhas presentes)
+// Linha 26
 console.log('Calling ESG dashboard edge function...');
+→ logger.debug('Calling ESG dashboard edge function', 'api');
+
+// Linha 33
 console.error('Error calling ESG dashboard function:', error);
+→ logger.error('Error calling ESG dashboard function', error, 'api');
+
+// Linha 37
+console.log('ESG dashboard data received:', data);
+→ logger.debug('ESG dashboard data received', 'api', { data });
+
+// Linha 40
 console.error('ESG dashboard service error:', error);
-
-// DEPOIS
-import { logger } from '@/utils/logger';
-
-logger.debug('Calling ESG dashboard edge function', 'api');
-logger.error('Error calling ESG dashboard function', error, 'api');
-logger.error('ESG dashboard service error', error, 'api');
+→ logger.error('ESG dashboard service error', error, 'api');
 ```
 
 ---
 
 ## Parte 2: Correção de Types `any`
 
-### 2.1 customerComplaints.ts (3 any types)
+### 2.1 dataExport.ts (7 any types)
 
 ```typescript
-// ANTES (linhas 23-24, 43)
-communication_log?: any;
-attachments?: any;
+// Linha 18 - convertToCSV parameter
+const convertToCSV = (data: any[], headers: string[]): string
+→ type ExportDataRow = Record<string, string | number | boolean>;
+→ const convertToCSV = (data: ExportDataRow[], headers: string[]): string
 
-// DEPOIS - Criar interfaces tipadas
-interface CommunicationLogEntry {
-  date: string;
-  type: 'creation' | 'communication' | 'resolution' | 'escalation';
-  message: string;
-  user_id?: string | null;
-}
-
-interface CustomerComplaint {
-  communication_log?: CommunicationLogEntry[];
-  attachments?: string[] | Record<string, unknown>;
-}
-```
-
-### 2.2 supplierPortalService.ts (4 any types)
-
-```typescript
-// ANTES (linhas 261, 306, 392, 406)
-const confirmedIds = new Set((confirmations as any[] || []).map(c => c.reading_id));
-const responseMap = new Map((responses as any[] || []).map(r => [r.survey_id, r as SurveyResponse]));
-const progressMap = new Map((progress as any[] || []).map(p => [p.training_material_id, p]));
-const updateData: any = { ... };
-
-// DEPOIS - Usar tipos específicos
-interface ReadingConfirmationBasic {
-  reading_id: string;
-}
-const confirmedIds = new Set((confirmations || []).map((c: ReadingConfirmationBasic) => c.reading_id));
-
-interface TrainingProgress {
-  training_material_id: string;
-  status: string;
-  // ...
-}
-const progressMap = new Map((progress || []).map((p: TrainingProgress) => [p.training_material_id, p]));
-```
-
-### 2.3 branches.ts (3 any types)
-
-```typescript
-// ANTES (linhas 103, 105, 427, 445, 478)
-const branchMap = new Map((data || []).map((b: any) => [b.id, b]));
-return (data || []).map((branch: any) => ({ ... }));
-onError: (error: any) => { ... }
-
-// DEPOIS
-// Usar tipo Branch já definido
-const branchMap = new Map((data || []).map((b: Branch) => [b.id, b]));
-return (data || []).map((branch: Branch) => ({ ... }));
-
-// Usar unknown + getErrorMessage
-onError: (error: unknown) => {
-  const message = error instanceof Error ? error.message : 'Erro desconhecido';
-}
-```
-
-### 2.4 dataExport.ts (7 any types)
-
-```typescript
-// ANTES (linhas 18, 78, 231, 400, 529, 594)
-const convertToCSV = (data: any[], headers: string[]): string => { ... }
+// Linhas 78, 231, 400, 529, 594 - exportData arrays
 const exportData: any[] = [];
-
-// DEPOIS - Usar generics e tipos específicos
-type ExportDataRow = Record<string, string | number | boolean>;
-
-const convertToCSV = (data: ExportDataRow[], headers: string[]): string => { ... }
-const exportData: ExportDataRow[] = [];
+→ const exportData: ExportDataRow[] = [];
 ```
 
-### 2.5 valueChainMapping.ts (15 any types)
+### 2.2 griReports.ts (4 any types)
 
 ```typescript
-// ANTES (linhas 13-16, 29-32, 65-68, 77-80, 209)
-external_suppliers: any[];
-external_clients: any[];
-requirements: any[];
-kpis: any[];
-sla_requirements: any;
-escalation_matrix: any[];
-performance_indicators: any[];
-
-// DEPOIS - Criar interfaces específicas
-interface ExternalEntity {
-  name: string;
-  contact?: string;
-  type?: string;
-}
-
-interface Requirement {
-  id?: string;
-  description: string;
-  priority?: 'low' | 'medium' | 'high';
-}
-
-interface KPI {
-  name: string;
-  target?: number;
-  unit?: string;
-  frequency?: string;
-}
-
-interface SLARequirement {
-  metric: string;
-  target_value: number;
-  unit: string;
-  measurement_period?: string;
-}
-
-// Aplicar nas interfaces
-external_suppliers: ExternalEntity[];
-external_clients: ExternalEntity[];
-requirements: Requirement[];
-kpis: KPI[];
-sla_requirements: SLARequirement | null;
-```
-
-### 2.6 factorExport.ts (7 any types)
-
-```typescript
-// ANTES (linhas 28, 98, 172, 175, 186, 189, 199)
-const row: any = {};
-const grouped: { [key: string]: any[] } = {};
-const result: any[] = [];
-const headerRow: any = {};
-const emptyRow: any = {};
-
-// DEPOIS
-type FactorExportRow = Record<string, string | number>;
-
-const row: FactorExportRow = {};
-const grouped: Record<string, FactorExportRow[]> = {};
-const result: FactorExportRow[] = [];
-```
-
-### 2.7 griReports.ts (4 any types)
-
-```typescript
-// ANTES (linhas 17-19, 180, 192, 397)
+// Linhas 17-19 - interface fields
 materiality_assessment?: any;
 stakeholder_engagement?: any;
 template_config?: any;
-} as any])
-catch (error: any)
-.insert([topic as any])
-
-// DEPOIS
+→ 
 interface MaterialityAssessment {
   topics?: string[];
   stakeholder_input?: Record<string, unknown>;
   methodology?: string;
 }
-
 interface StakeholderEngagement {
   groups?: string[];
   methods?: string[];
   frequency?: string;
 }
+→ materiality_assessment?: MaterialityAssessment;
+→ stakeholder_engagement?: StakeholderEngagement;
+→ template_config?: Record<string, unknown>;
 
-materiality_assessment?: MaterialityAssessment;
-stakeholder_engagement?: StakeholderEngagement;
-template_config?: Record<string, unknown>;
+// Linha 180 - insert cast
+} as any])
+→ Remover cast, usar tipo correto
 
-// Catch blocks
-} catch (error: unknown) {
+// Linha 192 - catch block
+catch (error: any)
+→ catch (error: unknown)
+
+// Linhas 397, 442 - insert casts
+.insert([topic as any])
+.insert([alignment as any])
+→ Manter JSON assertion necessária para Supabase
 ```
 
-### 2.8 ghgReports.ts (3 any types)
+### 2.3 supplierDashboard.ts (1 any type)
 
 ```typescript
-// ANTES (linhas 18, 70, 329)
+// Linha 131
+metricsData?: any;
+→ metricsData?: Record<string, number | string | boolean>;
+```
+
+### 2.4 licenseActivityHistory.ts (4 any types)
+
+```typescript
+// Linhas 12-13, 26-27
+old_values?: any;
+new_values?: any;
+→ 
+type ActionValues = Record<string, unknown>;
+old_values?: ActionValues;
+new_values?: ActionValues;
+```
+
+### 2.5 ghgReports.ts (3 any types)
+
+```typescript
+// Linha 18
 report_data: any;
+→ report_data: ReportData | Record<string, unknown>;
+
+// Linha 70
 [key: string]: any;
-const uniqueFactors = factors?.reduce((acc: any[], curr) => { ... }
+→ [key: string]: unknown;
 
-// DEPOIS
-report_data: ReportData;
-// Remover index signature se possível ou usar Record<string, unknown>
-
+// Linha 329
+const uniqueFactors = factors?.reduce((acc: any[], curr) => {
+→ 
 interface UsedEmissionFactor {
   source: string;
   category: string;
   factor_value: number;
   unit: string;
 }
-const uniqueFactors = factors?.reduce((acc: UsedEmissionFactor[], curr) => { ... }
+const uniqueFactors = factors?.reduce((acc: UsedEmissionFactor[], curr) => {
 ```
 
-### 2.9 licenseActivityHistory.ts (4 any types)
+### 2.6 factorExport.ts (7 any types)
 
 ```typescript
-// ANTES (linhas 12-13, 26-27)
-old_values?: any;
-new_values?: any;
+// Linhas 28, 98
+const row: any = {};
+→ type FactorExportRow = Record<string, string | number>;
+→ const row: FactorExportRow = {};
 
-// DEPOIS
-type ActionValues = Record<string, unknown>;
-
-old_values?: ActionValues;
-new_values?: ActionValues;
-```
-
-### 2.10 supplierDashboard.ts (1 any type)
-
-```typescript
-// ANTES (linha 131)
-metricsData?: any;
-
-// DEPOIS
-interface MetricsData {
-  [key: string]: number | string | boolean;
-}
-metricsData?: MetricsData;
+// Linhas 172, 175, 186, 189, 199
+const grouped: { [key: string]: any[] } = {};
+const result: any[] = [];
+const headerRow: any = {};
+const emptyRow: any = {};
+→ 
+const grouped: Record<string, FactorExportRow[]> = {};
+const result: FactorExportRow[] = [];
+const headerRow: FactorExportRow = {};
+const emptyRow: FactorExportRow = {};
 ```
 
 ---
 
-## Arquivos de Tipos a Criar/Atualizar
+## Arquivos a Modificar
 
-### Novo: `src/types/entities/complaint.ts`
+### Services com Logger + Types (7 arquivos)
+1. `trainingSchedules.ts` - 2 console
+2. `dataExport.ts` - 6 console + 7 any
+3. `griReports.ts` - 4 console + 4 any
+4. `supplierDashboard.ts` - 3 console + 1 any
+5. `licenseActivityHistory.ts` - 1 console + 4 any
+6. `energyManagement.ts` - 1 console
+7. `esg.ts` - 3 console
 
-```typescript
-export interface CommunicationLogEntry {
-  date: string;
-  type: 'creation' | 'communication' | 'resolution' | 'escalation';
-  message: string;
-  user_id?: string | null;
-}
+### Services com Types Only (2 arquivos)
+1. `ghgReports.ts` - 3 any types
+2. `factorExport.ts` - 7 any types
 
-export interface AttachmentInfo {
-  file_name: string;
-  file_path: string;
-  uploaded_at: string;
-}
-```
+---
 
-### Novo: `src/types/entities/supplier-portal.ts`
+## Tipos a Adicionar/Atualizar
 
-```typescript
-export interface TrainingProgress {
-  training_material_id: string;
-  supplier_id: string;
-  status: 'Não Iniciado' | 'Em Andamento' | 'Concluído';
-  started_at?: string;
-  completed_at?: string;
-  score?: number;
-}
+### Em `src/types/entities/index.ts` - atualizar barrel exports
 
-export interface ReadingConfirmationBasic {
-  reading_id: string;
-}
-```
-
-### Novo: `src/types/entities/value-chain.ts`
+### Em arquivos individuais - tipos inline:
 
 ```typescript
-export interface ExternalEntity {
-  name: string;
-  contact?: string;
-  type?: string;
-}
+// dataExport.ts
+type ExportDataRow = Record<string, string | number | boolean>;
 
-export interface ProcessRequirement {
-  id?: string;
-  description: string;
-  priority?: 'low' | 'medium' | 'high';
-}
+// griReports.ts  
+interface MaterialityAssessment { ... }
+interface StakeholderEngagement { ... }
 
-export interface ProcessKPI {
-  name: string;
-  target?: number;
-  unit?: string;
-  frequency?: string;
-}
+// ghgReports.ts
+interface UsedEmissionFactor { ... }
 
-export interface SLARequirement {
-  metric: string;
-  target_value: number;
-  unit: string;
-  measurement_period?: string;
-}
+// factorExport.ts
+type FactorExportRow = Record<string, string | number>;
+
+// licenseActivityHistory.ts
+type ActionValues = Record<string, unknown>;
 ```
 
 ---
 
 ## Ordem de Execução
 
-1. **Criar arquivos de tipos** (3 novos arquivos em `src/types/entities/`)
-2. **Migrar 12 services** para logger centralizado
-3. **Corrigir types `any`** nos 10 services identificados
-4. **Atualizar barrel export** em `src/types/entities/index.ts`
+1. Migrar `trainingSchedules.ts` (simples, 2 logs)
+2. Migrar `energyManagement.ts` (simples, 1 log)
+3. Migrar `esg.ts` (simples, 3 logs)
+4. Migrar `licenseActivityHistory.ts` (1 log + 4 types)
+5. Migrar `supplierDashboard.ts` (3 logs + 1 type)
+6. Migrar `dataExport.ts` (6 logs + 7 types)
+7. Migrar `griReports.ts` (4 logs + 4 types)
+8. Corrigir types em `ghgReports.ts` (3 types)
+9. Corrigir types em `factorExport.ts` (7 types)
 
 ---
 
-## Métricas Esperadas
+## Métricas Esperadas deste Batch
 
-| Métrica | Antes | Depois deste Batch |
-|---------|-------|-------------------|
-| Services migrados | 18 | 30 |
-| Console logs removidos | ~70 | ~140 |
-| `any` types corrigidos | ~15 | ~65 |
-| Arquivos de tipos | 4 | 7 |
+| Métrica | Antes | Depois |
+|---------|-------|--------|
+| Services migrados | 21 | 30 |
+| Console logs removidos | ~70 | ~90 |
+| `any` types corrigidos | ~15 | ~50 |
 
 ---
 
-## Arquivos a Modificar
+## Notas Técnicas
 
-### Services (12 arquivos)
-1. `customerComplaints.ts` - 12 console + 3 any
-2. `supplierPortalService.ts` - 13 console + 4 any
-3. `branches.ts` - 15+ console + 3 any
-4. `trainingSchedules.ts` - 2 console
-5. `brazilianFactorsTransform.ts` - 2 console
-6. `dataExport.ts` - 6 console + 7 any
-7. `griReports.ts` - 3 console + 4 any
-8. `deduplication.ts` - 5 console + 2 any
-9. `supplierDashboard.ts` - 3 console + 1 any
-10. `licenseActivityHistory.ts` - 1 console + 4 any
-11. `energyManagement.ts` - 1 console
-12. `esg.ts` - 3 console
+### Padrão de Migração Logger
 
-### Services (Types Only - 3 arquivos)
-1. `valueChainMapping.ts` - 15 any types
-2. `ghgReports.ts` - 3 any types
-3. `factorExport.ts` - 7 any types
+```typescript
+// Adicionar import no topo
+import { logger } from '@/utils/logger';
 
-### Novos Arquivos de Tipos (3 arquivos)
-1. `src/types/entities/complaint.ts`
-2. `src/types/entities/supplier-portal.ts`
-3. `src/types/entities/value-chain.ts`
+// console.error → logger.error
+console.error('Message:', error);
+→ logger.error('Message', error, 'category');
+
+// console.log → logger.debug
+console.log('Message:', data);
+→ logger.debug('Message', 'category', { data });
+
+// console.warn → logger.warn
+console.warn('Message');
+→ logger.warn('Message', 'category');
+```
+
+### Categorias do Logger Utilizadas
+
+| Service | Categoria |
+|---------|-----------|
+| trainingSchedules | `training` |
+| dataExport | `service` |
+| griReports | `gri` |
+| supplierDashboard | `supplier` |
+| licenseActivityHistory | `compliance` |
+| energyManagement | `emission` |
+| esg | `api` |
+| ghgReports | `emission` |
+| factorExport | `emission` |
