@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
+import { logger } from "@/utils/logger"
+import type { Json } from "@/integrations/supabase/types"
 
 export interface ExtractedLicenseFormData {
   nome: string;
@@ -22,6 +24,12 @@ export interface ExtractedLicenseFormData {
   };
 }
 
+export interface PartialExtractedData {
+  fields?: Record<string, string | number>;
+  confidence?: number;
+  errors?: string[];
+}
+
 export interface DocumentAnalysisResult {
   success: boolean;
   extracted_data?: ExtractedLicenseFormData;
@@ -30,7 +38,7 @@ export interface DocumentAnalysisResult {
   file_type?: string;
   analysis_type?: string;
   analysis_attempted?: boolean;
-  partial_data?: any;
+  partial_data?: PartialExtractedData;
   confidence?: number;
   error?: string;
 }
@@ -50,7 +58,7 @@ export interface LicenseData {
   company_id: string;
   ai_processing_status?: string;
   ai_confidence_score?: number;
-  ai_extracted_data?: any;
+  ai_extracted_data?: ExtractedLicenseFormData | Record<string, unknown> | Json;
   ai_last_analysis_at?: string;
   compliance_score?: number;
   created_at: string;
@@ -116,7 +124,7 @@ export interface LicenseDetail {
   asset_id?: string;
   ai_processing_status?: string;
   ai_confidence_score?: number;
-  ai_extracted_data?: any;
+  ai_extracted_data?: ExtractedLicenseFormData | Record<string, unknown> | Json;
   ai_last_analysis_at?: string;
   compliance_score?: number;
   created_at: string;
@@ -156,13 +164,13 @@ export async function getLicenses(filters?: LicenseFilters): Promise<LicenseList
       `)
       .order('expiration_date', { ascending: true })
 
-    // Apply status filter
+    // Apply status filter - cast to expected type
     if (filters?.status) {
-      query = query.eq('status', filters.status as any)
+      const validStatuses = ['Ativa', 'Em Renovação', 'Suspensa', 'Vencida'] as const;
+      if (validStatuses.includes(filters.status as typeof validStatuses[number])) {
+        query = query.eq('status', filters.status as typeof validStatuses[number])
+      }
     }
-
-    // Apply expires_in_days filter
-    if (filters?.expires_in_days) {
       const futureDate = new Date()
       futureDate.setDate(futureDate.getDate() + filters.expires_in_days)
       query = query.lte('expiration_date', futureDate.toISOString().split('T')[0])
@@ -171,14 +179,14 @@ export async function getLicenses(filters?: LicenseFilters): Promise<LicenseList
     const { data, error } = await query
 
     if (error) {
-      console.error('Error fetching licenses:', error)
+      logger.error('Error fetching licenses', error, 'compliance')
       toast.error('Erro ao carregar licenças')
       throw error
     }
 
     return data || []
   } catch (error) {
-    console.error('Error in getLicenses:', error)
+    logger.error('Error in getLicenses', error, 'compliance')
     throw error
   }
 }
@@ -194,7 +202,7 @@ export async function getLicenseById(id: string): Promise<LicenseDetail> {
       .maybeSingle()
 
     if (licenseError || !licenseData) {
-      console.error('Error fetching license:', licenseError)
+      logger.error('Error fetching license', licenseError, 'compliance')
       toast.error('Licença não encontrada')
       throw new Error('Licença não encontrada')
     }
@@ -212,7 +220,7 @@ export async function getLicenseById(id: string): Promise<LicenseDetail> {
       .eq('related_id', id)
 
     if (documentsError) {
-      console.error('Error fetching documents:', documentsError)
+      logger.error('Error fetching documents', documentsError, 'compliance')
       // Don't throw error for documents, just log it
     }
 
@@ -221,7 +229,7 @@ export async function getLicenseById(id: string): Promise<LicenseDetail> {
       documents: documentsData || []
     }
   } catch (error) {
-    console.error('Error in getLicenseById:', error)
+    logger.error('Error in getLicenseById', error, 'compliance')
     throw error
   }
 }
@@ -250,12 +258,12 @@ export async function createLicense(licenseData: CreateLicenseData): Promise<Lic
       .from('licenses')
       .insert({
         name: licenseData.name,
-        type: licenseData.type as any,
+        type: licenseData.type,
         issuing_body: licenseData.issuing_body,
         process_number: licenseData.process_number,
         issue_date: licenseData.issue_date?.toISOString().split('T')[0],
         expiration_date: licenseData.expiration_date.toISOString().split('T')[0],
-        status: licenseData.status as any,
+        status: licenseData.status,
         conditions: licenseData.conditions,
         responsible_user_id: licenseData.responsible_user_id,
         company_id: profile.company_id
@@ -264,7 +272,7 @@ export async function createLicense(licenseData: CreateLicenseData): Promise<Lic
       .maybeSingle()
 
     if (error) {
-      console.error('Error creating license:', error)
+      logger.error('Error creating license', error, 'compliance')
       toast.error('Erro ao criar licença')
       throw error
     }
@@ -276,7 +284,7 @@ export async function createLicense(licenseData: CreateLicenseData): Promise<Lic
     toast.success('Licença criada com sucesso!')
     return data
   } catch (error) {
-    console.error('Error in createLicense:', error)
+    logger.error('Error in createLicense', error, 'compliance')
     throw error
   }
 }
@@ -284,15 +292,18 @@ export async function createLicense(licenseData: CreateLicenseData): Promise<Lic
 // PUT /api/v1/licenses/{licenseId}
 export async function updateLicense(id: string, updates: UpdateLicenseData): Promise<LicenseData> {
   try {
-    const updateData: any = { ...updates }
+    const updateData: Record<string, unknown> = {}
     
-    // Convert dates to strings if they exist
-    if (updateData.issue_date) {
-      updateData.issue_date = updateData.issue_date.toISOString().split('T')[0]
-    }
-    if (updateData.expiration_date) {
-      updateData.expiration_date = updateData.expiration_date.toISOString().split('T')[0]
-    }
+    // Copy fields and convert dates
+    if (updates.name) updateData.name = updates.name
+    if (updates.type) updateData.type = updates.type
+    if (updates.issuing_body) updateData.issuing_body = updates.issuing_body
+    if (updates.process_number !== undefined) updateData.process_number = updates.process_number
+    if (updates.conditions !== undefined) updateData.conditions = updates.conditions
+    if (updates.responsible_user_id !== undefined) updateData.responsible_user_id = updates.responsible_user_id
+    if (updates.status) updateData.status = updates.status
+    if (updates.issue_date) updateData.issue_date = updates.issue_date.toISOString().split('T')[0]
+    if (updates.expiration_date) updateData.expiration_date = updates.expiration_date.toISOString().split('T')[0]
 
     const { data, error } = await supabase
       .from('licenses')
@@ -302,7 +313,7 @@ export async function updateLicense(id: string, updates: UpdateLicenseData): Pro
       .maybeSingle()
 
     if (error) {
-      console.error('Error updating license:', error)
+      logger.error('Error updating license', error, 'compliance')
       toast.error('Erro ao atualizar licença')
       throw error
     }
@@ -314,7 +325,7 @@ export async function updateLicense(id: string, updates: UpdateLicenseData): Pro
     toast.success('Licença atualizada com sucesso!')
     return data
   } catch (error) {
-    console.error('Error in updateLicense:', error)
+    logger.error('Error in updateLicense', error, 'compliance')
     throw error
   }
 }
@@ -328,14 +339,14 @@ export async function deleteLicense(id: string): Promise<void> {
       .eq('id', id)
 
     if (error) {
-      console.error('Error deleting license:', error)
+      logger.error('Error deleting license', error, 'compliance')
       toast.error('Erro ao excluir licença')
       throw error
     }
 
     toast.success('Licença excluída com sucesso!')
   } catch (error) {
-    console.error('Error in deleteLicense:', error)
+    logger.error('Error in deleteLicense', error, 'compliance')
     throw error
   }
 }
@@ -358,7 +369,7 @@ export async function uploadLicenseDocument(licenseId: string, file: File): Prom
       })
 
     if (uploadError) {
-      console.error('Error uploading file:', uploadError)
+      logger.error('Error uploading file', uploadError, 'compliance')
       toast.error('Erro ao fazer upload do arquivo')
       throw uploadError
     }
@@ -417,7 +428,7 @@ export async function uploadLicenseDocument(licenseId: string, file: File): Prom
       .maybeSingle()
 
     if (documentError || !documentData) {
-      console.error('Error saving document record:', documentError)
+      logger.error('Error saving document record', documentError, 'compliance')
       // Try to clean up the uploaded file
       await supabase.storage.from('documents').remove([filePath])
       toast.error('Erro ao salvar registro do documento')
@@ -436,7 +447,7 @@ export async function uploadLicenseDocument(licenseId: string, file: File): Prom
       upload_date: documentData.upload_date
     }
   } catch (error) {
-    console.error('Error in uploadLicenseDocument:', error)
+    logger.error('Error in uploadLicenseDocument', error, 'compliance')
     throw error
   }
 }
@@ -449,7 +460,7 @@ export async function getLicenseStats(): Promise<LicenseStats> {
       .select('status, expiration_date')
 
     if (error) {
-      console.error('Error fetching license stats:', error)
+      logger.error('Error fetching license stats', error, 'compliance')
       throw error
     }
 
@@ -480,7 +491,7 @@ export async function getLicenseStats(): Promise<LicenseStats> {
 
     return stats
   } catch (error) {
-    console.error('Error in getLicenseStats:', error)
+    logger.error('Error in getLicenseStats', error, 'compliance')
     throw error
   }
 }
@@ -498,7 +509,7 @@ export async function getDocumentUrl(filePath: string): Promise<string> {
 
     return data.signedUrl
   } catch (error) {
-    console.error('Error getting document URL:', error)
+    logger.error('Error getting document URL', error, 'compliance')
     throw error
   }
 }
@@ -520,7 +531,7 @@ export async function analyzeLicenseDocument(file: File): Promise<DocumentAnalys
       })
 
     if (uploadError) {
-      console.error('Error uploading temp file:', uploadError)
+      logger.error('Error uploading temp file', uploadError, 'compliance')
       throw new Error('Erro ao fazer upload temporário do arquivo')
     }
 
@@ -531,12 +542,12 @@ export async function analyzeLicenseDocument(file: File): Promise<DocumentAnalys
       })
 
       if (error) {
-        console.error('Edge function error:', error)
+        logger.error('Edge function error', error, 'compliance')
         throw new Error(`Erro na análise: ${error.message || 'Erro desconhecido'}`)
       }
 
       if (!data?.success) {
-        console.error('Analysis failed:', data)
+        logger.error('Analysis failed', data, 'compliance')
         const errorMsg = data?.error || 'Falha na análise do documento'
         const details = data?.details ? ` - Detalhes: ${data.details}` : ''
         throw new Error(`${errorMsg}${details}`)
@@ -548,7 +559,7 @@ export async function analyzeLicenseDocument(file: File): Promise<DocumentAnalys
       await supabase.storage.from('documents').remove([tempFilePath])
     }
   } catch (error) {
-    console.error('Error in analyzeLicenseDocument:', error)
+    logger.error('Error in analyzeLicenseDocument', error, 'compliance')
     // Re-throw with original message to preserve details
     throw error
   }

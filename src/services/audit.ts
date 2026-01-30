@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/utils/logger";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface ActivityLog {
   id: string;
@@ -7,7 +8,7 @@ export interface ActivityLog {
   user_id: string;
   action_type: string;
   description: string;
-  details_json?: any;
+  details_json?: Json;
   created_at: string;
   profiles?: {
     full_name: string;
@@ -82,7 +83,7 @@ export interface AuditTrailFilters {
 
 class AuditService {
   async getAudits(): Promise<Audit[]> {
-    logger.debug('Fetching audits');
+    logger.debug('Fetching audits', 'audit');
     
     const { data, error } = await supabase
       .from('audits')
@@ -90,21 +91,21 @@ class AuditService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      logger.error('Error fetching audits', error);
+      logger.error('Error fetching audits', error, 'audit');
       throw new Error(`Erro ao buscar auditorias: ${error.message}`);
     }
 
-    logger.debug('Audits fetched successfully', { count: data?.length || 0 });
+    logger.debug('Audits fetched successfully', 'audit', { count: data?.length || 0 });
     return data || [];
   }
 
   async createAudit(auditData: CreateAuditData): Promise<Audit> {
-    console.log('Creating audit:', auditData);
+    logger.debug('Creating audit', 'audit', { auditData });
     
     try {
       // Add company_id from current user's profile
       const { data: userResponse } = await supabase.auth.getUser();
-      console.log('Current user:', userResponse.user?.id);
+      logger.debug('Getting current user', 'audit', { userId: userResponse.user?.id });
       
       if (!userResponse.user) {
         throw new Error('Usuário não autenticado');
@@ -116,7 +117,7 @@ class AuditService {
         .eq('id', userResponse.user.id)
         .maybeSingle();
 
-      console.log('Profile data:', profile, 'Profile error:', profileError);
+      logger.debug('Profile data retrieved', 'audit');
 
       if (profileError) {
         throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
@@ -132,7 +133,7 @@ class AuditService {
         status: auditData.status || 'Planejada'
       };
 
-      console.log('Inserting audit data:', auditToInsert);
+      logger.debug('Inserting audit data', 'audit');
 
       const { data, error } = await supabase
         .from('audits')
@@ -141,7 +142,7 @@ class AuditService {
         .maybeSingle();
 
       if (error) {
-        console.error('Error creating audit:', error);
+        logger.error('Error creating audit', error, 'audit');
         throw new Error(`Erro ao criar auditoria: ${error.message}`);
       }
       
@@ -149,7 +150,7 @@ class AuditService {
         throw new Error('Não foi possível criar a auditoria');
       }
 
-      console.log('Audit created successfully:', data);
+      logger.debug('Audit created successfully', 'audit', { auditId: data.id });
       
       // Log the activity
       await this.logActivity('audit_created', `Auditoria criada: ${data.title}`, {
@@ -159,13 +160,13 @@ class AuditService {
 
       return data;
     } catch (error) {
-      console.error('Detailed audit creation error:', error);
+      logger.error('Detailed audit creation error', error, 'audit');
       throw error;
     }
   }
 
   async getAuditFindings(auditId: string): Promise<AuditFinding[]> {
-    console.log('Fetching audit findings for audit:', auditId);
+    logger.debug('Fetching audit findings', 'audit', { auditId });
     
     const { data, error } = await supabase
       .from('audit_findings')
@@ -174,16 +175,16 @@ class AuditService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching audit findings:', error);
+      logger.error('Error fetching audit findings', error, 'audit');
       throw new Error(`Erro ao buscar achados da auditoria: ${error.message}`);
     }
 
-    console.log('Audit findings fetched successfully:', data?.length || 0);
+    logger.debug('Audit findings fetched successfully', 'audit', { count: data?.length || 0 });
     return data || [];
   }
 
   async createAuditFinding(auditId: string, findingData: CreateFindingData): Promise<AuditFinding> {
-    console.log('Creating audit finding:', auditId, findingData);
+    logger.debug('Creating audit finding', 'audit', { auditId, findingData });
     
     try {
       const findingToInsert = {
@@ -192,7 +193,7 @@ class AuditService {
         status: 'Aberta'
       };
 
-      console.log('Inserting finding data:', findingToInsert);
+      logger.debug('Inserting finding data', 'audit');
 
       const { data, error } = await supabase
         .from('audit_findings')
@@ -201,7 +202,7 @@ class AuditService {
         .maybeSingle();
 
       if (error) {
-        console.error('Error creating audit finding:', error);
+        logger.error('Error creating audit finding', error, 'audit');
         throw new Error(`Erro ao criar achado da auditoria: ${error.message}`);
       }
       
@@ -209,7 +210,7 @@ class AuditService {
         throw new Error('Não foi possível criar o achado da auditoria');
       }
 
-      console.log('Audit finding created successfully:', data);
+      logger.debug('Audit finding created successfully', 'audit', { findingId: data.id });
       
       // Log the activity
       await this.logActivity('audit_finding_created', `Achado criado para auditoria: ${findingData.description}`, {
@@ -220,13 +221,13 @@ class AuditService {
 
       return data;
     } catch (error) {
-      console.error('Detailed finding creation error:', error);
+      logger.error('Detailed finding creation error', error, 'audit');
       throw error;
     }
   }
 
   async updateAudit(auditId: string, auditData: CreateAuditData): Promise<Audit> {
-    console.log('Updating audit:', auditId, auditData);
+    logger.debug('Updating audit', 'audit', { auditId, auditData });
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -268,7 +269,7 @@ class AuditService {
   }
 
   async updateAuditFinding(findingId: string, updateData: UpdateFindingData): Promise<AuditFinding> {
-    console.log('Updating audit finding:', findingId, updateData);
+    logger.debug('Updating audit finding', 'audit', { findingId, updateData });
     
     const { data, error } = await supabase
       .from('audit_findings')
@@ -278,7 +279,7 @@ class AuditService {
       .maybeSingle();
 
     if (error) {
-      console.error('Error updating audit finding:', error);
+      logger.error('Error updating audit finding', error, 'audit');
       throw new Error(`Erro ao atualizar achado da auditoria: ${error.message}`);
     }
     
@@ -286,12 +287,12 @@ class AuditService {
       throw new Error('Achado da auditoria não encontrado');
     }
 
-    console.log('Audit finding updated successfully:', data);
+    logger.debug('Audit finding updated successfully', 'audit', { findingId: data.id });
     return data;
   }
 
   async getActivityLogs(): Promise<ActivityLog[]> {
-    console.log('Fetching activity logs...');
+    logger.debug('Fetching activity logs', 'audit');
     
     const { data, error } = await supabase
       .from('activity_logs')
@@ -300,15 +301,15 @@ class AuditService {
       .limit(50);
 
     if (error) {
-      console.error('Error fetching activity logs:', error);
+      logger.error('Error fetching activity logs', error, 'audit');
       throw new Error(`Erro ao buscar logs de atividade: ${error.message}`);
     }
 
-    console.log('Activity logs fetched successfully:', data?.length || 0);
+    logger.debug('Activity logs fetched successfully', 'audit', { count: data?.length || 0 });
     return data || [];
   }
 
-  async logActivity(actionType: string, description: string, detailsJson?: any) {
+  async logActivity(actionType: string, description: string, detailsJson?: Json) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -329,15 +330,15 @@ class AuditService {
         p_details_json: detailsJson
       });
 
-      console.log('Activity logged successfully:', actionType);
+      logger.debug('Activity logged successfully', 'audit', { actionType });
       return result;
     } catch (error) {
-      console.error('Error logging activity:', error);
+      logger.error('Error logging activity', error, 'audit');
     }
   }
 
   async getAuditTrail(filters: AuditTrailFilters = {}) {
-    console.log('Fetching audit trail with filters:', filters);
+    logger.debug('Fetching audit trail', 'audit', { filters });
     
     let query = supabase
       .from('activity_logs')
@@ -367,16 +368,16 @@ class AuditService {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching audit trail:', error);
+      logger.error('Error fetching audit trail', error, 'audit');
       throw new Error(`Erro ao buscar trilha de auditoria: ${error.message}`);
     }
 
-    console.log('Audit trail fetched successfully:', data?.length || 0);
+    logger.debug('Audit trail fetched successfully', 'audit', { count: data?.length || 0 });
     return data || [];
   }
 
   async getAllFindings(): Promise<AuditFinding[]> {
-    console.log('Fetching all audit findings');
+    logger.debug('Fetching all audit findings', 'audit');
     
     const { data, error } = await supabase
       .from('audit_findings')
@@ -387,11 +388,11 @@ class AuditService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching all findings:', error);
+      logger.error('Error fetching all findings', error, 'audit');
       throw new Error(`Erro ao buscar achados de auditoria: ${error.message}`);
     }
 
-    console.log('All findings fetched successfully:', data?.length || 0);
+    logger.debug('All findings fetched successfully', 'audit', { count: data?.length || 0 });
     return data || [];
   }
 }
