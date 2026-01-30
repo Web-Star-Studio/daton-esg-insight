@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserManagement } from '@/hooks/data/useUserManagement';
 import { UserManagementHeader } from '@/components/users/UserManagementHeader';
 import { UserStatsCards } from '@/components/users/UserStatsCards';
-import { UserListTable } from '@/components/users/UserListTable';
+import { AdminUserTable } from '@/components/users/AdminUserTable';
+import { UserSearchFilters } from '@/components/users/UserSearchFilters';
+import { UserPagination } from '@/components/users/UserPagination';
 import { UserFormModal } from '@/components/users/UserFormModal';
+import { UserDetailsDialog } from '@/components/users/UserDetailsDialog';
+import { ResetPasswordDialog } from '@/components/users/ResetPasswordDialog';
+import { DeleteUserDialog } from '@/components/users/DeleteUserDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +19,7 @@ import { toast } from 'sonner';
 import { Shield, Settings } from 'lucide-react';
 import { PermissionGate } from '@/components/permissions/PermissionGate';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
-import type { UserProfile } from '@/hooks/data/useUserManagement';
+import type { UserProfile, UserFilters } from '@/hooks/data/useUserManagement';
 
 interface UserProfileWithRole extends UserProfile {
   role: UserRole;
@@ -22,21 +27,36 @@ interface UserProfileWithRole extends UserProfile {
 
 export default function GestaoUsuarios() {
   const queryClient = useQueryClient();
-  const { isSuperAdmin, isAdmin } = usePermissions();
+  const { isSuperAdmin, isAdmin, currentUserId } = usePermissions();
   const { 
     users, 
     stats, 
+    pagination,
+    filters,
     usersLoading, 
     createUser, 
     updateUser,
+    softDeleteUser,
+    reactivateUser,
+    deleteUser,
+    resetPassword,
     resendInvite,
+    updateFilters,
     isCreating,
     isUpdating,
-    isResending
+    isSoftDeleting,
+    isDeleting,
+    isResetting,
+    isResending,
+    checkEmailUnique,
+    checkUsernameUnique,
   } = useUserManagement();
   
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Fetch all users with roles for permissions tab
   const { data: usersWithRoles, isLoading: rolesLoading } = useQuery({
@@ -50,7 +70,7 @@ export default function GestaoUsuarios() {
 
       if (!profile?.company_id) return [];
 
-      // SECURE: Fetch roles from user_roles table (CRITICAL SECURITY FIX)
+      // SECURE: Fetch roles from user_roles table
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, company_id')
@@ -76,7 +96,7 @@ export default function GestaoUsuarios() {
   // Mutation to update user role
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, newRole }: { userId: string; newRole: UserRole }) => {
-      // SECURE: Update role in user_roles table (CRITICAL SECURITY FIX)
+      // SECURE: Update role in user_roles table
       const { error } = await supabase
         .from('user_roles')
         .update({ 
@@ -89,7 +109,7 @@ export default function GestaoUsuarios() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-users-roles'] });
-      queryClient.invalidateQueries({ queryKey: ['company-users'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Função do usuário atualizada com sucesso!');
     },
     onError: (error) => {
@@ -97,6 +117,7 @@ export default function GestaoUsuarios() {
     }
   });
 
+  // Handlers
   const handleNewUser = () => {
     setSelectedUser(null);
     setModalOpen(true);
@@ -105,6 +126,49 @@ export default function GestaoUsuarios() {
   const handleEditUser = (user: UserProfile) => {
     setSelectedUser(user);
     setModalOpen(true);
+  };
+
+  const handleViewUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setViewDialogOpen(true);
+  };
+
+  const handleResetPassword = (user: UserProfile) => {
+    setSelectedUser(user);
+    setResetDialogOpen(true);
+  };
+
+  const handleConfirmResetPassword = () => {
+    if (selectedUser) {
+      resetPassword({ userId: selectedUser.id, email: selectedUser.email });
+      setResetDialogOpen(false);
+    }
+  };
+
+  const handleDeactivateUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleReactivateUser = (user: UserProfile) => {
+    reactivateUser({ userId: user.id, fullName: user.full_name });
+  };
+
+  const handleDeleteUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleSoftDelete = (reason?: string) => {
+    if (selectedUser) {
+      softDeleteUser({ userId: selectedUser.id, reason, fullName: selectedUser.full_name });
+    }
+  };
+
+  const handleHardDelete = (reason?: string) => {
+    if (selectedUser) {
+      deleteUser({ userId: selectedUser.id, reason, fullName: selectedUser.full_name });
+    }
   };
 
   const handleSaveUser = (data: Partial<UserProfile>) => {
@@ -125,6 +189,11 @@ export default function GestaoUsuarios() {
       role: user.role,
     });
   };
+
+  const handleSort = useCallback((column: UserFilters['orderBy']) => {
+    const newDir = filters.orderBy === column && filters.orderDir === 'asc' ? 'desc' : 'asc';
+    updateFilters({ orderBy: column, orderDir: newDir });
+  }, [filters.orderBy, filters.orderDir, updateFilters]);
 
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
@@ -167,11 +236,48 @@ export default function GestaoUsuarios() {
           </TabsList>
 
           <TabsContent value="usuarios" className="space-y-4">
-            <UserListTable 
-              users={users} 
-              onEdit={handleEditUser}
-              isLoading={usersLoading}
-            />
+            <Card>
+              <CardHeader>
+                <CardTitle>Lista de Usuários</CardTitle>
+                <CardDescription>
+                  Gerencie todos os usuários do sistema com busca, filtros e ações avançadas.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Filters */}
+                <UserSearchFilters 
+                  filters={filters}
+                  onFilterChange={updateFilters}
+                />
+
+                {/* Table */}
+                <AdminUserTable
+                  users={users}
+                  isLoading={usersLoading}
+                  currentUserId={currentUserId}
+                  filters={filters}
+                  onSort={handleSort}
+                  onView={handleViewUser}
+                  onEdit={handleEditUser}
+                  onResetPassword={handleResetPassword}
+                  onDeactivate={handleDeactivateUser}
+                  onReactivate={handleReactivateUser}
+                  onDelete={handleDeleteUser}
+                />
+
+                {/* Pagination */}
+                {pagination.total > 0 && (
+                  <UserPagination
+                    page={pagination.page}
+                    limit={pagination.limit}
+                    total={pagination.total}
+                    totalPages={pagination.totalPages}
+                    onPageChange={(page) => updateFilters({ page })}
+                    onLimitChange={(limit) => updateFilters({ limit, page: 1 })}
+                  />
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="permissoes" className="space-y-4">
@@ -302,6 +408,7 @@ export default function GestaoUsuarios() {
         </Tabs>
       </div>
 
+      {/* Modals */}
       <UserFormModal
         open={modalOpen}
         onOpenChange={setModalOpen}
@@ -310,6 +417,32 @@ export default function GestaoUsuarios() {
         isLoading={isCreating || isUpdating}
         onResendInvite={handleResendInvite}
         isResending={isResending}
+        checkEmailUnique={checkEmailUnique}
+        checkUsernameUnique={checkUsernameUnique}
+      />
+
+      <UserDetailsDialog
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+        user={selectedUser}
+      />
+
+      <ResetPasswordDialog
+        open={resetDialogOpen}
+        onOpenChange={setResetDialogOpen}
+        user={selectedUser}
+        onConfirm={handleConfirmResetPassword}
+        isLoading={isResetting}
+      />
+
+      <DeleteUserDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        user={selectedUser}
+        onSoftDelete={handleSoftDelete}
+        onHardDelete={handleHardDelete}
+        isSoftDeleting={isSoftDeleting}
+        isHardDeleting={isDeleting}
       />
     </>
   );

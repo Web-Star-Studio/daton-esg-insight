@@ -125,6 +125,7 @@ export const usePermissions = () => {
 
   return {
     userRole,
+    currentUserId: user?.id,
     rolePermissions: rolePermissions || [],
     customPermissions: customPermissions || [],
     hasPermission,

@@ -18520,11 +18520,14 @@ export type Database = {
           company_id: string
           created_at: string
           dashboard_preferences: Json | null
+          deleted_at: string | null
+          deleted_by_user_id: string | null
           department: string | null
           email: string | null
           full_name: string
           has_completed_onboarding: boolean | null
           id: string
+          is_active: boolean | null
           job_title: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role_type"]
@@ -18535,11 +18538,14 @@ export type Database = {
           company_id: string
           created_at?: string
           dashboard_preferences?: Json | null
+          deleted_at?: string | null
+          deleted_by_user_id?: string | null
           department?: string | null
           email?: string | null
           full_name: string
           has_completed_onboarding?: boolean | null
           id: string
+          is_active?: boolean | null
           job_title?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role_type"]
@@ -18550,11 +18556,14 @@ export type Database = {
           company_id?: string
           created_at?: string
           dashboard_preferences?: Json | null
+          deleted_at?: string | null
+          deleted_by_user_id?: string | null
           department?: string | null
           email?: string | null
           full_name?: string
           has_completed_onboarding?: boolean | null
           id?: string
+          is_active?: boolean | null
           job_title?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role_type"]
