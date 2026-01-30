@@ -1,5 +1,7 @@
 import { EmissionFactor } from "./emissionFactors";
 
+type FactorExportRow = Record<string, string | number>;
+
 interface ExportConfig {
   format: "csv" | "xlsx" | "pdf";
   includeSystemFactors: boolean;
@@ -25,7 +27,7 @@ export async function exportFactors(factors: EmissionFactor[], config: ExportCon
 async function exportToCSV(factors: EmissionFactor[], config: ExportConfig): Promise<void> {
   // Prepare the data with selected columns
   const processedData = factors.map(factor => {
-    const row: any = {};
+    const row: FactorExportRow = {};
     
     config.columns.forEach(columnId => {
       switch (columnId) {
@@ -95,7 +97,7 @@ async function exportToExcel(factors: EmissionFactor[], config: ExportConfig): P
   // In production, you'd want to use a library like xlsx
   
   const processedData = factors.map(factor => {
-    const row: any = {};
+    const row: FactorExportRow = {};
     
     config.columns.forEach(columnId => {
       switch (columnId) {
@@ -169,10 +171,10 @@ async function exportToPDF(factors: EmissionFactor[], config: ExportConfig): Pro
   }
 }
 
-function groupData(data: any[], groupBy: string): any[] {
+function groupData(data: FactorExportRow[], groupBy: string): FactorExportRow[] {
   if (!groupBy || groupBy === 'none') return data;
   
-  const grouped: { [key: string]: any[] } = {};
+  const grouped: Record<string, FactorExportRow[]> = {};
   
   data.forEach(item => {
     const groupKey = item[getGroupColumnName(groupBy)] || 'Outros';
@@ -183,10 +185,10 @@ function groupData(data: any[], groupBy: string): any[] {
   });
   
   // Flatten grouped data with headers
-  const result: any[] = [];
+  const result: FactorExportRow[] = [];
   Object.keys(grouped).sort().forEach(groupKey => {
     // Add group header row
-    const headerRow: any = {};
+    const headerRow: FactorExportRow = {};
     Object.keys(data[0] || {}).forEach(col => {
       headerRow[col] = col === getGroupColumnName(groupBy) ? `=== ${groupKey} ===` : '';
     });
@@ -196,7 +198,7 @@ function groupData(data: any[], groupBy: string): any[] {
     result.push(...grouped[groupKey]);
     
     // Add empty row between groups
-    const emptyRow: any = {};
+    const emptyRow: FactorExportRow = {};
     Object.keys(data[0] || {}).forEach(col => {
       emptyRow[col] = '';
     });

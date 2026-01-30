@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 export interface KPI {
   key: string;
@@ -23,21 +24,21 @@ export interface ESGDashboardResponse {
 // Get ESG Dashboard data
 export const getESGDashboard = async (): Promise<ESGDashboardResponse> => {
   try {
-    console.log('Calling ESG dashboard edge function...');
+    logger.debug('Calling ESG dashboard edge function', 'api');
     
     const { data, error } = await supabase.functions.invoke('esg-dashboard', {
       method: 'GET'
     });
 
     if (error) {
-      console.error('Error calling ESG dashboard function:', error);
+      logger.error('Error calling ESG dashboard function', error, 'api');
       throw error;
     }
 
-    console.log('ESG dashboard data received:', data);
+    logger.debug('ESG dashboard data received', 'api');
     return data as ESGDashboardResponse;
   } catch (error) {
-    console.error('ESG dashboard service error:', error);
+    logger.error('ESG dashboard service error', error, 'api');
     
     // Return intelligent fallback data instead of zeros
     return {

@@ -4,6 +4,9 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
+
+type ExportDataRow = Record<string, string | number | boolean>;
 
 interface ExportConfig {
   year: number;
@@ -15,7 +18,7 @@ interface ExportConfig {
 /**
  * Converte dados para formato CSV
  */
-const convertToCSV = (data: any[], headers: string[]): string => {
+const convertToCSV = (data: ExportDataRow[], headers: string[]): string => {
   const csvRows = [];
   
   // Adicionar cabeçalhos
@@ -75,7 +78,7 @@ export const exportWaterData = async (config: ExportConfig) => {
     }
     
     // Preparar dados para exportação
-    const exportData: any[] = [];
+    const exportData: ExportDataRow[] = [];
     
     // Adicionar metadados
     if (includeMetadata) {
@@ -203,7 +206,7 @@ export const exportWaterData = async (config: ExportConfig) => {
     
     return { success: true, recordCount: waterRecords.length };
   } catch (error) {
-    console.error('Erro ao exportar dados de água:', error);
+    logger.error('Erro ao exportar dados de água', error, 'service');
     throw error;
   }
 };
@@ -228,7 +231,7 @@ export const exportEnergyData = async (config: ExportConfig) => {
       throw new Error('Nenhum dado de energia encontrado para o período selecionado');
     }
     
-    const exportData: any[] = [];
+    const exportData: ExportDataRow[] = [];
     
     if (includeMetadata) {
       exportData.push({
@@ -385,7 +388,7 @@ export const exportEnergyData = async (config: ExportConfig) => {
     
     return { success: true, recordCount: energyRecords.length };
   } catch (error) {
-    console.error('Erro ao exportar dados de energia:', error);
+    logger.error('Erro ao exportar dados de energia', error, 'service');
     throw error;
   }
 };
@@ -397,7 +400,7 @@ export const exportConsolidatedESG = async (config: ExportConfig) => {
   const { year, companyName, reportTitle } = config;
   
   try {
-    const exportData: any[] = [];
+    const exportData: ExportDataRow[] = [];
     
     // Cabeçalho
     exportData.push({
@@ -514,7 +517,7 @@ export const exportConsolidatedESG = async (config: ExportConfig) => {
     
     return { success: true };
   } catch (error) {
-    console.error('Erro ao exportar consolidado ESG:', error);
+    logger.error('Erro ao exportar consolidado ESG', error, 'service');
     throw error;
   }
 };
@@ -526,7 +529,7 @@ export const exportEmissionsData = async (config: ExportConfig) => {
   const { year, companyName, reportTitle, includeMetadata = true } = config;
   
   try {
-    const exportData: any[] = [];
+    const exportData: ExportDataRow[] = [];
     
     if (includeMetadata) {
       exportData.push({
@@ -579,7 +582,7 @@ export const exportEmissionsData = async (config: ExportConfig) => {
     
     return { success: true, recordCount: 0 };
   } catch (error) {
-    console.error('Erro ao exportar dados de emissões:', error);
+    logger.error('Erro ao exportar dados de emissões', error, 'service');
     throw error;
   }
 };
@@ -591,7 +594,7 @@ export const exportWasteData = async (config: ExportConfig) => {
   const { year, companyName, reportTitle, includeMetadata = true } = config;
   
   try {
-    const exportData: any[] = [];
+    const exportData: ExportDataRow[] = [];
     
     if (includeMetadata) {
       exportData.push({
@@ -644,7 +647,7 @@ export const exportWasteData = async (config: ExportConfig) => {
     
     return { success: true, recordCount: 0 };
   } catch (error) {
-    console.error('Erro ao exportar dados de resíduos:', error);
+    logger.error('Erro ao exportar dados de resíduos', error, 'service');
     throw error;
   }
 };

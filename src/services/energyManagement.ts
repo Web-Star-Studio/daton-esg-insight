@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export interface EnergyConsumptionRecord {
   id?: string;
@@ -78,7 +79,7 @@ function convertToGJ(value: number, unit: string): number {
     case 'm3 gas natural':
       return value * 0.038;
     default:
-      console.warn(`Unidade não reconhecida: ${unit}. Usando valor sem conversão.`);
+      logger.warn(`Unidade de energia não reconhecida: ${unit}`, 'emission');
       return value * 0.0036; // Default para kWh
   }
 }

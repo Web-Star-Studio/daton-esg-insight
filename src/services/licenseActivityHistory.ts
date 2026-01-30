@@ -1,5 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getUserAndCompany } from '@/utils/auth';
+import { logger } from '@/utils/logger';
+import type { Json } from '@/integrations/supabase/types';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ActionValues = Json | Record<string, any>;
 
 export interface ActivityHistoryItem {
   id: string;
@@ -9,8 +14,8 @@ export interface ActivityHistoryItem {
   action_type: string;
   action_target_type: string;
   action_target_id: string;
-  old_values?: any;
-  new_values?: any;
+  old_values?: ActionValues;
+  new_values?: ActionValues;
   description?: string;
   created_at: string;
   user?: {
@@ -23,8 +28,8 @@ export interface ActionInput {
   action_type: string;
   action_target_type: 'alert' | 'observation' | 'condition' | 'document' | 'license';
   action_target_id: string;
-  old_values?: any;
-  new_values?: any;
+  old_values?: ActionValues;
+  new_values?: ActionValues;
   description?: string;
 }
 
@@ -48,7 +53,7 @@ export async function logAction(action: ActionInput): Promise<void> {
       user_id: userAndCompany.id
     });
 
-  if (error) console.error('Error logging action:', error);
+  if (error) logger.error('Error logging action', error, 'compliance');
 }
 
 export async function getActivityHistory(
