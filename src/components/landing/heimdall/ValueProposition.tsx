@@ -1,9 +1,9 @@
 /**
  * ValueProposition - Interactive two-column value proposition section
+ * Refactored to use framer-motion instead of gsap
  */
-import { useEffect, useRef, useState } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useRef, useState } from 'react';
+import { motion, useInView } from 'framer-motion';
 import {
     Zap,
     ShieldCheck,
@@ -14,8 +14,6 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './heimdall.css';
-
-gsap.registerPlugin(ScrollTrigger);
 
 interface ValueItem {
     icon: React.ElementType;
@@ -65,46 +63,22 @@ const valueItems: ValueItem[] = [
 
 export function ValueProposition() {
     const sectionRef = useRef<HTMLElement>(null);
-    const headingRef = useRef<HTMLHeadingElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
     const navigate = useNavigate();
+    const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
 
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            // Animate heading
-            gsap.fromTo(headingRef.current,
-                { opacity: 0, y: 50 },
-                {
-                    opacity: 1,
-                    y: 0,
-                    duration: 1,
-                    ease: 'power3.out',
-                    scrollTrigger: {
-                        trigger: headingRef.current,
-                        start: 'top 80%',
-                    },
-                }
-            );
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
+        }
+    };
 
-            // Animate list items
-            gsap.fromTo('.value-item',
-                { opacity: 0, x: -30 },
-                {
-                    opacity: 1,
-                    x: 0,
-                    duration: 0.6,
-                    stagger: 0.1,
-                    ease: 'power3.out',
-                    scrollTrigger: {
-                        trigger: '.value-list',
-                        start: 'top 70%',
-                    },
-                }
-            );
-        }, sectionRef);
-
-        return () => ctx.revert();
-    }, []);
+    const itemVariants = {
+        hidden: { opacity: 0, x: -30 },
+        visible: { opacity: 1, x: 0, transition: { duration: 0.6 } }
+    };
 
     return (
         <section
@@ -116,8 +90,10 @@ export function ValueProposition() {
         >
             <div className="heimdall-container">
                 {/* Section Heading */}
-                <h2
-                    ref={headingRef}
+                <motion.h2
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 1 }}
                     className="heimdall-heading-lg"
                     style={{
                         color: 'var(--heimdall-text)',
@@ -130,7 +106,7 @@ export function ValueProposition() {
                     <span style={{ color: 'var(--heimdall-text-secondary)' }}>
                         É o pré-requisito para o progresso sustentável.
                     </span>
-                </h2>
+                </motion.h2>
 
                 {/* Two Column Layout */}
                 <div
@@ -143,14 +119,20 @@ export function ValueProposition() {
                     className="value-grid"
                 >
                     {/* Left Column - Interactive List */}
-                    <div className="value-list">
+                    <motion.div
+                        className="value-list"
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate={isInView ? 'visible' : 'hidden'}
+                    >
                         {valueItems.map((item, index) => (
-                            <ValueListItem
-                                key={index}
-                                item={item}
-                                isActive={activeIndex === index}
-                                onClick={() => setActiveIndex(index)}
-                            />
+                            <motion.div key={index} variants={itemVariants}>
+                                <ValueListItem
+                                    item={item}
+                                    isActive={activeIndex === index}
+                                    onClick={() => setActiveIndex(index)}
+                                />
+                            </motion.div>
                         ))}
 
                         {/* CTA */}
@@ -161,7 +143,7 @@ export function ValueProposition() {
                         >
                             Começar agora
                         </button>
-                    </div>
+                    </motion.div>
 
                     {/* Right Column - Sticky Visual */}
                     <div
