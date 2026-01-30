@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useNavigate } from "react-router-dom"
-import { User, Building2, Users, CreditCard, Settings, MoreHorizontal, Plus, Lock, Eye, EyeOff, Check, X } from "lucide-react"
+import { User, Building2, Users, CreditCard, Settings, MoreHorizontal, Plus, Lock, Eye, EyeOff, Check, X, Palette } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,6 +25,9 @@ import { useUserManagement, type UserProfile } from "@/hooks/data/useUserManagem
 import { UserListTable } from "@/components/users/UserListTable"
 import { UserFormModal } from "@/components/users/UserFormModal"
 import { passwordSchema, getPasswordRequirementChecks } from "@/utils/passwordValidation"
+import { ThemeSelector } from "@/components/settings/ThemeSelector"
+import { TimezoneSelector } from "@/components/settings/TimezoneSelector"
+import { NotificationPreferences } from "@/components/settings/NotificationPreferences"
 
 const perfilSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -563,6 +566,29 @@ export default function Configuracao() {
                     </Button>
                   </form>
                 </Form>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeSection === "perfil" && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  Preferências do Sistema
+                </CardTitle>
+                <CardDescription>
+                  Personalize sua experiência na plataforma
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <ThemeSelector />
+                <div className="border-t pt-6">
+                  <TimezoneSelector />
+                </div>
+                <div className="border-t pt-6">
+                  <NotificationPreferences />
+                </div>
               </CardContent>
             </Card>
           )}
