@@ -171,6 +171,9 @@ export async function getLicenses(filters?: LicenseFilters): Promise<LicenseList
         query = query.eq('status', filters.status as typeof validStatuses[number])
       }
     }
+
+    // Apply expires_in_days filter
+    if (filters?.expires_in_days) {
       const futureDate = new Date()
       futureDate.setDate(futureDate.getDate() + filters.expires_in_days)
       query = query.lte('expiration_date', futureDate.toISOString().split('T')[0])
@@ -254,20 +257,30 @@ export async function createLicense(licenseData: CreateLicenseData): Promise<Lic
       throw new Error('Empresa do usuário não encontrada')
     }
 
+    const validStatuses = ['Ativa', 'Em Renovação', 'Vencida', 'Suspensa'] as const;
+    const statusValue = validStatuses.includes(licenseData.status as typeof validStatuses[number]) 
+      ? (licenseData.status as typeof validStatuses[number])
+      : 'Ativa';
+    
+    const validTypes = ['LP', 'LI', 'LO', 'LAS', 'LOC', 'Outra'] as const;
+    const typeValue = validTypes.includes(licenseData.type as typeof validTypes[number])
+      ? (licenseData.type as typeof validTypes[number])
+      : 'Outra';
+
     const { data, error } = await supabase
       .from('licenses')
-      .insert({
-        name: licenseData.name,
-        type: licenseData.type,
+      .insert([{
+        name: licenseData.name || `Licença ${typeValue}`,
+        type: typeValue,
         issuing_body: licenseData.issuing_body,
         process_number: licenseData.process_number,
         issue_date: licenseData.issue_date?.toISOString().split('T')[0],
         expiration_date: licenseData.expiration_date.toISOString().split('T')[0],
-        status: licenseData.status,
+        status: statusValue,
         conditions: licenseData.conditions,
         responsible_user_id: licenseData.responsible_user_id,
         company_id: profile.company_id
-      })
+      }])
       .select()
       .maybeSingle()
 
