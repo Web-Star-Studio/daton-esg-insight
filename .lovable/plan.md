@@ -1,208 +1,96 @@
 
-# Plano de Correcao de Bugs - Validacao Funcional
 
-## Bugs Identificados
+# Plano de Validação Funcional - Continuação
 
-| ID | Severidade | Modulo | Descricao |
-|----|------------|--------|-----------|
-| BUG-001 | ALTA | ESG > SOCIAL | CPF invalido aceito no EmployeeModal (ex: 111.111.111-11) |
-| BUG-002 | MEDIA | ESG > SOCIAL | SocialProjectModal sem botao Excluir com AlertDialog |
-| BUG-003 | BAIXA | Dashboard | Erro 406 ao buscar company_id em algumas queries |
+## Status Atual
+Login realizado com sucesso. Navegação para Gestão de Colaboradores iniciada.
 
 ---
 
-## Correcao BUG-001: Validacao de CPF no EmployeeModal
+## Testes Pendentes
 
-### Problema Atual
-O `EmployeeModal.tsx` exibe uma mensagem de "CPF invalido" (linha 526-528), mas **nao bloqueia o envio do formulario** quando o CPF e invalido. A validacao e apenas visual.
+### 1. Deleção de Funcionário (Cascade)
 
-```typescript
-// Linha 526 - Apenas exibe mensagem, mas nao impede submit
-{formData.cpf && !validateCPF(formData.cpf) && formData.cpf.replace(/\D/g, '').length === 11 && (
-  <p className="text-xs text-destructive mt-1">CPF inválido</p>
-)}
-```
+**Objetivo:** Validar que a exclusão de funcionário remove corretamente todos os dados relacionados.
 
-### Solucao
-Adicionar validacao de CPF no `handleSubmit` antes de enviar:
+**Passos de Teste:**
+1. Abrir modal de edição de um funcionário existente
+2. Clicar no botão "Excluir" 
+3. Confirmar no AlertDialog
+4. Verificar toast de sucesso
+5. Confirmar que funcionário foi removido da lista
+6. Verificar no banco que registros em `employee_experiences`, `employee_education`, `benefit_enrollments` e `employee_trainings` foram removidos
 
-**Arquivo:** `src/components/EmployeeModal.tsx`
-
-1. Adicionar validacao de CPF no submit (apos linha 418):
-```typescript
-// Validar CPF se preenchido
-if (formData.cpf && formData.cpf.replace(/\D/g, '').length === 11) {
-  if (!validateCPF(formData.cpf)) {
-    toast.error('CPF invalido. Verifique os digitos informados.');
-    return;
-  }
-}
-```
+**Arquivos Relacionados:**
+- `src/components/EmployeeModal.tsx` - Modal com botão Excluir
+- `src/services/employeeService.ts` - Lógica de cascade deletion
 
 ---
 
-## Correcao BUG-002: Botao Excluir no SocialProjectModal
+### 2. Módulo QUALIDADE
 
-### Problema Atual
-O `SocialProjectModal.tsx` nao possui botao de exclusao com confirmacao AlertDialog, violando o padrao `standardized-deletion-flow` estabelecido no sistema.
+**Componentes a Testar:**
 
-### Solucao
-Adicionar estado e logica de exclusao com AlertDialog de confirmacao.
+| Componente | Rota | Validações |
+|------------|------|------------|
+| Dashboard SGQ | `/quality-dashboard` | Carregamento de métricas, gráficos |
+| Não Conformidades | `/nao-conformidades` | CRUD, workflow 6 etapas |
+| Tarefas NC | `/nc-tarefas` | Listagem, filtros, conclusão |
 
-**Arquivo:** `src/components/social/SocialProjectModal.tsx`
+**Testes Específicos:**
+1. **Dashboard:** Verificar carregamento de indicadores sem erros 406
+2. **Criar NC:** Testar fluxo completo de registro (campos obrigatórios: Unidade, Setor)
+3. **Workflow:** Navegar pelas 6 etapas (registro → ação imediata → análise causa → planejamento → implementação → eficácia)
+4. **Validação Zod:** Testar mensagens de erro em português
 
-**Alteracoes:**
-1. Importar `deleteSocialProject` do service
-2. Importar `AlertDialog` components
-3. Adicionar estado `showDeleteConfirm`
-4. Adicionar `isDeleting` state
-5. Implementar funcao `handleDelete`
-6. Adicionar botao "Excluir" no DialogFooter (visivel apenas em modo edicao)
-7. Adicionar AlertDialog de confirmacao
+---
 
-**Codigo a Adicionar:**
+### 3. Módulo FORNECEDORES
 
-```typescript
-// Imports adicionais
-import { deleteSocialProject } from "@/services/socialProjects";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
+**Componentes a Testar:**
 
-// Novos estados
-const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-const [isDeleting, setIsDeleting] = useState(false);
+| Componente | Rota | Validações |
+|------------|------|------------|
+| Dashboard | `/fornecedores` | Listagem, filtros |
+| Cadastro | `/fornecedores/cadastro` | Validação CNPJ/CPF |
+| Edição | `/fornecedores/:id` | Atualização de dados |
 
-// Funcao de exclusao
-const handleDelete = async () => {
-  if (!project) return;
-  
-  setIsDeleting(true);
-  try {
-    await deleteSocialProject(project.id);
-    toast.success('Projeto excluido com sucesso!');
-    onSuccess();
-    onOpenChange(false);
-  } catch (error) {
-    console.error('Error deleting project:', error);
-    toast.error('Erro ao excluir projeto');
-  } finally {
-    setIsDeleting(false);
-    setShowDeleteConfirm(false);
-  }
-};
+**Testes Específicos:**
+1. **Validação CNPJ:** Testar dígitos verificadores (rejeitar `11.111.111/1111-11`)
+2. **Validação CPF:** Testar dígitos verificadores (rejeitar `111.111.111-11`)
+3. **ViaCEP:** Testar auto-preenchimento de endereço
+4. **Unicidade:** Testar rejeição de CNPJ/CPF duplicado
+5. **Tipo de Pessoa:** Testar toggle PJ/PF e campos condicionais
 
-// Botao no DialogFooter
-{project && (
-  <Button 
-    type="button" 
-    variant="destructive" 
-    onClick={() => setShowDeleteConfirm(true)}
-    disabled={isSubmitting || isDeleting}
-    className="mr-auto"
-  >
-    <Trash2 className="mr-2 h-4 w-4" />
-    Excluir
-  </Button>
-)}
+**Arquivos Relacionados:**
+- `src/utils/formValidation.ts` - Funções `validateCNPJ`, `validateCPF`
+- `src/components/suppliers/SupplierForm.tsx` - Formulário de cadastro
 
-// AlertDialog de confirmacao
-<AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Confirmar Exclusao</AlertDialogTitle>
-      <AlertDialogDescription>
-        Tem certeza que deseja excluir o projeto "{project?.name}"? 
-        Esta acao nao pode ser desfeita.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-      <AlertDialogAction 
-        onClick={handleDelete}
-        disabled={isDeleting}
-        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-      >
-        {isDeleting ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Excluindo...
-          </>
-        ) : (
-          'Excluir Projeto'
-        )}
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+---
+
+## Bugs Potenciais a Investigar
+
+1. **Erro 406 no Dashboard:** Verificar se queries do módulo Qualidade usam `.maybeSingle()`
+2. **Cascade Deletion:** Confirmar que serviço de exclusão limpa todas as tabelas dependentes
+3. **Validação Submit:** Garantir que CNPJ/CPF inválidos bloqueiam envio (não apenas exibem mensagem)
+
+---
+
+## Arquivos a Verificar
+
+```
+src/services/employeeService.ts       # Cascade deletion
+src/components/UnifiedQualityDashboard.tsx  # Dashboard Qualidade
+src/pages/NaoConformidades.tsx        # NC principal
+src/components/suppliers/SupplierForm.tsx   # Formulário fornecedor
 ```
 
 ---
 
-## Correcao BUG-003: Erro 406 Not Acceptable
+## Próximos Passos
 
-### Problema Atual
-Erro 406 ocorre quando a API retorna dados em formato diferente do esperado. Isso pode acontecer quando `.single()` e usado mas nenhum registro ou multiplos registros sao retornados.
+1. Continuar navegação no browser para completar testes visuais
+2. Verificar logs de console para erros não tratados
+3. Validar network requests para erros 406/500
+4. Documentar bugs encontrados para correção
 
-### Analise
-O `formErrorHandler.ts` ja usa `.maybeSingle()` corretamente (linha 47), mas outras partes do codigo podem estar usando `.single()`.
-
-**Arquivos identificados com padrao potencialmente problematico:**
-- `src/components/gri-wizard/DocumentUploadZone.tsx:78`
-- `src/pages/SupplierFailuresPage.tsx:62`
-
-### Solucao
-Substituir `.single()` por `.maybeSingle()` nos arquivos identificados e adicionar tratamento de erro adequado.
-
-**Arquivo:** `src/pages/SupplierFailuresPage.tsx`
-
-```typescript
-// ANTES (linha 62)
-const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).single();
-
-// DEPOIS
-const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle();
-```
-
-**Arquivo:** `src/components/gri-wizard/DocumentUploadZone.tsx`
-
-```typescript
-// ANTES (linha 78)
-company_id: (await supabase.from('profiles').select('company_id').eq('id', (await supabase.auth.getUser()).data.user?.id).single()).data?.company_id,
-
-// DEPOIS - Refatorar para busca separada com maybeSingle
-const { data: profile } = await supabase
-  .from('profiles')
-  .select('company_id')
-  .eq('id', user?.id)
-  .maybeSingle();
-  
-if (!profile?.company_id) {
-  toast.error('Erro ao identificar empresa');
-  return;
-}
-// Usar profile.company_id na insercao
-```
-
----
-
-## Resumo das Alteracoes
-
-| Arquivo | Alteracao |
-|---------|-----------|
-| `src/components/EmployeeModal.tsx` | Adicionar validacao de CPF no handleSubmit |
-| `src/components/social/SocialProjectModal.tsx` | Adicionar botao Excluir + AlertDialog |
-| `src/pages/SupplierFailuresPage.tsx` | Substituir .single() por .maybeSingle() |
-| `src/components/gri-wizard/DocumentUploadZone.tsx` | Refatorar query com .maybeSingle() |
-
----
-
-## Secao Tecnica
-
-### Validacao de CPF
-A funcao `validateCPF` em `src/utils/formValidation.ts` ja implementa corretamente a validacao com digitos verificadores. O problema e que ela so exibe a mensagem de erro visualmente, sem bloquear o envio.
-
-### Padrao AlertDialog
-O sistema ja possui o padrao `standardized-deletion-flow` implementado em outros modais como `EmployeeModal.tsx` (linhas 17, 90, 101). A correcao segue o mesmo padrao.
-
-### Erro 406 HTTP
-Ocorre quando o cliente solicita um formato de resposta (via header Accept) que o servidor nao pode fornecer. No Supabase, `.single()` espera exatamente 1 resultado - se retorna 0 ou 2+, da erro 406.
