@@ -1,6 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import Papa from 'papaparse';
 import { retryOperation } from "@/utils/retryOperation";
+import { logger } from "@/utils/logger";
+
+// Type for CSV row data
+type CSVRow = Record<string, string | number | null>;
 
 // Interfaces
 export interface DocumentFolder {
@@ -54,7 +58,7 @@ export interface UpdateDocumentData {
 
 // Folder management
 export const getFolders = async (): Promise<DocumentFolder[]> => {
-  console.log('Fetching folder hierarchy...');
+  logger.debug('Fetching folder hierarchy', 'document');
   
   const { data, error } = await supabase
     .from('document_folders')
@@ -62,7 +66,7 @@ export const getFolders = async (): Promise<DocumentFolder[]> => {
     .order('name');
 
   if (error) {
-    console.error('Error fetching folders:', error);
+    logger.error('Error fetching folders', error, 'document');
     throw new Error(`Failed to fetch folders: ${error.message}`);
   }
 
@@ -99,7 +103,7 @@ const buildFolderHierarchy = (folders: DocumentFolder[]): DocumentFolder[] => {
 };
 
 export const createFolder = async (folderData: CreateFolderData): Promise<DocumentFolder> => {
-  console.log('Creating folder:', folderData);
+  logger.debug(`Creating folder: ${folderData.name}`, 'document');
 
   // Get user company
   const { data: { user } } = await supabase.auth.getUser();
@@ -131,7 +135,7 @@ export const createFolder = async (folderData: CreateFolderData): Promise<Docume
     .maybeSingle();
 
   if (error) {
-    console.error('Error creating folder:', error);
+    logger.error('Error creating folder', error, 'document');
     throw new Error(`Failed to create folder: ${error.message}`);
   }
   
@@ -156,7 +160,7 @@ export const getDocuments = async (
   page: number;
   totalPages: number;
 }> => {
-  console.log('Fetching documents with filters:', filters);
+  logger.debug('Fetching documents with filters', 'document', filters);
 
   const page = filters?.page || 1;
   const limit = filters?.limit || 20;
@@ -195,7 +199,7 @@ export const getDocuments = async (
   const { data, error, count } = await query;
 
   if (error) {
-    console.error('Error fetching documents:', error);
+    logger.error('Error fetching documents', error, 'document');
     throw new Error(`Failed to fetch documents: ${error.message}`);
   }
 
@@ -226,7 +230,7 @@ export const uploadDocument = async (
     skipAutoProcessing?: boolean;
   }
 ): Promise<Document> => {
-  console.log('📤 Uploading document:', file.name, options);
+  logger.debug(`Uploading document: ${file.name}`, 'document', options);
 
   // Validação de arquivo
   const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
@@ -263,7 +267,7 @@ export const uploadDocument = async (
     .maybeSingle();
 
   if (profileError) {
-    console.error('Profile error:', profileError);
+    logger.error('Profile error', profileError, 'document');
     throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
   }
   
@@ -289,7 +293,7 @@ export const uploadDocument = async (
   // Store without 'documents/' prefix - bucket name is enough
   const filePath = fileName;
 
-  console.log('📁 Storage path:', filePath);
+  logger.debug(`Storage path: ${filePath}`, 'document');
 
   // Upload file to Supabase Storage
   const { data: uploadData, error: uploadError } = await supabase.storage
@@ -301,11 +305,11 @@ export const uploadDocument = async (
     });
 
   if (uploadError) {
-    console.error('❌ Storage upload error:', uploadError);
+    logger.error('Storage upload error', uploadError, 'document');
     throw new Error(`Falha no upload: ${uploadError.message}`);
   }
 
-  console.log('✅ File uploaded to storage:', uploadData.path);
+  logger.debug(`File uploaded to storage: ${uploadData.path}`, 'document');
 
   // Simulate progress callback
   if (options?.onProgress) {
@@ -326,7 +330,7 @@ export const uploadDocument = async (
     related_id: options?.related_id || crypto.randomUUID(),
   };
 
-  console.log('💾 Creating document record:', documentData);
+  logger.debug('Creating document record', 'document', documentData);
 
   const { data, error } = await supabase
     .from('documents')
@@ -335,28 +339,28 @@ export const uploadDocument = async (
     .maybeSingle();
 
   if (error) {
-    console.error('❌ Database insert error:', error);
+    logger.error('Database insert error', error, 'document');
     // Clean up uploaded file if record creation fails
-    console.log('🧹 Cleaning up storage file...');
+    logger.debug('Cleaning up storage file...', 'document');
     await supabase.storage.from('documents').remove([uploadData.path]);
     throw new Error(`Falha ao criar registro: ${error.message}`);
   }
   
   if (!data) {
-    console.error('❌ No data returned from insert');
+    logger.error('No data returned from insert', new Error('Insert returned no data'), 'document');
     await supabase.storage.from('documents').remove([uploadData.path]);
     throw new Error('Não foi possível criar o registro do documento');
   }
 
-  console.log('✅ Document uploaded successfully:', data.id);
+  logger.debug(`Document uploaded successfully: ${data.id}`, 'document');
 
   // Trigger automatic AI processing if enabled
   if (shouldAutoProcess) {
-    console.log('🤖 Auto-processing enabled, triggering AI analysis...');
+    logger.debug('Auto-processing enabled, triggering AI analysis...', 'document');
     // Import dynamically to avoid circular dependencies
     import('./documentAI').then(({ processDocumentWithAI }) => {
       processDocumentWithAI(data.id).catch((err) => {
-        console.error('❌ Auto AI processing failed:', err);
+        logger.error('Auto AI processing failed', err, 'document');
         // Don't throw error - upload was successful, just processing failed
       });
     });
@@ -369,7 +373,7 @@ export const updateDocument = async (
   documentId: string,
   updates: UpdateDocumentData
 ): Promise<Document> => {
-  console.log('Updating document:', documentId, updates);
+  logger.debug(`Updating document: ${documentId}`, 'document', updates);
 
   const { data, error } = await supabase
     .from('documents')
@@ -379,7 +383,7 @@ export const updateDocument = async (
     .maybeSingle();
 
   if (error) {
-    console.error('Error updating document:', error);
+    logger.error('Error updating document', error, 'document');
     throw new Error(`Failed to update document: ${error.message}`);
   }
   
@@ -391,7 +395,7 @@ export const updateDocument = async (
 };
 
 export const deleteDocument = async (documentId: string): Promise<void> => {
-  console.log('Deleting document:', documentId);
+  logger.debug(`Deleting document: ${documentId}`, 'document');
 
   // Get document info to delete from storage
   const { data: document, error: fetchError } = await supabase
@@ -401,7 +405,7 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
     .maybeSingle();
 
   if (fetchError) {
-    console.error('Error fetching document:', fetchError);
+    logger.error('Error fetching document', fetchError, 'document');
     throw new Error(`Failed to fetch document: ${fetchError.message}`);
   }
   
@@ -415,7 +419,7 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
     .remove([document.file_path]);
 
   if (storageError) {
-    console.warn('Error deleting file from storage:', storageError);
+    logger.warn('Error deleting file from storage', 'document', storageError);
   }
 
   // Delete document record
@@ -425,13 +429,13 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
     .eq('id', documentId);
 
   if (error) {
-    console.error('Error deleting document:', error);
+    logger.error('Error deleting document', error, 'document');
     throw new Error(`Failed to delete document: ${error.message}`);
   }
 };
 
 export const downloadDocument = async (documentId: string): Promise<{ url: string; fileName: string }> => {
-  console.log('Getting download URL for document:', documentId);
+  logger.debug(`Getting download URL for document: ${documentId}`, 'document');
 
   // Get document info
   const { data: document, error: fetchError } = await supabase
@@ -441,7 +445,7 @@ export const downloadDocument = async (documentId: string): Promise<{ url: strin
     .maybeSingle();
 
   if (fetchError) {
-    console.error('Error fetching document:', fetchError);
+    logger.error('Error fetching document', fetchError, 'document');
     throw new Error(`Failed to fetch document: ${fetchError.message}`);
   }
   
@@ -464,7 +468,7 @@ export const downloadDocument = async (documentId: string): Promise<{ url: strin
     };
   }
 
-  console.warn('Signed URL failed, trying direct download...', signedError);
+  logger.warn('Signed URL failed, trying direct download...', 'document', signedError);
 
   // Method 2: Direct download and create blob URL
   const { data: blob, error: downloadError } = await supabase.storage
@@ -479,13 +483,13 @@ export const downloadDocument = async (documentId: string): Promise<{ url: strin
     };
   }
 
-  console.error('All download methods failed:', { signedError, downloadError });
+  logger.error('All download methods failed', new Error('Download failed'), 'document', { signedError, downloadError });
   throw new Error(`Falha ao criar URL de download: ${downloadError?.message || signedError?.message}`);
 };
 
 // Get document preview (for modal display)
 export const getDocumentPreview = async (documentId: string): Promise<{ url: string; type: string }> => {
-  console.log('📄 Getting preview URL for document:', documentId);
+  logger.debug(`Getting preview URL for document: ${documentId}`, 'document');
 
   const { data: document, error: fetchError } = await supabase
     .from('documents')
@@ -494,12 +498,12 @@ export const getDocumentPreview = async (documentId: string): Promise<{ url: str
     .maybeSingle();
 
   if (fetchError || !document) {
-    console.error('❌ Document not found:', fetchError);
+    logger.error('Document not found', fetchError, 'document');
     throw new Error('Documento não encontrado');
   }
 
   const normalizedPath = normalizePath(document.file_path);
-  console.log('📁 Normalized path:', normalizedPath);
+  logger.debug(`Normalized path: ${normalizedPath}`, 'document');
 
   // Method 1: Try signed URL with retry
   try {
@@ -517,13 +521,13 @@ export const getDocumentPreview = async (documentId: string): Promise<{ url: str
       { maxRetries: 3, initialDelay: 500 }
     );
 
-    console.log('✅ Signed URL created successfully');
+    logger.debug('Signed URL created successfully', 'document');
     return {
       url: signedData.signedUrl,
       type: document.file_type
     };
   } catch (signedError) {
-    console.warn('⚠️ Signed URL failed, trying direct download...', signedError);
+    logger.warn('Signed URL failed, trying direct download...', 'document', signedError);
     
     // Method 2: Download and create blob URL with retry
     try {
@@ -541,13 +545,13 @@ export const getDocumentPreview = async (documentId: string): Promise<{ url: str
         { maxRetries: 3, initialDelay: 500 }
       );
 
-      console.log('✅ Direct download successful');
+      logger.debug('Direct download successful', 'document');
       return {
         url: URL.createObjectURL(blob),
         type: document.file_type
       };
     } catch (downloadError) {
-      console.error('❌ Both methods failed:', { signedError, downloadError });
+      logger.error('Both methods failed', new Error('Preview failed'), 'document', { signedError, downloadError });
       throw new Error('Não foi possível carregar a visualização. Verifique as permissões do arquivo.');
     }
   }
@@ -557,10 +561,10 @@ export const getDocumentPreview = async (documentId: string): Promise<{ url: str
 export const getDocumentTextPreview = async (documentId: string): Promise<{
   content: string;
   headers?: string[];
-  rows?: any[];
+  rows?: CSVRow[];
   totalLines: number;
 }> => {
-  console.log('📖 Getting text preview for document:', documentId);
+  logger.debug(`Getting text preview for document: ${documentId}`, 'document');
 
   const { data: document, error: fetchError } = await supabase
     .from('documents')
@@ -569,12 +573,12 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
     .maybeSingle();
 
   if (fetchError || !document) {
-    console.error('❌ Document not found:', fetchError);
+    logger.error('Document not found', fetchError, 'document');
     throw new Error('Documento não encontrado');
   }
 
   const normalizedPath = normalizePath(document.file_path);
-  console.log('📁 Normalized path:', normalizedPath);
+  logger.debug(`Normalized path: ${normalizedPath}`, 'document');
 
   let text: string;
 
@@ -594,7 +598,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
       { maxRetries: 3, initialDelay: 500 }
     );
 
-    console.log('✅ Using signed URL for text preview');
+    logger.debug('Using signed URL for text preview', 'document');
     const response = await fetch(signedData.signedUrl);
     if (response.ok) {
       text = await response.text();
@@ -602,7 +606,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
       throw new Error(`Fetch failed: ${response.status}`);
     }
   } catch (signedError) {
-    console.warn('⚠️ Signed URL method failed, trying direct download...', signedError);
+    logger.warn('Signed URL method failed, trying direct download...', 'document', signedError);
     
     // Method 2: Direct download with retry (fallback)
     try {
@@ -621,9 +625,9 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
       );
 
       text = await blob.text();
-      console.log('✅ Direct download successful');
+      logger.debug('Direct download successful', 'document');
     } catch (downloadError) {
-      console.error('❌ Both methods failed:', { signedError, downloadError });
+      logger.error('Both methods failed', new Error('Text preview failed'), 'document', { signedError, downloadError });
       throw new Error('Não foi possível carregar a visualização. Verifique as permissões do arquivo.');
     }
   }
@@ -633,7 +637,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
 
   // For CSV, parse with PapaParse (robust parsing)
   if (document.file_type.includes('csv')) {
-    console.log('📊 Parsing CSV with PapaParse...');
+    logger.debug('Parsing CSV with PapaParse...', 'document');
     
     const parseResult = Papa.parse(text, {
       header: true,
@@ -643,9 +647,9 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
     });
 
     const headers = parseResult.meta.fields || [];
-    const rows = parseResult.data as Record<string, any>[];
+    const rows = parseResult.data as CSVRow[];
 
-    console.log(`✅ CSV parsed: ${headers.length} columns, ${rows.length} rows preview`);
+    logger.debug(`CSV parsed: ${headers.length} columns, ${rows.length} rows preview`, 'document');
 
     return {
       content: lines.slice(0, 200).join('\n'), // First 200 lines as text fallback
@@ -656,7 +660,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
   }
 
   // For plain text, return first 200 lines
-  console.log('📝 Plain text preview:', totalLines, 'total lines');
+  logger.debug(`Plain text preview: ${totalLines} total lines`, 'document');
   return {
     content: lines.slice(0, 200).join('\n'),
     totalLines
@@ -665,7 +669,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
 
 // Bulk operations
 export const bulkDeleteDocuments = async (documentIds: string[]): Promise<void> => {
-  console.log('Bulk deleting documents:', documentIds);
+  logger.debug(`Bulk deleting documents: ${documentIds.length} items`, 'document');
 
   // Get all documents to delete files from storage
   const { data: documents, error: fetchError } = await supabase
@@ -674,7 +678,7 @@ export const bulkDeleteDocuments = async (documentIds: string[]): Promise<void> 
     .in('id', documentIds);
 
   if (fetchError) {
-    console.error('Error fetching documents:', fetchError);
+    logger.error('Error fetching documents', fetchError, 'document');
     throw new Error(`Failed to fetch documents: ${fetchError.message}`);
   }
 
@@ -685,7 +689,7 @@ export const bulkDeleteDocuments = async (documentIds: string[]): Promise<void> 
     .remove(filePaths);
 
   if (storageError) {
-    console.warn('Error deleting files from storage:', storageError);
+    logger.warn('Error deleting files from storage', 'document', storageError);
   }
 
   // Delete document records
@@ -695,13 +699,13 @@ export const bulkDeleteDocuments = async (documentIds: string[]): Promise<void> 
     .in('id', documentIds);
 
   if (error) {
-    console.error('Error bulk deleting documents:', error);
+    logger.error('Error bulk deleting documents', error, 'document');
     throw new Error(`Failed to bulk delete documents: ${error.message}`);
   }
 };
 
 export const bulkMoveDocuments = async (documentIds: string[], targetFolderId: string | null): Promise<void> => {
-  console.log('Bulk moving documents:', documentIds, 'to folder:', targetFolderId);
+  logger.debug(`Bulk moving documents to folder: ${targetFolderId}`, 'document');
 
   const { error } = await supabase
     .from('documents')
@@ -709,13 +713,13 @@ export const bulkMoveDocuments = async (documentIds: string[], targetFolderId: s
     .in('id', documentIds);
 
   if (error) {
-    console.error('Error bulk moving documents:', error);
+    logger.error('Error bulk moving documents', error, 'document');
     throw new Error(`Failed to bulk move documents: ${error.message}`);
   }
 };
 
 export const bulkUpdateTags = async (documentIds: string[], tags: string[]): Promise<void> => {
-  console.log('Bulk updating tags for documents:', documentIds, 'tags:', tags);
+  logger.debug(`Bulk updating tags for ${documentIds.length} documents`, 'document');
 
   const { error } = await supabase
     .from('documents')
@@ -723,7 +727,7 @@ export const bulkUpdateTags = async (documentIds: string[], tags: string[]): Pro
     .in('id', documentIds);
 
   if (error) {
-    console.error('Error bulk updating tags:', error);
+    logger.error('Error bulk updating tags', error, 'document');
     throw new Error(`Failed to bulk update tags: ${error.message}`);
   }
 };

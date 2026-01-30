@@ -56,7 +56,17 @@ export function RiskManagementDashboard() {
 
   const stats = dashboardStats || {};
   const oppMetrics = opportunityMetrics || {};
-  const occMetrics = occurrenceMetrics || {};
+  const occMetrics = occurrenceMetrics || {
+    total: 0,
+    thisYear: 0,
+    open: 0,
+    inTreatment: 0,
+    resolved: 0,
+    closed: 0,
+    byImpact: {} as Record<string, number>,
+    totalFinancialImpact: 0,
+    avgResolutionDays: 0
+  };
 
   // Preparar dados para gráficos
   const riskTrendData = stats.trend || [];

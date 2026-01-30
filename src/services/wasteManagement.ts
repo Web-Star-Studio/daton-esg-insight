@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 /**
  * Converte diferentes unidades para toneladas
@@ -37,7 +38,7 @@ function convertToTonnes(quantity: number, unit: string): number {
       return quantity * 1;
     
     default:
-      console.warn(`Unidade não reconhecida: ${unit}. Assumindo toneladas.`);
+      logger.warn(`Unidade de resíduo não reconhecida: ${unit}. Assumindo toneladas.`, 'emission');
       return quantity;
   }
 }
@@ -221,8 +222,8 @@ export async function calculateTotalWasteGeneration(year: number): Promise<Waste
     improvement_percent = baseline_total > 0 
       ? ((baseline_total - total_generated_tonnes) / baseline_total) * 100 
       : 0;
-  } catch (error) {
-    console.log('Dados do ano anterior não disponíveis para comparação');
+  } catch {
+    logger.debug('Dados do ano anterior não disponíveis para comparação', 'emission');
   }
 
   return {
@@ -283,19 +284,19 @@ export async function calculateWasteIntensity(year: number): Promise<{
     return {};
   }
 
-  const result: any = {};
+  interface WasteIntensityResult {
+    intensity_per_production?: number;
+    intensity_per_revenue?: number;
+    production_unit?: string;
+  }
+
+  const result: WasteIntensityResult = {};
 
   // Intensidade por produção
   if (metrics.production_volume && metrics.production_volume > 0) {
     result.intensity_per_production = wasteData.total_generated_tonnes / metrics.production_volume;
     result.production_unit = metrics.production_unit || 'unidade';
   }
-
-  // Intensidade por receita (remover se não houver campo revenue na tabela)
-  // if (metrics.revenue && metrics.revenue > 0) {
-  //   // toneladas por R$ 1.000
-  //   result.intensity_per_revenue = (wasteData.total_generated_tonnes / metrics.revenue) * 1000;
-  // }
 
   return result;
 }
@@ -493,8 +494,8 @@ export async function calculateRecyclingByMaterial(year: number): Promise<Recycl
       change_percentage: Math.round(change_percentage * 100) / 100,
       is_improving: change_percentage > 0
     };
-  } catch (error) {
-    console.log('Dados do ano anterior não disponíveis para comparação de reciclagem');
+  } catch {
+    logger.debug('Dados do ano anterior não disponíveis para comparação de reciclagem', 'emission');
   }
   
   return {

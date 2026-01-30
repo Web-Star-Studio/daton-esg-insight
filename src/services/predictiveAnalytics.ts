@@ -42,7 +42,7 @@ export const getPredictiveAnalysis = async (
   months: number = 3
 ): Promise<PredictionResult | ComplianceRiskScore | FullAnalysis> => {
   try {
-    console.log('📡 [PredictiveAnalytics] Calling edge function:', { analysisType, months });
+    logger.debug('Calling predictive analytics edge function', 'emission', { analysisType, months });
 
     const { data, error } = await supabase.functions.invoke('predictive-analytics', {
       body: {
@@ -52,8 +52,7 @@ export const getPredictiveAnalysis = async (
     });
 
     if (error) {
-      console.error('❌ [PredictiveAnalytics] Edge function error:', error);
-      logger.error('Error fetching predictive analysis', error);
+      logger.error('Predictive analytics edge function error', error, 'emission');
       
       // Handle specific error types
       if (error.message?.includes('at least 3 months')) {
@@ -67,11 +66,10 @@ export const getPredictiveAnalysis = async (
       throw new Error(error.message || 'Erro ao buscar análise preditiva');
     }
 
-    console.log('✅ [PredictiveAnalytics] Data received successfully');
+    logger.debug('Predictive analytics data received successfully', 'emission');
     return data;
-  } catch (error: any) {
-    console.error('❌ [PredictiveAnalytics] Fatal error:', error);
-    logger.error('Failed to get predictive analysis', error);
+  } catch (error: unknown) {
+    logger.error('Fatal error in predictive analysis', error, 'emission');
     throw error;
   }
 };
