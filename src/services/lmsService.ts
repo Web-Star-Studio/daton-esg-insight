@@ -2,7 +2,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/utils/logger";
 import type { Json } from "@/integrations/supabase/types";
 
-// Types - Using Json for Supabase compatibility
+// Helper to safely parse JSON fields from Supabase
+function parseJsonArray(value: Json | null | undefined): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === 'string');
+  return [];
+}
+
+// Types - Using string[] for local usage, with JSON conversion helpers
 export interface TrainingCourse {
   id: string;
   company_id: string;
@@ -13,8 +20,8 @@ export interface TrainingCourse {
   estimated_duration_hours: number;
   thumbnail_url?: string;
   is_mandatory: boolean;
-  prerequisites: Json;
-  learning_objectives: Json;
+  prerequisites: string[];
+  learning_objectives: string[];
   status: string;
   created_by_user_id: string;
   created_at: string;
@@ -59,6 +66,12 @@ export interface Assessment {
   questions?: AssessmentQuestion[];
 }
 
+export interface QuestionOption {
+  id: string;
+  text: string;
+  is_correct?: boolean;
+}
+
 export interface AssessmentQuestion {
   id: string;
   assessment_id: string;
@@ -68,8 +81,8 @@ export interface AssessmentQuestion {
   order_index: number;
   explanation?: string;
   media_url?: string;
-  options: Json;
-  correct_answer: Json;
+  options: string[] | QuestionOption[];
+  correct_answer: string | string[] | boolean | Record<string, unknown> | null;
   created_at: string;
 }
 
@@ -135,6 +148,15 @@ export interface LearningPath {
 }
 
 class LMSService {
+  // Helper to transform Supabase course data to TrainingCourse type
+  private transformCourse(data: Record<string, unknown>): TrainingCourse {
+    return {
+      ...data,
+      prerequisites: parseJsonArray(data.prerequisites as Json),
+      learning_objectives: parseJsonArray(data.learning_objectives as Json),
+    } as TrainingCourse;
+  }
+
   // Training Courses
   async getCourses(): Promise<TrainingCourse[]> {
     logger.debug('Fetching training courses', 'training');
@@ -159,7 +181,7 @@ class LMSService {
     }
 
     logger.debug('Courses fetched successfully', 'training', { count: data?.length || 0 });
-    return data || [];
+    return (data || []).map(course => this.transformCourse(course as Record<string, unknown>));
   }
 
   async createCourse(courseData: Partial<TrainingCourse>): Promise<TrainingCourse> {
@@ -209,7 +231,7 @@ class LMSService {
       if (!data) throw new Error('Não foi possível criar o curso');
 
       logger.debug('Course created successfully', 'training', { courseId: data.id });
-      return data;
+      return this.transformCourse(data as Record<string, unknown>);
     } catch (error) {
       logger.error('Detailed course creation error', error, 'training');
       throw error;
@@ -219,7 +241,7 @@ class LMSService {
   async updateCourse(courseId: string, courseData: Partial<TrainingCourse>): Promise<TrainingCourse> {
     const { data, error } = await supabase
       .from('training_courses')
-      .update(courseData)
+      .update(courseData as Record<string, unknown>)
       .eq('id', courseId)
       .select()
       .maybeSingle();
@@ -227,7 +249,7 @@ class LMSService {
     if (error) throw new Error(`Erro ao atualizar curso: ${error.message}`);
     if (!data) throw new Error('Curso não encontrado');
 
-    return data;
+    return this.transformCourse(data as Record<string, unknown>);
   }
 
   async deleteCourse(courseId: string): Promise<void> {
@@ -365,8 +387,8 @@ class LMSService {
         order_index: questionData.order_index || 0,
         explanation: questionData.explanation,
         media_url: questionData.media_url,
-        options: questionData.options || [],
-        correct_answer: questionData.correct_answer
+        options: (questionData.options || []) as Json,
+        correct_answer: questionData.correct_answer as Json
       }])
       .select()
       .maybeSingle();
@@ -374,7 +396,11 @@ class LMSService {
     if (error) throw new Error(`Erro ao criar questão: ${error.message}`);
     if (!data) throw new Error('Não foi possível criar a questão');
 
-    return data;
+    return {
+      ...data,
+      options: Array.isArray(data.options) ? data.options : [],
+      correct_answer: data.correct_answer
+    } as AssessmentQuestion;
   }
 
   // Enrollments
