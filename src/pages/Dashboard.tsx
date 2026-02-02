@@ -321,15 +321,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in content-area" data-tour="dashboard-main" data-testid="dashboard-content">
+    <div className="space-y-4 sm:space-y-6 md:space-y-8 animate-fade-in content-area overflow-x-hidden" data-tour="dashboard-main" data-testid="dashboard-content">
       {/* Header */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-foreground animate-fade-in">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground animate-fade-in">
               Dashboard ESG
             </h1>
-            <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <p className="text-sm sm:text-base text-muted-foreground animate-fade-in" style={{ animationDelay: '0.1s' }}>
               Aqui está um resumo do seu desempenho ESG
             </p>
           </div>
@@ -381,7 +381,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="flex gap-3 overflow-x-auto pb-2 animate-fade-in" style={{ animationDelay: '0.3s' }} data-tour="quick-actions">
+        <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 animate-fade-in scrollbar-hide" style={{ animationDelay: '0.3s' }} data-tour="quick-actions">
           {QUICK_ACTIONS.map((action) => {
             const Icon = action.icon;
             return (
@@ -390,10 +390,10 @@ export default function Dashboard() {
                 variant="minimal"
                 size="sm"
                 onClick={() => navigate(action.path)}
-                className="flex-shrink-0 gap-2 transition-all hover:shadow-md focus-ring whitespace-nowrap"
+                className="flex-shrink-0 gap-2 transition-all hover:shadow-md focus-ring whitespace-nowrap h-10 min-w-[44px] text-sm"
               >
                 <Icon className="w-4 h-4" />
-                {action.title}
+                <span className="hidden xs:inline">{action.title}</span>
               </Button>
             );
           })}
@@ -418,7 +418,7 @@ export default function Dashboard() {
       <AlertsPanel />
 
       {/* Recent Activities & ESG Score Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-fade-in" style={{ animationDelay: '0.7s' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 animate-fade-in" style={{ animationDelay: '0.7s' }}>
         {/* Recent Activities - Compact */}
         <EnhancedCard 
           className="lg:col-span-1 border border-border"

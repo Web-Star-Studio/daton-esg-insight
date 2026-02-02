@@ -230,9 +230,9 @@ export default function GestaoUsuarios() {
         <UserStatsCards stats={stats} />
 
         <Tabs defaultValue="usuarios" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-            <TabsTrigger value="permissoes">Permissões & Roles</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 h-auto">
+            <TabsTrigger value="usuarios" className="text-sm py-2.5">Usuários</TabsTrigger>
+            <TabsTrigger value="permissoes" className="text-sm py-2.5">Permissões</TabsTrigger>
           </TabsList>
 
           <TabsContent value="usuarios" className="space-y-4">
