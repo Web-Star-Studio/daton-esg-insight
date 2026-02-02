@@ -426,11 +426,15 @@ async function calculateGovernanceScore(supabase: any, company_id: string): Prom
     else if (goalsOnTrack > 50) governanceScore += 30
     else if (goalsOnTrack > 25) governanceScore += 20
     
-    // Policy compliance (30 points max) - placeholder scoring
-    governanceScore += 25 // 95% compliance gets 25/30 points
+    // Policy compliance (30 points max) - baseado em desempenho de metas
+    // Usa goalsOnTrack como proxy para compliance até implementação de métricas específicas
+    const policyComplianceScore = Math.min(30, Math.round((goalsOnTrack / 100) * 30))
+    governanceScore += policyComplianceScore
     
-    // Board diversity (20 points max) - placeholder scoring  
-    governanceScore += 12 // 40% diversity gets 12/20 points
+    // Board diversity (20 points max) - score base até implementação de métricas de diversidade
+    // TODO: Implementar quando dados de diversidade estiverem disponíveis
+    const boardDiversityBaseScore = 10 // Score neutro
+    governanceScore += boardDiversityBaseScore
 
     console.log('Governance score calculated:', {
       goalsOnTrack,
