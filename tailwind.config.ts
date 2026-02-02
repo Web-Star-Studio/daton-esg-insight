@@ -78,6 +78,10 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
         ghgRequired: {
           DEFAULT: "hsl(var(--ghg-required))",
           foreground: "hsl(var(--ghg-required-foreground))",

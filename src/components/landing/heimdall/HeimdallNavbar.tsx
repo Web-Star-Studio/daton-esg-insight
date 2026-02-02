@@ -190,10 +190,10 @@ export function HeimdallNavbar() {
                             Contato
                         </span>
                         <div
+                            className="bg-primary"
                             style={{
                                 width: '28px',
                                 height: '28px',
-                                background: '#15c470',
                                 borderRadius: '6px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -264,7 +264,7 @@ export function HeimdallNavbar() {
                         <div className="pt-6 pb-4">
                             <button
                                 onClick={() => handleNavigate('/contato')}
-                                className="flex items-center justify-center gap-2 w-full bg-[#15c470] text-white py-4 px-6 rounded-xl font-medium text-lg hover:brightness-110 transition-all"
+                                className="flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground py-4 px-6 rounded-xl font-medium text-lg hover:brightness-110 transition-all"
                             >
                                 Contato
                                 <ArrowRight size={20} />

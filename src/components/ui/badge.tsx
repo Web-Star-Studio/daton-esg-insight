@@ -12,6 +12,15 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // Variantes semânticas sólidas
+        success: "border-transparent bg-success text-success-foreground hover:bg-success/80",
+        warning: "border-transparent bg-warning text-warning-foreground hover:bg-warning/80",
+        info: "border-transparent bg-info text-info-foreground hover:bg-info/80",
+        // Variantes sutis (fundo claro)
+        "success-subtle": "border-success/30 bg-success/10 text-success hover:bg-success/20",
+        "warning-subtle": "border-warning/30 bg-warning/10 text-warning hover:bg-warning/20",
+        "destructive-subtle": "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20",
+        "info-subtle": "border-info/30 bg-info/10 text-info hover:bg-info/20",
       },
     },
     defaultVariants: {
