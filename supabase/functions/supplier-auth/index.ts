@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serverPasswordSchema, checkRateLimit, clearRateLimit } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,6 +58,21 @@ serve(async (req) => {
         }
 
         const normalizedDoc = normalizeDocument(document);
+        const clientIP = req.headers.get("x-forwarded-for") || "unknown";
+        const rateLimitKey = `supplier-login:${normalizedDoc}:${clientIP}`;
+        
+        // Check rate limit (5 attempts per 15 minutes)
+        const rateCheck = checkRateLimit(rateLimitKey, 5, 15);
+        if (!rateCheck.allowed) {
+          console.log(`⚠️ Rate limit exceeded for ${rateLimitKey}`);
+          return new Response(
+            JSON.stringify({ 
+              error: `Muitas tentativas. Tente novamente em ${Math.ceil(rateCheck.resetInSeconds / 60)} minutos.` 
+            }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
         console.log(`🔐 Login attempt for document: ${normalizedDoc.substring(0, 4)}***`);
 
         // Find supplier by CPF or CNPJ
@@ -66,10 +82,11 @@ serve(async (req) => {
           .or(`cpf.eq.${normalizedDoc},cnpj.eq.${normalizedDoc}`)
           .single();
 
+        // Use generic error message to prevent user enumeration
         if (findError || !supplier) {
           console.log(`❌ Supplier not found`);
           return new Response(
-            JSON.stringify({ error: "Fornecedor não encontrado" }),
+            JSON.stringify({ error: "Credenciais inválidas" }),
             { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -125,7 +142,8 @@ serve(async (req) => {
           );
         }
 
-        // Reset login attempts on successful login
+        // Reset login attempts and rate limit on successful login
+        clearRateLimit(rateLimitKey);
         await supabase
           .from("supplier_management")
           .update({ 
@@ -177,10 +195,11 @@ serve(async (req) => {
           );
         }
 
-        // Validate password strength
-        if (newPassword.length < 8) {
+        // Validate password strength with full requirements
+        const passwordValidation = serverPasswordSchema.safeParse(newPassword);
+        if (!passwordValidation.success) {
           return new Response(
-            JSON.stringify({ error: "Senha deve ter pelo menos 8 caracteres" }),
+            JSON.stringify({ error: passwordValidation.error.issues[0].message }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }

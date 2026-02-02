@@ -261,6 +261,8 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
                 <Label htmlFor="contact_phone">Telefone</Label>
                 <Input
                   id="contact_phone"
+                  type="tel"
+                  inputMode="tel"
                   value={formData.contact_phone}
                   onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
                   placeholder="(00) 00000-0000"
