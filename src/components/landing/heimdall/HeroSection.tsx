@@ -1,15 +1,43 @@
 /**
- * HeroSection - Refactored to use framer-motion instead of gsap
+ * HeroSection - Optimized for LCP/FCP performance
+ * - Poster image for immediate LCP
+ * - Lazy video loading
+ * - Reduced motion for performance
  */
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { ArrowRight, Activity, Zap } from 'lucide-react';
 import './heimdall.css';
 
+// Memoized status item for performance
+const StatusItem = memo(function StatusItem({ 
+    icon: Icon, 
+    label, 
+    value, 
+    color 
+}: { 
+    icon: React.ElementType; 
+    label: string; 
+    value: string; 
+    color: string 
+}) {
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Icon size={14} color={color} />
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                <span style={{ fontSize: '0.6rem', fontFamily: 'Space Mono', color: 'var(--heimdall-text-muted)' }}>{label}</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, fontFamily: 'Sora', color }}>{value}</span>
+            </div>
+        </div>
+    );
+});
+
 export function HeroSection() {
     const navigate = useNavigate();
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+    const [videoLoaded, setVideoLoaded] = useState(false);
+    const [showVideo, setShowVideo] = useState(false);
     
     const cursorX = useMotionValue(0);
     const cursorY = useMotionValue(0);
@@ -22,14 +50,21 @@ export function HeroSection() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Defer video loading for better LCP
     useEffect(() => {
+        const timer = setTimeout(() => setShowVideo(true), 100);
+        return () => clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
+        if (isMobile) return; // Disable custom cursor on mobile
         const handleMouseMove = (e: MouseEvent) => {
             cursorX.set(e.clientX);
             cursorY.set(e.clientY);
         };
-        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mousemove', handleMouseMove, { passive: true });
         return () => window.removeEventListener('mousemove', handleMouseMove);
-    }, [cursorX, cursorY]);
+    }, [cursorX, cursorY, isMobile]);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -70,23 +105,26 @@ export function HeroSection() {
                 paddingBottom: isMobile ? '80px' : undefined,
             }}
         >
-            <motion.div
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '32px',
-                    height: '32px',
-                    border: '1px solid var(--heimdall-accent)',
-                    borderRadius: '50%',
-                    pointerEvents: 'none',
-                    zIndex: 9999,
-                    x: springX,
-                    y: springY,
-                    translateX: '-50%',
-                    translateY: '-50%',
-                }}
-            />
+            {/* Custom cursor - only on desktop */}
+            {!isMobile && (
+                <motion.div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '32px',
+                        height: '32px',
+                        border: '1px solid var(--heimdall-accent)',
+                        borderRadius: '50%',
+                        pointerEvents: 'none',
+                        zIndex: 9999,
+                        x: springX,
+                        y: springY,
+                        translateX: '-50%',
+                        translateY: '-50%',
+                    }}
+                />
+            )}
 
             <div className="technical-overlay" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1 }}>
                 <motion.div
@@ -111,6 +149,7 @@ export function HeroSection() {
                 </motion.div>
             </div>
 
+            {/* Video container with poster optimization for LCP */}
             <motion.div
                 initial={{ clipPath: 'inset(0 100% 0 0)', filter: 'grayscale(100%)' }}
                 animate={{ clipPath: 'inset(0 0% 0 0)', filter: 'grayscale(0%)' }}
@@ -124,18 +163,39 @@ export function HeroSection() {
                     zIndex: 0,
                 }}
             >
-                <video
-                    autoPlay muted loop playsInline
+                {/* Poster placeholder for LCP - shown until video loads */}
+                <div 
                     style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        maskImage: 'linear-gradient(to right, transparent 0%, black 30%, black 100%)',
-                        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 30%, black 100%)'
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(135deg, #f0f9f4 0%, #e8f5ec 50%, #d5ede0 100%)',
+                        opacity: videoLoaded ? 0 : 1,
+                        transition: 'opacity 0.5s ease-out',
                     }}
-                >
-                    <source src="https://player.vimeo.com/external/477862351.sd.mp4?s=e01deef2bfaf5c833e3e4c907721c13f5b9edc4e&profile_id=164&oauth2_token_id=57447761" type="video/mp4" />
-                </video>
+                    aria-hidden="true"
+                />
+                
+                {/* Video loads after initial render for better LCP */}
+                {showVideo && (
+                    <video
+                        autoPlay 
+                        muted 
+                        loop 
+                        playsInline
+                        onLoadedData={() => setVideoLoaded(true)}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            maskImage: 'linear-gradient(to right, transparent 0%, black 30%, black 100%)',
+                            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 30%, black 100%)',
+                            opacity: videoLoaded ? 1 : 0,
+                            transition: 'opacity 0.5s ease-out',
+                        }}
+                    >
+                        <source src="https://player.vimeo.com/external/477862351.sd.mp4?s=e01deef2bfaf5c833e3e4c907721c13f5b9edc4e&profile_id=164&oauth2_token_id=57447761" type="video/mp4" />
+                    </video>
+                )}
                 <div style={{
                     position: 'absolute',
                     inset: 0,
@@ -320,18 +380,6 @@ export function HeroSection() {
                 }
             `}</style>
         </section>
-    );
-}
-
-function StatusItem({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: string; color: string }) {
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Icon size={14} color={color} />
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-                <span style={{ fontSize: '0.6rem', fontFamily: 'Space Mono', color: 'var(--heimdall-text-muted)' }}>{label}</span>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, fontFamily: 'Sora', color }}>{value}</span>
-            </div>
-        </div>
     );
 }
 
