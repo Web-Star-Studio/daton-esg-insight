@@ -8,19 +8,47 @@
     <meta name="description" content="Plataforma SaaS B2B de ponta para gestão ESG, focada no mercado brasileiro">
     <meta name="author" content="Daton" />
     
-    <!-- Inter Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+    <!-- DNS Prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="dns-prefetch" href="https://player.vimeo.com">
     
+    <!-- Preconnect for fonts (performance optimization) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Non-blocking font loading - Inter -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    </noscript>
+    
+    <!-- Non-blocking font loading - Sora & Space Mono (Heimdall) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    </noscript>
+    
+    <!-- Critical CSS inline for FCP optimization -->
+    <style>
+      /* Critical CSS - Immediate loading state */
+      *,*::before,*::after{box-sizing:border-box}
+      html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4}
+      body{margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+      #root{min-height:100vh;display:flex;flex-direction:column}
+      /* Loading skeleton for CLS prevention */
+      .loading-skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+      @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+      /* Hero placeholder to prevent CLS */
+      .hero-placeholder{min-height:100vh;background:#fff}
+    </style>
     
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/FCaojVAoUrbBKRJonJcz2oWjiD63/social-images/social-1759106194182-Captura de Tela 2025-09-28 às 21.36.25.png">
+    <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/FCaojVAoUrbBKRJonJcz2oWjiD63/social-images/social-1759106194182-Captura de Tela 2025-09-28 às 21.36.25.png">
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/FCaojVAoUrbBKRJonJcz2oWjiD63/social-images/social-1759106194182-Captura de Tela 2025-09-28 às 21.36.25.png">
+    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/FCaojVAoUrbBKRJonJcz2oWjiD63/social-images/social-1759106194182-Captura de Tela 2025-09-28 às 21.36.25.png">
     <meta property="og:title" content="Daton - Plataforma ESG Inteligente">
   <meta name="twitter:title" content="Daton - Plataforma ESG Inteligente">
   <meta property="og:description" content="Plataforma SaaS B2B de ponta para gestão ESG, focada no mercado brasileiro">

@@ -6,15 +6,24 @@
  * - GSAP ScrollTrigger integration
  * - Custom cursor
  * - All sections composed together
+ * - Lazy loading for below-the-fold sections
  */
+import { lazy, Suspense } from 'react';
 import { HeimdallNavbar } from './HeimdallNavbar';
 import { HeroSection } from './HeroSection';
-import { NewsTicker } from './NewsTicker';
-import { TechStack3D } from './TechStack3D';
-import { StatsGrid } from './StatsGrid';
-import { HeimdallFooter } from './HeimdallFooter';
 import { CustomCursor } from './CustomCursor';
 import './heimdall.css';
+
+// Lazy load below-the-fold sections for better LCP
+const NewsTicker = lazy(() => import('./NewsTicker').then(m => ({ default: m.NewsTicker })));
+const TechStack3D = lazy(() => import('./TechStack3D').then(m => ({ default: m.TechStack3D })));
+const StatsGrid = lazy(() => import('./StatsGrid').then(m => ({ default: m.StatsGrid })));
+const HeimdallFooter = lazy(() => import('./HeimdallFooter').then(m => ({ default: m.HeimdallFooter })));
+
+// Loading skeleton component
+const SectionSkeleton = ({ height = 'h-96' }: { height?: string }) => (
+    <div className={`loading-skeleton ${height} w-full`} aria-hidden="true" />
+);
 
 export function HeimdallLanding() {
     return (
@@ -27,24 +36,27 @@ export function HeimdallLanding() {
 
             {/* Main Content */}
             <main>
-                {/* Hero with Video Background */}
+                {/* Hero with Video Background - Critical, loads immediately */}
                 <HeroSection />
 
+                {/* Below-the-fold sections - Lazy loaded */}
+                <Suspense fallback={<SectionSkeleton height="h-[600px]" />}>
+                    <TechStack3D />
+                </Suspense>
 
+                <Suspense fallback={<SectionSkeleton height="h-64" />}>
+                    <StatsGrid />
+                </Suspense>
 
-                {/* Tech Stack with 3D WebGL Spheres */}
-                <TechStack3D />
-
-
-                {/* Stats Grid */}
-                <StatsGrid />
-
-                {/* News Ticker with Dimming Effect */}
-                <NewsTicker />
+                <Suspense fallback={<SectionSkeleton height="h-48" />}>
+                    <NewsTicker />
+                </Suspense>
             </main>
 
-            {/* Massive Footer */}
-            <HeimdallFooter />
+            {/* Massive Footer - Lazy loaded */}
+            <Suspense fallback={<SectionSkeleton height="h-96" />}>
+                <HeimdallFooter />
+            </Suspense>
         </div>
     );
 }

@@ -27,6 +27,18 @@ export default defineConfig(({ mode }) => ({
     commonjsOptions: {
       include: [/react-quill/, /node_modules/]
     },
+    // Use terser for production minification with console removal
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.debug', 'console.info'],
+      },
+      format: {
+        comments: false,
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: {
@@ -43,6 +55,8 @@ export default defineConfig(({ mode }) => ({
           'chart-vendor': ['recharts'],
           'supabase': ['@supabase/supabase-js'],
           'tanstack': ['@tanstack/react-query'],
+          // Separate framer-motion for better tree-shaking
+          'animation': ['framer-motion'],
         },
       },
     },

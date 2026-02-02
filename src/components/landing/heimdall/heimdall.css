@@ -8,7 +8,7 @@
  * - Scroll: Lenis with damping 0.1
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+/* Fonts loaded via index.html with preload for non-blocking render */
 
 /* ============================================
    CSS VARIABLES - DESIGN TOKENS

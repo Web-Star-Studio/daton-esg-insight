@@ -11,20 +11,24 @@ interface ResponsiveImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageEle
   src: string;
   alt: string;
   responsiveSrcSet?: ResponsiveImageSrcSet;
+  webpSrc?: string;  // WebP version for modern browsers
   sizes?: string;
   aspectRatio?: string;
   fallback?: string;
+  priority?: boolean; // For LCP-critical images
 }
 
 export function ResponsiveImage({
   src,
   alt,
   responsiveSrcSet,
+  webpSrc,
   sizes = "(max-width: 480px) 100vw, (max-width: 1024px) 50vw, 33vw",
   className,
   loading = "lazy",
   aspectRatio,
   fallback,
+  priority = false,
   ...props
 }: ResponsiveImageProps) {
   const [hasError, setHasError] = React.useState(false);
@@ -40,17 +44,38 @@ export function ResponsiveImage({
     }
   };
 
+  const imgProps = {
+    alt,
+    loading: priority ? "eager" as const : loading,
+    onError: handleError,
+    className: cn("object-cover", className),
+    style: aspectRatio ? { aspectRatio } : undefined,
+    ...props,
+  };
+
+  // Use picture element for WebP with fallback
+  if (webpSrc && !hasError) {
+    return (
+      <picture>
+        <source srcSet={webpSrc} type="image/webp" />
+        <img
+          src={src}
+          srcSet={srcSetString}
+          sizes={sizes}
+          fetchPriority={priority ? "high" : undefined}
+          {...imgProps}
+        />
+      </picture>
+    );
+  }
+
   return (
     <img
       src={hasError && fallback ? fallback : src}
       srcSet={hasError ? undefined : srcSetString}
       sizes={hasError ? undefined : sizes}
-      alt={alt}
-      loading={loading}
-      onError={handleError}
-      className={cn("object-cover", className)}
-      style={aspectRatio ? { aspectRatio } : undefined}
-      {...props}
+      fetchPriority={priority ? "high" : undefined}
+      {...imgProps}
     />
   );
 }
