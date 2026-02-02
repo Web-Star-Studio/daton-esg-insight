@@ -1,9 +1,9 @@
 
-# Plano de Auditoria de Validacao de Inputs
+# Plano de Otimizacao de Performance e Escalabilidade
 
 ## Resumo Executivo
 
-Este plano aborda uma auditoria completa de validacao de inputs no sistema Daton ESG Insight, cobrindo validacao client-side, server-side, seguranca de input e UX de validacao conforme a diretiva do CTO.
+Este plano aborda uma auditoria completa de performance conforme a diretiva do CTO, visando atingir os targets de Core Web Vitals e otimizar bundle size, imagens, CSS/JS, network e React.
 
 ---
 
@@ -13,360 +13,536 @@ Este plano aborda uma auditoria completa de validacao de inputs no sistema Daton
 
 | Categoria | Status | Detalhes |
 |-----------|--------|----------|
-| Zod Schema Validation | OK | 68+ arquivos usam Zod para validacao |
-| Password Schema | OK | `passwordSchema` com requisitos completos (8 chars, maiuscula, minuscula, numero, especial) |
-| Password Confirmation | OK | `validatePasswordMatch()` implementado |
-| CPF/CNPJ Validation | OK | Validadores com algoritmo de digitos verificadores |
-| Email Regex | OK | Regex `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` implementado |
-| Phone Formatting | OK | `formatPhone()` e `validatePhone()` implementados |
-| URL Validation | OK | `new URL()` parsing em `sanitizeUrl()` |
-| XSS Protection | OK | DOMPurify com sanitizeHTML, sanitizeRichText, sanitizeText |
-| Rate Limiting Client | OK | `RateLimiter` class em securityUtils.ts |
-| File Size Limits | OK | MAX_FILE_SIZE = 20MB, validacao em useAttachments |
-| FormMessage Component | OK | Usado em 145 arquivos com indicador visual |
-| Required Field Messages | OK | Pattern `.min(1, "X e obrigatorio")` em 39+ arquivos |
+| Lazy Loading de Rotas | OK | 100+ rotas usando `React.lazy()` em `App.tsx` |
+| Code Splitting Manual | OK | `vite.config.ts` com 7 chunks manuais (react-vendor, ui-vendor, etc.) |
+| Query Caching | OK | React Query com `staleTime: 5min`, `gcTime: 30min` |
+| Virtualizacao de Listas | OK | `useVirtualizedList` hook com threshold de 50 items |
+| Route Preloading | OK | `routePreloader.ts` com idle/hover preloading |
+| Performance Monitor | OK | `performanceMonitor.ts` com Web Vitals tracking |
+| Memoized Components | OK | `MemoizedComponents.tsx` com Button, Input, Card |
+| Responsive Image | OK | `ResponsiveImage` component com srcset e lazy loading |
+| Debounce/Throttle | OK | `useDebounce`, `useThrottle` hooks implementados |
+| Smart Cache | OK | `useSmartCache` com priority levels |
 
 ### Problemas Identificados
 
-| Problema | Severidade | Localizacao | Impacto |
-|----------|------------|-------------|---------|
-| Inputs de telefone sem `type="tel"` | MEDIA | 30+ formularios | UX mobile degradada |
-| Server-side password validation incompleta | ALTA | supplier-auth | Apenas verifica length >= 8, sem requisitos de complexidade |
-| Falta de rate limiting em edge functions criticas | ALTA | invite-user, supplier-auth | Vulneravel a brute force |
-| Auth.tsx sem validacao Zod | MEDIA | src/pages/Auth.tsx | Validacao manual inconsistente |
-| Mensagens de erro tecnicas no servidor | BAIXA | Edge functions | Potencial leak de informacao |
-| Validacao de confirm password apenas no submit | BAIXA | Auth.tsx | UX pode ser melhorada com real-time |
+| Problema | Severidade | Impacto | Localizacao |
+|----------|------------|---------|-------------|
+| Framer-motion em paginas criticas | ALTA | LCP > 2.5s | 19 arquivos, incluindo LandingPage |
+| Video externo no Hero | ALTA | LCP bloqueante | HeroSection.tsx (Vimeo video) |
+| Fonts blocking render | ALTA | FCP > 1.8s | index.html (Google Fonts sem preload) |
+| CSS Heimdall importando fonts | MEDIA | Render blocking | heimdall.css (@import fonts) |
+| console.log em producao | MEDIA | Bundle size | 334 matches em 24 services |
+| Sem Critical CSS inline | MEDIA | FCP impactado | index.html sem styles inline |
+| Sem Service Worker | MEDIA | Sem cache offline | Nao implementado |
+| Sem WebP fallback | MEDIA | Imagens maiores | ResponsiveImage sem WebP |
+| framer-motion nao tree-shaked | MEDIA | Bundle maior | Importando modulo inteiro |
 
 ---
 
-## Matriz de Conformidade por Checklist
+## Metricas Atuais vs Targets
 
-### Validacao Client-Side
-
-| Requisito | Status | Implementacao |
-|-----------|--------|---------------|
-| Campo obrigatorio | OK | `.min(1, "Campo obrigatorio")` padronizado |
-| Email regex | OK | `z.string().email()` + regex customizado |
-| Phone regex | PARCIAL | `validatePhone()` existe, mas inputs sem `type="tel"` |
-| URL parsing | OK | `sanitizeUrl()` com `new URL()` |
-| Date parsing | OK | `parseDateSafe()` em dateUtils.ts |
-| Password requisitos comunicados | OK | `getPasswordRequirementChecks()` no Auth.tsx |
-| Confirm password match | OK | `validatePasswordMatch()` implementado |
-| Min/max length | OK | Zod `.min()` e `.max()` com mensagens |
-| Min/max value | OK | Zod `.min()` e `.max()` para numeros |
-| Custom regex | OK | CEP, CNPJ, CPF patterns implementados |
-
-### Validacao Server-Side
-
-| Requisito | Status | Implementacao |
-|-----------|--------|---------------|
-| Inputs revalidados no servidor | PARCIAL | `validateRequestBody()` basico, sem Zod |
-| Rate limiting em endpoints criticos | A IMPLEMENTAR | Nao existe em edge functions |
-| Mensagens de erro genericas | PARCIAL | Algumas mensagens especificas demais |
-| Never trust frontend | PARCIAL | Alguns endpoints sem validacao completa |
-
-### Seguranca de Input
-
-| Requisito | Status | Implementacao |
-|-----------|--------|---------------|
-| XSS protection | OK | DOMPurify em sanitize.ts |
-| SQL injection | OK | Supabase client usa prepared statements |
-| CSRF | OK | Token em auth header, CORS configurado |
-| Path traversal | OK | Nao permite paths customizados |
-| File size limits | OK | MAX_FILE_SIZE = 20MB |
-| File type validation | OK | ALLOWED_TYPES e ALLOWED_EXTENSIONS |
-
-### UX de Validacao
-
-| Requisito | Status | Implementacao |
-|-----------|--------|---------------|
-| Error message perto do field | OK | FormMessage component |
-| Red border/indicador visual | OK | `border-destructive` classes |
-| Mensagens claras | OK | Portugues, nao tecnicas |
-| Exemplos de formato | PARCIAL | Placeholders ajudam, mas podem melhorar |
-| Real-time validation nao agressivo | OK | `mode: "onBlur"` em forms |
+| Metrica | Target | Estado Estimado | Gap |
+|---------|--------|-----------------|-----|
+| LCP | < 2.5s | ~3-4s (video Hero) | ALTO |
+| FCP | < 1.8s | ~2s (fonts blocking) | MEDIO |
+| FID | < 100ms | ~50ms (OK) | BAIXO |
+| CLS | < 0.1 | ~0.05 (OK) | OK |
+| TTFB | < 600ms | ~200ms (OK) | OK |
+| Bundle Size | < 200KB gzip | ~250KB (estimado) | MEDIO |
+| Lighthouse Score | 90+ | ~70 (estimado) | ALTO |
 
 ---
 
 ## Plano de Correcoes
 
-### FASE 1: Input Types para Telefone
+### FASE 1: Critical Rendering Path (LCP/FCP)
 
-**Problema:** Campos de telefone nao usam `type="tel"` para melhor UX mobile
+#### 1.1 Preload Fonts em index.html
 
-**Arquivos a modificar:**
-- `src/components/EmployeeModal.tsx`
-- `src/pages/SupplierRegistration.tsx`
-- `src/components/StakeholderModal.tsx`
-- `src/components/suppliers/SupplierManagementModal.tsx`
-- `src/components/NotificationPreferencesModal.tsx`
-- `src/components/gri-wizard/Etapa1Planejamento.tsx`
+**Problema:** Google Fonts carregadas via link bloqueante
 
-**Exemplo de correcao:**
-```tsx
-// ANTES
-<Input
-  value={formData.phone}
-  onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
-/>
+**Arquivo:** `index.html`
 
-// DEPOIS
-<Input
-  type="tel"
-  inputMode="tel"
-  value={formData.phone}
-  onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
-  placeholder="(11) 99999-9999"
-/>
+```html
+<!-- ANTES -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- DEPOIS -->
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</noscript>
+```
+
+#### 1.2 Critical CSS Inline
+
+**Problema:** Nenhum CSS inline no head
+
+**Arquivo:** `index.html`
+
+```html
+<head>
+  <!-- Adicionar Critical CSS inline para above-the-fold -->
+  <style>
+    /* Critical CSS - Loading State */
+    #root { min-height: 100vh; }
+    body { 
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Prevent CLS from loading states */
+    .loading-skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  </style>
+</head>
+```
+
+#### 1.3 Otimizar Hero Video
+
+**Problema:** Video Vimeo externo bloqueia LCP
+
+**Arquivo:** `src/components/landing/heimdall/HeroSection.tsx`
+
+```typescript
+// ANTES: Video carrega imediatamente
+<video autoPlay muted loop playsInline>
+  <source src="https://player.vimeo.com/external/..." type="video/mp4" />
+</video>
+
+// DEPOIS: Poster image + lazy video loading
+const [videoLoaded, setVideoLoaded] = useState(false);
+
+// Usar poster image para LCP
+<div className="hero-video-container">
+  {!videoLoaded && (
+    <img 
+      src="/hero-poster.webp" 
+      alt="Dashboard ESG Preview"
+      fetchpriority="high"
+      decoding="async"
+      className="hero-poster"
+    />
+  )}
+  <video 
+    autoPlay muted loop playsInline
+    onLoadedData={() => setVideoLoaded(true)}
+    style={{ opacity: videoLoaded ? 1 : 0 }}
+  >
+    <source src="..." type="video/mp4" />
+  </video>
+</div>
+```
+
+#### 1.4 Remover @import de Fonts no CSS
+
+**Problema:** `heimdall.css` importa fonts de forma bloqueante
+
+**Arquivo:** `src/components/landing/heimdall/heimdall.css`
+
+```css
+/* REMOVER linha 11 */
+/* @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap'); */
+
+/* Fonts serao carregadas via index.html com preload */
+```
+
+Atualizar `index.html`:
+```html
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 ```
 
 ---
 
-### FASE 2: Validacao Server-Side com Zod
+### FASE 2: Bundle Size Optimization
 
-**Problema:** Edge functions nao usam Zod para validacao de schema
+#### 2.1 Tree-shake Framer Motion
 
-**Arquivo:** `supabase/functions/_shared/validation.ts`
+**Problema:** Importando modulo inteiro de framer-motion
 
-**Correcao:** Adicionar schemas Zod para validacao server-side
+**Arquivo:** Multiplos arquivos
 
-```typescript
-// Adicionar ao validation.ts
-import { z } from 'https://esm.sh/zod@3.23.8';
-
-// Schema de senha com requisitos completos
-export const serverPasswordSchema = z.string()
-  .min(8, 'Senha deve ter no minimo 8 caracteres')
-  .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiuscula')
-  .regex(/[a-z]/, 'Senha deve conter pelo menos uma letra minuscula')
-  .regex(/[0-9]/, 'Senha deve conter pelo menos um numero')
-  .regex(/[^A-Za-z0-9]/, 'Senha deve conter pelo menos um caractere especial');
-
-// Schema de email
-export const serverEmailSchema = z.string()
-  .email('Email invalido')
-  .max(255, 'Email muito longo');
-
-// Validar request body com schema
-export function validateBodyWithSchema<T>(body: unknown, schema: z.ZodSchema<T>): { 
-  success: true; data: T 
-} | { 
-  success: false; error: string 
-} {
-  const result = schema.safeParse(body);
-  if (result.success) {
-    return { success: true, data: result.data };
-  }
-  return { 
-    success: false, 
-    error: result.error.issues[0]?.message || 'Dados invalidos'
-  };
-}
-```
-
-**Atualizar supplier-auth/index.ts:**
 ```typescript
 // ANTES
-if (newPassword.length < 8) {
-  return new Response(
-    JSON.stringify({ error: "Senha deve ter pelo menos 8 caracteres" }),
-    { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
-}
+import { motion, AnimatePresence, useSpring } from 'framer-motion';
 
-// DEPOIS
-import { serverPasswordSchema, validateBodyWithSchema } from '../_shared/validation.ts';
-
-const passwordValidation = serverPasswordSchema.safeParse(newPassword);
-if (!passwordValidation.success) {
-  return new Response(
-    JSON.stringify({ error: passwordValidation.error.issues[0].message }),
-    { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
-}
+// DEPOIS - Importar apenas o necessario
+import { motion } from 'framer-motion/dist/es/render/dom/motion';
+import { AnimatePresence } from 'framer-motion/dist/es/components/AnimatePresence';
 ```
 
----
-
-### FASE 3: Rate Limiting em Edge Functions
-
-**Problema:** Endpoints criticos (login, change_password, invite-user) sem rate limiting
-
-**Arquivo:** `supabase/functions/_shared/validation.ts`
-
-**Correcao:** Adicionar rate limiting com Deno KV ou in-memory
-
+**Alternativa mais simples:** Adicionar ao vite.config.ts:
 ```typescript
-// Rate limiting simples para edge functions
-const rateLimitCache = new Map<string, { count: number; resetTime: number }>();
-
-export function checkRateLimit(
-  identifier: string,
-  maxAttempts: number = 5,
-  windowMinutes: number = 15
-): { allowed: boolean; remainingAttempts: number; resetInSeconds: number } {
-  const now = Date.now();
-  const windowMs = windowMinutes * 60 * 1000;
-  
-  const key = identifier;
-  const current = rateLimitCache.get(key);
-  
-  if (!current || now > current.resetTime) {
-    rateLimitCache.set(key, { count: 1, resetTime: now + windowMs });
-    return { allowed: true, remainingAttempts: maxAttempts - 1, resetInSeconds: windowMinutes * 60 };
-  }
-  
-  if (current.count >= maxAttempts) {
-    const resetInSeconds = Math.ceil((current.resetTime - now) / 1000);
-    return { allowed: false, remainingAttempts: 0, resetInSeconds };
-  }
-  
-  current.count++;
-  return { 
-    allowed: true, 
-    remainingAttempts: maxAttempts - current.count,
-    resetInSeconds: Math.ceil((current.resetTime - now) / 1000)
-  };
-}
+build: {
+  rollupOptions: {
+    output: {
+      manualChunks: {
+        // ... existing chunks ...
+        'framer-motion': ['framer-motion'],
+      },
+    },
+  },
+},
 ```
 
-**Atualizar supplier-auth/index.ts para login:**
-```typescript
-// No inicio do case "login":
-const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
-const rateLimitKey = `login:${normalizedDoc}:${clientIP}`;
+#### 2.2 Remover console.log em Producao
 
-const rateCheck = checkRateLimit(rateLimitKey, 5, 15); // 5 tentativas em 15 min
-if (!rateCheck.allowed) {
-  console.log(`⚠️ Rate limit exceeded for ${rateLimitKey}`);
-  return new Response(
-    JSON.stringify({ 
-      error: `Muitas tentativas. Tente novamente em ${Math.ceil(rateCheck.resetInSeconds / 60)} minutos.` 
+**Arquivo:** `vite.config.ts`
+
+```typescript
+build: {
+  // ... existing config ...
+  minify: 'terser',
+  terserOptions: {
+    compress: {
+      drop_console: true,
+      drop_debugger: true,
+    },
+  },
+},
+```
+
+#### 2.3 Adicionar Bundle Analyzer
+
+**Arquivo:** `vite.config.ts`
+
+```typescript
+import { visualizer } from 'rollup-plugin-visualizer';
+
+export default defineConfig(({ mode }) => ({
+  plugins: [
+    // ... existing plugins ...
+    mode === 'analyze' && visualizer({
+      open: true,
+      filename: 'dist/stats.html',
+      gzipSize: true,
+      brotliSize: true,
     }),
-    { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
+  ].filter(Boolean),
+}));
+```
+
+---
+
+### FASE 3: Image Optimization
+
+#### 3.1 Criar Utilitario de WebP
+
+**Arquivo:** `src/utils/imageOptimization.ts` (NOVO)
+
+```typescript
+/**
+ * Image Optimization Utilities
+ */
+
+// Check WebP support
+let webpSupported: boolean | null = null;
+
+export async function supportsWebP(): Promise<boolean> {
+  if (webpSupported !== null) return webpSupported;
+  
+  if (typeof window === 'undefined') return false;
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  webpSupported = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+  
+  return webpSupported;
+}
+
+// Get optimized image URL
+export function getOptimizedImageUrl(
+  src: string, 
+  options: { width?: number; quality?: number } = {}
+): string {
+  const { width = 800, quality = 80 } = options;
+  
+  // If using a CDN that supports image optimization (e.g., Cloudinary, Imgix)
+  // Return transformed URL
+  // For now, return original
+  return src;
+}
+
+// Preload critical images
+export function preloadCriticalImages(urls: string[]): void {
+  urls.forEach(url => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = url;
+    document.head.appendChild(link);
+  });
+}
+```
+
+#### 3.2 Atualizar ResponsiveImage para WebP
+
+**Arquivo:** `src/components/ui/responsive-image.tsx`
+
+```typescript
+interface ResponsiveImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'srcSet'> {
+  src: string;
+  alt: string;
+  responsiveSrcSet?: ResponsiveImageSrcSet;
+  webpSrc?: string; // Nova prop
+  sizes?: string;
+  aspectRatio?: string;
+  fallback?: string;
+  priority?: boolean; // Nova prop para imagens criticas
+}
+
+export function ResponsiveImage({
+  src,
+  alt,
+  responsiveSrcSet,
+  webpSrc,
+  sizes = "(max-width: 480px) 100vw, (max-width: 1024px) 50vw, 33vw",
+  className,
+  loading = "lazy",
+  aspectRatio,
+  fallback,
+  priority = false,
+  ...props
+}: ResponsiveImageProps) {
+  const [hasError, setHasError] = React.useState(false);
+  
+  // Use picture element for WebP with fallback
+  if (webpSrc) {
+    return (
+      <picture>
+        <source srcSet={webpSrc} type="image/webp" />
+        <img
+          src={hasError && fallback ? fallback : src}
+          alt={alt}
+          loading={priority ? "eager" : loading}
+          fetchPriority={priority ? "high" : undefined}
+          onError={() => setHasError(true)}
+          className={cn("object-cover", className)}
+          style={aspectRatio ? { aspectRatio } : undefined}
+          {...props}
+        />
+      </picture>
+    );
+  }
+  
+  // Fallback to original implementation
+  // ... existing code
 }
 ```
 
 ---
 
-### FASE 4: Migrar Auth.tsx para Zod
+### FASE 4: Network Optimization
 
-**Problema:** Auth.tsx usa validacao manual em vez de Zod schema
+#### 4.1 Adicionar Link Prefetch para Rotas
 
-**Arquivo:** `src/pages/Auth.tsx`
+**Arquivo:** `index.html`
 
-**Correcao:**
+```html
+<head>
+  <!-- Prefetch critical routes -->
+  <link rel="prefetch" href="/assets/Index-[hash].js">
+  <link rel="prefetch" href="/assets/Dashboard-[hash].js">
+  
+  <!-- DNS prefetch for external resources -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://player.vimeo.com">
+</head>
+```
+
+#### 4.2 Implementar Service Worker
+
+**Arquivo:** `public/sw.js` (NOVO)
+
+```javascript
+const CACHE_NAME = 'daton-v1';
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/assets/index.css',
+];
+
+// Install event
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS);
+    })
+  );
+});
+
+// Fetch event - Network first, cache fallback
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        // Clone response and cache
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          if (event.request.method === 'GET') {
+            cache.put(event.request, responseClone);
+          }
+        });
+        return response;
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
+  );
+});
+```
+
+**Registrar em main.tsx:**
 ```typescript
-import { z } from 'zod';
-import { passwordSchema } from '@/utils/passwordValidation';
-
-const loginSchema = z.object({
-  email: z.string().trim().email('Email invalido'),
-  password: z.string().min(1, 'Senha e obrigatoria')
-});
-
-const registerSchema = z.object({
-  company_name: z.string().trim().min(1, 'Nome da empresa e obrigatorio').max(255),
-  cnpj: z.string()
-    .transform(v => v.replace(/[^\d]/g, ''))
-    .refine(v => v.length === 14, 'CNPJ deve ter 14 digitos'),
-  user_name: z.string().trim().min(1, 'Nome e obrigatorio').max(100),
-  email: z.string().trim().email('Email invalido'),
-  password: passwordSchema,
-  confirmPassword: z.string()
-}).refine(data => data.password === data.confirmPassword, {
-  message: 'As senhas nao coincidem',
-  path: ['confirmPassword']
-});
+// Register service worker
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      console.warn('SW registration failed');
+    });
+  });
+}
 ```
 
 ---
 
-### FASE 5: Criar Schema Centralizado para Formularios
+### FASE 5: React Optimizations
 
-**Arquivo:** `src/schemas/formSchemas.ts` (NOVO)
+#### 5.1 Adicionar Profiler Wrapper
+
+**Arquivo:** `src/utils/reactProfiler.ts` (NOVO)
 
 ```typescript
-import { z } from 'zod';
-import { passwordSchema } from '@/utils/passwordValidation';
+import { Profiler, ProfilerOnRenderCallback } from 'react';
 
-// Login
-export const loginSchema = z.object({
-  email: z.string().trim().email('Email invalido'),
-  password: z.string().min(1, 'Senha e obrigatoria')
-});
+const onRenderCallback: ProfilerOnRenderCallback = (
+  id,
+  phase,
+  actualDuration,
+  baseDuration,
+  startTime,
+  commitTime
+) => {
+  if (process.env.NODE_ENV === 'development' && actualDuration > 16) {
+    console.warn(
+      `⚠️ Slow render: ${id} (${phase}) took ${actualDuration.toFixed(2)}ms`
+    );
+  }
+};
 
-// Registro
-export const registerSchema = z.object({
-  company_name: z.string().trim().min(1, 'Nome da empresa e obrigatorio').max(255),
-  cnpj: z.string()
-    .transform(v => v.replace(/[^\d]/g, ''))
-    .pipe(z.string().length(14, 'CNPJ deve ter 14 digitos')),
-  user_name: z.string().trim().min(1, 'Nome e obrigatorio').max(100),
-  email: z.string().trim().email('Email invalido').max(255),
-  password: passwordSchema,
-  confirmPassword: z.string()
-}).refine(data => data.password === data.confirmPassword, {
-  message: 'As senhas nao coincidem',
-  path: ['confirmPassword']
-});
-
-// Telefone
-export const phoneSchema = z.string()
-  .transform(v => v.replace(/[^\d]/g, ''))
-  .refine(v => v.length >= 10 && v.length <= 11, {
-    message: 'Telefone invalido (10 ou 11 digitos)'
-  })
-  .optional()
-  .or(z.literal(''));
-
-// CPF
-export const cpfSchema = z.string()
-  .transform(v => v.replace(/[^\d]/g, ''))
-  .refine(v => {
-    if (!v) return true;
-    if (v.length !== 11) return false;
-    if (/^(\d)\1+$/.test(v)) return false;
-    // Algoritmo de validacao CPF
-    let sum = 0;
-    for (let i = 0; i < 9; i++) sum += parseInt(v[i]) * (10 - i);
-    let d1 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    if (parseInt(v[9]) !== d1) return false;
-    sum = 0;
-    for (let i = 0; i < 10; i++) sum += parseInt(v[i]) * (11 - i);
-    let d2 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    return parseInt(v[10]) === d2;
-  }, { message: 'CPF invalido' })
-  .optional()
-  .or(z.literal(''));
+export function withProfiler<P extends object>(
+  Component: React.ComponentType<P>,
+  id: string
+): React.FC<P> {
+  return (props: P) => (
+    <Profiler id={id} onRender={onRenderCallback}>
+      <Component {...props} />
+    </Profiler>
+  );
+}
 ```
 
----
+#### 5.2 Otimizar Landing Page com Lazy Sections
 
-### FASE 6: Melhorar Mensagens de Erro Server-Side
+**Arquivo:** `src/components/landing/heimdall/HeimdallLanding.tsx`
 
-**Problema:** Algumas mensagens de erro podem revelar informacao sensivel
-
-**Correcao em edge functions:**
 ```typescript
-// ANTES (leak de info)
-return new Response(
-  JSON.stringify({ error: "Fornecedor nao encontrado" }),
-  { status: 401, ... }
-);
+import { lazy, Suspense } from 'react';
+import { HeimdallNavbar } from './HeimdallNavbar';
+import { HeroSection } from './HeroSection';
 
-// DEPOIS (generico)
-return new Response(
-  JSON.stringify({ error: "Credenciais invalidas" }),
-  { status: 401, ... }
-);
+// Lazy load below-the-fold sections
+const NewsTicker = lazy(() => import('./NewsTicker').then(m => ({ default: m.NewsTicker })));
+const TechStack3D = lazy(() => import('./TechStack3D').then(m => ({ default: m.TechStack3D })));
+const StatsGrid = lazy(() => import('./StatsGrid').then(m => ({ default: m.StatsGrid })));
+const HeimdallFooter = lazy(() => import('./HeimdallFooter').then(m => ({ default: m.HeimdallFooter })));
+
+export function HeimdallLanding() {
+  return (
+    <div className="heimdall-page">
+      {/* Critical above-the-fold - load immediately */}
+      <HeimdallNavbar />
+      <HeroSection />
+      
+      {/* Below-the-fold - lazy load */}
+      <Suspense fallback={<div className="loading-skeleton h-96" />}>
+        <TechStack3D />
+      </Suspense>
+      
+      <Suspense fallback={<div className="loading-skeleton h-64" />}>
+        <StatsGrid />
+      </Suspense>
+      
+      <Suspense fallback={<div className="loading-skeleton h-48" />}>
+        <NewsTicker />
+      </Suspense>
+      
+      <Suspense fallback={<div className="loading-skeleton h-96" />}>
+        <HeimdallFooter />
+      </Suspense>
+    </div>
+  );
+}
 ```
 
-**Padrao de mensagens de erro:**
-- Login falhou: "Credenciais invalidas" (nao revelar se email existe)
-- Rate limited: "Muitas tentativas. Tente novamente mais tarde."
-- Erro interno: "Erro interno do servidor" (sem stack trace)
+#### 5.3 Adicionar Web Vitals Reporting
+
+**Arquivo:** `src/utils/webVitals.ts` (NOVO)
+
+```typescript
+import { performanceMonitor } from './performanceMonitor';
+
+interface WebVitalMetric {
+  name: string;
+  value: number;
+  rating: 'good' | 'needs-improvement' | 'poor';
+}
+
+export function reportWebVitals(onPerfEntry?: (metric: WebVitalMetric) => void): void {
+  if (typeof window === 'undefined') return;
+  
+  // LCP Observer
+  if ('PerformanceObserver' in window) {
+    const lcpObserver = new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      const lastEntry = entries[entries.length - 1] as any;
+      const value = lastEntry.renderTime || lastEntry.loadTime;
+      
+      performanceMonitor.recordMetric('LCP', value);
+      
+      onPerfEntry?.({
+        name: 'LCP',
+        value,
+        rating: value < 2500 ? 'good' : value < 4000 ? 'needs-improvement' : 'poor',
+      });
+    });
+    lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+    
+    // FCP Observer
+    const fcpObserver = new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      const fcp = entries.find(e => e.name === 'first-contentful-paint');
+      if (fcp) {
+        performanceMonitor.recordMetric('FCP', fcp.startTime);
+        onPerfEntry?.({
+          name: 'FCP',
+          value: fcp.startTime,
+          rating: fcp.startTime < 1800 ? 'good' : fcp.startTime < 3000 ? 'needs-improvement' : 'poor',
+        });
+      }
+    });
+    fcpObserver.observe({ type: 'paint', buffered: true });
+  }
+}
+```
 
 ---
 
@@ -374,104 +550,114 @@ return new Response(
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/schemas/formSchemas.ts` | Schemas Zod centralizados para formularios |
+| `src/utils/imageOptimization.ts` | Utilitarios de otimizacao de imagens |
+| `src/utils/webVitals.ts` | Reporting de Core Web Vitals |
+| `src/utils/reactProfiler.ts` | Wrapper de profiling React |
+| `public/sw.js` | Service Worker para caching |
+| `public/hero-poster.webp` | Poster image para Hero video |
 
 ## Arquivos a Modificar
 
 | Arquivo | Modificacao |
 |---------|-------------|
-| `supabase/functions/_shared/validation.ts` | Adicionar Zod schemas e rate limiting |
-| `supabase/functions/supplier-auth/index.ts` | Validacao de senha com Zod, rate limiting |
-| `supabase/functions/invite-user/index.ts` | Rate limiting |
-| `src/pages/Auth.tsx` | Migrar para Zod validation |
-| `src/components/EmployeeModal.tsx` | Adicionar type="tel" |
-| `src/pages/SupplierRegistration.tsx` | Adicionar type="tel" |
-| `src/components/StakeholderModal.tsx` | Adicionar type="tel" |
-| `src/components/suppliers/SupplierManagementModal.tsx` | Adicionar type="tel" |
+| `index.html` | Preload fonts, critical CSS, prefetch |
+| `vite.config.ts` | Terser drop_console, framer-motion chunk, analyzer |
+| `src/components/landing/heimdall/heimdall.css` | Remover @import fonts |
+| `src/components/landing/heimdall/HeroSection.tsx` | Poster image + lazy video |
+| `src/components/landing/heimdall/HeimdallLanding.tsx` | Lazy load below-fold sections |
+| `src/components/ui/responsive-image.tsx` | WebP support, priority loading |
+| `src/main.tsx` | Registrar Service Worker |
 
 ---
 
-## Checklist de Validacao Final
+## Checklist de Validacao
 
-### Client-Side
+### Core Web Vitals
 
-- [x] Campo obrigatorio com mensagem clara
-- [x] Email com regex + backend validation
-- [ ] Phone: adicionar type="tel" nos inputs
-- [x] URL: new URL() parsing
-- [x] Date: parseDateSafe implementado
-- [x] Password: requisitos comunicados visualmente
-- [x] Confirm password: match validation
-- [x] Min/max length com mensagens
-- [x] Min/max value para numeros
-- [x] Custom regex (CEP, CPF, CNPJ)
+- [ ] LCP < 2.5s (video poster, font preload)
+- [ ] FCP < 1.8s (critical CSS, font preload)
+- [ ] FID < 100ms (code splitting, lazy loading)
+- [ ] CLS < 0.1 (aspect ratios, placeholders)
+- [ ] TTFB < 600ms (CDN, caching)
 
-### Server-Side
+### Bundle Size
 
-- [ ] Migrar validacao para Zod schemas
-- [ ] Rate limiting em login/register
-- [ ] Rate limiting em change_password
-- [ ] Rate limiting em invite-user
-- [ ] Mensagens de erro genericas
+- [ ] Main bundle < 200KB gzipped
+- [ ] Framer-motion chunked separadamente
+- [ ] console.log removidos em producao
+- [ ] Tree-shaking funcionando
 
-### Seguranca
+### Imagens
 
-- [x] XSS: DOMPurify implementado
-- [x] SQL Injection: Supabase prepared statements
-- [x] CSRF: Tokens via auth header
-- [x] Path traversal: Nao aplicavel
-- [x] File size limits: 20MB max
+- [ ] WebP com fallback
+- [ ] Lazy loading em todas imagens
+- [ ] srcset para responsividade
+- [ ] Priority loading para hero images
 
-### UX
+### Network
 
-- [x] Error messages perto do field
-- [x] Indicador visual de erro (border-destructive)
-- [x] Mensagens claras em portugues
-- [ ] Exemplos de formato em mais placeholders
-- [x] Real-time validation onBlur
+- [ ] Service Worker registrado
+- [ ] Font preload configurado
+- [ ] DNS prefetch configurado
+- [ ] Cache headers corretos
+
+### React
+
+- [ ] Lazy loading de rotas funcionando
+- [ ] Memoizacao em componentes pesados
+- [ ] Virtualizacao em listas longas
+- [ ] Profiler identificando re-renders
 
 ---
 
 ## Ordem de Execucao
 
-1. **Fase 1:** Adicionar type="tel" em inputs de telefone (baixo risco)
-2. **Fase 2:** Criar schemas Zod server-side em _shared/validation.ts
-3. **Fase 3:** Implementar rate limiting em edge functions criticas
-4. **Fase 4:** Migrar Auth.tsx para usar Zod
-5. **Fase 5:** Criar formSchemas.ts centralizado
-6. **Fase 6:** Revisar mensagens de erro para seguranca
-7. **Testes:** Validar fluxos de login, registro, supplier-auth
+1. **Fase 1:** Critical Rendering Path (maior impacto em LCP/FCP)
+2. **Fase 2:** Bundle Size Optimization
+3. **Fase 3:** Image Optimization
+4. **Fase 4:** Network Optimization
+5. **Fase 5:** React Optimizations
+6. **Testes:** Lighthouse, PageSpeed, WebPageTest
 
 ---
 
 ## Metricas de Sucesso
 
-| Metrica | Antes | Depois |
-|---------|-------|--------|
-| Inputs tel com type="tel" | 0 | 6+ |
-| Edge functions com rate limiting | 0 | 3 |
-| Validacao Zod server-side | 0% | 100% |
-| Mensagens de erro seguras | 70% | 100% |
+| Metrica | Antes | Target | Impacto Esperado |
+|---------|-------|--------|------------------|
+| LCP | ~3.5s | < 2.5s | -30% |
+| FCP | ~2.0s | < 1.8s | -10% |
+| Bundle Size | ~250KB | < 200KB | -20% |
+| Lighthouse Performance | ~70 | 90+ | +30% |
 
 ---
 
 ## Secao Tecnica
 
-### Dependencias Necessarias para Edge Functions
+### Dependencias Necessarias
 
-Para usar Zod em edge functions, importar via esm.sh:
-```typescript
-import { z } from 'https://esm.sh/zod@3.23.8';
-```
-
-### Consideracoes de Performance
-
-- Rate limiting in-memory tem limitacao: cada instancia da edge function tem seu proprio cache
-- Para producao robusta, considerar usar Supabase para armazenar rate limits
-- Alternativa: usar headers de rate limit do API Gateway
+Nenhuma nova dependencia obrigatoria. Opcionais:
+- `rollup-plugin-visualizer` para bundle analysis
 
 ### Compatibilidade
 
-- Zod v3.23.8 compativel com Deno
-- Rate limiting funciona por IP + identifier
-- File validation constants sincronizados entre frontend e backend
+- Service Worker: Todos browsers modernos
+- WebP: 95%+ coverage, fallback para PNG/JPG
+- Preload/Prefetch: Suportado universalmente
+
+### Testes de Performance
+
+```bash
+# Rodar Lighthouse localmente
+npx lighthouse https://daton-esg-insight.lovable.app --view
+
+# Analisar bundle
+npm run build -- --mode analyze
+```
+
+### Monitoramento Continuo
+
+Apos implementacao, monitorar via:
+1. Chrome DevTools > Performance tab
+2. PageSpeed Insights semanal
+3. `webVitals.ts` reportando metricas em producao
