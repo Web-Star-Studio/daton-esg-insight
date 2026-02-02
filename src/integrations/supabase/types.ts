@@ -22963,6 +22963,60 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string | null
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string | null
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string | null
+          updated_by_user_id?: string | null
+        }
+        Relationships: []
+      }
+      system_settings_history: {
+        Row: {
+          changed_at: string | null
+          changed_by_user_id: string | null
+          id: string
+          new_value: Json
+          old_value: Json | null
+          setting_key: string
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by_user_id?: string | null
+          id?: string
+          new_value: Json
+          old_value?: Json | null
+          setting_key: string
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by_user_id?: string | null
+          id?: string
+          new_value?: Json
+          old_value?: Json | null
+          setting_key?: string
+        }
+        Relationships: []
+      }
       tcfd_disclosures: {
         Row: {
           company_id: string
@@ -24610,6 +24664,7 @@ export type Database = {
         Returns: Json
       }
       check_supplier_mandatory_documents: { Args: never; Returns: undefined }
+      cleanup_old_activity_logs: { Args: never; Returns: undefined }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       debug_auth_status: { Args: never; Returns: Json }
       exec_sql: { Args: { query: string }; Returns: Json }

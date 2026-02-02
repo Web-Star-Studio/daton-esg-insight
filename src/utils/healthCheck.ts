@@ -146,6 +146,50 @@ export class HealthChecker {
     }
   }
 
+  async checkLoginSecurity(): Promise<HealthStatus> {
+    const startTime = Date.now();
+    try {
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+      const { count, error } = await supabase
+        .from('login_history')
+        .select('*', { count: 'exact', head: true })
+        .eq('login_success', false)
+        .gte('created_at', oneHourAgo.toISOString());
+
+      const responseTime = Date.now() - startTime;
+
+      if (error) {
+        return {
+          status: 'warn',
+          message: 'Unable to check login history',
+          responseTime,
+        };
+      }
+
+      if (count && count > 50) {
+        return {
+          status: 'warn',
+          message: `${count} failed logins in last hour - possible brute force`,
+          responseTime,
+        };
+      }
+
+      return {
+        status: 'pass',
+        message: 'Login activity normal',
+        responseTime,
+      };
+    } catch (error) {
+      return {
+        status: 'fail',
+        message: 'Login security check failed',
+        responseTime: Date.now() - startTime,
+      };
+    }
+  }
+
   private checkConfiguration(): HealthStatus {
     const requiredEnvVars = [
       'VITE_SUPABASE_URL',
