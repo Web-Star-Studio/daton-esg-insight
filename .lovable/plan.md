@@ -1,9 +1,9 @@
 
-# Plano de Implementacao de Acessibilidade WCAG 2.1 AA
+# Plano de Auditoria e Revisao de Conteudo
 
 ## Resumo Executivo
 
-Este plano apresenta uma auditoria completa de acessibilidade e implementacao de conformidade WCAG 2.1 AA para o sistema Daton ESG Insight, cobrindo HTML semantico, formularios, contraste, foco, navegacao por teclado, ARIA, imagens e testes.
+Esta auditoria abrangente cobre todos os textos da aplicacao Daton ESG Insight, identificando problemas de ortografia, consistencia terminologica, placeholders, mensagens do sistema, help text e onboarding. O plano apresenta um glossario de termos padronizados e implementa correcoes sistematicas.
 
 ---
 
@@ -11,480 +11,321 @@ Este plano apresenta uma auditoria completa de acessibilidade e implementacao de
 
 ### Pontos Fortes Identificados
 
-| Categoria | Status | Implementacao |
-|-----------|--------|---------------|
-| Skip Links | OK | `SkipLinks.tsx` com links para `#main-content` e `#navigation` |
-| HTML Semantico no MainLayout | OK | `<nav>`, `<main id="main-content">` implementados |
-| Focus Visible | OK | `focus-visible:ring-2` em 30+ componentes UI |
-| Reduced Motion | OK | `@media (prefers-reduced-motion)` no CSS global |
-| Labels em Forms | PARCIAL | 187+ arquivos com `<Label htmlFor>` |
-| aria-label em icons | PARCIAL | 35+ arquivos com aria-labels |
-| sr-only para textos ocultos | OK | 10+ componentes usando `.sr-only` |
-| Contrast Variables | OK | CSS variables com cores definidas em HSL |
-| role="alert" em erros | OK | Alert, FormMessage, EmptyState |
-| Accessible Form Hook | OK | `useAccessibleForm.ts` com aria-describedby |
-| Keyboard Handlers | PARCIAL | onKeyDown/onKeyPress em 33+ arquivos |
-| AlertDialog para confirmacoes | OK | 18+ usos em deletes destrutivos |
-| Breadcrumbs acessiveis | OK | aria-label="breadcrumb", separadores aria-hidden |
+| Categoria | Status | Detalhes |
+|-----------|--------|----------|
+| Conteudo Legal | OK | Paginas Termos, Privacidade e Seguranca com conteudo real e completo |
+| Toasts Padronizados | OK | Sistema unificado em `unifiedToast.ts` com success/error/warning/info |
+| Password Feedback | OK | `PasswordRequirements.tsx` com validacao em tempo real |
+| FormMessage em Forms | OK | Mensagens de erro via react-hook-form em 180+ arquivos |
+| Tooltips em Graficos | OK | 100+ arquivos com tooltips em Recharts |
+| FormDescription | OK | Presente em 16+ formularios complexos |
+| Empty States | OK | "Nenhum resultado encontrado" padronizado |
+| Loading States | OK | "Carregando..." e spinners consistentes |
 
 ### Problemas Identificados
 
-| Problema | Severidade | Localizacao | Impacto WCAG |
-|----------|------------|-------------|--------------|
-| `<html lang="en">` em vez de `"pt-BR"` | ALTA | index.html | 3.1.1 - Language of Page |
-| Falta de `<header>` semantico | ALTA | MainLayout.tsx | 1.3.1 - Info and Relationships |
-| Falta de `<footer>` semantico | ALTA | MainLayout.tsx | 1.3.1 - Info and Relationships |
-| Falta de `<fieldset>/<legend>` em grupos | MEDIA | Formularios | 1.3.1 - Info and Relationships |
-| Hierarquia de headings inconsistente | MEDIA | Diversos | 1.3.1 - Info and Relationships |
-| Botoes de icone sem aria-label | MEDIA | Diversos modais | 4.1.2 - Name, Role, Value |
-| Video sem controles acessiveis | MEDIA | HeroSection.tsx | 1.2.1 - Audio-only/Video-only |
-| Falta role="button" em divs clicaveis | BAIXA | FooterLink | 4.1.2 - Name, Role, Value |
-| Alguns inputs sem aria-describedby | BAIXA | Diversos | 1.3.1 - Info and Relationships |
-| Falta aria-current="page" no nav | BAIXA | AppSidebar | 2.4.8 - Location |
+| Problema | Severidade | Quantidade | Impacto |
+|----------|------------|------------|---------|
+| TODOs/FIXMEs no codigo | MEDIA | 13 arquivos | Funcionalidades incompletas |
+| Inconsistencia Excluir/Deletar/Remover | BAIXA | 166 arquivos | UX inconsistente |
+| Dashboard vs Painel | BAIXA | 275 arquivos | Terminologia mista |
+| Placeholders genericos | BAIXA | 101 arquivos | Falta de orientacao |
+| Falta de help text | MEDIA | Diversos | Campos sem dicas |
+| Comentario placeholder em edge function | MEDIA | `esg-dashboard` | Scoring incompleto |
 
 ---
 
-## Matriz de Conformidade WCAG 2.1 AA
+## Tarefa 1: Ortografia e Gramatica
 
-### Perceivable (Perceptivel)
+### Analise Realizada
 
-| Criterio | Status | Acao Necessaria |
-|----------|--------|-----------------|
-| 1.1.1 Non-text Content | PARCIAL | Adicionar alt text em imagens decorativas |
-| 1.3.1 Info and Relationships | PARCIAL | Adicionar header, footer, fieldset/legend |
-| 1.3.2 Meaningful Sequence | OK | Ordem DOM logica |
-| 1.3.4 Orientation | OK | Layout responsivo |
-| 1.4.1 Use of Color | PARCIAL | Garantir icones alem de cor em status |
-| 1.4.3 Contrast Minimum | OK | 4.5:1 nas variables CSS |
-| 1.4.4 Resize Text | OK | Layout nao quebra em 200% |
-| 1.4.10 Reflow | OK | Responsivo ate 320px |
-| 1.4.11 Non-text Contrast | OK | 3:1 em graficos |
-| 1.4.12 Text Spacing | OK | Sem quebra com spacing aumentado |
+A analise nao encontrou erros significativos de ortografia ou gramatica nos textos principais. O conteudo esta bem escrito em portugues brasileiro.
 
-### Operable (Operavel)
+**Pontos Verificados:**
+- Paginas legais (Termos, Privacidade, Seguranca): Corretas
+- Mensagens de toast: Corretas
+- Labels de formularios: Corretos
+- Descricoes de componentes: Corretas
 
-| Criterio | Status | Acao Necessaria |
-|----------|--------|-----------------|
-| 2.1.1 Keyboard | PARCIAL | Verificar todos elementos interativos |
-| 2.1.2 No Keyboard Trap | OK | Modais fecham com Escape |
-| 2.4.1 Bypass Blocks | OK | SkipLinks implementado |
-| 2.4.2 Page Titled | OK | Titulo dinamico |
-| 2.4.3 Focus Order | OK | Ordem tabindex logica |
-| 2.4.4 Link Purpose | PARCIAL | Alguns links sem contexto claro |
-| 2.4.6 Headings and Labels | PARCIAL | Hierarquia inconsistente |
-| 2.4.7 Focus Visible | OK | focus-visible:ring-2 |
-
-### Understandable (Compreensivel)
-
-| Criterio | Status | Acao Necessaria |
-|----------|--------|-----------------|
-| 3.1.1 Language of Page | FALHA | Corrigir lang="pt-BR" |
-| 3.1.2 Language of Parts | N/A | Conteudo em portugues |
-| 3.2.1 On Focus | OK | Nenhuma mudanca inesperada |
-| 3.2.2 On Input | OK | Formularios controlados |
-| 3.3.1 Error Identification | OK | FormMessage com role="alert" |
-| 3.3.2 Labels or Instructions | OK | Labels para inputs |
-| 3.3.3 Error Suggestion | OK | Mensagens de erro especificas |
-
-### Robust
-
-| Criterio | Status | Acao Necessaria |
-|----------|--------|-----------------|
-| 4.1.1 Parsing | OK | React gera HTML valido |
-| 4.1.2 Name, Role, Value | PARCIAL | Adicionar aria-labels em icones |
-| 4.1.3 Status Messages | PARCIAL | Adicionar aria-live em mais areas |
+**Nenhuma correcao ortografica necessaria.**
 
 ---
 
-## Plano de Correcoes
+## Tarefa 2: Glossario de Terminologia
 
-### FASE 1: Correcoes Criticas (Lang e HTML Semantico)
+### Glossario Padronizado
 
-#### 1.1 Corrigir Atributo lang
+| Termo Padrao | Variantes a Evitar | Uso |
+|--------------|-------------------|-----|
+| Excluir | Deletar, Remover, Apagar | Acoes destrutivas permanentes |
+| Remover | - | Desvincular (nao permanente) |
+| Salvar | Guardar, Armazenar | Persistir dados |
+| Dashboard | Painel | Manter "Dashboard" por ser termo tecnico ESG |
+| Usuario | usuario (sem acento) | Sempre com acento |
+| Email | E-mail | Sem hifen (padrao atual) |
+| Carregando | Loading | Preferir portugues |
+| Cancelar | Voltar (em modais) | Para fechar sem salvar |
+| Confirmar | OK, Sim | Para acoes afirmativas |
+| Sucesso | OK | Em mensagens de confirmacao |
+| Erro | Falha | Em mensagens de erro |
 
-**Arquivo:** `index.html`
+### Arquivos Principais para Padronizar
 
-```html
-<!-- ANTES (linha 2) -->
-<html lang="en">
+A terminologia esta majoritariamente consistente. Principais areas:
 
-<!-- DEPOIS -->
-<html lang="pt-BR">
-```
+1. **"Excluir" vs "Remover"**: 166 arquivos usam ambos
+   - Recomendacao: "Excluir" para delecao permanente, "Remover" para desvincular
 
-#### 1.2 Adicionar Header e Footer Semanticos ao MainLayout
+2. **"Dashboard" vs "Painel"**: 275 arquivos
+   - Recomendacao: Manter "Dashboard" (termo tecnico aceito em ESG)
 
-**Arquivo:** `src/components/MainLayout.tsx`
+3. **"Usuario" com acento**: Verificado e correto (98 arquivos)
+
+---
+
+## Tarefa 3: Placeholders e TODOs
+
+### TODOs Identificados (13 arquivos)
+
+| Arquivo | Linha | Conteudo |
+|---------|-------|----------|
+| `src/utils/logger.ts` | 219 | TODO: Integrate with Sentry |
+| `src/components/AttendanceReportsModal.tsx` | 108 | TODO: Implementar exportacao real |
+| `src/components/GRIIndicatorFormModal.tsx` | 104 | TODO: Implement API call |
+| `src/pages/OuvidoriaClientes.tsx` | 22 | TODO: Implementar hook useOmbudsman |
+| `src/components/ErrorBoundary.tsx` | 39 | TODO: Send to Sentry |
+| `src/components/financial/BalanceteVerificacao.tsx` | 26 | TODO: Implementar getBalancete |
+| `src/components/financial/AccountStatement.tsx` | 35 | TODO: Implementar getAccountStatement |
+| `src/components/intelligence/FeedbackCollector.tsx` | 80 | TODO: Uncomment when table created |
+| `src/hooks/useTourAnalytics.ts` | 46 | TODO: Implementar envio |
+| `src/utils/performanceMonitor.ts` | 91 | TODO: Send to monitoring |
+| `src/components/ActivityMonitoringModal.tsx` | 81 | TODO: Upload files |
+| `src/components/EmployeeScheduleAssignmentModal.tsx` | 40 | TODO: Implementar API |
+| `src/components/RootCauseAnalysisModal.tsx` | 155 | TODO: Integrar com API |
+
+### Placeholders em Edge Functions
+
+| Arquivo | Problema |
+|---------|----------|
+| `supabase/functions/esg-dashboard/index.ts` | Linhas 429-433: "placeholder scoring" comments |
+
+### Acoes
+
+1. **Criar arquivo de documentacao de TODOs**
 
 ```typescript
-// ANTES (linha 92-99)
-<div className="flex-1 flex flex-col min-w-0">
-  <AppHeader />
-  <main id="main-content" className="flex-1 p-3 sm:p-4 md:p-6 bg-muted/10">
-    <Breadcrumbs />
-    {children}
-  </main>
-</div>
-
-// DEPOIS
-<div className="flex-1 flex flex-col min-w-0">
-  <header role="banner">
-    <AppHeader />
-  </header>
-  <main id="main-content" className="flex-1 p-3 sm:p-4 md:p-6 bg-muted/10">
-    <Breadcrumbs />
-    {children}
-  </main>
-  <footer role="contentinfo" className="sr-only">
-    <p>Daton - Plataforma ESG Inteligente</p>
-  </footer>
-</div>
-```
-
----
-
-### FASE 2: Melhorias em Formularios
-
-#### 2.1 Criar Componente Fieldset Acessivel
-
-**Arquivo:** `src/components/ui/fieldset.tsx` (NOVO)
-
-```typescript
-import * as React from "react";
-import { cn } from "@/lib/utils";
-
-interface FieldsetProps extends React.FieldsetHTMLAttributes<HTMLFieldSetElement> {
-  legend: string;
-  legendClassName?: string;
-  hideLegend?: boolean;
-}
-
-const Fieldset = React.forwardRef<HTMLFieldSetElement, FieldsetProps>(
-  ({ legend, legendClassName, hideLegend, className, children, ...props }, ref) => {
-    return (
-      <fieldset
-        ref={ref}
-        className={cn("space-y-4 border-0 p-0 m-0", className)}
-        {...props}
-      >
-        <legend 
-          className={cn(
-            hideLegend ? "sr-only" : "text-sm font-medium text-foreground mb-2",
-            legendClassName
-          )}
-        >
-          {legend}
-        </legend>
-        {children}
-      </fieldset>
-    );
-  }
-);
-Fieldset.displayName = "Fieldset";
-
-export { Fieldset };
-```
-
-#### 2.2 Atualizar Formulario de Registro com Fieldsets
-
-**Arquivo:** `src/pages/Auth.tsx`
-
-Envolver grupos de campos com `<Fieldset>`:
-- "Dados da Empresa" (company_name, cnpj)
-- "Dados do Usuário" (user_name, email, password)
-
----
-
-### FASE 3: Hierarquia de Headings
-
-#### 3.1 Criar Utilitario de Verificacao de Headings
-
-**Arquivo:** `src/utils/accessibilityAudit.ts` (NOVO)
-
-```typescript
+// src/utils/todoRegistry.ts
 /**
- * Accessibility Audit Utilities
- * Development-only tools for WCAG compliance verification
+ * Registro de funcionalidades pendentes de implementacao
+ * 
+ * ## Integracao Futura
+ * - logger.ts: Integracao com Sentry para error reporting
+ * - performanceMonitor.ts: Envio de metricas para servico de monitoramento
+ * - ErrorBoundary.tsx: Captura de erros em producao
+ * 
+ * ## APIs Pendentes
+ * - BalanceteVerificacao: getBalancete service
+ * - AccountStatement: getAccountStatement service
+ * - OuvidoriaClientes: useOmbudsman hook
+ * - EmployeeScheduleAssignment: API de atribuicao de escala
+ * - RootCauseAnalysis: API de salvar analise
+ * 
+ * ## Melhorias de UX
+ * - AttendanceReports: Exportacao real de relatorios
+ * - ActivityMonitoring: Upload de evidencias
+ * 
+ * ## Analytics
+ * - useTourAnalytics: Envio para backend
+ * - FeedbackCollector: Tabela ai_feedback_logs
  */
-
-export function auditHeadingHierarchy(): {
-  valid: boolean;
-  issues: string[];
-  headings: { level: number; text: string }[];
-} {
-  if (typeof document === 'undefined') {
-    return { valid: true, issues: [], headings: [] };
-  }
-
-  const headings: { level: number; text: string }[] = [];
-  const issues: string[] = [];
-  let lastLevel = 0;
-  let hasH1 = false;
-
-  document.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((el) => {
-    const level = parseInt(el.tagName[1]);
-    const text = el.textContent?.trim() || '';
-    headings.push({ level, text });
-
-    if (level === 1) {
-      if (hasH1) {
-        issues.push(`Multiple h1 found: "${text}"`);
-      }
-      hasH1 = true;
-    }
-
-    if (level > lastLevel + 1 && lastLevel !== 0) {
-      issues.push(
-        `Heading level skip: h${lastLevel} to h${level} ("${text}")`
-      );
-    }
-
-    lastLevel = level;
-  });
-
-  if (!hasH1) {
-    issues.push('No h1 heading found on page');
-  }
-
-  return {
-    valid: issues.length === 0,
-    issues,
-    headings,
-  };
-}
-
-// Run audit in development
-if (import.meta.env.DEV) {
-  setTimeout(() => {
-    const audit = auditHeadingHierarchy();
-    if (!audit.valid) {
-      console.warn('🔍 Accessibility - Heading Issues:', audit.issues);
-    }
-  }, 2000);
-}
+export const PENDING_FEATURES = {
+  SENTRY_INTEGRATION: 'logger.ts, ErrorBoundary.tsx',
+  FINANCIAL_APIS: 'BalanceteVerificacao, AccountStatement',
+  TOUR_ANALYTICS: 'useTourAnalytics.ts',
+};
 ```
 
-#### 3.2 Padronizar Hierarquia em Paginas
-
-**Padrao a seguir em todas as paginas:**
+2. **Corrigir placeholder scoring em esg-dashboard**
 
 ```typescript
-// Cada pagina deve ter UM h1 como titulo principal
-<h1 className="text-3xl font-bold">Titulo da Pagina</h1>
+// Substituir linhas 429-433 em esg-dashboard/index.ts
+// DE:
+// Policy compliance (30 points max) - placeholder scoring
+governanceScore += 25 // 95% compliance gets 25/30 points
 
-// Secoes com h2
-<h2 className="text-xl font-semibold">Secao Principal</h2>
+// Board diversity (20 points max) - placeholder scoring  
+governanceScore += 12 // 40% diversity gets 12/20 points
 
-// Subsecoes com h3
-<h3 className="text-lg font-medium">Subsecao</h3>
+// PARA:
+// Policy compliance (30 points max) - baseado em dados reais quando disponiveis
+const policyComplianceScore = Math.min(30, Math.round((complianceRate / 100) * 30));
+governanceScore += policyComplianceScore;
+
+// Board diversity (20 points max) - requer dados de diversidade
+// Por enquanto, usa score neutro ate implementacao de metricas de diversidade
+governanceScore += 10; // Score base ate implementacao de metricas
 ```
 
 ---
 
-### FASE 4: Botoes de Icone e ARIA
+## Tarefa 4: Mensagens do Sistema
 
-#### 4.1 Criar Componente IconButton Acessivel
+### Padrao de Mensagens Implementado
 
-**Arquivo:** `src/components/ui/icon-button.tsx` (NOVO)
+O sistema ja possui um padrao bem definido em `src/utils/unifiedToast.ts`:
 
-```typescript
-import * as React from "react";
-import { Button, ButtonProps } from "./button";
-import { cn } from "@/lib/utils";
+| Tipo | Duracao | Formato Recomendado |
+|------|---------|---------------------|
+| Success | 4000ms | "[Acao] realizado(a) com sucesso!" |
+| Error | 6000ms | "Erro ao [acao]. [Sugestao]." |
+| Warning | 5000ms | "Atencao: [situacao]. [Acao recomendada]." |
+| Info | 4000ms | "[Informacao contextual]." |
+| Loading | Promise | "[Acao]..." |
 
-interface IconButtonProps extends Omit<ButtonProps, 'children'> {
-  icon: React.ReactNode;
-  label: string;
-  showLabel?: boolean;
-}
+### Melhorias Propostas
 
-const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ icon, label, showLabel = false, className, ...props }, ref) => {
-    return (
-      <Button
-        ref={ref}
-        size={showLabel ? "default" : "icon"}
-        aria-label={label}
-        className={cn("gap-2", className)}
-        {...props}
-      >
-        <span aria-hidden="true">{icon}</span>
-        {showLabel ? (
-          <span>{label}</span>
-        ) : (
-          <span className="sr-only">{label}</span>
-        )}
-      </Button>
-    );
-  }
-);
-IconButton.displayName = "IconButton";
-
-export { IconButton };
-```
-
-#### 4.2 Atualizar Botoes sem Labels
-
-**Exemplos de correcao em diversos arquivos:**
+1. **Criar constantes de mensagens padronizadas**
 
 ```typescript
-// ANTES
-<Button variant="ghost" size="icon">
-  <MoreVertical className="h-4 w-4" />
-</Button>
-
-// DEPOIS
-<Button variant="ghost" size="icon" aria-label="Mais opcoes">
-  <MoreVertical className="h-4 w-4" aria-hidden="true" />
-  <span className="sr-only">Mais opcoes</span>
-</Button>
+// src/constants/messages.ts
+export const MESSAGES = {
+  // Sucesso
+  SAVE_SUCCESS: 'Dados salvos com sucesso!',
+  CREATE_SUCCESS: (item: string) => `${item} criado(a) com sucesso!`,
+  UPDATE_SUCCESS: (item: string) => `${item} atualizado(a) com sucesso!`,
+  DELETE_SUCCESS: (item: string) => `${item} excluido(a) com sucesso!`,
+  
+  // Erro
+  SAVE_ERROR: 'Erro ao salvar. Tente novamente.',
+  CREATE_ERROR: (item: string) => `Erro ao criar ${item}. Verifique os dados e tente novamente.`,
+  UPDATE_ERROR: (item: string) => `Erro ao atualizar ${item}. Tente novamente.`,
+  DELETE_ERROR: (item: string) => `Erro ao excluir ${item}. Tente novamente.`,
+  LOAD_ERROR: 'Erro ao carregar dados. Atualize a pagina.',
+  NETWORK_ERROR: 'Erro de conexao. Verifique sua internet.',
+  
+  // Confirmacao
+  DELETE_CONFIRM: (item: string) => `Tem certeza que deseja excluir este(a) ${item}? Esta acao nao pode ser desfeita.`,
+  UNSAVED_CHANGES: 'Voce tem alteracoes nao salvas. Deseja sair mesmo assim?',
+  
+  // Vazio
+  NO_RESULTS: 'Nenhum resultado encontrado.',
+  NO_DATA: (item: string) => `Nenhum(a) ${item} cadastrado(a).`,
+  
+  // Loading
+  LOADING: 'Carregando...',
+  SAVING: 'Salvando...',
+  PROCESSING: 'Processando...',
+  
+  // Validacao
+  REQUIRED_FIELD: 'Campo obrigatorio',
+  INVALID_EMAIL: 'Email invalido',
+  INVALID_CNPJ: 'CNPJ invalido. Digite 14 digitos.',
+  PASSWORD_MISMATCH: 'As senhas nao coincidem',
+};
 ```
 
 ---
 
-### FASE 5: Video Acessivel
+## Tarefa 5: Help Text
 
-#### 5.1 Adicionar Controles ao Video do Hero
+### Campos que Necessitam Help Text
 
-**Arquivo:** `src/components/landing/heimdall/HeroSection.tsx`
+| Campo | Arquivo | Help Text Sugerido |
+|-------|---------|-------------------|
+| CNPJ | Auth.tsx | "Apenas numeros, 14 digitos" |
+| Email | Auth.tsx | "Use seu email corporativo" |
+| Senha | Auth.tsx | "Min 8 caracteres, 1 maiuscula, 1 numero, 1 especial" (ja implementado) |
+| CEP | BranchFormModal.tsx | "Digite o CEP para preenchimento automatico" |
+| Fator de Emissao | EmissionFactorModal | "Valor em kgCO2e por unidade de atividade" |
+| Data de Vencimento | LicenseModal | "Data limite para renovacao da licenca" |
 
-```typescript
-// ANTES (linha 180-197)
-<video
-  autoPlay 
-  muted 
-  loop 
-  playsInline
-  onLoadedData={() => setVideoLoaded(true)}
-  ...
->
+### Implementacao de Help Text Padronizado
 
-// DEPOIS - Adicionar aria-label e role
-<video
-  autoPlay 
-  muted 
-  loop 
-  playsInline
-  onLoadedData={() => setVideoLoaded(true)}
-  aria-label="Video demonstrativo do dashboard ESG - decorativo"
-  role="presentation"
-  aria-hidden="true"  // Video puramente decorativo
-  ...
->
-```
-
----
-
-### FASE 6: Navegacao e Estado Atual
-
-#### 6.1 Adicionar aria-current ao Sidebar
-
-**Arquivo:** `src/components/AppSidebar.tsx`
+O sistema ja usa `FormDescription` para help text. Criar componente auxiliar:
 
 ```typescript
-// Em cada item de navegacao ativo
-<SidebarMenuButton 
-  isActive={isActive}
-  aria-current={isActive ? "page" : undefined}
-  // ...
->
-```
+// src/components/ui/form-hint.tsx
+import { cn } from '@/lib/utils';
 
-#### 6.2 Criar Link com Indicador de Rota Atual
-
-**Arquivo:** `src/components/ui/nav-link.tsx` (NOVO)
-
-```typescript
-import { Link, LinkProps, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-
-interface NavLinkProps extends LinkProps {
-  activeClassName?: string;
+interface FormHintProps {
+  id: string;
+  children: React.ReactNode;
+  className?: string;
 }
 
-export function NavLink({ 
-  to, 
-  className, 
-  activeClassName = "font-semibold",
-  children,
-  ...props 
-}: NavLinkProps) {
-  const location = useLocation();
-  const isActive = location.pathname === to;
-
+export function FormHint({ id, children, className }: FormHintProps) {
   return (
-    <Link
-      to={to}
-      className={cn(className, isActive && activeClassName)}
-      aria-current={isActive ? "page" : undefined}
-      {...props}
+    <small 
+      id={id}
+      className={cn("text-xs text-muted-foreground mt-1", className)}
     >
       {children}
-    </Link>
+    </small>
   );
 }
+
+// Uso:
+<Input aria-describedby="cnpj-hint" />
+<FormHint id="cnpj-hint">Apenas numeros, 14 digitos</FormHint>
 ```
 
 ---
 
-### FASE 7: Anuncios de Status
+## Tarefa 6: Onboarding
 
-#### 7.1 Criar Componente de Live Region
+### Estado Atual
 
-**Arquivo:** `src/components/ui/live-region.tsx` (NOVO)
+O sistema possui onboarding robusto:
+- `CleanOnboardingMain.tsx`: Fluxo principal de onboarding
+- `EnhancedDataCreationStep.tsx`: Criacao de dados iniciais
+- `UnifiedTourSystem.tsx`: Tour guiado
+- `SmartContentGenerator.tsx`: Geracao de conteudo inteligente
+
+### Melhorias Propostas
+
+1. **Link de ajuda em cada pagina**
+
+Adicionar ao layout principal um link contextual de ajuda:
 
 ```typescript
-import * as React from "react";
-import { cn } from "@/lib/utils";
+// src/components/ContextualHelp.tsx
+import { HelpCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLocation } from 'react-router-dom';
 
-interface LiveRegionProps extends React.HTMLAttributes<HTMLDivElement> {
-  politeness?: "polite" | "assertive";
-  atomic?: boolean;
-  relevant?: "additions" | "removals" | "text" | "all";
+const HELP_LINKS: Record<string, string> = {
+  '/dashboard': '/documentacao#dashboard',
+  '/inventario-gee': '/documentacao#inventario',
+  '/gestao-licencas': '/documentacao#licencas',
+  '/nao-conformidades': '/documentacao#qualidade',
+  // ... mapear todas as rotas
+};
+
+export function ContextualHelp() {
+  const location = useLocation();
+  const helpLink = HELP_LINKS[location.pathname] || '/documentacao';
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => window.open(helpLink, '_blank')}
+            aria-label="Ajuda"
+          >
+            <HelpCircle className="h-5 w-5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Acessar documentacao</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
-
-const LiveRegion = React.forwardRef<HTMLDivElement, LiveRegionProps>(
-  ({ politeness = "polite", atomic = true, relevant = "additions", className, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        role="status"
-        aria-live={politeness}
-        aria-atomic={atomic}
-        aria-relevant={relevant}
-        className={cn("sr-only", className)}
-        {...props}
-      />
-    );
-  }
-);
-LiveRegion.displayName = "LiveRegion";
-
-export { LiveRegion };
-```
-
----
-
-### FASE 8: Indicadores Visuais Alem de Cor
-
-#### 8.1 Atualizar Badge de Status
-
-Garantir que badges de status usem icones alem de cor:
-
-```typescript
-// ANTES
-<Badge className="bg-green-500">Ativo</Badge>
-<Badge className="bg-red-500">Inativo</Badge>
-
-// DEPOIS
-<Badge className="bg-green-500 gap-1">
-  <CheckCircle className="h-3 w-3" aria-hidden="true" />
-  Ativo
-</Badge>
-<Badge className="bg-red-500 gap-1">
-  <XCircle className="h-3 w-3" aria-hidden="true" />
-  Inativo
-</Badge>
 ```
 
 ---
@@ -493,69 +334,58 @@ Garantir que badges de status usem icones alem de cor:
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/components/ui/fieldset.tsx` | Fieldset acessivel com legend |
-| `src/components/ui/icon-button.tsx` | Botao de icone com aria-label |
-| `src/components/ui/nav-link.tsx` | Link com aria-current |
-| `src/components/ui/live-region.tsx` | Componente de aria-live |
-| `src/utils/accessibilityAudit.ts` | Utilitarios de auditoria (dev) |
+| `src/constants/messages.ts` | Mensagens padronizadas do sistema |
+| `src/components/ui/form-hint.tsx` | Componente de help text |
+| `src/components/ContextualHelp.tsx` | Link de ajuda contextual |
+| `src/utils/todoRegistry.ts` | Documentacao de funcionalidades pendentes |
 
 ## Arquivos a Modificar
 
 | Arquivo | Modificacao |
 |---------|-------------|
-| `index.html` | lang="pt-BR" |
-| `src/components/MainLayout.tsx` | header, footer semanticos |
-| `src/pages/Auth.tsx` | Fieldsets em grupos de campos |
-| `src/components/landing/heimdall/HeroSection.tsx` | Video com aria-hidden |
-| `src/components/AppSidebar.tsx` | aria-current="page" |
-| Diversos modais | aria-label em botoes de icone |
+| `supabase/functions/esg-dashboard/index.ts` | Remover comentarios placeholder |
+| `src/pages/Auth.tsx` | Adicionar help text em CNPJ |
+| `src/components/MainLayout.tsx` | Adicionar ContextualHelp no header |
 
 ---
 
-## Checklist de Validacao Final
+## Checklist de Validacao
 
-### Testes Automatizados
+### Ortografia e Gramatica
+- [x] Verificado - Nenhum erro encontrado
 
-- [ ] Axe DevTools: 0 violations (WCAG 2.1 AA)
-- [ ] Lighthouse Accessibility: 90+
-- [ ] WAVE Extension: Sem erros criticos
+### Consistencia Terminologica
+- [x] Glossario definido
+- [ ] Padronizar uso de Excluir/Remover
+- [ ] Manter Dashboard como termo padrao
 
-### Testes Manuais - Teclado
+### Placeholders
+- [x] Zero Lorem Ipsum encontrado
+- [ ] Documentar TODOs existentes
+- [ ] Remover placeholder scoring de edge function
 
-- [ ] Tab navega para todos elementos interativos
-- [ ] Shift+Tab volta para elemento anterior
-- [ ] Enter ativa buttons e links
-- [ ] Escape fecha modais e menus
-- [ ] Space ativa checkboxes e radios
-- [ ] Nenhum elemento com keyboard trap
+### Mensagens do Sistema
+- [x] Toast system padronizado
+- [ ] Criar constantes de mensagens
 
-### Testes Manuais - Screen Reader
+### Help Text
+- [x] FormDescription em formularios complexos
+- [ ] Adicionar FormHint em campos criticos
 
-- [ ] VoiceOver (Mac): Navegacao completa
-- [ ] NVDA (Windows): Formularios legiveis
-- [ ] Headings anunciados corretamente
-- [ ] Erros de form anunciados
-
-### Testes Visuais
-
-- [ ] Zoom 200%: Layout nao quebra
-- [ ] High Contrast Mode: Conteudo visivel
-- [ ] Focus indicator: Visivel em todos elementos
-- [ ] Cores: Nao usadas sozinhas para informacao
+### Onboarding
+- [x] Sistema de tour implementado
+- [ ] Adicionar link de ajuda contextual
 
 ---
 
 ## Ordem de Execucao
 
-1. **Fase 1:** Correcoes criticas (lang, header, footer)
-2. **Fase 2:** Componente Fieldset e uso em forms
-3. **Fase 3:** Hierarquia de headings e auditoria
-4. **Fase 4:** IconButton e aria-labels
-5. **Fase 5:** Video acessivel
-6. **Fase 6:** Navegacao com aria-current
-7. **Fase 7:** Live regions para status
-8. **Fase 8:** Indicadores visuais alem de cor
-9. **Testes:** Axe, Lighthouse, teclado, screen reader
+1. **Fase 1:** Criar constantes de mensagens (`messages.ts`)
+2. **Fase 2:** Criar componente FormHint e aplicar em Auth.tsx
+3. **Fase 3:** Criar ContextualHelp e adicionar ao layout
+4. **Fase 4:** Documentar TODOs em todoRegistry.ts
+5. **Fase 5:** Corrigir placeholder scoring em esg-dashboard
+6. **Validacao:** Revisar todos os textos da interface
 
 ---
 
@@ -563,59 +393,44 @@ Garantir que badges de status usem icones alem de cor:
 
 | Metrica | Antes | Depois |
 |---------|-------|--------|
-| Lighthouse Accessibility | ~85 | 95+ |
-| Axe Violations | ~15 | 0 |
-| lang correto | NAO | SIM |
-| Elementos semanticos | PARCIAL | 100% |
-| aria-label em icons | 70% | 100% |
-| Keyboard navigable | 90% | 100% |
+| Erros ortograficos | 0 | 0 |
+| TODOs documentados | 0% | 100% |
+| Mensagens padronizadas | Parcial | 100% |
+| Campos com help text | 50% | 90% |
+| Paginas com link de ajuda | 0% | 100% |
 
 ---
 
 ## Secao Tecnica
 
-### Ferramentas de Teste
+### Validacao de Conteudo
 
 ```bash
-# Lighthouse CLI
-npx lighthouse https://daton-esg-insight.lovable.app --only-categories=accessibility --view
+# Buscar Lorem Ipsum
+grep -r "Lorem ipsum" src --include="*.tsx"
+# Resultado: 0 matches
 
-# Axe CLI
-npx @axe-core/cli https://daton-esg-insight.lovable.app
+# Buscar TODOs
+grep -rn "// TODO\|// FIXME" src --include="*.tsx" --include="*.ts"
+# Resultado: 13 matches
+
+# Verificar placeholders genericos
+grep -r "Inserir aqui\|EXAMPLE\|SAMPLE" src --include="*.tsx"
+# Resultado: 0 placeholders problematicos
 ```
 
-### Extensoes de Browser Recomendadas
+### Ferramentas de Revisao
 
-1. **axe DevTools** - Auditorias WCAG automatizadas
-2. **WAVE Evaluation Tool** - Visualizacao de problemas
-3. **Headings Map** - Verificar hierarquia de headings
-4. **Accessibility Insights** - Testes guiados
+1. **LanguageTool**: Verificacao gramatical em portugues
+2. **Hunspell pt-BR**: Verificacao ortografica
+3. **ESLint**: Verificacao de comentarios TODO/FIXME
 
-### Screen Readers para Teste
-
-| OS | Screen Reader | Comando |
-|----|---------------|---------|
-| macOS | VoiceOver | Cmd+F5 |
-| Windows | NVDA | Ctrl+Alt+N |
-| Windows | Narrator | Win+Ctrl+Enter |
-| Linux | Orca | Super+Alt+S |
-
-### Contrast Checker
-
-Usar WebAIM Contrast Checker para verificar:
-- Texto normal (< 18pt): 4.5:1 minimo
-- Texto grande (>= 18pt ou bold 14pt+): 3:1 minimo
-- Elementos graficos: 3:1 minimo
-
-### Regex para Encontrar Problemas
+### Scripts de Auditoria
 
 ```bash
-# Buscar botoes sem aria-label
-grep -r 'size="icon"' src/components --include="*.tsx" | grep -v "aria-label"
+# Contar termos inconsistentes
+grep -rc "Excluir\|Deletar\|Remover" src/components | sort -t: -k2 -rn | head -10
 
-# Buscar imagens sem alt
-grep -r '<img' src --include="*.tsx" | grep -v 'alt='
-
-# Buscar icons sem aria-hidden
-grep -r 'Icon\s' src --include="*.tsx" | grep -v 'aria-hidden'
+# Verificar toasts nao padronizados
+grep -rn "toast\." src --include="*.tsx" | grep -v "toast\.success\|toast\.error\|toast\.warning\|toast\.info"
 ```
