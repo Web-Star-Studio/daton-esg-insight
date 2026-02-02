@@ -1,456 +1,314 @@
 
 
-# Auditoria Completa de Responsividade - Plano de Implementacao
+# Plano de Teste e Correcao de Cross-Browser - Auditoria Completa
 
 ## Resumo Executivo
 
-Este plano aborda uma auditoria completa de responsividade da aplicacao Daton ESG Insight em todos os breakpoints obrigatorios (320px, 480px, 768px, 1024px, 1366px, 1920px). A auditoria cobrira horizontal overflow, touch targets, navegacao responsiva, imagens, formularios e tabelas.
+Este plano estabelece uma auditoria abrangente de compatibilidade cross-browser para a aplicacao Daton ESG, cobrindo Chrome, Safari, Firefox e Edge em dispositivos desktop e mobile. O plano inclui identificacao de problemas potenciais, implementacao de correcoes e criacao de uma matriz de compatibilidade.
 
 ---
 
-## Diagnostico do Estado Atual
+## Analise do Estado Atual
 
-### Infraestrutura Responsiva Existente
+### Infraestrutura de Build
 
 | Recurso | Status | Avaliacao |
 |---------|--------|-----------|
-| Tailwind CSS | Configurado | Breakpoints padrao (sm:640px, md:768px, lg:1024px, xl:1280px, 2xl:1400px) |
-| `useIsMobile` hook | Existe | Usa 768px como breakpoint mobile |
-| `useBreakpoint` hook | Existe | Detecta mobile/tablet/desktop (768/1280) |
-| Sidebar responsiva | Implementada | Sheet em mobile, fixed em desktop |
-| Landing page | Usa `isMobile` state | Responsividade inline |
-| CSS Variables responsivas | Parcial | Chat widths definidos por breakpoint |
+| Vite + React | v5.4.19 / v18.3.1 | Moderno, boa compatibilidade |
+| PostCSS + Autoprefixer | Configurado | Prefixos automaticos |
+| Tailwind CSS | v3.4.17 | Suporte robusto cross-browser |
+| TypeScript | v5.8.3 | Transpilacao para ES2015+ |
 
-### Problemas Identificados
+### Bibliotecas Criticas para Compatibilidade
 
-| Problema | Severidade | Localizacao |
-|----------|------------|-------------|
-| Nenhum uso de `srcset` ou `loading="lazy"` em imagens | ALTA | Projeto inteiro |
-| Breakpoint mobile = 768px (nao cobre 320-480px) | MEDIA | `use-mobile.tsx` |
-| Touch targets nao garantidos 44x44px | ALTA | Botoes pequenos (h-7, h-8, h-9) |
-| Texto `text-xs` (12px) em varios lugares | MEDIA | 704 arquivos com text-xs/text-sm |
-| Formularios sem layout mobile-first | MEDIA | Alguns formularios usam grid fixo |
-| Tabelas sem container de scroll horizontal | BAIXA | Maioria ja usa `overflow-x-auto` |
-| Media queries CSS customizadas limitadas | MEDIA | `index.css` so tem 768px/1280px |
+| Biblioteca | Versao | Risco de Compatibilidade |
+|------------|--------|-------------------------|
+| react-day-picker | v8.10.1 | Safari: OK (nao usa Date nativo) |
+| framer-motion | v12.23.22 | Prefixos webkit incluidos |
+| @radix-ui/* | Ultimas versoes | Acessibilidade built-in |
+| recharts | v2.15.4 | SVG - universal |
+| leaflet | v1.9.4 | Testado em todos navegadores |
 
----
+### Pontos Fortes Identificados
 
-## Arquitetura da Solucao
+1. **Autoprefixer configurado** - PostCSS adiciona prefixos automaticamente
+2. **Tailwind CSS** - Gera CSS compativel com todos os navegadores modernos
+3. **react-day-picker** - Nao depende de `<input type="date">` nativo
+4. **Radix UI** - Componentes acessiveis com suporte a teclado built-in
+5. **Focus states** - `focus-visible` presente em 21 arquivos
+6. **Keyboard navigation** - Hook `useKeyboardNavigation` implementado
+7. **ARIA labels** - Presentes em 13+ componentes
 
-```text
-+------------------------------------------+
-|     FASE 1: INFRAESTRUTURA BASE          |
-|  - Atualizar breakpoints                 |
-|  - Criar utility classes                 |
-|  - Componente ResponsiveImage            |
-+------------------------------------------+
-            |
-            v
-+------------------------------------------+
-|     FASE 2: COMPONENTES CORE             |
-|  - Button touch targets                  |
-|  - Input/Select sizing                   |
-|  - Sidebar mobile refinements            |
-+------------------------------------------+
-            |
-            v
-+------------------------------------------+
-|     FASE 3: LAYOUT PRINCIPAL             |
-|  - MainLayout padding mobile             |
-|  - Header mobile                         |
-|  - Navegacao hamburger                   |
-+------------------------------------------+
-            |
-            v
-+------------------------------------------+
-|     FASE 4: PAGINAS CRITICAS             |
-|  - Dashboard                             |
-|  - Auth                                  |
-|  - Landing Page                          |
-|  - Formularios (GestaoUsuarios, etc)     |
-+------------------------------------------+
-            |
-            v
-+------------------------------------------+
-|     FASE 5: TABELAS E DADOS              |
-|  - Scroll horizontal                     |
-|  - Card view mobile                      |
-|  - Paginacao responsiva                  |
-+------------------------------------------+
-            |
-            v
-+------------------------------------------+
-|     FASE 6: VALIDACAO E TESTES           |
-|  - Checklist por breakpoint              |
-|  - Screenshots de conformidade           |
-|  - Relatorio WCAG                        |
-+------------------------------------------+
-```
+### Problemas Potenciais Identificados
+
+| Problema | Severidade | Navegadores Afetados | Localizacao |
+|----------|------------|---------------------|-------------|
+| `backdrop-filter` sem prefixo webkit em alguns lugares | MEDIA | Safari iOS antigo | `heimdall.css` usa prefixo, mas inline styles nao |
+| Inputs `type="date"` nativos (82 ocorrencias) | BAIXA | Safari 14- | Varios formularios |
+| Falta de `type="tel"` em campos de telefone | BAIXA | Todos (UX) | Formularios |
+| Smooth scroll pode falhar em Safari antigo | BAIXA | Safari 14- | Lenis scroll |
+| CSS Grid sem fallback Flexbox | BAIXA | IE11 (nao suportado) | N/A |
+| `prefers-color-scheme` nao detectado diretamente | INFO | Todos | Usa next-themes |
 
 ---
 
-## FASE 1: Infraestrutura Base
+## Matriz de Testes por Navegador/Dispositivo
 
-### 1.1 Atualizar Tailwind Config
+### Navegadores Desktop
 
-**Arquivo:** `tailwind.config.ts`
+| Navegador | Versao Minima | Viewport | Sistema |
+|-----------|---------------|----------|---------|
+| Chrome | 90+ | 1366x768, 1920x1080 | Windows, Mac |
+| Safari | 14+ | 1366x768, 1920x1080 | Mac |
+| Firefox | 88+ | 1366x768, 1920x1080 | Windows, Mac |
+| Edge | 90+ | 1366x768, 1920x1080 | Windows |
 
-**Alteracao:** Adicionar breakpoints menores para dispositivos pequenos
+### Dispositivos Mobile
 
-```typescript
-screens: {
-  'xs': '320px',     // NOVO: Telefones muito pequenos
-  'sm': '480px',     // ATUALIZADO: de 640px
-  'md': '768px',     // Tablets
-  'lg': '1024px',    // Tablets landscape
-  'xl': '1366px',    // ATUALIZADO: Laptops
-  '2xl': '1920px',   // ATUALIZADO: Desktop grande
-}
-```
+| Dispositivo | Navegador | Viewport | Sistema |
+|-------------|-----------|----------|---------|
+| iPhone 12 | Safari | 390x844 | iOS |
+| iPhone SE | Safari | 375x667 | iOS |
+| Samsung Galaxy A71 | Chrome | 412x914 | Android |
+| Google Pixel 5 | Chrome | 393x851 | Android |
+| iPad | Safari | 768x1024 | iPadOS |
+| iPad Pro | Safari | 1024x1366 | iPadOS |
 
-### 1.2 Atualizar useIsMobile Hook
+---
 
-**Arquivo:** `src/hooks/use-mobile.tsx`
+## Plano de Correcoes
 
-**Alteracao:** Adicionar mais granularidade
+### Fase 1: CSS Cross-Browser Fixes
 
-```typescript
-const MOBILE_BREAKPOINT = 480;  // Atualizar para 480px (telefones)
-const TABLET_BREAKPOINT = 768;  // Adicionar tablet breakpoint
-const DESKTOP_BREAKPOINT = 1024; // Adicionar desktop breakpoint
+**1.1 Adicionar prefixos webkit para backdrop-filter inline**
 
-export function useIsMobile() { ... }
-export function useIsTablet() { ... }
-export function useIsDesktop() { ... }
-```
+**Arquivo:** `src/components/landing/heimdall/HeimdallNavbar.tsx`
 
-### 1.3 Criar CSS Utilities Responsivas
+O arquivo ja usa `WebkitBackdropFilter` em inline styles (linha 95), mas vamos verificar consistencia em todo o projeto.
+
+**1.2 Criar utility class para backdrop-filter seguro**
 
 **Arquivo:** `src/index.css`
 
-**Adicoes:**
+```css
+/* Cross-browser backdrop filter */
+.backdrop-blur-safe {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Safe area insets para notch devices */
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+```
+
+**1.3 Scroll behavior com fallback**
+
+**Arquivo:** `src/index.css`
 
 ```css
-/* Touch target minimum 44x44px */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
+/* Smooth scroll com fallback */
+html {
+  scroll-behavior: smooth;
 }
 
-/* Safe text sizes for mobile */
-.text-mobile-safe {
-  font-size: max(16px, 1rem);
+@supports not (scroll-behavior: smooth) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
-/* Responsive container com padding seguro */
-.container-responsive {
-  padding-left: max(1rem, env(safe-area-inset-left));
-  padding-right: max(1rem, env(safe-area-inset-right));
-}
-
-/* Hide horizontal overflow safety */
-.overflow-safe {
-  overflow-x: hidden;
-  max-width: 100vw;
-}
-
-/* Responsive table container */
-.table-responsive {
-  overflow-x: auto;
+/* iOS momentum scrolling */
+.scroll-touch {
   -webkit-overflow-scrolling: touch;
-  max-width: 100%;
-}
-
-/* Mobile-first media queries */
-@media (max-width: 479px) {
-  /* Telefones pequenos (320-479px) */
-  .hide-xs { display: none !important; }
-  .text-xs-safe { font-size: 14px !important; }
-}
-
-@media (max-width: 767px) {
-  /* Mobile (480-767px) */
-  .form-mobile { display: flex; flex-direction: column; gap: 1rem; }
 }
 ```
 
-### 1.4 Criar Componente ResponsiveImage
+---
 
-**Arquivo:** `src/components/ui/responsive-image.tsx` (NOVO)
+### Fase 2: Input Types Validation
 
-```typescript
-interface ResponsiveImageProps {
-  src: string;
-  alt: string;
-  srcSet?: {
-    mobile?: string;   // 320-480px
-    tablet?: string;   // 768-1024px
-    desktop?: string;  // 1366px+
-  };
-  sizes?: string;
-  className?: string;
-  loading?: 'lazy' | 'eager';
-  aspectRatio?: string;
+**2.1 Verificar inputs de telefone**
+
+O projeto nao usa `type="tel"` em nenhum lugar. Campos de telefone devem usar:
+
+```tsx
+<Input type="tel" inputMode="tel" pattern="[0-9]*" />
+```
+
+**Arquivos a verificar:**
+- `src/components/EmployeeModal.tsx`
+- `src/pages/SupplierRegistration.tsx`
+- `src/components/StakeholderModal.tsx`
+
+**2.2 Date inputs**
+
+O projeto usa `react-day-picker` para selecao de datas em modals, mas tambem usa `<Input type="date">` em 82 lugares. Isso e aceitavel pois:
+- Safari 14+ suporta `type="date"` nativo
+- O fallback para texto funciona
+- react-day-picker nao depende de input nativo
+
+**Recomendacao:** Manter como esta para formularios simples, migrar para react-day-picker em casos criticos de UX.
+
+---
+
+### Fase 3: Acessibilidade e Teclado
+
+**3.1 Verificar focus visibility**
+
+O projeto ja usa `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring` em componentes principais. Adicionar classe global de fallback:
+
+**Arquivo:** `src/index.css`
+
+```css
+/* Fallback para navegadores sem suporte a focus-visible */
+@supports not selector(:focus-visible) {
+  button:focus,
+  a:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }
+```
 
-export function ResponsiveImage({
-  src,
-  alt,
-  srcSet,
-  sizes = "(max-width: 480px) 100vw, (max-width: 1024px) 50vw, 33vw",
-  className,
-  loading = "lazy",
-  aspectRatio
-}: ResponsiveImageProps) {
-  // Construir srcSet string
-  const srcSetString = srcSet ? 
-    `${srcSet.mobile || src} 480w, ${srcSet.tablet || src} 1024w, ${srcSet.desktop || src} 1920w` 
-    : undefined;
+**3.2 Skip links para acessibilidade**
 
+**Arquivo:** `src/components/SkipLinks.tsx` (NOVO)
+
+```tsx
+export function SkipLinks() {
   return (
-    <img
-      src={src}
-      srcSet={srcSetString}
-      sizes={sizes}
-      alt={alt}
-      loading={loading}
-      className={cn("object-cover", className)}
-      style={aspectRatio ? { aspectRatio } : undefined}
-    />
+    <a 
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
+    >
+      Pular para o conteudo principal
+    </a>
   );
 }
 ```
 
 ---
 
-## FASE 2: Componentes Core
+### Fase 4: Dark Mode Cross-Browser
 
-### 2.1 Button - Touch Targets 44x44px
+**4.1 Verificar deteccao de tema do sistema**
 
-**Arquivo:** `src/components/ui/button.tsx`
+O projeto usa `next-themes` que ja detecta `prefers-color-scheme` automaticamente.
 
-**Alteracao:** Garantir tamanho minimo de touch target
+**Arquivo:** `src/App.tsx`
 
-```typescript
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 ... min-h-[44px] min-w-[44px]",
-  // OU aplicar via size variants:
-  variants: {
-    size: {
-      default: "h-11 px-4 py-2",  // h-10 -> h-11 (44px)
-      sm: "h-10 rounded-md px-3", // h-9 -> h-10 (40px, aceitavel)
-      lg: "h-12 rounded-md px-8",
-      icon: "h-11 w-11",          // h-10 w-10 -> h-11 w-11
-    },
-  },
-);
+```tsx
+<ThemeProvider 
+  attribute="class"
+  defaultTheme="system"  // Detecta preferencia do sistema
+  enableSystem={true}    // Habilita deteccao automatica
+>
 ```
 
-### 2.2 Input - Tamanho Mobile
+**4.2 Adicionar meta tag para color-scheme**
 
-**Arquivo:** `src/components/ui/input.tsx`
+**Arquivo:** `index.html`
 
-**Alteracao:** Text-base em mobile, text-sm em desktop
-
-```typescript
-<input
-  className={cn(
-    "flex h-11 w-full rounded-md border ... text-base md:text-sm", 
-    // h-10 -> h-11 para touch target
-    // text-base em mobile para evitar zoom no iOS
-    className,
-  )}
-/>
-```
-
-### 2.3 Select - Tamanho Mobile
-
-**Arquivo:** `src/components/ui/select.tsx`
-
-**Alteracao:** Mesma logica do Input
-
-```typescript
-// SelectTrigger
-"flex h-11 w-full ... text-base md:text-sm"
-```
-
-### 2.4 Table - Container Responsivo
-
-**Arquivo:** `src/components/ui/table.tsx`
-
-**Alteracao:** Wrapper com scroll horizontal automatico
-
-```typescript
-const Table = React.forwardRef<HTMLTableElement, ...>(
-  ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-x-auto -webkit-overflow-scrolling-touch">
-      <table ref={ref} className={cn("w-full min-w-[600px] caption-bottom text-sm", className)} {...props} />
-    </div>
-  ),
-);
+```html
+<meta name="color-scheme" content="light dark">
 ```
 
 ---
 
-## FASE 3: Layout Principal
+### Fase 5: Performance Cross-Browser
 
-### 3.1 MainLayout - Padding Responsivo
+**5.1 Verificar Lazy Loading de Imagens**
 
-**Arquivo:** `src/components/MainLayout.tsx`
+O componente `ResponsiveImage` ja usa `loading="lazy"` por padrao.
 
-**Alteracao:** Padding menor em mobile
+**5.2 CSS Containment para performance**
 
-```typescript
-<main className="flex-1 p-3 sm:p-4 md:p-6 bg-muted/10">
-  // p-6 -> p-3 mobile, p-4 tablet, p-6 desktop
-```
+**Arquivo:** `src/index.css`
 
-### 3.2 AppHeader - Layout Mobile
-
-**Arquivo:** `src/components/AppHeader.tsx`
-
-**Alteracao:** Condensar header em telas pequenas
-
-```typescript
-<header className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-3 md:py-4 ...">
-  <div className="flex items-center gap-2 md:gap-4">
-    <SidebarTrigger className="h-10 w-10 hover:bg-muted/50" />  // Touch target
-    <EnhancedGlobalSearch className="hidden sm:flex" /> // Esconder busca em mobile
-  </div>
-  // ...
-  <div className="text-left hidden sm:block"> // Nome do usuario escondido em mobile
-```
-
-### 3.3 Sidebar - Refinamentos Mobile
-
-**Arquivo:** `src/components/ui/sidebar.tsx`
-
-**Status:** Ja usa Sheet para mobile - revisar z-index e animacoes
-
-**Alteracoes menores:**
-- Garantir que overlay cobre toda a tela
-- Aumentar touch targets dos menu items para 44px
-
----
-
-## FASE 4: Paginas Criticas
-
-### 4.1 Dashboard
-
-**Arquivo:** `src/pages/Dashboard.tsx`
-
-**Alteracoes:**
-- Grid de KPIs: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`
-- Quick actions: `flex-wrap gap-2` com botoes menores em mobile
-- Cards: padding reduzido em mobile
-
-### 4.2 Auth Page
-
-**Arquivo:** `src/pages/Auth.tsx`
-
-**Alteracoes:**
-- Container: `max-w-lg px-4` ja esta bom
-- Inputs: aplicar text-base para evitar zoom iOS
-- Botoes: garantir 44px altura
-
-### 4.3 Landing Page (Heimdall)
-
-**Arquivos:** `src/components/landing/heimdall/`
-
-**Alteracoes:**
-- HeroSection: adicionar `loading="lazy"` no video (nao no poster)
-- HeimdallNavbar: ja tem hamburger menu - validar touch targets
-- Imagens: adicionar lazy loading
-- Botoes: verificar 44px minimo
-
-### 4.4 GestaoUsuarios
-
-**Arquivo:** `src/pages/GestaoUsuarios.tsx`
-
-**Alteracoes:**
-- Tabs: `flex-wrap` em mobile ou scroll horizontal
-- Tabela: confirmar `overflow-x-auto`
-- Filtros: stack vertical em mobile
-- Dialogs: full-screen em mobile (`sm:max-w-md`)
-
----
-
-## FASE 5: Tabelas e Dados
-
-### 5.1 Padrao de Tabela Responsiva
-
-**Criar componente:** `src/components/ui/responsive-table.tsx`
-
-```typescript
-interface ResponsiveTableProps {
-  data: any[];
-  columns: Column[];
-  mobileCardRenderer?: (item: any) => React.ReactNode;
+```css
+/* CSS Containment para cards e listas longas */
+.contain-layout {
+  contain: layout style;
 }
 
-export function ResponsiveTable({ data, columns, mobileCardRenderer }: ResponsiveTableProps) {
-  const isMobile = useIsMobile();
-  
-  if (isMobile && mobileCardRenderer) {
-    // Renderizar como cards em mobile
-    return (
-      <div className="space-y-3">
-        {data.map((item, i) => (
-          <Card key={i}>{mobileCardRenderer(item)}</Card>
-        ))}
-      </div>
-    );
+.contain-paint {
+  contain: paint;
+}
+```
+
+---
+
+### Fase 6: Print Styles
+
+**6.1 Adicionar estilos de impressao globais**
+
+**Arquivo:** `src/index.css`
+
+```css
+@media print {
+  /* Esconder elementos nao imprimiveis */
+  .no-print,
+  .ai-chat-container,
+  nav,
+  .sidebar,
+  button:not(.print-button) {
+    display: none !important;
   }
   
-  // Tabela com scroll horizontal
-  return (
-    <div className="overflow-x-auto rounded-md border">
-      <Table>...</Table>
-    </div>
-  );
+  /* Reset de cores para economia de tinta */
+  body {
+    color: #000 !important;
+    background: #fff !important;
+  }
+  
+  /* Quebras de pagina controladas */
+  .page-break-before {
+    page-break-before: always;
+  }
+  
+  .page-break-after {
+    page-break-after: always;
+  }
+  
+  .avoid-break {
+    break-inside: avoid;
+  }
+  
+  /* Garantir contraste em links */
+  a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+  
+  /* Mostrar URLs de links */
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+  }
 }
 ```
 
-### 5.2 Paginacao Responsiva
-
-**Arquivo:** `src/components/ui/pagination.tsx`
-
-**Alteracoes:**
-- Esconder numeros de pagina em mobile, mostrar apenas Anterior/Proximo
-- Touch targets de 44px
-
 ---
 
-## FASE 6: Validacao e Testes
+### Fase 7: Zoom Testing Support
 
-### 6.1 Checklist por Breakpoint
+**7.1 Garantir layout nao quebra em zoom 200%**
 
-| Verificacao | 320px | 480px | 768px | 1024px | 1366px | 1920px |
-|-------------|-------|-------|-------|--------|--------|--------|
-| Zero overflow horizontal | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Texto min 16px | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Touch targets 44px | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Navegacao funcional | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Imagens lazy load | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Forms legíveis | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Tabelas com scroll | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Sidebar abre/fecha | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+Os componentes ja usam unidades relativas (rem, %) e Tailwind responsive classes. Verificar:
 
-### 6.2 Paginas Prioritarias para Teste
-
-1. `/` (Landing Page)
-2. `/auth` (Login/Registro)
-3. `/dashboard` (Dashboard principal)
-4. `/gestao-usuarios` (Tabelas complexas)
-5. `/configuracao` (Formularios)
-6. `/inventario-gee` (Dados complexos)
-
-### 6.3 Ferramentas de Teste
-
-- Chrome DevTools Device Mode
-- Safari Responsive Design Mode
-- Dispositivos reais (iPhone SE, iPad, Pixel)
-- Lighthouse para performance (LCP, CLS)
+**Checklist:**
+- [ ] Texto nao e cortado em zoom 200%
+- [ ] Botoes continuam clicaveis
+- [ ] Formularios continuam usaveis
+- [ ] Navegacao funciona
 
 ---
 
@@ -458,59 +316,112 @@ export function ResponsiveTable({ data, columns, mobileCardRenderer }: Responsiv
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/components/ui/responsive-image.tsx` | Componente de imagem com srcset e lazy loading |
-| `src/components/ui/responsive-table.tsx` | Tabela com fallback para cards em mobile |
+| `src/components/SkipLinks.tsx` | Link de pular navegacao para acessibilidade |
+| `src/utils/browserDetection.ts` | Utilitarios para deteccao de navegador (opcional) |
 
 ## Arquivos a Modificar
 
-| Arquivo | Alteracao |
-|---------|-----------|
-| `tailwind.config.ts` | Breakpoints atualizados (xs, sm ajustados) |
-| `src/hooks/use-mobile.tsx` | Adicionar useIsTablet, useIsDesktop |
-| `src/index.css` | Adicionar utilities de touch target e text-safe |
-| `src/components/ui/button.tsx` | Min height 44px |
-| `src/components/ui/input.tsx` | Text-base em mobile, h-11 |
-| `src/components/ui/select.tsx` | Text-base em mobile, h-11 |
-| `src/components/ui/table.tsx` | Wrapper com overflow-x-auto |
-| `src/components/MainLayout.tsx` | Padding responsivo |
-| `src/components/AppHeader.tsx` | Layout condensado mobile |
-| `src/pages/Dashboard.tsx` | Grid responsivo |
-| `src/pages/Auth.tsx` | Touch targets e text-base |
-| `src/pages/GestaoUsuarios.tsx` | Tabela e filtros responsivos |
+| Arquivo | Modificacao |
+|---------|-------------|
+| `src/index.css` | Adicionar cross-browser utilities e print styles |
+| `index.html` | Adicionar meta tag color-scheme |
+| `src/components/MainLayout.tsx` | Adicionar SkipLinks e id="main-content" |
 
 ---
 
-## Metricas de Sucesso
+## Checklist de Testes por Navegador
 
-| Metrica | Target | Ferramenta |
-|---------|--------|------------|
-| LCP (Largest Contentful Paint) | < 2.5s | Lighthouse |
-| CLS (Cumulative Layout Shift) | < 0.1 | Lighthouse |
-| Touch targets | 100% >= 44px | Manual audit |
-| Horizontal scroll | 0 ocorrencias | Manual + DevTools |
-| Text legibility | 100% >= 16px mobile | Manual audit |
+### Testes Funcionais
+
+| Teste | Chrome | Safari | Firefox | Edge |
+|-------|--------|--------|---------|------|
+| Carregar aplicacao sem erros console | [ ] | [ ] | [ ] | [ ] |
+| Render cores, fonts, icones corretos | [ ] | [ ] | [ ] | [ ] |
+| Formularios com inputs corretos | [ ] | [ ] | [ ] | [ ] |
+| Date picker funciona | [ ] | [ ] | [ ] | [ ] |
+| Validacao HTML5 mensagens | [ ] | [ ] | [ ] | [ ] |
+| Teclado virtual nao esconde inputs | [ ] | [ ] | [ ] | [ ] |
+| Scroll smooth sem jank | [ ] | [ ] | [ ] | [ ] |
+| Botoes tamanho correto | [ ] | [ ] | [ ] | [ ] |
+| Links clicaveis, hover states | [ ] | [ ] | [ ] | [ ] |
+| Performance LCP menos que 2.5s | [ ] | [ ] | [ ] | [ ] |
+
+### Testes Especificos
+
+| Teste | Chrome | Safari | Firefox | Edge |
+|-------|--------|--------|---------|------|
+| Zoom 200% layout nao quebra | [ ] | [ ] | [ ] | [ ] |
+| Print Ctrl+P pagina legivel | [ ] | [ ] | [ ] | [ ] |
+| Tab navigation focus visivel | [ ] | [ ] | [ ] | [ ] |
+| Dark mode do SO responde | [ ] | [ ] | [ ] | [ ] |
+| Backdrop-filter funciona | [ ] | [ ] | [ ] | [ ] |
+| iOS momentum scroll | N/A | [ ] | N/A | N/A |
+
+### Testes por Dispositivo Mobile
+
+| Teste | iPhone 12 | iPhone SE | Galaxy A71 | Pixel 5 | iPad |
+|-------|-----------|-----------|------------|---------|------|
+| Touch targets 44x44px | [ ] | [ ] | [ ] | [ ] | [ ] |
+| Text min 16px | [ ] | [ ] | [ ] | [ ] | [ ] |
+| Teclado virtual | [ ] | [ ] | [ ] | [ ] | [ ] |
+| Orientacao landscape | [ ] | [ ] | [ ] | [ ] | [ ] |
+| Safe area insets | [ ] | [ ] | [ ] | [ ] | [ ] |
+
+---
+
+## Script de Teste Automatizado (Recomendacao)
+
+Para testes automatizados de cross-browser, recomenda-se usar Playwright ou Cypress com BrowserStack:
+
+```typescript
+// playwright.config.ts (exemplo futuro)
+export default {
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    { name: 'firefox', use: { browserName: 'firefox' } },
+    { name: 'webkit', use: { browserName: 'webkit' } },
+  ],
+};
+```
+
+---
+
+## Relatorio de Conformidade WCAG
+
+### Criterios WCAG 2.1 AA Verificados
+
+| Criterio | Status | Notas |
+|----------|--------|-------|
+| 1.4.3 Contraste Minimo | VERIFICAR | Usar ferramentas de contraste |
+| 1.4.4 Redimensionar Texto | OK | Tailwind usa rem |
+| 2.1.1 Teclado | OK | useKeyboardNavigation implementado |
+| 2.4.1 Ignorar Blocos | IMPLEMENTAR | Adicionar SkipLinks |
+| 2.4.3 Ordem de Foco | OK | Ordem natural do DOM |
+| 2.4.7 Foco Visivel | OK | focus-visible em componentes |
+| 3.3.2 Rotulos ou Instrucoes | OK | Labels em formularios |
 
 ---
 
 ## Ordem de Execucao
 
-1. **Fase 1:** Infraestrutura (Tailwind, hooks, CSS utilities, ResponsiveImage)
-2. **Fase 2:** Componentes core (Button, Input, Select, Table)
-3. **Fase 3:** Layout principal (MainLayout, AppHeader)
-4. **Fase 4:** Paginas criticas (Dashboard, Auth, Landing, GestaoUsuarios)
-5. **Fase 5:** Tabelas responsivas (ResponsiveTable, paginacao)
-6. **Fase 6:** Validacao em todos os breakpoints
+1. **Fase 1:** CSS Cross-Browser Fixes (backdrop-filter, scroll)
+2. **Fase 2:** Input Types Validation (tel, verificar date)
+3. **Fase 3:** Acessibilidade (SkipLinks, focus fallback)
+4. **Fase 4:** Dark Mode (meta tag color-scheme)
+5. **Fase 5:** Performance (CSS containment)
+6. **Fase 6:** Print Styles
+7. **Fase 7:** Testes manuais em cada navegador/dispositivo
+8. **Fase 8:** Documentacao de matriz de compatibilidade
 
 ---
 
 ## Entregaveis Finais
 
-- Breakpoints padronizados (320, 480, 768, 1024, 1366, 1920)
-- Touch targets garantidos 44x44px em todos os elementos interativos
-- Texto minimo 16px em mobile
-- Imagens com srcset e lazy loading
-- Tabelas com scroll horizontal ou card fallback
-- Navegacao hamburger funcional em mobile
-- Zero horizontal overflow em qualquer tamanho
-- Relatorio de conformidade WCAG 2.1 AA
+- Cross-browser CSS utilities adicionadas
+- Print styles implementados
+- SkipLinks para acessibilidade
+- Meta tag color-scheme adicionada
+- Checklist de testes por navegador preenchido
+- Relatorio de conformidade WCAG atualizado
+- Matriz de compatibilidade documentada
 
