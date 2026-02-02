@@ -674,7 +674,7 @@ class AvantgardeFrameworksService {
       category: framework.category,
       maturity_level: framework.maturity_level,
       implementation_status: 'exploring' as const,
-      readiness_score: Math.floor(Math.random() * 40) + 20, // Placeholder
+      readiness_score: 0, // Real score calculated after assessment
       innovation_potential: 'transformative' as const
     }));
   }

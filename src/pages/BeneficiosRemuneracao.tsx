@@ -463,7 +463,12 @@ export default function BeneficiosRemuneracao() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">R$ {(Math.random() * 8000 + 3000).toLocaleString('pt-BR', {maximumFractionDigits: 0})}</p>
+                          <p className="font-medium">
+                            {employee.salary 
+                              ? `R$ ${Number(employee.salary).toLocaleString('pt-BR', {maximumFractionDigits: 0})}`
+                              : '-'
+                            }
+                          </p>
                           <p className="text-xs text-muted-foreground">{employee.department || "Departamento"}</p>
                         </div>
                       </div>
