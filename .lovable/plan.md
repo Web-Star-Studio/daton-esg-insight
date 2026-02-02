@@ -1,387 +1,372 @@
 
-# Plano de Validacao de Integridade de Dados
+# Plano de Auditoria de Validacao de Inputs
 
 ## Resumo Executivo
 
-Este plano aborda uma auditoria completa de integridade de dados no sistema Daton ESG Insight, identificando e corrigindo mock data, validando tipos de dados, e garantindo consistencia de enums e valores padrao.
+Este plano aborda uma auditoria completa de validacao de inputs no sistema Daton ESG Insight, cobrindo validacao client-side, server-side, seguranca de input e UX de validacao conforme a diretiva do CTO.
 
 ---
 
 ## Diagnostico do Estado Atual
 
-### Resumo de Problemas Identificados
+### Pontos Fortes Identificados
 
-| Categoria | Quantidade | Severidade |
-|-----------|------------|------------|
-| Mock data em componentes de producao | 5 arquivos | ALTA |
-| Math.random() gerando dados fake | 8 arquivos | ALTA |
-| Tipos `any[]` sem tipagem estrita | 87 arquivos | MEDIA |
-| console.log em services | 64 arquivos | BAIXA |
-| Enums inconsistentes | 203 arquivos | MEDIA |
+| Categoria | Status | Detalhes |
+|-----------|--------|----------|
+| Zod Schema Validation | OK | 68+ arquivos usam Zod para validacao |
+| Password Schema | OK | `passwordSchema` com requisitos completos (8 chars, maiuscula, minuscula, numero, especial) |
+| Password Confirmation | OK | `validatePasswordMatch()` implementado |
+| CPF/CNPJ Validation | OK | Validadores com algoritmo de digitos verificadores |
+| Email Regex | OK | Regex `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` implementado |
+| Phone Formatting | OK | `formatPhone()` e `validatePhone()` implementados |
+| URL Validation | OK | `new URL()` parsing em `sanitizeUrl()` |
+| XSS Protection | OK | DOMPurify com sanitizeHTML, sanitizeRichText, sanitizeText |
+| Rate Limiting Client | OK | `RateLimiter` class em securityUtils.ts |
+| File Size Limits | OK | MAX_FILE_SIZE = 20MB, validacao em useAttachments |
+| FormMessage Component | OK | Usado em 145 arquivos com indicador visual |
+| Required Field Messages | OK | Pattern `.min(1, "X e obrigatorio")` em 39+ arquivos |
 
-### Arquivos com Mock Data Critico (Prioridade ALTA)
+### Problemas Identificados
 
-| Arquivo | Problema | Impacto |
-|---------|----------|---------|
-| `src/components/compliance/ComplianceAuditTrail.tsx` | Mock data hardcoded para auditoria | Dados falsos em producao |
-| `src/components/StrategicAssociations.tsx` | Mock risks e indicators | Associacoes estrategicas com dados fake |
-| `src/components/GoalTrackingWidget.tsx` | `Math.random()` para progresso historico | Graficos com valores aleatorios |
-| `src/services/intelligentReporting.ts` | `Math.random()` em analytics | Metricas de IA falsas |
-| `src/services/avantgardeFrameworks.ts` | `Math.random()` para readiness_score | Scores de frameworks aleatorios |
-| `src/pages/BeneficiosRemuneracao.tsx` | `Math.random()` para salarios | Salarios ficticios exibidos |
-| `src/pages/DashboardGHG.tsx` | `Math.random()` para cores de graficos | Cores inconsistentes |
+| Problema | Severidade | Localizacao | Impacto |
+|----------|------------|-------------|---------|
+| Inputs de telefone sem `type="tel"` | MEDIA | 30+ formularios | UX mobile degradada |
+| Server-side password validation incompleta | ALTA | supplier-auth | Apenas verifica length >= 8, sem requisitos de complexidade |
+| Falta de rate limiting em edge functions criticas | ALTA | invite-user, supplier-auth | Vulneravel a brute force |
+| Auth.tsx sem validacao Zod | MEDIA | src/pages/Auth.tsx | Validacao manual inconsistente |
+| Mensagens de erro tecnicas no servidor | BAIXA | Edge functions | Potencial leak de informacao |
+| Validacao de confirm password apenas no submit | BAIXA | Auth.tsx | UX pode ser melhorada com real-time |
 
-### Estado de Conformidade por Categoria
+---
 
-| Regra | Status Atual | Acao Necessaria |
-|-------|--------------|-----------------|
-| Strings: nunca null, usar "" | Parcial | Alguns locais usam null para strings |
-| Numbers: nunca undefined, usar 0 ou null | OK | Maioria correta |
-| Booleans: true/false, nunca truthy | OK | Uso correto de `=== true` |
-| Dates: ISO 8601 | OK | `parseDateSafe()` implementado |
-| Enums: allowlist | Parcial | Alguns valores dispersos |
-| Arrays: [] se vazio | OK | Padrao `[] as any[]` usado |
+## Matriz de Conformidade por Checklist
+
+### Validacao Client-Side
+
+| Requisito | Status | Implementacao |
+|-----------|--------|---------------|
+| Campo obrigatorio | OK | `.min(1, "Campo obrigatorio")` padronizado |
+| Email regex | OK | `z.string().email()` + regex customizado |
+| Phone regex | PARCIAL | `validatePhone()` existe, mas inputs sem `type="tel"` |
+| URL parsing | OK | `sanitizeUrl()` com `new URL()` |
+| Date parsing | OK | `parseDateSafe()` em dateUtils.ts |
+| Password requisitos comunicados | OK | `getPasswordRequirementChecks()` no Auth.tsx |
+| Confirm password match | OK | `validatePasswordMatch()` implementado |
+| Min/max length | OK | Zod `.min()` e `.max()` com mensagens |
+| Min/max value | OK | Zod `.min()` e `.max()` para numeros |
+| Custom regex | OK | CEP, CNPJ, CPF patterns implementados |
+
+### Validacao Server-Side
+
+| Requisito | Status | Implementacao |
+|-----------|--------|---------------|
+| Inputs revalidados no servidor | PARCIAL | `validateRequestBody()` basico, sem Zod |
+| Rate limiting em endpoints criticos | A IMPLEMENTAR | Nao existe em edge functions |
+| Mensagens de erro genericas | PARCIAL | Algumas mensagens especificas demais |
+| Never trust frontend | PARCIAL | Alguns endpoints sem validacao completa |
+
+### Seguranca de Input
+
+| Requisito | Status | Implementacao |
+|-----------|--------|---------------|
+| XSS protection | OK | DOMPurify em sanitize.ts |
+| SQL injection | OK | Supabase client usa prepared statements |
+| CSRF | OK | Token em auth header, CORS configurado |
+| Path traversal | OK | Nao permite paths customizados |
+| File size limits | OK | MAX_FILE_SIZE = 20MB |
+| File type validation | OK | ALLOWED_TYPES e ALLOWED_EXTENSIONS |
+
+### UX de Validacao
+
+| Requisito | Status | Implementacao |
+|-----------|--------|---------------|
+| Error message perto do field | OK | FormMessage component |
+| Red border/indicador visual | OK | `border-destructive` classes |
+| Mensagens claras | OK | Portugues, nao tecnicas |
+| Exemplos de formato | PARCIAL | Placeholders ajudam, mas podem melhorar |
+| Real-time validation nao agressivo | OK | `mode: "onBlur"` em forms |
 
 ---
 
 ## Plano de Correcoes
 
-### TAREFA 1: Remover Mock Data
+### FASE 1: Input Types para Telefone
 
-#### 1.1 ComplianceAuditTrail.tsx - Mock auditTrailData
+**Problema:** Campos de telefone nao usam `type="tel"` para melhor UX mobile
 
-**Problema:** Array hardcoded com 5 registros de auditoria falsos (linhas 19-77)
+**Arquivos a modificar:**
+- `src/components/EmployeeModal.tsx`
+- `src/pages/SupplierRegistration.tsx`
+- `src/components/StakeholderModal.tsx`
+- `src/components/suppliers/SupplierManagementModal.tsx`
+- `src/components/NotificationPreferencesModal.tsx`
+- `src/components/gri-wizard/Etapa1Planejamento.tsx`
 
-**Correcao:**
-```typescript
-// ANTES (mock data)
-const auditTrailData = [
-  { id: '1', action: 'task_created', ... },
-  ...
-];
-
-// DEPOIS (buscar do banco ou mostrar estado vazio)
-export function ComplianceAuditTrail() {
-  const { data: auditTrailData = [], isLoading } = useQuery({
-    queryKey: ['compliance-audit-trail'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  if (isLoading) return <Skeleton />;
-  if (auditTrailData.length === 0) {
-    return <EmptyState message="Nenhuma atividade registrada" />;
-  }
-  // ... render real data
-}
-```
-
-#### 1.2 StrategicAssociations.tsx - Mock risks e indicators
-
-**Problema:** Linhas 124-138 retornam arrays mock para tipos 'risk' e 'indicator'
-
-**Correcao:**
-```typescript
+**Exemplo de correcao:**
+```tsx
 // ANTES
-case 'risk':
-  items = [
-    { id: 'risk-1', title: 'Risco Operacional', ... },
-    { id: 'risk-2', title: 'Risco Financeiro', ... }
-  ];
-  break;
+<Input
+  value={formData.phone}
+  onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
+/>
 
 // DEPOIS
-case 'risk':
-  const { data: risks } = await supabase
-    .from('esg_risks')
-    .select('id, title, status')
-    .eq('company_id', companyId)
-    .limit(10);
-  items = (risks || []).map(r => ({
-    id: r.id,
-    title: r.title,
-    type: 'risk' as const,
-    status: r.status
-  }));
-  break;
-
-case 'indicator':
-  const { data: indicators } = await supabase
-    .from('gri_indicators')
-    .select('id, indicator_code, indicator_name')
-    .limit(10);
-  items = (indicators || []).map(ind => ({
-    id: ind.id,
-    title: `${ind.indicator_code} - ${ind.indicator_name}`,
-    type: 'indicator' as const,
-    status: 'active'
-  }));
-  break;
-```
-
-#### 1.3 GoalTrackingWidget.tsx - Math.random() para progresso
-
-**Problema:** Linha 92 usa `Math.random()` para gerar progresso historico
-
-**Correcao:**
-```typescript
-// ANTES
-const actualProgress = i === monthsTotal ? currentProgress : Math.random() * expectedProgress;
-
-// DEPOIS - Usar dados reais ou null para meses futuros
-const actualProgress = i === monthsTotal 
-  ? currentProgress 
-  : i <= currentMonthIndex 
-    ? (goal.historical_progress?.[i] ?? null) 
-    : null;
-```
-
-#### 1.4 intelligentReporting.ts - Analytics com Math.random()
-
-**Problema:** Linhas 261-276 geram metricas de IA com valores aleatorios
-
-**Correcao:**
-```typescript
-// ANTES
-async getReportingAnalytics() {
-  return {
-    total_reports_generated: Math.floor(Math.random() * 100) + 50,
-    ai_accuracy_average: Math.floor(Math.random() * 20) + 80,
-    ...
-  };
-}
-
-// DEPOIS - Retornar zeros ou buscar dados reais
-async getReportingAnalytics() {
-  const { data: metrics } = await supabase
-    .from('ai_metrics_daily')
-    .select('*')
-    .order('metric_date', { ascending: false })
-    .limit(30);
-
-  if (!metrics || metrics.length === 0) {
-    return {
-      total_reports_generated: 0,
-      ai_accuracy_average: 0,
-      insights_generated: 0,
-      time_saved_hours: 0,
-      top_categories: [],
-      monthly_trend: []
-    };
-  }
-  // Calculate real metrics from data
-  return this.calculateRealMetrics(metrics);
-}
-```
-
-#### 1.5 avantgardeFrameworks.ts - readiness_score aleatorio
-
-**Problema:** Linha 677 gera score aleatorio para frameworks
-
-**Correcao:**
-```typescript
-// ANTES
-readiness_score: Math.floor(Math.random() * 40) + 20, // Placeholder
-
-// DEPOIS
-readiness_score: 0, // Score real calculado apos avaliacao
-```
-
-#### 1.6 BeneficiosRemuneracao.tsx - Salarios aleatorios
-
-**Problema:** Linha 466 gera salarios com Math.random()
-
-**Correcao:**
-```typescript
-// ANTES
-<p className="font-medium">R$ {(Math.random() * 8000 + 3000).toLocaleString('pt-BR', {...})}</p>
-
-// DEPOIS - Usar dado real do funcionario ou placeholder "-"
-<p className="font-medium">
-  {employee.salary 
-    ? `R$ ${employee.salary.toLocaleString('pt-BR', {...})}`
-    : '-'
-  }
-</p>
-```
-
-#### 1.7 DashboardGHG.tsx - Cores aleatorias
-
-**Problema:** Linha 186 gera cores aleatorias para graficos
-
-**Correcao:**
-```typescript
-// ANTES
-color: "#" + Math.floor(Math.random()*16777215).toString(16)
-
-// DEPOIS - Usar paleta fixa deterministica
-const CATEGORY_COLORS: Record<string, string> = {
-  'Combustao Estacionaria': '#2563eb',
-  'Combustao Movel': '#16a34a',
-  'Processos Industriais': '#ea580c',
-  'Fugitivas': '#9333ea',
-  'Outros': '#64748b'
-};
-
-color: CATEGORY_COLORS[category] || CATEGORY_COLORS['Outros']
+<Input
+  type="tel"
+  inputMode="tel"
+  value={formData.phone}
+  onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
+  placeholder="(11) 99999-9999"
+/>
 ```
 
 ---
 
-### TAREFA 2: Validacao de Tipos
+### FASE 2: Validacao Server-Side com Zod
 
-#### 2.1 Criar Utilitario de Normalizacao
+**Problema:** Edge functions nao usam Zod para validacao de schema
 
-**Arquivo:** `src/utils/dataNormalization.ts` (NOVO)
+**Arquivo:** `supabase/functions/_shared/validation.ts`
+
+**Correcao:** Adicionar schemas Zod para validacao server-side
 
 ```typescript
-/**
- * Normaliza valores para tipos seguros
- */
+// Adicionar ao validation.ts
+import { z } from 'https://esm.sh/zod@3.23.8';
 
-// Strings: nunca null, usar ""
-export function normalizeString(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  return String(value).trim();
-}
+// Schema de senha com requisitos completos
+export const serverPasswordSchema = z.string()
+  .min(8, 'Senha deve ter no minimo 8 caracteres')
+  .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiuscula')
+  .regex(/[a-z]/, 'Senha deve conter pelo menos uma letra minuscula')
+  .regex(/[0-9]/, 'Senha deve conter pelo menos um numero')
+  .regex(/[^A-Za-z0-9]/, 'Senha deve conter pelo menos um caractere especial');
 
-// Numbers: usar 0 como default para calculos, null para "nao informado"
-export function normalizeNumber(value: unknown, defaultValue: number = 0): number {
-  if (value === null || value === undefined) return defaultValue;
-  const num = Number(value);
-  return isNaN(num) ? defaultValue : num;
-}
+// Schema de email
+export const serverEmailSchema = z.string()
+  .email('Email invalido')
+  .max(255, 'Email muito longo');
 
-export function normalizeNumberOrNull(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') return null;
-  const num = Number(value);
-  return isNaN(num) ? null : num;
-}
-
-// Booleans: true/false, nunca truthy
-export function normalizeBoolean(value: unknown, defaultValue: boolean = false): boolean {
-  if (value === true) return true;
-  if (value === false) return false;
-  if (value === 'true' || value === '1' || value === 1) return true;
-  return defaultValue;
-}
-
-// Dates: ISO 8601 (YYYY-MM-DD ou YYYY-MM-DDTHH:mm:ssZ)
-export function normalizeDate(value: unknown): string | null {
-  if (!value) return null;
-  
-  const date = new Date(String(value));
-  if (isNaN(date.getTime())) return null;
-  
-  return date.toISOString().split('T')[0]; // YYYY-MM-DD
-}
-
-export function normalizeDatetime(value: unknown): string | null {
-  if (!value) return null;
-  
-  const date = new Date(String(value));
-  if (isNaN(date.getTime())) return null;
-  
-  return date.toISOString(); // Full ISO 8601
-}
-
-// Arrays: [] se vazio
-export function normalizeArray<T>(value: unknown): T[] {
-  if (Array.isArray(value)) return value;
-  return [];
-}
-
-// Enums: validar contra allowlist
-export function normalizeEnum<T extends string>(
-  value: unknown, 
-  allowlist: readonly T[], 
-  defaultValue: T
-): T {
-  if (allowlist.includes(value as T)) {
-    return value as T;
+// Validar request body com schema
+export function validateBodyWithSchema<T>(body: unknown, schema: z.ZodSchema<T>): { 
+  success: true; data: T 
+} | { 
+  success: false; error: string 
+} {
+  const result = schema.safeParse(body);
+  if (result.success) {
+    return { success: true, data: result.data };
   }
-  return defaultValue;
+  return { 
+    success: false, 
+    error: result.error.issues[0]?.message || 'Dados invalidos'
+  };
 }
 ```
 
-#### 2.2 Definir Allowlists de Enums
-
-**Arquivo:** `src/types/enums.ts` (NOVO)
-
+**Atualizar supplier-auth/index.ts:**
 ```typescript
-/**
- * Enums centralizados com allowlists para validacao
- */
+// ANTES
+if (newPassword.length < 8) {
+  return new Response(
+    JSON.stringify({ error: "Senha deve ter pelo menos 8 caracteres" }),
+    { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
 
-// Status de Nao Conformidade
-export const NC_STATUS = ['Aberta', 'Em Andamento', 'Fechada', 'Cancelada'] as const;
-export type NCStatus = typeof NC_STATUS[number];
+// DEPOIS
+import { serverPasswordSchema, validateBodyWithSchema } from '../_shared/validation.ts';
 
-// Status de Licenca
-export const LICENSE_STATUS = ['Ativa', 'Vencida', 'Em Renovacao', 'Suspensa', 'Cancelada'] as const;
-export type LicenseStatus = typeof LICENSE_STATUS[number];
-
-// Status de Tarefa
-export const TASK_STATUS = ['Pendente', 'Em Andamento', 'Concluída', 'Atrasada', 'Cancelada'] as const;
-export type TaskStatus = typeof TASK_STATUS[number];
-
-// Status de Meta
-export const GOAL_STATUS = ['Em Progresso', 'Concluída', 'Atrasada', 'Cancelada'] as const;
-export type GoalStatus = typeof GOAL_STATUS[number];
-
-// Severidade
-export const SEVERITY_LEVELS = ['Baixa', 'Média', 'Alta', 'Crítica'] as const;
-export type Severity = typeof SEVERITY_LEVELS[number];
-
-// Prioridade
-export const PRIORITY_LEVELS = ['Baixa', 'Normal', 'Alta', 'Urgente'] as const;
-export type Priority = typeof PRIORITY_LEVELS[number];
-
-// Status de Aprovacao
-export const APPROVAL_STATUS = ['pendente', 'aprovado', 'rejeitado', 'em_revisao'] as const;
-export type ApprovalStatus = typeof APPROVAL_STATUS[number];
-
-// Escopo de Emissoes
-export const EMISSION_SCOPES = [1, 2, 3] as const;
-export type EmissionScope = typeof EMISSION_SCOPES[number];
-
-// Genero
-export const GENDER_OPTIONS = ['Masculino', 'Feminino', 'Outro', 'Prefiro não informar'] as const;
-export type Gender = typeof GENDER_OPTIONS[number];
-
-// Status de Funcionario
-export const EMPLOYEE_STATUS = ['Ativo', 'Inativo', 'Afastado', 'Férias', 'Desligado'] as const;
-export type EmployeeStatus = typeof EMPLOYEE_STATUS[number];
+const passwordValidation = serverPasswordSchema.safeParse(newPassword);
+if (!passwordValidation.success) {
+  return new Response(
+    JSON.stringify({ error: passwordValidation.error.issues[0].message }),
+    { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
 ```
 
-#### 2.3 Aplicar Normalizacao em Services
+---
 
-**Exemplo de refatoracao em `src/services/employees.ts`:**
+### FASE 3: Rate Limiting em Edge Functions
+
+**Problema:** Endpoints criticos (login, change_password, invite-user) sem rate limiting
+
+**Arquivo:** `supabase/functions/_shared/validation.ts`
+
+**Correcao:** Adicionar rate limiting com Deno KV ou in-memory
 
 ```typescript
-import { normalizeString, normalizeDate, normalizeEnum } from '@/utils/dataNormalization';
-import { EMPLOYEE_STATUS, EmployeeStatus } from '@/types/enums';
+// Rate limiting simples para edge functions
+const rateLimitCache = new Map<string, { count: number; resetTime: number }>();
 
-// Ao inserir/atualizar funcionario
-const normalizedData = {
-  full_name: normalizeString(data.full_name),
-  email: normalizeString(data.email).toLowerCase(),
-  phone: normalizeString(data.phone),
-  cpf: normalizeString(data.cpf).replace(/\D/g, ''),
-  hire_date: normalizeDate(data.hire_date),
-  birth_date: normalizeDate(data.birth_date),
-  status: normalizeEnum(data.status, EMPLOYEE_STATUS, 'Ativo'),
-  salary: data.salary ? Number(data.salary) : null,
-  skills: normalizeArray(data.skills),
-};
+export function checkRateLimit(
+  identifier: string,
+  maxAttempts: number = 5,
+  windowMinutes: number = 15
+): { allowed: boolean; remainingAttempts: number; resetInSeconds: number } {
+  const now = Date.now();
+  const windowMs = windowMinutes * 60 * 1000;
+  
+  const key = identifier;
+  const current = rateLimitCache.get(key);
+  
+  if (!current || now > current.resetTime) {
+    rateLimitCache.set(key, { count: 1, resetTime: now + windowMs });
+    return { allowed: true, remainingAttempts: maxAttempts - 1, resetInSeconds: windowMinutes * 60 };
+  }
+  
+  if (current.count >= maxAttempts) {
+    const resetInSeconds = Math.ceil((current.resetTime - now) / 1000);
+    return { allowed: false, remainingAttempts: 0, resetInSeconds };
+  }
+  
+  current.count++;
+  return { 
+    allowed: true, 
+    remainingAttempts: maxAttempts - current.count,
+    resetInSeconds: Math.ceil((current.resetTime - now) / 1000)
+  };
+}
 ```
+
+**Atualizar supplier-auth/index.ts para login:**
+```typescript
+// No inicio do case "login":
+const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+const rateLimitKey = `login:${normalizedDoc}:${clientIP}`;
+
+const rateCheck = checkRateLimit(rateLimitKey, 5, 15); // 5 tentativas em 15 min
+if (!rateCheck.allowed) {
+  console.log(`⚠️ Rate limit exceeded for ${rateLimitKey}`);
+  return new Response(
+    JSON.stringify({ 
+      error: `Muitas tentativas. Tente novamente em ${Math.ceil(rateCheck.resetInSeconds / 60)} minutos.` 
+    }),
+    { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+```
+
+---
+
+### FASE 4: Migrar Auth.tsx para Zod
+
+**Problema:** Auth.tsx usa validacao manual em vez de Zod schema
+
+**Arquivo:** `src/pages/Auth.tsx`
+
+**Correcao:**
+```typescript
+import { z } from 'zod';
+import { passwordSchema } from '@/utils/passwordValidation';
+
+const loginSchema = z.object({
+  email: z.string().trim().email('Email invalido'),
+  password: z.string().min(1, 'Senha e obrigatoria')
+});
+
+const registerSchema = z.object({
+  company_name: z.string().trim().min(1, 'Nome da empresa e obrigatorio').max(255),
+  cnpj: z.string()
+    .transform(v => v.replace(/[^\d]/g, ''))
+    .refine(v => v.length === 14, 'CNPJ deve ter 14 digitos'),
+  user_name: z.string().trim().min(1, 'Nome e obrigatorio').max(100),
+  email: z.string().trim().email('Email invalido'),
+  password: passwordSchema,
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: 'As senhas nao coincidem',
+  path: ['confirmPassword']
+});
+```
+
+---
+
+### FASE 5: Criar Schema Centralizado para Formularios
+
+**Arquivo:** `src/schemas/formSchemas.ts` (NOVO)
+
+```typescript
+import { z } from 'zod';
+import { passwordSchema } from '@/utils/passwordValidation';
+
+// Login
+export const loginSchema = z.object({
+  email: z.string().trim().email('Email invalido'),
+  password: z.string().min(1, 'Senha e obrigatoria')
+});
+
+// Registro
+export const registerSchema = z.object({
+  company_name: z.string().trim().min(1, 'Nome da empresa e obrigatorio').max(255),
+  cnpj: z.string()
+    .transform(v => v.replace(/[^\d]/g, ''))
+    .pipe(z.string().length(14, 'CNPJ deve ter 14 digitos')),
+  user_name: z.string().trim().min(1, 'Nome e obrigatorio').max(100),
+  email: z.string().trim().email('Email invalido').max(255),
+  password: passwordSchema,
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: 'As senhas nao coincidem',
+  path: ['confirmPassword']
+});
+
+// Telefone
+export const phoneSchema = z.string()
+  .transform(v => v.replace(/[^\d]/g, ''))
+  .refine(v => v.length >= 10 && v.length <= 11, {
+    message: 'Telefone invalido (10 ou 11 digitos)'
+  })
+  .optional()
+  .or(z.literal(''));
+
+// CPF
+export const cpfSchema = z.string()
+  .transform(v => v.replace(/[^\d]/g, ''))
+  .refine(v => {
+    if (!v) return true;
+    if (v.length !== 11) return false;
+    if (/^(\d)\1+$/.test(v)) return false;
+    // Algoritmo de validacao CPF
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(v[i]) * (10 - i);
+    let d1 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    if (parseInt(v[9]) !== d1) return false;
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(v[i]) * (11 - i);
+    let d2 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    return parseInt(v[10]) === d2;
+  }, { message: 'CPF invalido' })
+  .optional()
+  .or(z.literal(''));
+```
+
+---
+
+### FASE 6: Melhorar Mensagens de Erro Server-Side
+
+**Problema:** Algumas mensagens de erro podem revelar informacao sensivel
+
+**Correcao em edge functions:**
+```typescript
+// ANTES (leak de info)
+return new Response(
+  JSON.stringify({ error: "Fornecedor nao encontrado" }),
+  { status: 401, ... }
+);
+
+// DEPOIS (generico)
+return new Response(
+  JSON.stringify({ error: "Credenciais invalidas" }),
+  { status: 401, ... }
+);
+```
+
+**Padrao de mensagens de erro:**
+- Login falhou: "Credenciais invalidas" (nao revelar se email existe)
+- Rate limited: "Muitas tentativas. Tente novamente mais tarde."
+- Erro interno: "Erro interno do servidor" (sem stack trace)
 
 ---
 
@@ -389,56 +374,73 @@ const normalizedData = {
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/utils/dataNormalization.ts` | Utilitarios de normalizacao de tipos |
-| `src/types/enums.ts` | Allowlists centralizadas de enums |
+| `src/schemas/formSchemas.ts` | Schemas Zod centralizados para formularios |
 
 ## Arquivos a Modificar
 
 | Arquivo | Modificacao |
 |---------|-------------|
-| `src/components/compliance/ComplianceAuditTrail.tsx` | Remover mock data, buscar dados reais |
-| `src/components/StrategicAssociations.tsx` | Buscar risks e indicators do banco |
-| `src/components/GoalTrackingWidget.tsx` | Remover Math.random() |
-| `src/services/intelligentReporting.ts` | Retornar zeros ou dados reais |
-| `src/services/avantgardeFrameworks.ts` | Remover readiness_score aleatorio |
-| `src/pages/BeneficiosRemuneracao.tsx` | Usar salario real ou placeholder |
-| `src/pages/DashboardGHG.tsx` | Usar paleta de cores fixa |
+| `supabase/functions/_shared/validation.ts` | Adicionar Zod schemas e rate limiting |
+| `supabase/functions/supplier-auth/index.ts` | Validacao de senha com Zod, rate limiting |
+| `supabase/functions/invite-user/index.ts` | Rate limiting |
+| `src/pages/Auth.tsx` | Migrar para Zod validation |
+| `src/components/EmployeeModal.tsx` | Adicionar type="tel" |
+| `src/pages/SupplierRegistration.tsx` | Adicionar type="tel" |
+| `src/components/StakeholderModal.tsx` | Adicionar type="tel" |
+| `src/components/suppliers/SupplierManagementModal.tsx` | Adicionar type="tel" |
 
 ---
 
-## Checklist de Validacao
+## Checklist de Validacao Final
 
-### Mock Data
+### Client-Side
 
-- [ ] Nenhum Lorem Ipsum no codigo
-- [ ] Nenhum Math.random() para dados de negocio
-- [ ] Nenhum array hardcoded com dados fake
-- [ ] Todos os componentes buscam dados do banco ou mostram estado vazio
+- [x] Campo obrigatorio com mensagem clara
+- [x] Email com regex + backend validation
+- [ ] Phone: adicionar type="tel" nos inputs
+- [x] URL: new URL() parsing
+- [x] Date: parseDateSafe implementado
+- [x] Password: requisitos comunicados visualmente
+- [x] Confirm password: match validation
+- [x] Min/max length com mensagens
+- [x] Min/max value para numeros
+- [x] Custom regex (CEP, CPF, CNPJ)
 
-### Tipos de Dados
+### Server-Side
 
-- [ ] Strings: "" para vazios, nunca null
-- [ ] Numbers: 0 ou null explicito, nunca undefined
-- [ ] Booleans: true/false literais
-- [ ] Dates: Formato ISO 8601 (YYYY-MM-DD)
-- [ ] Enums: Valores validados contra allowlist
-- [ ] Arrays: [] para vazios
+- [ ] Migrar validacao para Zod schemas
+- [ ] Rate limiting em login/register
+- [ ] Rate limiting em change_password
+- [ ] Rate limiting em invite-user
+- [ ] Mensagens de erro genericas
 
-### Qualidade de Codigo
+### Seguranca
 
-- [ ] Nenhum `any[]` sem justificativa
-- [ ] console.log removidos de services
-- [ ] Tipagem estrita em interfaces
+- [x] XSS: DOMPurify implementado
+- [x] SQL Injection: Supabase prepared statements
+- [x] CSRF: Tokens via auth header
+- [x] Path traversal: Nao aplicavel
+- [x] File size limits: 20MB max
+
+### UX
+
+- [x] Error messages perto do field
+- [x] Indicador visual de erro (border-destructive)
+- [x] Mensagens claras em portugues
+- [ ] Exemplos de formato em mais placeholders
+- [x] Real-time validation onBlur
 
 ---
 
 ## Ordem de Execucao
 
-1. **Fase 1:** Criar arquivos de utilitarios (dataNormalization.ts, enums.ts)
-2. **Fase 2:** Remover mock data de componentes criticos (7 arquivos)
-3. **Fase 3:** Refatorar services para usar normalizacao
-4. **Fase 4:** Adicionar validacao de enums em formularios
-5. **Fase 5:** Testes de regressao
+1. **Fase 1:** Adicionar type="tel" em inputs de telefone (baixo risco)
+2. **Fase 2:** Criar schemas Zod server-side em _shared/validation.ts
+3. **Fase 3:** Implementar rate limiting em edge functions criticas
+4. **Fase 4:** Migrar Auth.tsx para usar Zod
+5. **Fase 5:** Criar formSchemas.ts centralizado
+6. **Fase 6:** Revisar mensagens de erro para seguranca
+7. **Testes:** Validar fluxos de login, registro, supplier-auth
 
 ---
 
@@ -446,7 +448,30 @@ const normalizedData = {
 
 | Metrica | Antes | Depois |
 |---------|-------|--------|
-| Arquivos com mock data | 5 | 0 |
-| Uso de Math.random() em dados | 8 | 0 |
-| Componentes mostrando dados fake | 7 | 0 |
-| Enums validados contra allowlist | 0% | 100% |
+| Inputs tel com type="tel" | 0 | 6+ |
+| Edge functions com rate limiting | 0 | 3 |
+| Validacao Zod server-side | 0% | 100% |
+| Mensagens de erro seguras | 70% | 100% |
+
+---
+
+## Secao Tecnica
+
+### Dependencias Necessarias para Edge Functions
+
+Para usar Zod em edge functions, importar via esm.sh:
+```typescript
+import { z } from 'https://esm.sh/zod@3.23.8';
+```
+
+### Consideracoes de Performance
+
+- Rate limiting in-memory tem limitacao: cada instancia da edge function tem seu proprio cache
+- Para producao robusta, considerar usar Supabase para armazenar rate limits
+- Alternativa: usar headers de rate limit do API Gateway
+
+### Compatibilidade
+
+- Zod v3.23.8 compativel com Deno
+- Rate limiting funciona por IP + identifier
+- File validation constants sincronizados entre frontend e backend
