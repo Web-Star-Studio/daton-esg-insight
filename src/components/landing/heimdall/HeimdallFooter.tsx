@@ -6,6 +6,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { ArrowRight, ArrowUpRight, Mail } from 'lucide-react';
+import { toast } from 'sonner';
 import datonLogo from '@/assets/daton-logo-header.png';
 import './heimdall.css';
 
@@ -19,9 +20,21 @@ export function HeimdallFooter() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setEmail('');
-        setIsSubmitting(false);
+        
+        try {
+            // Simula envio (ou integrar com backend)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            toast.success('Inscrito com sucesso!', {
+                description: 'Você receberá nossas novidades em breve.'
+            });
+            setEmail('');
+        } catch (error) {
+            toast.error('Erro ao inscrever', {
+                description: 'Tente novamente mais tarde.'
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const footerLinks = [
@@ -197,11 +210,11 @@ export function HeimdallFooter() {
                         gap: '1rem',
                     }}
                 >
-                    <p className="heimdall-body-sm">© {new Date().getFullYear()} Daton. Todos os direitos reservados.</p>
+                <p className="heimdall-body-sm">© {new Date().getFullYear()} Daton. Todos os direitos reservados.</p>
                     <div style={{ display: 'flex', gap: '1.5rem' }}>
-                        <FooterLink label="Privacidade" onClick={() => {}} />
-                        <FooterLink label="Termos" onClick={() => {}} />
-                        <FooterLink label="Segurança" onClick={() => {}} />
+                        <FooterLink label="Privacidade" onClick={() => navigate('/privacidade')} />
+                        <FooterLink label="Termos" onClick={() => navigate('/termos')} />
+                        <FooterLink label="Segurança" onClick={() => navigate('/seguranca')} />
                     </div>
                 </div>
             </div>
@@ -222,6 +235,7 @@ function FooterLink({ label, onClick }: { label: string; onClick: () => void }) 
             onClick={onClick}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            aria-label={`Navegar para ${label}`}
             style={{
                 background: 'none',
                 border: 'none',
@@ -238,6 +252,7 @@ function FooterLink({ label, onClick }: { label: string; onClick: () => void }) 
             {label}
             <ArrowUpRight
                 size={14}
+                aria-hidden="true"
                 style={{
                     opacity: isHovered ? 1 : 0,
                     transform: isHovered ? 'translate(2px, -2px)' : 'none',

@@ -221,6 +221,9 @@ export function HeimdallNavbar() {
                 >
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        aria-expanded={mobileMenuOpen}
+                        aria-controls="mobile-menu"
+                        aria-label={mobileMenuOpen ? 'Fechar menu de navegação' : 'Abrir menu de navegação'}
                         style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -236,13 +239,13 @@ export function HeimdallNavbar() {
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                         <img src={datonLogo} alt="Daton" style={{ height: '20px' }} />
-                        {mobileMenuOpen ? <X size={18} color="#111827" /> : <Menu size={18} color="#111827" />}
+                        {mobileMenuOpen ? <X size={18} color="#111827" aria-hidden="true" /> : <Menu size={18} color="#111827" aria-hidden="true" />}
                     </button>
                 </div>
             </header>
 
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetContent side="right" className="w-full sm:w-80 bg-white border-l border-gray-200 p-0">
+                <SheetContent side="right" className="w-full sm:w-80 bg-white border-l border-gray-200 p-0" id="mobile-menu">
                     <div className="flex flex-col h-full px-6 py-6">
                         <div className="flex items-center justify-between mb-8">
                             <img src={datonLogo} alt="Daton" className="h-6" />

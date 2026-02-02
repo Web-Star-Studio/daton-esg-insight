@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -350,13 +350,13 @@ export default function Auth() {
         <div className="text-center mt-6 text-sm text-muted-foreground">
           <p>
             Ao criar uma conta, você concorda com nossos{' '}
-            <span className="text-primary cursor-pointer hover:underline">
+            <Link to="/termos" className="text-primary hover:underline">
               Termos de Serviço
-            </span>{' '}
+            </Link>{' '}
             e{' '}
-            <span className="text-primary cursor-pointer hover:underline">
-            Política de Privacidade
-            </span>
+            <Link to="/privacidade" className="text-primary hover:underline">
+              Política de Privacidade
+            </Link>
           </p>
         </div>
       </div>

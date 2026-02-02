@@ -43,6 +43,10 @@ const ROUTE_LABELS: Record<string, string> = {
   '/gestao-stakeholders': 'Stakeholders',
   '/fornecedores': 'Fornecedores',
   '/indicadores-esg': 'Indicadores ESG',
+  // Legal pages
+  '/privacidade': 'Política de Privacidade',
+  '/termos': 'Termos de Serviço',
+  '/seguranca': 'Segurança e Cookies',
 };
 
 function getBreadcrumbItems(pathname: string): BreadcrumbItem[] {

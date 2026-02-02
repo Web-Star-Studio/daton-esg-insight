@@ -328,6 +328,29 @@ const AppContent = () => {
               </ProtectedLazyPageWrapper>
             } />
 
+            {/* Páginas legais públicas */}
+            <Route path="/privacidade" element={
+              <LazyPageWrapper>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="loading-skeleton h-96 w-full max-w-4xl" /></div>}>
+                  {React.createElement(lazy(() => import('./pages/Privacidade')))}
+                </Suspense>
+              </LazyPageWrapper>
+            } />
+            <Route path="/termos" element={
+              <LazyPageWrapper>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="loading-skeleton h-96 w-full max-w-4xl" /></div>}>
+                  {React.createElement(lazy(() => import('./pages/Termos')))}
+                </Suspense>
+              </LazyPageWrapper>
+            } />
+            <Route path="/seguranca" element={
+              <LazyPageWrapper>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="loading-skeleton h-96 w-full max-w-4xl" /></div>}>
+                  {React.createElement(lazy(() => import('./pages/Seguranca')))}
+                </Suspense>
+              </LazyPageWrapper>
+            } />
+
             {/* Portal do Fornecedor (público) */}
             <Route path="/fornecedor/login" element={<LazyPageWrapper><SupplierLogin /></LazyPageWrapper>} />
             <Route path="/fornecedor/alterar-senha" element={<LazyPageWrapper><SupplierChangePassword /></LazyPageWrapper>} />
