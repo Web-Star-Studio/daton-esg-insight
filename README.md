@@ -1,73 +1,107 @@
-# Welcome to your Lovable project
+# Daton ESG Insight
 
-## Project info
+Plataforma integrada de gestão ESG (Environmental, Social, Governance), qualidade e conformidade regulatória.
 
-**URL**: https://lovable.dev/projects/0c961165-e4b2-4936-9358-b3d86e9624cf
+## Tech Stack
 
-## How can I edit this code?
+- **Frontend:** React 18, TypeScript 5, Vite 5
+- **UI:** Tailwind CSS, shadcn/ui (Radix UI)
+- **Backend:** Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **State:** TanStack Query v5
+- **Forms:** React Hook Form + Zod
+- **Charts:** Recharts
+- **Testing:** Vitest + React Testing Library
 
-There are several ways of editing your application.
+## Instalação Rápida
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/0c961165-e4b2-4936-9358-b3d86e9624cf) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
+cp .env.example .env.local
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Build para Produção
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run build
+npm run preview
+```
 
-**Use GitHub Codespaces**
+## Estrutura do Projeto
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+src/
+├── components/       # Componentes React reutilizáveis (400+)
+│   ├── ui/           # Componentes base (shadcn)
+│   ├── forms/        # Componentes de formulário
+│   └── [modulo]/     # Componentes por módulo
+├── pages/            # Páginas/Rotas da aplicação (130+)
+├── services/         # Serviços de API e lógica de negócios (170+)
+├── hooks/            # Custom React hooks (90+)
+├── contexts/         # Context API (Auth, Company, Compliance)
+├── utils/            # Funções utilitárias
+├── types/            # Definições TypeScript
+├── integrations/     # Integrações externas (Supabase)
+├── constants/        # Constantes e configurações
+└── schemas/          # Schemas de validação Zod
 
-## What technologies are used for this project?
+supabase/
+└── functions/        # Edge Functions Deno (60+)
 
-This project is built with:
+docs/
+├── api.md            # Documentação de API
+├── architecture.md   # Arquitetura do sistema
+├── development.md    # Guia de desenvolvimento
+├── operations.md     # Guia de operações
+└── prd.md            # PRD do produto
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Scripts Disponíveis
 
-## How can I deploy this project?
+| Script | Descrição |
+|--------|-----------|
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Build de produção |
+| `npm run preview` | Preview do build |
+| `npm run lint` | Executar ESLint |
+| `npm run test` | Executar testes |
+| `npm run test:ui` | Interface visual de testes |
+| `npm run test:coverage` | Testes com cobertura |
 
-Simply open [Lovable](https://lovable.dev/projects/0c961165-e4b2-4936-9358-b3d86e9624cf) and click on Share -> Publish.
+## Documentação
 
-## Can I connect a custom domain to my Lovable project?
+- [Documentação de API](./docs/api.md)
+- [Arquitetura do Sistema](./docs/architecture.md)
+- [Guia de Desenvolvimento](./docs/development.md)
+- [Guia de Operações](./docs/operations.md)
+- [Guia de Performance](./PERFORMANCE.md)
+- [Guia de Testes](./TESTING.md)
+- [PRD do Produto](./docs/prd.md)
 
-Yes, you can!
+## Módulos Principais
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+| Módulo | Descrição |
+|--------|-----------|
+| **ESG Social** | Gestão de funcionários, treinamentos, segurança do trabalho |
+| **ESG Ambiental** | Inventário GEE, licenças, água, energia, resíduos |
+| **Qualidade (SGQ)** | Não conformidades, ações corretivas, documentos |
+| **Fornecedores** | Cadastro, avaliação, portal do fornecedor |
+| **Administração** | Usuários, permissões, configurações |
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Variáveis de Ambiente
+
+```env
+# Obrigatório - Supabase
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
+VITE_SUPABASE_PROJECT_ID=your-project-id
+
+# Opcional - IoT
+VITE_IOT_WEBSOCKET_URL=ws://localhost:3001/iot
+```
+
+Ver [.env.example](./.env.example) para mais detalhes.
+
+## Licença
+
+Proprietário - Daton ESG Insight © 2024-2026
