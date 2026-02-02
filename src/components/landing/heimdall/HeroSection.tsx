@@ -176,6 +176,7 @@ export function HeroSection() {
                 />
                 
                 {/* Video loads after initial render for better LCP */}
+                {/* Video is purely decorative - hidden from assistive technologies (WCAG 1.2.1) */}
                 {showVideo && (
                     <video
                         autoPlay 
@@ -183,6 +184,8 @@ export function HeroSection() {
                         loop 
                         playsInline
                         onLoadedData={() => setVideoLoaded(true)}
+                        aria-hidden="true"
+                        role="presentation"
                         style={{
                             width: '100%',
                             height: '100%',
@@ -317,6 +320,7 @@ export function HeroSection() {
                         onClick={() => navigate('/funcionalidades')}
                         whileHover={{ y: -4 }}
                         whileTap={{ scale: 0.98 }}
+                        aria-label="Iniciar agora - acessar funcionalidades"
                         style={{
                             background: 'var(--heimdall-accent)',
                             color: '#FFFFFF',
@@ -334,10 +338,14 @@ export function HeroSection() {
                         }}
                     >
                         {isMobile ? 'INICIAR' : 'INICIAR AGORA'}
-                        <ArrowRight size={18} />
+                        <ArrowRight size={18} aria-hidden="true" />
                     </motion.button>
 
-                    <button className="heimdall-btn-ghost" style={{ fontFamily: 'Space Mono', fontSize: '0.9rem' }}>
+                    <button 
+                        className="heimdall-btn-ghost" 
+                        style={{ fontFamily: 'Space Mono', fontSize: '0.9rem' }}
+                        aria-label="Acessar documentação"
+                    >
                         DOCUMENTAÇÃO
                     </button>
                 </motion.div>

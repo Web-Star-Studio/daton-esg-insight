@@ -494,12 +494,15 @@ export function AppSidebar() {
           </NavigationTooltip>
           
           {!collapsed && (
-            <div
-              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center"
+            <button
+              type="button"
+              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center bg-transparent border-0"
               onClick={(e) => handleFavoriteToggle(item, e)}
+              aria-label={isFav ? `Remover ${item.title} dos favoritos` : `Adicionar ${item.title} aos favoritos`}
+              aria-pressed={isFav}
             >
-              {isFav ? <Star className="h-2.5 w-2.5 fill-current text-yellow-500" /> : <StarOff className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" />}
-            </div>
+              {isFav ? <Star className="h-2.5 w-2.5 fill-current text-yellow-500" aria-hidden="true" /> : <StarOff className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" aria-hidden="true" />}
+            </button>
           )}
         </SidebarMenuSubButton>
       </SidebarMenuSubItem>
@@ -568,12 +571,15 @@ export function AppSidebar() {
                     />
                   )}
                   {!collapsed && (
-                    <div
-                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center"
+                    <button
+                      type="button"
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center bg-transparent border-0"
                       onClick={(e) => handleFavoriteToggle(item, e)}
+                      aria-label={isFav ? `Remover ${item.title} dos favoritos` : `Adicionar ${item.title} aos favoritos`}
+                      aria-pressed={isFav}
                     >
-                      {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" /> : <StarOff className="h-3 w-3 text-muted-foreground hover:text-foreground" />}
-                    </div>
+                      {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" aria-hidden="true" /> : <StarOff className="h-3 w-3 text-muted-foreground hover:text-foreground" aria-hidden="true" />}
+                    </button>
                   )}
                   {!collapsed && (
                     <ChevronRight className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
@@ -599,6 +605,7 @@ export function AppSidebar() {
       <SidebarMenuItem key={item.id}>
         <SidebarMenuButton
           onClick={() => navigate(item.path)}
+          aria-current={active ? "page" : undefined}
           className={`group transition-all duration-200 hover-scale ${active ? "bg-primary/10 text-primary font-medium shadow-sm" : "hover:bg-muted/50 hover:shadow-sm"}`}
         >
           <NavigationTooltip
@@ -636,12 +643,15 @@ export function AppSidebar() {
           )}
           
           {!collapsed && (
-            <div
-              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 hover-scale flex items-center justify-center"
+            <button
+              type="button"
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 hover-scale flex items-center justify-center bg-transparent border-0"
               onClick={(e) => handleFavoriteToggle(item, e)}
+              aria-label={isFav ? `Remover ${item.title} dos favoritos` : `Adicionar ${item.title} aos favoritos`}
+              aria-pressed={isFav}
             >
-              {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" /> : <StarOff className="h-3 w-3 text-muted-foreground hover:text-foreground" />}
-            </div>
+              {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" aria-hidden="true" /> : <StarOff className="h-3 w-3 text-muted-foreground hover:text-foreground" aria-hidden="true" />}
+            </button>
           )}
         </SidebarMenuButton>
       </SidebarMenuItem>
