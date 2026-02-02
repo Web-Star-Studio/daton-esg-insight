@@ -235,6 +235,8 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave }: St
                   <Label htmlFor="contact_phone">Telefone</Label>
                   <Input
                     id="contact_phone"
+                    type="tel"
+                    inputMode="tel"
                     value={formData.contact_phone}
                     onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
                     placeholder="(11) 99999-9999"

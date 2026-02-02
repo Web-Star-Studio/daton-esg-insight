@@ -805,15 +805,21 @@ export default function SupplierRegistration() {
                 <div className="space-y-2">
                   <Label>Telefone 1 *</Label>
                   <Input
+                    type="tel"
+                    inputMode="tel"
                     value={formData.phone_1}
                     onChange={(e) => setFormData({ ...formData, phone_1: e.target.value })}
+                    placeholder="(00) 00000-0000"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Telefone 2</Label>
                   <Input
+                    type="tel"
+                    inputMode="tel"
                     value={formData.phone_2}
                     onChange={(e) => setFormData({ ...formData, phone_2: e.target.value })}
+                    placeholder="(00) 00000-0000"
                   />
                 </div>
               </div>

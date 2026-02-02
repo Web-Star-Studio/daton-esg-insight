@@ -576,6 +576,8 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
               <Label htmlFor="phone">Telefone</Label>
               <Input
                 id="phone"
+                type="tel"
+                inputMode="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData(prev => ({ ...prev, phone: formatPhone(e.target.value) }))}
                 placeholder="(11) 99999-9999"
