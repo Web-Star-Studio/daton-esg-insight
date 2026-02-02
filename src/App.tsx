@@ -199,6 +199,7 @@ const MonitoramentoResiduos = lazy(() => import("./pages/MonitoramentoResiduos")
 const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
 const SystemStatus = lazy(() => import("./pages/SystemStatus"));
 const PlatformAdminDashboard = lazy(() => import("./pages/PlatformAdminDashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
 // Backward-compat alias
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
@@ -745,6 +746,20 @@ const AppContent = () => {
                   <RoleGuard requiredRole="platform_admin">
                     <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
                       <PlatformAdminDashboard />
+                    </Suspense>
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin Dashboard - Dashboard administrativo com auditoria e configurações */}
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard requiredRole="admin">
+                    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                      <AdminDashboard />
                     </Suspense>
                   </RoleGuard>
                 </ProtectedRoute>
