@@ -122,19 +122,29 @@ export default function StrategicAssociations() {
           break;
 
         case 'risk':
-          // Use a simple mock data for risks
-          items = [
-            { id: 'risk-1', title: 'Risco Operacional', type: 'risk' as const, status: 'active' },
-            { id: 'risk-2', title: 'Risco Financeiro', type: 'risk' as const, status: 'active' }
-          ];
+          const { data: risks } = await supabase
+            .from("esg_risks")
+            .select("id, risk_title, status")
+            .limit(20);
+          items = (risks || []).map(r => ({
+            id: r.id,
+            title: r.risk_title || 'Risco sem título',
+            type: 'risk' as const,
+            status: r.status || 'active'
+          }));
           break;
 
         case 'indicator':
-          // Use a simple mock data for indicators
-          items = [
-            { id: 'ind-1', title: 'Indicador GRI 305-1', type: 'indicator' as const, status: 'active' },
-            { id: 'ind-2', title: 'Indicador GRI 302-1', type: 'indicator' as const, status: 'active' }
-          ];
+          const { data: indicators } = await supabase
+            .from("gri_indicator_data")
+            .select("id, indicator_id")
+            .limit(20);
+          items = (indicators || []).map(ind => ({
+            id: ind.id,
+            title: `Indicador ${ind.indicator_id}`,
+            type: 'indicator' as const,
+            status: 'active'
+          }));
           break;
       }
 

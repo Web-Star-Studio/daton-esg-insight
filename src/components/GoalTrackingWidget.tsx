@@ -86,15 +86,27 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
   const generateProgressChart = (goal: any) => {
     const monthsTotal = differenceInMonths(new Date(goal.deadline_date), new Date(goal.created_at));
     const currentProgress = calculateProgress(goal);
+    const currentMonthIndex = differenceInMonths(new Date(), new Date(goal.created_at));
     
     return Array.from({ length: monthsTotal + 1 }, (_, i) => {
-      const expectedProgress = (i / monthsTotal) * 100;
-      const actualProgress = i === monthsTotal ? currentProgress : Math.random() * expectedProgress; // Mock historical data
+      const expectedProgress = monthsTotal > 0 ? (i / monthsTotal) * 100 : 0;
+      
+      // Use real progress for current month, proportional progress for past months, null for future
+      let actualProgress: number | null = null;
+      if (i === currentMonthIndex) {
+        actualProgress = currentProgress;
+      } else if (i < currentMonthIndex) {
+        // Calculate proportional progress for past months (linear interpolation to current)
+        actualProgress = currentMonthIndex > 0 
+          ? (currentProgress / currentMonthIndex) * i 
+          : 0;
+      }
+      // Future months remain null (no data yet)
       
       return {
         month: i,
         expected: expectedProgress,
-        actual: i <= differenceInMonths(new Date(), new Date(goal.created_at)) ? actualProgress : null,
+        actual: actualProgress,
         target: i === monthsTotal ? 100 : null
       };
     });

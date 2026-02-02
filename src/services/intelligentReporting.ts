@@ -257,23 +257,61 @@ class IntelligentReportingService {
   }
 
   async getReportingAnalytics() {
+    // Return zeros/empty - real data should come from ai_performance_metrics table
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return this.getEmptyAnalytics();
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!profile?.company_id) {
+        return this.getEmptyAnalytics();
+      }
+
+      const { data: metrics } = await supabase
+        .from('ai_performance_metrics')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .order('metric_date', { ascending: false })
+        .limit(30);
+
+      if (!metrics || metrics.length === 0) {
+        return this.getEmptyAnalytics();
+      }
+
+      // Calculate real metrics from data
+      const totalReports = metrics.reduce((sum, m) => sum + (m.documents_processed || 0), 0);
+      const avgAccuracy = metrics.reduce((sum, m) => sum + (m.accuracy_rate || 0), 0) / metrics.length;
+      const totalInsights = metrics.reduce((sum, m) => sum + (m.total_fields_extracted || 0), 0);
+
+      return {
+        total_reports_generated: totalReports,
+        ai_accuracy_average: Math.round(avgAccuracy) || 0,
+        insights_generated: totalInsights,
+        time_saved_hours: Math.round(totalReports * 0.5), // Estimated 30 min per report
+        top_categories: [], // Would need category tracking in metrics
+        monthly_trend: [] // Would need to aggregate by month
+      };
+    } catch (error) {
+      console.error('Error fetching reporting analytics:', error);
+      return this.getEmptyAnalytics();
+    }
+  }
+
+  private getEmptyAnalytics() {
     return {
-      total_reports_generated: Math.floor(Math.random() * 100) + 50,
-      ai_accuracy_average: Math.floor(Math.random() * 20) + 80,
-      insights_generated: Math.floor(Math.random() * 500) + 200,
-      time_saved_hours: Math.floor(Math.random() * 100) + 50,
-      top_categories: [
-        { name: 'ESG', count: 35 },
-        { name: 'Qualidade', count: 28 },
-        { name: 'Emissões', count: 22 },
-        { name: 'Compliance', count: 18 },
-        { name: 'Governança', count: 12 }
-      ],
-      monthly_trend: Array.from({ length: 6 }, (_, i) => ({
-        month: new Date(Date.now() - (5 - i) * 30 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', { month: 'short' }),
-        reports: Math.floor(Math.random() * 20) + 10,
-        insights: Math.floor(Math.random() * 50) + 20
-      }))
+      total_reports_generated: 0,
+      ai_accuracy_average: 0,
+      insights_generated: 0,
+      time_saved_hours: 0,
+      top_categories: [],
+      monthly_trend: []
     };
   }
 

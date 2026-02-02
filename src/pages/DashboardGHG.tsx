@@ -177,13 +177,29 @@ const DashboardGHG = () => {
       },
     ].filter(item => item.value > 0)
 
-    // Process scope 1 sources
+    // Deterministic colors for emission categories
+    const categoryColors: Record<string, string> = {
+      'Combustão Estacionária': '#2563eb',
+      'Combustão Móvel': '#16a34a',
+      'Processos Industriais': '#ea580c',
+      'Fugitivas': '#9333ea',
+      'Energia Elétrica': '#f59e0b',
+      'Transporte': '#06b6d4',
+      'Resíduos': '#84cc16',
+      'Viagens a Negócios': '#ec4899',
+      'Deslocamento de Funcionários': '#8b5cf6',
+      'Outros': '#64748b'
+    };
+    
+    const sequentialColors = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#9333ea', '#06b6d4', '#ec4899', '#84cc16'];
+    
+    // Process scope 1 sources with deterministic colors
     const totalScope1 = scopeTotals.escopo1
     const processedFontesData = Object.entries(categoryTotals)
-      .map(([category, value]) => ({
+      .map(([category, value], index) => ({
         name: category,
         value: totalScope1 > 0 ? Math.round((value / totalScope1) * 1000) / 10 : 0,
-        color: "#" + Math.floor(Math.random()*16777215).toString(16) // Random color
+        color: categoryColors[category] || sequentialColors[index % sequentialColors.length]
       }))
       .filter(item => item.value > 0)
 
