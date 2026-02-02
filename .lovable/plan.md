@@ -1,9 +1,31 @@
 
-# Plano de Otimizacao de Performance e Escalabilidade
+
+# Plano de Auditoria Completa de Usabilidade
 
 ## Resumo Executivo
 
-Este plano aborda uma auditoria completa de performance conforme a diretiva do CTO, visando atingir os targets de Core Web Vitals e otimizar bundle size, imagens, CSS/JS, network e React.
+Este plano apresenta uma auditoria abrangente de usabilidade do sistema Daton ESG Insight, cobrindo 150+ paginas agrupadas em 12 categorias funcionais. A auditoria identifica melhorias de navegacao, CTAs, formularios, feedback, e acessibilidade conforme a diretiva do CTO.
+
+---
+
+## Mapeamento de Paginas Principais
+
+### Categorias de Paginas
+
+| Categoria | Quantidade | Paginas Principais |
+|-----------|------------|-------------------|
+| Landing/Marketing | 5 | LandingPage, Funcionalidades, Contato, FAQ, Documentacao |
+| Autenticacao | 4 | Auth, ResetPassword, SetPassword, SupplierLogin |
+| Dashboard | 3 | Dashboard, AdminDashboard, QualityDashboard |
+| ESG Ambiental | 15 | GestaoESG, InventarioGEE, DashboardGHG, Residuos, Metas, Monitoramento* |
+| ESG Social | 12 | SocialESG, GestaoFuncionarios, Treinamentos, SegurancaTrabalho, Carreira |
+| ESG Governanca | 8 | GovernancaESG, Compliance, Auditoria, GestaoRiscos, GestaoStakeholders |
+| Qualidade (SGQ) | 10 | NaoConformidades, AcoesCorretivas, ControleDocumentos, LAIA |
+| Financeiro | 14 | DashboardFinanceiro, ContasAPagar, ContasAReceber, FluxoCaixa, Orcamento |
+| Fornecedores | 18 | SupplierManagementDashboard, Cadastro, Avaliacoes, Falhas, Indicadores |
+| RH | 10 | EstruturaOrganizacional, DescricaoCargos, Recrutamento, BeneficiosRemuneracao |
+| Dados/Relatorios | 8 | ColetaDados, DocumentosHub, RelatoriosIntegrados, SDGDashboard |
+| Configuracoes | 5 | Configuracao, GestaoUsuarios, AdminDashboard, PlatformAdminDashboard |
 
 ---
 
@@ -11,536 +33,351 @@ Este plano aborda uma auditoria completa de performance conforme a diretiva do C
 
 ### Pontos Fortes Identificados
 
-| Categoria | Status | Detalhes |
-|-----------|--------|----------|
-| Lazy Loading de Rotas | OK | 100+ rotas usando `React.lazy()` em `App.tsx` |
-| Code Splitting Manual | OK | `vite.config.ts` com 7 chunks manuais (react-vendor, ui-vendor, etc.) |
-| Query Caching | OK | React Query com `staleTime: 5min`, `gcTime: 30min` |
-| Virtualizacao de Listas | OK | `useVirtualizedList` hook com threshold de 50 items |
-| Route Preloading | OK | `routePreloader.ts` com idle/hover preloading |
-| Performance Monitor | OK | `performanceMonitor.ts` com Web Vitals tracking |
-| Memoized Components | OK | `MemoizedComponents.tsx` com Button, Input, Card |
-| Responsive Image | OK | `ResponsiveImage` component com srcset e lazy loading |
-| Debounce/Throttle | OK | `useDebounce`, `useThrottle` hooks implementados |
-| Smart Cache | OK | `useSmartCache` com priority levels |
+| Categoria | Status | Implementacao |
+|-----------|--------|---------------|
+| Navegacao Principal | OK | AppSidebar com menu colapsavel, agrupamentos logicos |
+| Breadcrumbs | OK | Componente global Breadcrumbs em MainLayout |
+| Logo leva a Home | OK | Sidebar e Navbar com link para "/" |
+| Skip Links | OK | SkipLinks component implementado para acessibilidade |
+| Confirmacao de Acoes Destrutivas | OK | AlertDialog em 18+ arquivos para delete/exclusao |
+| Loading States | OK | EnhancedLoading com 4 variantes (default, dots, pulse, gradient) |
+| Toast System | OK | Sonner + SmartToastProvider com tipos success/error/warning/info |
+| Keyboard Shortcuts | OK | GlobalKeyboardShortcuts (Ctrl+K busca, Ctrl+D docs, etc.) |
+| Focus Visible | OK | `focus-visible:ring-2` padrao em 30+ componentes |
+| Error Boundary | OK | Componente global com retry e go home |
+| Form Validation | OK | Zod + react-hook-form com FormMessage |
+| Password Requirements | OK | Feedback visual em tempo real no Auth.tsx |
+| Reduced Motion | OK | `@media (prefers-reduced-motion)` no CSS |
+| Print Styles | OK | `@media print` com estilos apropriados |
+| Dark Mode | OK | ThemeProvider com suporte a light/dark/system |
 
 ### Problemas Identificados
 
-| Problema | Severidade | Impacto | Localizacao |
-|----------|------------|---------|-------------|
-| Framer-motion em paginas criticas | ALTA | LCP > 2.5s | 19 arquivos, incluindo LandingPage |
-| Video externo no Hero | ALTA | LCP bloqueante | HeroSection.tsx (Vimeo video) |
-| Fonts blocking render | ALTA | FCP > 1.8s | index.html (Google Fonts sem preload) |
-| CSS Heimdall importando fonts | MEDIA | Render blocking | heimdall.css (@import fonts) |
-| console.log em producao | MEDIA | Bundle size | 334 matches em 24 services |
-| Sem Critical CSS inline | MEDIA | FCP impactado | index.html sem styles inline |
-| Sem Service Worker | MEDIA | Sem cache offline | Nao implementado |
-| Sem WebP fallback | MEDIA | Imagens maiores | ResponsiveImage sem WebP |
-| framer-motion nao tree-shaked | MEDIA | Bundle maior | Importando modulo inteiro |
+| Problema | Severidade | Localizacao | Impacto |
+|----------|------------|-------------|---------|
+| Footer links nao navegam | MEDIA | HeimdallFooter.tsx | Links de Privacidade/Termos/Seguranca tem onClick vazio |
+| Newsletter form sem feedback | MEDIA | HeimdallFooter.tsx | Apenas reseta email, sem toast de sucesso |
+| Termos/Privacidade sem pagina | MEDIA | Auth.tsx | Links apontam para spans sem navegacao |
+| Sidebar muito densa | BAIXA | AppSidebar.tsx | 150+ items, pode ser overwhelming |
+| Alguns forms sem aria-describedby | BAIXA | Diversos | FormMessage existe mas nem todos inputs conectados |
+| Footer links sem aria-label | BAIXA | HeimdallFooter.tsx | Buttons sem labels acessiveis |
+| Navbar mobile sem aria-expanded | BAIXA | HeimdallNavbar.tsx | Menu hamburger sem estado acessivel |
+| Alguns placeholders genericos | BAIXA | Diversos forms | "Digite aqui" vs exemplos especificos |
+| Falta de hover em alguns botoes terciarios | BAIXA | FooterLink | Estados hover sutis demais |
 
 ---
 
-## Metricas Atuais vs Targets
+## Matriz de Conformidade por Checklist
 
-| Metrica | Target | Estado Estimado | Gap |
-|---------|--------|-----------------|-----|
-| LCP | < 2.5s | ~3-4s (video Hero) | ALTO |
-| FCP | < 1.8s | ~2s (fonts blocking) | MEDIO |
-| FID | < 100ms | ~50ms (OK) | BAIXO |
-| CLS | < 0.1 | ~0.05 (OK) | OK |
-| TTFB | < 600ms | ~200ms (OK) | OK |
-| Bundle Size | < 200KB gzip | ~250KB (estimado) | MEDIO |
-| Lighthouse Score | 90+ | ~70 (estimado) | ALTO |
+### 1. Navegacao
+
+| Requisito | Status | Implementacao |
+|-----------|--------|---------------|
+| Menu claro e acessivel | OK | AppSidebar com icones + labels + descriptions |
+| Logo leva a home | OK | datonLogo com onClick={() => navigate('/')} |
+| Links do footer funcionam | PARCIAL | Navegacao OK, mas Privacidade/Termos/Seguranca sem pagina |
+| Breadcrumbs atualizados | OK | Breadcrumbs.tsx com ROUTE_LABELS mapeado |
+| Search global | OK | GlobalKeyboardShortcuts + GlobalSearch (Ctrl+K) |
+| Favoritos | OK | useFavorites hook para pages favoritas |
+
+### 2. Chamadas para Acao (CTAs)
+
+| Requisito | Status | Implementacao |
+|-----------|--------|---------------|
+| Botao principal destacado | OK | variant="default" com bg-primary |
+| Botoes secundarios diferentes | OK | variant="outline", "ghost", "secondary" |
+| Confirmacao em acoes destrutivas | OK | AlertDialog em deletes (18+ componentes) |
+| Estados hover claros | OK | hover:bg-primary/90, shadow-md transitions |
+| Botoes disabled durante loading | OK | disabled={isLoading} padronizado |
+
+### 3. Formularios
+
+| Requisito | Status | Implementacao |
+|-----------|--------|---------------|
+| Labels com for/id corretos | OK | FormLabel com htmlFor={formItemId} |
+| Ordem logica de campos | OK | Agrupamentos semanticos (Empresa, Usuario, etc.) |
+| Validacao em tempo real | OK | mode="onBlur" com Zod validation |
+| Submit ativado quando valido | PARCIAL | Alguns forms sempre habilitados |
+| Sucesso/erro indicado | OK | Toast + FormMessage |
+| Password feedback visual | OK | getPasswordRequirementChecks() em Auth.tsx |
+
+### 4. Feedback
+
+| Requisito | Status | Implementacao |
+|-----------|--------|---------------|
+| Loading spinner | OK | EnhancedLoading, Loader2 spinner |
+| Toast de sucesso | OK | "Salvo com sucesso", "Atualizado", etc. |
+| Erro com sugestao | OK | "Email ja usado, tente outro" pattern |
+| Transicoes suaves | OK | animate-fade-in, transition-all |
+| Empty states | OK | Componentes mostram "Nenhum registro encontrado" |
+
+### 5. Acessibilidade
+
+| Requisito | Status | Implementacao |
+|-----------|--------|---------------|
+| Contraste texto 4.5:1 | OK | --foreground vs --background adequado |
+| Contraste graficos 3:1 | OK | Cores de status com contraste suficiente |
+| Keyboard navigation Tab | OK | tabIndex, focus styles |
+| Enter/Escape funcionam | OK | onKeyDown handlers em modais e dropdowns |
+| Focus visible | OK | focus-visible:ring-2 ring-ring |
+| ARIA labels em icons | PARCIAL | 26 arquivos com aria-label, mas alguns gaps |
+| Alt text em imagens | PARCIAL | datonLogo tem alt, mas algumas decorativas sem |
+| Skip links | OK | SkipLinks.tsx implementado |
+| Reduced motion | OK | @media (prefers-reduced-motion) |
 
 ---
 
 ## Plano de Correcoes
 
-### FASE 1: Critical Rendering Path (LCP/FCP)
+### FASE 1: Footer Links e Navegacao
 
-#### 1.1 Preload Fonts em index.html
+#### 1.1 Corrigir Footer Links Vazios
 
-**Problema:** Google Fonts carregadas via link bloqueante
+**Arquivo:** `src/components/landing/heimdall/HeimdallFooter.tsx`
 
-**Arquivo:** `index.html`
+**Problema:** Links Privacidade/Termos/Seguranca tem `onClick={() => {}}`
 
-```html
-<!-- ANTES -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- DEPOIS -->
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</noscript>
-```
-
-#### 1.2 Critical CSS Inline
-
-**Problema:** Nenhum CSS inline no head
-
-**Arquivo:** `index.html`
-
-```html
-<head>
-  <!-- Adicionar Critical CSS inline para above-the-fold -->
-  <style>
-    /* Critical CSS - Loading State */
-    #root { min-height: 100vh; }
-    body { 
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      margin: 0;
-      -webkit-font-smoothing: antialiased;
-    }
-    /* Prevent CLS from loading states */
-    .loading-skeleton {
-      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-    }
-    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-  </style>
-</head>
-```
-
-#### 1.3 Otimizar Hero Video
-
-**Problema:** Video Vimeo externo bloqueia LCP
-
-**Arquivo:** `src/components/landing/heimdall/HeroSection.tsx`
-
+**Correcao:**
 ```typescript
-// ANTES: Video carrega imediatamente
-<video autoPlay muted loop playsInline>
-  <source src="https://player.vimeo.com/external/..." type="video/mp4" />
-</video>
+// ANTES (linha 202-204)
+<FooterLink label="Privacidade" onClick={() => {}} />
+<FooterLink label="Termos" onClick={() => {}} />
+<FooterLink label="Segurança" onClick={() => {}} />
 
-// DEPOIS: Poster image + lazy video loading
-const [videoLoaded, setVideoLoaded] = useState(false);
-
-// Usar poster image para LCP
-<div className="hero-video-container">
-  {!videoLoaded && (
-    <img 
-      src="/hero-poster.webp" 
-      alt="Dashboard ESG Preview"
-      fetchpriority="high"
-      decoding="async"
-      className="hero-poster"
-    />
-  )}
-  <video 
-    autoPlay muted loop playsInline
-    onLoadedData={() => setVideoLoaded(true)}
-    style={{ opacity: videoLoaded ? 1 : 0 }}
-  >
-    <source src="..." type="video/mp4" />
-  </video>
-</div>
+// DEPOIS - Criar paginas ou abrir modal
+<FooterLink label="Privacidade" onClick={() => navigate('/privacidade')} />
+<FooterLink label="Termos" onClick={() => navigate('/termos')} />
+<FooterLink label="Segurança" onClick={() => navigate('/seguranca')} />
 ```
 
-#### 1.4 Remover @import de Fonts no CSS
+**Alternativa:** Criar TermsModal e PrivacyModal components com conteudo estatico.
 
-**Problema:** `heimdall.css` importa fonts de forma bloqueante
+#### 1.2 Adicionar Feedback na Newsletter
 
-**Arquivo:** `src/components/landing/heimdall/heimdall.css`
+**Arquivo:** `src/components/landing/heimdall/HeimdallFooter.tsx`
 
-```css
-/* REMOVER linha 11 */
-/* @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap'); */
+**Problema:** Form de email reseta sem feedback (linhas 19-24)
 
-/* Fonts serao carregadas via index.html com preload */
+**Correcao:**
+```typescript
+import { toast } from 'sonner';
+
+const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+        // Simula envio (ou integrar com backend)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        toast.success('Inscrito com sucesso!', {
+            description: 'Voce recebera nossas novidades em breve.'
+        });
+        setEmail('');
+    } catch (error) {
+        toast.error('Erro ao inscrever', {
+            description: 'Tente novamente mais tarde.'
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+};
 ```
 
-Atualizar `index.html`:
-```html
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-```
+#### 1.3 Corrigir Links de Termos no Auth.tsx
 
----
+**Arquivo:** `src/pages/Auth.tsx`
 
-### FASE 2: Bundle Size Optimization
+**Problema:** Spans sem navegacao (linhas 352-359)
 
-#### 2.1 Tree-shake Framer Motion
-
-**Problema:** Importando modulo inteiro de framer-motion
-
-**Arquivo:** Multiplos arquivos
-
+**Correcao:**
 ```typescript
 // ANTES
-import { motion, AnimatePresence, useSpring } from 'framer-motion';
+<span className="text-primary cursor-pointer hover:underline">
+  Termos de Serviço
+</span>
 
-// DEPOIS - Importar apenas o necessario
-import { motion } from 'framer-motion/dist/es/render/dom/motion';
-import { AnimatePresence } from 'framer-motion/dist/es/components/AnimatePresence';
-```
-
-**Alternativa mais simples:** Adicionar ao vite.config.ts:
-```typescript
-build: {
-  rollupOptions: {
-    output: {
-      manualChunks: {
-        // ... existing chunks ...
-        'framer-motion': ['framer-motion'],
-      },
-    },
-  },
-},
-```
-
-#### 2.2 Remover console.log em Producao
-
-**Arquivo:** `vite.config.ts`
-
-```typescript
-build: {
-  // ... existing config ...
-  minify: 'terser',
-  terserOptions: {
-    compress: {
-      drop_console: true,
-      drop_debugger: true,
-    },
-  },
-},
-```
-
-#### 2.3 Adicionar Bundle Analyzer
-
-**Arquivo:** `vite.config.ts`
-
-```typescript
-import { visualizer } from 'rollup-plugin-visualizer';
-
-export default defineConfig(({ mode }) => ({
-  plugins: [
-    // ... existing plugins ...
-    mode === 'analyze' && visualizer({
-      open: true,
-      filename: 'dist/stats.html',
-      gzipSize: true,
-      brotliSize: true,
-    }),
-  ].filter(Boolean),
-}));
+// DEPOIS
+<Link to="/termos" className="text-primary hover:underline">
+  Termos de Serviço
+</Link>
 ```
 
 ---
 
-### FASE 3: Image Optimization
+### FASE 2: Acessibilidade
 
-#### 3.1 Criar Utilitario de WebP
+#### 2.1 Adicionar aria-label em FooterLink
 
-**Arquivo:** `src/utils/imageOptimization.ts` (NOVO)
+**Arquivo:** `src/components/landing/heimdall/HeimdallFooter.tsx`
 
+**Correcao:**
 ```typescript
-/**
- * Image Optimization Utilities
- */
-
-// Check WebP support
-let webpSupported: boolean | null = null;
-
-export async function supportsWebP(): Promise<boolean> {
-  if (webpSupported !== null) return webpSupported;
-  
-  if (typeof window === 'undefined') return false;
-  
-  const canvas = document.createElement('canvas');
-  canvas.width = 1;
-  canvas.height = 1;
-  webpSupported = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
-  
-  return webpSupported;
-}
-
-// Get optimized image URL
-export function getOptimizedImageUrl(
-  src: string, 
-  options: { width?: number; quality?: number } = {}
-): string {
-  const { width = 800, quality = 80 } = options;
-  
-  // If using a CDN that supports image optimization (e.g., Cloudinary, Imgix)
-  // Return transformed URL
-  // For now, return original
-  return src;
-}
-
-// Preload critical images
-export function preloadCriticalImages(urls: string[]): void {
-  urls.forEach(url => {
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.href = url;
-    document.head.appendChild(link);
-  });
-}
-```
-
-#### 3.2 Atualizar ResponsiveImage para WebP
-
-**Arquivo:** `src/components/ui/responsive-image.tsx`
-
-```typescript
-interface ResponsiveImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'srcSet'> {
-  src: string;
-  alt: string;
-  responsiveSrcSet?: ResponsiveImageSrcSet;
-  webpSrc?: string; // Nova prop
-  sizes?: string;
-  aspectRatio?: string;
-  fallback?: string;
-  priority?: boolean; // Nova prop para imagens criticas
-}
-
-export function ResponsiveImage({
-  src,
-  alt,
-  responsiveSrcSet,
-  webpSrc,
-  sizes = "(max-width: 480px) 100vw, (max-width: 1024px) 50vw, 33vw",
-  className,
-  loading = "lazy",
-  aspectRatio,
-  fallback,
-  priority = false,
-  ...props
-}: ResponsiveImageProps) {
-  const [hasError, setHasError] = React.useState(false);
-  
-  // Use picture element for WebP with fallback
-  if (webpSrc) {
+function FooterLink({ label, onClick }: { label: string; onClick: () => void }) {
+    // ...
     return (
-      <picture>
-        <source srcSet={webpSrc} type="image/webp" />
-        <img
-          src={hasError && fallback ? fallback : src}
-          alt={alt}
-          loading={priority ? "eager" : loading}
-          fetchPriority={priority ? "high" : undefined}
-          onError={() => setHasError(true)}
-          className={cn("object-cover", className)}
-          style={aspectRatio ? { aspectRatio } : undefined}
-          {...props}
-        />
-      </picture>
-    );
-  }
-  
-  // Fallback to original implementation
-  // ... existing code
-}
+        <button
+            onClick={onClick}
+            aria-label={`Navegar para ${label}`}
+            // ... rest of props
+        >
+```
+
+#### 2.2 Adicionar aria-expanded no Menu Mobile
+
+**Arquivo:** `src/components/landing/heimdall/HeimdallNavbar.tsx`
+
+**Correcao:**
+```typescript
+<button
+    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+    aria-expanded={mobileMenuOpen}
+    aria-controls="mobile-menu"
+    aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+    // ... rest
+>
+```
+
+#### 2.3 Melhorar Labels em Formularios
+
+**Arquivo:** Diversos forms
+
+**Padrao a aplicar:**
+```typescript
+<Label htmlFor="field-id">
+  Campo Obrigatorio <span aria-hidden="true" className="text-destructive">*</span>
+  <span className="sr-only">(obrigatorio)</span>
+</Label>
+<Input
+  id="field-id"
+  aria-describedby="field-id-description field-id-error"
+  aria-required="true"
+  // ...
+/>
+<FormDescription id="field-id-description">
+  Dica ou exemplo de preenchimento
+</FormDescription>
+<FormMessage id="field-id-error" />
 ```
 
 ---
 
-### FASE 4: Network Optimization
+### FASE 3: UX de Formularios
 
-#### 4.1 Adicionar Link Prefetch para Rotas
+#### 3.1 Adicionar Exemplos de Formato
 
-**Arquivo:** `index.html`
+**Problema:** Placeholders genericos como "Digite aqui"
 
-```html
-<head>
-  <!-- Prefetch critical routes -->
-  <link rel="prefetch" href="/assets/Index-[hash].js">
-  <link rel="prefetch" href="/assets/Dashboard-[hash].js">
-  
-  <!-- DNS prefetch for external resources -->
-  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-  <link rel="dns-prefetch" href="https://player.vimeo.com">
-</head>
-```
+**Arquivos:** EmployeeModal.tsx, SupplierRegistration.tsx, etc.
 
-#### 4.2 Implementar Service Worker
-
-**Arquivo:** `public/sw.js` (NOVO)
-
-```javascript
-const CACHE_NAME = 'daton-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/assets/index.css',
-];
-
-// Install event
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
-});
-
-// Fetch event - Network first, cache fallback
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Clone response and cache
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          if (event.request.method === 'GET') {
-            cache.put(event.request, responseClone);
-          }
-        });
-        return response;
-      })
-      .catch(() => {
-        return caches.match(event.request);
-      })
-  );
-});
-```
-
-**Registrar em main.tsx:**
+**Correcao:**
 ```typescript
-// Register service worker
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      console.warn('SW registration failed');
-    });
-  });
-}
+// ANTES
+<Input placeholder="Digite seu email" />
+
+// DEPOIS
+<Input 
+  placeholder="exemplo@empresa.com" 
+  aria-describedby="email-hint"
+/>
+<span id="email-hint" className="text-xs text-muted-foreground">
+  Use o email corporativo
+</span>
+```
+
+#### 3.2 Desabilitar Submit ate Formulario Valido
+
+**Problema:** Alguns forms permitem submit com dados invalidos
+
+**Correcao:**
+```typescript
+<Button 
+  type="submit" 
+  disabled={isLoading || !form.formState.isValid}
+>
+  {isLoading ? 'Salvando...' : 'Salvar'}
+</Button>
 ```
 
 ---
 
-### FASE 5: React Optimizations
+### FASE 4: Paginas Faltantes
 
-#### 5.1 Adicionar Profiler Wrapper
+#### 4.1 Criar Paginas de Politicas
 
-**Arquivo:** `src/utils/reactProfiler.ts` (NOVO)
+**Novos arquivos necessarios:**
 
+| Arquivo | Conteudo |
+|---------|----------|
+| `src/pages/Privacidade.tsx` | Politica de Privacidade (LGPD compliant) |
+| `src/pages/Termos.tsx` | Termos de Servico |
+| `src/pages/Seguranca.tsx` | Politica de Seguranca e Cookies |
+
+**Template basico:**
 ```typescript
-import { Profiler, ProfilerOnRenderCallback } from 'react';
-
-const onRenderCallback: ProfilerOnRenderCallback = (
-  id,
-  phase,
-  actualDuration,
-  baseDuration,
-  startTime,
-  commitTime
-) => {
-  if (process.env.NODE_ENV === 'development' && actualDuration > 16) {
-    console.warn(
-      `⚠️ Slow render: ${id} (${phase}) took ${actualDuration.toFixed(2)}ms`
-    );
-  }
-};
-
-export function withProfiler<P extends object>(
-  Component: React.ComponentType<P>,
-  id: string
-): React.FC<P> {
-  return (props: P) => (
-    <Profiler id={id} onRender={onRenderCallback}>
-      <Component {...props} />
-    </Profiler>
-  );
-}
-```
-
-#### 5.2 Otimizar Landing Page com Lazy Sections
-
-**Arquivo:** `src/components/landing/heimdall/HeimdallLanding.tsx`
-
-```typescript
-import { lazy, Suspense } from 'react';
-import { HeimdallNavbar } from './HeimdallNavbar';
-import { HeroSection } from './HeroSection';
-
-// Lazy load below-the-fold sections
-const NewsTicker = lazy(() => import('./NewsTicker').then(m => ({ default: m.NewsTicker })));
-const TechStack3D = lazy(() => import('./TechStack3D').then(m => ({ default: m.TechStack3D })));
-const StatsGrid = lazy(() => import('./StatsGrid').then(m => ({ default: m.StatsGrid })));
-const HeimdallFooter = lazy(() => import('./HeimdallFooter').then(m => ({ default: m.HeimdallFooter })));
-
-export function HeimdallLanding() {
+export default function Privacidade() {
   return (
-    <div className="heimdall-page">
-      {/* Critical above-the-fold - load immediately */}
-      <HeimdallNavbar />
-      <HeroSection />
-      
-      {/* Below-the-fold - lazy load */}
-      <Suspense fallback={<div className="loading-skeleton h-96" />}>
-        <TechStack3D />
-      </Suspense>
-      
-      <Suspense fallback={<div className="loading-skeleton h-64" />}>
-        <StatsGrid />
-      </Suspense>
-      
-      <Suspense fallback={<div className="loading-skeleton h-48" />}>
-        <NewsTicker />
-      </Suspense>
-      
-      <Suspense fallback={<div className="loading-skeleton h-96" />}>
-        <HeimdallFooter />
-      </Suspense>
+    <div className="max-w-4xl mx-auto py-12 px-4">
+      <h1 className="text-3xl font-bold mb-6">Politica de Privacidade</h1>
+      <div className="prose prose-slate dark:prose-invert">
+        {/* Conteudo da politica */}
+      </div>
     </div>
   );
 }
 ```
 
-#### 5.3 Adicionar Web Vitals Reporting
+---
 
-**Arquivo:** `src/utils/webVitals.ts` (NOVO)
+### FASE 5: Consistencia Visual
+
+#### 5.1 Padronizar Estados de Erro
+
+**Problema:** Alguns campos usam border-destructive, outros nao
+
+**Padrao a aplicar:**
+```css
+.input-error {
+  @apply border-destructive focus-visible:ring-destructive;
+}
+```
 
 ```typescript
-import { performanceMonitor } from './performanceMonitor';
+<Input
+  className={cn(
+    "...",
+    form.formState.errors.fieldName && "border-destructive focus-visible:ring-destructive"
+  )}
+/>
+```
 
-interface WebVitalMetric {
-  name: string;
-  value: number;
-  rating: 'good' | 'needs-improvement' | 'poor';
+#### 5.2 Padronizar Empty States
+
+**Componente a criar:** `src/components/ui/empty-state.tsx`
+
+```typescript
+interface EmptyStateProps {
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string;
+  description?: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
-export function reportWebVitals(onPerfEntry?: (metric: WebVitalMetric) => void): void {
-  if (typeof window === 'undefined') return;
-  
-  // LCP Observer
-  if ('PerformanceObserver' in window) {
-    const lcpObserver = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
-      const lastEntry = entries[entries.length - 1] as any;
-      const value = lastEntry.renderTime || lastEntry.loadTime;
-      
-      performanceMonitor.recordMetric('LCP', value);
-      
-      onPerfEntry?.({
-        name: 'LCP',
-        value,
-        rating: value < 2500 ? 'good' : value < 4000 ? 'needs-improvement' : 'poor',
-      });
-    });
-    lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
-    
-    // FCP Observer
-    const fcpObserver = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
-      const fcp = entries.find(e => e.name === 'first-contentful-paint');
-      if (fcp) {
-        performanceMonitor.recordMetric('FCP', fcp.startTime);
-        onPerfEntry?.({
-          name: 'FCP',
-          value: fcp.startTime,
-          rating: fcp.startTime < 1800 ? 'good' : fcp.startTime < 3000 ? 'needs-improvement' : 'poor',
-        });
-      }
-    });
-    fcpObserver.observe({ type: 'paint', buffered: true });
-  }
+export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      {Icon && <Icon className="h-12 w-12 text-muted-foreground/50 mb-4" />}
+      <h3 className="text-lg font-medium text-foreground">{title}</h3>
+      {description && <p className="text-sm text-muted-foreground mt-1 max-w-sm">{description}</p>}
+      {action && (
+        <Button onClick={action.onClick} className="mt-4">
+          {action.label}
+        </Button>
+      )}
+    </div>
+  );
 }
 ```
 
@@ -550,114 +387,112 @@ export function reportWebVitals(onPerfEntry?: (metric: WebVitalMetric) => void):
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/utils/imageOptimization.ts` | Utilitarios de otimizacao de imagens |
-| `src/utils/webVitals.ts` | Reporting de Core Web Vitals |
-| `src/utils/reactProfiler.ts` | Wrapper de profiling React |
-| `public/sw.js` | Service Worker para caching |
-| `public/hero-poster.webp` | Poster image para Hero video |
+| `src/pages/Privacidade.tsx` | Pagina de Politica de Privacidade |
+| `src/pages/Termos.tsx` | Pagina de Termos de Servico |
+| `src/pages/Seguranca.tsx` | Pagina de Politica de Seguranca |
+| `src/components/ui/empty-state.tsx` | Componente padronizado para estados vazios |
+| `src/components/legal/TermsModal.tsx` | Modal alternativo para Termos (opcional) |
+| `src/components/legal/PrivacyModal.tsx` | Modal alternativo para Privacidade (opcional) |
 
 ## Arquivos a Modificar
 
 | Arquivo | Modificacao |
 |---------|-------------|
-| `index.html` | Preload fonts, critical CSS, prefetch |
-| `vite.config.ts` | Terser drop_console, framer-motion chunk, analyzer |
-| `src/components/landing/heimdall/heimdall.css` | Remover @import fonts |
-| `src/components/landing/heimdall/HeroSection.tsx` | Poster image + lazy video |
-| `src/components/landing/heimdall/HeimdallLanding.tsx` | Lazy load below-fold sections |
-| `src/components/ui/responsive-image.tsx` | WebP support, priority loading |
-| `src/main.tsx` | Registrar Service Worker |
+| `src/components/landing/heimdall/HeimdallFooter.tsx` | Footer links funcionais, aria-labels, toast na newsletter |
+| `src/components/landing/heimdall/HeimdallNavbar.tsx` | aria-expanded no menu mobile |
+| `src/pages/Auth.tsx` | Links de Termos/Privacidade navegaveis |
+| `src/App.tsx` | Adicionar rotas para paginas de politicas |
+| `src/components/navigation/Breadcrumbs.tsx` | Adicionar labels para novas paginas |
 
 ---
 
-## Checklist de Validacao
+## Checklist de Validacao Final
 
-### Core Web Vitals
+### Usuario Novo
 
-- [ ] LCP < 2.5s (video poster, font preload)
-- [ ] FCP < 1.8s (critical CSS, font preload)
-- [ ] FID < 100ms (code splitting, lazy loading)
-- [ ] CLS < 0.1 (aspect ratios, placeholders)
-- [ ] TTFB < 600ms (CDN, caching)
+- [x] Pode usar sem instrucoes (navegacao clara, icones com labels)
+- [x] Onboarding flow existe (CleanOnboardingMain)
+- [ ] Termos/Privacidade acessiveis antes do registro
 
-### Bundle Size
+### Acoes Criticas
 
-- [ ] Main bundle < 200KB gzipped
-- [ ] Framer-motion chunked separadamente
-- [ ] console.log removidos em producao
-- [ ] Tree-shaking funcionando
+- [x] Delete tem confirmacao (AlertDialog)
+- [x] Logout tem confirmacao (AppHeader)
+- [ ] Cancel em modais pergunta se quer descartar alteracoes
 
-### Imagens
+### Feedback
 
-- [ ] WebP com fallback
-- [ ] Lazy loading em todas imagens
-- [ ] srcset para responsividade
-- [ ] Priority loading para hero images
+- [x] Toast para sucesso/erro
+- [x] Loading spinners
+- [x] Form errors com indicador visual
 
-### Network
+### Consistencia
 
-- [ ] Service Worker registrado
-- [ ] Font preload configurado
-- [ ] DNS prefetch configurado
-- [ ] Cache headers corretos
+- [x] Cores de botoes padronizadas
+- [x] Espacamento consistente (8px grid)
+- [x] Tipografia hierarquica
 
-### React
+### Performance
 
-- [ ] Lazy loading de rotas funcionando
-- [ ] Memoizacao em componentes pesados
-- [ ] Virtualizacao em listas longas
-- [ ] Profiler identificando re-renders
+- [x] Resposta rapida para clicks (< 100ms)
+- [x] Lazy loading de rotas
+- [x] Skeleton loaders
 
 ---
 
 ## Ordem de Execucao
 
-1. **Fase 1:** Critical Rendering Path (maior impacto em LCP/FCP)
-2. **Fase 2:** Bundle Size Optimization
-3. **Fase 3:** Image Optimization
-4. **Fase 4:** Network Optimization
-5. **Fase 5:** React Optimizations
-6. **Testes:** Lighthouse, PageSpeed, WebPageTest
+1. **Fase 1:** Corrigir footer links e adicionar feedback newsletter (impacto alto, esforco baixo)
+2. **Fase 2:** Adicionar aria-labels e aria-expanded faltantes
+3. **Fase 3:** Padronizar exemplos de formato em inputs
+4. **Fase 4:** Criar paginas de Privacidade/Termos/Seguranca
+5. **Fase 5:** Criar componente EmptyState padronizado
+6. **Validacao:** Testar fluxos principais com keyboard-only
 
 ---
 
 ## Metricas de Sucesso
 
-| Metrica | Antes | Target | Impacto Esperado |
-|---------|-------|--------|------------------|
-| LCP | ~3.5s | < 2.5s | -30% |
-| FCP | ~2.0s | < 1.8s | -10% |
-| Bundle Size | ~250KB | < 200KB | -20% |
-| Lighthouse Performance | ~70 | 90+ | +30% |
+| Metrica | Antes | Depois |
+|---------|-------|--------|
+| Footer links funcionais | 60% | 100% |
+| Componentes com aria-label | 70% | 95%+ |
+| Forms com feedback de formato | 50% | 100% |
+| Paginas legais disponiveis | 0% | 100% |
+| Empty states padronizados | 30% | 100% |
 
 ---
 
 ## Secao Tecnica
 
-### Dependencias Necessarias
+### Testes de Acessibilidade Recomendados
 
-Nenhuma nova dependencia obrigatoria. Opcionais:
-- `rollup-plugin-visualizer` para bundle analysis
+```bash
+# Lighthouse Accessibility
+npx lighthouse https://daton-esg-insight.lovable.app --view --only-categories=accessibility
+
+# axe-core (CLI)
+npx @axe-core/cli https://daton-esg-insight.lovable.app
+
+# Keyboard testing manual
+# Tab through entire page, verify:
+# - All interactive elements focusable
+# - Focus order logical
+# - Modal traps focus
+# - Escape closes modals
+```
+
+### Ferramentas de Validacao
+
+1. **Chrome DevTools > Accessibility tab**: Verificar arvore ARIA
+2. **Lighthouse**: Score 90+ em Accessibility
+3. **axe DevTools extension**: Detectar violacoes WCAG
+4. **NVDA/VoiceOver**: Testar com leitor de tela real
 
 ### Compatibilidade
 
-- Service Worker: Todos browsers modernos
-- WebP: 95%+ coverage, fallback para PNG/JPG
-- Preload/Prefetch: Suportado universalmente
+- WCAG 2.1 AA (target)
+- Browsers: Chrome, Firefox, Safari, Edge (ultimas 2 versoes)
+- Mobile: iOS Safari, Chrome Android
+- Screen readers: NVDA, VoiceOver
 
-### Testes de Performance
-
-```bash
-# Rodar Lighthouse localmente
-npx lighthouse https://daton-esg-insight.lovable.app --view
-
-# Analisar bundle
-npm run build -- --mode analyze
-```
-
-### Monitoramento Continuo
-
-Apos implementacao, monitorar via:
-1. Chrome DevTools > Performance tab
-2. PageSpeed Insights semanal
-3. `webVitals.ts` reportando metricas em producao
