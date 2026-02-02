@@ -27,17 +27,10 @@ export default defineConfig(({ mode }) => ({
     commonjsOptions: {
       include: [/react-quill/, /node_modules/]
     },
-    // Use terser for production minification with console removal
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.debug', 'console.info'],
-      },
-      format: {
-        comments: false,
-      },
+    // Use esbuild for production minification with console removal
+    minify: 'esbuild',
+    esbuild: {
+      drop: ['console', 'debugger'],
     },
     rollupOptions: {
       output: {
