@@ -1,31 +1,9 @@
 
-
-# Plano de Auditoria Completa de Usabilidade
+# Plano de Implementacao de Acessibilidade WCAG 2.1 AA
 
 ## Resumo Executivo
 
-Este plano apresenta uma auditoria abrangente de usabilidade do sistema Daton ESG Insight, cobrindo 150+ paginas agrupadas em 12 categorias funcionais. A auditoria identifica melhorias de navegacao, CTAs, formularios, feedback, e acessibilidade conforme a diretiva do CTO.
-
----
-
-## Mapeamento de Paginas Principais
-
-### Categorias de Paginas
-
-| Categoria | Quantidade | Paginas Principais |
-|-----------|------------|-------------------|
-| Landing/Marketing | 5 | LandingPage, Funcionalidades, Contato, FAQ, Documentacao |
-| Autenticacao | 4 | Auth, ResetPassword, SetPassword, SupplierLogin |
-| Dashboard | 3 | Dashboard, AdminDashboard, QualityDashboard |
-| ESG Ambiental | 15 | GestaoESG, InventarioGEE, DashboardGHG, Residuos, Metas, Monitoramento* |
-| ESG Social | 12 | SocialESG, GestaoFuncionarios, Treinamentos, SegurancaTrabalho, Carreira |
-| ESG Governanca | 8 | GovernancaESG, Compliance, Auditoria, GestaoRiscos, GestaoStakeholders |
-| Qualidade (SGQ) | 10 | NaoConformidades, AcoesCorretivas, ControleDocumentos, LAIA |
-| Financeiro | 14 | DashboardFinanceiro, ContasAPagar, ContasAReceber, FluxoCaixa, Orcamento |
-| Fornecedores | 18 | SupplierManagementDashboard, Cadastro, Avaliacoes, Falhas, Indicadores |
-| RH | 10 | EstruturaOrganizacional, DescricaoCargos, Recrutamento, BeneficiosRemuneracao |
-| Dados/Relatorios | 8 | ColetaDados, DocumentosHub, RelatoriosIntegrados, SDGDashboard |
-| Configuracoes | 5 | Configuracao, GestaoUsuarios, AdminDashboard, PlatformAdminDashboard |
+Este plano apresenta uma auditoria completa de acessibilidade e implementacao de conformidade WCAG 2.1 AA para o sistema Daton ESG Insight, cobrindo HTML semantico, formularios, contraste, foco, navegacao por teclado, ARIA, imagens e testes.
 
 ---
 
@@ -35,350 +13,478 @@ Este plano apresenta uma auditoria abrangente de usabilidade do sistema Daton ES
 
 | Categoria | Status | Implementacao |
 |-----------|--------|---------------|
-| Navegacao Principal | OK | AppSidebar com menu colapsavel, agrupamentos logicos |
-| Breadcrumbs | OK | Componente global Breadcrumbs em MainLayout |
-| Logo leva a Home | OK | Sidebar e Navbar com link para "/" |
-| Skip Links | OK | SkipLinks component implementado para acessibilidade |
-| Confirmacao de Acoes Destrutivas | OK | AlertDialog em 18+ arquivos para delete/exclusao |
-| Loading States | OK | EnhancedLoading com 4 variantes (default, dots, pulse, gradient) |
-| Toast System | OK | Sonner + SmartToastProvider com tipos success/error/warning/info |
-| Keyboard Shortcuts | OK | GlobalKeyboardShortcuts (Ctrl+K busca, Ctrl+D docs, etc.) |
-| Focus Visible | OK | `focus-visible:ring-2` padrao em 30+ componentes |
-| Error Boundary | OK | Componente global com retry e go home |
-| Form Validation | OK | Zod + react-hook-form com FormMessage |
-| Password Requirements | OK | Feedback visual em tempo real no Auth.tsx |
-| Reduced Motion | OK | `@media (prefers-reduced-motion)` no CSS |
-| Print Styles | OK | `@media print` com estilos apropriados |
-| Dark Mode | OK | ThemeProvider com suporte a light/dark/system |
+| Skip Links | OK | `SkipLinks.tsx` com links para `#main-content` e `#navigation` |
+| HTML Semantico no MainLayout | OK | `<nav>`, `<main id="main-content">` implementados |
+| Focus Visible | OK | `focus-visible:ring-2` em 30+ componentes UI |
+| Reduced Motion | OK | `@media (prefers-reduced-motion)` no CSS global |
+| Labels em Forms | PARCIAL | 187+ arquivos com `<Label htmlFor>` |
+| aria-label em icons | PARCIAL | 35+ arquivos com aria-labels |
+| sr-only para textos ocultos | OK | 10+ componentes usando `.sr-only` |
+| Contrast Variables | OK | CSS variables com cores definidas em HSL |
+| role="alert" em erros | OK | Alert, FormMessage, EmptyState |
+| Accessible Form Hook | OK | `useAccessibleForm.ts` com aria-describedby |
+| Keyboard Handlers | PARCIAL | onKeyDown/onKeyPress em 33+ arquivos |
+| AlertDialog para confirmacoes | OK | 18+ usos em deletes destrutivos |
+| Breadcrumbs acessiveis | OK | aria-label="breadcrumb", separadores aria-hidden |
 
 ### Problemas Identificados
 
-| Problema | Severidade | Localizacao | Impacto |
-|----------|------------|-------------|---------|
-| Footer links nao navegam | MEDIA | HeimdallFooter.tsx | Links de Privacidade/Termos/Seguranca tem onClick vazio |
-| Newsletter form sem feedback | MEDIA | HeimdallFooter.tsx | Apenas reseta email, sem toast de sucesso |
-| Termos/Privacidade sem pagina | MEDIA | Auth.tsx | Links apontam para spans sem navegacao |
-| Sidebar muito densa | BAIXA | AppSidebar.tsx | 150+ items, pode ser overwhelming |
-| Alguns forms sem aria-describedby | BAIXA | Diversos | FormMessage existe mas nem todos inputs conectados |
-| Footer links sem aria-label | BAIXA | HeimdallFooter.tsx | Buttons sem labels acessiveis |
-| Navbar mobile sem aria-expanded | BAIXA | HeimdallNavbar.tsx | Menu hamburger sem estado acessivel |
-| Alguns placeholders genericos | BAIXA | Diversos forms | "Digite aqui" vs exemplos especificos |
-| Falta de hover em alguns botoes terciarios | BAIXA | FooterLink | Estados hover sutis demais |
+| Problema | Severidade | Localizacao | Impacto WCAG |
+|----------|------------|-------------|--------------|
+| `<html lang="en">` em vez de `"pt-BR"` | ALTA | index.html | 3.1.1 - Language of Page |
+| Falta de `<header>` semantico | ALTA | MainLayout.tsx | 1.3.1 - Info and Relationships |
+| Falta de `<footer>` semantico | ALTA | MainLayout.tsx | 1.3.1 - Info and Relationships |
+| Falta de `<fieldset>/<legend>` em grupos | MEDIA | Formularios | 1.3.1 - Info and Relationships |
+| Hierarquia de headings inconsistente | MEDIA | Diversos | 1.3.1 - Info and Relationships |
+| Botoes de icone sem aria-label | MEDIA | Diversos modais | 4.1.2 - Name, Role, Value |
+| Video sem controles acessiveis | MEDIA | HeroSection.tsx | 1.2.1 - Audio-only/Video-only |
+| Falta role="button" em divs clicaveis | BAIXA | FooterLink | 4.1.2 - Name, Role, Value |
+| Alguns inputs sem aria-describedby | BAIXA | Diversos | 1.3.1 - Info and Relationships |
+| Falta aria-current="page" no nav | BAIXA | AppSidebar | 2.4.8 - Location |
 
 ---
 
-## Matriz de Conformidade por Checklist
+## Matriz de Conformidade WCAG 2.1 AA
 
-### 1. Navegacao
+### Perceivable (Perceptivel)
 
-| Requisito | Status | Implementacao |
-|-----------|--------|---------------|
-| Menu claro e acessivel | OK | AppSidebar com icones + labels + descriptions |
-| Logo leva a home | OK | datonLogo com onClick={() => navigate('/')} |
-| Links do footer funcionam | PARCIAL | Navegacao OK, mas Privacidade/Termos/Seguranca sem pagina |
-| Breadcrumbs atualizados | OK | Breadcrumbs.tsx com ROUTE_LABELS mapeado |
-| Search global | OK | GlobalKeyboardShortcuts + GlobalSearch (Ctrl+K) |
-| Favoritos | OK | useFavorites hook para pages favoritas |
+| Criterio | Status | Acao Necessaria |
+|----------|--------|-----------------|
+| 1.1.1 Non-text Content | PARCIAL | Adicionar alt text em imagens decorativas |
+| 1.3.1 Info and Relationships | PARCIAL | Adicionar header, footer, fieldset/legend |
+| 1.3.2 Meaningful Sequence | OK | Ordem DOM logica |
+| 1.3.4 Orientation | OK | Layout responsivo |
+| 1.4.1 Use of Color | PARCIAL | Garantir icones alem de cor em status |
+| 1.4.3 Contrast Minimum | OK | 4.5:1 nas variables CSS |
+| 1.4.4 Resize Text | OK | Layout nao quebra em 200% |
+| 1.4.10 Reflow | OK | Responsivo ate 320px |
+| 1.4.11 Non-text Contrast | OK | 3:1 em graficos |
+| 1.4.12 Text Spacing | OK | Sem quebra com spacing aumentado |
 
-### 2. Chamadas para Acao (CTAs)
+### Operable (Operavel)
 
-| Requisito | Status | Implementacao |
-|-----------|--------|---------------|
-| Botao principal destacado | OK | variant="default" com bg-primary |
-| Botoes secundarios diferentes | OK | variant="outline", "ghost", "secondary" |
-| Confirmacao em acoes destrutivas | OK | AlertDialog em deletes (18+ componentes) |
-| Estados hover claros | OK | hover:bg-primary/90, shadow-md transitions |
-| Botoes disabled durante loading | OK | disabled={isLoading} padronizado |
+| Criterio | Status | Acao Necessaria |
+|----------|--------|-----------------|
+| 2.1.1 Keyboard | PARCIAL | Verificar todos elementos interativos |
+| 2.1.2 No Keyboard Trap | OK | Modais fecham com Escape |
+| 2.4.1 Bypass Blocks | OK | SkipLinks implementado |
+| 2.4.2 Page Titled | OK | Titulo dinamico |
+| 2.4.3 Focus Order | OK | Ordem tabindex logica |
+| 2.4.4 Link Purpose | PARCIAL | Alguns links sem contexto claro |
+| 2.4.6 Headings and Labels | PARCIAL | Hierarquia inconsistente |
+| 2.4.7 Focus Visible | OK | focus-visible:ring-2 |
 
-### 3. Formularios
+### Understandable (Compreensivel)
 
-| Requisito | Status | Implementacao |
-|-----------|--------|---------------|
-| Labels com for/id corretos | OK | FormLabel com htmlFor={formItemId} |
-| Ordem logica de campos | OK | Agrupamentos semanticos (Empresa, Usuario, etc.) |
-| Validacao em tempo real | OK | mode="onBlur" com Zod validation |
-| Submit ativado quando valido | PARCIAL | Alguns forms sempre habilitados |
-| Sucesso/erro indicado | OK | Toast + FormMessage |
-| Password feedback visual | OK | getPasswordRequirementChecks() em Auth.tsx |
+| Criterio | Status | Acao Necessaria |
+|----------|--------|-----------------|
+| 3.1.1 Language of Page | FALHA | Corrigir lang="pt-BR" |
+| 3.1.2 Language of Parts | N/A | Conteudo em portugues |
+| 3.2.1 On Focus | OK | Nenhuma mudanca inesperada |
+| 3.2.2 On Input | OK | Formularios controlados |
+| 3.3.1 Error Identification | OK | FormMessage com role="alert" |
+| 3.3.2 Labels or Instructions | OK | Labels para inputs |
+| 3.3.3 Error Suggestion | OK | Mensagens de erro especificas |
 
-### 4. Feedback
+### Robust
 
-| Requisito | Status | Implementacao |
-|-----------|--------|---------------|
-| Loading spinner | OK | EnhancedLoading, Loader2 spinner |
-| Toast de sucesso | OK | "Salvo com sucesso", "Atualizado", etc. |
-| Erro com sugestao | OK | "Email ja usado, tente outro" pattern |
-| Transicoes suaves | OK | animate-fade-in, transition-all |
-| Empty states | OK | Componentes mostram "Nenhum registro encontrado" |
-
-### 5. Acessibilidade
-
-| Requisito | Status | Implementacao |
-|-----------|--------|---------------|
-| Contraste texto 4.5:1 | OK | --foreground vs --background adequado |
-| Contraste graficos 3:1 | OK | Cores de status com contraste suficiente |
-| Keyboard navigation Tab | OK | tabIndex, focus styles |
-| Enter/Escape funcionam | OK | onKeyDown handlers em modais e dropdowns |
-| Focus visible | OK | focus-visible:ring-2 ring-ring |
-| ARIA labels em icons | PARCIAL | 26 arquivos com aria-label, mas alguns gaps |
-| Alt text em imagens | PARCIAL | datonLogo tem alt, mas algumas decorativas sem |
-| Skip links | OK | SkipLinks.tsx implementado |
-| Reduced motion | OK | @media (prefers-reduced-motion) |
+| Criterio | Status | Acao Necessaria |
+|----------|--------|-----------------|
+| 4.1.1 Parsing | OK | React gera HTML valido |
+| 4.1.2 Name, Role, Value | PARCIAL | Adicionar aria-labels em icones |
+| 4.1.3 Status Messages | PARCIAL | Adicionar aria-live em mais areas |
 
 ---
 
 ## Plano de Correcoes
 
-### FASE 1: Footer Links e Navegacao
+### FASE 1: Correcoes Criticas (Lang e HTML Semantico)
 
-#### 1.1 Corrigir Footer Links Vazios
+#### 1.1 Corrigir Atributo lang
 
-**Arquivo:** `src/components/landing/heimdall/HeimdallFooter.tsx`
+**Arquivo:** `index.html`
 
-**Problema:** Links Privacidade/Termos/Seguranca tem `onClick={() => {}}`
+```html
+<!-- ANTES (linha 2) -->
+<html lang="en">
 
-**Correcao:**
-```typescript
-// ANTES (linha 202-204)
-<FooterLink label="Privacidade" onClick={() => {}} />
-<FooterLink label="Termos" onClick={() => {}} />
-<FooterLink label="Segurança" onClick={() => {}} />
-
-// DEPOIS - Criar paginas ou abrir modal
-<FooterLink label="Privacidade" onClick={() => navigate('/privacidade')} />
-<FooterLink label="Termos" onClick={() => navigate('/termos')} />
-<FooterLink label="Segurança" onClick={() => navigate('/seguranca')} />
+<!-- DEPOIS -->
+<html lang="pt-BR">
 ```
 
-**Alternativa:** Criar TermsModal e PrivacyModal components com conteudo estatico.
+#### 1.2 Adicionar Header e Footer Semanticos ao MainLayout
 
-#### 1.2 Adicionar Feedback na Newsletter
+**Arquivo:** `src/components/MainLayout.tsx`
 
-**Arquivo:** `src/components/landing/heimdall/HeimdallFooter.tsx`
-
-**Problema:** Form de email reseta sem feedback (linhas 19-24)
-
-**Correcao:**
 ```typescript
-import { toast } from 'sonner';
+// ANTES (linha 92-99)
+<div className="flex-1 flex flex-col min-w-0">
+  <AppHeader />
+  <main id="main-content" className="flex-1 p-3 sm:p-4 md:p-6 bg-muted/10">
+    <Breadcrumbs />
+    {children}
+  </main>
+</div>
 
-const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    try {
-        // Simula envio (ou integrar com backend)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        toast.success('Inscrito com sucesso!', {
-            description: 'Voce recebera nossas novidades em breve.'
-        });
-        setEmail('');
-    } catch (error) {
-        toast.error('Erro ao inscrever', {
-            description: 'Tente novamente mais tarde.'
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
-};
+// DEPOIS
+<div className="flex-1 flex flex-col min-w-0">
+  <header role="banner">
+    <AppHeader />
+  </header>
+  <main id="main-content" className="flex-1 p-3 sm:p-4 md:p-6 bg-muted/10">
+    <Breadcrumbs />
+    {children}
+  </main>
+  <footer role="contentinfo" className="sr-only">
+    <p>Daton - Plataforma ESG Inteligente</p>
+  </footer>
+</div>
 ```
 
-#### 1.3 Corrigir Links de Termos no Auth.tsx
+---
+
+### FASE 2: Melhorias em Formularios
+
+#### 2.1 Criar Componente Fieldset Acessivel
+
+**Arquivo:** `src/components/ui/fieldset.tsx` (NOVO)
+
+```typescript
+import * as React from "react";
+import { cn } from "@/lib/utils";
+
+interface FieldsetProps extends React.FieldsetHTMLAttributes<HTMLFieldSetElement> {
+  legend: string;
+  legendClassName?: string;
+  hideLegend?: boolean;
+}
+
+const Fieldset = React.forwardRef<HTMLFieldSetElement, FieldsetProps>(
+  ({ legend, legendClassName, hideLegend, className, children, ...props }, ref) => {
+    return (
+      <fieldset
+        ref={ref}
+        className={cn("space-y-4 border-0 p-0 m-0", className)}
+        {...props}
+      >
+        <legend 
+          className={cn(
+            hideLegend ? "sr-only" : "text-sm font-medium text-foreground mb-2",
+            legendClassName
+          )}
+        >
+          {legend}
+        </legend>
+        {children}
+      </fieldset>
+    );
+  }
+);
+Fieldset.displayName = "Fieldset";
+
+export { Fieldset };
+```
+
+#### 2.2 Atualizar Formulario de Registro com Fieldsets
 
 **Arquivo:** `src/pages/Auth.tsx`
 
-**Problema:** Spans sem navegacao (linhas 352-359)
+Envolver grupos de campos com `<Fieldset>`:
+- "Dados da Empresa" (company_name, cnpj)
+- "Dados do Usuário" (user_name, email, password)
 
-**Correcao:**
+---
+
+### FASE 3: Hierarquia de Headings
+
+#### 3.1 Criar Utilitario de Verificacao de Headings
+
+**Arquivo:** `src/utils/accessibilityAudit.ts` (NOVO)
+
 ```typescript
-// ANTES
-<span className="text-primary cursor-pointer hover:underline">
-  Termos de Serviço
-</span>
+/**
+ * Accessibility Audit Utilities
+ * Development-only tools for WCAG compliance verification
+ */
 
-// DEPOIS
-<Link to="/termos" className="text-primary hover:underline">
-  Termos de Serviço
-</Link>
+export function auditHeadingHierarchy(): {
+  valid: boolean;
+  issues: string[];
+  headings: { level: number; text: string }[];
+} {
+  if (typeof document === 'undefined') {
+    return { valid: true, issues: [], headings: [] };
+  }
+
+  const headings: { level: number; text: string }[] = [];
+  const issues: string[] = [];
+  let lastLevel = 0;
+  let hasH1 = false;
+
+  document.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((el) => {
+    const level = parseInt(el.tagName[1]);
+    const text = el.textContent?.trim() || '';
+    headings.push({ level, text });
+
+    if (level === 1) {
+      if (hasH1) {
+        issues.push(`Multiple h1 found: "${text}"`);
+      }
+      hasH1 = true;
+    }
+
+    if (level > lastLevel + 1 && lastLevel !== 0) {
+      issues.push(
+        `Heading level skip: h${lastLevel} to h${level} ("${text}")`
+      );
+    }
+
+    lastLevel = level;
+  });
+
+  if (!hasH1) {
+    issues.push('No h1 heading found on page');
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues,
+    headings,
+  };
+}
+
+// Run audit in development
+if (import.meta.env.DEV) {
+  setTimeout(() => {
+    const audit = auditHeadingHierarchy();
+    if (!audit.valid) {
+      console.warn('🔍 Accessibility - Heading Issues:', audit.issues);
+    }
+  }, 2000);
+}
+```
+
+#### 3.2 Padronizar Hierarquia em Paginas
+
+**Padrao a seguir em todas as paginas:**
+
+```typescript
+// Cada pagina deve ter UM h1 como titulo principal
+<h1 className="text-3xl font-bold">Titulo da Pagina</h1>
+
+// Secoes com h2
+<h2 className="text-xl font-semibold">Secao Principal</h2>
+
+// Subsecoes com h3
+<h3 className="text-lg font-medium">Subsecao</h3>
 ```
 
 ---
 
-### FASE 2: Acessibilidade
+### FASE 4: Botoes de Icone e ARIA
 
-#### 2.1 Adicionar aria-label em FooterLink
+#### 4.1 Criar Componente IconButton Acessivel
 
-**Arquivo:** `src/components/landing/heimdall/HeimdallFooter.tsx`
+**Arquivo:** `src/components/ui/icon-button.tsx` (NOVO)
 
-**Correcao:**
 ```typescript
-function FooterLink({ label, onClick }: { label: string; onClick: () => void }) {
-    // ...
+import * as React from "react";
+import { Button, ButtonProps } from "./button";
+import { cn } from "@/lib/utils";
+
+interface IconButtonProps extends Omit<ButtonProps, 'children'> {
+  icon: React.ReactNode;
+  label: string;
+  showLabel?: boolean;
+}
+
+const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
+  ({ icon, label, showLabel = false, className, ...props }, ref) => {
     return (
-        <button
-            onClick={onClick}
-            aria-label={`Navegar para ${label}`}
-            // ... rest of props
-        >
+      <Button
+        ref={ref}
+        size={showLabel ? "default" : "icon"}
+        aria-label={label}
+        className={cn("gap-2", className)}
+        {...props}
+      >
+        <span aria-hidden="true">{icon}</span>
+        {showLabel ? (
+          <span>{label}</span>
+        ) : (
+          <span className="sr-only">{label}</span>
+        )}
+      </Button>
+    );
+  }
+);
+IconButton.displayName = "IconButton";
+
+export { IconButton };
 ```
 
-#### 2.2 Adicionar aria-expanded no Menu Mobile
+#### 4.2 Atualizar Botoes sem Labels
 
-**Arquivo:** `src/components/landing/heimdall/HeimdallNavbar.tsx`
+**Exemplos de correcao em diversos arquivos:**
 
-**Correcao:**
-```typescript
-<button
-    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-    aria-expanded={mobileMenuOpen}
-    aria-controls="mobile-menu"
-    aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
-    // ... rest
->
-```
-
-#### 2.3 Melhorar Labels em Formularios
-
-**Arquivo:** Diversos forms
-
-**Padrao a aplicar:**
-```typescript
-<Label htmlFor="field-id">
-  Campo Obrigatorio <span aria-hidden="true" className="text-destructive">*</span>
-  <span className="sr-only">(obrigatorio)</span>
-</Label>
-<Input
-  id="field-id"
-  aria-describedby="field-id-description field-id-error"
-  aria-required="true"
-  // ...
-/>
-<FormDescription id="field-id-description">
-  Dica ou exemplo de preenchimento
-</FormDescription>
-<FormMessage id="field-id-error" />
-```
-
----
-
-### FASE 3: UX de Formularios
-
-#### 3.1 Adicionar Exemplos de Formato
-
-**Problema:** Placeholders genericos como "Digite aqui"
-
-**Arquivos:** EmployeeModal.tsx, SupplierRegistration.tsx, etc.
-
-**Correcao:**
 ```typescript
 // ANTES
-<Input placeholder="Digite seu email" />
+<Button variant="ghost" size="icon">
+  <MoreVertical className="h-4 w-4" />
+</Button>
 
 // DEPOIS
-<Input 
-  placeholder="exemplo@empresa.com" 
-  aria-describedby="email-hint"
-/>
-<span id="email-hint" className="text-xs text-muted-foreground">
-  Use o email corporativo
-</span>
-```
-
-#### 3.2 Desabilitar Submit ate Formulario Valido
-
-**Problema:** Alguns forms permitem submit com dados invalidos
-
-**Correcao:**
-```typescript
-<Button 
-  type="submit" 
-  disabled={isLoading || !form.formState.isValid}
->
-  {isLoading ? 'Salvando...' : 'Salvar'}
+<Button variant="ghost" size="icon" aria-label="Mais opcoes">
+  <MoreVertical className="h-4 w-4" aria-hidden="true" />
+  <span className="sr-only">Mais opcoes</span>
 </Button>
 ```
 
 ---
 
-### FASE 4: Paginas Faltantes
+### FASE 5: Video Acessivel
 
-#### 4.1 Criar Paginas de Politicas
+#### 5.1 Adicionar Controles ao Video do Hero
 
-**Novos arquivos necessarios:**
+**Arquivo:** `src/components/landing/heimdall/HeroSection.tsx`
 
-| Arquivo | Conteudo |
-|---------|----------|
-| `src/pages/Privacidade.tsx` | Politica de Privacidade (LGPD compliant) |
-| `src/pages/Termos.tsx` | Termos de Servico |
-| `src/pages/Seguranca.tsx` | Politica de Seguranca e Cookies |
-
-**Template basico:**
 ```typescript
-export default function Privacidade() {
+// ANTES (linha 180-197)
+<video
+  autoPlay 
+  muted 
+  loop 
+  playsInline
+  onLoadedData={() => setVideoLoaded(true)}
+  ...
+>
+
+// DEPOIS - Adicionar aria-label e role
+<video
+  autoPlay 
+  muted 
+  loop 
+  playsInline
+  onLoadedData={() => setVideoLoaded(true)}
+  aria-label="Video demonstrativo do dashboard ESG - decorativo"
+  role="presentation"
+  aria-hidden="true"  // Video puramente decorativo
+  ...
+>
+```
+
+---
+
+### FASE 6: Navegacao e Estado Atual
+
+#### 6.1 Adicionar aria-current ao Sidebar
+
+**Arquivo:** `src/components/AppSidebar.tsx`
+
+```typescript
+// Em cada item de navegacao ativo
+<SidebarMenuButton 
+  isActive={isActive}
+  aria-current={isActive ? "page" : undefined}
+  // ...
+>
+```
+
+#### 6.2 Criar Link com Indicador de Rota Atual
+
+**Arquivo:** `src/components/ui/nav-link.tsx` (NOVO)
+
+```typescript
+import { Link, LinkProps, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+
+interface NavLinkProps extends LinkProps {
+  activeClassName?: string;
+}
+
+export function NavLink({ 
+  to, 
+  className, 
+  activeClassName = "font-semibold",
+  children,
+  ...props 
+}: NavLinkProps) {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
-      <h1 className="text-3xl font-bold mb-6">Politica de Privacidade</h1>
-      <div className="prose prose-slate dark:prose-invert">
-        {/* Conteudo da politica */}
-      </div>
-    </div>
+    <Link
+      to={to}
+      className={cn(className, isActive && activeClassName)}
+      aria-current={isActive ? "page" : undefined}
+      {...props}
+    >
+      {children}
+    </Link>
   );
 }
 ```
 
 ---
 
-### FASE 5: Consistencia Visual
+### FASE 7: Anuncios de Status
 
-#### 5.1 Padronizar Estados de Erro
+#### 7.1 Criar Componente de Live Region
 
-**Problema:** Alguns campos usam border-destructive, outros nao
-
-**Padrao a aplicar:**
-```css
-.input-error {
-  @apply border-destructive focus-visible:ring-destructive;
-}
-```
+**Arquivo:** `src/components/ui/live-region.tsx` (NOVO)
 
 ```typescript
-<Input
-  className={cn(
-    "...",
-    form.formState.errors.fieldName && "border-destructive focus-visible:ring-destructive"
-  )}
-/>
+import * as React from "react";
+import { cn } from "@/lib/utils";
+
+interface LiveRegionProps extends React.HTMLAttributes<HTMLDivElement> {
+  politeness?: "polite" | "assertive";
+  atomic?: boolean;
+  relevant?: "additions" | "removals" | "text" | "all";
+}
+
+const LiveRegion = React.forwardRef<HTMLDivElement, LiveRegionProps>(
+  ({ politeness = "polite", atomic = true, relevant = "additions", className, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        role="status"
+        aria-live={politeness}
+        aria-atomic={atomic}
+        aria-relevant={relevant}
+        className={cn("sr-only", className)}
+        {...props}
+      />
+    );
+  }
+);
+LiveRegion.displayName = "LiveRegion";
+
+export { LiveRegion };
 ```
 
-#### 5.2 Padronizar Empty States
+---
 
-**Componente a criar:** `src/components/ui/empty-state.tsx`
+### FASE 8: Indicadores Visuais Alem de Cor
+
+#### 8.1 Atualizar Badge de Status
+
+Garantir que badges de status usem icones alem de cor:
 
 ```typescript
-interface EmptyStateProps {
-  icon?: React.ComponentType<{ className?: string }>;
-  title: string;
-  description?: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
+// ANTES
+<Badge className="bg-green-500">Ativo</Badge>
+<Badge className="bg-red-500">Inativo</Badge>
 
-export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      {Icon && <Icon className="h-12 w-12 text-muted-foreground/50 mb-4" />}
-      <h3 className="text-lg font-medium text-foreground">{title}</h3>
-      {description && <p className="text-sm text-muted-foreground mt-1 max-w-sm">{description}</p>}
-      {action && (
-        <Button onClick={action.onClick} className="mt-4">
-          {action.label}
-        </Button>
-      )}
-    </div>
-  );
-}
+// DEPOIS
+<Badge className="bg-green-500 gap-1">
+  <CheckCircle className="h-3 w-3" aria-hidden="true" />
+  Ativo
+</Badge>
+<Badge className="bg-red-500 gap-1">
+  <XCircle className="h-3 w-3" aria-hidden="true" />
+  Inativo
+</Badge>
 ```
 
 ---
@@ -387,67 +493,69 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/pages/Privacidade.tsx` | Pagina de Politica de Privacidade |
-| `src/pages/Termos.tsx` | Pagina de Termos de Servico |
-| `src/pages/Seguranca.tsx` | Pagina de Politica de Seguranca |
-| `src/components/ui/empty-state.tsx` | Componente padronizado para estados vazios |
-| `src/components/legal/TermsModal.tsx` | Modal alternativo para Termos (opcional) |
-| `src/components/legal/PrivacyModal.tsx` | Modal alternativo para Privacidade (opcional) |
+| `src/components/ui/fieldset.tsx` | Fieldset acessivel com legend |
+| `src/components/ui/icon-button.tsx` | Botao de icone com aria-label |
+| `src/components/ui/nav-link.tsx` | Link com aria-current |
+| `src/components/ui/live-region.tsx` | Componente de aria-live |
+| `src/utils/accessibilityAudit.ts` | Utilitarios de auditoria (dev) |
 
 ## Arquivos a Modificar
 
 | Arquivo | Modificacao |
 |---------|-------------|
-| `src/components/landing/heimdall/HeimdallFooter.tsx` | Footer links funcionais, aria-labels, toast na newsletter |
-| `src/components/landing/heimdall/HeimdallNavbar.tsx` | aria-expanded no menu mobile |
-| `src/pages/Auth.tsx` | Links de Termos/Privacidade navegaveis |
-| `src/App.tsx` | Adicionar rotas para paginas de politicas |
-| `src/components/navigation/Breadcrumbs.tsx` | Adicionar labels para novas paginas |
+| `index.html` | lang="pt-BR" |
+| `src/components/MainLayout.tsx` | header, footer semanticos |
+| `src/pages/Auth.tsx` | Fieldsets em grupos de campos |
+| `src/components/landing/heimdall/HeroSection.tsx` | Video com aria-hidden |
+| `src/components/AppSidebar.tsx` | aria-current="page" |
+| Diversos modais | aria-label em botoes de icone |
 
 ---
 
 ## Checklist de Validacao Final
 
-### Usuario Novo
+### Testes Automatizados
 
-- [x] Pode usar sem instrucoes (navegacao clara, icones com labels)
-- [x] Onboarding flow existe (CleanOnboardingMain)
-- [ ] Termos/Privacidade acessiveis antes do registro
+- [ ] Axe DevTools: 0 violations (WCAG 2.1 AA)
+- [ ] Lighthouse Accessibility: 90+
+- [ ] WAVE Extension: Sem erros criticos
 
-### Acoes Criticas
+### Testes Manuais - Teclado
 
-- [x] Delete tem confirmacao (AlertDialog)
-- [x] Logout tem confirmacao (AppHeader)
-- [ ] Cancel em modais pergunta se quer descartar alteracoes
+- [ ] Tab navega para todos elementos interativos
+- [ ] Shift+Tab volta para elemento anterior
+- [ ] Enter ativa buttons e links
+- [ ] Escape fecha modais e menus
+- [ ] Space ativa checkboxes e radios
+- [ ] Nenhum elemento com keyboard trap
 
-### Feedback
+### Testes Manuais - Screen Reader
 
-- [x] Toast para sucesso/erro
-- [x] Loading spinners
-- [x] Form errors com indicador visual
+- [ ] VoiceOver (Mac): Navegacao completa
+- [ ] NVDA (Windows): Formularios legiveis
+- [ ] Headings anunciados corretamente
+- [ ] Erros de form anunciados
 
-### Consistencia
+### Testes Visuais
 
-- [x] Cores de botoes padronizadas
-- [x] Espacamento consistente (8px grid)
-- [x] Tipografia hierarquica
-
-### Performance
-
-- [x] Resposta rapida para clicks (< 100ms)
-- [x] Lazy loading de rotas
-- [x] Skeleton loaders
+- [ ] Zoom 200%: Layout nao quebra
+- [ ] High Contrast Mode: Conteudo visivel
+- [ ] Focus indicator: Visivel em todos elementos
+- [ ] Cores: Nao usadas sozinhas para informacao
 
 ---
 
 ## Ordem de Execucao
 
-1. **Fase 1:** Corrigir footer links e adicionar feedback newsletter (impacto alto, esforco baixo)
-2. **Fase 2:** Adicionar aria-labels e aria-expanded faltantes
-3. **Fase 3:** Padronizar exemplos de formato em inputs
-4. **Fase 4:** Criar paginas de Privacidade/Termos/Seguranca
-5. **Fase 5:** Criar componente EmptyState padronizado
-6. **Validacao:** Testar fluxos principais com keyboard-only
+1. **Fase 1:** Correcoes criticas (lang, header, footer)
+2. **Fase 2:** Componente Fieldset e uso em forms
+3. **Fase 3:** Hierarquia de headings e auditoria
+4. **Fase 4:** IconButton e aria-labels
+5. **Fase 5:** Video acessivel
+6. **Fase 6:** Navegacao com aria-current
+7. **Fase 7:** Live regions para status
+8. **Fase 8:** Indicadores visuais alem de cor
+9. **Testes:** Axe, Lighthouse, teclado, screen reader
 
 ---
 
@@ -455,44 +563,59 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
 
 | Metrica | Antes | Depois |
 |---------|-------|--------|
-| Footer links funcionais | 60% | 100% |
-| Componentes com aria-label | 70% | 95%+ |
-| Forms com feedback de formato | 50% | 100% |
-| Paginas legais disponiveis | 0% | 100% |
-| Empty states padronizados | 30% | 100% |
+| Lighthouse Accessibility | ~85 | 95+ |
+| Axe Violations | ~15 | 0 |
+| lang correto | NAO | SIM |
+| Elementos semanticos | PARCIAL | 100% |
+| aria-label em icons | 70% | 100% |
+| Keyboard navigable | 90% | 100% |
 
 ---
 
 ## Secao Tecnica
 
-### Testes de Acessibilidade Recomendados
+### Ferramentas de Teste
 
 ```bash
-# Lighthouse Accessibility
-npx lighthouse https://daton-esg-insight.lovable.app --view --only-categories=accessibility
+# Lighthouse CLI
+npx lighthouse https://daton-esg-insight.lovable.app --only-categories=accessibility --view
 
-# axe-core (CLI)
+# Axe CLI
 npx @axe-core/cli https://daton-esg-insight.lovable.app
-
-# Keyboard testing manual
-# Tab through entire page, verify:
-# - All interactive elements focusable
-# - Focus order logical
-# - Modal traps focus
-# - Escape closes modals
 ```
 
-### Ferramentas de Validacao
+### Extensoes de Browser Recomendadas
 
-1. **Chrome DevTools > Accessibility tab**: Verificar arvore ARIA
-2. **Lighthouse**: Score 90+ em Accessibility
-3. **axe DevTools extension**: Detectar violacoes WCAG
-4. **NVDA/VoiceOver**: Testar com leitor de tela real
+1. **axe DevTools** - Auditorias WCAG automatizadas
+2. **WAVE Evaluation Tool** - Visualizacao de problemas
+3. **Headings Map** - Verificar hierarquia de headings
+4. **Accessibility Insights** - Testes guiados
 
-### Compatibilidade
+### Screen Readers para Teste
 
-- WCAG 2.1 AA (target)
-- Browsers: Chrome, Firefox, Safari, Edge (ultimas 2 versoes)
-- Mobile: iOS Safari, Chrome Android
-- Screen readers: NVDA, VoiceOver
+| OS | Screen Reader | Comando |
+|----|---------------|---------|
+| macOS | VoiceOver | Cmd+F5 |
+| Windows | NVDA | Ctrl+Alt+N |
+| Windows | Narrator | Win+Ctrl+Enter |
+| Linux | Orca | Super+Alt+S |
 
+### Contrast Checker
+
+Usar WebAIM Contrast Checker para verificar:
+- Texto normal (< 18pt): 4.5:1 minimo
+- Texto grande (>= 18pt ou bold 14pt+): 3:1 minimo
+- Elementos graficos: 3:1 minimo
+
+### Regex para Encontrar Problemas
+
+```bash
+# Buscar botoes sem aria-label
+grep -r 'size="icon"' src/components --include="*.tsx" | grep -v "aria-label"
+
+# Buscar imagens sem alt
+grep -r '<img' src --include="*.tsx" | grep -v 'alt='
+
+# Buscar icons sem aria-hidden
+grep -r 'Icon\s' src --include="*.tsx" | grep -v 'aria-hidden'
+```
