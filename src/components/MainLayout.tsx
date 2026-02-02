@@ -86,7 +86,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <div className="flex-1 flex flex-col min-w-0">
                   <AppHeader />
                   
-                  <main className="flex-1 p-6 bg-muted/10">
+                  <main className="flex-1 p-3 sm:p-4 md:p-6 bg-muted/10">
                     <Breadcrumbs />
                     {children}
                   </main>
