@@ -90,12 +90,18 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </nav>
                 
                 <div className="flex-1 flex flex-col min-w-0">
-                  <AppHeader />
+                  <header role="banner">
+                    <AppHeader />
+                  </header>
                   
                   <main id="main-content" className="flex-1 p-3 sm:p-4 md:p-6 bg-muted/10">
                     <Breadcrumbs />
                     {children}
                   </main>
+                  
+                  <footer role="contentinfo" className="sr-only">
+                    <p>Daton - Plataforma ESG Inteligente &copy; 2024</p>
+                  </footer>
                 </div>
               </div>
               
