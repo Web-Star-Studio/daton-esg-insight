@@ -640,3 +640,215 @@ All colors MUST be HSL.
     display: none !important;
   }
 }
+
+/* ========================================
+   CROSS-BROWSER COMPATIBILITY UTILITIES
+   ======================================== */
+
+/* Cross-browser backdrop filter with webkit prefix */
+.backdrop-blur-safe {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.backdrop-blur-safe-sm {
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.backdrop-blur-safe-lg {
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+
+/* Safe area insets for notch devices (iPhone X+, etc) */
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Smooth scroll with fallback for older browsers */
+html {
+  scroll-behavior: smooth;
+}
+
+@supports not (scroll-behavior: smooth) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* iOS momentum scrolling */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Focus visibility fallback for older browsers */
+@supports not selector(:focus-visible) {
+  button:focus,
+  a:focus,
+  input:focus,
+  select:focus,
+  textarea:focus,
+  [tabindex]:focus {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+/* CSS Containment for performance optimization */
+.contain-layout {
+  contain: layout style;
+}
+
+.contain-paint {
+  contain: paint;
+}
+
+.contain-strict {
+  contain: strict;
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
+@media print {
+  /* Hide non-printable elements */
+  .no-print,
+  .ai-chat-container,
+  [data-chat-expanded],
+  nav:not(.print-nav),
+  .sidebar,
+  [data-sidebar],
+  button:not(.print-button),
+  .fixed,
+  .sticky {
+    display: none !important;
+  }
+  
+  /* Reset colors for ink economy */
+  body {
+    color: #000 !important;
+    background: #fff !important;
+    font-size: 12pt !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* Ensure cards and sections are visible */
+  .card,
+  [class*="Card"] {
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+  
+  /* Page break controls */
+  .page-break-before {
+    page-break-before: always;
+  }
+  
+  .page-break-after {
+    page-break-after: always;
+  }
+  
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  /* Ensure contrast on links */
+  a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+  
+  /* Show URLs of external links */
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    word-break: break-all;
+  }
+  
+  /* Don't show URL for internal links */
+  a[href^="#"]:after,
+  a[href^="/"]:after {
+    content: none;
+  }
+  
+  /* Ensure tables are readable */
+  table {
+    border-collapse: collapse !important;
+  }
+  
+  th, td {
+    border: 1px solid #000 !important;
+    padding: 0.5rem !important;
+  }
+  
+  /* Images should print at full quality */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+  
+  /* Headers for each page */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    color: #000 !important;
+  }
+  
+  /* Ensure main content takes full width */
+  main, #main-content {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY ENHANCEMENTS
+   ======================================== */
+
+/* Skip link styling - visible only on focus */
+.skip-link {
+  position: fixed;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: var(--radius);
+  font-weight: 500;
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
