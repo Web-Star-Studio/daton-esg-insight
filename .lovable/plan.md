@@ -1,632 +1,904 @@
 
 
-# Plano de Implementacao de Design System Completo
+# Plano de Criacao de Documentacao Tecnica Completa
 
 ## Resumo Executivo
 
-Este plano documenta uma auditoria abrangente do Design System do Daton ESG Insight e propoe melhorias para garantir consistencia visual profissional em toda a aplicacao. A analise revelou uma base solida ja implementada, com areas especificas para padronizacao e documentacao.
+Este plano detalha a criacao de documentacao tecnica abrangente para o sistema Daton ESG Insight, cobrindo README principal, documentacao de API, arquitetura, guia de desenvolvimento e operacoes.
 
 ---
 
-## Diagnostico do Estado Atual
+## Analise do Estado Atual
 
-### Pontos Fortes Identificados
+### Documentacao Existente
 
-| Categoria | Status | Detalhes |
-|-----------|--------|----------|
-| Cores Primarias | EXCELENTE | Verde Daton #00bf63 (HSL 151 100% 37%) bem definido |
-| CSS Variables | EXCELENTE | 50+ variables em HSL no index.css |
-| Dark Mode | OK | Suporte completo light/dark com ThemeProvider |
-| Spacing System | OK | 8px grid documentado (--spacing-xs a --spacing-2xl) |
-| Shadows | OK | 5 niveis padronizados (xs, sm, md, lg, hover) |
-| Transitions | OK | --transition-smooth e --transition-fast definidos |
-| Border Radius | OK | --radius: 0.75rem com variantes (lg, md, sm) |
-| Typography | PARCIAL | Inter definido, mas falta escala tipografica formal |
-| Chart Colors | EXCELENTE | 5 cores harmonizadas para graficos |
-| Focus States | OK | focus-visible:ring-2 padronizado |
-| Print Styles | OK | @media print abrangente |
-| Responsive | OK | Breakpoints 320px-1920px com utilities |
+| Arquivo | Status | Conteudo |
+|---------|--------|----------|
+| `README.md` (raiz) | BASICO | Template Lovable padrao, falta info especifica do projeto |
+| `.env.example` | PARCIAL | Apenas 4 variaveis documentadas |
+| `docs/EDGE_FUNCTIONS_API.md` | BOM | Documentacao de Edge Functions existente |
+| `docs/PRODUCTION_SYSTEM_OVERVIEW.md` | BOM | Overview do sistema de monitoramento |
+| `docs/PRODUCTION_MONITORING_GUIDE.md` | BOM | Guia de monitoramento detalhado |
+| `docs/prd.md` | BOM | PRD completo do produto |
+| `PERFORMANCE.md` | BOM | Guia de otimizacao de performance |
+| `TESTING.md` | BOM | Guia de testes |
+| `docs/architecture.md` | NAO EXISTE | Precisa ser criado |
+| `docs/development.md` | NAO EXISTE | Precisa ser criado |
+| `docs/operations.md` | NAO EXISTE | Precisa ser criado |
 
-### Problemas Identificados
+### Tech Stack Identificada
 
-| Problema | Severidade | Quantidade | Impacto |
-|----------|------------|------------|---------|
-| Cores hardcoded (bg-green-500, etc) | MEDIA | 251 arquivos | Inconsistencia de cores |
-| Falta badge variants (success, warning) | MEDIA | 1 componente | UX inconsistente |
-| Hex hardcoded (#15c470) em Navbar | BAIXA | 1 arquivo | Manutencao dificil |
-| Falta documentacao formal de tokens | MEDIA | 0 arquivos | Onboarding de devs |
-| Info color nao definida | BAIXA | CSS variables | Falta cor semantica |
-| Typography scale informal | MEDIA | Diversos | Tamanhos inconsistentes |
-
----
-
-## Design System Atual (Ja Implementado)
-
-### 1. Paleta de Cores (CSS Variables)
-
-```text
-+------------------+-------------------+------------------------+
-| Cor              | HSL Light         | Uso                    |
-+------------------+-------------------+------------------------+
-| Primary          | 151 100% 37%      | Verde Daton (#00bf63)  |
-| Primary Light    | 151 60% 85%       | Backgrounds suaves     |
-| Secondary        | 210 17% 96%       | Elementos neutros      |
-| Accent           | 151 100% 32%      | Verde mais escuro      |
-| Destructive      | 0 84% 60%         | Vermelho erros         |
-| Success          | 151 100% 37%      | Verde sucesso          |
-| Warning          | 38 92% 50%        | Laranja avisos         |
-| Background       | 0 0% 100%         | Branco fundo           |
-| Foreground       | 0 0% 9%           | Texto principal        |
-| Muted            | 210 17% 95%       | Backgrounds secundarios|
-| Muted Foreground | 0 0% 45%          | Texto secundario       |
-+------------------+-------------------+------------------------+
-```
-
-### 2. Sistema de Sombras (Definido)
-
-```css
---shadow-xs: 0 1px 2px 0 hsl(0 0% 9% / 0.05);
---shadow-sm: 0 1px 3px 0 hsl(0 0% 9% / 0.1), 0 1px 2px -1px hsl(0 0% 9% / 0.1);
---shadow-md: 0 4px 6px -1px hsl(0 0% 9% / 0.1), 0 2px 4px -2px hsl(0 0% 9% / 0.1);
---shadow-lg: 0 10px 15px -3px hsl(0 0% 9% / 0.1), 0 4px 6px -4px hsl(0 0% 9% / 0.1);
---shadow-hover: 0 20px 25px -5px hsl(0 0% 9% / 0.1), 0 8px 10px -6px hsl(0 0% 9% / 0.1);
-```
-
-### 3. Sistema de Espacamento (8px Grid)
-
-```css
---spacing-xs: 0.25rem;  /* 4px */
---spacing-sm: 0.5rem;   /* 8px */
---spacing-md: 1rem;     /* 16px */
---spacing-lg: 1.5rem;   /* 24px */
---spacing-xl: 2rem;     /* 32px */
---spacing-2xl: 3rem;    /* 48px */
-```
-
-### 4. Border Radius
-
-```css
---radius: 0.75rem; /* 12px - Base */
-/* Via Tailwind */
-rounded-lg: 12px
-rounded-md: 10px
-rounded-sm: 8px
-rounded-full: 50%
-```
+| Categoria | Tecnologia | Versao |
+|-----------|------------|--------|
+| Frontend | React | 18.3.1 |
+| Build Tool | Vite | 5.4.19 |
+| Linguagem | TypeScript | 5.8.3 |
+| Styling | Tailwind CSS | 3.4.17 |
+| UI Components | shadcn/ui (Radix) | Latest |
+| Backend | Supabase | 2.57.4 |
+| State Management | TanStack Query | 5.83.0 |
+| Forms | React Hook Form + Zod | 7.61.1 / 4.1.11 |
+| Charts | Recharts | 2.15.4 |
+| Testing | Vitest | 3.2.4 |
+| CI/CD | GitHub Actions | - |
 
 ---
 
-## Plano de Melhorias
+## Arquivos a Criar/Atualizar
 
-### FASE 1: Documentacao Formal do Design System
+### 1. README.md (Atualizar - Raiz)
 
-#### 1.1 Criar Arquivo de Design Tokens
+**Conteudo:**
 
-**Arquivo:** `src/constants/designTokens.ts` (NOVO)
+```markdown
+# Daton ESG Insight
 
-```typescript
-/**
- * Daton Design System - Design Tokens
- * 
- * Documentacao formal dos tokens de design para uso consistente
- * em toda a aplicacao.
- */
+Plataforma integrada de gestao ESG (Environmental, Social, Governance), qualidade e conformidade regulatoria.
 
-export const DESIGN_TOKENS = {
-  // ============ CORES SEMANTICAS ============
-  colors: {
-    primary: {
-      DEFAULT: 'hsl(151, 100%, 37%)', // #00bf63 - Verde Daton
-      light: 'hsl(151, 60%, 85%)',
-      dark: 'hsl(151, 100%, 32%)',
-      foreground: 'hsl(0, 0%, 100%)',
-    },
-    secondary: {
-      DEFAULT: 'hsl(210, 17%, 96%)',
-      foreground: 'hsl(0, 0%, 9%)',
-    },
-    destructive: {
-      DEFAULT: 'hsl(0, 84%, 60%)', // Vermelho
-      light: 'hsl(0, 84%, 95%)',
-      foreground: 'hsl(0, 0%, 100%)',
-    },
-    success: {
-      DEFAULT: 'hsl(151, 100%, 37%)', // Verde
-      light: 'hsl(151, 60%, 90%)',
-      foreground: 'hsl(0, 0%, 100%)',
-    },
-    warning: {
-      DEFAULT: 'hsl(38, 92%, 50%)', // Laranja
-      light: 'hsl(38, 92%, 90%)',
-      foreground: 'hsl(0, 0%, 9%)',
-    },
-    info: {
-      DEFAULT: 'hsl(199, 89%, 48%)', // Azul
-      light: 'hsl(199, 89%, 90%)',
-      foreground: 'hsl(0, 0%, 100%)',
-    },
-    neutral: {
-      50: 'hsl(0, 0%, 98%)',
-      100: 'hsl(0, 0%, 96%)',
-      200: 'hsl(0, 0%, 91%)',
-      300: 'hsl(0, 0%, 83%)',
-      400: 'hsl(0, 0%, 64%)',
-      500: 'hsl(0, 0%, 45%)',
-      600: 'hsl(0, 0%, 32%)',
-      700: 'hsl(0, 0%, 21%)',
-      800: 'hsl(0, 0%, 9%)',
-      900: 'hsl(0, 0%, 4%)',
-    },
-  },
+## Tech Stack
 
-  // ============ TIPOGRAFIA ============
-  typography: {
-    fontFamily: {
-      sans: ['Inter', 'system-ui', 'sans-serif'],
-      mono: ['Monaco', 'Consolas', 'monospace'],
-    },
-    fontSize: {
-      xs: ['0.75rem', { lineHeight: '1rem' }],      // 12px
-      sm: ['0.875rem', { lineHeight: '1.25rem' }],  // 14px
-      base: ['1rem', { lineHeight: '1.5rem' }],     // 16px
-      lg: ['1.125rem', { lineHeight: '1.75rem' }],  // 18px
-      xl: ['1.25rem', { lineHeight: '1.75rem' }],   // 20px
-      '2xl': ['1.5rem', { lineHeight: '2rem' }],    // 24px
-      '3xl': ['1.875rem', { lineHeight: '2.25rem' }], // 30px
-      '4xl': ['2.25rem', { lineHeight: '2.5rem' }], // 36px
-    },
-    fontWeight: {
-      normal: 400,
-      medium: 500,
-      semibold: 600,
-      bold: 700,
-    },
-  },
+- **Frontend:** React 18, TypeScript 5, Vite 5
+- **UI:** Tailwind CSS, shadcn/ui (Radix UI)
+- **Backend:** Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **State:** TanStack Query v5
+- **Forms:** React Hook Form + Zod
+- **Charts:** Recharts
+- **Testing:** Vitest + React Testing Library
 
-  // ============ ESPACAMENTO (8px Grid) ============
-  spacing: {
-    0: '0',
-    1: '0.25rem',  // 4px
-    2: '0.5rem',   // 8px
-    3: '0.75rem',  // 12px
-    4: '1rem',     // 16px
-    5: '1.25rem',  // 20px
-    6: '1.5rem',   // 24px
-    8: '2rem',     // 32px
-    10: '2.5rem',  // 40px
-    12: '3rem',    // 48px
-    16: '4rem',    // 64px
-  },
+## Instalacao Rapida
 
-  // ============ BORDER RADIUS ============
-  borderRadius: {
-    none: '0',
-    sm: '0.5rem',     // 8px - Inputs pequenos
-    DEFAULT: '0.75rem', // 12px - Cards, botoes
-    lg: '1rem',       // 16px - Modais
-    full: '9999px',   // Circular - Avatars, badges
-  },
+npm install
+cp .env.example .env.local
+npm run dev
 
-  // ============ SOMBRAS ============
-  shadows: {
-    none: 'none',
-    xs: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-    sm: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-    md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-    lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
-    xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-  },
+## Build para Producao
 
-  // ============ TRANSICOES ============
-  transitions: {
-    fast: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-    smooth: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    slow: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-  },
+npm run build
+npm run preview
 
-  // ============ BREAKPOINTS ============
-  breakpoints: {
-    xs: '320px',
-    sm: '480px',
-    md: '768px',
-    lg: '1024px',
-    xl: '1366px',
-    '2xl': '1920px',
-  },
+## Estrutura do Projeto
 
-  // ============ Z-INDEX ============
-  zIndex: {
-    dropdown: 50,
-    sticky: 100,
-    modal: 150,
-    popover: 200,
-    tooltip: 250,
-    toast: 300,
-  },
-} as const;
+src/
+├── components/       # Componentes React reutilizaveis (400+)
+├── pages/            # Paginas/Rotas da aplicacao (130+)
+├── services/         # Servicos de API e logica de negocios (170+)
+├── hooks/            # Custom React hooks (90+)
+├── contexts/         # Context API (Auth, Company, Compliance)
+├── utils/            # Funcoes utilitarias
+├── types/            # Definicoes TypeScript
+├── integrations/     # Integracoes externas (Supabase)
+├── constants/        # Constantes e configuracoes
+└── schemas/          # Schemas de validacao Zod
 
-// Tipos para autocomplete
-export type ColorToken = keyof typeof DESIGN_TOKENS.colors;
-export type SpacingToken = keyof typeof DESIGN_TOKENS.spacing;
-export type ShadowToken = keyof typeof DESIGN_TOKENS.shadows;
+supabase/
+└── functions/        # Edge Functions Deno (60+)
+
+## Scripts Disponiveis
+
+- npm run dev - Servidor de desenvolvimento
+- npm run build - Build de producao
+- npm run preview - Preview do build
+- npm run lint - Executar ESLint
+- npm run test - Executar testes
+- npm run test:ui - Interface visual de testes
+- npm run test:coverage - Testes com cobertura
+
+## Documentacao
+
+- [Documentacao de API](./docs/api.md)
+- [Arquitetura do Sistema](./docs/architecture.md)
+- [Guia de Desenvolvimento](./docs/development.md)
+- [Guia de Operacoes](./docs/operations.md)
+- [Guia de Performance](./PERFORMANCE.md)
+- [Guia de Testes](./TESTING.md)
+- [PRD do Produto](./docs/prd.md)
+
+## Modulos Principais
+
+| Modulo | Descricao |
+|--------|-----------|
+| ESG Social | Gestao de funcionarios, treinamentos, seguranca |
+| ESG Ambiental | Inventario GEE, licencas, agua, energia, residuos |
+| Qualidade (SGQ) | Nao conformidades, acoes corretivas, documentos |
+| Fornecedores | Cadastro, avaliacao, portal do fornecedor |
+| Administracao | Usuarios, permissoes, configuracoes |
+
+## Licenca
+
+Proprietario - Daton ESG Insight
 ```
 
 ---
 
-### FASE 2: Adicionar Variaveis CSS Faltantes
+### 2. docs/api.md (Criar)
 
-#### 2.1 Adicionar Info Color ao CSS
+**Conteudo:**
 
-**Arquivo:** `src/index.css`
+```markdown
+# Documentacao de API - Daton ESG Insight
 
-Adicionar na secao `:root`:
+## Visao Geral
 
-```css
-/* Azul para informacoes */
---info: 199 89% 48%;
---info-foreground: 0 0% 100%;
-```
+O Daton utiliza Supabase Edge Functions como backend serverless. Todas as funcoes sao escritas em Deno/TypeScript.
 
-Adicionar na secao `.dark`:
+## Autenticacao
 
-```css
---info: 199 89% 55%;
---info-foreground: 0 0% 100%;
-```
+Authorization: Bearer {supabase_access_token}
 
-#### 2.2 Registrar no Tailwind Config
+Tokens sao obtidos via Supabase Auth (email/senha ou OAuth).
 
-**Arquivo:** `tailwind.config.ts`
+## Endpoints Base
 
-Adicionar em `colors`:
+- Supabase URL: https://dqlvioijqzlvnvvajmft.supabase.co
+- Functions: https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/{function_name}
 
-```typescript
-info: {
-  DEFAULT: "hsl(var(--info))",
-  foreground: "hsl(var(--info-foreground))",
-},
-```
+## Padrao de Resposta
 
----
+### Sucesso (200)
 
-### FASE 3: Adicionar Variantes de Badge
-
-#### 3.1 Atualizar Componente Badge
-
-**Arquivo:** `src/components/ui/badge.tsx`
-
-```typescript
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
-
-const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-  {
-    variants: {
-      variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
-        // NOVAS VARIANTES
-        success: "border-transparent bg-success text-success-foreground hover:bg-success/80",
-        warning: "border-transparent bg-warning text-warning-foreground hover:bg-warning/80",
-        info: "border-transparent bg-info text-info-foreground hover:bg-info/80",
-        // Variantes sutis (fundo claro)
-        "success-subtle": "border-success/30 bg-success/10 text-success hover:bg-success/20",
-        "warning-subtle": "border-warning/30 bg-warning/10 text-warning hover:bg-warning/20",
-        "destructive-subtle": "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20",
-        "info-subtle": "border-info/30 bg-info/10 text-info hover:bg-info/20",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  },
-);
-
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
-
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
+{
+  "success": true,
+  "data": { ... },
+  "message": "Operacao realizada com sucesso"
 }
 
-export { Badge, badgeVariants };
-```
+### Erro (4xx/5xx)
 
----
-
-### FASE 4: Corrigir Hex Hardcoded
-
-#### 4.1 Atualizar HeimdallNavbar
-
-**Arquivo:** `src/components/landing/heimdall/HeimdallNavbar.tsx`
-
-Substituir:
-```tsx
-className="... bg-[#15c470] ..."
-```
-
-Por:
-```tsx
-className="... bg-primary ..."
-```
-
----
-
-### FASE 5: Criar Componentes de Status Padronizados
-
-#### 5.1 Criar Componente StatusIndicator
-
-**Arquivo:** `src/components/ui/status-indicator.tsx` (NOVO)
-
-```typescript
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
-import { CheckCircle, XCircle, AlertCircle, Info, Clock, Loader2 } from "lucide-react";
-
-const statusVariants = cva(
-  "inline-flex items-center gap-1.5 text-sm font-medium",
-  {
-    variants: {
-      status: {
-        success: "text-success",
-        error: "text-destructive",
-        warning: "text-warning",
-        info: "text-info",
-        pending: "text-muted-foreground",
-        loading: "text-muted-foreground",
-      },
-    },
-    defaultVariants: {
-      status: "info",
-    },
+{
+  "success": false,
+  "error": "Mensagem de erro",
+  "details": {
+    "function": "function_name",
+    "step": "validation",
+    "timestamp": "2026-02-02T10:30:00Z"
   }
-);
-
-const StatusIcon = {
-  success: CheckCircle,
-  error: XCircle,
-  warning: AlertCircle,
-  info: Info,
-  pending: Clock,
-  loading: Loader2,
-};
-
-interface StatusIndicatorProps extends VariantProps<typeof statusVariants> {
-  children?: React.ReactNode;
-  showIcon?: boolean;
-  className?: string;
 }
 
-export function StatusIndicator({ 
-  status = "info", 
-  children, 
-  showIcon = true,
-  className 
-}: StatusIndicatorProps) {
-  const Icon = StatusIcon[status || "info"];
+## Edge Functions Principais
+
+### ESG Dashboard
+
+POST /functions/v1/esg-dashboard
+
+Retorna dados consolidados do dashboard ESG.
+
+Request:
+{
+  "company_id": "uuid"
+}
+
+Response (200):
+{
+  "success": true,
+  "data": {
+    "environmental_score": 85,
+    "social_score": 78,
+    "governance_score": 92,
+    "emissions_total": 1500.5,
+    "goals_on_track": 12,
+    "goals_at_risk": 3
+  }
+}
+
+### Document Processor
+
+POST /functions/v1/universal-document-processor
+
+Processa e analisa documentos com IA.
+
+Request:
+{
+  "document_id": "uuid",
+  "mode": "exploratory",
+  "skip_parse": false
+}
+
+Response (200):
+{
+  "success": true,
+  "analysis": {
+    "document_category": "Emissoes",
+    "relevance_score": 95,
+    "extracted_entities": [...]
+  }
+}
+
+### AI Chat Assistant
+
+POST /functions/v1/ai-chat-assistant
+
+Assistente de IA para consultas contextuais.
+
+Request:
+{
+  "message": "Qual foi o total de emissoes em 2025?",
+  "context_type": "emissions",
+  "company_id": "uuid"
+}
+
+[... Ver docs/EDGE_FUNCTIONS_API.md para lista completa ...]
+
+## Codigos de Erro
+
+| Codigo | Significado | Acao |
+|--------|-------------|------|
+| 400 | Parametros invalidos | Verificar body da requisicao |
+| 401 | Nao autenticado | Renovar token de acesso |
+| 403 | Sem permissao | Verificar roles do usuario |
+| 404 | Recurso nao encontrado | Verificar IDs |
+| 429 | Rate limit excedido | Aguardar e tentar novamente |
+| 500 | Erro interno | Verificar logs, reportar bug |
+
+## Rate Limiting
+
+- 100 requisicoes por minuto por IP
+- 1000 requisicoes por hora por usuario
+
+## Tabelas Principais (Database)
+
+| Tabela | Descricao |
+|--------|-----------|
+| companies | Empresas cadastradas |
+| profiles | Perfis de usuarios |
+| employees | Funcionarios |
+| emission_sources | Fontes de emissao GEE |
+| activity_data | Dados de atividade (consumo) |
+| goals | Metas ESG |
+| non_conformities | Nao conformidades |
+| suppliers | Fornecedores |
+| licenses | Licencas ambientais |
+| documents | Documentos do sistema |
+
+## Exemplos de Uso
+
+### JavaScript/TypeScript
+
+import { supabase } from '@/integrations/supabase/client';
+
+const { data, error } = await supabase.functions.invoke('esg-dashboard', {
+  body: { company_id: 'uuid' }
+});
+
+if (error) console.error(error);
+console.log(data);
+
+### cURL
+
+curl -X POST \
+  'https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/esg-dashboard' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{"company_id": "uuid"}'
+```
+
+---
+
+### 3. docs/architecture.md (Criar)
+
+**Conteudo:**
+
+```markdown
+# Arquitetura do Sistema - Daton ESG Insight
+
+## Visao Geral
+
++-------------+     +----------------+     +------------------+
+|   Browser   | --> |  React SPA     | --> |  Supabase        |
+|   (Client)  |     |  (Vite/TS)     |     |  (PostgreSQL)    |
++-------------+     +----------------+     +------------------+
+                           |                       |
+                           v                       v
+                    +----------------+     +------------------+
+                    |  TanStack      |     |  Edge Functions  |
+                    |  Query Cache   |     |  (Deno/TS)       |
+                    +----------------+     +------------------+
+
+## Camadas da Aplicacao
+
+### 1. Apresentacao (Frontend)
+
+src/pages/         # Paginas (routes)
+src/components/    # Componentes UI
+src/contexts/      # Estado global (React Context)
+
+- React 18 com Suspense e Lazy Loading
+- Tailwind CSS para estilizacao
+- shadcn/ui para componentes base
+
+### 2. Logica de Negocios
+
+src/hooks/         # Custom hooks (dados + logica)
+src/services/      # Camada de servicos (API calls)
+src/utils/         # Funcoes utilitarias
+
+- TanStack Query para cache e sincronizacao
+- React Hook Form para formularios
+- Zod para validacao de schemas
+
+### 3. Persistencia (Backend)
+
+supabase/functions/   # Edge Functions
+Supabase Database     # PostgreSQL com RLS
+Supabase Storage      # Arquivos e documentos
+
+## Fluxo de Autenticacao
+
++--------+    +----------+    +----------+    +----------+
+| Login  | -> | Supabase | -> | Session  | -> | Protected|
+| Page   |    | Auth     |    | Storage  |    | Routes   |
++--------+    +----------+    +----------+    +----------+
+                   |
+                   v
+            +----------+
+            | profiles |
+            | table    |
+            +----------+
+
+1. Usuario submete credenciais em /auth
+2. Supabase Auth valida e retorna JWT
+3. JWT armazenado em localStorage
+4. AuthContext gerencia estado global
+5. ProtectedRoute verifica sessao
+
+## Fluxo de Dados
+
++-----------+     +-------------+     +-----------+
+| Component | --> | useQuery    | --> | Service   |
+|           |     | (TanStack)  |     | Function  |
++-----------+     +-------------+     +-----------+
+                        |                   |
+                        v                   v
+                  +----------+       +-----------+
+                  | Cache    |       | Supabase  |
+                  | (5 min)  |       | Client    |
+                  +----------+       +-----------+
+
+## Modulos Principais
+
+### ESG Ambiental
+- Inventario GEE (Escopos 1, 2, 3)
+- Gestao de Licencas
+- Monitoramento (Agua, Energia, Residuos)
+
+### ESG Social
+- Gestao de Funcionarios
+- Treinamentos (LMS)
+- Seguranca do Trabalho
+
+### Qualidade (SGQ)
+- Nao Conformidades
+- Acoes Corretivas
+- Controle de Documentos
+- Auditorias
+
+### Fornecedores
+- Cadastro e Avaliacao
+- Portal do Fornecedor
+- Monitoramento de Riscos
+
+## Edge Functions (60+)
+
+Categorias:
+- AI/ML: ai-chat-assistant, ai-insights-engine
+- Documentos: universal-document-processor, document-ai-processor
+- ESG: esg-dashboard, ghg-recalculate
+- Qualidade: compliance-management, audit-management
+- Fornecedores: supplier-auth, supplier-notifications
+
+## Decisoes de Arquitetura (ADR)
+
+### ADR-001: Supabase como Backend
+- Decisao: Usar Supabase em vez de backend custom
+- Motivo: Time-to-market, custos, escalabilidade
+- Consequencias: Depende de RLS para seguranca
+
+### ADR-002: TanStack Query para Cache
+- Decisao: Usar TanStack Query v5
+- Motivo: Cache automatico, revalidacao, devtools
+- Consequencias: Complexidade em mutations
+
+### ADR-003: Edge Functions para Logica Complexa
+- Decisao: Deno Edge Functions para IA/processamento
+- Motivo: Timeout maior, acesso a APIs externas
+- Consequencias: Deploy separado, cold starts
+
+### ADR-004: Lazy Loading de Rotas
+- Decisao: Code splitting por rota
+- Motivo: Bundle inicial menor (~200KB)
+- Consequencias: Loading states necessarios
+
+## Seguranca
+
+### Row Level Security (RLS)
+- Todas tabelas tem policies
+- company_id usado para isolamento
+- Roles: admin, manager, user, viewer
+
+### Validacao de Entrada
+- Zod schemas no frontend
+- Validacao em Edge Functions
+- Sanitizacao HTML (DOMPurify)
+
+### Rate Limiting
+- 100 req/min por IP
+- Rate limiter em utils/securityUtils.ts
+
+## Monitoramento
+
+- Performance: src/utils/performanceMonitor.ts
+- Logs: src/utils/logger.ts
+- Health: src/utils/healthCheck.ts
+- Dashboard: /production-monitoring
+```
+
+---
+
+### 4. docs/development.md (Criar)
+
+**Conteudo:**
+
+```markdown
+# Guia de Desenvolvimento - Daton ESG Insight
+
+## Configuracao do Ambiente
+
+### Requisitos
+- Node.js 20+
+- npm 10+
+- Git
+
+### Setup Inicial
+
+# Clonar repositorio
+git clone <repo_url>
+cd daton-esg-insight
+
+# Instalar dependencias
+npm install
+
+# Copiar variaveis de ambiente
+cp .env.example .env.local
+
+# Iniciar servidor de desenvolvimento
+npm run dev
+
+### Variaveis de Ambiente
+
+VITE_SUPABASE_URL=https://dqlvioijqzlvnvvajmft.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJ...
+VITE_SUPABASE_PROJECT_ID=dqlvioijqzlvnvvajmft
+VITE_IOT_WEBSOCKET_URL=ws://localhost:3001/iot (opcional)
+
+## Estrutura de Pastas
+
+src/
+├── components/       # Componentes reutilizaveis
+│   ├── ui/           # Componentes base (shadcn)
+│   ├── forms/        # Componentes de formulario
+│   └── [modulo]/     # Componentes por modulo
+├── pages/            # Paginas (1 arquivo = 1 rota)
+├── services/         # Chamadas de API
+├── hooks/            # Custom hooks
+├── contexts/         # React Context
+├── utils/            # Funcoes utilitarias
+├── types/            # Tipos TypeScript
+├── constants/        # Constantes
+└── schemas/          # Zod schemas
+
+## Scripts NPM
+
+npm run dev          # Servidor desenvolvimento
+npm run build        # Build producao
+npm run preview      # Preview do build
+npm run lint         # ESLint
+npm run test         # Vitest
+npm run test:ui      # Vitest UI
+npm run test:coverage # Cobertura de testes
+
+## Padroes de Codigo
+
+### Componentes React
+
+// Estrutura padrao
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+
+interface MyComponentProps {
+  title: string;
+  onAction?: () => void;
+}
+
+export function MyComponent({ title, onAction }: MyComponentProps) {
+  const [isOpen, setIsOpen] = useState(false);
   
   return (
-    <span className={cn(statusVariants({ status }), className)}>
-      {showIcon && (
-        <Icon 
-          className={cn(
-            "h-4 w-4 flex-shrink-0",
-            status === "loading" && "animate-spin"
-          )} 
-          aria-hidden="true" 
-        />
-      )}
-      {children && <span>{children}</span>}
-    </span>
+    <div className="p-4">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <Button onClick={onAction}>Acao</Button>
+    </div>
   );
 }
+
+### Hooks com TanStack Query
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getItems, createItem } from '@/services/items';
+
+export function useItems() {
+  return useQuery({
+    queryKey: ['items'],
+    queryFn: getItems,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+}
+
+export function useCreateItem() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: createItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+    },
+  });
+}
+
+### Servicos (API Layer)
+
+import { supabase } from '@/integrations/supabase/client';
+
+export async function getItems() {
+  const { data, error } = await supabase
+    .from('items')
+    .select('*')
+    .order('created_at', { ascending: false });
+    
+  if (error) throw error;
+  return data;
+}
+
+export async function createItem(item: CreateItemInput) {
+  const { data, error } = await supabase
+    .from('items')
+    .insert(item)
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data;
+}
+
+## Convencoes de Nomenclatura
+
+| Tipo | Convencao | Exemplo |
+|------|-----------|---------|
+| Componentes | PascalCase | UserProfile.tsx |
+| Hooks | camelCase (use*) | useUserData.ts |
+| Servicos | camelCase | userService.ts |
+| Constantes | SCREAMING_SNAKE | MAX_FILE_SIZE |
+| Tipos/Interfaces | PascalCase | UserProfile |
+
+## Git Workflow
+
+### Branches
+- main - Producao
+- develop - Desenvolvimento
+- feature/* - Novas features
+- fix/* - Bug fixes
+- hotfix/* - Correcoes urgentes
+
+### Commit Messages
+
+Formato: type(scope): descricao
+
+Tipos:
+- feat: Nova funcionalidade
+- fix: Correcao de bug
+- docs: Documentacao
+- style: Formatacao
+- refactor: Refatoracao
+- test: Testes
+- chore: Tarefas gerais
+
+Exemplos:
+feat(emissions): adicionar calculo de escopo 3
+fix(auth): corrigir logout em mobile
+docs(readme): atualizar instrucoes de setup
+
+### Pull Request Checklist
+
+- [ ] Codigo segue padroes do projeto
+- [ ] Testes adicionados/atualizados
+- [ ] Tipos TypeScript corretos
+- [ ] Sem erros de lint
+- [ ] Build passa sem erros
+- [ ] Documentacao atualizada (se necessario)
+
+## Debugging
+
+### Console Logs (Dev Only)
+
+import { logger } from '@/utils/logger';
+
+logger.info('Acao executada', { userId, action });
+logger.error('Erro ao salvar', error);
+logger.debug('Debug info', data); // Apenas em dev
+
+### React Query DevTools
+- Abre automaticamente em desenvolvimento
+- Inspecionar cache, queries, mutations
+
+### Performance
+- Chrome DevTools > Performance
+- Ver performanceMonitor.ts para metricas
+
+## Recursos Adicionais
+
+- [React Docs](https://react.dev)
+- [TanStack Query](https://tanstack.com/query)
+- [Tailwind CSS](https://tailwindcss.com)
+- [shadcn/ui](https://ui.shadcn.com)
+- [Supabase Docs](https://supabase.com/docs)
 ```
 
 ---
 
-### FASE 6: Criar Utilitarios de Cor Semantica
+### 5. docs/operations.md (Criar)
 
-#### 6.1 Criar Funcoes Helper
+**Conteudo:**
 
-**Arquivo:** `src/utils/designHelpers.ts` (NOVO)
+```markdown
+# Guia de Operacoes - Daton ESG Insight
 
-```typescript
-/**
- * Design System Helpers
- * Funcoes utilitarias para uso consistente do design system
- */
+## Ambientes
 
-/**
- * Retorna classes de cor semantica baseado no status
- */
-export function getStatusClasses(status: 'success' | 'error' | 'warning' | 'info' | 'neutral') {
-  const statusMap = {
-    success: {
-      bg: 'bg-success/10',
-      border: 'border-success/30',
-      text: 'text-success',
-      solid: 'bg-success text-success-foreground',
-    },
-    error: {
-      bg: 'bg-destructive/10',
-      border: 'border-destructive/30',
-      text: 'text-destructive',
-      solid: 'bg-destructive text-destructive-foreground',
-    },
-    warning: {
-      bg: 'bg-warning/10',
-      border: 'border-warning/30',
-      text: 'text-warning',
-      solid: 'bg-warning text-warning-foreground',
-    },
-    info: {
-      bg: 'bg-info/10',
-      border: 'border-info/30',
-      text: 'text-info',
-      solid: 'bg-info text-info-foreground',
-    },
-    neutral: {
-      bg: 'bg-muted',
-      border: 'border-border',
-      text: 'text-muted-foreground',
-      solid: 'bg-secondary text-secondary-foreground',
-    },
-  };
-  
-  return statusMap[status];
-}
+| Ambiente | URL | Branch |
+|----------|-----|--------|
+| Producao | https://daton-esg-insight.lovable.app | main |
+| Preview | https://id-preview--*.lovable.app | feature/* |
+| Local | http://localhost:8080 | - |
 
-/**
- * Retorna classes de prioridade
- */
-export function getPriorityClasses(priority: 'high' | 'medium' | 'low') {
-  const priorityMap = {
-    high: 'bg-destructive/10 text-destructive border-destructive/30',
-    medium: 'bg-warning/10 text-warning border-warning/30',
-    low: 'bg-success/10 text-success border-success/30',
-  };
-  
-  return priorityMap[priority];
-}
+## Deploy
 
-/**
- * Retorna classes de confianca/score
- */
-export function getConfidenceClasses(confidence: number) {
-  if (confidence >= 0.8) return 'bg-success/10 text-success border-success/30';
-  if (confidence >= 0.6) return 'bg-warning/10 text-warning border-warning/30';
-  return 'bg-destructive/10 text-destructive border-destructive/30';
-}
+### Producao (Lovable)
+1. Merge PR para branch main
+2. Deploy automatico via Lovable
+3. Verificar em https://daton-esg-insight.lovable.app
+
+### Edge Functions
+- Deploy automatico ao fazer push
+- Verificar logs: Supabase Dashboard > Edge Functions > Logs
+
+## Monitoramento
+
+### Dashboard de Producao
+- URL: /production-monitoring
+- Tabs: Status, Logs, Performance
+
+### Health Check
+- Acesso: Via ProductionHealthWidget no dashboard
+- Metricas: Score 0-100, status healthy/warning/critical
+
+### Logs
+- Nivel: error (producao), debug (desenvolvimento)
+- Acesso: /production-monitoring > Logs
+- Export: JSON para analise
+
+### Performance
+- Web Vitals: LCP < 2.5s, FID < 100ms, CLS < 0.1
+- Metricas custom via performanceMonitor.ts
+
+## Database
+
+### Acesso
+- Dashboard: https://supabase.com/dashboard/project/dqlvioijqzlvnvvajmft
+- SQL Editor: Dashboard > SQL Editor
+
+### Backup
+- Automatico diario (Supabase)
+- Point-in-time recovery disponivel
+
+### Migrations
+- Via Lovable (automatico)
+- Ou via Dashboard > SQL Editor
+
+## Troubleshooting
+
+### Problema: Pagina em branco
+
+1. Verificar console do browser (F12)
+2. Checar erros de JavaScript
+3. Verificar se Supabase esta acessivel
+4. Limpar cache do browser
+
+### Problema: Erro 401 (Unauthorized)
+
+1. Verificar se usuario esta logado
+2. Token expirado? Fazer logout/login
+3. Verificar AuthContext
+
+### Problema: Erro 500 em Edge Function
+
+1. Acessar Supabase Dashboard > Edge Functions > Logs
+2. Identificar erro especifico
+3. Verificar parametros enviados
+4. Checar secrets configurados
+
+### Problema: Dados nao aparecem
+
+1. Verificar RLS policies
+2. Checar company_id do usuario
+3. Verificar cache do TanStack Query
+4. Limpar cache: window.queryClient.clear()
+
+### Problema: Performance lenta
+
+1. Verificar Network tab (chamadas lentas)
+2. Checar /production-monitoring > Performance
+3. Verificar queries no Supabase Dashboard
+4. Considerar adicionar indices
+
+## Rollback
+
+### Codigo (via Git)
+
+# Identificar commit anterior
+git log --oneline -10
+
+# Reverter para commit especifico
+git revert <commit_hash>
+git push origin main
+
+### Edge Functions
+
+# Via Supabase CLI
+supabase functions deploy <function_name> --version <previous_version>
+
+## Escalacao
+
+### Nivel 1 - Desenvolvedor
+- Erros de codigo
+- Bugs de UI
+- Problemas de configuracao
+
+### Nivel 2 - Tech Lead
+- Problemas de arquitetura
+- Performance critica
+- Seguranca
+
+### Nivel 3 - Supabase/Lovable Support
+- Infraestrutura
+- Outages
+- Problemas de plataforma
+
+## Comandos Uteis
+
+### Limpar Cache (Browser Console)
+
+// Limpar cache do React Query
+window.queryClient.clear();
+
+// Limpar localStorage
+localStorage.clear();
+
+// Reload forcado
+location.reload(true);
+
+### Verificar Versao
+
+// Ver versao do sistema
+console.log(PRODUCTION_CONFIG.VERSION);
+
+### Debug Mode
+
+// Ativar logs de debug (dev only)
+localStorage.setItem('DEBUG', 'true');
+
+## Checklist Pre-Deploy
+
+- [ ] Testes passando (npm run test)
+- [ ] Build sem erros (npm run build)
+- [ ] Lint sem erros (npm run lint)
+- [ ] TypeScript sem erros (npx tsc --noEmit)
+- [ ] Variaveis de ambiente configuradas
+- [ ] Edge Functions testadas
+- [ ] RLS policies verificadas
+
+## Contatos
+
+- Suporte Lovable: https://lovable.dev/support
+- Suporte Supabase: https://supabase.com/support
+- Documentacao: /documentacao ou /faq
 ```
 
 ---
 
-### FASE 7: Documentacao Visual
+### 6. .env.example (Atualizar)
 
-#### 7.1 Criar Pagina de Storybook/Design System
+**Conteudo:**
 
-**Arquivo:** `src/pages/DesignSystem.tsx` (NOVO - Opcional, para desenvolvimento)
+```
+# ===========================================
+# Daton ESG Management System
+# Environment Variables
+# ===========================================
 
-Esta pagina servira como referencia visual para desenvolvedores, mostrando todos os tokens e componentes disponiveis.
+# OBRIGATORIO - Supabase Configuration
+# Obter em: https://supabase.com/dashboard/project/[id]/settings/api
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key-here
+VITE_SUPABASE_PROJECT_ID=your-project-id
 
----
+# OPCIONAL - IoT Integration
+# WebSocket URL para dados de sensores em tempo real
+VITE_IOT_WEBSOCKET_URL=ws://localhost:3001/iot
 
-## Arquivos a Criar
-
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/constants/designTokens.ts` | Documentacao formal dos design tokens |
-| `src/components/ui/status-indicator.tsx` | Componente de status padronizado |
-| `src/utils/designHelpers.ts` | Funcoes helper para cores semanticas |
-
-## Arquivos a Modificar
-
-| Arquivo | Modificacao |
-|---------|-------------|
-| `src/index.css` | Adicionar --info e --info-foreground |
-| `tailwind.config.ts` | Adicionar cor info |
-| `src/components/ui/badge.tsx` | Adicionar variantes success, warning, info |
-| `src/components/landing/heimdall/HeimdallNavbar.tsx` | Substituir hex hardcoded |
-
----
-
-## Checklist de Validacao
-
-### Cores
-- [x] Primary definida (Verde Daton #00bf63)
-- [x] Secondary definida
-- [x] Destructive definida
-- [x] Success definida
-- [x] Warning definida
-- [ ] Info a adicionar
-- [x] Contrast 4.5:1 para texto
-
-### Tipografia
-- [x] Inter como fonte principal
-- [x] Font weights definidos (400-700)
-- [ ] Escala tipografica a documentar formalmente
-
-### Espacamento
-- [x] 8px grid implementado
-- [x] CSS variables definidas
-
-### Sombras
-- [x] 5 niveis padronizados
-- [x] Hover states com shadow-hover
-
-### Border Radius
-- [x] --radius base definido (12px)
-- [x] Variantes sm, md, lg via Tailwind
-
-### Componentes
-- [x] Button variants consistentes
-- [ ] Badge variants a expandir (success, warning, info)
-- [x] Card styles padronizados
-- [ ] StatusIndicator a criar
+# ===========================================
+# NOTAS:
+# - Nunca commitar .env com valores reais
+# - Usar .env.local para desenvolvimento local
+# - Variaveis VITE_* sao expostas ao client
+# ===========================================
+```
 
 ---
 
-## Ordem de Execucao
+## Resumo de Arquivos
 
-1. **Fase 1:** Criar designTokens.ts (documentacao)
-2. **Fase 2:** Adicionar info color ao CSS e Tailwind
-3. **Fase 3:** Expandir badge variants
-4. **Fase 4:** Corrigir hex hardcoded na Navbar
-5. **Fase 5:** Criar StatusIndicator component
-6. **Fase 6:** Criar design helpers
-7. **Validacao:** Verificar consistencia visual em todas as paginas
-
----
-
-## Metricas de Sucesso
-
-| Metrica | Antes | Depois |
-|---------|-------|--------|
-| CSS Variables documentadas | Parcial | 100% |
-| Cores semanticas disponiveis | 5 | 6 (+ info) |
-| Badge variants | 4 | 11 |
-| Hex hardcoded | 1 | 0 |
-| Design tokens documentados | 0% | 100% |
-| Componentes de status | 0 | 1 |
+| Arquivo | Acao | Descricao |
+|---------|------|-----------|
+| `README.md` | Atualizar | README completo com tech stack e estrutura |
+| `docs/api.md` | Criar | Documentacao de API e Edge Functions |
+| `docs/architecture.md` | Criar | Arquitetura e decisoes de design |
+| `docs/development.md` | Criar | Guia para desenvolvedores |
+| `docs/operations.md` | Criar | Guia de operacoes e troubleshooting |
+| `.env.example` | Atualizar | Template de variaveis com comentarios |
 
 ---
 
 ## Secao Tecnica
 
-### Ferramentas de Validacao
+### Estrutura Final /docs
 
-```bash
-# Verificar cores hardcoded
-grep -rn "bg-green-\|bg-red-\|bg-yellow-\|bg-blue-\|bg-orange-" src/components --include="*.tsx" | wc -l
+docs/
+├── api.md                          # Documentacao de API
+├── architecture.md                 # Arquitetura do sistema
+├── development.md                  # Guia de desenvolvimento
+├── operations.md                   # Guia de operacoes
+├── prd.md                          # PRD (existente)
+├── EDGE_FUNCTIONS_API.md           # API Edge Functions (existente)
+├── PRODUCTION_MONITORING_GUIDE.md  # Monitoramento (existente)
+├── PRODUCTION_SYSTEM_OVERVIEW.md   # Overview producao (existente)
+└── [outros docs existentes...]
 
-# Verificar hex hardcoded
-grep -rn "#[0-9a-fA-F]\{6\}\|#[0-9a-fA-F]\{3\}" src/components --include="*.tsx"
+### Diagramas ASCII
 
-# Verificar uso de design tokens
-grep -rn "DESIGN_TOKENS" src --include="*.tsx" --include="*.ts"
-```
+Os diagramas sao criados em formato ASCII para compatibilidade com Markdown:
+- Blocos com +---+
+- Setas com --> ou |
+- Formatacao monospace
 
-### Contrast Checker
+### Links Internos
 
-Para validar contraste WCAG:
-- Texto normal: minimo 4.5:1
-- Texto grande (18px+): minimo 3:1
-- Ferramenta: WebAIM Contrast Checker
-
-### Migracao Gradual
-
-Para migrar cores hardcoded (bg-green-500, etc) para variaveis semanticas:
-
-1. Identificar contexto (sucesso, erro, aviso, info)
-2. Substituir por classe semantica correspondente:
-   - `bg-green-500` -> `bg-success`
-   - `bg-red-500` -> `bg-destructive`
-   - `bg-yellow-500` -> `bg-warning`
-   - `bg-blue-500` -> `bg-info`
-
-Esta migracao pode ser feita gradualmente em sprints futuras.
+Todos os documentos referenciam uns aos outros para navegacao facil.
 
