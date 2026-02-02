@@ -242,9 +242,13 @@ export default function Auth() {
                           className="pl-10"
                           value={registerData.cnpj}
                           onChange={(e) => setRegisterData({...registerData, cnpj: e.target.value})}
+                          aria-describedby="cnpj-hint"
                           required
                         />
                       </div>
+                      <small id="cnpj-hint" className="text-xs text-muted-foreground">
+                        Apenas números, 14 dígitos
+                      </small>
                     </div>
                   </div>
 
@@ -279,9 +283,13 @@ export default function Auth() {
                           className="pl-10"
                           value={registerData.email}
                           onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+                          aria-describedby="email-hint"
                           required
                         />
                       </div>
+                      <small id="email-hint" className="text-xs text-muted-foreground">
+                        Use seu email corporativo
+                      </small>
                     </div>
 
                     <div className="space-y-2">
