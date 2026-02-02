@@ -1,9 +1,10 @@
 
-# Plano de Auditoria e Revisao de Conteudo
+
+# Plano de Implementacao de Design System Completo
 
 ## Resumo Executivo
 
-Esta auditoria abrangente cobre todos os textos da aplicacao Daton ESG Insight, identificando problemas de ortografia, consistencia terminologica, placeholders, mensagens do sistema, help text e onboarding. O plano apresenta um glossario de termos padronizados e implementa correcoes sistematicas.
+Este plano documenta uma auditoria abrangente do Design System do Daton ESG Insight e propoe melhorias para garantir consistencia visual profissional em toda a aplicacao. A analise revelou uma base solida ja implementada, com areas especificas para padronizacao e documentacao.
 
 ---
 
@@ -13,320 +14,504 @@ Esta auditoria abrangente cobre todos os textos da aplicacao Daton ESG Insight, 
 
 | Categoria | Status | Detalhes |
 |-----------|--------|----------|
-| Conteudo Legal | OK | Paginas Termos, Privacidade e Seguranca com conteudo real e completo |
-| Toasts Padronizados | OK | Sistema unificado em `unifiedToast.ts` com success/error/warning/info |
-| Password Feedback | OK | `PasswordRequirements.tsx` com validacao em tempo real |
-| FormMessage em Forms | OK | Mensagens de erro via react-hook-form em 180+ arquivos |
-| Tooltips em Graficos | OK | 100+ arquivos com tooltips em Recharts |
-| FormDescription | OK | Presente em 16+ formularios complexos |
-| Empty States | OK | "Nenhum resultado encontrado" padronizado |
-| Loading States | OK | "Carregando..." e spinners consistentes |
+| Cores Primarias | EXCELENTE | Verde Daton #00bf63 (HSL 151 100% 37%) bem definido |
+| CSS Variables | EXCELENTE | 50+ variables em HSL no index.css |
+| Dark Mode | OK | Suporte completo light/dark com ThemeProvider |
+| Spacing System | OK | 8px grid documentado (--spacing-xs a --spacing-2xl) |
+| Shadows | OK | 5 niveis padronizados (xs, sm, md, lg, hover) |
+| Transitions | OK | --transition-smooth e --transition-fast definidos |
+| Border Radius | OK | --radius: 0.75rem com variantes (lg, md, sm) |
+| Typography | PARCIAL | Inter definido, mas falta escala tipografica formal |
+| Chart Colors | EXCELENTE | 5 cores harmonizadas para graficos |
+| Focus States | OK | focus-visible:ring-2 padronizado |
+| Print Styles | OK | @media print abrangente |
+| Responsive | OK | Breakpoints 320px-1920px com utilities |
 
 ### Problemas Identificados
 
 | Problema | Severidade | Quantidade | Impacto |
 |----------|------------|------------|---------|
-| TODOs/FIXMEs no codigo | MEDIA | 13 arquivos | Funcionalidades incompletas |
-| Inconsistencia Excluir/Deletar/Remover | BAIXA | 166 arquivos | UX inconsistente |
-| Dashboard vs Painel | BAIXA | 275 arquivos | Terminologia mista |
-| Placeholders genericos | BAIXA | 101 arquivos | Falta de orientacao |
-| Falta de help text | MEDIA | Diversos | Campos sem dicas |
-| Comentario placeholder em edge function | MEDIA | `esg-dashboard` | Scoring incompleto |
+| Cores hardcoded (bg-green-500, etc) | MEDIA | 251 arquivos | Inconsistencia de cores |
+| Falta badge variants (success, warning) | MEDIA | 1 componente | UX inconsistente |
+| Hex hardcoded (#15c470) em Navbar | BAIXA | 1 arquivo | Manutencao dificil |
+| Falta documentacao formal de tokens | MEDIA | 0 arquivos | Onboarding de devs |
+| Info color nao definida | BAIXA | CSS variables | Falta cor semantica |
+| Typography scale informal | MEDIA | Diversos | Tamanhos inconsistentes |
 
 ---
 
-## Tarefa 1: Ortografia e Gramatica
+## Design System Atual (Ja Implementado)
 
-### Analise Realizada
+### 1. Paleta de Cores (CSS Variables)
 
-A analise nao encontrou erros significativos de ortografia ou gramatica nos textos principais. O conteudo esta bem escrito em portugues brasileiro.
+```text
++------------------+-------------------+------------------------+
+| Cor              | HSL Light         | Uso                    |
++------------------+-------------------+------------------------+
+| Primary          | 151 100% 37%      | Verde Daton (#00bf63)  |
+| Primary Light    | 151 60% 85%       | Backgrounds suaves     |
+| Secondary        | 210 17% 96%       | Elementos neutros      |
+| Accent           | 151 100% 32%      | Verde mais escuro      |
+| Destructive      | 0 84% 60%         | Vermelho erros         |
+| Success          | 151 100% 37%      | Verde sucesso          |
+| Warning          | 38 92% 50%        | Laranja avisos         |
+| Background       | 0 0% 100%         | Branco fundo           |
+| Foreground       | 0 0% 9%           | Texto principal        |
+| Muted            | 210 17% 95%       | Backgrounds secundarios|
+| Muted Foreground | 0 0% 45%          | Texto secundario       |
++------------------+-------------------+------------------------+
+```
 
-**Pontos Verificados:**
-- Paginas legais (Termos, Privacidade, Seguranca): Corretas
-- Mensagens de toast: Corretas
-- Labels de formularios: Corretos
-- Descricoes de componentes: Corretas
+### 2. Sistema de Sombras (Definido)
 
-**Nenhuma correcao ortografica necessaria.**
+```css
+--shadow-xs: 0 1px 2px 0 hsl(0 0% 9% / 0.05);
+--shadow-sm: 0 1px 3px 0 hsl(0 0% 9% / 0.1), 0 1px 2px -1px hsl(0 0% 9% / 0.1);
+--shadow-md: 0 4px 6px -1px hsl(0 0% 9% / 0.1), 0 2px 4px -2px hsl(0 0% 9% / 0.1);
+--shadow-lg: 0 10px 15px -3px hsl(0 0% 9% / 0.1), 0 4px 6px -4px hsl(0 0% 9% / 0.1);
+--shadow-hover: 0 20px 25px -5px hsl(0 0% 9% / 0.1), 0 8px 10px -6px hsl(0 0% 9% / 0.1);
+```
+
+### 3. Sistema de Espacamento (8px Grid)
+
+```css
+--spacing-xs: 0.25rem;  /* 4px */
+--spacing-sm: 0.5rem;   /* 8px */
+--spacing-md: 1rem;     /* 16px */
+--spacing-lg: 1.5rem;   /* 24px */
+--spacing-xl: 2rem;     /* 32px */
+--spacing-2xl: 3rem;    /* 48px */
+```
+
+### 4. Border Radius
+
+```css
+--radius: 0.75rem; /* 12px - Base */
+/* Via Tailwind */
+rounded-lg: 12px
+rounded-md: 10px
+rounded-sm: 8px
+rounded-full: 50%
+```
 
 ---
 
-## Tarefa 2: Glossario de Terminologia
+## Plano de Melhorias
 
-### Glossario Padronizado
+### FASE 1: Documentacao Formal do Design System
 
-| Termo Padrao | Variantes a Evitar | Uso |
-|--------------|-------------------|-----|
-| Excluir | Deletar, Remover, Apagar | Acoes destrutivas permanentes |
-| Remover | - | Desvincular (nao permanente) |
-| Salvar | Guardar, Armazenar | Persistir dados |
-| Dashboard | Painel | Manter "Dashboard" por ser termo tecnico ESG |
-| Usuario | usuario (sem acento) | Sempre com acento |
-| Email | E-mail | Sem hifen (padrao atual) |
-| Carregando | Loading | Preferir portugues |
-| Cancelar | Voltar (em modais) | Para fechar sem salvar |
-| Confirmar | OK, Sim | Para acoes afirmativas |
-| Sucesso | OK | Em mensagens de confirmacao |
-| Erro | Falha | Em mensagens de erro |
+#### 1.1 Criar Arquivo de Design Tokens
 
-### Arquivos Principais para Padronizar
-
-A terminologia esta majoritariamente consistente. Principais areas:
-
-1. **"Excluir" vs "Remover"**: 166 arquivos usam ambos
-   - Recomendacao: "Excluir" para delecao permanente, "Remover" para desvincular
-
-2. **"Dashboard" vs "Painel"**: 275 arquivos
-   - Recomendacao: Manter "Dashboard" (termo tecnico aceito em ESG)
-
-3. **"Usuario" com acento**: Verificado e correto (98 arquivos)
-
----
-
-## Tarefa 3: Placeholders e TODOs
-
-### TODOs Identificados (13 arquivos)
-
-| Arquivo | Linha | Conteudo |
-|---------|-------|----------|
-| `src/utils/logger.ts` | 219 | TODO: Integrate with Sentry |
-| `src/components/AttendanceReportsModal.tsx` | 108 | TODO: Implementar exportacao real |
-| `src/components/GRIIndicatorFormModal.tsx` | 104 | TODO: Implement API call |
-| `src/pages/OuvidoriaClientes.tsx` | 22 | TODO: Implementar hook useOmbudsman |
-| `src/components/ErrorBoundary.tsx` | 39 | TODO: Send to Sentry |
-| `src/components/financial/BalanceteVerificacao.tsx` | 26 | TODO: Implementar getBalancete |
-| `src/components/financial/AccountStatement.tsx` | 35 | TODO: Implementar getAccountStatement |
-| `src/components/intelligence/FeedbackCollector.tsx` | 80 | TODO: Uncomment when table created |
-| `src/hooks/useTourAnalytics.ts` | 46 | TODO: Implementar envio |
-| `src/utils/performanceMonitor.ts` | 91 | TODO: Send to monitoring |
-| `src/components/ActivityMonitoringModal.tsx` | 81 | TODO: Upload files |
-| `src/components/EmployeeScheduleAssignmentModal.tsx` | 40 | TODO: Implementar API |
-| `src/components/RootCauseAnalysisModal.tsx` | 155 | TODO: Integrar com API |
-
-### Placeholders em Edge Functions
-
-| Arquivo | Problema |
-|---------|----------|
-| `supabase/functions/esg-dashboard/index.ts` | Linhas 429-433: "placeholder scoring" comments |
-
-### Acoes
-
-1. **Criar arquivo de documentacao de TODOs**
+**Arquivo:** `src/constants/designTokens.ts` (NOVO)
 
 ```typescript
-// src/utils/todoRegistry.ts
 /**
- * Registro de funcionalidades pendentes de implementacao
+ * Daton Design System - Design Tokens
  * 
- * ## Integracao Futura
- * - logger.ts: Integracao com Sentry para error reporting
- * - performanceMonitor.ts: Envio de metricas para servico de monitoramento
- * - ErrorBoundary.tsx: Captura de erros em producao
- * 
- * ## APIs Pendentes
- * - BalanceteVerificacao: getBalancete service
- * - AccountStatement: getAccountStatement service
- * - OuvidoriaClientes: useOmbudsman hook
- * - EmployeeScheduleAssignment: API de atribuicao de escala
- * - RootCauseAnalysis: API de salvar analise
- * 
- * ## Melhorias de UX
- * - AttendanceReports: Exportacao real de relatorios
- * - ActivityMonitoring: Upload de evidencias
- * 
- * ## Analytics
- * - useTourAnalytics: Envio para backend
- * - FeedbackCollector: Tabela ai_feedback_logs
+ * Documentacao formal dos tokens de design para uso consistente
+ * em toda a aplicacao.
  */
-export const PENDING_FEATURES = {
-  SENTRY_INTEGRATION: 'logger.ts, ErrorBoundary.tsx',
-  FINANCIAL_APIS: 'BalanceteVerificacao, AccountStatement',
-  TOUR_ANALYTICS: 'useTourAnalytics.ts',
-};
-```
 
-2. **Corrigir placeholder scoring em esg-dashboard**
+export const DESIGN_TOKENS = {
+  // ============ CORES SEMANTICAS ============
+  colors: {
+    primary: {
+      DEFAULT: 'hsl(151, 100%, 37%)', // #00bf63 - Verde Daton
+      light: 'hsl(151, 60%, 85%)',
+      dark: 'hsl(151, 100%, 32%)',
+      foreground: 'hsl(0, 0%, 100%)',
+    },
+    secondary: {
+      DEFAULT: 'hsl(210, 17%, 96%)',
+      foreground: 'hsl(0, 0%, 9%)',
+    },
+    destructive: {
+      DEFAULT: 'hsl(0, 84%, 60%)', // Vermelho
+      light: 'hsl(0, 84%, 95%)',
+      foreground: 'hsl(0, 0%, 100%)',
+    },
+    success: {
+      DEFAULT: 'hsl(151, 100%, 37%)', // Verde
+      light: 'hsl(151, 60%, 90%)',
+      foreground: 'hsl(0, 0%, 100%)',
+    },
+    warning: {
+      DEFAULT: 'hsl(38, 92%, 50%)', // Laranja
+      light: 'hsl(38, 92%, 90%)',
+      foreground: 'hsl(0, 0%, 9%)',
+    },
+    info: {
+      DEFAULT: 'hsl(199, 89%, 48%)', // Azul
+      light: 'hsl(199, 89%, 90%)',
+      foreground: 'hsl(0, 0%, 100%)',
+    },
+    neutral: {
+      50: 'hsl(0, 0%, 98%)',
+      100: 'hsl(0, 0%, 96%)',
+      200: 'hsl(0, 0%, 91%)',
+      300: 'hsl(0, 0%, 83%)',
+      400: 'hsl(0, 0%, 64%)',
+      500: 'hsl(0, 0%, 45%)',
+      600: 'hsl(0, 0%, 32%)',
+      700: 'hsl(0, 0%, 21%)',
+      800: 'hsl(0, 0%, 9%)',
+      900: 'hsl(0, 0%, 4%)',
+    },
+  },
 
-```typescript
-// Substituir linhas 429-433 em esg-dashboard/index.ts
-// DE:
-// Policy compliance (30 points max) - placeholder scoring
-governanceScore += 25 // 95% compliance gets 25/30 points
+  // ============ TIPOGRAFIA ============
+  typography: {
+    fontFamily: {
+      sans: ['Inter', 'system-ui', 'sans-serif'],
+      mono: ['Monaco', 'Consolas', 'monospace'],
+    },
+    fontSize: {
+      xs: ['0.75rem', { lineHeight: '1rem' }],      // 12px
+      sm: ['0.875rem', { lineHeight: '1.25rem' }],  // 14px
+      base: ['1rem', { lineHeight: '1.5rem' }],     // 16px
+      lg: ['1.125rem', { lineHeight: '1.75rem' }],  // 18px
+      xl: ['1.25rem', { lineHeight: '1.75rem' }],   // 20px
+      '2xl': ['1.5rem', { lineHeight: '2rem' }],    // 24px
+      '3xl': ['1.875rem', { lineHeight: '2.25rem' }], // 30px
+      '4xl': ['2.25rem', { lineHeight: '2.5rem' }], // 36px
+    },
+    fontWeight: {
+      normal: 400,
+      medium: 500,
+      semibold: 600,
+      bold: 700,
+    },
+  },
 
-// Board diversity (20 points max) - placeholder scoring  
-governanceScore += 12 // 40% diversity gets 12/20 points
+  // ============ ESPACAMENTO (8px Grid) ============
+  spacing: {
+    0: '0',
+    1: '0.25rem',  // 4px
+    2: '0.5rem',   // 8px
+    3: '0.75rem',  // 12px
+    4: '1rem',     // 16px
+    5: '1.25rem',  // 20px
+    6: '1.5rem',   // 24px
+    8: '2rem',     // 32px
+    10: '2.5rem',  // 40px
+    12: '3rem',    // 48px
+    16: '4rem',    // 64px
+  },
 
-// PARA:
-// Policy compliance (30 points max) - baseado em dados reais quando disponiveis
-const policyComplianceScore = Math.min(30, Math.round((complianceRate / 100) * 30));
-governanceScore += policyComplianceScore;
+  // ============ BORDER RADIUS ============
+  borderRadius: {
+    none: '0',
+    sm: '0.5rem',     // 8px - Inputs pequenos
+    DEFAULT: '0.75rem', // 12px - Cards, botoes
+    lg: '1rem',       // 16px - Modais
+    full: '9999px',   // Circular - Avatars, badges
+  },
 
-// Board diversity (20 points max) - requer dados de diversidade
-// Por enquanto, usa score neutro ate implementacao de metricas de diversidade
-governanceScore += 10; // Score base ate implementacao de metricas
+  // ============ SOMBRAS ============
+  shadows: {
+    none: 'none',
+    xs: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    sm: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+    md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+    lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+    xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+  },
+
+  // ============ TRANSICOES ============
+  transitions: {
+    fast: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+    smooth: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    slow: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+
+  // ============ BREAKPOINTS ============
+  breakpoints: {
+    xs: '320px',
+    sm: '480px',
+    md: '768px',
+    lg: '1024px',
+    xl: '1366px',
+    '2xl': '1920px',
+  },
+
+  // ============ Z-INDEX ============
+  zIndex: {
+    dropdown: 50,
+    sticky: 100,
+    modal: 150,
+    popover: 200,
+    tooltip: 250,
+    toast: 300,
+  },
+} as const;
+
+// Tipos para autocomplete
+export type ColorToken = keyof typeof DESIGN_TOKENS.colors;
+export type SpacingToken = keyof typeof DESIGN_TOKENS.spacing;
+export type ShadowToken = keyof typeof DESIGN_TOKENS.shadows;
 ```
 
 ---
 
-## Tarefa 4: Mensagens do Sistema
+### FASE 2: Adicionar Variaveis CSS Faltantes
 
-### Padrao de Mensagens Implementado
+#### 2.1 Adicionar Info Color ao CSS
 
-O sistema ja possui um padrao bem definido em `src/utils/unifiedToast.ts`:
+**Arquivo:** `src/index.css`
 
-| Tipo | Duracao | Formato Recomendado |
-|------|---------|---------------------|
-| Success | 4000ms | "[Acao] realizado(a) com sucesso!" |
-| Error | 6000ms | "Erro ao [acao]. [Sugestao]." |
-| Warning | 5000ms | "Atencao: [situacao]. [Acao recomendada]." |
-| Info | 4000ms | "[Informacao contextual]." |
-| Loading | Promise | "[Acao]..." |
+Adicionar na secao `:root`:
 
-### Melhorias Propostas
+```css
+/* Azul para informacoes */
+--info: 199 89% 48%;
+--info-foreground: 0 0% 100%;
+```
 
-1. **Criar constantes de mensagens padronizadas**
+Adicionar na secao `.dark`:
+
+```css
+--info: 199 89% 55%;
+--info-foreground: 0 0% 100%;
+```
+
+#### 2.2 Registrar no Tailwind Config
+
+**Arquivo:** `tailwind.config.ts`
+
+Adicionar em `colors`:
 
 ```typescript
-// src/constants/messages.ts
-export const MESSAGES = {
-  // Sucesso
-  SAVE_SUCCESS: 'Dados salvos com sucesso!',
-  CREATE_SUCCESS: (item: string) => `${item} criado(a) com sucesso!`,
-  UPDATE_SUCCESS: (item: string) => `${item} atualizado(a) com sucesso!`,
-  DELETE_SUCCESS: (item: string) => `${item} excluido(a) com sucesso!`,
-  
-  // Erro
-  SAVE_ERROR: 'Erro ao salvar. Tente novamente.',
-  CREATE_ERROR: (item: string) => `Erro ao criar ${item}. Verifique os dados e tente novamente.`,
-  UPDATE_ERROR: (item: string) => `Erro ao atualizar ${item}. Tente novamente.`,
-  DELETE_ERROR: (item: string) => `Erro ao excluir ${item}. Tente novamente.`,
-  LOAD_ERROR: 'Erro ao carregar dados. Atualize a pagina.',
-  NETWORK_ERROR: 'Erro de conexao. Verifique sua internet.',
-  
-  // Confirmacao
-  DELETE_CONFIRM: (item: string) => `Tem certeza que deseja excluir este(a) ${item}? Esta acao nao pode ser desfeita.`,
-  UNSAVED_CHANGES: 'Voce tem alteracoes nao salvas. Deseja sair mesmo assim?',
-  
-  // Vazio
-  NO_RESULTS: 'Nenhum resultado encontrado.',
-  NO_DATA: (item: string) => `Nenhum(a) ${item} cadastrado(a).`,
-  
-  // Loading
-  LOADING: 'Carregando...',
-  SAVING: 'Salvando...',
-  PROCESSING: 'Processando...',
-  
-  // Validacao
-  REQUIRED_FIELD: 'Campo obrigatorio',
-  INVALID_EMAIL: 'Email invalido',
-  INVALID_CNPJ: 'CNPJ invalido. Digite 14 digitos.',
-  PASSWORD_MISMATCH: 'As senhas nao coincidem',
-};
+info: {
+  DEFAULT: "hsl(var(--info))",
+  foreground: "hsl(var(--info-foreground))",
+},
 ```
 
 ---
 
-## Tarefa 5: Help Text
+### FASE 3: Adicionar Variantes de Badge
 
-### Campos que Necessitam Help Text
+#### 3.1 Atualizar Componente Badge
 
-| Campo | Arquivo | Help Text Sugerido |
-|-------|---------|-------------------|
-| CNPJ | Auth.tsx | "Apenas numeros, 14 digitos" |
-| Email | Auth.tsx | "Use seu email corporativo" |
-| Senha | Auth.tsx | "Min 8 caracteres, 1 maiuscula, 1 numero, 1 especial" (ja implementado) |
-| CEP | BranchFormModal.tsx | "Digite o CEP para preenchimento automatico" |
-| Fator de Emissao | EmissionFactorModal | "Valor em kgCO2e por unidade de atividade" |
-| Data de Vencimento | LicenseModal | "Data limite para renovacao da licenca" |
-
-### Implementacao de Help Text Padronizado
-
-O sistema ja usa `FormDescription` para help text. Criar componente auxiliar:
+**Arquivo:** `src/components/ui/badge.tsx`
 
 ```typescript
-// src/components/ui/form-hint.tsx
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
-interface FormHintProps {
-  id: string;
-  children: React.ReactNode;
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground",
+        // NOVAS VARIANTES
+        success: "border-transparent bg-success text-success-foreground hover:bg-success/80",
+        warning: "border-transparent bg-warning text-warning-foreground hover:bg-warning/80",
+        info: "border-transparent bg-info text-info-foreground hover:bg-info/80",
+        // Variantes sutis (fundo claro)
+        "success-subtle": "border-success/30 bg-success/10 text-success hover:bg-success/20",
+        "warning-subtle": "border-warning/30 bg-warning/10 text-warning hover:bg-warning/20",
+        "destructive-subtle": "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20",
+        "info-subtle": "border-info/30 bg-info/10 text-info hover:bg-info/20",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  },
+);
+
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
+  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
+}
+
+export { Badge, badgeVariants };
+```
+
+---
+
+### FASE 4: Corrigir Hex Hardcoded
+
+#### 4.1 Atualizar HeimdallNavbar
+
+**Arquivo:** `src/components/landing/heimdall/HeimdallNavbar.tsx`
+
+Substituir:
+```tsx
+className="... bg-[#15c470] ..."
+```
+
+Por:
+```tsx
+className="... bg-primary ..."
+```
+
+---
+
+### FASE 5: Criar Componentes de Status Padronizados
+
+#### 5.1 Criar Componente StatusIndicator
+
+**Arquivo:** `src/components/ui/status-indicator.tsx` (NOVO)
+
+```typescript
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
+import { CheckCircle, XCircle, AlertCircle, Info, Clock, Loader2 } from "lucide-react";
+
+const statusVariants = cva(
+  "inline-flex items-center gap-1.5 text-sm font-medium",
+  {
+    variants: {
+      status: {
+        success: "text-success",
+        error: "text-destructive",
+        warning: "text-warning",
+        info: "text-info",
+        pending: "text-muted-foreground",
+        loading: "text-muted-foreground",
+      },
+    },
+    defaultVariants: {
+      status: "info",
+    },
+  }
+);
+
+const StatusIcon = {
+  success: CheckCircle,
+  error: XCircle,
+  warning: AlertCircle,
+  info: Info,
+  pending: Clock,
+  loading: Loader2,
+};
+
+interface StatusIndicatorProps extends VariantProps<typeof statusVariants> {
+  children?: React.ReactNode;
+  showIcon?: boolean;
   className?: string;
 }
 
-export function FormHint({ id, children, className }: FormHintProps) {
+export function StatusIndicator({ 
+  status = "info", 
+  children, 
+  showIcon = true,
+  className 
+}: StatusIndicatorProps) {
+  const Icon = StatusIcon[status || "info"];
+  
   return (
-    <small 
-      id={id}
-      className={cn("text-xs text-muted-foreground mt-1", className)}
-    >
-      {children}
-    </small>
+    <span className={cn(statusVariants({ status }), className)}>
+      {showIcon && (
+        <Icon 
+          className={cn(
+            "h-4 w-4 flex-shrink-0",
+            status === "loading" && "animate-spin"
+          )} 
+          aria-hidden="true" 
+        />
+      )}
+      {children && <span>{children}</span>}
+    </span>
   );
 }
-
-// Uso:
-<Input aria-describedby="cnpj-hint" />
-<FormHint id="cnpj-hint">Apenas numeros, 14 digitos</FormHint>
 ```
 
 ---
 
-## Tarefa 6: Onboarding
+### FASE 6: Criar Utilitarios de Cor Semantica
 
-### Estado Atual
+#### 6.1 Criar Funcoes Helper
 
-O sistema possui onboarding robusto:
-- `CleanOnboardingMain.tsx`: Fluxo principal de onboarding
-- `EnhancedDataCreationStep.tsx`: Criacao de dados iniciais
-- `UnifiedTourSystem.tsx`: Tour guiado
-- `SmartContentGenerator.tsx`: Geracao de conteudo inteligente
-
-### Melhorias Propostas
-
-1. **Link de ajuda em cada pagina**
-
-Adicionar ao layout principal um link contextual de ajuda:
+**Arquivo:** `src/utils/designHelpers.ts` (NOVO)
 
 ```typescript
-// src/components/ContextualHelp.tsx
-import { HelpCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useLocation } from 'react-router-dom';
+/**
+ * Design System Helpers
+ * Funcoes utilitarias para uso consistente do design system
+ */
 
-const HELP_LINKS: Record<string, string> = {
-  '/dashboard': '/documentacao#dashboard',
-  '/inventario-gee': '/documentacao#inventario',
-  '/gestao-licencas': '/documentacao#licencas',
-  '/nao-conformidades': '/documentacao#qualidade',
-  // ... mapear todas as rotas
-};
+/**
+ * Retorna classes de cor semantica baseado no status
+ */
+export function getStatusClasses(status: 'success' | 'error' | 'warning' | 'info' | 'neutral') {
+  const statusMap = {
+    success: {
+      bg: 'bg-success/10',
+      border: 'border-success/30',
+      text: 'text-success',
+      solid: 'bg-success text-success-foreground',
+    },
+    error: {
+      bg: 'bg-destructive/10',
+      border: 'border-destructive/30',
+      text: 'text-destructive',
+      solid: 'bg-destructive text-destructive-foreground',
+    },
+    warning: {
+      bg: 'bg-warning/10',
+      border: 'border-warning/30',
+      text: 'text-warning',
+      solid: 'bg-warning text-warning-foreground',
+    },
+    info: {
+      bg: 'bg-info/10',
+      border: 'border-info/30',
+      text: 'text-info',
+      solid: 'bg-info text-info-foreground',
+    },
+    neutral: {
+      bg: 'bg-muted',
+      border: 'border-border',
+      text: 'text-muted-foreground',
+      solid: 'bg-secondary text-secondary-foreground',
+    },
+  };
+  
+  return statusMap[status];
+}
 
-export function ContextualHelp() {
-  const location = useLocation();
-  const helpLink = HELP_LINKS[location.pathname] || '/documentacao';
+/**
+ * Retorna classes de prioridade
+ */
+export function getPriorityClasses(priority: 'high' | 'medium' | 'low') {
+  const priorityMap = {
+    high: 'bg-destructive/10 text-destructive border-destructive/30',
+    medium: 'bg-warning/10 text-warning border-warning/30',
+    low: 'bg-success/10 text-success border-success/30',
+  };
+  
+  return priorityMap[priority];
+}
 
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => window.open(helpLink, '_blank')}
-            aria-label="Ajuda"
-          >
-            <HelpCircle className="h-5 w-5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Acessar documentacao</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
+/**
+ * Retorna classes de confianca/score
+ */
+export function getConfidenceClasses(confidence: number) {
+  if (confidence >= 0.8) return 'bg-success/10 text-success border-success/30';
+  if (confidence >= 0.6) return 'bg-warning/10 text-warning border-warning/30';
+  return 'bg-destructive/10 text-destructive border-destructive/30';
 }
 ```
+
+---
+
+### FASE 7: Documentacao Visual
+
+#### 7.1 Criar Pagina de Storybook/Design System
+
+**Arquivo:** `src/pages/DesignSystem.tsx` (NOVO - Opcional, para desenvolvimento)
+
+Esta pagina servira como referencia visual para desenvolvedores, mostrando todos os tokens e componentes disponiveis.
 
 ---
 
@@ -334,58 +519,66 @@ export function ContextualHelp() {
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/constants/messages.ts` | Mensagens padronizadas do sistema |
-| `src/components/ui/form-hint.tsx` | Componente de help text |
-| `src/components/ContextualHelp.tsx` | Link de ajuda contextual |
-| `src/utils/todoRegistry.ts` | Documentacao de funcionalidades pendentes |
+| `src/constants/designTokens.ts` | Documentacao formal dos design tokens |
+| `src/components/ui/status-indicator.tsx` | Componente de status padronizado |
+| `src/utils/designHelpers.ts` | Funcoes helper para cores semanticas |
 
 ## Arquivos a Modificar
 
 | Arquivo | Modificacao |
 |---------|-------------|
-| `supabase/functions/esg-dashboard/index.ts` | Remover comentarios placeholder |
-| `src/pages/Auth.tsx` | Adicionar help text em CNPJ |
-| `src/components/MainLayout.tsx` | Adicionar ContextualHelp no header |
+| `src/index.css` | Adicionar --info e --info-foreground |
+| `tailwind.config.ts` | Adicionar cor info |
+| `src/components/ui/badge.tsx` | Adicionar variantes success, warning, info |
+| `src/components/landing/heimdall/HeimdallNavbar.tsx` | Substituir hex hardcoded |
 
 ---
 
 ## Checklist de Validacao
 
-### Ortografia e Gramatica
-- [x] Verificado - Nenhum erro encontrado
+### Cores
+- [x] Primary definida (Verde Daton #00bf63)
+- [x] Secondary definida
+- [x] Destructive definida
+- [x] Success definida
+- [x] Warning definida
+- [ ] Info a adicionar
+- [x] Contrast 4.5:1 para texto
 
-### Consistencia Terminologica
-- [x] Glossario definido
-- [ ] Padronizar uso de Excluir/Remover
-- [ ] Manter Dashboard como termo padrao
+### Tipografia
+- [x] Inter como fonte principal
+- [x] Font weights definidos (400-700)
+- [ ] Escala tipografica a documentar formalmente
 
-### Placeholders
-- [x] Zero Lorem Ipsum encontrado
-- [ ] Documentar TODOs existentes
-- [ ] Remover placeholder scoring de edge function
+### Espacamento
+- [x] 8px grid implementado
+- [x] CSS variables definidas
 
-### Mensagens do Sistema
-- [x] Toast system padronizado
-- [ ] Criar constantes de mensagens
+### Sombras
+- [x] 5 niveis padronizados
+- [x] Hover states com shadow-hover
 
-### Help Text
-- [x] FormDescription em formularios complexos
-- [ ] Adicionar FormHint em campos criticos
+### Border Radius
+- [x] --radius base definido (12px)
+- [x] Variantes sm, md, lg via Tailwind
 
-### Onboarding
-- [x] Sistema de tour implementado
-- [ ] Adicionar link de ajuda contextual
+### Componentes
+- [x] Button variants consistentes
+- [ ] Badge variants a expandir (success, warning, info)
+- [x] Card styles padronizados
+- [ ] StatusIndicator a criar
 
 ---
 
 ## Ordem de Execucao
 
-1. **Fase 1:** Criar constantes de mensagens (`messages.ts`)
-2. **Fase 2:** Criar componente FormHint e aplicar em Auth.tsx
-3. **Fase 3:** Criar ContextualHelp e adicionar ao layout
-4. **Fase 4:** Documentar TODOs em todoRegistry.ts
-5. **Fase 5:** Corrigir placeholder scoring em esg-dashboard
-6. **Validacao:** Revisar todos os textos da interface
+1. **Fase 1:** Criar designTokens.ts (documentacao)
+2. **Fase 2:** Adicionar info color ao CSS e Tailwind
+3. **Fase 3:** Expandir badge variants
+4. **Fase 4:** Corrigir hex hardcoded na Navbar
+5. **Fase 5:** Criar StatusIndicator component
+6. **Fase 6:** Criar design helpers
+7. **Validacao:** Verificar consistencia visual em todas as paginas
 
 ---
 
@@ -393,44 +586,47 @@ export function ContextualHelp() {
 
 | Metrica | Antes | Depois |
 |---------|-------|--------|
-| Erros ortograficos | 0 | 0 |
-| TODOs documentados | 0% | 100% |
-| Mensagens padronizadas | Parcial | 100% |
-| Campos com help text | 50% | 90% |
-| Paginas com link de ajuda | 0% | 100% |
+| CSS Variables documentadas | Parcial | 100% |
+| Cores semanticas disponiveis | 5 | 6 (+ info) |
+| Badge variants | 4 | 11 |
+| Hex hardcoded | 1 | 0 |
+| Design tokens documentados | 0% | 100% |
+| Componentes de status | 0 | 1 |
 
 ---
 
 ## Secao Tecnica
 
-### Validacao de Conteudo
+### Ferramentas de Validacao
 
 ```bash
-# Buscar Lorem Ipsum
-grep -r "Lorem ipsum" src --include="*.tsx"
-# Resultado: 0 matches
+# Verificar cores hardcoded
+grep -rn "bg-green-\|bg-red-\|bg-yellow-\|bg-blue-\|bg-orange-" src/components --include="*.tsx" | wc -l
 
-# Buscar TODOs
-grep -rn "// TODO\|// FIXME" src --include="*.tsx" --include="*.ts"
-# Resultado: 13 matches
+# Verificar hex hardcoded
+grep -rn "#[0-9a-fA-F]\{6\}\|#[0-9a-fA-F]\{3\}" src/components --include="*.tsx"
 
-# Verificar placeholders genericos
-grep -r "Inserir aqui\|EXAMPLE\|SAMPLE" src --include="*.tsx"
-# Resultado: 0 placeholders problematicos
+# Verificar uso de design tokens
+grep -rn "DESIGN_TOKENS" src --include="*.tsx" --include="*.ts"
 ```
 
-### Ferramentas de Revisao
+### Contrast Checker
 
-1. **LanguageTool**: Verificacao gramatical em portugues
-2. **Hunspell pt-BR**: Verificacao ortografica
-3. **ESLint**: Verificacao de comentarios TODO/FIXME
+Para validar contraste WCAG:
+- Texto normal: minimo 4.5:1
+- Texto grande (18px+): minimo 3:1
+- Ferramenta: WebAIM Contrast Checker
 
-### Scripts de Auditoria
+### Migracao Gradual
 
-```bash
-# Contar termos inconsistentes
-grep -rc "Excluir\|Deletar\|Remover" src/components | sort -t: -k2 -rn | head -10
+Para migrar cores hardcoded (bg-green-500, etc) para variaveis semanticas:
 
-# Verificar toasts nao padronizados
-grep -rn "toast\." src --include="*.tsx" | grep -v "toast\.success\|toast\.error\|toast\.warning\|toast\.info"
-```
+1. Identificar contexto (sucesso, erro, aviso, info)
+2. Substituir por classe semantica correspondente:
+   - `bg-green-500` -> `bg-success`
+   - `bg-red-500` -> `bg-destructive`
+   - `bg-yellow-500` -> `bg-warning`
+   - `bg-blue-500` -> `bg-info`
+
+Esta migracao pode ser feita gradualmente em sprints futuras.
+
