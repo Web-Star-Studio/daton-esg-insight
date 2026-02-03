@@ -383,9 +383,17 @@ export const useCreateEmployee = () => {
   return useMutation({
     mutationFn: createEmployee,
     onSuccess: () => {
+      // Queries principais de funcionários
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
+      // Queries de modais de treinamento
+      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal-2'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-for-schedule'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-for-reschedule'] });
+      // Queries de company employees
+      queryClient.invalidateQueries({ queryKey: ['company-employees'] });
     },
   });
 };
@@ -396,9 +404,17 @@ export const useUpdateEmployee = () => {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Employee> }) =>
       updateEmployee(id, updates),
     onSuccess: () => {
+      // Queries principais de funcionários
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
+      // Queries de modais de treinamento
+      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal-2'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-for-schedule'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-for-reschedule'] });
+      // Queries de company employees
+      queryClient.invalidateQueries({ queryKey: ['company-employees'] });
     },
   });
 };
@@ -408,9 +424,17 @@ export const useDeleteEmployee = () => {
   return useMutation({
     mutationFn: deleteEmployee,
     onSuccess: () => {
+      // Queries principais de funcionários
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
+      // Queries de modais de treinamento
+      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal-2'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-for-schedule'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-for-reschedule'] });
+      // Queries de company employees
+      queryClient.invalidateQueries({ queryKey: ['company-employees'] });
     },
     onError: (error: Error) => {
       logger.error('Erro na mutação de exclusão', error, 'service');
