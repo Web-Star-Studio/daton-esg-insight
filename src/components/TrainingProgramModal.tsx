@@ -388,10 +388,41 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       
       if (isEditing && program?.id) {
         await updateTrainingProgram(program.id, sanitizedValues);
-        toast({
-          title: "Sucesso",
-          description: "Programa de treinamento atualizado com sucesso!",
-        });
+        
+        // Adicionar novos participantes que não existiam
+        const newParticipants = Array.from(pendingParticipants).filter(
+          empId => !existingParticipantIds.includes(empId)
+        );
+        
+        if (newParticipants.length > 0) {
+          let successCount = 0;
+          for (const employeeId of newParticipants) {
+            try {
+              await createEmployeeTraining({
+                employee_id: employeeId,
+                training_program_id: program.id,
+                status: "Inscrito",
+                company_id: "",
+              });
+              successCount++;
+            } catch (err) {
+              console.error(`Erro ao inscrever funcionário ${employeeId}:`, err);
+            }
+          }
+          
+          queryClient.invalidateQueries({ queryKey: ['training-program-participants'] });
+          queryClient.invalidateQueries({ queryKey: ['employee-trainings'] });
+          
+          toast({
+            title: "Sucesso",
+            description: `Programa atualizado. ${successCount} novo(s) participante(s) adicionado(s).`,
+          });
+        } else {
+          toast({
+            title: "Sucesso",
+            description: "Programa de treinamento atualizado com sucesso!",
+          });
+        }
       } else {
         const programData = {
           ...sanitizedValues,
@@ -461,12 +492,43 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
   
   // Funcionários filtrados para seleção do responsável
   const filteredEvaluators = useMemo(() => {
-    if (!evaluatorSearchTerm) return employees.slice(0, 20);
+    if (!evaluatorSearchTerm) return employees.slice(0, 50);
     return employees.filter(emp => 
       emp.full_name?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase()) ||
       emp.employee_code?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase())
-    ).slice(0, 20);
+    ).slice(0, 100);
   }, [employees, evaluatorSearchTerm]);
+  
+  // Contador total de avaliadores para mostrar quando há mais resultados
+  const totalMatchingEvaluators = useMemo(() => {
+    if (!evaluatorSearchTerm) return employees.length;
+    return employees.filter(emp => 
+      emp.full_name?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase()) ||
+      emp.employee_code?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase())
+    ).length;
+  }, [employees, evaluatorSearchTerm]);
+  
+  // Query para buscar participantes existentes quando editando
+  const { data: existingParticipantIds = [] } = useQuery({
+    queryKey: ['training-participants-modal', program?.id],
+    queryFn: async () => {
+      if (!program?.id) return [];
+      const { data, error } = await supabase
+        .from('employee_trainings')
+        .select('employee_id')
+        .eq('training_program_id', program.id);
+      if (error) throw error;
+      return (data || []).map(p => p.employee_id);
+    },
+    enabled: open && isEditing && !!program?.id,
+  });
+  
+  // Inicializar participantes selecionados com existentes quando editando
+  useEffect(() => {
+    if (isEditing && existingParticipantIds.length > 0) {
+      setPendingParticipants(new Set(existingParticipantIds));
+    }
+  }, [isEditing, existingParticipantIds]);
   
   // Buscar nome do responsável selecionado
   const selectedEvaluator = useMemo(() => {
@@ -1052,6 +1114,12 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                                       </CommandItem>
                                     ))}
                                   </CommandGroup>
+                                  {totalMatchingEvaluators > filteredEvaluators.length && (
+                                    <p className="text-xs text-muted-foreground px-3 py-2 border-t">
+                                      Mostrando {filteredEvaluators.length} de {totalMatchingEvaluators}. 
+                                      Digite para refinar a busca.
+                                    </p>
+                                  )}
                                 </CommandList>
                               </Command>
                             </PopoverContent>
@@ -1086,8 +1154,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
               </div>
             </div>
 
-            {/* ============ SEÇÃO: PARTICIPANTES (apenas na criação) ============ */}
-            {!isEditing && (
+            {/* ============ SEÇÃO: PARTICIPANTES ============ */}
+            {(
               <>
                 <Separator />
                 
@@ -1100,8 +1168,13 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                       </h3>
                       {pendingParticipants.size > 0 && (
                         <Badge variant="secondary">
-                          {pendingParticipants.size} selecionado(s)
+                          {pendingParticipants.size} {isEditing ? 'inscrito(s)' : 'selecionado(s)'}
                         </Badge>
+                      )}
+                      {isEditing && (
+                        <span className="text-xs text-muted-foreground">
+                          (novos serão adicionados ao salvar)
+                        </span>
                       )}
                     </div>
                     <Button
