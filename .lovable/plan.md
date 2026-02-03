@@ -1,83 +1,196 @@
 
+# Plano de Correção: Seleção de Avaliador e Adição de Participantes
 
-# Plano de Correção: Funcionários não aparecem na criação de Programas de Treinamento
+## Resumo dos Problemas Identificados
 
-## Diagnóstico do Problema
+### Problema 1: Avaliador de Eficácia - Não aparecem todos os funcionários
 
-### Causa Raiz Identificada
+**Causa Raiz Identificada**
 
-O problema ocorre porque **as query keys usadas nos modais de treinamento não são invalidadas quando funcionários são criados/atualizados**.
+No arquivo `TrainingProgramModal.tsx`, linha 464, a lista de avaliadores está **limitada artificialmente a 20 funcionários**:
 
-Quando um funcionário é cadastrado:
-
-```text
-┌─────────────────────────┐      ┌──────────────────────────────┐
-│  useCreateEmployee()    │ ---> │  Invalida apenas:            │
-│  (src/services/         │      │  - ['employees']             │
-│   employees.ts)         │      │  - ['employees-paginated']   │
-│                         │      │  - ['employees-stats']       │
-└─────────────────────────┘      └──────────────────────────────┘
-                                           |
-                                           v
-                          ┌────────────────────────────────────────┐
-                          │  NÃO invalida:                         │
-                          │  - ['employees-for-training-modal']    │
-                          │  - ['employees-for-training-modal-2']  │
-                          │  - ['employees-for-schedule']          │
-                          │  - ['employees-for-reschedule']        │
-                          └────────────────────────────────────────┘
+```typescript
+const filteredEvaluators = useMemo(() => {
+  if (!evaluatorSearchTerm) return employees.slice(0, 20); // ← PROBLEMA: Limite de 20
+  return employees.filter(emp => 
+    emp.full_name?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase()) ||
+    emp.employee_code?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase())
+  ).slice(0, 20); // ← PROBLEMA: Também limita a 20
+}, [employees, evaluatorSearchTerm]);
 ```
 
-### Evidências
+Isso significa que:
+- Sem busca: apenas os 20 primeiros funcionários aparecem
+- Com busca: apenas os 20 primeiros resultados aparecem
+- Funcionários que não estão nos primeiros 20 são invisíveis para seleção
 
-1. **TrainingProgramModal.tsx** (linha 107): Query key `["employees-for-training-modal"]`
-2. **EmployeeTrainingModal.tsx** (linha 105): Query key `["employees-for-training-modal-2"]`
-3. **useCreateEmployee** (linha 386-388): Invalida apenas `['employees']`, `['employees-paginated']`, `['employees-stats']`
+### Problema 2: Adicionar participantes na edição
 
-Mesmo com `staleTime: 0`, os dados só são refetch quando:
-- A query é remontada (modal abre novamente após fechamento completo)
-- A query é explicitamente invalidada
-- O usuário faz refresh na página
+**Situação Atual**
+
+A seção de participantes está explicitamente oculta durante a edição (linha 1089-1090):
+
+```typescript
+{/* ============ SEÇÃO: PARTICIPANTES (apenas na criação) ============ */}
+{!isEditing && (
+  // ... toda a seção de seleção de participantes
+)}
+```
+
+**Funcionalidade Existente**
+
+A funcionalidade de adicionar participantes já existe no modal de detalhes (`TrainingProgramDetailModal`), acessível via botão "Adicionar" na aba Participantes. No entanto, não está disponível diretamente no modal de edição.
 
 ---
 
 ## Solução Proposta
 
-### Opção A: Invalidar todas as queries de funcionários (Recomendada)
+### Correção 1: Remover limite de 20 avaliadores
 
-Adicionar invalidação das queries específicas usadas nos modais de treinamento quando funcionários são criados/atualizados/excluídos.
+**Arquivo:** `src/components/TrainingProgramModal.tsx`
 
-**Arquivo a modificar:** `src/services/employees.ts`
+Alterar a lógica de `filteredEvaluators` para permitir visualização de mais funcionários:
+
+| Cenário | Antes | Depois |
+|---------|-------|--------|
+| Sem busca | Máx 20 | Máx 50 (para performance) |
+| Com busca | Máx 20 | Máx 100 (prioriza busca) |
 
 ```typescript
-// useCreateEmployee (linha 385-389)
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ['employees'] });
-  queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
-  queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
-  // ADICIONAR - Invalidar queries de treinamento
-  queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal'] });
-  queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal-2'] });
-  queryClient.invalidateQueries({ queryKey: ['employees-for-schedule'] });
-  queryClient.invalidateQueries({ queryKey: ['employees-for-reschedule'] });
-},
+const filteredEvaluators = useMemo(() => {
+  if (!evaluatorSearchTerm) return employees.slice(0, 50); // Aumentar limite inicial
+  return employees.filter(emp => 
+    emp.full_name?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase()) ||
+    emp.employee_code?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase())
+  ).slice(0, 100); // Mais resultados na busca
+}, [employees, evaluatorSearchTerm]);
 ```
 
-Aplicar a mesma correção em:
-- `useUpdateEmployee` (linha 398-402)
-- `useDeleteEmployee` (linha 410-414)
+**Melhoria adicional:** Adicionar mensagem informativa quando há mais resultados:
 
-### Opção B: Padronizar query keys (Melhoria de longo prazo)
-
-Unificar todas as queries de funcionários sob uma query key base comum, permitindo invalidação por prefixo.
-
-**Mudança nas queries:**
-- Mudar de: `["employees-for-training-modal"]`
-- Para: `["employees", "training-modal"]`
-
-Depois usar invalidação por prefixo:
 ```typescript
-queryClient.invalidateQueries({ queryKey: ['employees'] });
+// Adicionar contador de resultados ocultos
+const totalMatchingEvaluators = useMemo(() => {
+  if (!evaluatorSearchTerm) return employees.length;
+  return employees.filter(emp => 
+    emp.full_name?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase()) ||
+    emp.employee_code?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase())
+  ).length;
+}, [employees, evaluatorSearchTerm]);
+
+// Exibir aviso quando há mais resultados
+{totalMatchingEvaluators > filteredEvaluators.length && (
+  <p className="text-xs text-muted-foreground px-2 py-1 border-t">
+    Mostrando {filteredEvaluators.length} de {totalMatchingEvaluators}. 
+    Digite para refinar a busca.
+  </p>
+)}
+```
+
+### Correção 2: Permitir adicionar participantes na edição
+
+**Abordagem:** Exibir a seção de participantes na edição, mostrando os participantes atuais e permitindo adicionar novos.
+
+**Arquivo:** `src/components/TrainingProgramModal.tsx`
+
+**Mudanças necessárias:**
+
+1. **Buscar participantes existentes quando editando:**
+
+```typescript
+// Adicionar query para buscar participantes existentes
+const { data: existingParticipants = [] } = useQuery({
+  queryKey: ['training-participants-modal', program?.id],
+  queryFn: async () => {
+    if (!program?.id) return [];
+    const { data, error } = await supabase
+      .from('employee_trainings')
+      .select('employee_id')
+      .eq('training_program_id', program.id);
+    if (error) throw error;
+    return (data || []).map(p => p.employee_id);
+  },
+  enabled: open && isEditing && !!program?.id,
+});
+```
+
+2. **Inicializar participantes selecionados com existentes:**
+
+```typescript
+// Atualizar pendingParticipants quando editando
+useEffect(() => {
+  if (isEditing && existingParticipants.length > 0) {
+    setPendingParticipants(new Set(existingParticipants));
+  }
+}, [isEditing, existingParticipants]);
+```
+
+3. **Modificar condição de exibição da seção de participantes:**
+
+```typescript
+// ANTES: {!isEditing && (
+// DEPOIS: Sempre exibir, com texto diferenciado
+{(
+  <>
+    <Separator />
+    
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-1 w-1 rounded-full bg-primary" />
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+            Participantes
+          </h3>
+          {pendingParticipants.size > 0 && (
+            <Badge variant="secondary">
+              {pendingParticipants.size} {isEditing ? 'inscrito(s)' : 'selecionado(s)'}
+            </Badge>
+          )}
+        </div>
+        // ... resto da seção
+      </div>
+    </div>
+  </>
+)}
+```
+
+4. **Atualizar lógica de salvamento para adicionar novos participantes na edição:**
+
+```typescript
+// Na função onSubmit, após updateTrainingProgram:
+if (isEditing && program?.id) {
+  await updateTrainingProgram(program.id, sanitizedValues);
+  
+  // Adicionar novos participantes que não existiam
+  const newParticipants = Array.from(pendingParticipants).filter(
+    empId => !existingParticipants.includes(empId)
+  );
+  
+  if (newParticipants.length > 0) {
+    for (const employeeId of newParticipants) {
+      try {
+        await createEmployeeTraining({
+          employee_id: employeeId,
+          training_program_id: program.id,
+          status: "Inscrito",
+          company_id: "",
+        });
+      } catch (err) {
+        console.error(`Erro ao inscrever funcionário ${employeeId}:`, err);
+      }
+    }
+    
+    toast({
+      title: "Sucesso",
+      description: `Programa atualizado. ${newParticipants.length} novo(s) participante(s) adicionado(s).`,
+    });
+  } else {
+    toast({
+      title: "Sucesso",
+      description: "Programa de treinamento atualizado com sucesso!",
+    });
+  }
+}
 ```
 
 ---
@@ -86,134 +199,91 @@ queryClient.invalidateQueries({ queryKey: ['employees'] });
 
 | Arquivo | Modificação |
 |---------|-------------|
-| `src/services/employees.ts` | Adicionar invalidação das queries de treinamento em `useCreateEmployee`, `useUpdateEmployee`, `useDeleteEmployee` |
+| `src/components/TrainingProgramModal.tsx` | 1. Aumentar limite de avaliadores de 20 para 50/100 |
+|  | 2. Adicionar contador de resultados ocultos |
+|  | 3. Buscar participantes existentes na edição |
+|  | 4. Exibir seção de participantes na edição |
+|  | 5. Atualizar lógica de salvamento para novos participantes |
 
 ---
 
-## Correção Detalhada
+## Fluxo de Usuário Após Correções
 
-### 1. Atualizar useCreateEmployee
+### Seleção de Avaliador
 
-Linha ~385-389 em `src/services/employees.ts`:
-
-```typescript
-export const useCreateEmployee = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: createEmployee,
-    onSuccess: () => {
-      // Queries principais de funcionários
-      queryClient.invalidateQueries({ queryKey: ['employees'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
-      // Queries de modais de treinamento
-      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal-2'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-for-schedule'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-for-reschedule'] });
-      // Queries de company employees
-      queryClient.invalidateQueries({ queryKey: ['company-employees'] });
-    },
-  });
-};
+```text
+┌──────────────────────────────────────┐
+│  Responsável pela Avaliação          │
+│  ┌──────────────────────────────────┐│
+│  │ Buscar por nome ou código...    ││
+│  └──────────────────────────────────┘│
+│  ┌──────────────────────────────────┐│
+│  │ ✓ Ana Silva (EMP001)            ││
+│  │   Bruno Santos (EMP002)         ││
+│  │   Carlos Oliveira (EMP003)      ││
+│  │   ... (até 50 sem busca)        ││
+│  │                                 ││
+│  │ Mostrando 50 de 150.            ││
+│  │ Digite para refinar a busca.    ││
+│  └──────────────────────────────────┘│
+└──────────────────────────────────────┘
 ```
 
-### 2. Atualizar useUpdateEmployee
+### Adicionar Participantes na Edição
 
-Linha ~398-402:
-
-```typescript
-export const useUpdateEmployee = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Employee> }) =>
-      updateEmployee(id, updates),
-    onSuccess: () => {
-      // Queries principais de funcionários
-      queryClient.invalidateQueries({ queryKey: ['employees'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
-      // Queries de modais de treinamento
-      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal-2'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-for-schedule'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-for-reschedule'] });
-      // Queries de company employees
-      queryClient.invalidateQueries({ queryKey: ['company-employees'] });
-    },
-  });
-};
-```
-
-### 3. Atualizar useDeleteEmployee
-
-Linha ~410-414:
-
-```typescript
-export const useDeleteEmployee = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: deleteEmployee,
-    onSuccess: () => {
-      // Queries principais de funcionários
-      queryClient.invalidateQueries({ queryKey: ['employees'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
-      // Queries de modais de treinamento
-      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-for-training-modal-2'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-for-schedule'] });
-      queryClient.invalidateQueries({ queryKey: ['employees-for-reschedule'] });
-      // Queries de company employees
-      queryClient.invalidateQueries({ queryKey: ['company-employees'] });
-    },
-    onError: (error: Error) => {
-      logger.error('Erro na mutação de exclusão', error, 'service');
-    },
-  });
-};
-```
-
----
-
-## Melhoria Adicional (Opcional)
-
-### Criar função helper para invalidar todas as queries de funcionários
-
-```typescript
-// Em src/services/employees.ts
-
-const invalidateAllEmployeeQueries = (queryClient: ReturnType<typeof useQueryClient>) => {
-  const employeeQueryKeys = [
-    ['employees'],
-    ['employees-paginated'],
-    ['employees-stats'],
-    ['employees-for-training-modal'],
-    ['employees-for-training-modal-2'],
-    ['employees-for-schedule'],
-    ['employees-for-reschedule'],
-    ['company-employees'],
-  ];
-  
-  employeeQueryKeys.forEach(key => {
-    queryClient.invalidateQueries({ queryKey: key });
-  });
-};
-```
-
-Depois usar em cada mutation:
-```typescript
-onSuccess: () => {
-  invalidateAllEmployeeQueries(queryClient);
-},
+```text
+┌──────────────────────────────────────┐
+│  PARTICIPANTES                       │
+│  [32 inscrito(s)]                    │
+│                                       │
+│  [Buscar funcionários...] [Dept ▼]   │
+│                                       │
+│  ┌──────────────────────────────────┐│
+│  │ ✓ Ana Silva - RH                ││  ← Já inscrita
+│  │ ✓ Bruno Santos - TI             ││  ← Já inscrito
+│  │ ☐ Carlos Oliveira - Vendas      ││  ← Pode adicionar
+│  │ ✓ Daniela Lima - Produção       ││  ← Já inscrita
+│  │ ☐ Eduardo Pereira - Logística   ││  ← Pode adicionar
+│  └──────────────────────────────────┘│
+│                                       │
+│  ⚠️ Participantes já inscritos não   │
+│  podem ser removidos por aqui.       │
+│  Use o modal de detalhes.            │
+└──────────────────────────────────────┘
 ```
 
 ---
 
 ## Resultado Esperado
 
-Após a correção:
-1. Ao cadastrar um novo funcionário, o modal de criação de programa de treinamento exibirá o funcionário recém-cadastrado
-2. Ao atualizar o status de um funcionário, os modais refletirão a mudança
-3. Ao excluir um funcionário, ele desaparecerá imediatamente dos modais de treinamento
+| Funcionalidade | Antes | Depois |
+|----------------|-------|--------|
+| Avaliadores visíveis | Máximo 20 | Até 50 sem busca, 100 com busca |
+| Adicionar participantes | Apenas na criação | Criação e edição |
+| Feedback ao usuário | Nenhum | Contador de resultados ocultos |
 
+---
+
+## Seção Técnica
+
+### Query Keys a Adicionar
+
+```typescript
+['training-participants-modal', programId] // Para buscar participantes existentes na edição
+```
+
+### Invalidações Necessárias
+
+Após salvar com novos participantes:
+```typescript
+queryClient.invalidateQueries({ queryKey: ['training-program-participants'] });
+queryClient.invalidateQueries({ queryKey: ['employee-trainings'] });
+```
+
+### Considerações de UX
+
+1. **Participantes já inscritos:** Devem aparecer selecionados e não podem ser desmarcados via este modal (remoção deve ser feita pelo modal de detalhes)
+
+2. **Distinção visual:** Participantes existentes vs novos a adicionar
+
+3. **Mensagem informativa:** Explicar que remoção não é possível neste modal
