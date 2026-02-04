@@ -40,6 +40,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatDateDisplay } from '@/utils/dateUtils';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthCheck } from '@/hooks/useAuthCheck';
 
 // Import components
 import { TrainingProgramModal } from '@/components/TrainingProgramModal';
@@ -100,22 +101,24 @@ export default function GestaoTreinamentos() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // OTIMIZAÇÃO: Removida invalidação agressiva no mount
-  // A invalidação agora ocorre apenas após ações do usuário (criar/editar/excluir)
+  
+  // Verificação de autenticação - queries só executam após auth estar pronta
+  const { isAuthenticated, isLoading: authLoading } = useAuthCheck();
 
   // Fetch training programs - Cache de 2 minutos para evitar queries desnecessárias
   const { data: programs = [], isLoading: isLoadingPrograms } = useQuery({
     queryKey: ['training-programs'],
     queryFn: getTrainingPrograms,
-    staleTime: 2 * 60 * 1000, // 2 minutos de cache
+    staleTime: 2 * 60 * 1000,
+    enabled: isAuthenticated, // Só executa quando autenticado
   });
 
   // Fetch training categories for dynamic filter
   const { data: categories = [] } = useQuery({
     queryKey: ['training-categories'],
     queryFn: getTrainingCategories,
-    staleTime: 5 * 60 * 1000, // 5 minutos - categorias mudam raramente
+    staleTime: 5 * 60 * 1000,
+    enabled: isAuthenticated,
   });
 
   // Fetch employee trainings - Cache de 1 minuto
@@ -123,14 +126,16 @@ export default function GestaoTreinamentos() {
     queryKey: ['employee-trainings'],
     queryFn: getEmployeeTrainings,
     retry: 3,
-    staleTime: 60 * 1000, // 1 minuto de cache
+    staleTime: 60 * 1000,
+    enabled: isAuthenticated,
   });
 
   // Fetch training metrics - Cache de 3 minutos (dados agregados)
   const { data: trainingMetrics } = useQuery({
     queryKey: ['training-metrics'],
     queryFn: getTrainingMetrics,
-    staleTime: 3 * 60 * 1000, // 3 minutos de cache
+    staleTime: 3 * 60 * 1000,
+    enabled: isAuthenticated,
   });
 
   const filteredPrograms = programs.filter(program => {
@@ -372,6 +377,15 @@ export default function GestaoTreinamentos() {
       color: 'text-orange-600'
     }
   ];
+
+  // Loading state enquanto verifica autenticação
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6 space-y-6">
