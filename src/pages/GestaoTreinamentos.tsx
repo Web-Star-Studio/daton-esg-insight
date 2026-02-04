@@ -101,39 +101,36 @@ export default function GestaoTreinamentos() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Force fresh data on component mount
-  React.useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ['training-programs'] });
-    queryClient.invalidateQueries({ queryKey: ['employee-trainings'] });
-    queryClient.invalidateQueries({ queryKey: ['training-metrics'] });
-  }, [queryClient]);
+  // OTIMIZAÇÃO: Removida invalidação agressiva no mount
+  // A invalidação agora ocorre apenas após ações do usuário (criar/editar/excluir)
 
-  // Fetch training programs
+  // Fetch training programs - Cache de 2 minutos para evitar queries desnecessárias
   const { data: programs = [], isLoading: isLoadingPrograms } = useQuery({
     queryKey: ['training-programs'],
     queryFn: getTrainingPrograms,
-    staleTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 2 * 60 * 1000, // 2 minutos de cache
   });
 
   // Fetch training categories for dynamic filter
   const { data: categories = [] } = useQuery({
     queryKey: ['training-categories'],
     queryFn: getTrainingCategories,
+    staleTime: 5 * 60 * 1000, // 5 minutos - categorias mudam raramente
   });
 
-  // Fetch employee trainings
+  // Fetch employee trainings - Cache de 1 minuto
   const { data: employeeTrainings = [] } = useQuery({
     queryKey: ['employee-trainings'],
     queryFn: getEmployeeTrainings,
     retry: 3,
-    staleTime: 30000, // 30 seconds
+    staleTime: 60 * 1000, // 1 minuto de cache
   });
 
-  // Fetch training metrics
+  // Fetch training metrics - Cache de 3 minutos (dados agregados)
   const { data: trainingMetrics } = useQuery({
     queryKey: ['training-metrics'],
     queryFn: getTrainingMetrics,
+    staleTime: 3 * 60 * 1000, // 3 minutos de cache
   });
 
   const filteredPrograms = programs.filter(program => {
