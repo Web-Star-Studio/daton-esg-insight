@@ -1,221 +1,229 @@
 
-# Plano de Otimizacao: Performance da Tela de Gestao de Treinamentos
+# Plano de Correção: Treinamentos não aparecem na tela
 
-## Diagnostico do Problema
+## Diagnóstico do Problema
 
-### Causa Raiz: N+1 Query Problem
+### Causa Raiz Identificada
 
-A funcao `getTrainingPrograms()` em `src/services/trainingPrograms.ts` tem um **problema critico de performance** nas linhas 59-85:
+O problema é uma **combinação de dois fatores**:
+
+1. **Ausência de verificação de autenticação** na página `GestaoTreinamentos.tsx`
+2. **Cache excessivo** (2 minutos de `staleTime`) sem condição de habilitação
 
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
-│  1. Busca todos os programas de treinamento                     │
-│     SELECT * FROM training_programs ORDER BY name               │
+│  Usuário acessa /gestao-treinamentos                             │
 └──────────────────────────────────────────────────────────────────┘
                               │
                               v
 ┌──────────────────────────────────────────────────────────────────┐
-│  2. Para CADA programa, faz uma query separada:                 │
-│     await checkHasEfficacyEvaluation(supabase, program.id)      │
-│                                                                  │
-│     SELECT id FROM training_efficacy_evaluations                 │
-│     WHERE training_program_id = ? AND status = 'Concluida'      │
-│     LIMIT 1                                                      │
+│  useQuery executa ANTES da autenticação estar pronta             │
+│  (auth.uid() = NULL no momento da query)                         │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              v
+┌──────────────────────────────────────────────────────────────────┐
+│  RLS bloqueia: get_user_company_id() retorna NULL                │
+│  → SELECT retorna 0 linhas                                       │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              v
+┌──────────────────────────────────────────────────────────────────┐
+│  React Query CACHEIA o array vazio por 2 minutos                 │
+│  (staleTime: 2 * 60 * 1000)                                      │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              v
+┌──────────────────────────────────────────────────────────────────┐
+│  Autenticação completa (segundos depois)                         │
+│  MAS o cache não é refetch porque ainda é "fresh"                │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              v
+┌──────────────────────────────────────────────────────────────────┐
+│  "Nenhum programa encontrado" - lista vazia                      │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**Impacto:** Se existem 50 programas de treinamento, sao feitas **51 queries** ao banco de dados (1 principal + 50 verificacoes de eficacia).
+### Evidência
 
-### Problemas Adicionais Identificados
+A página `GestaoDesempenho.tsx` usa corretamente:
 
-1. **Invalidacao Excessiva no Mount** (linhas 105-109)
-   - Toda vez que a pagina carrega, invalida 3 queries forçando refetch completo
-   - Combinado com `staleTime: 0`, garante que SEMPRE busque do servidor
+```typescript
+const { isAuthenticated, isLoading: authLoading } = useAuthCheck();
 
-2. **Query de Metricas Pesada** (`getTrainingMetrics`)
-   - Faz 3 queries grandes (trainings, programs, employees)
-   - Processa tudo no cliente sem paginacao
+const { data: performanceStats } = useQuery({
+  queryKey: ['performance-stats'],
+  queryFn: getPerformanceStats,
+  enabled: isAuthenticated,  // ← Query só executa quando autenticado
+});
+```
 
-3. **Sem Cache Efetivo**
-   - `staleTime: 0` nas queries principais
-   - `refetchOnMount: 'always'` força novo fetch a cada visita
+Já `GestaoTreinamentos.tsx` não tem essa verificação:
+
+```typescript
+// SEM verificação de autenticação!
+const { data: programs = [] } = useQuery({
+  queryKey: ['training-programs'],
+  queryFn: getTrainingPrograms,
+  staleTime: 2 * 60 * 1000,
+  // Falta: enabled: isAuthenticated
+});
+```
 
 ---
 
-## Solucao Proposta
+## Solução Proposta
 
-### Correcao 1: Eliminar N+1 com Batch Query
+### Adicionar verificação de autenticação nas queries
 
-**Arquivo:** `src/services/trainingPrograms.ts`
+**Arquivo:** `src/pages/GestaoTreinamentos.tsx`
 
-Buscar todas as avaliacoes de eficacia de uma vez so, em vez de uma query por programa:
+Adicionar o hook `useAuthCheck` e condicionar todas as queries com `enabled: isAuthenticated`:
 
 ```typescript
-export const getTrainingPrograms = async () => {
-  // Busca programas
-  const { data: programs, error } = await supabase
-    .from('training_programs')
-    .select('*')
-    .order('name');
+import { useAuthCheck } from "@/hooks/useAuthCheck";
 
-  if (error) throw error;
-  if (!programs || programs.length === 0) return [];
-
-  // OTIMIZACAO: Buscar TODAS as avaliacoes de eficacia em UMA query
-  const programIds = programs
-    .filter(p => p.start_date || p.end_date)
-    .map(p => p.id);
+export default function GestaoTreinamentos() {
+  // ... state declarations ...
   
-  let efficacyMap: Record<string, boolean> = {};
-  
-  if (programIds.length > 0) {
-    const { data: evaluations, error: evalError } = await supabase
-      .from('training_efficacy_evaluations')
-      .select('training_program_id')
-      .in('training_program_id', programIds)
-      .eq('status', 'Concluída');
-    
-    if (!evalError && evaluations) {
-      evaluations.forEach(e => {
-        efficacyMap[e.training_program_id] = true;
-      });
-    }
-  }
+  // Adicionar verificação de autenticação
+  const { isAuthenticated, isLoading: authLoading } = useAuthCheck();
 
-  // Calcular status usando o mapa (sem queries adicionais)
-  const legacyStatuses = ['Ativo', 'Inativo', 'Suspenso', 'Arquivado'];
-
-  return programs.map(program => {
-    if (legacyStatuses.includes(program.status) && !program.start_date && !program.end_date) {
-      return program;
-    }
-    
-    if (program.start_date || program.end_date) {
-      const hasEfficacy = efficacyMap[program.id] || false;
-      const calculatedStatus = calculateTrainingStatus({
-        start_date: program.start_date,
-        end_date: program.end_date,
-        efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
-        hasEfficacyEvaluation: hasEfficacy,
-      });
-      
-      return { ...program, status: calculatedStatus };
-    }
-    
-    return program;
+  // Query condicionada à autenticação
+  const { data: programs = [], isLoading: isLoadingPrograms } = useQuery({
+    queryKey: ['training-programs'],
+    queryFn: getTrainingPrograms,
+    staleTime: 2 * 60 * 1000,
+    enabled: isAuthenticated,  // ← ADICIONAR
   });
-};
-```
 
-**Resultado:** De N+1 queries para apenas **2 queries** (programas + avaliacoes).
+  // Aplicar em todas as outras queries também
+  const { data: categories = [] } = useQuery({
+    queryKey: ['training-categories'],
+    queryFn: getTrainingCategories,
+    staleTime: 5 * 60 * 1000,
+    enabled: isAuthenticated,  // ← ADICIONAR
+  });
 
-### Correcao 2: Remover Invalidacao Agressiva
+  const { data: employeeTrainings = [] } = useQuery({
+    queryKey: ['employee-trainings'],
+    queryFn: getEmployeeTrainings,
+    staleTime: 60 * 1000,
+    enabled: isAuthenticated,  // ← ADICIONAR
+  });
 
-**Arquivo:** `src/pages/GestaoTreinamentos.tsx`
+  const { data: trainingMetrics } = useQuery({
+    queryKey: ['training-metrics'],
+    queryFn: getTrainingMetrics,
+    staleTime: 3 * 60 * 1000,
+    enabled: isAuthenticated,  // ← ADICIONAR
+  });
 
-Remover ou condicionar o useEffect que invalida queries no mount:
-
-```typescript
-// REMOVER este useEffect completamente ou tornar opcional
-// React.useEffect(() => {
-//   queryClient.invalidateQueries({ queryKey: ['training-programs'] });
-//   queryClient.invalidateQueries({ queryKey: ['employee-trainings'] });
-//   queryClient.invalidateQueries({ queryKey: ['training-metrics'] });
-// }, [queryClient]);
-```
-
-### Correcao 3: Adicionar Cache Efetivo
-
-**Arquivo:** `src/pages/GestaoTreinamentos.tsx`
-
-Configurar staleTime razoavel para permitir cache:
-
-```typescript
-// Training programs - dados mudam com pouca frequencia
-const { data: programs = [], isLoading: isLoadingPrograms } = useQuery({
-  queryKey: ['training-programs'],
-  queryFn: getTrainingPrograms,
-  staleTime: 2 * 60 * 1000, // 2 minutos de cache
-  // Remover refetchOnMount: 'always'
-});
-
-// Employee trainings
-const { data: employeeTrainings = [] } = useQuery({
-  queryKey: ['employee-trainings'],
-  queryFn: getEmployeeTrainings,
-  retry: 3,
-  staleTime: 60 * 1000, // 1 minuto de cache
-});
-
-// Training metrics - dados agregados, pode ter cache maior
-const { data: trainingMetrics } = useQuery({
-  queryKey: ['training-metrics'],
-  queryFn: getTrainingMetrics,
-  staleTime: 3 * 60 * 1000, // 3 minutos de cache
-});
+  // Mostrar loading enquanto verifica autenticação
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+}
 ```
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Modificacao |
+| Arquivo | Modificação |
 |---------|-------------|
-| `src/services/trainingPrograms.ts` | Otimizar `getTrainingPrograms()` com batch query |
-| `src/pages/GestaoTreinamentos.tsx` | Remover invalidacao no mount, ajustar staleTime |
+| `src/pages/GestaoTreinamentos.tsx` | Adicionar `useAuthCheck` e `enabled: isAuthenticated` em todas as queries |
 
 ---
 
-## Estimativa de Melhoria
+## Mudanças Detalhadas
 
-| Metrica | Antes | Depois |
+### 1. Adicionar import do hook de autenticação
+
+```typescript
+import { useAuthCheck } from "@/hooks/useAuthCheck";
+```
+
+### 2. Usar o hook no componente
+
+```typescript
+const { isAuthenticated, isLoading: authLoading, error: authError } = useAuthCheck();
+```
+
+### 3. Adicionar `enabled: isAuthenticated` em todas as queries
+
+Queries a atualizar:
+- `['training-programs']`
+- `['training-categories']`
+- `['employee-trainings']`
+- `['training-metrics']`
+
+### 4. Adicionar estado de carregamento enquanto verifica autenticação
+
+```typescript
+if (authLoading) {
+  return (
+    <div className="flex items-center justify-center h-[60vh]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+  );
+}
+```
+
+---
+
+## Resultado Esperado
+
+| Cenário | Antes | Depois |
 |---------|-------|--------|
-| Queries ao carregar (50 programas) | 51+ | 2-5 |
-| Tempo estimado primeiro load | 3-5s | 0.5-1s |
-| Cache entre navegacoes | Nenhum | 2 minutos |
-| Requests em visitas subsequentes | 51+ | 0 (se dentro do cache) |
+| Primeiro acesso (auth não pronta) | Query executa com auth=NULL, retorna [], cacheia vazio | Query aguarda auth, executa só quando pronta |
+| Cache após auth | Mantém [] por 2 min | Dados corretos cacheados |
+| Navegação entre páginas | Pode mostrar dados vazios | Sempre mostra dados corretos |
 
 ---
 
-## Secao Tecnica
+## Seção Técnica
 
-### Fluxo Otimizado
+### Por que isso resolve o problema?
+
+O TanStack Query com `enabled: false` **não executa a query**. Isso significa:
+
+1. A query fica em estado "idle" enquanto `isAuthenticated === false`
+2. Quando a autenticação completa, `enabled` muda para `true`
+3. A query executa com a sessão válida
+4. RLS funciona corretamente pois `auth.uid()` retorna o ID do usuário
+5. Os dados são retornados e cacheados
+
+### Fluxo corrigido
 
 ```text
 ┌─────────────────────────────┐
-│  Primeiro Acesso            │
-│  (fora do cache)            │
+│  Acesso à página            │
+│  isAuthenticated = false    │
+│  Queries em estado IDLE     │
 └─────────────────────────────┘
               │
               v
 ┌─────────────────────────────┐
-│  Query 1: training_programs │
-│  Query 2: efficacy_evals    │  ← Batch (IN clause)
-│  Query 3: employee_trainings│
-│  Query 4: metrics           │
+│  Autenticação completa      │
+│  isAuthenticated = true     │
 └─────────────────────────────┘
               │
               v
 ┌─────────────────────────────┐
-│  Cache por 2 minutos        │
+│  Queries executam           │
+│  auth.uid() = ID válido     │
+│  RLS permite acesso         │
 └─────────────────────────────┘
               │
               v
 ┌─────────────────────────────┐
-│  Acessos Subsequentes       │
-│  (dentro do cache)          │
-│  → Zero queries             │
+│  Dados retornados e         │
+│  cacheados corretamente     │
 └─────────────────────────────┘
 ```
-
-### Invalidacao Inteligente
-
-Manter invalidacao apenas apos acoes do usuario:
-
-```typescript
-// Ao criar/editar/excluir programa
-queryClient.invalidateQueries({ queryKey: ['training-programs'] });
-queryClient.invalidateQueries({ queryKey: ['training-metrics'] });
-```
-
-Isso garante dados frescos apos mudancas, mas evita refetch desnecessario no carregamento inicial.
