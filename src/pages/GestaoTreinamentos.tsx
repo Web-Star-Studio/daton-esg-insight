@@ -40,7 +40,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatDateDisplay } from '@/utils/dateUtils';
 import { useToast } from '@/hooks/use-toast';
-import { useAuthCheck } from '@/hooks/useAuthCheck';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Import components
 import { TrainingProgramModal } from '@/components/TrainingProgramModal';
@@ -102,8 +102,9 @@ export default function GestaoTreinamentos() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Verificação de autenticação - queries só executam após auth estar pronta
-  const { isAuthenticated, isLoading: authLoading } = useAuthCheck();
+  // Usa estado de autenticação do contexto global (já validado pelo ProtectedRoute)
+  const { user, isLoading: authLoading } = useAuth();
+  const isAuthenticated = !!user;
 
   // Fetch training programs - Cache de 2 minutos para evitar queries desnecessárias
   const { data: programs = [], isLoading: isLoadingPrograms } = useQuery({
