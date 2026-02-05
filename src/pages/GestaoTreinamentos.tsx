@@ -40,7 +40,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatDateDisplay } from '@/utils/dateUtils';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Import components
 import { TrainingProgramModal } from '@/components/TrainingProgramModal';
@@ -102,16 +102,13 @@ export default function GestaoTreinamentos() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Usa estado de autenticação do contexto global (já validado pelo ProtectedRoute)
-  const { user, isLoading: authLoading } = useAuth();
-  const isAuthenticated = !!user;
+  // ProtectedRoute já garantiu autenticação - queries executam imediatamente
 
   // Fetch training programs - Cache de 2 minutos para evitar queries desnecessárias
   const { data: programs = [], isLoading: isLoadingPrograms } = useQuery({
     queryKey: ['training-programs'],
     queryFn: getTrainingPrograms,
     staleTime: 2 * 60 * 1000,
-    enabled: isAuthenticated, // Só executa quando autenticado
   });
 
   // Fetch training categories for dynamic filter
@@ -119,24 +116,21 @@ export default function GestaoTreinamentos() {
     queryKey: ['training-categories'],
     queryFn: getTrainingCategories,
     staleTime: 5 * 60 * 1000,
-    enabled: isAuthenticated,
   });
 
   // Fetch employee trainings - Cache de 1 minuto
-  const { data: employeeTrainings = [] } = useQuery({
+  const { data: employeeTrainings = [], isLoading: isLoadingTrainings } = useQuery({
     queryKey: ['employee-trainings'],
     queryFn: getEmployeeTrainings,
     retry: 3,
     staleTime: 60 * 1000,
-    enabled: isAuthenticated,
   });
 
   // Fetch training metrics - Cache de 3 minutos (dados agregados)
-  const { data: trainingMetrics } = useQuery({
+  const { data: trainingMetrics, isLoading: isLoadingMetrics } = useQuery({
     queryKey: ['training-metrics'],
     queryFn: getTrainingMetrics,
     staleTime: 3 * 60 * 1000,
-    enabled: isAuthenticated,
   });
 
   const filteredPrograms = programs.filter(program => {
@@ -379,11 +373,25 @@ export default function GestaoTreinamentos() {
     }
   ];
 
-  // Loading state enquanto verifica autenticação
-  if (authLoading) {
+  // Loading state baseado nas queries (não na autenticação)
+  const isInitialLoading = isLoadingPrograms && isLoadingTrainings && isLoadingMetrics;
+  
+  if (isInitialLoading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-5 w-96" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-28" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-32" />)}
+        </div>
       </div>
     );
   }
