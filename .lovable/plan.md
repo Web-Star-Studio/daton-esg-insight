@@ -1,135 +1,71 @@
 
-# Plano de Correção: Treinamentos não aparecem na tela
+# Plano de Correção: Lista Vazia de Treinamentos
 
 ## Diagnóstico do Problema
 
 ### Causa Raiz Identificada
 
-O problema é uma **combinação de dois fatores**:
-
-1. **Ausência de verificação de autenticação** na página `GestaoTreinamentos.tsx`
-2. **Cache excessivo** (2 minutos de `staleTime`) sem condição de habilitação
+O problema está no uso conflitante de **dois hooks de autenticação diferentes**:
 
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
-│  Usuário acessa /gestao-treinamentos                             │
+│  ProtectedRoute                                                  │
+│  Usa: useAuth() (AuthContext)                                    │
+│  ✓ Já verificou autenticação                                     │
+│  ✓ Renderiza o componente filho                                  │
 └──────────────────────────────────────────────────────────────────┘
                               │
                               v
 ┌──────────────────────────────────────────────────────────────────┐
-│  useQuery executa ANTES da autenticação estar pronta             │
-│  (auth.uid() = NULL no momento da query)                         │
+│  GestaoTreinamentos                                              │
+│  Usa: useAuthCheck() (hook separado)                             │
+│  ✗ Faz NOVA verificação de sessão                                │
+│  ✗ Race condition com Supabase auth                              │
+│  ✗ isAuthenticated pode ser false                                │
 └──────────────────────────────────────────────────────────────────┘
                               │
                               v
 ┌──────────────────────────────────────────────────────────────────┐
-│  RLS bloqueia: get_user_company_id() retorna NULL                │
-│  → SELECT retorna 0 linhas                                       │
-└──────────────────────────────────────────────────────────────────┘
-                              │
-                              v
-┌──────────────────────────────────────────────────────────────────┐
-│  React Query CACHEIA o array vazio por 2 minutos                 │
-│  (staleTime: 2 * 60 * 1000)                                      │
-└──────────────────────────────────────────────────────────────────┘
-                              │
-                              v
-┌──────────────────────────────────────────────────────────────────┐
-│  Autenticação completa (segundos depois)                         │
-│  MAS o cache não é refetch porque ainda é "fresh"                │
-└──────────────────────────────────────────────────────────────────┘
-                              │
-                              v
-┌──────────────────────────────────────────────────────────────────┐
-│  "Nenhum programa encontrado" - lista vazia                      │
+│  useQuery({ enabled: isAuthenticated })                          │
+│  enabled = false → Query NÃO EXECUTA                             │
+│  programs = [] → "Nenhum programa encontrado"                    │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Evidência
+### Evidências
 
-A página `GestaoDesempenho.tsx` usa corretamente:
+1. **Dados existem no banco**: 11 programas de treinamento
+2. **RLS está configurada corretamente**: `get_user_company_id()` funciona
+3. **Outras páginas funcionam**: Usam `useAuth()` diretamente
+4. **GestaoTreinamentos e GestaoDesempenho**: Únicas páginas usando `useAuthCheck()`
 
-```typescript
-const { isAuthenticated, isLoading: authLoading } = useAuthCheck();
-
-const { data: performanceStats } = useQuery({
-  queryKey: ['performance-stats'],
-  queryFn: getPerformanceStats,
-  enabled: isAuthenticated,  // ← Query só executa quando autenticado
-});
-```
-
-Já `GestaoTreinamentos.tsx` não tem essa verificação:
-
-```typescript
-// SEM verificação de autenticação!
-const { data: programs = [] } = useQuery({
-  queryKey: ['training-programs'],
-  queryFn: getTrainingPrograms,
-  staleTime: 2 * 60 * 1000,
-  // Falta: enabled: isAuthenticated
-});
-```
+O `useAuthCheck()` faz uma verificação **independente** de sessão que pode não estar sincronizada com o estado do `AuthContext`. Isso causa o problema quando:
+- O `ProtectedRoute` já verificou e confirmou autenticação
+- O `useAuthCheck()` ainda está verificando OU falhou silenciosamente
+- As queries ficam com `enabled: false` permanentemente
 
 ---
 
 ## Solução Proposta
 
-### Adicionar verificação de autenticação nas queries
+### Abordagem: Usar o AuthContext existente
 
-**Arquivo:** `src/pages/GestaoTreinamentos.tsx`
+Em vez de usar `useAuthCheck()` (que duplica verificações), usar o `useAuth()` do `AuthContext` que já está validado pelo `ProtectedRoute`.
 
-Adicionar o hook `useAuthCheck` e condicionar todas as queries com `enabled: isAuthenticated`:
+### Mudança no GestaoTreinamentos.tsx
 
+**De:**
 ```typescript
-import { useAuthCheck } from "@/hooks/useAuthCheck";
-
-export default function GestaoTreinamentos() {
-  // ... state declarations ...
-  
-  // Adicionar verificação de autenticação
-  const { isAuthenticated, isLoading: authLoading } = useAuthCheck();
-
-  // Query condicionada à autenticação
-  const { data: programs = [], isLoading: isLoadingPrograms } = useQuery({
-    queryKey: ['training-programs'],
-    queryFn: getTrainingPrograms,
-    staleTime: 2 * 60 * 1000,
-    enabled: isAuthenticated,  // ← ADICIONAR
-  });
-
-  // Aplicar em todas as outras queries também
-  const { data: categories = [] } = useQuery({
-    queryKey: ['training-categories'],
-    queryFn: getTrainingCategories,
-    staleTime: 5 * 60 * 1000,
-    enabled: isAuthenticated,  // ← ADICIONAR
-  });
-
-  const { data: employeeTrainings = [] } = useQuery({
-    queryKey: ['employee-trainings'],
-    queryFn: getEmployeeTrainings,
-    staleTime: 60 * 1000,
-    enabled: isAuthenticated,  // ← ADICIONAR
-  });
-
-  const { data: trainingMetrics } = useQuery({
-    queryKey: ['training-metrics'],
-    queryFn: getTrainingMetrics,
-    staleTime: 3 * 60 * 1000,
-    enabled: isAuthenticated,  // ← ADICIONAR
-  });
-
-  // Mostrar loading enquanto verifica autenticação
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
-}
+const { isAuthenticated, isLoading: authLoading } = useAuthCheck();
 ```
+
+**Para:**
+```typescript
+const { user, isLoading: authLoading } = useAuth();
+const isAuthenticated = !!user;
+```
+
+Isso aproveita o estado de autenticação já validado pelo `ProtectedRoute`, eliminando a race condition.
 
 ---
 
@@ -137,43 +73,36 @@ export default function GestaoTreinamentos() {
 
 | Arquivo | Modificação |
 |---------|-------------|
-| `src/pages/GestaoTreinamentos.tsx` | Adicionar `useAuthCheck` e `enabled: isAuthenticated` em todas as queries |
+| `src/pages/GestaoTreinamentos.tsx` | Trocar `useAuthCheck()` por `useAuth()` |
 
 ---
 
 ## Mudanças Detalhadas
 
-### 1. Adicionar import do hook de autenticação
+### 1. Substituir import
 
 ```typescript
-import { useAuthCheck } from "@/hooks/useAuthCheck";
+// ANTES:
+import { useAuthCheck } from '@/hooks/useAuthCheck';
+
+// DEPOIS:
+import { useAuth } from '@/contexts/AuthContext';
 ```
 
-### 2. Usar o hook no componente
+### 2. Substituir hook de autenticação
 
 ```typescript
-const { isAuthenticated, isLoading: authLoading, error: authError } = useAuthCheck();
+// ANTES:
+const { isAuthenticated, isLoading: authLoading } = useAuthCheck();
+
+// DEPOIS:
+const { user, isLoading: authLoading } = useAuth();
+const isAuthenticated = !!user;
 ```
 
-### 3. Adicionar `enabled: isAuthenticated` em todas as queries
+### 3. Manter queries condicionadas
 
-Queries a atualizar:
-- `['training-programs']`
-- `['training-categories']`
-- `['employee-trainings']`
-- `['training-metrics']`
-
-### 4. Adicionar estado de carregamento enquanto verifica autenticação
-
-```typescript
-if (authLoading) {
-  return (
-    <div className="flex items-center justify-center h-[60vh]">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-    </div>
-  );
-}
-```
+As queries já estão corretamente condicionadas com `enabled: isAuthenticated`. Só precisamos garantir que `isAuthenticated` venha do contexto correto.
 
 ---
 
@@ -181,49 +110,57 @@ if (authLoading) {
 
 | Cenário | Antes | Depois |
 |---------|-------|--------|
-| Primeiro acesso (auth não pronta) | Query executa com auth=NULL, retorna [], cacheia vazio | Query aguarda auth, executa só quando pronta |
-| Cache após auth | Mantém [] por 2 min | Dados corretos cacheados |
-| Navegação entre páginas | Pode mostrar dados vazios | Sempre mostra dados corretos |
+| Primeiro acesso | Lista vazia (isAuthenticated=false) | Dados carregados corretamente |
+| Race condition | Duas verificações concorrentes | Uma fonte única de verdade |
+| Cache | Vazio cacheado incorretamente | Dados corretos cacheados |
+
+---
+
+## Fluxo Corrigido
+
+```text
+┌─────────────────────────────┐
+│  ProtectedRoute             │
+│  useAuth() verifica         │
+│  user = { id, company... }  │
+└─────────────────────────────┘
+              │
+              v
+┌─────────────────────────────┐
+│  GestaoTreinamentos         │
+│  useAuth() (mesmo estado)   │
+│  isAuthenticated = true ✓   │
+└─────────────────────────────┘
+              │
+              v
+┌─────────────────────────────┐
+│  useQuery executa           │
+│  RLS funciona               │
+│  Dados retornados ✓         │
+└─────────────────────────────┘
+```
 
 ---
 
 ## Seção Técnica
 
-### Por que isso resolve o problema?
+### Por que isso funciona?
 
-O TanStack Query com `enabled: false` **não executa a query**. Isso significa:
+O `AuthContext` é o **contexto pai** que já verificou a autenticação. Quando o `ProtectedRoute` renderiza o componente filho (GestaoTreinamentos), ele já garantiu que:
 
-1. A query fica em estado "idle" enquanto `isAuthenticated === false`
-2. Quando a autenticação completa, `enabled` muda para `true`
-3. A query executa com a sessão válida
-4. RLS funciona corretamente pois `auth.uid()` retorna o ID do usuário
-5. Os dados são retornados e cacheados
+1. `user` existe
+2. A sessão é válida
+3. O perfil foi carregado
 
-### Fluxo corrigido
+Usar `useAuth()` dentro do componente filho simplesmente **acessa o mesmo estado** já validado, sem fazer novas verificações.
 
-```text
-┌─────────────────────────────┐
-│  Acesso à página            │
-│  isAuthenticated = false    │
-│  Queries em estado IDLE     │
-└─────────────────────────────┘
-              │
-              v
-┌─────────────────────────────┐
-│  Autenticação completa      │
-│  isAuthenticated = true     │
-└─────────────────────────────┘
-              │
-              v
-┌─────────────────────────────┐
-│  Queries executam           │
-│  auth.uid() = ID válido     │
-│  RLS permite acesso         │
-└─────────────────────────────┘
-              │
-              v
-┌─────────────────────────────┐
-│  Dados retornados e         │
-│  cacheados corretamente     │
-└─────────────────────────────┘
-```
+### Benefícios adicionais
+
+1. **Consistência**: Mesma fonte de verdade para autenticação
+2. **Performance**: Elimina query duplicada ao banco
+3. **Menos código**: Remove dependência de hook separado
+4. **Menos bugs**: Sem race conditions entre hooks
+
+### Nota sobre useAuthCheck
+
+O hook `useAuthCheck` pode ser útil em contextos onde não há `ProtectedRoute` envolvendo (ex: páginas públicas com features opcionais para usuários logados). Mas dentro de rotas protegidas, deve-se usar o `useAuth()` do contexto.
