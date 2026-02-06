@@ -463,8 +463,8 @@ export default function NaoConformidades() {
               <ISOReferencesSelector
                 selectedStandard={newNCData.iso_standard}
                 selectedClauses={newNCData.iso_clauses}
-                onStandardChange={(s) => setNewNCData({...newNCData, iso_standard: s})}
-                onClausesChange={(c) => setNewNCData({...newNCData, iso_clauses: c})}
+                onStandardChange={(s) => setNewNCData(prev => ({ ...prev, iso_standard: s, iso_clauses: [] }))}
+                onClausesChange={(c) => setNewNCData(prev => ({ ...prev, iso_clauses: c }))}
                 disabled={createNCMutation.isPending}
                 ncContext={{
                   title: newNCData.title,

@@ -107,7 +107,7 @@ export function ISOReferencesSelector({
           value={selectedStandard || "none"}
           onValueChange={(v) => {
             onStandardChange(v === "none" ? null : v);
-            onClausesChange([]);
+            // Limpeza de cláusulas agora é feita pelo pai no onStandardChange
             if (v !== "none") setIsExpanded(true);
           }}
           disabled={disabled}
