@@ -192,3 +192,6 @@ verify_jwt = true
 
 [functions.delete-account]
 verify_jwt = false
+
+[functions.nc-iso-suggestions]
+verify_jwt = true
