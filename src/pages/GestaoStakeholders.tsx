@@ -49,13 +49,11 @@ export default function GestaoStakeholders() {
   const { data: stakeholders = [], isLoading } = useQuery({
     queryKey: ['stakeholders'],
     queryFn: () => getStakeholders(),
-    enabled: !!user,
   });
 
   const { data: engagementStats } = useQuery({
     queryKey: ['stakeholder-stats'],
     queryFn: () => getStakeholderEngagementStats(),
-    enabled: !!user,
   });
 
   const createMutation = useMutation({
