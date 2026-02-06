@@ -12,6 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { FileText, Download, Calendar, Clock, TrendingUp, Users, AlertTriangle, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatDateDisplay } from "@/utils/dateUtils";
 import { DateRange } from "react-day-picker";
 import { useAttendanceRecords, useEmployees } from "@/services/attendanceService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -342,7 +343,7 @@ export function AttendanceReportsModal({ isOpen, onClose }: AttendanceReportsMod
                             </div>
                           </TableCell>
                           <TableCell>{record.employee?.department}</TableCell>
-                          <TableCell>{format(new Date(record.date), "dd/MM/yyyy")}</TableCell>
+                          <TableCell>{formatDateDisplay(record.date)}</TableCell>
                           <TableCell>
                             {record.check_in ? format(new Date(record.check_in), "HH:mm") : "-"}
                           </TableCell>

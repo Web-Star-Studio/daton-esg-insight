@@ -26,8 +26,7 @@ import {
   Edit,
   MessageSquare
 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDateDisplay } from "@/utils/dateUtils";
 import { toast } from "sonner";
 import { 
   useCareerStatistics,
@@ -364,7 +363,7 @@ export default function DesenvolvimentoCarreira() {
                         <div className="flex flex-col items-end gap-2">
                           <Badge variant={getStatusColor(plan.status)}>{plan.status}</Badge>
                           <span className="text-sm text-muted-foreground">
-                            Meta: {format(new Date(plan.target_date), "dd/MM/yyyy", { locale: ptBR })}
+                            Meta: {formatDateDisplay(plan.target_date)}
                           </span>
                         </div>
                       </div>
@@ -757,7 +756,7 @@ export default function DesenvolvimentoCarreira() {
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            Prazo: {format(new Date(job.application_deadline), "dd/MM/yyyy", { locale: ptBR })}
+                            Prazo: {formatDateDisplay(job.application_deadline)}
                           </span>
                         </div>
                         

@@ -1,6 +1,7 @@
 import React from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatDateDisplay } from "@/utils/dateUtils";
 import { 
   History, 
   Plus, 
@@ -122,8 +123,8 @@ const formatChangeDescription = (oldValues: any, newValues: any): string[] => {
       }
       
       if (field === 'next_review_date' || field === 'last_review_date') {
-        if (oldVal !== '-') oldVal = format(new Date(oldVal), 'dd/MM/yyyy');
-        if (newVal !== '-') newVal = format(new Date(newVal), 'dd/MM/yyyy');
+        if (oldVal !== '-') oldVal = formatDateDisplay(oldVal);
+        if (newVal !== '-') newVal = formatDateDisplay(newVal);
       }
       
       changes.push(`${label}: ${oldVal} → ${newVal}`);

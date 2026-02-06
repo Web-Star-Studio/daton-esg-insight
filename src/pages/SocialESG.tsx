@@ -29,7 +29,7 @@ import { ModuleSummaryCard } from "@/components/ModuleSummaryCard";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { SocialProjectModal } from "@/components/social/SocialProjectModal";
 import { QuickActionModal } from "@/components/social/QuickActionModal";
-import { format } from "date-fns";
+import { formatDateDisplay } from "@/utils/dateUtils";
 import { useSocialDashboardFilters } from "@/hooks/useSocialDashboardFilters";
 import { SocialDashboardFilters } from "@/components/social/SocialDashboardFilters";
 import { TrainingByLocationChart } from "@/components/social/TrainingByLocationChart";
@@ -483,7 +483,7 @@ export default function SocialESG() {
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm">
                             <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {project.start_date ? format(new Date(project.start_date), 'dd/MM/yyyy') : '-'} - {project.end_date ? format(new Date(project.end_date), 'dd/MM/yyyy') : '-'}
+                            {project.start_date ? formatDateDisplay(project.start_date) : '-'} - {project.end_date ? formatDateDisplay(project.end_date) : '-'}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
