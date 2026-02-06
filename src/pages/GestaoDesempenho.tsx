@@ -31,9 +31,8 @@ import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthErrorFallback } from "@/components/fallbacks/AuthErrorFallback";
 import { DataErrorFallback } from "@/components/fallbacks/DataErrorFallback";
-import { useAuthCheck } from "@/hooks/useAuthCheck";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Component de fallback para erros específicos de dados
 const PerformanceErrorFallback = ({ error, retry }: { error?: Error; retry: () => void }) => (
@@ -56,30 +55,23 @@ export default function GestaoDesempenho() {
   const [selectedCompetency, setSelectedCompetency] = useState<any>(null);
   const { toast } = useToast();
 
-  // Use auth check hook
-  const { isAuthenticated, isLoading: authLoading, error: authError, retry: authRetry } = useAuthCheck();
-
-  // Initialize default criteria only after auth is confirmed
+  // Initialize default criteria on mount (ProtectedRoute already guarantees auth)
   useEffect(() => {
-    if (!isAuthenticated) return;
-    
     const initDefaults = async () => {
       try {
         await initializeDefaultCriteria();
       } catch (error) {
         console.error('Erro ao inicializar critérios padrão:', error);
-        // Don't show error toast for initialization - it's not critical
       }
     };
     
     initDefaults();
-  }, [isAuthenticated]);
+  }, []);
 
-  // Fetch real data with error handling - only when authenticated
+  // Fetch real data with error handling
   const { data: performanceStats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['performance-stats'],
     queryFn: getPerformanceStats,
-    enabled: isAuthenticated,
     retry: 2,
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
@@ -99,36 +91,31 @@ export default function GestaoDesempenho() {
   const { data: evaluationsList = [], isLoading: evaluationsLoading, error: evaluationsError } = useQuery({
     queryKey: ['performance-evaluations'],
     queryFn: getPerformanceEvaluations,
-    enabled: isAuthenticated,
     retry: 2
   });
 
   const { data: goalsList = [], isLoading: goalsLoading, error: goalsError } = useQuery({
     queryKey: ['employee-goals'],
     queryFn: getEmployeeGoals,
-    enabled: isAuthenticated,
     retry: 2
   });
 
-  // Fetch competency data - only when authenticated  
+  // Fetch competency data
   const { data: competencies = [], isLoading: competenciesLoading, error: competenciesError } = useQuery({
     queryKey: ['competency-matrix'],
     queryFn: getCompetencyMatrix,
-    enabled: isAuthenticated,
     retry: 2
   });
 
   const { data: assessments = [], isLoading: assessmentsLoading } = useQuery({
     queryKey: ['competency-assessments'],
     queryFn: getEmployeeCompetencyAssessments,
-    enabled: isAuthenticated,
     retry: 2
   });
 
   const { data: gaps = [], isLoading: gapsLoading } = useQuery({
     queryKey: ['competency-gaps'],
     queryFn: getCompetencyGapAnalysis,
-    enabled: isAuthenticated,
     retry: 2
   });
 
@@ -258,25 +245,23 @@ export default function GestaoDesempenho() {
     }
   };
 
-  // Show auth error state
-  if (authError) {
+  // Show initial loading state (query-based skeleton)
+  const isInitialLoading = statsLoading && evaluationsLoading && goalsLoading;
+  if (isInitialLoading) {
     return (
-      <AuthErrorFallback 
-        error={authError}
-        retry={authRetry}
-        title="Acesso ao Módulo de Desempenho"
-        description="É necessário estar autenticado para acessar o módulo de gestão de desempenho."
-      />
-    );
-  }
-
-  // Show loading state while checking auth
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[600px]">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Verificando autenticação...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-40" />
+            <Skeleton className="h-10 w-36" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
         </div>
       </div>
     );
