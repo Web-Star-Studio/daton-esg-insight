@@ -1,109 +1,187 @@
 
+# Plano de Correção: Race Condition em Múltiplas Páginas Protegidas
 
-# Plano de Correção: GestaoDesempenho.tsx - Mesmo Problema de Lista Vazia
+## Diagnóstico
 
-## Resultado do Teste
+Durante o teste end-to-end do sistema, identifiquei **4 páginas adicionais** com o mesmo problema de race condition que foi corrigido em `GestaoTreinamentos` e `GestaoDesempenho`.
 
-O teste da página **Gestão de Treinamentos** confirmou que a correção anterior funcionou - os 4 programas carregaram corretamente na primeira screenshot.
+### Páginas Afetadas
 
-Durante a análise do código, identifiquei que a página **Gestão de Desempenho** (`GestaoDesempenho.tsx`) tem exatamente o mesmo problema que foi corrigido em Treinamentos.
+| Página | Arquivo | Queries com `enabled: !!user` |
+|--------|---------|-------------------------------|
+| Gestão de Stakeholders | `src/pages/GestaoStakeholders.tsx` | 2 queries (linhas 52, 58) |
+| Configuração Organizacional | `src/pages/ConfiguracaoOrganizacional.tsx` | 1 query (linha 92) |
+| Coleta de Dados | `src/pages/ColetaDados.tsx` | 2 queries (linhas 65, 71) |
+| Análise de Materialidade | `src/pages/AnaliseMaterialidade.tsx` | 2 queries (linhas 44, 50) |
+| Formulários Customizados | `src/pages/FormulariosCustomizados.tsx` | useEffect com authLoading (linha 52) |
 
-## Problema Identificado
+### Arquivos que NÃO precisam de correção
 
-O arquivo `src/pages/GestaoDesempenho.tsx` usa o padrão problemático:
+- `usePermissions.tsx` - Hook reutilizável, condição faz sentido
+- `useNotificationCounts.tsx` - Condição complexa com companyId
+- Componentes modais/widgets - Usam condições específicas de dados
 
-```text
-┌────────────────────────────────────────────────────────────────────┐
-│  Linha 36:  import { useAuthCheck } from '@/hooks/useAuthCheck';   │
-│  Linha 60:  const { isAuthenticated, ... } = useAuthCheck();       │
-│  Linha 82:  enabled: isAuthenticated  (query performance-stats)    │
-│  Linha 102: enabled: isAuthenticated  (query evaluations)          │
-│  Linha 109: enabled: isAuthenticated  (query goals)                │
-│  Linha 117: enabled: isAuthenticated  (query competencies)         │
-│  Linha 124: enabled: isAuthenticated  (query assessments)          │
-│  Linha 131: enabled: isAuthenticated  (query gaps)                 │
-└────────────────────────────────────────────────────────────────────┘
-```
+### Por que o problema ocorre?
 
-Isso causa a mesma race condition que afetava Treinamentos:
-- O `ProtectedRoute` já valida autenticação
-- O `useAuthCheck()` faz verificação duplicada
-- As queries ficam com `enabled: false` durante o race
-- Dados não carregam
+Todas essas páginas estão envolvidas pelo `ProtectedRoute`, que já garante:
+1. `isLoading === false`
+2. `user !== null`
+
+Porém, devido a timing do React Context, o componente filho pode ler `user = null` por um frame antes de receber a atualização, fazendo com que:
+- `enabled: !!user` seja `false`
+- Queries retornem arrays vazios `[]`
+- UI mostre "Nenhum dado encontrado"
 
 ---
 
 ## Solução
 
-Aplicar a mesma correção de `GestaoTreinamentos.tsx`:
+Aplicar o mesmo padrão de correção usado em `GestaoTreinamentos` e `GestaoDesempenho`:
 
-1. **Remover `useAuthCheck`** - já está no contexto do `ProtectedRoute`
-2. **Remover `enabled: isAuthenticated`** das 6 queries
-3. **Remover o loading state de auth** (linhas 274-283)
-4. **Manter skeleton loaders** baseados no estado das queries
-
----
-
-## Arquivos a Modificar
-
-| Arquivo | Modificação |
-|---------|-------------|
-| `src/pages/GestaoDesempenho.tsx` | Remover useAuthCheck e enabled das queries |
+1. **Remover `enabled: !!user`** de todas as queries em páginas protegidas
+2. **Manter loading states** baseados no estado das queries
+3. **Confiar no ProtectedRoute** para garantia de autenticação
 
 ---
 
-## Mudanças Detalhadas
+## Mudanças por Arquivo
 
-### 1. Remover import e hook
+### 1. GestaoStakeholders.tsx
 
 ```typescript
-// REMOVER linha 36:
-import { useAuthCheck } from "@/hooks/useAuthCheck";
+// REMOVER enabled: !!user das queries
+const { data: stakeholders = [], isLoading } = useQuery({
+  queryKey: ['stakeholders'],
+  queryFn: () => getStakeholders(),
+  // enabled: !!user,  <- REMOVER
+});
 
-// REMOVER linha 60:
-const { isAuthenticated, isLoading: authLoading, error: authError, retry: authRetry } = useAuthCheck();
+const { data: engagementStats } = useQuery({
+  queryKey: ['stakeholder-stats'],
+  queryFn: () => getStakeholderEngagementStats(),
+  // enabled: !!user,  <- REMOVER
+});
 ```
 
-### 2. Remover `enabled: isAuthenticated` de todas as queries
+### 2. ConfiguracaoOrganizacional.tsx
 
-Queries afetadas (6 no total):
-- `performance-stats` (linha 82)
-- `performance-evaluations` (linha 102)
-- `employee-goals` (linha 109)
-- `competency-matrix` (linha 117)
-- `competency-assessments` (linha 124)
-- `competency-gaps` (linha 131)
+```typescript
+const { data: profile, isLoading } = useQuery({
+  queryKey: ['organizational-profile'],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .limit(1)
+      .single();
+    
+    if (error) throw error;
+    return data as OrganizationalProfile;
+  },
+  // enabled: !!user,  <- REMOVER
+});
+```
 
-### 3. Remover verificação de authError (linhas 262-271)
+### 3. ColetaDados.tsx
 
-O `ProtectedRoute` já trata erros de autenticação.
+```typescript
+const { data: tasks = [], isLoading: tasksLoading } = useQuery({
+  queryKey: ['data-collection-tasks'],
+  queryFn: () => dataCollectionService.getTasks(),
+  // enabled: !!user,  <- REMOVER
+});
 
-### 4. Remover loading state de auth (linhas 274-283)
+const { data: importJobs = [] } = useQuery({
+  queryKey: ['import-jobs'],
+  queryFn: () => dataCollectionService.getImportJobs(),
+  // enabled: !!user,  <- REMOVER
+});
+```
 
-Substituir por skeleton loaders baseados nas queries.
+### 4. AnaliseMaterialidade.tsx
 
-### 5. Ajustar useEffect de inicialização (linhas 63-76)
+```typescript
+const { data: themes = [], isLoading: loadingThemes } = useQuery({
+  queryKey: ['materiality-themes'],
+  queryFn: () => getMaterialityThemes(),
+  // enabled: !!user,  <- REMOVER
+});
 
-Mudar de `if (!isAuthenticated)` para sempre executar (o componente só monta quando autenticado).
+const { data: assessments = [], isLoading: loadingAssessments } = useQuery({
+  queryKey: ['materiality-assessments'],
+  queryFn: () => getMaterialityAssessments(),
+  // enabled: !!user,  <- REMOVER
+  retry: 2,
+  retryDelay: 1000,
+});
+```
+
+### 5. FormulariosCustomizados.tsx
+
+```typescript
+// SIMPLIFICAR useEffect - remover verificação de authLoading
+useEffect(() => {
+  loadForms();
+}, []);  // Executar no mount, ProtectedRoute garante auth
+
+// REMOVER useAuth completamente se não for usado para mais nada
+```
+
+---
+
+## Resumo de Impacto
+
+| Arquivo | Linhas a Modificar | Tipo de Mudança |
+|---------|-------------------|-----------------|
+| GestaoStakeholders.tsx | 52, 58 | Remover `enabled: !!user` |
+| ConfiguracaoOrganizacional.tsx | 92 | Remover `enabled: !!user` |
+| ColetaDados.tsx | 65, 71 | Remover `enabled: !!user` |
+| AnaliseMaterialidade.tsx | 44, 50 | Remover `enabled: !!user` |
+| FormulariosCustomizados.tsx | 25, 52-57 | Remover authLoading check |
 
 ---
 
 ## Resultado Esperado
 
-| Página | Antes | Depois |
-|--------|-------|--------|
-| Gestão de Treinamentos | Lista vazia corrigida | Dados carregando |
-| Gestão de Desempenho | Lista vazia | Dados carregando corretamente |
+Após as correções:
+
+| Cenário | Antes | Depois |
+|---------|-------|--------|
+| Primeiro acesso a qualquer página protegida | Possível lista vazia | Dados carregam corretamente |
+| Navegação entre páginas | Inconsistente | Dados sempre presentes |
+| Reload da página | Race condition | Queries executam imediatamente |
 
 ---
 
 ## Seção Técnica
 
-### Por que a correção em Treinamentos funcionou?
+### Padrão Correto para Páginas Protegidas
 
-A correção removeu a dependência de `useAuthCheck()`, fazendo as queries executarem imediatamente quando o componente monta. Como o `ProtectedRoute` só renderiza o componente após confirmar autenticação, as queries sempre têm uma sessão válida.
+```typescript
+// Em página envolvida por ProtectedRoute:
+export default function MinhaPagena() {
+  // NÃO usar:
+  // const { user } = useAuth();
+  // enabled: !!user
 
-### Consistência do Codebase
+  // USAR:
+  const { data, isLoading } = useQuery({
+    queryKey: ['meus-dados'],
+    queryFn: () => fetchDados(),
+    // Sem enabled - ProtectedRoute garante auth
+  });
 
-Após esta correção, nenhuma página protegida usará `useAuthCheck()`. O hook continuará disponível para casos específicos (páginas públicas com features opcionais para usuários logados), mas não será usado em rotas protegidas.
+  if (isLoading) {
+    return <Skeleton />; // Loading baseado na query
+  }
 
+  return <div>{/* Conteúdo */}</div>;
+}
+```
+
+### Quando usar `enabled: !!user`?
+
+- Em hooks reutilizáveis (ex: `usePermissions`)
+- Em componentes que podem aparecer em contextos públicos
+- Em modais/widgets condicionais
+- Em páginas públicas com features opcionais para usuários logados
