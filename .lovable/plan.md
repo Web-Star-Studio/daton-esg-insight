@@ -1,172 +1,139 @@
 
-# Plano de Correção: Problema Sistêmico de Timezone em Datas
+# Plano: Adicionar Filtros de Status na Lista de Não Conformidades
 
-## Resumo do Teste End-to-End
+## Visão Geral
 
-### Verificações Realizadas
+Adicionar botões de filtro por status acima da tabela de Não Conformidades, permitindo filtrar rapidamente por: Todas, Aberta, Em Tratamento e Encerrada.
 
-| Módulo | Status | Resultado |
-|--------|--------|-----------|
-| Gestão de Treinamentos | Testado | Datas corrigidas (27/01/2026) |
-| Gestão de Desempenho | Código verificado | Correções aplicadas |
-| Gestão de Stakeholders | Código verificado | Correção aplicada |
-| Coleta de Dados | Código verificado | Correção aplicada |
-| Análise de Materialidade | Código verificado | Correção aplicada |
-| Formulários Customizados | Código verificado | Correção aplicada |
+## Design Proposto
 
-### Novo Problema Identificado: Timezone em Datas
+Os filtros serão apresentados como um grupo de botões (toggle buttons) horizontais, similar ao padrão já usado em outras partes do sistema:
 
-Durante a varredura do codebase, identifiquei que **112 arquivos** ainda usam o padrão problemático:
-
-```typescript
-format(new Date(date), 'dd/MM/yyyy')
+```
+[ Todas (5) ] [ Aberta (3) ] [ Em Tratamento (1) ] [ Encerrada (1) ]
 ```
 
-Este padrão causa o problema de "um dia atrás" devido à interpretação de timezone:
-- JavaScript interpreta "2026-01-26" como meia-noite UTC
-- No Brasil (UTC-3), meia-noite UTC = 21:00 do dia anterior
-- Resultado: 26/01/2026 aparece como 25/01/2026
+- O botão ativo terá estilo destacado (variant="default")
+- Os demais terão estilo outline (variant="outline")
+- Cada botão mostrará a contagem de NCs naquele status
 
-### Arquivos Críticos Afetados
-
-| Arquivo | Linhas Afetadas | Contexto |
-|---------|-----------------|----------|
-| `SocialESG.tsx` | 486 | Datas de projetos sociais |
-| `GoalTrackingWidget.tsx` | 222, 312 | Datas de metas ESG |
-| `DesenvolvimentoCarreira.tsx` | 367, 760 | Datas de planos e vagas |
-| `SupplierPerformanceEvaluationPage.tsx` | 348 | Datas de avaliações |
-| `SupplierSurveysManagementPage.tsx` | 230, 402 | Datas de pesquisas |
-| `FluxoCaixa.tsx` | 316 | Datas de transações |
-| `LancamentosContabeis.tsx` | 41 | Datas de lançamentos |
-| `AttendanceReportsModal.tsx` | 345 | Datas de frequência |
-| `IndicatorTargetModal.tsx` | 353, 354 | Datas de metas |
-| `LegislationHistoryTimeline.tsx` | 125, 126 | Datas de legislação |
-
----
-
-## Solução Proposta
-
-### Abordagem em 3 Fases
-
-**Fase 1 - Imediata**: Corrigir os 10 arquivos mais críticos (páginas principais)
-
-**Fase 2 - Componentes**: Corrigir modais e widgets reutilizáveis
-
-**Fase 3 - Auditoria**: Varrer todo o codebase para garantir consistência
-
-### Padrão de Correção
-
-Em cada arquivo:
-
-1. Adicionar import do utilitário:
-```typescript
-import { formatDateDisplay } from '@/utils/dateUtils';
-```
-
-2. Substituir todas as ocorrências:
-```typescript
-// ANTES
-format(new Date(date), 'dd/MM/yyyy')
-
-// DEPOIS  
-formatDateDisplay(date)
-```
-
----
-
-## Arquivos a Modificar (Fase 1)
+## Arquivos a Modificar
 
 | Arquivo | Modificação |
 |---------|-------------|
-| `src/pages/SocialESG.tsx` | Linha 486: usar `formatDateDisplay` |
-| `src/pages/DesenvolvimentoCarreira.tsx` | Linhas 367, 760 |
-| `src/pages/SupplierPerformanceEvaluationPage.tsx` | Linha 348 |
-| `src/pages/SupplierSurveysManagementPage.tsx` | Linhas 230, 402 |
-| `src/pages/FluxoCaixa.tsx` | Linha 316 |
-| `src/pages/LancamentosContabeis.tsx` | Linha 41 |
-| `src/components/GoalTrackingWidget.tsx` | Linhas 222, 312 |
-| `src/components/AttendanceReportsModal.tsx` | Linha 345 |
-| `src/components/IndicatorTargetModal.tsx` | Linhas 353, 354 |
-| `src/components/legislation/LegislationHistoryTimeline.tsx` | Linhas 125, 126 |
+| `src/pages/NaoConformidades.tsx` | Adicionar estado de filtro, botões e lógica de filtragem |
 
----
+## Mudanças Detalhadas
 
-## Exemplo de Correção
+### 1. Adicionar estado de filtro (linha ~59)
 
-### SocialESG.tsx (Linha 486)
-
-**Antes**:
 ```typescript
-{project.start_date ? format(new Date(project.start_date), 'dd/MM/yyyy') : '-'} - {project.end_date ? format(new Date(project.end_date), 'dd/MM/yyyy') : '-'}
+const [statusFilter, setStatusFilter] = useState<string>("all");
 ```
 
-**Depois**:
+### 2. Calcular contagens por status (após linha 332)
+
 ```typescript
-{project.start_date ? formatDateDisplay(project.start_date) : '-'} - {project.end_date ? formatDateDisplay(project.end_date) : '-'}
+const statusCounts = {
+  all: totalNCs,
+  aberta: nonConformities?.filter(nc => isNCOpen(nc.status)).length || 0,
+  em_tratamento: nonConformities?.filter(nc => isNCInProgress(nc.status)).length || 0,
+  encerrada: nonConformities?.filter(nc => isNCClosed(nc.status)).length || 0,
+};
 ```
 
-### GoalTrackingWidget.tsx (Linhas 222 e 312)
+### 3. Filtrar lista baseado no status selecionado
 
-**Antes**:
 ```typescript
-{goal.description || `Reduzir emissões para ${goal.target_value} tCO₂e até ${format(new Date(goal.deadline_date), 'dd/MM/yyyy')}`}
+const filteredNCs = nonConformities?.filter(nc => {
+  if (statusFilter === "all") return true;
+  if (statusFilter === "aberta") return isNCOpen(nc.status);
+  if (statusFilter === "em_tratamento") return isNCInProgress(nc.status);
+  if (statusFilter === "encerrada") return isNCClosed(nc.status);
+  return true;
+});
 ```
 
-**Depois**:
-```typescript
-{goal.description || `Reduzir emissões para ${goal.target_value} tCO₂e até ${formatDateDisplay(goal.deadline_date)}`}
+### 4. Adicionar botões de filtro na UI (após linha 559)
+
+Inserir entre CardDescription e a tabela:
+
+```tsx
+<div className="flex flex-wrap gap-2 mt-4">
+  <Button
+    variant={statusFilter === "all" ? "default" : "outline"}
+    size="sm"
+    onClick={() => setStatusFilter("all")}
+  >
+    Todas ({statusCounts.all})
+  </Button>
+  <Button
+    variant={statusFilter === "aberta" ? "default" : "outline"}
+    size="sm"
+    onClick={() => setStatusFilter("aberta")}
+    className={statusFilter === "aberta" ? "" : "border-red-200 text-red-700 hover:bg-red-50"}
+  >
+    <AlertCircle className="h-4 w-4 mr-1" />
+    Aberta ({statusCounts.aberta})
+  </Button>
+  <Button
+    variant={statusFilter === "em_tratamento" ? "default" : "outline"}
+    size="sm"
+    onClick={() => setStatusFilter("em_tratamento")}
+    className={statusFilter === "em_tratamento" ? "" : "border-yellow-200 text-yellow-700 hover:bg-yellow-50"}
+  >
+    <Clock className="h-4 w-4 mr-1" />
+    Em Tratamento ({statusCounts.em_tratamento})
+  </Button>
+  <Button
+    variant={statusFilter === "encerrada" ? "default" : "outline"}
+    size="sm"
+    onClick={() => setStatusFilter("encerrada")}
+    className={statusFilter === "encerrada" ? "" : "border-green-200 text-green-700 hover:bg-green-50"}
+  >
+    <CheckCircle className="h-4 w-4 mr-1" />
+    Encerrada ({statusCounts.encerrada})
+  </Button>
+</div>
 ```
 
----
+### 5. Usar lista filtrada na tabela
 
-## Resumo das Correções Anteriores
+Substituir `{nonConformities.map((nc) => (` por `{filteredNCs?.map((nc) => (`
 
-### Correções Confirmadas Funcionando
+### 6. Adicionar import da função isNCInProgress
 
-1. **Race Condition em 7 páginas** - Todas as ocorrências de `enabled: isAuthenticated` e `enabled: !!user` em páginas protegidas foram removidas
-
-2. **Data de Treinamentos** - Corrigida usando `formatDateDisplay`
-
-3. **Busca de Avaliadores** - Corrigida usando `shouldFilter={false}` e `value` com nome
-
----
-
-## Resultado Esperado
-
-| Cenário | Antes | Depois |
-|---------|-------|--------|
-| Datas em todas as páginas | Possível 1 dia atrás | Data correta |
-| Projetos Sociais | 25/01/2026 | 26/01/2026 |
-| Metas ESG | 25/01/2026 | 26/01/2026 |
-| Avaliações de Fornecedores | 25/01/2026 | 26/01/2026 |
-
----
+```typescript
+import { getNCStatusLabel, getNCStatusColor, isNCOpen, isNCClosed, isNCInProgress } from "@/utils/ncStatusUtils";
+```
 
 ## Seção Técnica
 
-### Por que `formatDateDisplay` funciona?
+### Funções de Filtro Utilizadas
 
-A função usa o utilitário `parseDateSafe` que adiciona `T12:00:00` à string de data:
+O arquivo `ncStatusUtils.ts` já possui as funções necessárias:
+- `isNCOpen(status)` - Retorna true para "Aberta" ou "Pendente"
+- `isNCInProgress(status)` - Retorna true para "Em Tratamento"
+- `isNCClosed(status)` - Retorna true para "Encerrada" ou "Cancelada"
+
+### Correção Adicional: Data com Timezone
+
+Aproveitando a edição, corrigir a data na linha 602 que usa o padrão problemático:
 
 ```typescript
-export function parseDateSafe(dateString: string): Date | null {
-  // Adiciona meio-dia para evitar problemas de timezone
-  const normalized = `${dateString}T12:00:00`;
-  return new Date(normalized);
-}
+// Antes:
+{format(new Date(nc.detected_date), "dd/MM/yyyy", { locale: ptBR })}
 
-export function formatDateDisplay(date: string | Date | null): string {
-  const parsed = parseDateSafe(date);
-  return parsed ? format(parsed, 'dd/MM/yyyy') : '-';
-}
+// Depois:
+{formatDateDisplay(nc.detected_date)}
 ```
 
-Meio-dia (12:00) é um "ponto seguro" - qualquer timezone do mundo (UTC-12 a UTC+14) não consegue empurrar meio-dia para outro dia.
+## Resultado Esperado
 
-### Padrão Consolidado
-
-Este padrão já está documentado na memória do projeto:
-- `memory/technical/timezone-safe-date-handling-standard`
-- Aplicado em: Employees, Training, NC
-
-Após esta correção, o padrão será aplicado em todo o sistema.
+| Interação | Resultado |
+|-----------|-----------|
+| Página carrega | Mostra "Todas" selecionado |
+| Clicar "Aberta" | Filtra apenas NCs abertas/pendentes |
+| Clicar "Em Tratamento" | Filtra NCs em andamento |
+| Clicar "Encerrada" | Filtra NCs encerradas/canceladas |
+| Clicar "Todas" | Remove filtro |
