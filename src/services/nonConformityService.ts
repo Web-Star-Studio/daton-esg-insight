@@ -63,6 +63,7 @@ export interface NCCauseAnalysis {
   company_id: string;
   analysis_method: 'root_cause' | 'ishikawa' | '5_whys' | 'other';
   root_cause?: string;
+  main_causes?: string[];
   similar_nc_ids: any;
   attachments: any;
   ishikawa_data: any;

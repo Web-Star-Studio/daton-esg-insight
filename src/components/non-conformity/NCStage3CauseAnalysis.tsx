@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Check, Search, GitBranch, HelpCircle } from "lucide-react";
+import { Check, Search, GitBranch, HelpCircle, Users, Cog, Package, Wrench, Leaf, Ruler, Monitor, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { 
   useCauseAnalysis, 
   useCreateCauseAnalysis, 
@@ -14,6 +17,57 @@ import {
 import { IshikawaDiagram } from "./IshikawaDiagram";
 import { FiveWhysAnalysis } from "./FiveWhysAnalysis";
 import { toast } from "sonner";
+
+const MAIN_CAUSE_CATEGORIES = [
+  { 
+    id: "mao_obra", 
+    label: "Mão de Obra", 
+    description: "treinamento, erro humano, falta de capacitação, sobrecarga",
+    icon: Users
+  },
+  { 
+    id: "maquina", 
+    label: "Máquina / Equipamento", 
+    description: "falha, manutenção, indisponibilidade, tecnologia inadequada",
+    icon: Cog
+  },
+  { 
+    id: "material", 
+    label: "Material / Insumo", 
+    description: "qualidade, especificação, fornecedor, lote",
+    icon: Package
+  },
+  { 
+    id: "metodo", 
+    label: "Método / Processo", 
+    description: "procedimento inexistente, não seguido, fluxo incorreto",
+    icon: Wrench
+  },
+  { 
+    id: "meio_ambiente", 
+    label: "Meio Ambiente", 
+    description: "layout, clima, ruído, ergonomia, condições externas",
+    icon: Leaf
+  },
+  { 
+    id: "medicao", 
+    label: "Medição / Controle", 
+    description: "indicador errado, falta de controle, instrumento não calibrado, dado incorreto",
+    icon: Ruler
+  },
+  { 
+    id: "sistema", 
+    label: "Sistema / Tecnologia", 
+    description: "ERP, integração, parametrização, bug, regra de sistema",
+    icon: Monitor
+  },
+  { 
+    id: "gestao", 
+    label: "Gestão / Planejamento", 
+    description: "priorização, comunicação, decisão, recursos, cronograma",
+    icon: Target
+  },
+];
 
 interface NCStage3CauseAnalysisProps {
   ncId: string;
@@ -27,6 +81,7 @@ export function NCStage3CauseAnalysis({ ncId, onComplete }: NCStage3CauseAnalysi
 
   const [analysisMethod, setAnalysisMethod] = useState<string>(causeAnalysis?.analysis_method || "root_cause");
   const [rootCause, setRootCause] = useState(causeAnalysis?.root_cause || "");
+  const [mainCauses, setMainCauses] = useState<string[]>(causeAnalysis?.main_causes || []);
   const [ishikawaData, setIshikawaData] = useState(causeAnalysis?.ishikawa_data || {
     metodo: [],
     material: [],
@@ -36,6 +91,14 @@ export function NCStage3CauseAnalysis({ ncId, onComplete }: NCStage3CauseAnalysi
     meio_ambiente: [],
   });
   const [fiveWhysData, setFiveWhysData] = useState(causeAnalysis?.five_whys_data || []);
+
+  const toggleMainCause = (causeId: string) => {
+    setMainCauses(prev => 
+      prev.includes(causeId) 
+        ? prev.filter(id => id !== causeId)
+        : [...prev, causeId]
+    );
+  };
 
   const handleSave = () => {
     if (!rootCause.trim()) {
@@ -47,6 +110,7 @@ export function NCStage3CauseAnalysis({ ncId, onComplete }: NCStage3CauseAnalysi
       non_conformity_id: ncId,
       analysis_method: analysisMethod as any,
       root_cause: rootCause,
+      main_causes: mainCauses,
       ishikawa_data: ishikawaData,
       five_whys_data: fiveWhysData,
       similar_nc_ids: [],
@@ -133,6 +197,48 @@ export function NCStage3CauseAnalysis({ ncId, onComplete }: NCStage3CauseAnalysi
               </Label>
             </div>
           </RadioGroup>
+        </div>
+
+        {/* Main Causes Selection */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label>Principais Causas</Label>
+            {mainCauses.length > 0 && (
+              <Badge variant="secondary">{mainCauses.length} selecionada(s)</Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Selecione uma ou mais categorias de causas identificadas
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {MAIN_CAUSE_CATEGORIES.map((cause) => {
+              const Icon = cause.icon;
+              const isSelected = mainCauses.includes(cause.id);
+              return (
+                <div
+                  key={cause.id}
+                  onClick={() => toggleMainCause(cause.id)}
+                  className={cn(
+                    "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                    isSelected 
+                      ? "border-primary bg-primary/5" 
+                      : "border-muted hover:bg-muted/50"
+                  )}
+                >
+                  <Checkbox checked={isSelected} className="mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium text-sm">{cause.label}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {cause.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Analysis Content */}
