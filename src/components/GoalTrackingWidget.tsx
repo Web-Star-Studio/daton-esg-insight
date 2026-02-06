@@ -26,7 +26,8 @@ import {
   ResponsiveContainer,
   ReferenceLine
 } from "recharts";
-import { format, differenceInDays, differenceInMonths } from "date-fns";
+import { differenceInDays, differenceInMonths } from "date-fns";
+import { formatDateDisplay } from "@/utils/dateUtils";
 
 interface GoalTrackingWidgetProps {
   currentEmissions: number;
@@ -219,7 +220,7 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
                         </div>
                         
                         <p className="text-sm text-muted-foreground mb-2">
-                          {goal.description || `Reduzir emissões para ${goal.target_value} tCO₂e até ${format(new Date(goal.deadline_date), 'dd/MM/yyyy')}`}
+                          {goal.description || `Reduzir emissões para ${goal.target_value} tCO₂e até ${formatDateDisplay(goal.deadline_date)}`}
                         </p>
                         
                         <div className="flex items-center space-x-4 text-sm">
@@ -309,7 +310,7 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
                 <div>
                   <p className="text-sm font-medium">Meta em risco: {goal.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Acelerar ações de redução para atingir {goal.target_value} tCO₂e até {format(new Date(goal.deadline_date), 'dd/MM/yyyy')}
+                    Acelerar ações de redução para atingir {goal.target_value} tCO₂e até {formatDateDisplay(goal.deadline_date)}
                   </p>
                 </div>
               </div>

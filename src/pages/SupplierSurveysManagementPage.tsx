@@ -13,7 +13,7 @@ import { Loader2, Plus, Pencil, Trash2, ClipboardList, Users } from 'lucide-reac
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { getSupplierSurveys, createSupplierSurvey, updateSupplierSurvey, deleteSupplierSurvey, getSurveyResponses, SupplierSurvey } from '@/services/supplierPortalService';
-import { format } from 'date-fns';
+import { formatDateDisplay } from '@/utils/dateUtils';
 import { useCompany } from '@/contexts/CompanyContext';
 
 export default function SupplierSurveysManagementPage() {
@@ -227,7 +227,7 @@ export default function SupplierSurveysManagementPage() {
                       {survey.category?.name || '-'}
                     </TableCell>
                     <TableCell>
-                      {survey.due_days ? `${survey.due_days} dias` : survey.end_date ? format(new Date(survey.end_date), 'dd/MM/yyyy') : '-'}
+                      {survey.due_days ? `${survey.due_days} dias` : survey.end_date ? formatDateDisplay(survey.end_date) : '-'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={survey.is_active ? 'default' : 'secondary'}>
@@ -399,7 +399,7 @@ export default function SupplierSurveysManagementPage() {
                     </div>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {resp.completed_at ? format(new Date(resp.completed_at), 'dd/MM/yyyy') : '-'}
+                    {resp.completed_at ? formatDateDisplay(resp.completed_at) : '-'}
                   </span>
                 </div>
               ))}

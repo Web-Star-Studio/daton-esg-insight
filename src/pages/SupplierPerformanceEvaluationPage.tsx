@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LoadingState } from "@/components/ui/loading-state";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatDateDisplay } from "@/utils/dateUtils";
 import { getManagedSupplierById, getSupplierAssignments } from "@/services/supplierManagementService";
 import {
   getActiveEvaluationCriteria,
@@ -345,7 +346,7 @@ export default function SupplierPerformanceEvaluationPage() {
                   {evaluations?.map((eval_) => (
                     <TableRow key={eval_.id}>
                       <TableCell>
-                        {format(new Date(eval_.evaluation_date), "dd/MM/yyyy", { locale: ptBR })}
+                        {formatDateDisplay(eval_.evaluation_date)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

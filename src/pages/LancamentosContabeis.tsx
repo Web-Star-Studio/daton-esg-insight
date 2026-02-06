@@ -6,7 +6,7 @@ import { Plus, CheckCircle, XCircle } from 'lucide-react';
 import { accountingEntriesService } from '@/services/accountingEntries';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { formatDateDisplay } from '@/utils/dateUtils';
 import { NewEntryDialog } from '@/components/accounting/NewEntryDialog';
 
 export default function LancamentosContabeis() {
@@ -38,7 +38,7 @@ export default function LancamentosContabeis() {
     { 
       accessorKey: 'entry_date', 
       header: 'Data Lançamento',
-      cell: ({ row }: any) => format(new Date(row.original.entry_date), 'dd/MM/yyyy')
+      cell: ({ row }: any) => formatDateDisplay(row.original.entry_date)
     },
     { accessorKey: 'description', header: 'Histórico' },
     { 

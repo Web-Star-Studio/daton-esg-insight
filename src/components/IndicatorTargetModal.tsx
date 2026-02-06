@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CalendarIcon, Target, TrendingUp, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatDateDisplay } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -350,8 +351,8 @@ export const IndicatorTargetModal: React.FC<IndicatorTargetModalProps> = ({
                     
                     <div className="text-sm text-muted-foreground space-y-1">
                       <div>
-                        Período: {format(new Date(target.valid_from), 'dd/MM/yyyy')} - {' '}
-                        {target.valid_until ? format(new Date(target.valid_until), 'dd/MM/yyyy') : 'Indefinido'}
+                        Período: {formatDateDisplay(target.valid_from)} - {' '}
+                        {target.valid_until ? formatDateDisplay(target.valid_until) : 'Indefinido'}
                       </div>
                       
                       {(target.upper_limit || target.lower_limit) && (

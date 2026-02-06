@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { formatDateDisplay } from '@/utils/dateUtils';
 
 export default function FluxoCaixa() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -313,7 +313,7 @@ export default function FluxoCaixa() {
               <TableBody>
                 {transactions?.map((transaction) => (
                   <TableRow key={transaction.id}>
-                    <TableCell>{format(new Date(transaction.transaction_date), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell>{formatDateDisplay(transaction.transaction_date)}</TableCell>
                     <TableCell>
                       <Badge variant={transaction.type === 'entrada' ? 'default' : 'secondary'}>
                         {transaction.type}
