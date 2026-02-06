@@ -1,139 +1,96 @@
 
-# Plano: Corrigir Seleção de ISO e Exibição de Cláusulas
+## Diagnóstico (por que “continua como nenhuma”)
 
-## Problema Identificado
+O componente `ISOReferencesSelector` está chamando **duas atualizações de estado seguidas** quando você escolhe uma ISO:
 
-Ao selecionar uma ISO no formulário de registro de NC, as cláusulas não são exibidas. A análise do código revelou dois problemas:
+- `onStandardChange(...)`
+- `onClausesChange([])`
 
-1. **Problema no Hook `useISORequirements`**: O hook usa duas queries mutuamente exclusivas (uma para todas as ISOs e outra para uma ISO específica), mas a query específica pode não estar sendo executada corretamente quando o usuário seleciona uma ISO.
+No `NaoConformidades.tsx`, esses callbacks estão implementados assim (padrão atual):
 
-2. **Tipo null vs undefined**: O `selectedStandard` no componente é `string | null`, mas o hook espera `ISOStandardType | undefined`. O cast `null as ISOStandardType | undefined` pode não funcionar como esperado.
+- `setNewNCData({ ...newNCData, iso_standard: s })`
+- `setNewNCData({ ...newNCData, iso_clauses: c })`
 
-## Solução Proposta
+Como ambos usam **o mesmo `newNCData` “antigo” capturado no render**, a segunda chamada (clauses) acaba “voltando” o `iso_standard` para `null`, porque ela espalha o objeto antigo novamente. Resultado visual: você clica numa ISO, mas o Select volta para “Nenhuma”.
 
-### 1. Corrigir o Hook `useISORequirements`
+Esse é um bug clássico de “stale state + múltiplos setState com spread”.
 
-Simplificar o hook para usar uma única query que carrega os requisitos da ISO específica quando selecionada:
+## Objetivo da correção
 
-```typescript
-export function useISORequirements(standard?: ISOStandardType | null) {
-  const { data: requirements, isLoading } = useQuery({
-    queryKey: ['iso-requirements', standard || 'all'],
-    queryFn: async () => {
-      if (standard) {
-        return isoRequirementsService.getRequirementsByStandard(standard);
-      }
-      return isoRequirementsService.getAllRequirements();
-    },
-  });
+1. Permitir selecionar a ISO (o Select precisa “persistir” o valor escolhido).
+2. Ao selecionar uma ISO, a lista de cláusulas deve aparecer e permitir marcar itens.
+3. Manter o comportamento de limpar cláusulas ao trocar a ISO.
+4. Garantir que o “Aplicar Sugestões” da IA também funcione (ele também chama `onStandardChange` e `onClausesChange` em sequência).
 
-  return {
-    requirements: requirements || [],
-    isLoading,
-    searchRequirements: (term: string) => isoRequirementsService.searchRequirements(term),
-  };
-}
-```
+## Estratégia
 
-### 2. Ajustar o Componente ISOReferencesSelector
+### A) Corrigir o estado no `NaoConformidades.tsx` (principal)
+Trocar os `setNewNCData({...newNCData, ...})` por **atualizações funcionais**:
 
-Remover o type cast problemático e passar o valor diretamente:
+- `setNewNCData(prev => ({ ...prev, campo: valor }))`
 
-```typescript
-// Antes:
-const { requirements, isLoading } = useISORequirements(selectedStandard as ISOStandardType | undefined);
+Isso garante que cada atualização sempre parte do estado mais recente, eliminando o “volta para nenhuma”.
 
-// Depois:
-const { requirements, isLoading } = useISORequirements(selectedStandard as ISOStandardType | null);
-```
+### B) Ajustar a “limpeza de cláusulas” para acontecer em um único lugar (recomendado)
+Hoje, ao trocar ISO, o selector faz:
+- `onStandardChange(...)`
+- `onClausesChange([])`
 
-### 3. Garantir que a UI é atualizada corretamente
+Podemos manter isso, mas o ideal é:
+- Centralizar a regra “troquei ISO => zera clauses” no **callback `onStandardChange` do pai**, fazendo uma única atualização de estado.
 
-Adicionar logs de debug temporários para verificar o fluxo de dados (a serem removidos após teste).
+Assim, mesmo que no futuro o selector mude, a integridade do dado fica garantida no formulário.
 
-## Arquivos a Modificar
+### C) Garantir que a seleção de itens (cláusulas) persista
+Depois que a ISO ficar selecionável (A), a UI de cláusulas já está preparada:
+- `toggleClause` usa `selectedClauses` e chama `onClausesChange([...])`.
 
-| Arquivo | Modificação |
-|---------|-------------|
-| `src/hooks/useISORequirements.ts` | Simplificar para query única com chave dinâmica |
-| `src/components/non-conformity/ISOReferencesSelector.tsx` | Corrigir type cast e adicionar fallback para array vazio |
+Com o `onClausesChange` corrigido para update funcional no pai, os checkboxes passam a funcionar corretamente.
 
-## Mudanças Detalhadas
+## Mudanças planejadas (passo a passo)
 
-### 1. useISORequirements.ts
+### 1) `src/pages/NaoConformidades.tsx`
+Na renderização do `ISOReferencesSelector`, alterar os handlers para updates funcionais:
 
-```typescript
-import { useQuery } from "@tanstack/react-query";
-import { isoRequirementsService, ISOStandardType } from "@/services/isoRequirements";
+- `onStandardChange` deve:
+  - setar `iso_standard`
+  - limpar `iso_clauses` automaticamente (porque mudou o universo de itens)
 
-export function useISORequirements(standard?: ISOStandardType | null) {
-  const { data: requirements, isLoading } = useQuery({
-    queryKey: ['iso-requirements', standard ?? 'all'],
-    queryFn: async () => {
-      if (standard) {
-        return isoRequirementsService.getRequirementsByStandard(standard);
-      }
-      return isoRequirementsService.getAllRequirements();
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutos - os requisitos ISO não mudam frequentemente
-  });
+Exemplo do comportamento desejado:
+- Selecionou ISO_9001 → `iso_standard="ISO_9001"` e `iso_clauses=[]`
+- Marcou cláusulas → `iso_clauses=["4.1","7.2"]`
+- Trocou para ISO_14001 → `iso_standard="ISO_14001"` e `iso_clauses=[]`
 
-  return {
-    requirements: requirements || [],
-    isLoading,
-    searchRequirements: (term: string) => isoRequirementsService.searchRequirements(term),
-  };
-}
-```
+E `onClausesChange` deve usar:
+- `setNewNCData(prev => ({ ...prev, iso_clauses: c }))`
 
-### 2. ISOReferencesSelector.tsx - Linha 49
+### 2) `src/components/non-conformity/ISOReferencesSelector.tsx`
+Opcional (mas recomendado para robustez):
+- Ao trocar o Select, evitar disparar duas atualizações separadas no pai.
+  - Alternativa 1 (mais simples): manter como está (porque o pai já estará correto com updates funcionais).
+  - Alternativa 2 (mais “limpo”): no `onValueChange`, remover `onClausesChange([])` e deixar o pai fazer isso dentro de `onStandardChange`.
 
-```typescript
-// Antes:
-const { requirements, isLoading } = useISORequirements(selectedStandard as ISOStandardType | undefined);
+Eu recomendo a Alternativa 2 para reduzir chances de regressão e simplificar fluxo.
 
-// Depois:
-const { requirements, isLoading } = useISORequirements(selectedStandard as ISOStandardType | null);
-```
+### 3) Validação rápida pós-correção (checklist)
+No formulário “Registrar NC”:
+1. Abrir o Select “Referência ISO”
+2. Selecionar “ISO 9001:2015”
+   - Deve permanecer selecionada (não volta para “Nenhuma”)
+3. A lista de cláusulas deve aparecer (Collapsible expandido)
+4. Marcar 2-3 cláusulas
+   - Badge “X cláusula(s)” deve atualizar
+5. Trocar para “ISO 14001:2015”
+   - As cláusulas selecionadas devem zerar
+   - Deve carregar as cláusulas da 14001
+6. (IA) Clicar “Buscar com IA” e aplicar sugestões
+   - Deve setar ISO e cláusulas automaticamente, sem resetar para “Nenhuma”
 
-### 3. ISOReferencesSelector.tsx - Garantir array
+## Resultado esperado após implementar
+- O Select de ISO passa a funcionar (sem “voltar para nenhuma”).
+- Ao escolher uma ISO, você consegue selecionar os itens/cláusulas dela normalmente.
+- Trocar de ISO limpa cláusulas (comportamento correto).
+- “Aplicar Sugestões” da IA funciona sem perder a seleção.
 
-Na linha 51, garantir que `requirements` nunca seja undefined:
-
-```typescript
-const filteredRequirements = (requirements || []).filter(req =>
-  req.clause_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  req.clause_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  req.description.toLowerCase().includes(searchTerm.toLowerCase())
-);
-```
-
-## Por que isso resolve o problema
-
-1. **Query unificada**: Com uma única query que usa a chave `['iso-requirements', standard ?? 'all']`, o React Query entende que são queries diferentes para cada ISO e gerencia o cache corretamente.
-
-2. **Tipo consistente**: Aceitar `null` explicitamente no hook evita problemas de type casting.
-
-3. **Fallback para array vazio**: Garantir que sempre há um array evita erros de "cannot filter undefined".
-
-## Fluxo esperado após correção
-
-1. Usuário abre o formulário de NC
-2. Campo "Referência ISO" mostra "Nenhuma" selecionado
-3. Usuário clica no dropdown e seleciona "ISO 9001:2015"
-4. Hook dispara nova query com key `['iso-requirements', 'ISO_9001']`
-5. Requisitos da ISO 9001 são carregados
-6. Collapsible expande automaticamente mostrando as cláusulas
-7. Usuário pode pesquisar e selecionar as cláusulas desejadas
-
-## Teste recomendado
-
-Após a implementação:
-1. Abrir formulário de nova NC
-2. Selecionar "ISO 9001:2015"
-3. Verificar se a lista de cláusulas aparece
-4. Testar filtro de busca por cláusula
-5. Marcar algumas cláusulas
-6. Trocar para outra ISO (ex: ISO 14001)
-7. Verificar se as cláusulas da nova ISO aparecem
-8. Testar o botão "Buscar com IA"
+## Risco/impacto
+Baixo. A mudança é localizada na forma como o estado do formulário é atualizado e não afeta schema/banco. É uma correção de lógica de estado no React.
