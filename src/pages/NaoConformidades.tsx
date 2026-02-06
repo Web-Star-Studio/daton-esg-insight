@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { NonConformityDetailsModal } from "@/components/NonConformityDetailsModal";
+import { ISOReferencesSelector } from "@/components/non-conformity/ISOReferencesSelector";
 import { NonConformitiesAdvancedDashboard } from "@/components/NonConformitiesAdvancedDashboard";
 import { ApprovalWorkflowManager } from "@/components/ApprovalWorkflowManager";
 import { NCAdvancedDashboard } from "@/components/non-conformity";
@@ -72,7 +73,9 @@ export default function NaoConformidades() {
     damage_level: "Baixo",
     responsible_user_id: "",
     organizational_unit_id: "",
-    sector: ""
+    sector: "",
+    iso_standard: null as string | null,
+    iso_clauses: [] as string[]
   });
 
   // Buscar filiais da empresa
@@ -202,7 +205,13 @@ export default function NaoConformidades() {
         organizational_unit_id: ncData.organizational_unit_id || null,
         sector: ncData.sector || null,
         nc_number: ncNumber,
-        company_id: profile.company_id
+        company_id: profile.company_id,
+        attachments: ncData.iso_standard ? {
+          iso_references: {
+            standard: ncData.iso_standard,
+            clauses: ncData.iso_clauses
+          }
+        } : null
       };
 
       const { data, error } = await supabase
@@ -228,7 +237,9 @@ export default function NaoConformidades() {
         damage_level: "Baixo",
         responsible_user_id: "",
         organizational_unit_id: "",
-        sector: ""
+        sector: "",
+        iso_standard: null,
+        iso_clauses: []
       });
     },
     onError: (error: any) => {
@@ -447,6 +458,21 @@ export default function NaoConformidades() {
                   </Select>
                 </div>
               </div>
+
+              {/* Referência ISO */}
+              <ISOReferencesSelector
+                selectedStandard={newNCData.iso_standard}
+                selectedClauses={newNCData.iso_clauses}
+                onStandardChange={(s) => setNewNCData({...newNCData, iso_standard: s})}
+                onClausesChange={(c) => setNewNCData({...newNCData, iso_clauses: c})}
+                disabled={createNCMutation.isPending}
+                ncContext={{
+                  title: newNCData.title,
+                  description: newNCData.description,
+                  category: newNCData.category,
+                  sector: newNCData.sector
+                }}
+              />
               
               <div className="grid grid-cols-3 gap-4">
                 <div>
