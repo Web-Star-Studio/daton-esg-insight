@@ -1,243 +1,245 @@
 
 
-# Plano: Adicionar Seleção de Principais Causas na Análise de Causa
+# Plano: Referenciar ISO e Itens no Registro de Não Conformidade
 
 ## Visão Geral
 
-Adicionar um seletor de múltiplos itens para "Principais Causas" na Etapa 3 (Análise de Causa) do fluxo de Não Conformidades. O usuário poderá selecionar uma ou mais causas de uma lista pré-definida baseada na metodologia 8M (expansão do 6M tradicional).
+Adicionar ao formulário de registro de NC a capacidade de:
+1. Selecionar uma ou mais normas ISO (ISO 9001, ISO 14001, ISO 45001, ISO 39001)
+2. Ver e selecionar os itens/cláusulas específicas da norma selecionada
+3. Usar IA para buscar a norma e seus itens baseado em texto descritivo
 
 ## Design Proposto
 
-O componente será exibido entre a seleção da metodologia e o campo de descrição. Será um seletor compacto usando checkboxes agrupados por categoria:
+O formulário terá uma nova seção "Referência ISO" entre "Setor" e "Severidade":
 
 ```
-Principais Causas (selecione uma ou mais)
-
-[ ] Mão de Obra (treinamento, erro humano, falta de capacitação, sobrecarga)
-[ ] Máquina / Equipamento (falha, manutenção, indisponibilidade, tecnologia inadequada)
-[ ] Material / Insumo (qualidade, especificação, fornecedor, lote)
-[ ] Método / Processo (procedimento inexistente, não seguido, fluxo incorreto)
-[ ] Meio Ambiente (layout, clima, ruído, ergonomia, condições externas)
-[ ] Medição / Controle (indicador errado, falta de controle, instrumento não calibrado)
-[ ] Sistema / Tecnologia (ERP, integração, parametrização, bug, regra de sistema)
-[ ] Gestão / Planejamento (priorização, comunicação, decisão, recursos, cronograma)
-
-Causas selecionadas: 2
+┌─────────────────────────────────────────────────────────────────┐
+│ Referência ISO (opcional)                                       │
+│                                                                 │
+│ ┌─────────────────────────────────────┐  ┌──────────────────┐  │
+│ │ Selecione a norma ISO...        ▼   │  │ 🤖 Buscar com IA │  │
+│ └─────────────────────────────────────┘  └──────────────────┘  │
+│                                                                 │
+│ ┌───────────────────────────────────────────────────────────┐  │
+│ │ Pesquisar cláusulas...                                🔍  │  │
+│ └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│ Cláusulas disponíveis:                                          │
+│ ┌───────────────────────────────────────────────────────────┐  │
+│ │ [ ] 4.1 - Entendendo a organização e seu contexto        │  │
+│ │ [✓] 4.2 - Necessidades e expectativas de partes...       │  │
+│ │ [ ] 4.3 - Escopo do sistema de gestão da qualidade       │  │
+│ │ [✓] 5.1 - Liderança e comprometimento                    │  │
+│ │ ...                                                       │  │
+│ └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│ Selecionadas: 2 cláusula(s)                                     │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Arquivos a Modificar
+### Busca com IA
 
-| Arquivo | Modificação |
-|---------|-------------|
-| `src/components/non-conformity/NCStage3CauseAnalysis.tsx` | Adicionar estado, constantes e UI do multi-select |
-| `src/services/nonConformityService.ts` | Adicionar campo `main_causes` no tipo `NCCauseAnalysis` |
+O botão "Buscar com IA" abrirá um modal:
+```
+┌────────────────────────────────────────────────────────────────┐
+│ 🤖 Buscar Referência ISO com IA                            X  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│ Descreva o problema ou contexto da não conformidade:          │
+│ ┌──────────────────────────────────────────────────────────┐  │
+│ │ Exemplo: "Falta de treinamento documentado para         │  │
+│ │ operadores de empilhadeira"                             │  │
+│ └──────────────────────────────────────────────────────────┘  │
+│                                                                │
+│                               [ Cancelar ]  [ Buscar ]         │
+├────────────────────────────────────────────────────────────────┤
+│ Resultado:                                                     │
+│ ┌──────────────────────────────────────────────────────────┐  │
+│ │ 📋 ISO 9001:2015                                        │  │
+│ │   ├ 7.2 - Competência (confiança: 95%)                  │  │
+│ │   └ 7.3 - Conscientização (confiança: 82%)              │  │
+│ │                                                          │  │
+│ │ 📋 ISO 45001:2018                                       │  │
+│ │   └ 7.2 - Competência (confiança: 88%)                  │  │
+│ └──────────────────────────────────────────────────────────┘  │
+│                                                                │
+│                                     [ Aplicar Sugestões ]      │
+└────────────────────────────────────────────────────────────────┘
+```
+
+## Arquivos a Criar/Modificar
+
+| Arquivo | Ação | Descrição |
+|---------|------|-----------|
+| `src/components/non-conformity/ISOReferencesSelector.tsx` | Criar | Componente de seleção de ISO e cláusulas |
+| `src/components/non-conformity/ISOAISearchModal.tsx` | Criar | Modal de busca com IA |
+| `src/pages/NaoConformidades.tsx` | Modificar | Adicionar seção de referência ISO no formulário |
+| `supabase/functions/nc-iso-suggestions/index.ts` | Criar | Edge function para busca com IA |
 
 ## Mudanças Detalhadas
 
-### 1. NCStage3CauseAnalysis.tsx
+### 1. ISOReferencesSelector.tsx (Novo)
 
-#### 1.1 Adicionar constante com as categorias de causas (após imports)
+Componente que encapsula a seleção de norma e cláusulas:
 
+```tsx
+interface ISOReferencesSelectorProps {
+  selectedStandard: string | null;
+  selectedClauses: string[];
+  onStandardChange: (standard: string | null) => void;
+  onClausesChange: (clauses: string[]) => void;
+  disabled?: boolean;
+}
+```
+
+Funcionalidades:
+- Select para escolher a norma (ISO 9001, 14001, 45001, 39001)
+- Campo de busca para filtrar cláusulas
+- Lista de checkboxes com as cláusulas da norma selecionada
+- Contador de cláusulas selecionadas
+- Botão "Buscar com IA" que abre o modal
+
+### 2. ISOAISearchModal.tsx (Novo)
+
+Modal para busca inteligente:
+- Input para descrever o problema
+- Botão para executar busca via Edge Function
+- Lista de resultados agrupados por norma
+- Cada item mostra cláusula + título + confiança
+- Botão "Aplicar" que seleciona automaticamente as cláusulas sugeridas
+
+### 3. Edge Function: nc-iso-suggestions
+
+Prompt para o Gemini:
 ```typescript
-const MAIN_CAUSE_CATEGORIES = [
-  { 
-    id: "mao_obra", 
-    label: "Mão de Obra", 
-    description: "treinamento, erro humano, falta de capacitação, sobrecarga",
-    icon: Users
-  },
-  { 
-    id: "maquina", 
-    label: "Máquina / Equipamento", 
-    description: "falha, manutenção, indisponibilidade, tecnologia inadequada",
-    icon: Cog
-  },
-  { 
-    id: "material", 
-    label: "Material / Insumo", 
-    description: "qualidade, especificação, fornecedor, lote",
-    icon: Package
-  },
-  { 
-    id: "metodo", 
-    label: "Método / Processo", 
-    description: "procedimento inexistente, não seguido, fluxo incorreto",
-    icon: Wrench
-  },
-  { 
-    id: "meio_ambiente", 
-    label: "Meio Ambiente", 
-    description: "layout, clima, ruído, ergonomia, condições externas",
-    icon: Leaf
-  },
-  { 
-    id: "medicao", 
-    label: "Medição / Controle", 
-    description: "indicador errado, falta de controle, instrumento não calibrado",
-    icon: Ruler
-  },
-  { 
-    id: "sistema", 
-    label: "Sistema / Tecnologia", 
-    description: "ERP, integração, parametrização, bug, regra de sistema",
-    icon: Monitor
-  },
-  { 
-    id: "gestao", 
-    label: "Gestão / Planejamento", 
-    description: "priorização, comunicação, decisão, recursos, cronograma",
-    icon: Target
-  },
+const systemPrompt = `Você é um especialista em normas ISO de sistemas de gestão.
+Analise a descrição da não conformidade e identifique as cláusulas ISO mais relevantes.
+
+Normas disponíveis:
+- ISO 9001:2015 - Gestão da Qualidade
+- ISO 14001:2015 - Gestão Ambiental  
+- ISO 45001:2018 - Saúde e Segurança Ocupacional
+- ISO 39001:2012 - Segurança Viária
+
+Retorne um JSON com as cláusulas mais relevantes e um score de confiança (0-100).`;
+```
+
+Request body:
+```json
+{
+  "description": "Falta de treinamento documentado...",
+  "context": "Título da NC, categoria, setor"
+}
+```
+
+Response:
+```json
+{
+  "suggestions": [
+    { "standard": "ISO_9001", "clause_number": "7.2", "confidence": 95 },
+    { "standard": "ISO_9001", "clause_number": "7.3", "confidence": 82 },
+    { "standard": "ISO_45001", "clause_number": "7.2", "confidence": 88 }
+  ]
+}
+```
+
+### 4. Modificações em NaoConformidades.tsx
+
+**4.1 Atualizar estado do formulário:**
+```typescript
+const [newNCData, setNewNCData] = useState({
+  // ... campos existentes ...
+  iso_standard: null as string | null,
+  iso_clauses: [] as string[]
+});
+```
+
+**4.2 Adicionar seção no formulário (após Setor, antes de Severidade):**
+```tsx
+<ISOReferencesSelector
+  selectedStandard={newNCData.iso_standard}
+  selectedClauses={newNCData.iso_clauses}
+  onStandardChange={(s) => setNewNCData({...newNCData, iso_standard: s})}
+  onClausesChange={(c) => setNewNCData({...newNCData, iso_clauses: c})}
+  disabled={createNCMutation.isPending}
+/>
+```
+
+**4.3 Incluir referências ISO no insert:**
+Os dados serão salvos no campo `attachments` (JSONB) existente até criar uma tabela específica:
+```typescript
+attachments: {
+  iso_references: {
+    standard: newNCData.iso_standard,
+    clauses: newNCData.iso_clauses
+  }
+}
+```
+
+## Fluxo de Uso
+
+### Cenário 1: Seleção Manual
+1. Usuário seleciona "ISO 9001:2015" no dropdown
+2. Lista de cláusulas carrega automaticamente
+3. Usuário digita "liderança" no campo de busca
+4. Lista filtra para mostrar apenas cláusulas relacionadas
+5. Usuário marca as cláusulas relevantes
+6. Contador atualiza: "2 cláusula(s) selecionada(s)"
+
+### Cenário 2: Busca com IA
+1. Usuário clica em "🤖 Buscar com IA"
+2. Modal abre
+3. Usuário descreve: "Fornecedor entregou material fora da especificação técnica"
+4. Clica em "Buscar"
+5. IA retorna sugestões:
+   - ISO 9001 → 8.4 (Controle de produtos adquiridos) - 92%
+   - ISO 9001 → 8.6 (Liberação de produtos) - 78%
+6. Usuário clica em "Aplicar Sugestões"
+7. Modal fecha
+8. Norma e cláusulas são preenchidas automaticamente
+
+## Dados Disponíveis
+
+O banco já possui a tabela `iso_requirements` com:
+- 10 cláusulas ISO 9001
+- 10 cláusulas ISO 14001
+- 10 cláusulas ISO 45001
+- 8 cláusulas ISO 39001
+
+Cada cláusula contém: `clause_number`, `clause_title`, `description`, `guidance_notes`, `evidence_examples`.
+
+## Considerações Técnicas
+
+### Hook Existente
+Reutilizar `useISORequirements` que já carrega os requisitos por norma.
+
+### Constante de Normas
+Já existe em `ISORequirementsLibrary.tsx`:
+```typescript
+const STANDARDS = [
+  { id: 'ISO_9001', label: 'ISO 9001:2015', description: 'Sistema de Gestão da Qualidade', color: 'bg-blue-500' },
+  { id: 'ISO_14001', label: 'ISO 14001:2015', description: 'Sistema de Gestão Ambiental', color: 'bg-green-500' },
+  { id: 'ISO_45001', label: 'ISO 45001:2018', description: 'Saúde e Segurança Ocupacional', color: 'bg-orange-500' },
+  { id: 'ISO_39001', label: 'ISO 39001:2012', description: 'Segurança Viária', color: 'bg-purple-500' },
 ];
 ```
 
-#### 1.2 Adicionar estado para causas selecionadas
+### Edge Function
+- Usar modelo `google/gemini-3-flash-preview` via Lovable AI Gateway
+- Usar `LOVABLE_API_KEY` (já disponível como secret)
+- Retornar JSON estruturado com sugestões
 
-```typescript
-const [mainCauses, setMainCauses] = useState<string[]>(causeAnalysis?.main_causes || []);
-```
-
-#### 1.3 Adicionar função toggle para seleção
-
-```typescript
-const toggleMainCause = (causeId: string) => {
-  setMainCauses(prev => 
-    prev.includes(causeId) 
-      ? prev.filter(id => id !== causeId)
-      : [...prev, causeId]
-  );
-};
-```
-
-#### 1.4 Adicionar seção UI após "Metodologia de Análise"
-
-```tsx
-{/* Main Causes Selection */}
-<div className="space-y-3">
-  <div className="flex items-center justify-between">
-    <Label>Principais Causas</Label>
-    {mainCauses.length > 0 && (
-      <Badge variant="secondary">{mainCauses.length} selecionada(s)</Badge>
-    )}
-  </div>
-  <p className="text-sm text-muted-foreground">
-    Selecione uma ou mais categorias de causas identificadas
-  </p>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-    {MAIN_CAUSE_CATEGORIES.map((cause) => {
-      const Icon = cause.icon;
-      const isSelected = mainCauses.includes(cause.id);
-      return (
-        <div
-          key={cause.id}
-          onClick={() => toggleMainCause(cause.id)}
-          className={cn(
-            "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-            isSelected 
-              ? "border-primary bg-primary/5" 
-              : "border-muted hover:bg-muted/50"
-          )}
-        >
-          <Checkbox checked={isSelected} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <Icon className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">{cause.label}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1 truncate">
-              {cause.description}
-            </p>
-          </div>
-        </div>
-      );
-    })}
-  </div>
-</div>
-```
-
-#### 1.5 Incluir main_causes no handleSave
-
-```typescript
-const data = {
-  non_conformity_id: ncId,
-  analysis_method: analysisMethod as any,
-  root_cause: rootCause,
-  main_causes: mainCauses,  // ← Adicionar
-  ishikawa_data: ishikawaData,
-  five_whys_data: fiveWhysData,
-  similar_nc_ids: [],
-  attachments: [],
-};
-```
-
-### 2. nonConformityService.ts
-
-#### 2.1 Adicionar campo ao tipo NCCauseAnalysis
-
-```typescript
-export interface NCCauseAnalysis {
-  id: string;
-  non_conformity_id: string;
-  company_id: string;
-  analysis_method: 'root_cause' | 'ishikawa' | '5_whys' | 'other';
-  root_cause?: string;
-  main_causes?: string[];  // ← Adicionar
-  similar_nc_ids: any;
-  attachments: any;
-  ishikawa_data: any;
-  five_whys_data: any;
-  // ...demais campos
-}
-```
-
-## Armazenamento
-
-O campo `main_causes` será armazenado no campo JSON `ishikawa_data` existente no banco, que já é usado para dados estruturados de causa:
-
-```typescript
-ishikawa_data: {
-  ...ishikawaData,
-  main_causes: mainCauses  // Array de IDs das causas selecionadas
-}
-```
-
-Alternativa: Se preferir um campo separado no banco, será necessário criar uma migration para adicionar a coluna `main_causes JSONB` na tabela `nc_cause_analysis`.
-
-## Imports Adicionais
-
-```typescript
-import { Users, Cog, Package, Wrench, Leaf, Ruler, Monitor, Target } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-```
-
-## Resultado Esperado
-
-| Interação | Resultado |
-|-----------|-----------|
-| Carregar análise existente | Causas previamente selecionadas aparecem marcadas |
-| Clicar em causa | Alterna seleção (adiciona/remove da lista) |
-| Salvar rascunho | Causas são persistidas junto com análise |
-| Concluir etapa | Causas ficam registradas para relatórios |
-
-## Seção Técnica
-
-### Por que usar ishikawa_data?
-
-O campo `ishikawa_data` é um JSON flexível já existente no banco de dados. Ao invés de criar uma nova coluna, podemos estruturar os dados assim:
-
+### Armazenamento
+Usar campo `attachments` (JSONB) para armazenar referências ISO inicialmente:
 ```json
 {
-  "metodo": ["causa 1", "causa 2"],
-  "material": [],
-  "main_causes": ["mao_obra", "metodo", "gestao"]
+  "iso_references": {
+    "standard": "ISO_9001",
+    "clauses": ["4.2", "7.2", "8.4"]
+  }
 }
 ```
 
-Isso evita a necessidade de uma migration no banco e mantém compatibilidade com dados existentes.
-
-### Sincronização com Ishikawa
-
-As categorias do multi-select são as mesmas do diagrama de Ishikawa (6M/8M). Se o usuário marcar "Mão de Obra" como causa principal e depois usar o diagrama de Ishikawa, poderá detalhar as causas específicas nessa categoria.
+Futuramente, pode-se criar uma tabela `nc_iso_references` para melhor consulta.
 
