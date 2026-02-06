@@ -23,7 +23,8 @@ import { NCAdvancedDashboard } from "@/components/non-conformity";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { getNCStatusLabel, getNCStatusColor, isNCOpen, isNCClosed } from "@/utils/ncStatusUtils";
+import { getNCStatusLabel, getNCStatusColor, isNCOpen, isNCClosed, isNCInProgress } from "@/utils/ncStatusUtils";
+import { formatDateDisplay } from "@/utils/dateUtils";
 
 interface NonConformity {
   id: string;
@@ -57,6 +58,7 @@ export default function NaoConformidades() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isCreateNCOpen, setIsCreateNCOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedNCId, setSelectedNCId] = useState<string | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
   const [isWorkflowManagerOpen, setIsWorkflowManagerOpen] = useState(false);
@@ -331,6 +333,23 @@ export default function NaoConformidades() {
   const criticalNCs = nonConformities?.filter(nc => nc.severity === "Crítica" && !isNCClosed(nc.status)).length || 0;
   const closedNCs = nonConformities?.filter(nc => isNCClosed(nc.status)).length || 0;
 
+  // Status filter counts
+  const statusCounts = {
+    all: totalNCs,
+    aberta: nonConformities?.filter(nc => isNCOpen(nc.status)).length || 0,
+    em_tratamento: nonConformities?.filter(nc => isNCInProgress(nc.status)).length || 0,
+    encerrada: nonConformities?.filter(nc => isNCClosed(nc.status)).length || 0,
+  };
+
+  // Filtered NCs based on status filter
+  const filteredNCs = nonConformities?.filter(nc => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "aberta") return isNCOpen(nc.status);
+    if (statusFilter === "em_tratamento") return isNCInProgress(nc.status);
+    if (statusFilter === "encerrada") return isNCClosed(nc.status);
+    return true;
+  });
+
   return (
     <>
       <div className="flex justify-between items-center mb-8">
@@ -558,6 +577,44 @@ export default function NaoConformidades() {
           <CardDescription>
             Visualize e gerencie todas as não conformidades registradas
           </CardDescription>
+          
+          {/* Status Filter Buttons */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            <Button
+              variant={statusFilter === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter("all")}
+            >
+              Todas ({statusCounts.all})
+            </Button>
+            <Button
+              variant={statusFilter === "aberta" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter("aberta")}
+              className={statusFilter === "aberta" ? "" : "border-red-200 text-red-700 hover:bg-red-50"}
+            >
+              <AlertCircle className="h-4 w-4 mr-1" />
+              Aberta ({statusCounts.aberta})
+            </Button>
+            <Button
+              variant={statusFilter === "em_tratamento" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter("em_tratamento")}
+              className={statusFilter === "em_tratamento" ? "" : "border-yellow-200 text-yellow-700 hover:bg-yellow-50"}
+            >
+              <Clock className="h-4 w-4 mr-1" />
+              Em Tratamento ({statusCounts.em_tratamento})
+            </Button>
+            <Button
+              variant={statusFilter === "encerrada" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter("encerrada")}
+              className={statusFilter === "encerrada" ? "" : "border-green-200 text-green-700 hover:bg-green-50"}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Encerrada ({statusCounts.encerrada})
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {nonConformities?.length ? (
@@ -574,7 +631,7 @@ export default function NaoConformidades() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {nonConformities.map((nc) => (
+                {filteredNCs?.map((nc) => (
                   <TableRow key={nc.id}>
                     <TableCell className="font-mono text-sm">
                       {nc.nc_number}
@@ -599,7 +656,7 @@ export default function NaoConformidades() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {format(new Date(nc.detected_date), "dd/MM/yyyy", { locale: ptBR })}
+                      {formatDateDisplay(nc.detected_date)}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2 items-center">
