@@ -62,13 +62,11 @@ export default function ColetaDados() {
   const { data: tasks = [], isLoading: tasksLoading, refetch: refetchTasks } = useQuery({
     queryKey: ['data-collection-tasks'],
     queryFn: () => dataCollectionService.getTasks(),
-    enabled: !!user,
   });
 
   const { data: importJobs = [], refetch: refetchJobs } = useQuery({
     queryKey: ['import-jobs'],
     queryFn: () => dataCollectionService.getImportJobs(),
-    enabled: !!user,
   });
 
   const pendingTasks = tasks.filter((task: DataCollectionTask) => task.status === 'Pendente');

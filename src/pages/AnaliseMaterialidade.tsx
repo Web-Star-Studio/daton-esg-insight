@@ -41,13 +41,11 @@ export default function AnaliseMaterialidade() {
   const { data: themes = [], isLoading: loadingThemes } = useQuery({
     queryKey: ['materiality-themes'],
     queryFn: () => getMaterialityThemes(),
-    enabled: !!user,
   });
 
   const { data: assessments = [], isLoading: loadingAssessments, error: assessmentsError } = useQuery({
     queryKey: ['materiality-assessments'],
     queryFn: () => getMaterialityAssessments(),
-    enabled: !!user,
     retry: 2,
     retryDelay: 1000,
   });

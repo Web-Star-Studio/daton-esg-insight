@@ -89,7 +89,6 @@ export default function ConfiguracaoOrganizacional() {
       if (error) throw error;
       return data as OrganizationalProfile;
     },
-    enabled: !!user,
   });
 
   const updateProfileMutation = useMutation({
