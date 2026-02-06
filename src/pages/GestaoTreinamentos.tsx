@@ -711,9 +711,9 @@ export default function GestaoTreinamentos() {
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3.5 h-3.5" />
                               <span>
-                                {program.start_date && format(new Date(program.start_date), "dd/MM/yyyy", { locale: ptBR })}
+                                {program.start_date && formatDateDisplay(program.start_date)}
                                 {program.start_date && program.end_date && " - "}
-                                {program.end_date && format(new Date(program.end_date), "dd/MM/yyyy", { locale: ptBR })}
+                                {program.end_date && formatDateDisplay(program.end_date)}
                               </span>
                             </div>
                           )}
