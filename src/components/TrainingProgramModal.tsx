@@ -1080,7 +1080,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                               </FormControl>
                             </PopoverTrigger>
                             <PopoverContent className="w-[400px] p-0" align="start">
-                              <Command>
+                              <Command shouldFilter={false}>
                                 <CommandInput 
                                   placeholder="Buscar por nome ou código..." 
                                   value={evaluatorSearchTerm}
@@ -1092,7 +1092,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                                     {filteredEvaluators.map((emp) => (
                                       <CommandItem
                                         key={emp.id}
-                                        value={emp.id}
+                                        value={`${emp.full_name} ${emp.employee_code || ''}`}
                                         onSelect={() => {
                                           field.onChange(emp.id);
                                           setEvaluatorSearchOpen(false);
