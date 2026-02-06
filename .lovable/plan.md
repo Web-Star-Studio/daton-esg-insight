@@ -1,117 +1,133 @@
 
-# Plano de Correção: Data Um Dia Atrás e Seleção de Avaliadores
+# Plano de Correção: Problema Sistêmico de Timezone em Datas
 
-## Problemas Identificados
+## Resumo do Teste End-to-End
 
-### Problema 1: Data exibida um dia atrás
-Na tela de Gestão de Treinamentos, as datas dos programas (início e término) aparecem sempre um dia antes do que foi cadastrado.
+### Verificações Realizadas
 
-**Causa**: O código usa `new Date()` diretamente com strings ISO (YYYY-MM-DD). Isso causa o famoso problema de timezone:
+| Módulo | Status | Resultado |
+|--------|--------|-----------|
+| Gestão de Treinamentos | Testado | Datas corrigidas (27/01/2026) |
+| Gestão de Desempenho | Código verificado | Correções aplicadas |
+| Gestão de Stakeholders | Código verificado | Correção aplicada |
+| Coleta de Dados | Código verificado | Correção aplicada |
+| Análise de Materialidade | Código verificado | Correção aplicada |
+| Formulários Customizados | Código verificado | Correção aplicada |
+
+### Novo Problema Identificado: Timezone em Datas
+
+Durante a varredura do codebase, identifiquei que **112 arquivos** ainda usam o padrão problemático:
+
+```typescript
+format(new Date(date), 'dd/MM/yyyy')
+```
+
+Este padrão causa o problema de "um dia atrás" devido à interpretação de timezone:
 - JavaScript interpreta "2026-01-26" como meia-noite UTC
-- No Brasil (UTC-3), meia-noite UTC = 21:00 do dia **anterior**
+- No Brasil (UTC-3), meia-noite UTC = 21:00 do dia anterior
 - Resultado: 26/01/2026 aparece como 25/01/2026
 
-**Local afetado**: `src/pages/GestaoTreinamentos.tsx`, linhas 714-716
+### Arquivos Críticos Afetados
 
-### Problema 2: Seleção de avaliadores não encontra colaboradores
-Ao buscar colaboradores para "Responsável pela Avaliação", a busca por nome não funciona - mesmo digitando "elian", retorna "Nenhum colaborador encontrado" (mas existem 4 "Eliana/Eliane" no banco).
-
-**Causa**: O componente `Command` do shadcn faz filtragem interna baseada no atributo `value` do `CommandItem`. O código atual usa `value={emp.id}` (UUID), então quando o usuário digita "elian", o Command procura UUIDs que contenham "elian" - que obviamente não existem.
-
-**Local afetado**: `src/components/TrainingProgramModal.tsx`, linha 1095
-
----
-
-## Solução
-
-### Correção 1: Usar `formatDateDisplay` para datas
-
-O utilitário `formatDateDisplay` já existe e está importado, mas não está sendo usado. Ele usa `T12:00:00` para evitar o problema de timezone.
-
-**Antes (linha 714)**:
-```typescript
-{program.start_date && format(new Date(program.start_date), "dd/MM/yyyy", { locale: ptBR })}
-```
-
-**Depois**:
-```typescript
-{program.start_date && formatDateDisplay(program.start_date)}
-```
-
-### Correção 2: Usar nome no `value` do `CommandItem`
-
-O `Command` precisa que o `value` contenha o texto buscável. A solução é usar uma combinação de nome + código como `value`, mas manter o `onSelect` usando o ID.
-
-**Antes (linha 1095)**:
-```typescript
-value={emp.id}
-```
-
-**Depois**:
-```typescript
-value={`${emp.full_name} ${emp.employee_code || ''}`}
-```
-
-Também precisamos desabilitar a filtragem interna do Command quando já estamos filtrando manualmente pelo `evaluatorSearchTerm`.
+| Arquivo | Linhas Afetadas | Contexto |
+|---------|-----------------|----------|
+| `SocialESG.tsx` | 486 | Datas de projetos sociais |
+| `GoalTrackingWidget.tsx` | 222, 312 | Datas de metas ESG |
+| `DesenvolvimentoCarreira.tsx` | 367, 760 | Datas de planos e vagas |
+| `SupplierPerformanceEvaluationPage.tsx` | 348 | Datas de avaliações |
+| `SupplierSurveysManagementPage.tsx` | 230, 402 | Datas de pesquisas |
+| `FluxoCaixa.tsx` | 316 | Datas de transações |
+| `LancamentosContabeis.tsx` | 41 | Datas de lançamentos |
+| `AttendanceReportsModal.tsx` | 345 | Datas de frequência |
+| `IndicatorTargetModal.tsx` | 353, 354 | Datas de metas |
+| `LegislationHistoryTimeline.tsx` | 125, 126 | Datas de legislação |
 
 ---
 
-## Arquivos a Modificar
+## Solução Proposta
+
+### Abordagem em 3 Fases
+
+**Fase 1 - Imediata**: Corrigir os 10 arquivos mais críticos (páginas principais)
+
+**Fase 2 - Componentes**: Corrigir modais e widgets reutilizáveis
+
+**Fase 3 - Auditoria**: Varrer todo o codebase para garantir consistência
+
+### Padrão de Correção
+
+Em cada arquivo:
+
+1. Adicionar import do utilitário:
+```typescript
+import { formatDateDisplay } from '@/utils/dateUtils';
+```
+
+2. Substituir todas as ocorrências:
+```typescript
+// ANTES
+format(new Date(date), 'dd/MM/yyyy')
+
+// DEPOIS  
+formatDateDisplay(date)
+```
+
+---
+
+## Arquivos a Modificar (Fase 1)
 
 | Arquivo | Modificação |
 |---------|-------------|
-| `src/pages/GestaoTreinamentos.tsx` | Usar `formatDateDisplay` nas linhas 714-716 |
-| `src/components/TrainingProgramModal.tsx` | Ajustar `value` do `CommandItem` para usar nome |
+| `src/pages/SocialESG.tsx` | Linha 486: usar `formatDateDisplay` |
+| `src/pages/DesenvolvimentoCarreira.tsx` | Linhas 367, 760 |
+| `src/pages/SupplierPerformanceEvaluationPage.tsx` | Linha 348 |
+| `src/pages/SupplierSurveysManagementPage.tsx` | Linhas 230, 402 |
+| `src/pages/FluxoCaixa.tsx` | Linha 316 |
+| `src/pages/LancamentosContabeis.tsx` | Linha 41 |
+| `src/components/GoalTrackingWidget.tsx` | Linhas 222, 312 |
+| `src/components/AttendanceReportsModal.tsx` | Linha 345 |
+| `src/components/IndicatorTargetModal.tsx` | Linhas 353, 354 |
+| `src/components/legislation/LegislationHistoryTimeline.tsx` | Linhas 125, 126 |
 
 ---
 
-## Mudanças Detalhadas
+## Exemplo de Correção
 
-### 1. GestaoTreinamentos.tsx (linhas 714-716)
+### SocialESG.tsx (Linha 486)
 
-**Atual**:
+**Antes**:
 ```typescript
-<span>
-  {program.start_date && format(new Date(program.start_date), "dd/MM/yyyy", { locale: ptBR })}
-  {program.start_date && program.end_date && " - "}
-  {program.end_date && format(new Date(program.end_date), "dd/MM/yyyy", { locale: ptBR })}
-</span>
+{project.start_date ? format(new Date(project.start_date), 'dd/MM/yyyy') : '-'} - {project.end_date ? format(new Date(project.end_date), 'dd/MM/yyyy') : '-'}
 ```
 
-**Corrigido**:
+**Depois**:
 ```typescript
-<span>
-  {program.start_date && formatDateDisplay(program.start_date)}
-  {program.start_date && program.end_date && " - "}
-  {program.end_date && formatDateDisplay(program.end_date)}
-</span>
+{project.start_date ? formatDateDisplay(project.start_date) : '-'} - {project.end_date ? formatDateDisplay(project.end_date) : '-'}
 ```
 
-### 2. TrainingProgramModal.tsx (linha 1083 e 1095)
+### GoalTrackingWidget.tsx (Linhas 222 e 312)
 
-Adicionar `shouldFilter={false}` no `Command` para desabilitar a filtragem interna (já que filtramos manualmente via `filteredEvaluators`):
-
-**Linha 1083 - Atual**:
+**Antes**:
 ```typescript
-<Command>
+{goal.description || `Reduzir emissões para ${goal.target_value} tCO₂e até ${format(new Date(goal.deadline_date), 'dd/MM/yyyy')}`}
 ```
 
-**Corrigido**:
+**Depois**:
 ```typescript
-<Command shouldFilter={false}>
+{goal.description || `Reduzir emissões para ${goal.target_value} tCO₂e até ${formatDateDisplay(goal.deadline_date)}`}
 ```
 
-E mudar o `value` do `CommandItem` para usar o nome:
+---
 
-**Linha 1095 - Atual**:
-```typescript
-value={emp.id}
-```
+## Resumo das Correções Anteriores
 
-**Corrigido**:
-```typescript
-value={`${emp.full_name} ${emp.employee_code || ''}`}
-```
+### Correções Confirmadas Funcionando
+
+1. **Race Condition em 7 páginas** - Todas as ocorrências de `enabled: isAuthenticated` e `enabled: !!user` em páginas protegidas foram removidas
+
+2. **Data de Treinamentos** - Corrigida usando `formatDateDisplay`
+
+3. **Busca de Avaliadores** - Corrigida usando `shouldFilter={false}` e `value` com nome
 
 ---
 
@@ -119,29 +135,38 @@ value={`${emp.full_name} ${emp.employee_code || ''}`}
 
 | Cenário | Antes | Depois |
 |---------|-------|--------|
-| Data início 26/01/2026 | Mostra 25/01/2026 | Mostra 26/01/2026 |
-| Buscar "elian" nos avaliadores | "Nenhum colaborador encontrado" | Encontra Eliana Panke, Eliane Pires, etc. |
-| Lista inicial de avaliadores | Apenas ~50 primeiros (por ordem alfabética) | Mesmos 50, mas busca funciona |
+| Datas em todas as páginas | Possível 1 dia atrás | Data correta |
+| Projetos Sociais | 25/01/2026 | 26/01/2026 |
+| Metas ESG | 25/01/2026 | 26/01/2026 |
+| Avaliações de Fornecedores | 25/01/2026 | 26/01/2026 |
 
 ---
 
 ## Seção Técnica
 
-### Por que `formatDateDisplay` resolve o problema?
+### Por que `formatDateDisplay` funciona?
 
-A função `parseDateSafe` usada internamente adiciona `T12:00:00` às datas:
+A função usa o utilitário `parseDateSafe` que adiciona `T12:00:00` à string de data:
 
 ```typescript
-// Com T12:00:00, mesmo com conversão ±12h, o dia nunca muda
-const date = new Date(`${dateString}T12:00:00`);
+export function parseDateSafe(dateString: string): Date | null {
+  // Adiciona meio-dia para evitar problemas de timezone
+  const normalized = `${dateString}T12:00:00`;
+  return new Date(normalized);
+}
+
+export function formatDateDisplay(date: string | Date | null): string {
+  const parsed = parseDateSafe(date);
+  return parsed ? format(parsed, 'dd/MM/yyyy') : '-';
+}
 ```
 
-Meio-dia é um "ponto seguro" - qualquer timezone do mundo (UTC-12 a UTC+14) não consegue empurrar meio-dia para outro dia.
+Meio-dia (12:00) é um "ponto seguro" - qualquer timezone do mundo (UTC-12 a UTC+14) não consegue empurrar meio-dia para outro dia.
 
-### Por que `shouldFilter={false}` é necessário?
+### Padrão Consolidado
 
-O componente `Command` do cmdk/shadcn tem filtragem automática habilitada por padrão. Quando o usuário digita na `CommandInput`, ele filtra os `CommandItem` pelo atributo `value`.
+Este padrão já está documentado na memória do projeto:
+- `memory/technical/timezone-safe-date-handling-standard`
+- Aplicado em: Employees, Training, NC
 
-No nosso caso, já filtramos manualmente via `filteredEvaluators`. Se deixarmos a filtragem dupla, o Command filtra novamente pelo `value`, o que causava o problema.
-
-Com `shouldFilter={false}`, delegamos toda a lógica de filtragem para nosso código, que já funciona corretamente com nome e código.
+Após esta correção, o padrão será aplicado em todo o sistema.
