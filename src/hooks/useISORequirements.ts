@@ -1,22 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { isoRequirementsService, ISOStandardType } from "@/services/isoRequirements";
 
-export function useISORequirements(standard?: ISOStandardType) {
-  const { data: allRequirements, isLoading: loadingAll } = useQuery({
-    queryKey: ['iso-requirements'],
-    queryFn: () => isoRequirementsService.getAllRequirements(),
-    enabled: !standard,
-  });
-
-  const { data: standardRequirements, isLoading: loadingStandard } = useQuery({
-    queryKey: ['iso-requirements', standard],
-    queryFn: () => standard ? isoRequirementsService.getRequirementsByStandard(standard) : Promise.resolve([]),
-    enabled: !!standard,
+export function useISORequirements(standard?: ISOStandardType | null) {
+  const { data: requirements, isLoading } = useQuery({
+    queryKey: ['iso-requirements', standard ?? 'all'],
+    queryFn: async () => {
+      if (standard) {
+        return isoRequirementsService.getRequirementsByStandard(standard);
+      }
+      return isoRequirementsService.getAllRequirements();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos - os requisitos ISO não mudam frequentemente
   });
 
   return {
-    requirements: standard ? standardRequirements : allRequirements,
-    isLoading: standard ? loadingStandard : loadingAll,
+    requirements: requirements || [],
+    isLoading,
     searchRequirements: (term: string) => isoRequirementsService.searchRequirements(term),
   };
 }

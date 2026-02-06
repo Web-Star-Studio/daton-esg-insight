@@ -46,9 +46,9 @@ export function ISOReferencesSelector({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
-  const { requirements, isLoading } = useISORequirements(selectedStandard as ISOStandardType | undefined);
+  const { requirements, isLoading } = useISORequirements(selectedStandard as ISOStandardType | null);
 
-  const filteredRequirements = requirements?.filter(req =>
+  const filteredRequirements = (requirements || []).filter(req =>
     req.clause_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     req.clause_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     req.description.toLowerCase().includes(searchTerm.toLowerCase())
