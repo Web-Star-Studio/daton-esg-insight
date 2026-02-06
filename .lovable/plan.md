@@ -1,187 +1,147 @@
 
-# Plano de Correção: Race Condition em Múltiplas Páginas Protegidas
+# Plano de Correção: Data Um Dia Atrás e Seleção de Avaliadores
 
-## Diagnóstico
+## Problemas Identificados
 
-Durante o teste end-to-end do sistema, identifiquei **4 páginas adicionais** com o mesmo problema de race condition que foi corrigido em `GestaoTreinamentos` e `GestaoDesempenho`.
+### Problema 1: Data exibida um dia atrás
+Na tela de Gestão de Treinamentos, as datas dos programas (início e término) aparecem sempre um dia antes do que foi cadastrado.
 
-### Páginas Afetadas
+**Causa**: O código usa `new Date()` diretamente com strings ISO (YYYY-MM-DD). Isso causa o famoso problema de timezone:
+- JavaScript interpreta "2026-01-26" como meia-noite UTC
+- No Brasil (UTC-3), meia-noite UTC = 21:00 do dia **anterior**
+- Resultado: 26/01/2026 aparece como 25/01/2026
 
-| Página | Arquivo | Queries com `enabled: !!user` |
-|--------|---------|-------------------------------|
-| Gestão de Stakeholders | `src/pages/GestaoStakeholders.tsx` | 2 queries (linhas 52, 58) |
-| Configuração Organizacional | `src/pages/ConfiguracaoOrganizacional.tsx` | 1 query (linha 92) |
-| Coleta de Dados | `src/pages/ColetaDados.tsx` | 2 queries (linhas 65, 71) |
-| Análise de Materialidade | `src/pages/AnaliseMaterialidade.tsx` | 2 queries (linhas 44, 50) |
-| Formulários Customizados | `src/pages/FormulariosCustomizados.tsx` | useEffect com authLoading (linha 52) |
+**Local afetado**: `src/pages/GestaoTreinamentos.tsx`, linhas 714-716
 
-### Arquivos que NÃO precisam de correção
+### Problema 2: Seleção de avaliadores não encontra colaboradores
+Ao buscar colaboradores para "Responsável pela Avaliação", a busca por nome não funciona - mesmo digitando "elian", retorna "Nenhum colaborador encontrado" (mas existem 4 "Eliana/Eliane" no banco).
 
-- `usePermissions.tsx` - Hook reutilizável, condição faz sentido
-- `useNotificationCounts.tsx` - Condição complexa com companyId
-- Componentes modais/widgets - Usam condições específicas de dados
+**Causa**: O componente `Command` do shadcn faz filtragem interna baseada no atributo `value` do `CommandItem`. O código atual usa `value={emp.id}` (UUID), então quando o usuário digita "elian", o Command procura UUIDs que contenham "elian" - que obviamente não existem.
 
-### Por que o problema ocorre?
-
-Todas essas páginas estão envolvidas pelo `ProtectedRoute`, que já garante:
-1. `isLoading === false`
-2. `user !== null`
-
-Porém, devido a timing do React Context, o componente filho pode ler `user = null` por um frame antes de receber a atualização, fazendo com que:
-- `enabled: !!user` seja `false`
-- Queries retornem arrays vazios `[]`
-- UI mostre "Nenhum dado encontrado"
+**Local afetado**: `src/components/TrainingProgramModal.tsx`, linha 1095
 
 ---
 
 ## Solução
 
-Aplicar o mesmo padrão de correção usado em `GestaoTreinamentos` e `GestaoDesempenho`:
+### Correção 1: Usar `formatDateDisplay` para datas
 
-1. **Remover `enabled: !!user`** de todas as queries em páginas protegidas
-2. **Manter loading states** baseados no estado das queries
-3. **Confiar no ProtectedRoute** para garantia de autenticação
+O utilitário `formatDateDisplay` já existe e está importado, mas não está sendo usado. Ele usa `T12:00:00` para evitar o problema de timezone.
+
+**Antes (linha 714)**:
+```typescript
+{program.start_date && format(new Date(program.start_date), "dd/MM/yyyy", { locale: ptBR })}
+```
+
+**Depois**:
+```typescript
+{program.start_date && formatDateDisplay(program.start_date)}
+```
+
+### Correção 2: Usar nome no `value` do `CommandItem`
+
+O `Command` precisa que o `value` contenha o texto buscável. A solução é usar uma combinação de nome + código como `value`, mas manter o `onSelect` usando o ID.
+
+**Antes (linha 1095)**:
+```typescript
+value={emp.id}
+```
+
+**Depois**:
+```typescript
+value={`${emp.full_name} ${emp.employee_code || ''}`}
+```
+
+Também precisamos desabilitar a filtragem interna do Command quando já estamos filtrando manualmente pelo `evaluatorSearchTerm`.
 
 ---
 
-## Mudanças por Arquivo
+## Arquivos a Modificar
 
-### 1. GestaoStakeholders.tsx
-
-```typescript
-// REMOVER enabled: !!user das queries
-const { data: stakeholders = [], isLoading } = useQuery({
-  queryKey: ['stakeholders'],
-  queryFn: () => getStakeholders(),
-  // enabled: !!user,  <- REMOVER
-});
-
-const { data: engagementStats } = useQuery({
-  queryKey: ['stakeholder-stats'],
-  queryFn: () => getStakeholderEngagementStats(),
-  // enabled: !!user,  <- REMOVER
-});
-```
-
-### 2. ConfiguracaoOrganizacional.tsx
-
-```typescript
-const { data: profile, isLoading } = useQuery({
-  queryKey: ['organizational-profile'],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from('companies')
-      .select('*')
-      .limit(1)
-      .single();
-    
-    if (error) throw error;
-    return data as OrganizationalProfile;
-  },
-  // enabled: !!user,  <- REMOVER
-});
-```
-
-### 3. ColetaDados.tsx
-
-```typescript
-const { data: tasks = [], isLoading: tasksLoading } = useQuery({
-  queryKey: ['data-collection-tasks'],
-  queryFn: () => dataCollectionService.getTasks(),
-  // enabled: !!user,  <- REMOVER
-});
-
-const { data: importJobs = [] } = useQuery({
-  queryKey: ['import-jobs'],
-  queryFn: () => dataCollectionService.getImportJobs(),
-  // enabled: !!user,  <- REMOVER
-});
-```
-
-### 4. AnaliseMaterialidade.tsx
-
-```typescript
-const { data: themes = [], isLoading: loadingThemes } = useQuery({
-  queryKey: ['materiality-themes'],
-  queryFn: () => getMaterialityThemes(),
-  // enabled: !!user,  <- REMOVER
-});
-
-const { data: assessments = [], isLoading: loadingAssessments } = useQuery({
-  queryKey: ['materiality-assessments'],
-  queryFn: () => getMaterialityAssessments(),
-  // enabled: !!user,  <- REMOVER
-  retry: 2,
-  retryDelay: 1000,
-});
-```
-
-### 5. FormulariosCustomizados.tsx
-
-```typescript
-// SIMPLIFICAR useEffect - remover verificação de authLoading
-useEffect(() => {
-  loadForms();
-}, []);  // Executar no mount, ProtectedRoute garante auth
-
-// REMOVER useAuth completamente se não for usado para mais nada
-```
+| Arquivo | Modificação |
+|---------|-------------|
+| `src/pages/GestaoTreinamentos.tsx` | Usar `formatDateDisplay` nas linhas 714-716 |
+| `src/components/TrainingProgramModal.tsx` | Ajustar `value` do `CommandItem` para usar nome |
 
 ---
 
-## Resumo de Impacto
+## Mudanças Detalhadas
 
-| Arquivo | Linhas a Modificar | Tipo de Mudança |
-|---------|-------------------|-----------------|
-| GestaoStakeholders.tsx | 52, 58 | Remover `enabled: !!user` |
-| ConfiguracaoOrganizacional.tsx | 92 | Remover `enabled: !!user` |
-| ColetaDados.tsx | 65, 71 | Remover `enabled: !!user` |
-| AnaliseMaterialidade.tsx | 44, 50 | Remover `enabled: !!user` |
-| FormulariosCustomizados.tsx | 25, 52-57 | Remover authLoading check |
+### 1. GestaoTreinamentos.tsx (linhas 714-716)
+
+**Atual**:
+```typescript
+<span>
+  {program.start_date && format(new Date(program.start_date), "dd/MM/yyyy", { locale: ptBR })}
+  {program.start_date && program.end_date && " - "}
+  {program.end_date && format(new Date(program.end_date), "dd/MM/yyyy", { locale: ptBR })}
+</span>
+```
+
+**Corrigido**:
+```typescript
+<span>
+  {program.start_date && formatDateDisplay(program.start_date)}
+  {program.start_date && program.end_date && " - "}
+  {program.end_date && formatDateDisplay(program.end_date)}
+</span>
+```
+
+### 2. TrainingProgramModal.tsx (linha 1083 e 1095)
+
+Adicionar `shouldFilter={false}` no `Command` para desabilitar a filtragem interna (já que filtramos manualmente via `filteredEvaluators`):
+
+**Linha 1083 - Atual**:
+```typescript
+<Command>
+```
+
+**Corrigido**:
+```typescript
+<Command shouldFilter={false}>
+```
+
+E mudar o `value` do `CommandItem` para usar o nome:
+
+**Linha 1095 - Atual**:
+```typescript
+value={emp.id}
+```
+
+**Corrigido**:
+```typescript
+value={`${emp.full_name} ${emp.employee_code || ''}`}
+```
 
 ---
 
 ## Resultado Esperado
 
-Após as correções:
-
 | Cenário | Antes | Depois |
 |---------|-------|--------|
-| Primeiro acesso a qualquer página protegida | Possível lista vazia | Dados carregam corretamente |
-| Navegação entre páginas | Inconsistente | Dados sempre presentes |
-| Reload da página | Race condition | Queries executam imediatamente |
+| Data início 26/01/2026 | Mostra 25/01/2026 | Mostra 26/01/2026 |
+| Buscar "elian" nos avaliadores | "Nenhum colaborador encontrado" | Encontra Eliana Panke, Eliane Pires, etc. |
+| Lista inicial de avaliadores | Apenas ~50 primeiros (por ordem alfabética) | Mesmos 50, mas busca funciona |
 
 ---
 
 ## Seção Técnica
 
-### Padrão Correto para Páginas Protegidas
+### Por que `formatDateDisplay` resolve o problema?
+
+A função `parseDateSafe` usada internamente adiciona `T12:00:00` às datas:
 
 ```typescript
-// Em página envolvida por ProtectedRoute:
-export default function MinhaPagena() {
-  // NÃO usar:
-  // const { user } = useAuth();
-  // enabled: !!user
-
-  // USAR:
-  const { data, isLoading } = useQuery({
-    queryKey: ['meus-dados'],
-    queryFn: () => fetchDados(),
-    // Sem enabled - ProtectedRoute garante auth
-  });
-
-  if (isLoading) {
-    return <Skeleton />; // Loading baseado na query
-  }
-
-  return <div>{/* Conteúdo */}</div>;
-}
+// Com T12:00:00, mesmo com conversão ±12h, o dia nunca muda
+const date = new Date(`${dateString}T12:00:00`);
 ```
 
-### Quando usar `enabled: !!user`?
+Meio-dia é um "ponto seguro" - qualquer timezone do mundo (UTC-12 a UTC+14) não consegue empurrar meio-dia para outro dia.
 
-- Em hooks reutilizáveis (ex: `usePermissions`)
-- Em componentes que podem aparecer em contextos públicos
-- Em modais/widgets condicionais
-- Em páginas públicas com features opcionais para usuários logados
+### Por que `shouldFilter={false}` é necessário?
+
+O componente `Command` do cmdk/shadcn tem filtragem automática habilitada por padrão. Quando o usuário digita na `CommandInput`, ele filtra os `CommandItem` pelo atributo `value`.
+
+No nosso caso, já filtramos manualmente via `filteredEvaluators`. Se deixarmos a filtragem dupla, o Command filtra novamente pelo `value`, o que causava o problema.
+
+Com `shouldFilter={false}`, delegamos toda a lógica de filtragem para nosso código, que já funciona corretamente com nome e código.
