@@ -1,196 +1,109 @@
 
-# Plano de Correção Definitivo: Programas de Treinamento Não Carregam
 
-## Diagnóstico Final
+# Plano de Correção: GestaoDesempenho.tsx - Mesmo Problema de Lista Vazia
 
-### Problema Identificado: Verificação Redundante de Autenticação
+## Resultado do Teste
 
-O componente `GestaoTreinamentos.tsx` está fazendo verificações duplicadas de autenticação que criam uma race condition:
+O teste da página **Gestão de Treinamentos** confirmou que a correção anterior funcionou - os 4 programas carregaram corretamente na primeira screenshot.
+
+Durante a análise do código, identifiquei que a página **Gestão de Desempenho** (`GestaoDesempenho.tsx`) tem exatamente o mesmo problema que foi corrigido em Treinamentos.
+
+## Problema Identificado
+
+O arquivo `src/pages/GestaoDesempenho.tsx` usa o padrão problemático:
 
 ```text
-┌──────────────────────────────────────────────────────────────────┐
-│  ProtectedRoute                                                  │
-│  ✓ Verifica isLoading do AuthContext                             │
-│  ✓ Verifica user existe                                          │
-│  ✓ Renderiza children SOMENTE quando user != null                │
-└──────────────────────────────────────────────────────────────────┘
-                              │
-                              v
-┌──────────────────────────────────────────────────────────────────┐
-│  GestaoTreinamentos                                              │
-│  ✗ Verifica authLoading NOVAMENTE (redundante)                   │
-│  ✗ Calcula isAuthenticated = !!user                              │
-│  ✗ Queries com enabled: isAuthenticated                          │
-└──────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│  Linha 36:  import { useAuthCheck } from '@/hooks/useAuthCheck';   │
+│  Linha 60:  const { isAuthenticated, ... } = useAuthCheck();       │
+│  Linha 82:  enabled: isAuthenticated  (query performance-stats)    │
+│  Linha 102: enabled: isAuthenticated  (query evaluations)          │
+│  Linha 109: enabled: isAuthenticated  (query goals)                │
+│  Linha 117: enabled: isAuthenticated  (query competencies)         │
+│  Linha 124: enabled: isAuthenticated  (query assessments)          │
+│  Linha 131: enabled: isAuthenticated  (query gaps)                 │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-### Por Que Isso Falha?
-
-Quando o `ProtectedRoute` renderiza `children`:
-- O `user` DEVERIA existir
-- Mas o React pode renderizar o componente filho ANTES do contexto atualizar completamente
-- O filho le `user = null` momentaneamente
-- As queries ficam com `enabled: false`
-- O array vazio `[]` e renderizado como "Nenhum programa encontrado"
-
-### Evidencia
-
-O network log mostra que a query funcionou corretamente as 14:14:18 e retornou 4 programas. O problema e que o componente renderizou antes da query executar (ou a query nao executou por `enabled: false`).
+Isso causa a mesma race condition que afetava Treinamentos:
+- O `ProtectedRoute` já valida autenticação
+- O `useAuthCheck()` faz verificação duplicada
+- As queries ficam com `enabled: false` durante o race
+- Dados não carregam
 
 ---
 
-## Solucao Proposta
+## Solução
 
-### Abordagem: Remover Verificacao Redundante e Confiar no ProtectedRoute
+Aplicar a mesma correção de `GestaoTreinamentos.tsx`:
 
-Como o `ProtectedRoute` ja garante que o usuario esta autenticado antes de renderizar o componente, nao e necessario verificar novamente dentro de `GestaoTreinamentos`.
-
-**Mudancas:**
-
-1. **Remover a verificacao de `authLoading`** - ja e feita pelo ProtectedRoute
-2. **Remover `enabled: isAuthenticated` das queries** - o componente so e renderizado quando autenticado
-3. **Manter o cache com staleTime** - performance otimizada
+1. **Remover `useAuthCheck`** - já está no contexto do `ProtectedRoute`
+2. **Remover `enabled: isAuthenticated`** das 6 queries
+3. **Remover o loading state de auth** (linhas 274-283)
+4. **Manter skeleton loaders** baseados no estado das queries
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Modificacao |
+| Arquivo | Modificação |
 |---------|-------------|
-| `src/pages/GestaoTreinamentos.tsx` | Remover verificacao redundante de auth, remover `enabled` das queries |
+| `src/pages/GestaoDesempenho.tsx` | Remover useAuthCheck e enabled das queries |
 
 ---
 
-## Mudancas Detalhadas
+## Mudanças Detalhadas
 
-### 1. Remover hook de autenticacao e verificacao de loading
+### 1. Remover import e hook
 
-**De:**
 ```typescript
-const { user, isLoading: authLoading } = useAuth();
-const isAuthenticated = !!user;
+// REMOVER linha 36:
+import { useAuthCheck } from "@/hooks/useAuthCheck";
 
-// ...
-
-if (authLoading) {
-  return (
-    <div className="flex items-center justify-center h-[60vh]">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-    </div>
-  );
-}
-```
-
-**Para:**
-```typescript
-// Remover useAuth() - ProtectedRoute ja garantiu autenticacao
-// Remover verificacao de authLoading
+// REMOVER linha 60:
+const { isAuthenticated, isLoading: authLoading, error: authError, retry: authRetry } = useAuthCheck();
 ```
 
 ### 2. Remover `enabled: isAuthenticated` de todas as queries
 
-**De:**
-```typescript
-const { data: programs = [] } = useQuery({
-  queryKey: ['training-programs'],
-  queryFn: getTrainingPrograms,
-  staleTime: 2 * 60 * 1000,
-  enabled: isAuthenticated,
-});
-```
+Queries afetadas (6 no total):
+- `performance-stats` (linha 82)
+- `performance-evaluations` (linha 102)
+- `employee-goals` (linha 109)
+- `competency-matrix` (linha 117)
+- `competency-assessments` (linha 124)
+- `competency-gaps` (linha 131)
 
-**Para:**
-```typescript
-const { data: programs = [] } = useQuery({
-  queryKey: ['training-programs'],
-  queryFn: getTrainingPrograms,
-  staleTime: 2 * 60 * 1000,
-  // Sem enabled - ProtectedRoute garante que so chegamos aqui autenticados
-});
-```
+### 3. Remover verificação de authError (linhas 262-271)
 
-### 3. Adicionar loading state baseado nas queries
+O `ProtectedRoute` já trata erros de autenticação.
 
-Para melhor UX, mostrar loading enquanto as queries carregam:
+### 4. Remover loading state de auth (linhas 274-283)
 
-```typescript
-const { data: programs = [], isLoading: isLoadingPrograms } = useQuery({
-  queryKey: ['training-programs'],
-  queryFn: getTrainingPrograms,
-  staleTime: 2 * 60 * 1000,
-});
+Substituir por skeleton loaders baseados nas queries.
 
-// Na aba Programas, mostrar skeleton enquanto carrega
-{isLoadingPrograms ? (
-  <div className="space-y-4">
-    {[1,2,3].map(i => <Skeleton key={i} className="h-24" />)}
-  </div>
-) : (
-  // Lista de programas existente
-)}
-```
+### 5. Ajustar useEffect de inicialização (linhas 63-76)
+
+Mudar de `if (!isAuthenticated)` para sempre executar (o componente só monta quando autenticado).
 
 ---
 
 ## Resultado Esperado
 
-| Cenario | Antes | Depois |
-|---------|-------|--------|
-| Primeiro acesso | Lista vazia (race condition) | Dados carregados corretamente |
-| Verificacao de auth | Duplicada (ProtectedRoute + componente) | Unica (ProtectedRoute) |
-| Queries | Condicionadas a isAuthenticated | Executam imediatamente |
-| Loading state | Spinner de auth (incorreto) | Skeleton de conteudo (correto) |
+| Página | Antes | Depois |
+|--------|-------|--------|
+| Gestão de Treinamentos | Lista vazia corrigida | Dados carregando |
+| Gestão de Desempenho | Lista vazia | Dados carregando corretamente |
 
 ---
 
-## Fluxo Corrigido
+## Seção Técnica
 
-```text
-┌─────────────────────────────┐
-│  ProtectedRoute             │
-│  Verifica auth              │
-│  Renderiza quando OK        │
-└─────────────────────────────┘
-              │
-              v
-┌─────────────────────────────┐
-│  GestaoTreinamentos         │
-│  Queries executam           │
-│  imediatamente              │
-│  (sem condicao enabled)     │
-└─────────────────────────────┘
-              │
-              v
-┌─────────────────────────────┐
-│  Dados retornados           │
-│  Lista exibida ✓            │
-└─────────────────────────────┘
-```
+### Por que a correção em Treinamentos funcionou?
 
----
+A correção removeu a dependência de `useAuthCheck()`, fazendo as queries executarem imediatamente quando o componente monta. Como o `ProtectedRoute` só renderiza o componente após confirmar autenticação, as queries sempre têm uma sessão válida.
 
-## Secao Tecnica
+### Consistência do Codebase
 
-### Por Que Funciona?
+Após esta correção, nenhuma página protegida usará `useAuthCheck()`. O hook continuará disponível para casos específicos (páginas públicas com features opcionais para usuários logados), mas não será usado em rotas protegidas.
 
-O `ProtectedRoute` (linha 32-49 de ProtectedRoute.tsx) ja faz duas verificacoes:
-1. `if (isLoading)` → mostra skeleton
-2. `if (!user)` → redireciona para /auth
-
-Quando o componente filho e renderizado, e **garantido** que:
-- `isLoading === false`
-- `user !== null`
-- A sessao esta ativa
-
-Portanto, as queries dentro do componente podem executar imediatamente sem verificacao adicional.
-
-### Beneficios
-
-1. **Elimina race condition**: Queries executam imediatamente
-2. **Menos codigo**: Remove logica redundante
-3. **Melhor UX**: Loading state correto (skeleton de conteudo vs spinner de auth)
-4. **Consistente**: Mesmo padrao usado em outras paginas que funcionam
-
-### Nota Sobre Cache
-
-O `staleTime` de 2 minutos continua funcionando. A diferenca e que agora as queries executam no momento correto (quando o componente monta) em vez de esperar por uma condicao que pode falhar.
