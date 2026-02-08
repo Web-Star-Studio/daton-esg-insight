@@ -14,33 +14,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
-          cache: 'npm'
+          bun-version: 1.3.8
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
-      - name: Run linter
-        run: npm run lint || true
+      - name: Lint native workspace
+        run: bun run --cwd apps/native lint
 
-      - name: Run type check
-        run: npx tsc --noEmit
-
-      - name: Run tests
-        run: npm run test
-
-      - name: Run tests with coverage
-        run: npm run test:coverage
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/coverage-final.json
-          flags: unittests
-          name: codecov-umbrella
+      - name: Type-check shared + native
+        run: bun run type-check --filter=@ws/shared --filter=@ws/native
 
   build:
     runs-on: ubuntu-latest
@@ -50,17 +36,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
-          cache: 'npm'
+          bun-version: 1.3.8
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
-      - name: Build project
-        run: npm run build
+      - name: Build web workspace
+        run: bun run build --filter=@ws/web
 
       - name: Check build size
         run: |

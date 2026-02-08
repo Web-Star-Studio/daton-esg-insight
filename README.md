@@ -2,6 +2,15 @@
 
 Plataforma integrada de gestão ESG (Environmental, Social, Governance), qualidade e conformidade regulatória.
 
+## Monorepo Status
+
+Este repositório foi migrado para **Bun Workspaces + Turborepo**.
+
+- `apps/web`: app web atual (Vite, em fase de transição para mover `src/` do root)
+- `apps/native`: app mobile Expo (iOS-first) com Expo Router + Uniwind
+- `packages/backend`: backend Convex (esquema inicial para Social, Qualidade e Fornecedores)
+- `packages/shared`: tipos/contratos compartilhados
+
 ## Tech Stack
 
 - **Frontend:** React 18, TypeScript 5, Vite 5
@@ -15,9 +24,17 @@ Plataforma integrada de gestão ESG (Environmental, Social, Governance), qualida
 ## Instalação Rápida
 
 ```bash
-npm install
+bun install
 cp .env.example .env.local
-npm run dev
+bun run dev
+```
+
+### Rodar por workspace
+
+```bash
+bun run dev:web
+bun run dev:native
+bun run dev:backend
 ```
 
 ## Build para Produção

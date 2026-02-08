@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Turborepo
+.turbo
+
+# Expo Native
+apps/native/.expo
+apps/native/.expo-shared
+
+# Convex generated files
+packages/backend/convex/_generated
