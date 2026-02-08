@@ -5,11 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "cd ../.. && vite",
+    "dev:e2e": "cd ../.. && vite --host 127.0.0.1 --port 4173",
     "build": "cd ../.. && vite build",
     "build:dev": "cd ../.. && vite build --mode development",
     "lint": "cd ../.. && eslint src vite.config.ts eslint.config.js",
     "preview": "cd ../.. && vite preview",
-    "type-check": "cd ../.. && tsc --project tsconfig.app.json --noEmit && tsc --project tsconfig.node.json --noEmit"
+    "type-check": "cd ../.. && tsc --project tsconfig.app.json --noEmit && tsc --project tsconfig.node.json --noEmit",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:ui": "playwright test --ui",
+    "e2e:install": "playwright install chromium"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
@@ -106,6 +111,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",

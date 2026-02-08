@@ -19,7 +19,7 @@ Este repositório foi migrado para **Bun Workspaces + Turborepo**.
 - **State:** TanStack Query v5
 - **Forms:** React Hook Form + Zod
 - **Charts:** Recharts
-- **Testing:** Vitest + React Testing Library
+- **Testing:** Vitest + React Testing Library + Playwright (E2E)
 
 ## Instalação Rápida
 
@@ -35,6 +35,20 @@ bun run dev
 bun run dev:web
 bun run dev:native
 bun run dev:backend
+```
+
+### Testes E2E (Playwright)
+
+```bash
+bun run e2e:web:install
+bun run e2e:web
+```
+
+Para cenários autenticados (Social/Qualidade/Fornecedores), defina:
+
+```bash
+export E2E_EMAIL="seu-usuario@empresa.com"
+export E2E_PASSWORD="sua-senha"
 ```
 
 ## Build para Produção
