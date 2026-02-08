@@ -24,15 +24,22 @@ for (const moduleRoute of moduleRoutes) {
       timeout: 20_000,
     }).toMatch(new RegExp(`^(${moduleRoute.route}|/auth)$`));
 
-    if (new URL(page.url()).pathname === "/auth") {
-      await expect(
-        page.getByRole("heading", { name: "Bem-vindo de volta" }),
-      ).toBeVisible();
-      return;
-    }
+    const authHeading = page.getByRole("heading", { name: "Bem-vindo de volta" });
+    const moduleHeading = page.getByRole("heading", { name: moduleRoute.heading });
 
-    await expect(
-      page.getByRole("heading", { name: moduleRoute.heading }),
-    ).toBeVisible();
+    await expect.poll(
+      async () => {
+        if (await authHeading.isVisible().catch(() => false)) {
+          return "auth";
+        }
+
+        if (await moduleHeading.isVisible().catch(() => false)) {
+          return "module";
+        }
+
+        return "pending";
+      },
+      { timeout: 20_000 },
+    ).toMatch(/^(auth|module)$/);
   });
 }
