@@ -4,12 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --config ../../vite.config.ts --root ../..",
-    "build": "vite build --config ../../vite.config.ts --root ../..",
-    "build:dev": "vite build --config ../../vite.config.ts --root ../.. --mode development",
-    "lint": "eslint ../../src ../../vite.config.ts ../../eslint.config.js",
-    "preview": "vite preview --config ../../vite.config.ts --root ../..",
-    "type-check": "tsc --project ../../tsconfig.app.json --noEmit && tsc --project ../../tsconfig.node.json --noEmit"
+    "dev": "cd ../.. && vite",
+    "build": "cd ../.. && vite build",
+    "build:dev": "cd ../.. && vite build --mode development",
+    "lint": "cd ../.. && eslint src vite.config.ts eslint.config.js",
+    "preview": "cd ../.. && vite preview",
+    "type-check": "cd ../.. && tsc --project tsconfig.app.json --noEmit && tsc --project tsconfig.node.json --noEmit"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
