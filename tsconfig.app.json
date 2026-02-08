@@ -21,6 +21,12 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@ws/shared": [
+        "./packages/shared/src/index.ts"
+      ],
+      "@ws/shared/*": [
+        "./packages/shared/src/*"
       ]
     },
     "skipLibCheck": true,

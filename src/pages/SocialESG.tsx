@@ -15,16 +15,19 @@ import {
   Plus,
   TrendingUp,
   DollarSign,
-  Eye,
   Pencil,
   MapPin,
   Calendar,
-  Download
 } from "lucide-react";
-import { getEmployeesStats } from "@/services/employees";
-import { getSafetyMetrics } from "@/services/safetyIncidents";
-import { getTrainingMetrics } from "@/services/trainingPrograms";
-import { getSocialImpactMetrics, getSocialProjects, SocialProject } from "@/services/socialProjects";
+import {
+  getEmployeesStats,
+  getSafetyMetrics,
+  getTrainingMetrics,
+  getSocialImpactMetrics,
+  getSocialProjects,
+  getFilteredTrainingMetrics,
+  SocialProject,
+} from "@/services/socialGateway";
 import { ModuleSummaryCard } from "@/components/ModuleSummaryCard";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { SocialProjectModal } from "@/components/social/SocialProjectModal";
@@ -35,7 +38,6 @@ import { SocialDashboardFilters } from "@/components/social/SocialDashboardFilte
 import { TrainingByLocationChart } from "@/components/social/TrainingByLocationChart";
 import { TrainingBySectorChart } from "@/components/social/TrainingBySectorChart";
 import { EmployeeTrainingTable } from "@/components/social/EmployeeTrainingTable";
-import { getFilteredTrainingMetrics } from "@/services/socialDashboard";
 
 
 export default function SocialESG() {
