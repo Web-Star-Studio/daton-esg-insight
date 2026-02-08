@@ -27,3 +27,5 @@ export interface SupplierSummary extends CompanyScopedEntity {
 }
 
 export * from "./social";
+export * from "./quality";
+export * from "./suppliers";
