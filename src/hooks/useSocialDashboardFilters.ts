@@ -1,12 +1,5 @@
 import { useState, useMemo } from 'react';
-
-export interface SocialFilters {
-  location?: string;
-  department?: string;
-  position?: string;
-  minHours?: number;
-  maxHours?: number;
-}
+import type { SocialFilters } from '@ws/shared';
 
 export function useSocialDashboardFilters() {
   const [filters, setFilters] = useState<SocialFilters>({

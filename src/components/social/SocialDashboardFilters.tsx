@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Briefcase, UserCircle, Clock, X } from "lucide-react";
-import { SocialFilters } from "@/hooks/useSocialDashboardFilters";
-import { getFilterOptions } from "@/services/socialDashboard";
+import type { SocialFilters } from "@ws/shared";
+import { getFilterOptions } from "@/services/socialGateway";
 
 interface SocialDashboardFiltersProps {
   filters: SocialFilters;

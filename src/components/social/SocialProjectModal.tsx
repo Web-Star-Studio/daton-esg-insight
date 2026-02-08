@@ -9,10 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { createSocialProject, updateSocialProject, deleteSocialProject, SocialProject } from "@/services/socialProjects";
+import {
+  createSocialProject,
+  updateSocialProject,
+  deleteSocialProject,
+  SocialProject,
+} from "@/services/socialGateway";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { formErrorHandler } from "@/utils/formErrorHandler";
 
 const projectSchema = z.object({
@@ -76,7 +80,7 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
   useEffect(() => {
     const fetchCompanyId = async () => {
       try {
-        const { user, profile } = await formErrorHandler.checkAuth();
+        const { profile } = await formErrorHandler.checkAuth();
         setCompanyId(profile.company_id);
       } catch (error) {
         console.error('Error fetching company_id:', error);
@@ -127,10 +131,6 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
   }, [open, project, reset]);
 
   const onSubmit = async (data: ProjectFormData) => {
-    console.log('=== SOCIAL PROJECT SUBMISSION ===');
-    console.log('Form data:', data);
-    console.log('Company ID:', companyId);
-    
     if (!companyId) {
       toast.error('Erro ao identificar empresa. Tente novamente.');
       return;
@@ -141,7 +141,7 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
     try {
       const { beneficiaries_target, beneficiaries_reached, category, ...projectData } = data;
       
-      const projectPayload = {
+      const projectPayload: Omit<SocialProject, "id" | "created_at" | "updated_at"> = {
         ...projectData,
         company_id: companyId,
         impact_metrics: {
@@ -150,8 +150,6 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
           category,
         }
       };
-
-      console.log('Final payload:', projectPayload);
 
       if (project) {
         await formErrorHandler.updateRecord(
@@ -163,7 +161,7 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
         );
       } else {
         await formErrorHandler.createRecord(
-          () => createSocialProject(projectPayload as any),
+          () => createSocialProject(projectPayload),
           {
             formType: 'Projeto Social',
             successMessage: 'Projeto criado com sucesso!'

@@ -25,3 +25,5 @@ export interface SupplierSummary extends CompanyScopedEntity {
   displayName: string;
   status: "Ativo" | "Inativo" | "Suspenso";
 }
+
+export * from "./social";
