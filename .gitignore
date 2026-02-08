@@ -32,3 +32,8 @@ apps/native/.expo-shared
 
 # Convex generated files
 packages/backend/convex/_generated
+
+# Playwright E2E artifacts
+apps/web/playwright-report
+apps/web/test-results
+apps/web/e2e/.auth

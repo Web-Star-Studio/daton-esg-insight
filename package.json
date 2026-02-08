@@ -16,7 +16,10 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
-    "format": "turbo run format"
+    "format": "turbo run format",
+    "e2e:web": "turbo run e2e --filter=@ws/web",
+    "e2e:web:headed": "bun run --cwd apps/web e2e:headed",
+    "e2e:web:install": "bun run --cwd apps/web e2e:install"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",

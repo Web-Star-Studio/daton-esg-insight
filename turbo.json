@@ -17,6 +17,11 @@
       "dependsOn": ["^type-check"],
       "outputs": []
     },
+    "e2e": {
+      "cache": false,
+      "dependsOn": ["build"],
+      "outputs": []
+    },
     "format": {
       "outputs": []
     }
