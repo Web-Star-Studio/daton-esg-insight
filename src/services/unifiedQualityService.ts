@@ -1,7 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ConvexHttpClient } from "convex/browser";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/utils/logger";
+import type {
+  QualityActionPlanProgressContract,
+  QualityDashboardContract,
+  QualityIndicatorDataContract,
+  QualityMetricsContract,
+  QualityNonConformityStatsContract,
+  QualityPredictiveAnalysisContract,
+} from "@ws/shared";
 
 // Unified interfaces for quality management
 export interface QualityDashboard {
@@ -122,6 +131,11 @@ export interface PredictiveAnalysis {
 
 import type { RiskMatrixCell, RiskMatrixResult, LogContext } from "@/types/entities/quality";
 
+const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined;
+const convexQualityEnabled =
+  import.meta.env.VITE_USE_CONVEX_QUALITY === "true" && !!convexUrl;
+const convexClient = convexUrl ? new ConvexHttpClient(convexUrl) : null;
+
 class UnifiedQualityService {
   private debugMode = true; // Enable debug logging
 
@@ -131,9 +145,72 @@ class UnifiedQualityService {
     }
   }
 
+  private async getCurrentUserCompanyId(): Promise<string> {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile?.company_id) {
+      throw new Error("Empresa não encontrada para o usuário");
+    }
+
+    return profile.company_id;
+  }
+
+  private async convexQuery<T>(
+    name: string,
+    args: Record<string, unknown>,
+  ): Promise<T> {
+    if (!convexClient) {
+      throw new Error("Convex não configurado");
+    }
+    return (await convexClient.query(
+      name as unknown as never,
+      args as unknown as never,
+    )) as T;
+  }
+
   async getQualityDashboard(): Promise<QualityDashboard> {
     const startTime = Date.now();
     this.log('getQualityDashboard: Starting request');
+
+    if (convexQualityEnabled) {
+      try {
+        const companyId = await this.getCurrentUserCompanyId();
+        const convexData = await this.convexQuery<QualityDashboardContract>(
+          "quality:getQualityDashboard",
+          { companyId },
+        );
+        const insights = await this.generateQualityInsights({
+          metrics: convexData.metrics,
+          recentNCs: convexData.recentNCs,
+          plansProgress: convexData.plansProgress,
+        });
+        return {
+          metrics: convexData.metrics,
+          recentNCs: convexData.recentNCs,
+          plansProgress: convexData.plansProgress,
+          insights,
+        };
+      } catch (convexError) {
+        logger.warn(
+          "[QualityService] Convex getQualityDashboard failed, falling back",
+          "api",
+          { convexError },
+        );
+      }
+    }
 
     try {
       // Use edge function for comprehensive dashboard data
@@ -220,6 +297,23 @@ class UnifiedQualityService {
   async getQualityIndicators(): Promise<QualityIndicatorData> {
     const startTime = Date.now();
     this.log('getQualityIndicators: Starting request');
+
+    if (convexQualityEnabled) {
+      try {
+        const companyId = await this.getCurrentUserCompanyId();
+        const data = await this.convexQuery<QualityIndicatorDataContract>(
+          "quality:getQualityIndicators",
+          { companyId },
+        );
+        return data;
+      } catch (convexError) {
+        logger.warn(
+          "[QualityService] Convex getQualityIndicators failed, falling back",
+          "api",
+          { convexError },
+        );
+      }
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('quality-management', {
@@ -370,6 +464,23 @@ class UnifiedQualityService {
   }
 
   async getPredictiveAnalysis(): Promise<PredictiveAnalysis> {
+    if (convexQualityEnabled) {
+      try {
+        const companyId = await this.getCurrentUserCompanyId();
+        const convexData = await this.convexQuery<QualityPredictiveAnalysisContract>(
+          "quality:getPredictiveAnalysis",
+          { companyId },
+        );
+        return convexData;
+      } catch (convexError) {
+        logger.warn(
+          "[QualityService] Convex getPredictiveAnalysis failed, falling back",
+          "api",
+          { convexError },
+        );
+      }
+    }
+
     try {
       // Get historical data for analysis
       const { data: historicalNCs } = await supabase
@@ -489,6 +600,22 @@ class UnifiedQualityService {
   }
 
   async getQualityMetrics() {
+    if (convexQualityEnabled) {
+      try {
+        const companyId = await this.getCurrentUserCompanyId();
+        return await this.convexQuery<QualityMetricsContract>(
+          "quality:getQualityMetrics",
+          { companyId },
+        );
+      } catch (convexError) {
+        logger.warn(
+          "[QualityService] Convex getQualityMetrics failed, falling back",
+          "api",
+          { convexError },
+        );
+      }
+    }
+
     const { data, error } = await supabase.functions.invoke('quality-management', {
       body: { action: 'dashboard' }
     });
@@ -498,6 +625,22 @@ class UnifiedQualityService {
   }
 
   async getNonConformityStats() {
+    if (convexQualityEnabled) {
+      try {
+        const companyId = await this.getCurrentUserCompanyId();
+        return await this.convexQuery<QualityNonConformityStatsContract>(
+          "quality:getNonConformityStats",
+          { companyId },
+        );
+      } catch (convexError) {
+        logger.warn(
+          "[QualityService] Convex getNonConformityStats failed, falling back",
+          "api",
+          { convexError },
+        );
+      }
+    }
+
     const { data, error } = await supabase.functions.invoke('quality-management', {
       body: { action: 'nc-stats' }
     });
@@ -507,6 +650,22 @@ class UnifiedQualityService {
   }
 
   async getActionPlansProgress() {
+    if (convexQualityEnabled) {
+      try {
+        const companyId = await this.getCurrentUserCompanyId();
+        return await this.convexQuery<Array<QualityActionPlanProgressContract>>(
+          "quality:getActionPlansProgress",
+          { companyId },
+        );
+      } catch (convexError) {
+        logger.warn(
+          "[QualityService] Convex getActionPlansProgress failed, falling back",
+          "api",
+          { convexError },
+        );
+      }
+    }
+
     const { data, error } = await supabase.functions.invoke('quality-management', {
       body: { action: 'action-plans' }
     });
@@ -715,7 +874,7 @@ export const useCreateQualityIndicator = () => {
         description: "Indicador de qualidade criado com sucesso",
       });
     },
-    onError: (error) => {
+    onError: (_error) => {
       toast({
         variant: "destructive",
         title: "Erro",
@@ -742,7 +901,7 @@ export const useAddIndicatorMeasurement = () => {
         description: "Medição adicionada com sucesso",
       });
     },
-    onError: (error) => {
+    onError: (_error) => {
       toast({
         variant: "destructive",
         title: "Erro",

@@ -6,14 +6,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Building2 } from 'lucide-react';
+import {
+  createEmissionSupplier,
+  updateEmissionSupplier,
+  type EmissionSupplier,
+} from '@/services/emissionSuppliersGateway';
 
 interface SupplierManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  editingSupplier?: any;
+  editingSupplier?: EmissionSupplier | null;
 }
 
 export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSupplier }: SupplierManagementModalProps) {
@@ -27,8 +31,15 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
     contact_phone: editingSupplier?.contact_phone || '',
     has_inventory: editingSupplier?.has_inventory || false,
     scope_3_category: editingSupplier?.scope_3_category || '1',
-    annual_emissions_estimate: editingSupplier?.annual_emissions_estimate || '',
-    data_quality_score: editingSupplier?.data_quality_score || '3',
+    annual_emissions_estimate:
+      editingSupplier?.annual_emissions_estimate !== undefined &&
+      editingSupplier?.annual_emissions_estimate !== null
+        ? String(editingSupplier.annual_emissions_estimate)
+        : '',
+    data_quality_score:
+      editingSupplier?.data_quality_score !== undefined
+        ? String(editingSupplier.data_quality_score)
+        : '3',
     notes: editingSupplier?.notes || '',
   });
 
@@ -66,8 +77,15 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
           contact_phone: editingSupplier.contact_phone || '',
           has_inventory: editingSupplier.has_inventory || false,
           scope_3_category: editingSupplier.scope_3_category || '1',
-          annual_emissions_estimate: editingSupplier.annual_emissions_estimate || '',
-          data_quality_score: editingSupplier.data_quality_score || '3',
+          annual_emissions_estimate:
+            editingSupplier.annual_emissions_estimate !== undefined &&
+            editingSupplier.annual_emissions_estimate !== null
+              ? String(editingSupplier.annual_emissions_estimate)
+              : '',
+          data_quality_score:
+            editingSupplier.data_quality_score !== undefined
+              ? String(editingSupplier.data_quality_score)
+              : '3',
           notes: editingSupplier.notes || '',
         });
       } else {
@@ -92,38 +110,30 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
     setIsSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('Empresa não encontrada');
-
       const dataToSave = {
-        ...formData,
-        company_id: profile.company_id,
-        annual_emissions_estimate: formData.annual_emissions_estimate ? parseFloat(formData.annual_emissions_estimate) : null,
-        data_quality_score: parseInt(formData.data_quality_score),
+        supplier_name: formData.supplier_name,
+        cnpj: formData.cnpj || undefined,
+        category: formData.category,
+        contact_email: formData.contact_email || undefined,
+        contact_phone: formData.contact_phone || undefined,
+        has_inventory: formData.has_inventory,
+        scope_3_category: formData.scope_3_category,
+        annual_emissions_estimate: formData.annual_emissions_estimate
+          ? parseFloat(String(formData.annual_emissions_estimate))
+          : null,
+        data_quality_score: parseInt(formData.data_quality_score, 10),
+        notes: formData.notes || undefined,
       };
 
       if (editingSupplier) {
-        await supabase
-          .from('emission_suppliers')
-          .update(dataToSave)
-          .eq('id', editingSupplier.id);
+        await updateEmissionSupplier(editingSupplier.id, dataToSave);
         
         toast({
           title: 'Fornecedor atualizado!',
           description: 'Os dados do fornecedor foram atualizados com sucesso.',
         });
       } else {
-        await supabase
-          .from('emission_suppliers')
-          .insert(dataToSave);
+        await createEmissionSupplier(dataToSave);
         
         toast({
           title: 'Fornecedor cadastrado!',
