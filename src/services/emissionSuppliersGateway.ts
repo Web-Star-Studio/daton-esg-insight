@@ -165,6 +165,7 @@ async function getSuppliersFromSupabase(
   return ((data || []) as Array<EmissionSupplier>).map((row) =>
     normalizeSupplierRow({
       ...row,
+      status: "Ativo",
       id: row.id,
       company_id: row.company_id,
       supplier_name: row.supplier_name,
@@ -192,7 +193,11 @@ async function syncBatchToConvex(rows: Array<EmissionSupplier>): Promise<void> {
     return;
   }
 
-  await Promise.allSettled(rows.slice(0, 100).map((row) => syncSupplierToConvex(row)));
+  const batchSize = 50;
+  for (let index = 0; index < rows.length; index += batchSize) {
+    const batch = rows.slice(index, index + batchSize);
+    await Promise.allSettled(batch.map((row) => syncSupplierToConvex(row)));
+  }
 }
 
 export async function getEmissionSuppliers(): Promise<Array<EmissionSupplier>> {
@@ -205,11 +210,10 @@ export async function getEmissionSuppliers(): Promise<Array<EmissionSupplier>> {
         { companyId },
       );
 
-      const mapped = suppliers
-        .filter((supplier) => Boolean(supplier.sourceId))
-        .map((supplier) => mapContractToModel(supplier));
+      const hasUnsyncedRows = suppliers.some((supplier) => !supplier.sourceId);
+      const mapped = suppliers.map((supplier) => mapContractToModel(supplier));
 
-      if (mapped.length > 0) {
+      if (mapped.length > 0 && !hasUnsyncedRows) {
         return mapped;
       }
     } catch (error) {
@@ -252,6 +256,7 @@ export async function createEmissionSupplier(
 
   const row = normalizeSupplierRow({
     ...(data as EmissionSupplier),
+    status: "Ativo",
     id: data.id,
     company_id: data.company_id,
     supplier_name: data.supplier_name,
@@ -305,6 +310,7 @@ export async function updateEmissionSupplier(
 
   const row = normalizeSupplierRow({
     ...(data as EmissionSupplier),
+    status: "Ativo",
     id: data.id,
     company_id: data.company_id,
     supplier_name: data.supplier_name,
