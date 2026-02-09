@@ -195,6 +195,13 @@ const MonitoramentoEnergia = lazy(() => import("./pages/MonitoramentoEnergia"));
 const MonitoramentoEmissoes = lazy(() => import("./pages/MonitoramentoEmissoes"));
 const MonitoramentoResiduos = lazy(() => import("./pages/MonitoramentoResiduos"));
 
+// Landing page design variants
+const LandingTerra = lazy(() => import("./pages/LandingTerra"));
+const LandingNexus = lazy(() => import("./pages/LandingNexus"));
+const LandingAurea = lazy(() => import("./pages/LandingAurea"));
+const LandingPulso = lazy(() => import("./pages/LandingPulso"));
+const LandingSelva = lazy(() => import("./pages/LandingSelva"));
+
 // Páginas específicas mantidas
 const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
 const SystemStatus = lazy(() => import("./pages/SystemStatus"));
@@ -244,6 +251,13 @@ const AppContent = () => {
             {/* Landing Page - público */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/landing" element={<LandingPage />} />
+
+            {/* Landing page design variants */}
+            <Route path="/1" element={<LazyPageWrapper><LandingTerra /></LazyPageWrapper>} />
+            <Route path="/2" element={<LazyPageWrapper><LandingNexus /></LazyPageWrapper>} />
+            <Route path="/3" element={<LazyPageWrapper><LandingAurea /></LazyPageWrapper>} />
+            <Route path="/4" element={<LazyPageWrapper><LandingPulso /></LazyPageWrapper>} />
+            <Route path="/5" element={<LazyPageWrapper><LandingSelva /></LazyPageWrapper>} />
 
             {/* Rota de autenticação - pública */}
             <Route path="/auth" element={<Auth />} />
