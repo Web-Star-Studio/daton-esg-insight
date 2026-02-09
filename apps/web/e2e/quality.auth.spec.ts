@@ -20,4 +20,18 @@ test.describe("Quality Module", () => {
     ).toBeVisible();
     await expect(page.getByRole("tab", { name: /Indicadores|KPIs/ })).toBeVisible();
   });
+
+  test("loads non-conformities page and opens create dialog", async ({ page }) => {
+    await page.goto("/nao-conformidades");
+
+    await expect(page).toHaveURL(/\/nao-conformidades/);
+    await expect(
+      page.getByRole("heading", { name: "Não Conformidades" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Registrar NC" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Registrar Não Conformidade" }),
+    ).toBeVisible();
+  });
 });

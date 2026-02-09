@@ -4,6 +4,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit, BarChart3, TrendingUp, Activity, Settings, ClipboardList, ExternalLink, Trash2, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserAndCompany } from "@/utils/auth";
+import {
+  createNonConformity,
+  deleteNonConformity,
+  getNonConformities,
+  getNonConformity,
+} from "@/services/nonConformityGateway";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,38 +28,8 @@ import { NonConformitiesAdvancedDashboard } from "@/components/NonConformitiesAd
 import { ApprovalWorkflowManager } from "@/components/ApprovalWorkflowManager";
 import { NCAdvancedDashboard } from "@/components/non-conformity";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { getNCStatusLabel, getNCStatusColor, isNCOpen, isNCClosed, isNCInProgress } from "@/utils/ncStatusUtils";
 import { formatDateDisplay } from "@/utils/dateUtils";
-
-interface NonConformity {
-  id: string;
-  nc_number: string;
-  title: string;
-  description: string;
-  category: string;
-  severity: string;
-  source: string;
-  detected_date: string;
-  status: string;
-  created_at: string;
-  damage_level?: string;
-  impact_analysis?: string;
-  root_cause_analysis?: string;
-  corrective_actions?: string;
-  preventive_actions?: string;
-  effectiveness_evaluation?: string;
-  effectiveness_date?: string;
-  responsible_user_id?: string;
-  approved_by_user_id?: string;
-  approval_date?: string;
-  approval_notes?: string;
-  attachments?: any[];
-  due_date?: string;
-  completion_date?: string;
-  recurrence_count?: number;
-}
 
 export default function NaoConformidades() {
   const navigate = useNavigate();
@@ -118,85 +94,23 @@ export default function NaoConformidades() {
   const prefetchNCDetails = (ncId: string) => {
     queryClient.prefetchQuery({
       queryKey: ["non-conformity", ncId],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("non_conformities")
-          .select("*")
-          .eq("id", ncId)
-          .single();
-        
-        if (error) throw error;
-        return data;
-      },
+      queryFn: () => getNonConformity(ncId),
       staleTime: 2 * 60 * 1000,
     });
   };
 
   const { data: nonConformities, isLoading } = useQuery({
     queryKey: ["non-conformities"],
-    queryFn: async () => {
-      // Get user's company
-      const userAndCompany = await getUserAndCompany();
-      if (!userAndCompany?.company_id) {
-        throw new Error('Company ID not found');
-      }
-
-      // First get the non-conformities filtered by company
-      const { data: ncs, error } = await supabase
-        .from("non_conformities")
-        .select("*")
-        .eq('company_id', userAndCompany.company_id)
-        .order("created_at", { ascending: false });
-      
-      if (error) throw error;
-      
-      // Then get user profiles for responsible and approved_by users
-      const userIds = [...new Set([
-        ...ncs.map(nc => nc.responsible_user_id).filter(Boolean),
-        ...ncs.map(nc => nc.approved_by_user_id).filter(Boolean)
-      ])];
-      
-      let profiles = [];
-      if (userIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", userIds);
-        profiles = profilesData || [];
-      }
-      
-      // Map user data to NCs
-      const enrichedNCs = ncs.map(nc => ({
-        ...nc,
-        responsible: profiles.find(p => p.id === nc.responsible_user_id),
-        approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
-      }));
-      
-      return enrichedNCs as NonConformity[];
-    },
+    queryFn: getNonConformities,
     staleTime: 30 * 1000, // 30 segundos
   });
 
   const createNCMutation = useMutation({
-    mutationFn: async (ncData: typeof newNCData) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error("Company ID não encontrado");
-
-      const ncNumber = generateNCNumber();
-      
-      // Limpar dados antes de enviar
-      const cleanData = {
-        title: ncData.title.trim(),
-        description: ncData.description.trim(),
-        category: ncData.category.trim() || null,
+    mutationFn: async (ncData: typeof newNCData) =>
+      await createNonConformity({
+        title: ncData.title,
+        description: ncData.description,
+        category: ncData.category,
         severity: ncData.severity,
         source: ncData.source,
         detected_date: ncData.detected_date,
@@ -204,25 +118,15 @@ export default function NaoConformidades() {
         responsible_user_id: ncData.responsible_user_id || null,
         organizational_unit_id: ncData.organizational_unit_id || null,
         sector: ncData.sector || null,
-        nc_number: ncNumber,
-        company_id: profile.company_id,
-        attachments: ncData.iso_standard ? {
-          iso_references: {
-            standard: ncData.iso_standard,
-            clauses: ncData.iso_clauses
-          }
-        } : null
-      };
-
-      const { data, error } = await supabase
-        .from("non_conformities")
-        .insert([cleanData])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
+        attachments: ncData.iso_standard
+          ? {
+              iso_references: {
+                standard: ncData.iso_standard,
+                clauses: ncData.iso_clauses,
+              },
+            }
+          : null,
+      }),
     onSuccess: () => {
       toast.success("Não conformidade registrada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["non-conformities"] });
@@ -247,15 +151,6 @@ export default function NaoConformidades() {
       toast.error(error.message || "Erro ao registrar não conformidade");
     }
   });
-
-  const generateNCNumber = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const timestamp = now.getTime().toString().slice(-4);
-    return `NC-${year}${month}${day}-${timestamp}`;
-  };
 
   const handleCreateNC = () => {
     // Validações
@@ -311,14 +206,7 @@ export default function NaoConformidades() {
   const [deleteNCId, setDeleteNCId] = useState<string | null>(null);
 
   const deleteNCMutation = useMutation({
-    mutationFn: async (ncId: string) => {
-      const { error } = await supabase
-        .from("non_conformities")
-        .delete()
-        .eq("id", ncId);
-      
-      if (error) throw error;
-    },
+    mutationFn: async (ncId: string) => await deleteNonConformity(ncId),
     onSuccess: () => {
       toast.success("Não conformidade excluída com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["non-conformities"] });

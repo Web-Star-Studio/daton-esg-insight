@@ -62,30 +62,43 @@ const socialSafetyIncident = {
 };
 
 const qualityNc = {
+  sourceId: v.optional(v.string()),
   companyId: v.string(),
   ncNumber: v.optional(v.string()),
   title: v.string(),
   description: v.optional(v.string()),
   category: v.optional(v.string()),
-  severity: v.union(
-    v.literal("Baixa"),
-    v.literal("Media"),
-    v.literal("Média"),
-    v.literal("Alta"),
-    v.literal("Critica"),
-    v.literal("Crítica"),
-  ),
-  status: v.union(
-    v.literal("Aberta"),
-    v.literal("Em Andamento"),
-    v.literal("Resolvida"),
-    v.literal("Fechada"),
-  ),
+  severity: v.string(),
+  status: v.string(),
   source: v.optional(v.string()),
   detectedDate: v.optional(v.string()),
   dueDate: v.optional(v.string()),
   resolvedAt: v.optional(v.string()),
   completedAt: v.optional(v.string()),
+  currentStage: v.optional(v.number()),
+  stage1CompletedAt: v.optional(v.string()),
+  stage2CompletedAt: v.optional(v.string()),
+  stage3CompletedAt: v.optional(v.string()),
+  stage4CompletedAt: v.optional(v.string()),
+  stage5CompletedAt: v.optional(v.string()),
+  stage6CompletedAt: v.optional(v.string()),
+  revisionNumber: v.optional(v.number()),
+  parentNcId: v.optional(v.string()),
+  organizationalUnitId: v.optional(v.string()),
+  processId: v.optional(v.string()),
+  sector: v.optional(v.string()),
+  damageLevel: v.optional(v.string()),
+  impactAnalysis: v.optional(v.string()),
+  rootCauseAnalysis: v.optional(v.string()),
+  correctiveActions: v.optional(v.string()),
+  preventiveActions: v.optional(v.string()),
+  effectivenessEvaluation: v.optional(v.string()),
+  effectivenessDate: v.optional(v.string()),
+  responsibleUserId: v.optional(v.string()),
+  approvedByUserId: v.optional(v.string()),
+  approvalDate: v.optional(v.string()),
+  approvalNotes: v.optional(v.string()),
+  recurrenceCount: v.optional(v.number()),
   createdAt: v.string(),
   updatedAt: v.string(),
 };
@@ -165,7 +178,8 @@ export default defineSchema({
     .index("by_companyId_and_status", ["companyId", "status"]),
   qualityNonConformities: defineTable(qualityNc)
     .index("by_companyId", ["companyId"])
-    .index("by_companyId_and_status", ["companyId", "status"]),
+    .index("by_companyId_and_status", ["companyId", "status"])
+    .index("by_companyId_and_sourceId", ["companyId", "sourceId"]),
   qualityActionPlans: defineTable(qualityActionPlan)
     .index("by_companyId", ["companyId"])
     .index("by_companyId_and_status", ["companyId", "status"]),

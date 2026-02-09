@@ -1,21 +1,9 @@
 import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
-const severityValidator = v.union(
-  v.literal("Baixa"),
-  v.literal("Media"),
-  v.literal("Média"),
-  v.literal("Alta"),
-  v.literal("Critica"),
-  v.literal("Crítica"),
-);
-
-const statusValidator = v.union(
-  v.literal("Aberta"),
-  v.literal("Em Andamento"),
-  v.literal("Resolvida"),
-  v.literal("Fechada"),
-);
+const severityValidator = v.string();
+const statusValidator = v.string();
 
 const trendDirectionValidator = v.union(
   v.literal("up"),
@@ -25,6 +13,7 @@ const trendDirectionValidator = v.union(
 
 const qualityNcReturn = v.object({
   id: v.id("qualityNonConformities"),
+  sourceId: v.optional(v.string()),
   companyId: v.string(),
   ncNumber: v.string(),
   title: v.string(),
@@ -37,9 +26,73 @@ const qualityNcReturn = v.object({
   dueDate: v.optional(v.string()),
   resolvedAt: v.optional(v.string()),
   completedAt: v.optional(v.string()),
+  currentStage: v.optional(v.number()),
+  stage1CompletedAt: v.optional(v.string()),
+  stage2CompletedAt: v.optional(v.string()),
+  stage3CompletedAt: v.optional(v.string()),
+  stage4CompletedAt: v.optional(v.string()),
+  stage5CompletedAt: v.optional(v.string()),
+  stage6CompletedAt: v.optional(v.string()),
+  revisionNumber: v.optional(v.number()),
+  parentNcId: v.optional(v.string()),
+  organizationalUnitId: v.optional(v.string()),
+  processId: v.optional(v.string()),
+  sector: v.optional(v.string()),
+  damageLevel: v.optional(v.string()),
+  impactAnalysis: v.optional(v.string()),
+  rootCauseAnalysis: v.optional(v.string()),
+  correctiveActions: v.optional(v.string()),
+  preventiveActions: v.optional(v.string()),
+  effectivenessEvaluation: v.optional(v.string()),
+  effectivenessDate: v.optional(v.string()),
+  responsibleUserId: v.optional(v.string()),
+  approvedByUserId: v.optional(v.string()),
+  approvalDate: v.optional(v.string()),
+  approvalNotes: v.optional(v.string()),
+  recurrenceCount: v.optional(v.number()),
   createdAt: v.string(),
   updatedAt: v.string(),
 });
+
+const qualityNcSyncArgs = {
+  companyId: v.string(),
+  sourceId: v.string(),
+  ncNumber: v.optional(v.string()),
+  title: v.string(),
+  description: v.optional(v.string()),
+  category: v.optional(v.string()),
+  severity: severityValidator,
+  status: statusValidator,
+  source: v.optional(v.string()),
+  detectedDate: v.optional(v.string()),
+  dueDate: v.optional(v.string()),
+  resolvedAt: v.optional(v.string()),
+  completedAt: v.optional(v.string()),
+  currentStage: v.optional(v.number()),
+  stage1CompletedAt: v.optional(v.string()),
+  stage2CompletedAt: v.optional(v.string()),
+  stage3CompletedAt: v.optional(v.string()),
+  stage4CompletedAt: v.optional(v.string()),
+  stage5CompletedAt: v.optional(v.string()),
+  stage6CompletedAt: v.optional(v.string()),
+  revisionNumber: v.optional(v.number()),
+  parentNcId: v.optional(v.string()),
+  organizationalUnitId: v.optional(v.string()),
+  processId: v.optional(v.string()),
+  sector: v.optional(v.string()),
+  damageLevel: v.optional(v.string()),
+  impactAnalysis: v.optional(v.string()),
+  rootCauseAnalysis: v.optional(v.string()),
+  correctiveActions: v.optional(v.string()),
+  preventiveActions: v.optional(v.string()),
+  effectivenessEvaluation: v.optional(v.string()),
+  effectivenessDate: v.optional(v.string()),
+  responsibleUserId: v.optional(v.string()),
+  approvedByUserId: v.optional(v.string()),
+  approvalDate: v.optional(v.string()),
+  approvalNotes: v.optional(v.string()),
+  recurrenceCount: v.optional(v.number()),
+};
 
 const qualityDashboardReturn = v.object({
   metrics: v.object({
@@ -78,24 +131,151 @@ const qualityDashboardReturn = v.object({
   ),
 });
 
-function normalizeSeverity(
-  severity: "Baixa" | "Media" | "Média" | "Alta" | "Critica" | "Crítica",
-): "Baixa" | "Média" | "Alta" | "Crítica" {
+function normalizeSeverity(severity: string): string {
   if (severity === "Media") {
     return "Média";
   }
   if (severity === "Critica") {
     return "Crítica";
   }
+  if (severity === "critical") {
+    return "Crítica";
+  }
+  if (severity === "major") {
+    return "Alta";
+  }
+  if (severity === "minor") {
+    return "Média";
+  }
+  if (severity === "observation") {
+    return "Baixa";
+  }
   return severity;
 }
 
 function isResolvedStatus(status: string): boolean {
-  return status === "Resolvida" || status === "Fechada";
+  return (
+    status === "Resolvida" ||
+    status === "Fechada" ||
+    status === "Encerrada" ||
+    status === "Aprovada" ||
+    status === "closed"
+  );
 }
 
 function isOpenStatus(status: string): boolean {
-  return status === "Aberta" || status === "Em Andamento";
+  return (
+    status === "Aberta" ||
+    status === "Pendente" ||
+    status === "Em Andamento" ||
+    status === "Em Tratamento" ||
+    status === "open" ||
+    status === "in_progress"
+  );
+}
+
+function normalizeStatus(status: string): string {
+  if (status === "Em Análise" || status === "Em Correção") {
+    return "Em Tratamento";
+  }
+  if (status === "approved") {
+    return "Aprovada";
+  }
+  if (status === "cancelled") {
+    return "Cancelada";
+  }
+  if (status === "pending") {
+    return "Pendente";
+  }
+  return status;
+}
+
+function mapNonConformityFromRow(
+  row: {
+    _id: Id<"qualityNonConformities">;
+    sourceId?: string;
+    companyId: string;
+    ncNumber?: string;
+    title: string;
+    description?: string;
+    category?: string;
+    severity: string;
+    status: string;
+    source?: string;
+    detectedDate?: string;
+    dueDate?: string;
+    resolvedAt?: string;
+    completedAt?: string;
+    currentStage?: number;
+    stage1CompletedAt?: string;
+    stage2CompletedAt?: string;
+    stage3CompletedAt?: string;
+    stage4CompletedAt?: string;
+    stage5CompletedAt?: string;
+    stage6CompletedAt?: string;
+    revisionNumber?: number;
+    parentNcId?: string;
+    organizationalUnitId?: string;
+    processId?: string;
+    sector?: string;
+    damageLevel?: string;
+    impactAnalysis?: string;
+    rootCauseAnalysis?: string;
+    correctiveActions?: string;
+    preventiveActions?: string;
+    effectivenessEvaluation?: string;
+    effectivenessDate?: string;
+    responsibleUserId?: string;
+    approvedByUserId?: string;
+    approvalDate?: string;
+    approvalNotes?: string;
+    recurrenceCount?: number;
+    createdAt: string;
+    updatedAt: string;
+  },
+) {
+  return {
+    id: row._id,
+    sourceId: row.sourceId,
+    companyId: row.companyId,
+    ncNumber: row.ncNumber ?? `NC-${String(row._id)}`,
+    title: row.title,
+    description: row.description,
+    category: row.category,
+    severity: normalizeSeverity(row.severity),
+    status: normalizeStatus(row.status),
+    source: row.source,
+    detectedDate: row.detectedDate,
+    dueDate: row.dueDate,
+    resolvedAt: row.resolvedAt,
+    completedAt: row.completedAt,
+    currentStage: row.currentStage,
+    stage1CompletedAt: row.stage1CompletedAt,
+    stage2CompletedAt: row.stage2CompletedAt,
+    stage3CompletedAt: row.stage3CompletedAt,
+    stage4CompletedAt: row.stage4CompletedAt,
+    stage5CompletedAt: row.stage5CompletedAt,
+    stage6CompletedAt: row.stage6CompletedAt,
+    revisionNumber: row.revisionNumber,
+    parentNcId: row.parentNcId,
+    organizationalUnitId: row.organizationalUnitId,
+    processId: row.processId,
+    sector: row.sector,
+    damageLevel: row.damageLevel,
+    impactAnalysis: row.impactAnalysis,
+    rootCauseAnalysis: row.rootCauseAnalysis,
+    correctiveActions: row.correctiveActions,
+    preventiveActions: row.preventiveActions,
+    effectivenessEvaluation: row.effectivenessEvaluation,
+    effectivenessDate: row.effectivenessDate,
+    responsibleUserId: row.responsibleUserId,
+    approvedByUserId: row.approvedByUserId,
+    approvalDate: row.approvalDate,
+    approvalNotes: row.approvalNotes,
+    recurrenceCount: row.recurrenceCount,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -158,23 +338,29 @@ export const getNonConformities = query({
       .order("desc")
       .collect();
 
-    return rows.map((row) => ({
-      id: row._id,
-      companyId: row.companyId,
-      ncNumber: row.ncNumber ?? `NC-${String(row._id)}`,
-      title: row.title,
-      description: row.description,
-      category: row.category,
-      severity: normalizeSeverity(row.severity),
-      status: row.status,
-      source: row.source,
-      detectedDate: row.detectedDate,
-      dueDate: row.dueDate,
-      resolvedAt: row.resolvedAt,
-      completedAt: row.completedAt,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-    }));
+    return rows.map((row) => mapNonConformityFromRow(row));
+  },
+});
+
+export const getNonConformityBySourceId = query({
+  args: {
+    companyId: v.string(),
+    sourceId: v.string(),
+  },
+  returns: v.union(qualityNcReturn, v.null()),
+  handler: async (ctx, args) => {
+    const row = await ctx.db
+      .query("qualityNonConformities")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    if (!row) {
+      return null;
+    }
+
+    return mapNonConformityFromRow(row);
   },
 });
 
@@ -643,6 +829,8 @@ export const getPredictiveAnalysis = query({
 export const createNonConformity = mutation({
   args: {
     companyId: v.string(),
+    sourceId: v.optional(v.string()),
+    ncNumber: v.optional(v.string()),
     title: v.string(),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -651,14 +839,43 @@ export const createNonConformity = mutation({
     source: v.optional(v.string()),
     detectedDate: v.optional(v.string()),
     dueDate: v.optional(v.string()),
+    resolvedAt: v.optional(v.string()),
+    completedAt: v.optional(v.string()),
+    currentStage: v.optional(v.number()),
+    stage1CompletedAt: v.optional(v.string()),
+    stage2CompletedAt: v.optional(v.string()),
+    stage3CompletedAt: v.optional(v.string()),
+    stage4CompletedAt: v.optional(v.string()),
+    stage5CompletedAt: v.optional(v.string()),
+    stage6CompletedAt: v.optional(v.string()),
+    revisionNumber: v.optional(v.number()),
+    parentNcId: v.optional(v.string()),
+    organizationalUnitId: v.optional(v.string()),
+    processId: v.optional(v.string()),
+    sector: v.optional(v.string()),
+    damageLevel: v.optional(v.string()),
+    impactAnalysis: v.optional(v.string()),
+    rootCauseAnalysis: v.optional(v.string()),
+    correctiveActions: v.optional(v.string()),
+    preventiveActions: v.optional(v.string()),
+    effectivenessEvaluation: v.optional(v.string()),
+    effectivenessDate: v.optional(v.string()),
+    responsibleUserId: v.optional(v.string()),
+    approvedByUserId: v.optional(v.string()),
+    approvalDate: v.optional(v.string()),
+    approvalNotes: v.optional(v.string()),
+    recurrenceCount: v.optional(v.number()),
   },
   returns: v.id("qualityNonConformities"),
   handler: async (ctx, args) => {
     const now = new Date();
     const nowIso = now.toISOString();
-    const ncNumber = `NC-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getTime()).slice(-4)}`;
+    const ncNumber =
+      args.ncNumber ??
+      `NC-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getTime()).slice(-4)}`;
 
     return await ctx.db.insert("qualityNonConformities", {
+      sourceId: args.sourceId,
       companyId: args.companyId,
       ncNumber,
       title: args.title,
@@ -669,6 +886,32 @@ export const createNonConformity = mutation({
       source: args.source,
       detectedDate: args.detectedDate,
       dueDate: args.dueDate,
+      resolvedAt: args.resolvedAt,
+      completedAt: args.completedAt,
+      currentStage: args.currentStage,
+      stage1CompletedAt: args.stage1CompletedAt,
+      stage2CompletedAt: args.stage2CompletedAt,
+      stage3CompletedAt: args.stage3CompletedAt,
+      stage4CompletedAt: args.stage4CompletedAt,
+      stage5CompletedAt: args.stage5CompletedAt,
+      stage6CompletedAt: args.stage6CompletedAt,
+      revisionNumber: args.revisionNumber,
+      parentNcId: args.parentNcId,
+      organizationalUnitId: args.organizationalUnitId,
+      processId: args.processId,
+      sector: args.sector,
+      damageLevel: args.damageLevel,
+      impactAnalysis: args.impactAnalysis,
+      rootCauseAnalysis: args.rootCauseAnalysis,
+      correctiveActions: args.correctiveActions,
+      preventiveActions: args.preventiveActions,
+      effectivenessEvaluation: args.effectivenessEvaluation,
+      effectivenessDate: args.effectivenessDate,
+      responsibleUserId: args.responsibleUserId,
+      approvedByUserId: args.approvedByUserId,
+      approvalDate: args.approvalDate,
+      approvalNotes: args.approvalNotes,
+      recurrenceCount: args.recurrenceCount,
       createdAt: nowIso,
       updatedAt: nowIso,
     });
@@ -689,6 +932,30 @@ export const updateNonConformity = mutation({
       dueDate: v.optional(v.string()),
       resolvedAt: v.optional(v.string()),
       completedAt: v.optional(v.string()),
+      currentStage: v.optional(v.number()),
+      stage1CompletedAt: v.optional(v.string()),
+      stage2CompletedAt: v.optional(v.string()),
+      stage3CompletedAt: v.optional(v.string()),
+      stage4CompletedAt: v.optional(v.string()),
+      stage5CompletedAt: v.optional(v.string()),
+      stage6CompletedAt: v.optional(v.string()),
+      revisionNumber: v.optional(v.number()),
+      parentNcId: v.optional(v.string()),
+      organizationalUnitId: v.optional(v.string()),
+      processId: v.optional(v.string()),
+      sector: v.optional(v.string()),
+      damageLevel: v.optional(v.string()),
+      impactAnalysis: v.optional(v.string()),
+      rootCauseAnalysis: v.optional(v.string()),
+      correctiveActions: v.optional(v.string()),
+      preventiveActions: v.optional(v.string()),
+      effectivenessEvaluation: v.optional(v.string()),
+      effectivenessDate: v.optional(v.string()),
+      responsibleUserId: v.optional(v.string()),
+      approvedByUserId: v.optional(v.string()),
+      approvalDate: v.optional(v.string()),
+      approvalNotes: v.optional(v.string()),
+      recurrenceCount: v.optional(v.number()),
     }),
   },
   returns: v.id("qualityNonConformities"),
@@ -708,6 +975,62 @@ export const deleteNonConformity = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
+    return null;
+  },
+});
+
+export const upsertNonConformityBySourceId = mutation({
+  args: qualityNcSyncArgs,
+  returns: v.id("qualityNonConformities"),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("qualityNonConformities")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    const nowIso = new Date().toISOString();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        ...args,
+        severity: normalizeSeverity(args.severity),
+        status: normalizeStatus(args.status),
+        updatedAt: nowIso,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("qualityNonConformities", {
+      ...args,
+      severity: normalizeSeverity(args.severity),
+      status: normalizeStatus(args.status),
+      ncNumber: args.ncNumber ?? `NC-${args.sourceId.slice(-8)}`,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    });
+  },
+});
+
+export const deleteNonConformityBySourceId = mutation({
+  args: {
+    companyId: v.string(),
+    sourceId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("qualityNonConformities")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+
     return null;
   },
 });
