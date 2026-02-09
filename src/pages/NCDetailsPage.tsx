@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, CheckCircle, PartyPopper } from "lucide-react";
-import { 
+import {
   NCStageWizard,
   NCStage2ImmediateAction,
   NCStage3CauseAnalysis,
@@ -13,7 +13,7 @@ import {
 } from "@/components/non-conformity";
 import { NCStage1Details } from "@/components/non-conformity/NCStage1Details";
 import { useNonConformity, useAdvanceNCStage } from "@/hooks/useNonConformity";
-import { supabase } from "@/integrations/supabase/client";
+import { closeNonConformity } from "@/services/nonConformityGateway";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -95,15 +95,7 @@ export default function NCDetailsPage() {
   const handleCloseNC = async () => {
     setIsClosing(true);
     try {
-      const { error } = await supabase
-        .from("non_conformities")
-        .update({ 
-          status: "closed",
-          completion_date: new Date().toISOString()
-        })
-        .eq("id", nc.id);
-
-      if (error) throw error;
+      await closeNonConformity(nc.id);
 
       toast({
         title: "NC Encerrada com Sucesso!",

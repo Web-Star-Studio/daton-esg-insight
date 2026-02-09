@@ -77,3 +77,48 @@ export interface QualityPredictiveAnalysisContract {
     priority: "high" | "medium" | "low";
   }>;
 }
+
+export interface QualityNonConformityContract {
+  id: string;
+  sourceId?: string;
+  companyId: string;
+  ncNumber: string;
+  title: string;
+  description?: string;
+  category?: string;
+  severity: string;
+  status: string;
+  source?: string;
+  detectedDate?: string;
+  dueDate?: string;
+  resolvedAt?: string;
+  completedAt?: string;
+  currentStage?: number;
+  stage1CompletedAt?: string;
+  stage2CompletedAt?: string;
+  stage3CompletedAt?: string;
+  stage4CompletedAt?: string;
+  stage5CompletedAt?: string;
+  stage6CompletedAt?: string;
+  revisionNumber?: number;
+  parentNcId?: string;
+  organizationalUnitId?: string;
+  processId?: string;
+  sector?: string;
+  damageLevel?: string;
+  impactAnalysis?: string;
+  rootCauseAnalysis?: string;
+  correctiveActions?: string;
+  preventiveActions?: string;
+  effectivenessEvaluation?: string;
+  effectivenessDate?: string;
+  responsibleUserId?: string;
+  approvedByUserId?: string;
+  approvalDate?: string;
+  approvalNotes?: string;
+  recurrenceCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type QualityNonConformitySyncInput = Omit<QualityNonConformityContract, "id">;

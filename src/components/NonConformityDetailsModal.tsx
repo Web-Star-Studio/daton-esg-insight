@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  approveNonConformity,
+  getNonConformity as getNonConformityById,
+  type NonConformityRecord,
+  updateNonConformity,
+} from "@/services/nonConformityGateway";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,30 +72,7 @@ export function NonConformityDetailsModal({
   // Query principal da NC
   const { data: nonConformity, isLoading } = useQuery({
     queryKey: ["non-conformity", nonConformityId],
-    queryFn: async () => {
-      const [ncResult, profilesResult] = await Promise.all([
-        supabase
-          .from("non_conformities")
-          .select("*")
-          .eq("id", nonConformityId)
-          .single(),
-        supabase
-          .from("profiles")
-          .select("id, full_name")
-          .limit(50)
-      ]);
-
-      if (ncResult.error) throw ncResult.error;
-      
-      const nc = ncResult.data;
-      const profiles = profilesResult.data || [];
-      
-      return {
-        ...nc,
-        responsible: profiles.find(p => p.id === nc.responsible_user_id),
-        approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
-      };
-    },
+    queryFn: () => getNonConformityById(nonConformityId),
     enabled: open && !!nonConformityId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -177,21 +160,16 @@ export function NonConformityDetailsModal({
       const sanitizedData = Object.keys(editData)
         .filter(key => allowedFields.includes(key))
         .reduce((obj, key) => {
-          obj[key] = editData[key];
+          (obj as Record<string, unknown>)[key] = editData[key];
           return obj;
-        }, {} as any);
+        }, {} as Partial<NonConformityRecord>);
 
       queryClient.setQueryData(["non-conformity", nonConformityId], {
         ...nonConformity,
         ...sanitizedData
       });
 
-      const { error } = await supabase
-        .from("non_conformities")
-        .update(sanitizedData)
-        .eq("id", nonConformityId);
-
-      if (error) throw error;
+      await updateNonConformity(nonConformityId, sanitizedData);
 
       toast.success("Não conformidade atualizada!");
       queryClient.invalidateQueries({ queryKey: ["non-conformities"] });
@@ -207,19 +185,11 @@ export function NonConformityDetailsModal({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const { error } = await supabase
-        .from("non_conformities")
-        .update({
-          approved_by_user_id: user.id,
-          approval_date: new Date().toISOString(),
-          status: "Aprovada"
-        })
-        .eq("id", nonConformityId);
-
-      if (error) throw error;
+      await approveNonConformity(nonConformityId, user.id);
 
       toast.success("Não conformidade aprovada!");
       queryClient.invalidateQueries({ queryKey: ["non-conformity", nonConformityId] });
+      queryClient.invalidateQueries({ queryKey: ["non-conformities"] });
     } catch (error) {
       toast.error("Erro ao aprovar não conformidade");
       console.error(error);
