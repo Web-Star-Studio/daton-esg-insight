@@ -140,6 +140,7 @@ const qualityRisk = {
 };
 
 const supplier = {
+  sourceId: v.optional(v.string()),
   companyId: v.string(),
   personType: v.optional(v.union(v.literal("PF"), v.literal("PJ"))),
   displayName: v.optional(v.string()),
@@ -188,6 +189,7 @@ export default defineSchema({
     .index("by_companyId_and_status", ["companyId", "status"]),
   suppliers: defineTable(supplier)
     .index("by_companyId", ["companyId"])
+    .index("by_companyId_and_sourceId", ["companyId", "sourceId"])
     .index("by_companyId_and_category", ["companyId", "category"])
     .index("by_companyId_and_status", ["companyId", "status"]),
 });

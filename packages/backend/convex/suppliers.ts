@@ -21,6 +21,7 @@ const supplierReturn = v.object({
 
 const emissionSupplierReturn = v.object({
   id: v.id("suppliers"),
+  sourceId: v.optional(v.string()),
   companyId: v.string(),
   supplierName: v.string(),
   cnpj: v.optional(v.string()),
@@ -36,6 +37,24 @@ const emissionSupplierReturn = v.object({
   createdAt: v.string(),
   updatedAt: v.string(),
 });
+
+const emissionSupplierSyncArgs = {
+  sourceId: v.string(),
+  companyId: v.string(),
+  supplierName: v.string(),
+  cnpj: v.optional(v.string()),
+  category: v.string(),
+  contactEmail: v.optional(v.string()),
+  contactPhone: v.optional(v.string()),
+  hasInventory: v.optional(v.boolean()),
+  scope3Category: v.optional(v.string()),
+  annualEmissionsEstimate: v.optional(v.number()),
+  dataQualityScore: v.optional(v.number()),
+  notes: v.optional(v.string()),
+  status: v.optional(supplierStatusValidator),
+  createdAt: v.optional(v.string()),
+  updatedAt: v.optional(v.string()),
+};
 
 export const listByCompany = query({
   args: {
@@ -98,6 +117,7 @@ export const getEmissionSuppliers = query({
       .filter((row) => !!row.supplierName)
       .map((row) => ({
         id: row._id,
+        sourceId: row.sourceId,
         companyId: row.companyId,
         supplierName: row.supplierName ?? row.displayName ?? "",
         cnpj: row.cnpj,
@@ -118,6 +138,7 @@ export const getEmissionSuppliers = query({
 
 export const createEmissionSupplier = mutation({
   args: {
+    sourceId: v.optional(v.string()),
     companyId: v.string(),
     supplierName: v.string(),
     cnpj: v.optional(v.string()),
@@ -135,6 +156,7 @@ export const createEmissionSupplier = mutation({
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
     return await ctx.db.insert("suppliers", {
+      sourceId: args.sourceId,
       companyId: args.companyId,
       supplierName: args.supplierName,
       displayName: args.supplierName,
@@ -230,6 +252,64 @@ export const deleteEmissionSupplier = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
+    return null;
+  },
+});
+
+export const upsertEmissionSupplierBySourceId = mutation({
+  args: emissionSupplierSyncArgs,
+  returns: v.id("suppliers"),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("suppliers")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    const nowIso = new Date().toISOString();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        ...args,
+        displayName: args.supplierName,
+        status: args.status ?? "Ativo",
+        updatedAt: args.updatedAt ?? nowIso,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("suppliers", {
+      ...args,
+      displayName: args.supplierName,
+      status: args.status ?? "Ativo",
+      hasInventory: args.hasInventory ?? false,
+      scope3Category: args.scope3Category ?? "1",
+      dataQualityScore: args.dataQualityScore ?? 3,
+      createdAt: args.createdAt ?? nowIso,
+      updatedAt: args.updatedAt ?? nowIso,
+    });
+  },
+});
+
+export const deleteEmissionSupplierBySourceId = mutation({
+  args: {
+    companyId: v.string(),
+    sourceId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("suppliers")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+
     return null;
   },
 });

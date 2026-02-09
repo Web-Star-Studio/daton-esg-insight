@@ -1,5 +1,6 @@
 export interface EmissionSupplierContract {
   id: string;
+  sourceId?: string;
   companyId: string;
   supplierName: string;
   cnpj?: string;
@@ -15,6 +16,8 @@ export interface EmissionSupplierContract {
   createdAt: string;
   updatedAt: string;
 }
+
+export type EmissionSupplierSyncInput = Omit<EmissionSupplierContract, "id">;
 
 export interface EmissionSupplierInput {
   supplierName: string;
