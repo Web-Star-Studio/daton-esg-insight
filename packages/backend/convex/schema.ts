@@ -139,6 +139,86 @@ const qualityRisk = {
   updatedAt: v.string(),
 };
 
+const qualityImmediateAction = {
+  sourceId: v.optional(v.string()),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  description: v.string(),
+  responsibleUserId: v.optional(v.string()),
+  dueDate: v.string(),
+  completionDate: v.optional(v.string()),
+  evidence: v.optional(v.string()),
+  attachments: v.optional(v.array(v.any())),
+  status: v.optional(v.string()),
+  createdByUserId: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+};
+
+const qualityCauseAnalysis = {
+  sourceId: v.optional(v.string()),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  analysisMethod: v.string(),
+  rootCause: v.optional(v.string()),
+  mainCauses: v.optional(v.array(v.string())),
+  similarNcIds: v.optional(v.array(v.any())),
+  attachments: v.optional(v.array(v.any())),
+  ishikawaData: v.optional(v.any()),
+  fiveWhysData: v.optional(v.array(v.any())),
+  responsibleUserId: v.optional(v.string()),
+  dueDate: v.optional(v.string()),
+  completedAt: v.optional(v.string()),
+  createdByUserId: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+};
+
+const qualityNcActionPlan = {
+  sourceId: v.optional(v.string()),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  whatAction: v.string(),
+  whyReason: v.optional(v.string()),
+  howMethod: v.optional(v.string()),
+  whereLocation: v.optional(v.string()),
+  whoResponsibleId: v.optional(v.string()),
+  whenDeadline: v.string(),
+  howMuchCost: v.optional(v.string()),
+  status: v.optional(v.string()),
+  evidence: v.optional(v.string()),
+  attachments: v.optional(v.array(v.any())),
+  evidenceAttachments: v.optional(v.array(v.any())),
+  completionDate: v.optional(v.string()),
+  completedAt: v.optional(v.string()),
+  orderIndex: v.optional(v.number()),
+  createdByUserId: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+};
+
+const qualityEffectiveness = {
+  sourceId: v.optional(v.string()),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  isEffective: v.optional(v.boolean()),
+  evidence: v.string(),
+  attachments: v.optional(v.array(v.any())),
+  requiresRiskUpdate: v.optional(v.boolean()),
+  riskUpdateNotes: v.optional(v.string()),
+  requiresSgqChange: v.optional(v.boolean()),
+  sgqChangeNotes: v.optional(v.string()),
+  evaluatedByUserId: v.optional(v.string()),
+  evaluatedAt: v.optional(v.string()),
+  postponedTo: v.optional(v.string()),
+  postponedReason: v.optional(v.string()),
+  postponedResponsibleId: v.optional(v.string()),
+  revisionNumber: v.optional(v.number()),
+  generatedRevisionNcId: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+};
+
 const supplier = {
   companyId: v.string(),
   personType: v.optional(v.union(v.literal("PF"), v.literal("PJ"))),
@@ -186,6 +266,39 @@ export default defineSchema({
   qualityRisks: defineTable(qualityRisk)
     .index("by_companyId", ["companyId"])
     .index("by_companyId_and_status", ["companyId", "status"]),
+  qualityImmediateActions: defineTable(qualityImmediateAction)
+    .index("by_companyId", ["companyId"])
+    .index("by_companyId_and_sourceId", ["companyId", "sourceId"])
+    .index("by_companyId_and_nonConformitySourceId", [
+      "companyId",
+      "nonConformitySourceId",
+    ]),
+  qualityCauseAnalyses: defineTable(qualityCauseAnalysis)
+    .index("by_companyId", ["companyId"])
+    .index("by_companyId_and_sourceId", ["companyId", "sourceId"])
+    .index("by_companyId_and_nonConformitySourceId", [
+      "companyId",
+      "nonConformitySourceId",
+    ]),
+  qualityNcActionPlans: defineTable(qualityNcActionPlan)
+    .index("by_companyId", ["companyId"])
+    .index("by_companyId_and_sourceId", ["companyId", "sourceId"])
+    .index("by_companyId_and_nonConformitySourceId", [
+      "companyId",
+      "nonConformitySourceId",
+    ]),
+  qualityEffectiveness: defineTable(qualityEffectiveness)
+    .index("by_companyId", ["companyId"])
+    .index("by_companyId_and_sourceId", ["companyId", "sourceId"])
+    .index("by_companyId_and_nonConformitySourceId", [
+      "companyId",
+      "nonConformitySourceId",
+    ])
+    .index("by_companyId_and_nonConformitySourceId_and_revisionNumber", [
+      "companyId",
+      "nonConformitySourceId",
+      "revisionNumber",
+    ]),
   suppliers: defineTable(supplier)
     .index("by_companyId", ["companyId"])
     .index("by_companyId_and_category", ["companyId", "category"])

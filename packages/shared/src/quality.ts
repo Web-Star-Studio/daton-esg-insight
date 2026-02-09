@@ -122,3 +122,95 @@ export interface QualityNonConformityContract {
 }
 
 export type QualityNonConformitySyncInput = Omit<QualityNonConformityContract, "id">;
+
+export interface QualityImmediateActionContract {
+  id: string;
+  sourceId?: string;
+  companyId: string;
+  nonConformitySourceId: string;
+  description: string;
+  responsibleUserId?: string;
+  dueDate: string;
+  completionDate?: string;
+  evidence?: string;
+  attachments?: Array<unknown>;
+  status?: string;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type QualityImmediateActionSyncInput = Omit<QualityImmediateActionContract, "id">;
+
+export interface QualityCauseAnalysisContract {
+  id: string;
+  sourceId?: string;
+  companyId: string;
+  nonConformitySourceId: string;
+  analysisMethod: string;
+  rootCause?: string;
+  mainCauses?: Array<string>;
+  similarNcIds?: Array<unknown>;
+  attachments?: Array<unknown>;
+  ishikawaData?: unknown;
+  fiveWhysData?: Array<unknown>;
+  responsibleUserId?: string;
+  dueDate?: string;
+  completedAt?: string;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type QualityCauseAnalysisSyncInput = Omit<QualityCauseAnalysisContract, "id">;
+
+export interface QualityNcActionPlanContract {
+  id: string;
+  sourceId?: string;
+  companyId: string;
+  nonConformitySourceId: string;
+  whatAction: string;
+  whyReason?: string;
+  howMethod?: string;
+  whereLocation?: string;
+  whoResponsibleId?: string;
+  whenDeadline: string;
+  howMuchCost?: string;
+  status?: string;
+  evidence?: string;
+  attachments?: Array<unknown>;
+  evidenceAttachments?: Array<unknown>;
+  completionDate?: string;
+  completedAt?: string;
+  orderIndex?: number;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type QualityNcActionPlanSyncInput = Omit<QualityNcActionPlanContract, "id">;
+
+export interface QualityEffectivenessContract {
+  id: string;
+  sourceId?: string;
+  companyId: string;
+  nonConformitySourceId: string;
+  isEffective?: boolean;
+  evidence: string;
+  attachments?: Array<unknown>;
+  requiresRiskUpdate?: boolean;
+  riskUpdateNotes?: string;
+  requiresSgqChange?: boolean;
+  sgqChangeNotes?: string;
+  evaluatedByUserId?: string;
+  evaluatedAt?: string;
+  postponedTo?: string;
+  postponedReason?: string;
+  postponedResponsibleId?: string;
+  revisionNumber?: number;
+  generatedRevisionNcId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type QualityEffectivenessSyncInput = Omit<QualityEffectivenessContract, "id">;

@@ -1,5 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getUserAndCompany } from "@/utils/auth";
+import {
+  createActionPlan as createActionPlanGateway,
+  createCauseAnalysis as createCauseAnalysisGateway,
+  createEffectiveness as createEffectivenessGateway,
+  createImmediateAction as createImmediateActionGateway,
+  deleteActionPlan as deleteActionPlanGateway,
+  deleteImmediateAction as deleteImmediateActionGateway,
+  getActionPlans as getActionPlansGateway,
+  getCauseAnalysis as getCauseAnalysisGateway,
+  getEffectiveness as getEffectivenessGateway,
+  getImmediateActions as getImmediateActionsGateway,
+  getNonConformities as getNonConformitiesGateway,
+  getNonConformity as getNonConformityGateway,
+  updateActionPlan as updateActionPlanGateway,
+  updateCauseAnalysis as updateCauseAnalysisGateway,
+  updateEffectiveness as updateEffectivenessGateway,
+  updateImmediateAction as updateImmediateActionGateway,
+  updateNonConformity as updateNonConformityGateway,
+} from "@/services/nonConformityGateway";
 
 // Types
 export interface NonConformity {
@@ -162,253 +181,87 @@ class NonConformityService {
   // ==================== NON-CONFORMITIES ====================
   
   async getNonConformities(): Promise<NonConformity[]> {
-    const companyId = await this.getCompanyId();
-    const { data, error } = await supabase
-      .from("non_conformities")
-      .select("*")
-      .eq('company_id', companyId)
-      .order("created_at", { ascending: false });
-    
-    if (error) throw error;
-    return data as NonConformity[];
+    return (await getNonConformitiesGateway()) as NonConformity[];
   }
 
   async getNonConformity(id: string): Promise<NonConformity> {
-    const { data, error } = await supabase
-      .from("non_conformities")
-      .select("*")
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data as NonConformity;
+    return (await getNonConformityGateway(id)) as NonConformity;
   }
 
   async updateNonConformity(id: string, updates: Partial<NonConformity>): Promise<NonConformity> {
-    const { data, error } = await supabase
-      .from("non_conformities")
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as NonConformity;
+    return (await updateNonConformityGateway(id, updates as any)) as NonConformity;
   }
 
   async advanceStage(id: string, currentStage: number): Promise<NonConformity> {
     const stageCompletedField = `stage_${currentStage}_completed_at`;
-    const { data, error } = await supabase
-      .from("non_conformities")
-      .update({
-        current_stage: currentStage + 1,
-        [stageCompletedField]: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as NonConformity;
+    return (await updateNonConformityGateway(id, {
+      current_stage: currentStage + 1,
+      [stageCompletedField]: new Date().toISOString(),
+    } as any)) as NonConformity;
   }
 
   // ==================== IMMEDIATE ACTIONS (Etapa 2) ====================
 
   async getImmediateActions(ncId: string): Promise<NCImmediateAction[]> {
-    const { data, error } = await supabase
-      .from("nc_immediate_actions")
-      .select(`
-        *,
-        responsible:profiles!nc_immediate_actions_responsible_user_id_fkey(id, full_name)
-      `)
-      .eq('non_conformity_id', ncId)
-      .order("created_at", { ascending: true });
-    
-    if (error) throw error;
-    return data as NCImmediateAction[];
+    return (await getImmediateActionsGateway(ncId)) as NCImmediateAction[];
   }
 
   async createImmediateAction(action: Omit<NCImmediateAction, 'id' | 'created_at' | 'updated_at'>): Promise<NCImmediateAction> {
-    const companyId = await this.getCompanyId();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const { data, error } = await supabase
-      .from("nc_immediate_actions")
-      .insert({
-        ...action,
-        company_id: companyId,
-        created_by_user_id: user?.id
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as NCImmediateAction;
+    return (await createImmediateActionGateway(action as any)) as NCImmediateAction;
   }
 
   async updateImmediateAction(id: string, updates: Partial<NCImmediateAction>): Promise<NCImmediateAction> {
-    const { data, error } = await supabase
-      .from("nc_immediate_actions")
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as NCImmediateAction;
+    return (await updateImmediateActionGateway(id, updates as any)) as NCImmediateAction;
   }
 
   async deleteImmediateAction(id: string): Promise<void> {
-    const { error } = await supabase
-      .from("nc_immediate_actions")
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    await deleteImmediateActionGateway(id);
   }
 
   // ==================== CAUSE ANALYSIS (Etapa 3) ====================
 
   async getCauseAnalysis(ncId: string): Promise<NCCauseAnalysis | null> {
-    const { data, error } = await supabase
-      .from("nc_cause_analysis")
-      .select("*")
-      .eq('non_conformity_id', ncId)
-      .maybeSingle();
-    
-    if (error) throw error;
-    return data as NCCauseAnalysis | null;
+    return (await getCauseAnalysisGateway(ncId)) as NCCauseAnalysis | null;
   }
 
   async createCauseAnalysis(analysis: Omit<NCCauseAnalysis, 'id' | 'created_at' | 'updated_at'>): Promise<NCCauseAnalysis> {
-    const companyId = await this.getCompanyId();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const { data, error } = await supabase
-      .from("nc_cause_analysis")
-      .insert({
-        ...analysis,
-        company_id: companyId,
-        created_by_user_id: user?.id
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as NCCauseAnalysis;
+    return (await createCauseAnalysisGateway(analysis as any)) as NCCauseAnalysis;
   }
 
   async updateCauseAnalysis(id: string, updates: Partial<NCCauseAnalysis>): Promise<NCCauseAnalysis> {
-    const { data, error } = await supabase
-      .from("nc_cause_analysis")
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as NCCauseAnalysis;
+    return (await updateCauseAnalysisGateway(id, updates as any)) as NCCauseAnalysis;
   }
 
   // ==================== ACTION PLANS (Etapa 4) ====================
 
   async getActionPlans(ncId: string): Promise<NCActionPlan[]> {
-    const { data, error } = await supabase
-      .from("nc_action_plans")
-      .select(`
-        *,
-        responsible:profiles!nc_action_plans_who_responsible_id_fkey(id, full_name)
-      `)
-      .eq('non_conformity_id', ncId)
-      .order("order_index", { ascending: true });
-    
-    if (error) throw error;
-    return data as NCActionPlan[];
+    return (await getActionPlansGateway(ncId)) as NCActionPlan[];
   }
 
   async createActionPlan(plan: Omit<NCActionPlan, 'id' | 'created_at' | 'updated_at'>): Promise<NCActionPlan> {
-    const companyId = await this.getCompanyId();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const { data, error } = await supabase
-      .from("nc_action_plans")
-      .insert({
-        ...plan,
-        company_id: companyId,
-        created_by_user_id: user?.id
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as NCActionPlan;
+    return (await createActionPlanGateway(plan as any)) as NCActionPlan;
   }
 
   async updateActionPlan(id: string, updates: Partial<NCActionPlan>): Promise<NCActionPlan> {
-    const { data, error } = await supabase
-      .from("nc_action_plans")
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as NCActionPlan;
+    return (await updateActionPlanGateway(id, updates as any)) as NCActionPlan;
   }
 
   async deleteActionPlan(id: string): Promise<void> {
-    const { error } = await supabase
-      .from("nc_action_plans")
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    await deleteActionPlanGateway(id);
   }
 
   // ==================== EFFECTIVENESS (Etapa 6) ====================
 
   async getEffectiveness(ncId: string): Promise<NCEffectiveness | null> {
-    const { data, error } = await supabase
-      .from("nc_effectiveness")
-      .select("*")
-      .eq('non_conformity_id', ncId)
-      .order("revision_number", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    
-    if (error) throw error;
-    return data as NCEffectiveness | null;
+    return (await getEffectivenessGateway(ncId)) as NCEffectiveness | null;
   }
 
   async createEffectiveness(effectiveness: Omit<NCEffectiveness, 'id' | 'created_at' | 'updated_at'>): Promise<NCEffectiveness> {
-    const companyId = await this.getCompanyId();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const { data, error } = await supabase
-      .from("nc_effectiveness")
-      .insert({
-        ...effectiveness,
-        company_id: companyId,
-        evaluated_by_user_id: user?.id,
-        evaluated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as NCEffectiveness;
+    return (await createEffectivenessGateway(effectiveness as any)) as NCEffectiveness;
   }
 
   async updateEffectiveness(id: string, updates: Partial<NCEffectiveness>): Promise<NCEffectiveness> {
-    const { data, error } = await supabase
-      .from("nc_effectiveness")
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as NCEffectiveness;
+    return (await updateEffectivenessGateway(id, updates as any)) as NCEffectiveness;
   }
 
   // ==================== TASKS ====================

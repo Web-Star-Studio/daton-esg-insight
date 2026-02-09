@@ -94,6 +94,170 @@ const qualityNcSyncArgs = {
   recurrenceCount: v.optional(v.number()),
 };
 
+const qualityImmediateActionReturn = v.object({
+  id: v.id("qualityImmediateActions"),
+  sourceId: v.optional(v.string()),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  description: v.string(),
+  responsibleUserId: v.optional(v.string()),
+  dueDate: v.string(),
+  completionDate: v.optional(v.string()),
+  evidence: v.optional(v.string()),
+  attachments: v.optional(v.array(v.any())),
+  status: v.optional(v.string()),
+  createdByUserId: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+});
+
+const qualityImmediateActionSyncArgs = {
+  sourceId: v.string(),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  description: v.string(),
+  responsibleUserId: v.optional(v.string()),
+  dueDate: v.string(),
+  completionDate: v.optional(v.string()),
+  evidence: v.optional(v.string()),
+  attachments: v.optional(v.array(v.any())),
+  status: v.optional(v.string()),
+  createdByUserId: v.optional(v.string()),
+  createdAt: v.optional(v.string()),
+  updatedAt: v.optional(v.string()),
+};
+
+const qualityCauseAnalysisReturn = v.object({
+  id: v.id("qualityCauseAnalyses"),
+  sourceId: v.optional(v.string()),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  analysisMethod: v.string(),
+  rootCause: v.optional(v.string()),
+  mainCauses: v.optional(v.array(v.string())),
+  similarNcIds: v.optional(v.array(v.any())),
+  attachments: v.optional(v.array(v.any())),
+  ishikawaData: v.optional(v.any()),
+  fiveWhysData: v.optional(v.array(v.any())),
+  responsibleUserId: v.optional(v.string()),
+  dueDate: v.optional(v.string()),
+  completedAt: v.optional(v.string()),
+  createdByUserId: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+});
+
+const qualityCauseAnalysisSyncArgs = {
+  sourceId: v.string(),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  analysisMethod: v.string(),
+  rootCause: v.optional(v.string()),
+  mainCauses: v.optional(v.array(v.string())),
+  similarNcIds: v.optional(v.array(v.any())),
+  attachments: v.optional(v.array(v.any())),
+  ishikawaData: v.optional(v.any()),
+  fiveWhysData: v.optional(v.array(v.any())),
+  responsibleUserId: v.optional(v.string()),
+  dueDate: v.optional(v.string()),
+  completedAt: v.optional(v.string()),
+  createdByUserId: v.optional(v.string()),
+  createdAt: v.optional(v.string()),
+  updatedAt: v.optional(v.string()),
+};
+
+const qualityNcActionPlanReturn = v.object({
+  id: v.id("qualityNcActionPlans"),
+  sourceId: v.optional(v.string()),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  whatAction: v.string(),
+  whyReason: v.optional(v.string()),
+  howMethod: v.optional(v.string()),
+  whereLocation: v.optional(v.string()),
+  whoResponsibleId: v.optional(v.string()),
+  whenDeadline: v.string(),
+  howMuchCost: v.optional(v.string()),
+  status: v.optional(v.string()),
+  evidence: v.optional(v.string()),
+  attachments: v.optional(v.array(v.any())),
+  evidenceAttachments: v.optional(v.array(v.any())),
+  completionDate: v.optional(v.string()),
+  completedAt: v.optional(v.string()),
+  orderIndex: v.optional(v.number()),
+  createdByUserId: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+});
+
+const qualityNcActionPlanSyncArgs = {
+  sourceId: v.string(),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  whatAction: v.string(),
+  whyReason: v.optional(v.string()),
+  howMethod: v.optional(v.string()),
+  whereLocation: v.optional(v.string()),
+  whoResponsibleId: v.optional(v.string()),
+  whenDeadline: v.string(),
+  howMuchCost: v.optional(v.string()),
+  status: v.optional(v.string()),
+  evidence: v.optional(v.string()),
+  attachments: v.optional(v.array(v.any())),
+  evidenceAttachments: v.optional(v.array(v.any())),
+  completionDate: v.optional(v.string()),
+  completedAt: v.optional(v.string()),
+  orderIndex: v.optional(v.number()),
+  createdByUserId: v.optional(v.string()),
+  createdAt: v.optional(v.string()),
+  updatedAt: v.optional(v.string()),
+};
+
+const qualityEffectivenessReturn = v.object({
+  id: v.id("qualityEffectiveness"),
+  sourceId: v.optional(v.string()),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  isEffective: v.optional(v.boolean()),
+  evidence: v.string(),
+  attachments: v.optional(v.array(v.any())),
+  requiresRiskUpdate: v.optional(v.boolean()),
+  riskUpdateNotes: v.optional(v.string()),
+  requiresSgqChange: v.optional(v.boolean()),
+  sgqChangeNotes: v.optional(v.string()),
+  evaluatedByUserId: v.optional(v.string()),
+  evaluatedAt: v.optional(v.string()),
+  postponedTo: v.optional(v.string()),
+  postponedReason: v.optional(v.string()),
+  postponedResponsibleId: v.optional(v.string()),
+  revisionNumber: v.optional(v.number()),
+  generatedRevisionNcId: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+});
+
+const qualityEffectivenessSyncArgs = {
+  sourceId: v.string(),
+  companyId: v.string(),
+  nonConformitySourceId: v.string(),
+  isEffective: v.optional(v.boolean()),
+  evidence: v.string(),
+  attachments: v.optional(v.array(v.any())),
+  requiresRiskUpdate: v.optional(v.boolean()),
+  riskUpdateNotes: v.optional(v.string()),
+  requiresSgqChange: v.optional(v.boolean()),
+  sgqChangeNotes: v.optional(v.string()),
+  evaluatedByUserId: v.optional(v.string()),
+  evaluatedAt: v.optional(v.string()),
+  postponedTo: v.optional(v.string()),
+  postponedReason: v.optional(v.string()),
+  postponedResponsibleId: v.optional(v.string()),
+  revisionNumber: v.optional(v.number()),
+  generatedRevisionNcId: v.optional(v.string()),
+  createdAt: v.optional(v.string()),
+  updatedAt: v.optional(v.string()),
+};
+
 const qualityDashboardReturn = v.object({
   metrics: v.object({
     totalNCs: v.number(),
@@ -273,6 +437,182 @@ function mapNonConformityFromRow(
     approvalDate: row.approvalDate,
     approvalNotes: row.approvalNotes,
     recurrenceCount: row.recurrenceCount,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function mapImmediateActionFromRow(
+  row: {
+    _id: Id<"qualityImmediateActions">;
+    sourceId?: string;
+    companyId: string;
+    nonConformitySourceId: string;
+    description: string;
+    responsibleUserId?: string;
+    dueDate: string;
+    completionDate?: string;
+    evidence?: string;
+    attachments?: Array<any>;
+    status?: string;
+    createdByUserId?: string;
+    createdAt: string;
+    updatedAt: string;
+  },
+) {
+  return {
+    id: row._id,
+    sourceId: row.sourceId,
+    companyId: row.companyId,
+    nonConformitySourceId: row.nonConformitySourceId,
+    description: row.description,
+    responsibleUserId: row.responsibleUserId,
+    dueDate: row.dueDate,
+    completionDate: row.completionDate,
+    evidence: row.evidence,
+    attachments: row.attachments,
+    status: row.status,
+    createdByUserId: row.createdByUserId,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function mapCauseAnalysisFromRow(
+  row: {
+    _id: Id<"qualityCauseAnalyses">;
+    sourceId?: string;
+    companyId: string;
+    nonConformitySourceId: string;
+    analysisMethod: string;
+    rootCause?: string;
+    mainCauses?: Array<string>;
+    similarNcIds?: Array<any>;
+    attachments?: Array<any>;
+    ishikawaData?: any;
+    fiveWhysData?: Array<any>;
+    responsibleUserId?: string;
+    dueDate?: string;
+    completedAt?: string;
+    createdByUserId?: string;
+    createdAt: string;
+    updatedAt: string;
+  },
+) {
+  return {
+    id: row._id,
+    sourceId: row.sourceId,
+    companyId: row.companyId,
+    nonConformitySourceId: row.nonConformitySourceId,
+    analysisMethod: row.analysisMethod,
+    rootCause: row.rootCause,
+    mainCauses: row.mainCauses,
+    similarNcIds: row.similarNcIds,
+    attachments: row.attachments,
+    ishikawaData: row.ishikawaData,
+    fiveWhysData: row.fiveWhysData,
+    responsibleUserId: row.responsibleUserId,
+    dueDate: row.dueDate,
+    completedAt: row.completedAt,
+    createdByUserId: row.createdByUserId,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function mapNcActionPlanFromRow(
+  row: {
+    _id: Id<"qualityNcActionPlans">;
+    sourceId?: string;
+    companyId: string;
+    nonConformitySourceId: string;
+    whatAction: string;
+    whyReason?: string;
+    howMethod?: string;
+    whereLocation?: string;
+    whoResponsibleId?: string;
+    whenDeadline: string;
+    howMuchCost?: string;
+    status?: string;
+    evidence?: string;
+    attachments?: Array<any>;
+    evidenceAttachments?: Array<any>;
+    completionDate?: string;
+    completedAt?: string;
+    orderIndex?: number;
+    createdByUserId?: string;
+    createdAt: string;
+    updatedAt: string;
+  },
+) {
+  return {
+    id: row._id,
+    sourceId: row.sourceId,
+    companyId: row.companyId,
+    nonConformitySourceId: row.nonConformitySourceId,
+    whatAction: row.whatAction,
+    whyReason: row.whyReason,
+    howMethod: row.howMethod,
+    whereLocation: row.whereLocation,
+    whoResponsibleId: row.whoResponsibleId,
+    whenDeadline: row.whenDeadline,
+    howMuchCost: row.howMuchCost,
+    status: row.status,
+    evidence: row.evidence,
+    attachments: row.attachments,
+    evidenceAttachments: row.evidenceAttachments,
+    completionDate: row.completionDate,
+    completedAt: row.completedAt,
+    orderIndex: row.orderIndex,
+    createdByUserId: row.createdByUserId,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function mapEffectivenessFromRow(
+  row: {
+    _id: Id<"qualityEffectiveness">;
+    sourceId?: string;
+    companyId: string;
+    nonConformitySourceId: string;
+    isEffective?: boolean;
+    evidence: string;
+    attachments?: Array<any>;
+    requiresRiskUpdate?: boolean;
+    riskUpdateNotes?: string;
+    requiresSgqChange?: boolean;
+    sgqChangeNotes?: string;
+    evaluatedByUserId?: string;
+    evaluatedAt?: string;
+    postponedTo?: string;
+    postponedReason?: string;
+    postponedResponsibleId?: string;
+    revisionNumber?: number;
+    generatedRevisionNcId?: string;
+    createdAt: string;
+    updatedAt: string;
+  },
+) {
+  return {
+    id: row._id,
+    sourceId: row.sourceId,
+    companyId: row.companyId,
+    nonConformitySourceId: row.nonConformitySourceId,
+    isEffective: row.isEffective,
+    evidence: row.evidence,
+    attachments: row.attachments,
+    requiresRiskUpdate: row.requiresRiskUpdate,
+    riskUpdateNotes: row.riskUpdateNotes,
+    requiresSgqChange: row.requiresSgqChange,
+    sgqChangeNotes: row.sgqChangeNotes,
+    evaluatedByUserId: row.evaluatedByUserId,
+    evaluatedAt: row.evaluatedAt,
+    postponedTo: row.postponedTo,
+    postponedReason: row.postponedReason,
+    postponedResponsibleId: row.postponedResponsibleId,
+    revisionNumber: row.revisionNumber,
+    generatedRevisionNcId: row.generatedRevisionNcId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -1022,6 +1362,318 @@ export const deleteNonConformityBySourceId = mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("qualityNonConformities")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+
+    return null;
+  },
+});
+
+export const getImmediateActionsBySourceId = query({
+  args: {
+    companyId: v.string(),
+    nonConformitySourceId: v.string(),
+  },
+  returns: v.array(qualityImmediateActionReturn),
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("qualityImmediateActions")
+      .withIndex("by_companyId_and_nonConformitySourceId", (q) =>
+        q
+          .eq("companyId", args.companyId)
+          .eq("nonConformitySourceId", args.nonConformitySourceId),
+      )
+      .collect();
+
+    return rows.map((row) => mapImmediateActionFromRow(row));
+  },
+});
+
+export const upsertImmediateActionBySourceId = mutation({
+  args: qualityImmediateActionSyncArgs,
+  returns: v.id("qualityImmediateActions"),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("qualityImmediateActions")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    const nowIso = new Date().toISOString();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        ...args,
+        updatedAt: args.updatedAt ?? nowIso,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("qualityImmediateActions", {
+      ...args,
+      createdAt: args.createdAt ?? nowIso,
+      updatedAt: args.updatedAt ?? nowIso,
+    });
+  },
+});
+
+export const deleteImmediateActionBySourceId = mutation({
+  args: {
+    companyId: v.string(),
+    sourceId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("qualityImmediateActions")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+
+    return null;
+  },
+});
+
+export const getCauseAnalysisBySourceId = query({
+  args: {
+    companyId: v.string(),
+    nonConformitySourceId: v.string(),
+  },
+  returns: v.union(qualityCauseAnalysisReturn, v.null()),
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("qualityCauseAnalyses")
+      .withIndex("by_companyId_and_nonConformitySourceId", (q) =>
+        q
+          .eq("companyId", args.companyId)
+          .eq("nonConformitySourceId", args.nonConformitySourceId),
+      )
+      .collect();
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const sorted = rows.slice().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return mapCauseAnalysisFromRow(sorted[0]);
+  },
+});
+
+export const upsertCauseAnalysisBySourceId = mutation({
+  args: qualityCauseAnalysisSyncArgs,
+  returns: v.id("qualityCauseAnalyses"),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("qualityCauseAnalyses")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    const nowIso = new Date().toISOString();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        ...args,
+        updatedAt: args.updatedAt ?? nowIso,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("qualityCauseAnalyses", {
+      ...args,
+      createdAt: args.createdAt ?? nowIso,
+      updatedAt: args.updatedAt ?? nowIso,
+    });
+  },
+});
+
+export const deleteCauseAnalysisBySourceId = mutation({
+  args: {
+    companyId: v.string(),
+    sourceId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("qualityCauseAnalyses")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+
+    return null;
+  },
+});
+
+export const getActionPlansBySourceId = query({
+  args: {
+    companyId: v.string(),
+    nonConformitySourceId: v.string(),
+  },
+  returns: v.array(qualityNcActionPlanReturn),
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("qualityNcActionPlans")
+      .withIndex("by_companyId_and_nonConformitySourceId", (q) =>
+        q
+          .eq("companyId", args.companyId)
+          .eq("nonConformitySourceId", args.nonConformitySourceId),
+      )
+      .collect();
+
+    return rows
+      .slice()
+      .sort((a, b) => {
+        const aOrder = a.orderIndex ?? Number.MAX_SAFE_INTEGER;
+        const bOrder = b.orderIndex ?? Number.MAX_SAFE_INTEGER;
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
+        }
+        return a.createdAt.localeCompare(b.createdAt);
+      })
+      .map((row) => mapNcActionPlanFromRow(row));
+  },
+});
+
+export const upsertActionPlanBySourceId = mutation({
+  args: qualityNcActionPlanSyncArgs,
+  returns: v.id("qualityNcActionPlans"),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("qualityNcActionPlans")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    const nowIso = new Date().toISOString();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        ...args,
+        updatedAt: args.updatedAt ?? nowIso,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("qualityNcActionPlans", {
+      ...args,
+      createdAt: args.createdAt ?? nowIso,
+      updatedAt: args.updatedAt ?? nowIso,
+    });
+  },
+});
+
+export const deleteActionPlanBySourceId = mutation({
+  args: {
+    companyId: v.string(),
+    sourceId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("qualityNcActionPlans")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+
+    return null;
+  },
+});
+
+export const getLatestEffectivenessBySourceId = query({
+  args: {
+    companyId: v.string(),
+    nonConformitySourceId: v.string(),
+  },
+  returns: v.union(qualityEffectivenessReturn, v.null()),
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("qualityEffectiveness")
+      .withIndex("by_companyId_and_nonConformitySourceId", (q) =>
+        q
+          .eq("companyId", args.companyId)
+          .eq("nonConformitySourceId", args.nonConformitySourceId),
+      )
+      .collect();
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const sorted = rows.slice().sort((a, b) => {
+      const aRevision = a.revisionNumber ?? 0;
+      const bRevision = b.revisionNumber ?? 0;
+      if (aRevision !== bRevision) {
+        return bRevision - aRevision;
+      }
+      return b.updatedAt.localeCompare(a.updatedAt);
+    });
+
+    return mapEffectivenessFromRow(sorted[0]);
+  },
+});
+
+export const upsertEffectivenessBySourceId = mutation({
+  args: qualityEffectivenessSyncArgs,
+  returns: v.id("qualityEffectiveness"),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("qualityEffectiveness")
+      .withIndex("by_companyId_and_sourceId", (q) =>
+        q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
+      )
+      .unique();
+
+    const nowIso = new Date().toISOString();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        ...args,
+        updatedAt: args.updatedAt ?? nowIso,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("qualityEffectiveness", {
+      ...args,
+      createdAt: args.createdAt ?? nowIso,
+      updatedAt: args.updatedAt ?? nowIso,
+    });
+  },
+});
+
+export const deleteEffectivenessBySourceId = mutation({
+  args: {
+    companyId: v.string(),
+    sourceId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("qualityEffectiveness")
       .withIndex("by_companyId_and_sourceId", (q) =>
         q.eq("companyId", args.companyId).eq("sourceId", args.sourceId),
       )
