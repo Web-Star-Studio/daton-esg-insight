@@ -1,57 +1,70 @@
 
-## Adicionar Tabela de Usuarios ao Platform Admin Dashboard
+## Dashboard Demo Interativo para Usuarios Nao Pagantes
 
-### Visao Geral
+### Objetivo
 
-Adicionar uma segunda tabela ao painel `/platform-admin` para listar todos os usuarios da plataforma, com filtro por empresa. O dashboard usara abas (Tabs) para alternar entre "Empresas" e "Usuarios".
+Criar uma pagina `/demo` com uma copia visual completa do dashboard principal, usando dados fictícios (mock) e sem nenhuma chamada ao banco de dados. O usuario podera interagir com a interface (clicar botoes, trocar filtros, navegar no carousel), mas nenhuma acao real sera executada.
 
-### Mudancas
-
-**1. Criar componente `PlatformUsersTable`** (`src/components/platform/PlatformUsersTable.tsx`)
-
-- Tabela com colunas: Nome, Email, Empresa, Cargo, Role, Status, Data de cadastro
-- Busca por nome ou email
-- Filtro por empresa (select/combobox com todas as empresas)
-- Filtro por status (ativo/inativo)
-- Consulta direta ao Supabase: `profiles` com join em `companies(name)` e `user_roles(role)`
-- Paginacao simples (50 por pagina)
-
-**2. Atualizar `PlatformAdminDashboard`** (`src/pages/PlatformAdminDashboard.tsx`)
-
-- Adicionar componente `Tabs` (do shadcn) com duas abas:
-  - **Empresas** - contem o `CompanyTable` existente
-  - **Usuarios** - contem o novo `PlatformUsersTable`
-- Manter os KPIs e "Empresas Mais Ativas" acima das abas
-
-### Detalhes Tecnicos
-
-**Query de usuarios:**
-```sql
-SELECT p.id, p.full_name, p.email, p.is_active, p.created_at, p.job_title,
-       c.name as company_name, c.id as company_id,
-       ur.role
-FROM profiles p
-LEFT JOIN companies c ON p.company_id = c.id
-LEFT JOIN user_roles ur ON ur.user_id = p.id
-ORDER BY p.created_at DESC
-```
-
-**Filtro por empresa:** Um `Select` dropdown populado com todas as empresas, permitindo filtrar a tabela. Quando selecionada uma empresa, a query adiciona `.eq('company_id', selectedCompanyId)`.
-
-**Estrutura do componente PlatformUsersTable:**
-- Estado: `search`, `selectedCompanyId`, `statusFilter`, `page`
-- useQuery para buscar usuarios com filtros server-side
-- useQuery separado para lista de empresas (para o dropdown)
-- Badges para role e status
-- Paginacao com `.range()`
-
-### Arquivos Modificados/Criados
+### Arquivos a Criar/Modificar
 
 | Arquivo | Acao |
 |---------|------|
-| `src/components/platform/PlatformUsersTable.tsx` | Criar |
-| `src/pages/PlatformAdminDashboard.tsx` | Modificar (adicionar Tabs) |
+| `src/pages/DemoDashboard.tsx` | Criar - Pagina principal do demo |
+| `src/App.tsx` | Modificar - Adicionar rota `/demo` publica |
 
-### Nenhuma migracao necessaria
+### Estrutura do DemoDashboard
 
-Os dados ja existem nas tabelas `profiles`, `companies` e `user_roles`. Nao e necessario alterar o banco.
+O componente sera uma copia do `Dashboard.tsx` atual, mas com as seguintes diferencas:
+
+1. **Sem autenticacao**: Rota publica (usando `LazyPageWrapper`, nao `ProtectedLazyPageWrapper`)
+2. **Dados mockados**: Todos os valores serao hardcoded (KPIs, atividades recentes, scores ESG, alertas)
+3. **Navegacao bloqueada**: Clicks em botoes de acao mostram um toast/modal incentivando o cadastro, em vez de navegar para outras paginas
+4. **Banner de demonstracao**: Um banner fixo no topo informando que e uma versao demo, com CTA para criar conta
+5. **Layout proprio**: Incluira sidebar e header proprios simplificados (sem depender do MainLayout/AuthContext)
+
+### Dados Mock
+
+```text
+KPIs:
+- Emissoes CO2: 1.247 tCO2e (-8.3%)
+- Conformidade: 94.2% (+2.1%)
+- Colaboradores: 342 (+5%)
+- Qualidade: 91.7% (+1.8%)
+- Economia Energia: 12.5 MWh
+- Reducao CO2: -15.3%
+- Satisfacao RH: 4.7/5
+
+ESG Score: 78% (E: 82%, S: 74%, G: 79%)
+
+Atividades Recentes: Mesmas 4 atividades estaticas ja existentes no Dashboard
+
+Alertas: 2-3 alertas mockados (licenca vencendo, meta em risco)
+```
+
+### Interacoes Permitidas (sem funcionalidade real)
+
+- Trocar periodo no date picker (atualiza visualmente mas mantem dados iguais)
+- Navegar no carousel de KPIs (funciona normalmente)
+- Clicar em botoes de acao rapida → mostra toast "Crie sua conta para acessar"
+- Clicar em "Ver todas" atividades → mesmo toast
+- Hover effects e animacoes funcionam normalmente
+
+### Rota
+
+```
+/demo → DemoDashboard (publica, sem autenticacao)
+```
+
+### Banner Demo
+
+Um banner fixo no topo da pagina com:
+- Texto: "Voce esta visualizando uma versao demonstrativa da plataforma Daton"
+- Botao CTA: "Criar conta gratuita" → navega para `/auth`
+- Estilo: gradiente sutil com borda, nao intrusivo
+
+### Detalhes Tecnicos
+
+- Reutiliza os componentes visuais existentes: `KPICarousel`, `EnhancedCard`, `ESGScoreGauge`, `Progress`, `Badge`
+- Nao importa `useAuth`, `useQuery`, nem faz chamadas ao Supabase
+- Sidebar simplificada com itens visuais (sem links reais) ou sem sidebar (apenas o conteudo centralizado com header proprio)
+- Usa `sonner` (toast) para feedback quando o usuario tenta interagir com funcionalidades bloqueadas
