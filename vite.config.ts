@@ -1,7 +1,16 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
 import { componentTagger } from "lovable-tagger";
+
+const require = createRequire(import.meta.url);
+const reactDomPath = path.dirname(require.resolve("react-dom/package.json"));
+const reactPeerPath = path.join(reactDomPath, "node_modules/react");
+const resolvedReactPath = existsSync(reactPeerPath)
+  ? reactPeerPath
+  : path.resolve(__dirname, "./node_modules/react");
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -13,8 +22,10 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "react": path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      "@ws/shared": path.resolve(__dirname, "./packages/shared/src"),
+      // Keep React paired with the installed react-dom version.
+      react: resolvedReactPath,
+      "react-dom": reactDomPath,
     },
     dedupe: ["react", "react-dom"],
   },

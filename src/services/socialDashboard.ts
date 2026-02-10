@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { SocialFilters } from "@/hooks/useSocialDashboardFilters";
+import type { SocialFilters } from "@ws/shared";
 
 export const getFilterOptions = async () => {
   const { data: employees, error } = await supabase

@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Plus, Search, Building2, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { SupplierManagementModal } from '@/components/suppliers/SupplierManagementModal';
+import {
+  deleteEmissionSupplier,
+  getEmissionSuppliers,
+  type EmissionSupplier,
+} from '@/services/emissionSuppliersGateway';
 import {
   Table,
   TableBody,
@@ -18,24 +22,15 @@ import { Badge } from '@/components/ui/badge';
 
 export default function Fornecedores() {
   const { toast } = useToast();
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Array<EmissionSupplier>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<any>(null);
+  const [editingSupplier, setEditingSupplier] = useState<EmissionSupplier | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadSuppliers();
-  }, []);
-
-  const loadSuppliers = async () => {
+  const loadSuppliers = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('emission_suppliers')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await getEmissionSuppliers();
       setSuppliers(data || []);
     } catch (error) {
       console.error('Erro ao carregar fornecedores:', error);
@@ -47,25 +42,24 @@ export default function Fornecedores() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    void loadSuppliers();
+  }, [loadSuppliers]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este fornecedor?')) return;
 
     try {
-      const { error } = await supabase
-        .from('emission_suppliers')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await deleteEmissionSupplier(id);
 
       toast({
         title: 'Fornecedor excluído',
         description: 'O fornecedor foi removido com sucesso.',
       });
       
-      loadSuppliers();
+      await loadSuppliers();
     } catch (error) {
       console.error('Erro ao excluir fornecedor:', error);
       toast({

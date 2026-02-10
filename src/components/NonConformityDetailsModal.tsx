@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  approveNonConformity,
+  getNonConformity as getNonConformityById,
+  type NonConformityRecord,
+  updateNonConformity,
+} from "@/services/nonConformityGateway";
+import { nonConformityService } from "@/services/nonConformityService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,30 +73,7 @@ export function NonConformityDetailsModal({
   // Query principal da NC
   const { data: nonConformity, isLoading } = useQuery({
     queryKey: ["non-conformity", nonConformityId],
-    queryFn: async () => {
-      const [ncResult, profilesResult] = await Promise.all([
-        supabase
-          .from("non_conformities")
-          .select("*")
-          .eq("id", nonConformityId)
-          .single(),
-        supabase
-          .from("profiles")
-          .select("id, full_name")
-          .limit(50)
-      ]);
-
-      if (ncResult.error) throw ncResult.error;
-      
-      const nc = ncResult.data;
-      const profiles = profilesResult.data || [];
-      
-      return {
-        ...nc,
-        responsible: profiles.find(p => p.id === nc.responsible_user_id),
-        approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
-      };
-    },
+    queryFn: () => getNonConformityById(nonConformityId),
     enabled: open && !!nonConformityId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -98,64 +82,28 @@ export function NonConformityDetailsModal({
   // Query das Ações Imediatas
   const { data: immediateActions } = useQuery({
     queryKey: ["nc-immediate-actions-modal", nonConformityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("nc_immediate_actions")
-        .select("*, responsible:profiles!nc_immediate_actions_responsible_user_id_fkey(id, full_name)")
-        .eq("non_conformity_id", nonConformityId)
-        .order("created_at", { ascending: true });
-      
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => nonConformityService.getImmediateActions(nonConformityId),
     enabled: open && !!nonConformityId,
   });
 
   // Query da Análise de Causa
   const { data: causeAnalysis } = useQuery({
     queryKey: ["nc-cause-analysis-modal", nonConformityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("nc_cause_analysis")
-        .select("*")
-        .eq("non_conformity_id", nonConformityId)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => nonConformityService.getCauseAnalysis(nonConformityId),
     enabled: open && !!nonConformityId,
   });
 
   // Query dos Planos de Ação
   const { data: actionPlans } = useQuery({
     queryKey: ["nc-action-plans-modal", nonConformityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("nc_action_plans")
-        .select("*, who_responsible:profiles!nc_action_plans_who_responsible_id_fkey(id, full_name)")
-        .eq("non_conformity_id", nonConformityId)
-        .order("order_index", { ascending: true });
-      
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => nonConformityService.getActionPlans(nonConformityId),
     enabled: open && !!nonConformityId,
   });
 
   // Query da Eficácia
   const { data: effectiveness } = useQuery({
     queryKey: ["nc-effectiveness-modal", nonConformityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("nc_effectiveness")
-        .select("*")
-        .eq("non_conformity_id", nonConformityId)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => nonConformityService.getEffectiveness(nonConformityId),
     enabled: open && !!nonConformityId,
   });
 
@@ -177,21 +125,16 @@ export function NonConformityDetailsModal({
       const sanitizedData = Object.keys(editData)
         .filter(key => allowedFields.includes(key))
         .reduce((obj, key) => {
-          obj[key] = editData[key];
+          (obj as Record<string, unknown>)[key] = editData[key];
           return obj;
-        }, {} as any);
+        }, {} as Partial<NonConformityRecord>);
 
       queryClient.setQueryData(["non-conformity", nonConformityId], {
         ...nonConformity,
         ...sanitizedData
       });
 
-      const { error } = await supabase
-        .from("non_conformities")
-        .update(sanitizedData)
-        .eq("id", nonConformityId);
-
-      if (error) throw error;
+      await updateNonConformity(nonConformityId, sanitizedData);
 
       toast.success("Não conformidade atualizada!");
       queryClient.invalidateQueries({ queryKey: ["non-conformities"] });
@@ -207,19 +150,11 @@ export function NonConformityDetailsModal({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const { error } = await supabase
-        .from("non_conformities")
-        .update({
-          approved_by_user_id: user.id,
-          approval_date: new Date().toISOString(),
-          status: "Aprovada"
-        })
-        .eq("id", nonConformityId);
-
-      if (error) throw error;
+      await approveNonConformity(nonConformityId, user.id);
 
       toast.success("Não conformidade aprovada!");
       queryClient.invalidateQueries({ queryKey: ["non-conformity", nonConformityId] });
+      queryClient.invalidateQueries({ queryKey: ["non-conformities"] });
     } catch (error) {
       toast.error("Erro ao aprovar não conformidade");
       console.error(error);
@@ -545,7 +480,7 @@ export function NonConformityDetailsModal({
                               </div>
                               <div>
                                 <p className="text-xs text-muted-foreground uppercase">Quem (Who)?</p>
-                                <p>{plan.who_responsible?.full_name || "N/A"}</p>
+                                <p>{plan.responsible?.full_name || "N/A"}</p>
                               </div>
                               <div>
                                 <p className="text-xs text-muted-foreground uppercase">Quando (When)?</p>

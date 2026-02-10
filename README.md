@@ -2,6 +2,15 @@
 
 Plataforma integrada de gestão ESG (Environmental, Social, Governance), qualidade e conformidade regulatória.
 
+## Monorepo Status
+
+Este repositório foi migrado para **Bun Workspaces + Turborepo**.
+
+- `apps/web`: app web atual (Vite, em fase de transição para mover `src/` do root)
+- `apps/native`: app mobile Expo (iOS-first) com Expo Router + Uniwind
+- `packages/backend`: backend Convex (esquema inicial para Social, Qualidade e Fornecedores)
+- `packages/shared`: tipos/contratos compartilhados
+
 ## Tech Stack
 
 - **Frontend:** React 18, TypeScript 5, Vite 5
@@ -10,14 +19,36 @@ Plataforma integrada de gestão ESG (Environmental, Social, Governance), qualida
 - **State:** TanStack Query v5
 - **Forms:** React Hook Form + Zod
 - **Charts:** Recharts
-- **Testing:** Vitest + React Testing Library
+- **Testing:** Vitest + React Testing Library + Playwright (E2E)
 
 ## Instalação Rápida
 
 ```bash
-npm install
+bun install
 cp .env.example .env.local
-npm run dev
+bun run dev
+```
+
+### Rodar por workspace
+
+```bash
+bun run dev:web
+bun run dev:native
+bun run dev:backend
+```
+
+### Testes E2E (Playwright)
+
+```bash
+bun run e2e:web:install
+bun run e2e:web
+```
+
+Para cenários autenticados (Social/Qualidade/Fornecedores), defina:
+
+```bash
+export E2E_EMAIL="seu-usuario@empresa.com"
+export E2E_PASSWORD="sua-senha"
 ```
 
 ## Build para Produção
