@@ -18528,6 +18528,7 @@ export type Database = {
           has_completed_onboarding: boolean | null
           id: string
           is_active: boolean | null
+          is_approved: boolean
           job_title: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role_type"]
@@ -18546,6 +18547,7 @@ export type Database = {
           has_completed_onboarding?: boolean | null
           id: string
           is_active?: boolean | null
+          is_approved?: boolean
           job_title?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role_type"]
@@ -18564,6 +18566,7 @@ export type Database = {
           has_completed_onboarding?: boolean | null
           id?: string
           is_active?: boolean | null
+          is_approved?: boolean
           job_title?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role_type"]
