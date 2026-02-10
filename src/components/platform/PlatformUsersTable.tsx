@@ -59,14 +59,13 @@ export function PlatformUsersTable() {
   const { data, isLoading } = useQuery({
     queryKey: ["platform-users", debouncedSearch, companyFilter, statusFilter, approvalFilter, page],
     queryFn: async () => {
-      const baseQuery = (supabase
-        .from("profiles") as any)
+      // Query 1: profiles + companies (sem user_roles, pois não há FK direta)
+      let query = supabase
+        .from("profiles")
         .select(
-          "id, full_name, email, is_active, is_approved, created_at, job_title, company_id, companies(name), user_roles(role)",
+          "id, full_name, email, is_active, is_approved, created_at, job_title, company_id, companies(name)",
           { count: "exact" }
-        );
-
-      let query = baseQuery
+        )
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
@@ -92,9 +91,26 @@ export function PlatformUsersTable() {
         query = query.eq("is_approved", false);
       }
 
-      const { data, error, count } = await query;
+      const { data: profiles, error, count } = await query;
       if (error) throw error;
-      return { users: data, total: count ?? 0 };
+
+      // Query 2: buscar roles separadamente
+      const userIds = (profiles ?? []).map((p: any) => p.id);
+      let roles: any[] = [];
+      if (userIds.length > 0) {
+        const { data: rolesData } = await supabase
+          .from("user_roles")
+          .select("user_id, role")
+          .in("user_id", userIds);
+        roles = rolesData ?? [];
+      }
+
+      // Combinar profiles + roles
+      const roleMap: Record<string, string> = {};
+      roles.forEach((r: any) => { roleMap[r.user_id] = r.role; });
+      const users = (profiles ?? []).map((p: any) => ({ ...p, role: roleMap[p.id] }));
+
+      return { users, total: count ?? 0 };
     },
   });
 
@@ -218,7 +234,7 @@ export function PlatformUsersTable() {
               </TableRow>
             ) : (
               users.map((user: any) => {
-                const role = user.user_roles?.[0]?.role;
+                const role = user.role;
                 const companyName =
                   (user.companies as any)?.name ?? "—";
                 const isPlatformAdmin = role === 'platform_admin';
