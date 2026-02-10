@@ -109,7 +109,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       const { data, error } = await supabase
         .from("employees")
         .select("id, full_name, employee_code, department, status")
-        .order("full_name");
+        .order("full_name")
+        .range(0, 4999);
       if (error) throw error;
       // Filtrar localmente para ser case-insensitive e incluir múltiplos status válidos
       const activeStatuses = ['ativo', 'férias', 'ferias', 'licença', 'licenca'];
