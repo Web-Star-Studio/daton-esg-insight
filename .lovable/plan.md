@@ -1,62 +1,38 @@
 
+## Correção: Build Error + Lista de Colaboradores Incompleta
 
-## Barra de Progresso de Etapas na Lista de NCs
-
-### O que sera feito
-
-Adicionar uma nova coluna **"Progresso"** na tabela de listagem de Nao Conformidades, exibindo uma barra de progresso visual baseada no campo `current_stage` (1 a 6) de cada NC.
-
-A barra mostrara visualmente em qual das 6 etapas a NC se encontra, com cores semanticas:
-- **Vermelho/Laranja** (etapas 1-2): NC no inicio, precisa de atencao
-- **Amarelo** (etapas 3-4): NC em andamento
-- **Verde** (etapas 5-6): NC avancada, sob controle
-
-### Visual proposto
-
-Cada linha da tabela tera:
-
-```text
-[====------] 2/6  Acao Imediata
-```
-
-- Barra de progresso fina (height 6px, rounded) preenchida proporcionalmente
-- Fracao "X/6" pequena
-- Nome da etapa atual em texto pequeno
-
-### Exemplo pratico com as NCs do usuario
-
-| NC | current_stage | Progresso Visual |
-|----|---------------|------------------|
-| NC-9995 | 1 (Registro) | [==========] 1/6 - barra vermelha, "preciso focar nela" |
-| NC-0902 | 5 (Implementacao) | [========--] 5/6 - barra verde, "nao preciso me preocupar" |
-
----
-
-### Detalhes tecnicos
-
-**Arquivo modificado**: `src/pages/NaoConformidades.tsx`
-
-1. Adicionar uma coluna "Progresso" no `TableHeader`, entre "Status" e "Data"
-2. Adicionar a celula correspondente no `TableBody` com:
-   - Componente `Progress` do Radix (ja instalado) ou uma `div` com width dinamico
-   - Texto auxiliar com nome da etapa e fracao
-   - Cor da barra baseada no `current_stage`:
-     - Etapas 1-2: vermelho/laranja (`bg-red-500` / `bg-orange-500`)
-     - Etapas 3-4: amarelo (`bg-yellow-500`)
-     - Etapas 5-6: verde (`bg-green-500`)
-
-**Mapa de etapas** (reutilizando labels existentes do `NCStageWizard`):
+### Problema Principal
+A correção anterior (`.range(0, 4999)`) ja esta no codigo, mas **nunca foi implantada** porque existe um erro de build bloqueando tudo:
 
 ```
-1 = Registro
-2 = Acao Imediata
-3 = Analise de Causa
-4 = Planejamento
-5 = Implementacao
-6 = Eficacia
+Could not find a matching package for 'npm:openai@^4.52.5'
 ```
 
-**Calculo do progresso**: `(current_stage / 6) * 100`
+Esse erro vem da tipagem interna do `@supabase/functions-js` tentando resolver o pacote `openai`. A solucao e criar um arquivo `deno.json` na pasta de edge functions para satisfazer essa dependencia.
 
-Nenhuma query, rota, endpoint ou copy existente sera alterada. Apenas uma coluna visual nova na tabela.
+### Solucao
 
+**Arquivo 1 - Criar `supabase/functions/deno.json`**
+
+Adicionar um arquivo de configuracao Deno com o mapeamento do pacote openai para resolver o erro de tipos:
+
+```json
+{
+  "imports": {
+    "npm:openai@^4.52.5": "https://esm.sh/openai@4.52.5"
+  }
+}
+```
+
+Isso resolve o erro de build sem alterar nenhuma funcionalidade. As edge functions continuam usando `fetch()` diretamente para chamar a API da OpenAI.
+
+### Resultado Esperado
+
+Com o build funcionando novamente:
+- A correcao `.range(0, 4999)` que ja esta no `TrainingProgramModal.tsx` entra em vigor
+- Todos os 1898+ colaboradores aparecerao na lista de participantes (letras A ate Z)
+- O modal de treinamento funcionara corretamente
+
+### Impacto
+- Nenhuma mudanca funcional
+- Apenas desbloqueio do build e ativacao da correcao ja existente
