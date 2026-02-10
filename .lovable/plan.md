@@ -1,41 +1,53 @@
 
-## Corrigir listagem de funcionarios no modal de programa de treinamento
 
-### Problema identificado
+## Corrigir carregamento de todos os funcionários no modal de treinamento
 
-A query de funcionarios no `TrainingProgramModal.tsx` **nao filtra por empresa** (`company_id`), carregando todos os 1900+ funcionarios de todas as empresas. Alem disso, renderiza todos os itens sem virtualizacao, causando lentidao e a impressao de que alguns funcionarios nao aparecem.
+### Problema raiz
 
-### Solucao
+O Supabase/PostgREST tem um limite máximo de registros por requisição (tipicamente 1000). O `.range(0, 4999)` **não** garante trazer 5000 registros — ele apenas indica o intervalo desejado, mas o servidor pode truncar no seu limite configurado. Com 1891 funcionários ativos na empresa, a query retorna apenas os primeiros ~1000, cortando o restante.
 
-Duas correcoes no arquivo `src/components/TrainingProgramModal.tsx`:
+### Solução
 
-**1. Filtrar por `company_id`**
+Implementar paginação na query, fazendo múltiplas chamadas de 1000 registros até esgotar os dados, e concatenando os resultados.
 
-Adicionar o filtro `.eq('company_id', companyId)` na query de funcionarios, usando o `companyId` que ja esta disponivel no componente (vindo das props ou do contexto da empresa). Isso garante que apenas funcionarios da empresa atual sejam exibidos.
+### Mudanças no arquivo
 
-**2. Virtualizar a lista com `react-window`**
+**`src/components/TrainingProgramModal.tsx`**
 
-Substituir o `.map()` direto por um componente `FixedSizeList` do `react-window` (ja instalado no projeto). Isso renderiza apenas os itens visiveis na tela, eliminando o gargalo de performance com listas grandes.
+Substituir a query única com `.range(0, 4999)` por um loop que busca em lotes de 1000:
 
-### Detalhes tecnicos
+```typescript
+queryFn: async () => {
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let from = 0;
+  let hasMore = true;
 
-**Query corrigida:**
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from("employees")
+      .select("id, full_name, employee_code, department, status")
+      .eq("company_id", selectedCompany!.id)
+      .order("full_name")
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) throw error;
+    allData = allData.concat(data || []);
+    hasMore = (data?.length || 0) === PAGE_SIZE;
+    from += PAGE_SIZE;
+  }
+
+  const activeStatuses = ['ativo', 'férias', 'ferias', 'licença', 'licenca'];
+  return allData.filter(emp =>
+    emp.status && activeStatuses.includes(emp.status.toLowerCase())
+  );
+},
 ```
-supabase
-  .from("employees")
-  .select("id, full_name, employee_code, department, status")
-  .eq("company_id", companyId)   // <-- NOVO FILTRO
-  .order("full_name")
-  .range(0, 4999)
-```
 
-**Lista virtualizada:**
-- Usar `FixedSizeList` do `react-window` com `itemSize={56}` (altura de cada item)
-- Altura do container: 200px (mesmo que o atual)
-- Cada item renderizado via `Row` component recebendo `index` e `style`
+Isso garante que **todos** os registros sejam buscados independentemente do limite do PostgREST.
 
 ### Arquivo modificado
 
-| Arquivo | Mudanca |
+| Arquivo | Mudança |
 |---------|---------|
-| `src/components/TrainingProgramModal.tsx` | Adicionar filtro `company_id` + virtualizar lista com `react-window` |
+| `src/components/TrainingProgramModal.tsx` | Substituir query única por loop paginado de 1000 em 1000 |
