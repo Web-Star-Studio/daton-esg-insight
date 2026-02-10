@@ -1,38 +1,38 @@
 
-## Correção: Build Error + Lista de Colaboradores Incompleta
+## Promover contatodoug.a@gmail.com a Platform Admin
 
-### Problema Principal
-A correção anterior (`.range(0, 4999)`) ja esta no codigo, mas **nunca foi implantada** porque existe um erro de build bloqueando tudo:
+### O que sera feito
 
+Duas alteracoes no banco de dados para conceder acesso total ao painel master (`/platform-admin`):
+
+1. **Atualizar role** na tabela `user_roles`: de `admin` para `platform_admin`
+2. **Inserir registro** na tabela `platform_admins` para liberar o acesso ao painel
+
+### Usuario
+
+| Campo | Valor |
+|-------|-------|
+| Email | contatodoug.a@gmail.com |
+| User ID | ba36f039-23cc-49ec-ae9d-aa6e5a43c7f7 |
+| Role atual | admin |
+| Role nova | platform_admin |
+
+### Detalhes tecnicos
+
+**Migracoes SQL necessarias:**
+
+```sql
+-- 1. Atualizar role para platform_admin
+UPDATE user_roles 
+SET role = 'platform_admin', updated_at = now()
+WHERE user_id = 'ba36f039-23cc-49ec-ae9d-aa6e5a43c7f7';
+
+-- 2. Inserir na tabela platform_admins
+INSERT INTO platform_admins (user_id)
+VALUES ('ba36f039-23cc-49ec-ae9d-aa6e5a43c7f7')
+ON CONFLICT DO NOTHING;
 ```
-Could not find a matching package for 'npm:openai@^4.52.5'
-```
 
-Esse erro vem da tipagem interna do `@supabase/functions-js` tentando resolver o pacote `openai`. A solucao e criar um arquivo `deno.json` na pasta de edge functions para satisfazer essa dependencia.
+### Resultado
 
-### Solucao
-
-**Arquivo 1 - Criar `supabase/functions/deno.json`**
-
-Adicionar um arquivo de configuracao Deno com o mapeamento do pacote openai para resolver o erro de tipos:
-
-```json
-{
-  "imports": {
-    "npm:openai@^4.52.5": "https://esm.sh/openai@4.52.5"
-  }
-}
-```
-
-Isso resolve o erro de build sem alterar nenhuma funcionalidade. As edge functions continuam usando `fetch()` diretamente para chamar a API da OpenAI.
-
-### Resultado Esperado
-
-Com o build funcionando novamente:
-- A correcao `.range(0, 4999)` que ja esta no `TrainingProgramModal.tsx` entra em vigor
-- Todos os 1898+ colaboradores aparecerao na lista de participantes (letras A ate Z)
-- O modal de treinamento funcionara corretamente
-
-### Impacto
-- Nenhuma mudanca funcional
-- Apenas desbloqueio do build e ativacao da correcao ja existente
+O usuario podera acessar `/platform-admin` com visao completa da plataforma (KPIs globais, gestao de empresas, controle de status).
