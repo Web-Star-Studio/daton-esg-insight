@@ -1,38 +1,57 @@
 
-## Promover contatodoug.a@gmail.com a Platform Admin
+## Adicionar Tabela de Usuarios ao Platform Admin Dashboard
 
-### O que sera feito
+### Visao Geral
 
-Duas alteracoes no banco de dados para conceder acesso total ao painel master (`/platform-admin`):
+Adicionar uma segunda tabela ao painel `/platform-admin` para listar todos os usuarios da plataforma, com filtro por empresa. O dashboard usara abas (Tabs) para alternar entre "Empresas" e "Usuarios".
 
-1. **Atualizar role** na tabela `user_roles`: de `admin` para `platform_admin`
-2. **Inserir registro** na tabela `platform_admins` para liberar o acesso ao painel
+### Mudancas
 
-### Usuario
+**1. Criar componente `PlatformUsersTable`** (`src/components/platform/PlatformUsersTable.tsx`)
 
-| Campo | Valor |
-|-------|-------|
-| Email | contatodoug.a@gmail.com |
-| User ID | ba36f039-23cc-49ec-ae9d-aa6e5a43c7f7 |
-| Role atual | admin |
-| Role nova | platform_admin |
+- Tabela com colunas: Nome, Email, Empresa, Cargo, Role, Status, Data de cadastro
+- Busca por nome ou email
+- Filtro por empresa (select/combobox com todas as empresas)
+- Filtro por status (ativo/inativo)
+- Consulta direta ao Supabase: `profiles` com join em `companies(name)` e `user_roles(role)`
+- Paginacao simples (50 por pagina)
 
-### Detalhes tecnicos
+**2. Atualizar `PlatformAdminDashboard`** (`src/pages/PlatformAdminDashboard.tsx`)
 
-**Migracoes SQL necessarias:**
+- Adicionar componente `Tabs` (do shadcn) com duas abas:
+  - **Empresas** - contem o `CompanyTable` existente
+  - **Usuarios** - contem o novo `PlatformUsersTable`
+- Manter os KPIs e "Empresas Mais Ativas" acima das abas
 
+### Detalhes Tecnicos
+
+**Query de usuarios:**
 ```sql
--- 1. Atualizar role para platform_admin
-UPDATE user_roles 
-SET role = 'platform_admin', updated_at = now()
-WHERE user_id = 'ba36f039-23cc-49ec-ae9d-aa6e5a43c7f7';
-
--- 2. Inserir na tabela platform_admins
-INSERT INTO platform_admins (user_id)
-VALUES ('ba36f039-23cc-49ec-ae9d-aa6e5a43c7f7')
-ON CONFLICT DO NOTHING;
+SELECT p.id, p.full_name, p.email, p.is_active, p.created_at, p.job_title,
+       c.name as company_name, c.id as company_id,
+       ur.role
+FROM profiles p
+LEFT JOIN companies c ON p.company_id = c.id
+LEFT JOIN user_roles ur ON ur.user_id = p.id
+ORDER BY p.created_at DESC
 ```
 
-### Resultado
+**Filtro por empresa:** Um `Select` dropdown populado com todas as empresas, permitindo filtrar a tabela. Quando selecionada uma empresa, a query adiciona `.eq('company_id', selectedCompanyId)`.
 
-O usuario podera acessar `/platform-admin` com visao completa da plataforma (KPIs globais, gestao de empresas, controle de status).
+**Estrutura do componente PlatformUsersTable:**
+- Estado: `search`, `selectedCompanyId`, `statusFilter`, `page`
+- useQuery para buscar usuarios com filtros server-side
+- useQuery separado para lista de empresas (para o dropdown)
+- Badges para role e status
+- Paginacao com `.range()`
+
+### Arquivos Modificados/Criados
+
+| Arquivo | Acao |
+|---------|------|
+| `src/components/platform/PlatformUsersTable.tsx` | Criar |
+| `src/pages/PlatformAdminDashboard.tsx` | Modificar (adicionar Tabs) |
+
+### Nenhuma migracao necessaria
+
+Os dados ja existem nas tabelas `profiles`, `companies` e `user_roles`. Nao e necessario alterar o banco.
