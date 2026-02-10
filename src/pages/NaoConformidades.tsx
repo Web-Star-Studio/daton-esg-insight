@@ -652,6 +652,7 @@ export default function NaoConformidades() {
                   <TableHead>Categoria</TableHead>
                   <TableHead>Severidade</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="min-w-[180px]">Progresso</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -680,6 +681,30 @@ export default function NaoConformidades() {
                         {getStatusIcon(nc.status)}
                         <span className="ml-1">{getNCStatusLabel(nc.status)}</span>
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const stage = (nc as any).current_stage || 1;
+                        const progress = Math.round((stage / 6) * 100);
+                        const stageLabels: Record<number, string> = {
+                          1: "Registro", 2: "Ação Imediata", 3: "Análise de Causa",
+                          4: "Planejamento", 5: "Implementação", 6: "Eficácia"
+                        };
+                        const barColor = stage <= 2 ? "bg-red-500" : stage <= 4 ? "bg-yellow-500" : "bg-green-500";
+                        return (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                                <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${progress}%` }} />
+                              </div>
+                              <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">{stage}/6</span>
+                            </div>
+                            <p className={`text-[10px] leading-tight ${stage <= 2 ? "text-red-600 font-medium" : stage <= 4 ? "text-yellow-600" : "text-green-600"}`}>
+                              {stageLabels[stage]}
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       {formatDateDisplay(nc.detected_date)}
