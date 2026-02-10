@@ -1,93 +1,52 @@
 
 
-## Fluxo de Aprovacao de Usuarios pelo Admin
+## Corrigir listagem de usuarios no Platform Admin
 
-### Resumo
+### Problema raiz
 
-Adicionar um campo `is_approved` na tabela `profiles` que controla se o usuario pode acessar o dashboard real. Novos usuarios seguem o fluxo: **Registro → Onboarding → Dashboard Demo** (ate ser aprovado). O platform admin podera aprovar/rejeitar usuarios diretamente na aba de Usuarios do painel `/platform-admin`.
+A query do `PlatformUsersTable` tenta fazer um join embutido `profiles -> user_roles(role)`, mas nao existe uma foreign key direta entre `profiles` e `user_roles`. A FK de `user_roles.user_id` aponta para `auth.users(id)`, nao para `profiles(id)`. Isso causa erro 400 do PostgREST e nenhum usuario e retornado.
 
-### 1. Migracao de Banco de Dados
+### Solucao
 
-Adicionar coluna `is_approved` na tabela `profiles`:
+Separar a busca em duas queries:
 
-```sql
-ALTER TABLE public.profiles 
-ADD COLUMN is_approved boolean NOT NULL DEFAULT false;
-```
+1. Buscar `profiles` com join em `companies(name)` (que funciona, pois `profiles.company_id` tem FK para `companies`)
+2. Buscar `user_roles` separadamente para os IDs retornados, e combinar no cliente
 
-Usuarios existentes precisam ser aprovados automaticamente para nao quebrar o acesso:
-
-```sql
-UPDATE public.profiles SET is_approved = true WHERE has_completed_onboarding = true;
-```
-
-### 2. Atualizar AuthContext e AuthService
-
-**`src/services/auth.ts`**
-- Incluir `is_approved` no select do `getCurrentUser()`
-- Adicionar campo `is_approved` na interface `AuthUser`
-
-**`src/contexts/AuthContext.tsx`**
-- Expor `isApproved` (derivado de `user.is_approved`) no contexto
-- Usar esse campo para decidir o redirecionamento pos-onboarding
-
-### 3. Atualizar ProtectedRoute
-
-**`src/components/ProtectedRoute.tsx`**
-- Apos verificar autenticacao, checar `user.is_approved`
-- Se `is_approved === false`, redirecionar para `/demo` em vez do dashboard
-- Platform admins (`role === 'platform_admin'`) sao sempre considerados aprovados
-
-### 4. Atualizar OnboardingRoute
-
-**`src/routes/onboarding.tsx`**
-- Apos onboarding completo, redirecionar para `/demo` (em vez de `/dashboard`) se `is_approved === false`
-
-### 5. Atualizar DemoDashboard
-
-**`src/pages/DemoDashboard.tsx`**
-- Detectar se o usuario esta logado mas nao aprovado
-- Mostrar banner diferenciado: "Sua conta esta em analise. Um administrador aprovara seu acesso em breve."
-- Manter o CTA de "Criar conta" apenas para visitantes nao logados
-
-### 6. Atualizar PlatformUsersTable com controle de aprovacao
+### Mudancas no arquivo
 
 **`src/components/platform/PlatformUsersTable.tsx`**
-- Adicionar coluna "Aprovado" na tabela
-- Incluir `is_approved` no select da query
-- Adicionar filtro por status de aprovacao (Todos / Aprovados / Pendentes)
-- Adicionar botao de acao em cada linha para aprovar/rejeitar usuario
-- Ao aprovar: `UPDATE profiles SET is_approved = true WHERE id = :userId`
-- Ao rejeitar: `UPDATE profiles SET is_approved = false WHERE id = :userId`
-- Mostrar Badge verde "Aprovado" ou amarelo "Pendente" na coluna
 
-### Detalhes tecnicos
+Alterar a `queryFn` para:
 
-**Arquivos modificados:**
+1. Remover `user_roles(role)` do select embutido do profiles
+2. Apos obter os profiles, buscar os roles separadamente:
+
+```typescript
+// Query 1: profiles + companies
+const { data: profiles, count, error } = await supabase
+  .from("profiles")
+  .select("id, full_name, email, is_active, is_approved, created_at, job_title, company_id, companies(name)", { count: "exact" })
+  .order("created_at", { ascending: false })
+  .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+// Query 2: roles para esses usuarios
+const userIds = profiles.map(p => p.id);
+const { data: roles } = await supabase
+  .from("user_roles")
+  .select("user_id, role")
+  .in("user_id", userIds);
+
+// Combinar
+const roleMap = Object.fromEntries(roles.map(r => [r.user_id, r.role]));
+const users = profiles.map(p => ({ ...p, role: roleMap[p.id] }));
+```
+
+3. Atualizar a renderizacao para usar `user.role` diretamente em vez de `user.user_roles?.[0]?.role`
+
+### Arquivo modificado
 
 | Arquivo | Mudanca |
 |---------|---------|
-| Migracao SQL | Adicionar coluna `is_approved` default `false` |
-| `src/services/auth.ts` | Incluir `is_approved` na interface e query |
-| `src/contexts/AuthContext.tsx` | Expor `isApproved` no contexto |
-| `src/components/ProtectedRoute.tsx` | Redirecionar para `/demo` se nao aprovado |
-| `src/routes/onboarding.tsx` | Redirecionar pos-onboarding para `/demo` se nao aprovado |
-| `src/pages/DemoDashboard.tsx` | Banner contextual para usuarios pendentes |
-| `src/components/platform/PlatformUsersTable.tsx` | Coluna + filtro + botoes de aprovacao |
-
-**Fluxo do usuario:**
-
-```text
-Registro → Confirmacao Email → Login → Onboarding → /demo (pendente)
-                                                        |
-                            Admin aprova na /platform-admin
-                                                        |
-                                                   /dashboard (acesso completo)
-```
-
-**Seguranca:**
-- A coluna `is_approved` fica no banco, nao pode ser manipulada pelo cliente
-- RLS existente ja protege a tabela `profiles` (usuario so edita o proprio perfil)
-- Apenas platform_admin pode alterar `is_approved` de outros usuarios (via query direta com permissao RLS)
-- Platform admins sao automaticamente considerados aprovados no codigo
+| `src/components/platform/PlatformUsersTable.tsx` | Separar query de roles e combinar no cliente |
 
