@@ -145,7 +145,8 @@ export function RescheduleTrainingModal({
         .from("employees")
         .select("id, full_name, employee_code, department")
         .eq("status", "Ativo")
-        .order("full_name");
+        .order("full_name")
+        .range(0, 4999);
       
       if (error) throw error;
       return data;
