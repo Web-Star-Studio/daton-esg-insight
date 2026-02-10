@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 50;
 
@@ -38,8 +39,10 @@ export function PlatformUsersTable() {
   const [search, setSearch] = useState("");
   const [companyFilter, setCompanyFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [approvalFilter, setApprovalFilter] = useState("all");
   const [page, setPage] = useState(0);
   const debouncedSearch = useDebounce(search, 400);
+  const queryClient = useQueryClient();
 
   const { data: companies } = useQuery({
     queryKey: ["platform-companies-list"],
@@ -54,12 +57,12 @@ export function PlatformUsersTable() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["platform-users", debouncedSearch, companyFilter, statusFilter, page],
+    queryKey: ["platform-users", debouncedSearch, companyFilter, statusFilter, approvalFilter, page],
     queryFn: async () => {
       const baseQuery = (supabase
         .from("profiles") as any)
         .select(
-          "id, full_name, email, is_active, created_at, job_title, company_id, companies(name), user_roles(role)",
+          "id, full_name, email, is_active, is_approved, created_at, job_title, company_id, companies(name), user_roles(role)",
           { count: "exact" }
         );
 
@@ -83,9 +86,31 @@ export function PlatformUsersTable() {
         query = query.eq("is_active", false);
       }
 
+      if (approvalFilter === "approved") {
+        query = query.eq("is_approved", true);
+      } else if (approvalFilter === "pending") {
+        query = query.eq("is_approved", false);
+      }
+
       const { data, error, count } = await query;
       if (error) throw error;
       return { users: data, total: count ?? 0 };
+    },
+  });
+
+  const toggleApproval = useMutation({
+    mutationFn: async ({ userId, approve }: { userId: string; approve: boolean }) => {
+      const { error } = await (supabase.from("profiles") as any)
+        .update({ is_approved: approve })
+        .eq("id", userId);
+      if (error) throw error;
+    },
+    onSuccess: (_, { approve }) => {
+      queryClient.invalidateQueries({ queryKey: ["platform-users"] });
+      toast.success(approve ? "Usuário aprovado com sucesso" : "Aprovação revogada");
+    },
+    onError: () => {
+      toast.error("Erro ao alterar aprovação do usuário");
     },
   });
 
@@ -144,6 +169,22 @@ export function PlatformUsersTable() {
             <SelectItem value="inactive">Inativos</SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={approvalFilter}
+          onValueChange={(v) => {
+            setApprovalFilter(v);
+            setPage(0);
+          }}
+        >
+          <SelectTrigger className="w-full sm:w-[160px]">
+            <SelectValue placeholder="Aprovação" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="approved">Aprovados</SelectItem>
+            <SelectItem value="pending">Pendentes</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -157,19 +198,21 @@ export function PlatformUsersTable() {
               <TableHead>Cargo</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Aprovação</TableHead>
               <TableHead>Cadastro</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                   Nenhum usuário encontrado.
                 </TableCell>
               </TableRow>
@@ -178,6 +221,7 @@ export function PlatformUsersTable() {
                 const role = user.user_roles?.[0]?.role;
                 const companyName =
                   (user.companies as any)?.name ?? "—";
+                const isPlatformAdmin = role === 'platform_admin';
                 return (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
@@ -203,9 +247,40 @@ export function PlatformUsersTable() {
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      <Badge
+                        variant={user.is_approved ? "success-subtle" : "warning-subtle" as any}
+                        className={!user.is_approved ? "bg-warning/10 text-warning border-warning/20" : ""}
+                      >
+                        {user.is_approved ? "Aprovado" : "Pendente"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       {user.created_at
                         ? format(new Date(user.created_at), "dd/MM/yyyy")
                         : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!isPlatformAdmin && (
+                        <Button
+                          variant={user.is_approved ? "ghost" : "default"}
+                          size="sm"
+                          onClick={() => toggleApproval.mutate({ userId: user.id, approve: !user.is_approved })}
+                          disabled={toggleApproval.isPending}
+                          className="gap-1.5"
+                        >
+                          {user.is_approved ? (
+                            <>
+                              <XCircle className="h-3.5 w-3.5" />
+                              Revogar
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-3.5 w-3.5" />
+                              Aprovar
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

@@ -10,6 +10,7 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   isLoading: boolean;
+  isApproved: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterCompanyData) => Promise<void>;
   logout: () => Promise<void>;
@@ -399,10 +400,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const isApproved = user?.is_approved || user?.role === 'platform_admin' || false;
+
   const value: AuthContextType = {
     user,
     session,
     isLoading,
+    isApproved,
     login,
     register,
     logout,

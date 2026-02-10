@@ -19,7 +19,7 @@ const mapRoleToUIRole = (serviceRole: string): 'Admin' | 'Editor' | 'Leitor' => 
 };
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isApproved } = useAuth();
 
   logger.debug('ProtectedRoute check', 'auth', { 
     hasUser: !!user, 
@@ -47,6 +47,12 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   // Redirecionar para login se não autenticado
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Redirect unapproved users to demo dashboard
+  if (!isApproved) {
+    logger.info('User not approved - redirecting to demo', 'auth', { userId: user.id });
+    return <Navigate to="/demo" replace />;
   }
 
   // Verificar permissões de role se especificado

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DateRange } from 'react-day-picker';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EnhancedCard } from '@/components/ui/enhanced-card';
 import { Button } from '@/components/ui/button';
@@ -203,6 +204,8 @@ const SIDEBAR_ITEMS = [
 
 export default function DemoDashboard() {
   const navigate = useNavigate();
+  const { user, isApproved } = useAuth();
+  const isLoggedInPending = !!user && !isApproved;
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     to: new Date(),
@@ -262,31 +265,49 @@ export default function DemoDashboard() {
             );
           })}
         </nav>
-        <div className="p-4 border-t border-border">
-          <Button className="w-full gap-2" onClick={() => navigate('/auth')}>
-            <LogIn className="w-4 h-4" />
-            Criar conta gratuita
-          </Button>
-        </div>
+        {!isLoggedInPending && (
+          <div className="p-4 border-t border-border">
+            <Button className="w-full gap-2" onClick={() => navigate('/auth')}>
+              <LogIn className="w-4 h-4" />
+              Criar conta gratuita
+            </Button>
+          </div>
+        )}
       </aside>
 
       {/* ── Main Content ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Demo Banner */}
-        <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border-b border-primary/20 px-4 py-3">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm text-foreground">
-                Você está visualizando uma <strong>versão demonstrativa</strong> da plataforma Daton
-              </span>
+        {isLoggedInPending ? (
+          <div className="bg-gradient-to-r from-warning/10 via-warning/5 to-warning/10 border-b border-warning/20 px-4 py-3">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-warning" />
+                <span className="text-sm text-foreground">
+                  Sua conta está <strong>em análise</strong>. Um administrador aprovará seu acesso em breve.
+                </span>
+              </div>
+              <Badge variant="outline" className="border-warning/30 text-warning">
+                Acesso pendente
+              </Badge>
             </div>
-            <Button size="sm" className="gap-1.5" onClick={() => navigate('/auth')}>
-              Criar conta gratuita
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
           </div>
-        </div>
+        ) : (
+          <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border-b border-primary/20 px-4 py-3">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-sm text-foreground">
+                  Você está visualizando uma <strong>versão demonstrativa</strong> da plataforma Daton
+                </span>
+              </div>
+              <Button size="sm" className="gap-1.5" onClick={() => navigate('/auth')}>
+                Criar conta gratuita
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Mobile header */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-border">
