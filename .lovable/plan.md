@@ -1,42 +1,62 @@
 
 
-## Problema Identificado
+## Barra de Progresso de Etapas na Lista de NCs
 
-O Supabase retorna no maximo **1000 linhas por consulta** por padrao. Voce tem **1898 colaboradores ativos**, entao a query ordenada por nome retorna apenas os primeiros 1000 (letras A ate J) e ignora o restante.
+### O que sera feito
 
-Isso afeta **dois modais**:
-- `TrainingProgramModal.tsx` (query: `employees-for-training-modal`)
-- `EmployeeTrainingModal.tsx` (query: `employees-for-training-modal-2`)
+Adicionar uma nova coluna **"Progresso"** na tabela de listagem de Nao Conformidades, exibindo uma barra de progresso visual baseada no campo `current_stage` (1 a 6) de cada NC.
 
-## Solucao
+A barra mostrara visualmente em qual das 6 etapas a NC se encontra, com cores semanticas:
+- **Vermelho/Laranja** (etapas 1-2): NC no inicio, precisa de atencao
+- **Amarelo** (etapas 3-4): NC em andamento
+- **Verde** (etapas 5-6): NC avancada, sob controle
 
-Adicionar `.range(0, 5000)` nas queries de ambos os modais para garantir que todos os colaboradores sejam retornados. O Supabase suporta ate ~10.000 linhas com range explicito.
+### Visual proposto
 
-## Arquivos a Alterar
+Cada linha da tabela tera:
 
-### 1. `src/components/TrainingProgramModal.tsx` (linha ~112)
-
-Antes:
-```typescript
-.order("full_name");
+```text
+[====------] 2/6  Acao Imediata
 ```
 
-Depois:
-```typescript
-.order("full_name")
-.range(0, 4999);
+- Barra de progresso fina (height 6px, rounded) preenchida proporcionalmente
+- Fracao "X/6" pequena
+- Nome da etapa atual em texto pequeno
+
+### Exemplo pratico com as NCs do usuario
+
+| NC | current_stage | Progresso Visual |
+|----|---------------|------------------|
+| NC-9995 | 1 (Registro) | [==========] 1/6 - barra vermelha, "preciso focar nela" |
+| NC-0902 | 5 (Implementacao) | [========--] 5/6 - barra verde, "nao preciso me preocupar" |
+
+---
+
+### Detalhes tecnicos
+
+**Arquivo modificado**: `src/pages/NaoConformidades.tsx`
+
+1. Adicionar uma coluna "Progresso" no `TableHeader`, entre "Status" e "Data"
+2. Adicionar a celula correspondente no `TableBody` com:
+   - Componente `Progress` do Radix (ja instalado) ou uma `div` com width dinamico
+   - Texto auxiliar com nome da etapa e fracao
+   - Cor da barra baseada no `current_stage`:
+     - Etapas 1-2: vermelho/laranja (`bg-red-500` / `bg-orange-500`)
+     - Etapas 3-4: amarelo (`bg-yellow-500`)
+     - Etapas 5-6: verde (`bg-green-500`)
+
+**Mapa de etapas** (reutilizando labels existentes do `NCStageWizard`):
+
+```
+1 = Registro
+2 = Acao Imediata
+3 = Analise de Causa
+4 = Planejamento
+5 = Implementacao
+6 = Eficacia
 ```
 
-### 2. `src/components/EmployeeTrainingModal.tsx` (query similar)
+**Calculo do progresso**: `(current_stage / 6) * 100`
 
-Aplicar a mesma correcao `.range(0, 4999)` na query de employees.
+Nenhuma query, rota, endpoint ou copy existente sera alterada. Apenas uma coluna visual nova na tabela.
 
-### 3. Verificar outros modais
-
-Revisar `RescheduleTrainingModal.tsx` e `BenefitConfigurationModal.tsx` para o mesmo problema.
-
-## Impacto
-
-- Nenhuma mudanca funcional, de layout ou de copy
-- Apenas garante que todos os colaboradores sejam carregados
-- Risco: nenhum
