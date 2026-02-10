@@ -207,6 +207,7 @@ const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
 const SystemStatus = lazy(() => import("./pages/SystemStatus"));
 const PlatformAdminDashboard = lazy(() => import("./pages/PlatformAdminDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const DemoDashboard = lazy(() => import("./pages/DemoDashboard"));
 
 // Backward-compat alias
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
@@ -258,6 +259,9 @@ const AppContent = () => {
             <Route path="/3" element={<LazyPageWrapper><LandingAurea /></LazyPageWrapper>} />
             <Route path="/4" element={<LazyPageWrapper><LandingPulso /></LazyPageWrapper>} />
             <Route path="/5" element={<LazyPageWrapper><LandingSelva /></LazyPageWrapper>} />
+
+            {/* Demo dashboard - público */}
+            <Route path="/demo" element={<LazyPageWrapper><DemoDashboard /></LazyPageWrapper>} />
 
             {/* Rota de autenticação - pública */}
             <Route path="/auth" element={<Auth />} />
