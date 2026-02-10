@@ -1,70 +1,41 @@
 
-## Dashboard Demo Interativo para Usuarios Nao Pagantes
+## Corrigir listagem de funcionarios no modal de programa de treinamento
 
-### Objetivo
+### Problema identificado
 
-Criar uma pagina `/demo` com uma copia visual completa do dashboard principal, usando dados fictícios (mock) e sem nenhuma chamada ao banco de dados. O usuario podera interagir com a interface (clicar botoes, trocar filtros, navegar no carousel), mas nenhuma acao real sera executada.
+A query de funcionarios no `TrainingProgramModal.tsx` **nao filtra por empresa** (`company_id`), carregando todos os 1900+ funcionarios de todas as empresas. Alem disso, renderiza todos os itens sem virtualizacao, causando lentidao e a impressao de que alguns funcionarios nao aparecem.
 
-### Arquivos a Criar/Modificar
+### Solucao
 
-| Arquivo | Acao |
-|---------|------|
-| `src/pages/DemoDashboard.tsx` | Criar - Pagina principal do demo |
-| `src/App.tsx` | Modificar - Adicionar rota `/demo` publica |
+Duas correcoes no arquivo `src/components/TrainingProgramModal.tsx`:
 
-### Estrutura do DemoDashboard
+**1. Filtrar por `company_id`**
 
-O componente sera uma copia do `Dashboard.tsx` atual, mas com as seguintes diferencas:
+Adicionar o filtro `.eq('company_id', companyId)` na query de funcionarios, usando o `companyId` que ja esta disponivel no componente (vindo das props ou do contexto da empresa). Isso garante que apenas funcionarios da empresa atual sejam exibidos.
 
-1. **Sem autenticacao**: Rota publica (usando `LazyPageWrapper`, nao `ProtectedLazyPageWrapper`)
-2. **Dados mockados**: Todos os valores serao hardcoded (KPIs, atividades recentes, scores ESG, alertas)
-3. **Navegacao bloqueada**: Clicks em botoes de acao mostram um toast/modal incentivando o cadastro, em vez de navegar para outras paginas
-4. **Banner de demonstracao**: Um banner fixo no topo informando que e uma versao demo, com CTA para criar conta
-5. **Layout proprio**: Incluira sidebar e header proprios simplificados (sem depender do MainLayout/AuthContext)
+**2. Virtualizar a lista com `react-window`**
 
-### Dados Mock
+Substituir o `.map()` direto por um componente `FixedSizeList` do `react-window` (ja instalado no projeto). Isso renderiza apenas os itens visiveis na tela, eliminando o gargalo de performance com listas grandes.
 
-```text
-KPIs:
-- Emissoes CO2: 1.247 tCO2e (-8.3%)
-- Conformidade: 94.2% (+2.1%)
-- Colaboradores: 342 (+5%)
-- Qualidade: 91.7% (+1.8%)
-- Economia Energia: 12.5 MWh
-- Reducao CO2: -15.3%
-- Satisfacao RH: 4.7/5
+### Detalhes tecnicos
 
-ESG Score: 78% (E: 82%, S: 74%, G: 79%)
-
-Atividades Recentes: Mesmas 4 atividades estaticas ja existentes no Dashboard
-
-Alertas: 2-3 alertas mockados (licenca vencendo, meta em risco)
+**Query corrigida:**
+```
+supabase
+  .from("employees")
+  .select("id, full_name, employee_code, department, status")
+  .eq("company_id", companyId)   // <-- NOVO FILTRO
+  .order("full_name")
+  .range(0, 4999)
 ```
 
-### Interacoes Permitidas (sem funcionalidade real)
+**Lista virtualizada:**
+- Usar `FixedSizeList` do `react-window` com `itemSize={56}` (altura de cada item)
+- Altura do container: 200px (mesmo que o atual)
+- Cada item renderizado via `Row` component recebendo `index` e `style`
 
-- Trocar periodo no date picker (atualiza visualmente mas mantem dados iguais)
-- Navegar no carousel de KPIs (funciona normalmente)
-- Clicar em botoes de acao rapida → mostra toast "Crie sua conta para acessar"
-- Clicar em "Ver todas" atividades → mesmo toast
-- Hover effects e animacoes funcionam normalmente
+### Arquivo modificado
 
-### Rota
-
-```
-/demo → DemoDashboard (publica, sem autenticacao)
-```
-
-### Banner Demo
-
-Um banner fixo no topo da pagina com:
-- Texto: "Voce esta visualizando uma versao demonstrativa da plataforma Daton"
-- Botao CTA: "Criar conta gratuita" → navega para `/auth`
-- Estilo: gradiente sutil com borda, nao intrusivo
-
-### Detalhes Tecnicos
-
-- Reutiliza os componentes visuais existentes: `KPICarousel`, `EnhancedCard`, `ESGScoreGauge`, `Progress`, `Badge`
-- Nao importa `useAuth`, `useQuery`, nem faz chamadas ao Supabase
-- Sidebar simplificada com itens visuais (sem links reais) ou sem sidebar (apenas o conteudo centralizado com header proprio)
-- Usa `sonner` (toast) para feedback quando o usuario tenta interagir com funcionalidades bloqueadas
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/components/TrainingProgramModal.tsx` | Adicionar filtro `company_id` + virtualizar lista com `react-window` |
