@@ -137,32 +137,102 @@ export function TechStack3D() {
                 </motion.p>
             </div>
 
-            {/* Animated CSS Orbs */}
+            {/* Animated CSS Orbs with Orbiting Motion */}
             <div
                 style={{
                     position: 'relative',
                     zIndex: 10,
-                    height: 'clamp(300px, 40vh, 500px)',
+                    height: 'clamp(400px, 60vh, 600px)',
                     width: '100%',
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    gap: '4rem',
-                    flexWrap: 'wrap',
-                    padding: '0 2rem',
+                    margin: '2rem 0',
                 }}
             >
-                {sphereData.map((item, index) => (
+                {/* Orbital Paths (Visual Guide) */}
+                <div style={{
+                    position: 'absolute',
+                    width: 'min(500px, 80vw)',
+                    height: 'min(500px, 80vw)',
+                    border: '1px dashed rgba(0,0,0,0.05)',
+                    borderRadius: '50%',
+                    pointerEvents: 'none'
+                }} />
+
+                {/* Central Orb - Data Core */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                    transition={{ duration: 1, delay: 0.3 }}
+                    style={{ position: 'absolute', zIndex: 15 }}
+                >
+                    <CSSOrb type={sphereData[1].type} color={sphereData[1].color} size={160} />
+                </motion.div>
+
+                {/* Orbiting Orb 1 - Virtual Intelligence */}
+                <motion.div
+                    animate={isInView ? { rotate: 360 } : {}}
+                    transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+                    style={{
+                        position: 'absolute',
+                        width: 'min(500px, 80vw)',
+                        height: 'min(500px, 80vw)',
+                        zIndex: 14,
+                        pointerEvents: 'none'
+                    }}
+                >
                     <motion.div
-                        key={index}
-                        initial={{ opacity: 0, scale: 0.5, y: 50 }}
-                        animate={isInView ? { opacity: 1, scale: 1, y: 0 } : {}}
-                        transition={{ duration: 0.8, delay: 0.3 + index * 0.15, ease: 'easeOut' }}
-                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={isInView ? { opacity: 1, scale: 1, rotate: -360 } : {}}
+                        transition={{
+                            opacity: { duration: 0.8, delay: 0.5 },
+                            scale: { duration: 0.8, delay: 0.5 },
+                            rotate: { duration: 25, repeat: Infinity, ease: 'linear' }
+                        }}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            pointerEvents: 'auto'
+                        }}
                     >
-                        <CSSOrb type={item.type} color={item.color} />
+                        <CSSOrb type={sphereData[0].type} color={sphereData[0].color} size={100} />
                     </motion.div>
-                ))}
+                </motion.div>
+
+                {/* Orbiting Orb 2 - Cloud Platform */}
+                <motion.div
+                    animate={isInView ? { rotate: -360 } : {}}
+                    transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
+                    style={{
+                        position: 'absolute',
+                        width: 'min(420px, 70vw)',
+                        height: 'min(420px, 70vw)',
+                        zIndex: 16, // Slightly in front or back depending on orbit
+                        pointerEvents: 'none'
+                    }}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={isInView ? { opacity: 1, scale: 1, rotate: 360 } : {}}
+                        transition={{
+                            opacity: { duration: 0.8, delay: 0.7 },
+                            scale: { duration: 0.8, delay: 0.7 },
+                            rotate: { duration: 35, repeat: Infinity, ease: 'linear' }
+                        }}
+                        style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: '50%',
+                            transform: 'translate(-50%, 50%)',
+                            pointerEvents: 'auto'
+                        }}
+                    >
+                        <CSSOrb type={sphereData[2].type} color={sphereData[2].color} size={90} />
+                    </motion.div>
+                </motion.div>
             </div>
 
             {/* Labels Grid */}
@@ -226,10 +296,10 @@ export function TechStack3D() {
     );
 }
 
-function CSSOrb({ type, color }: { type: string; color: string }) {
+function CSSOrb({ type, color, size = 120 }: { type: string; color: string; size?: number }) {
     const baseStyle: React.CSSProperties = {
-        width: '120px',
-        height: '120px',
+        width: `${size}px`,
+        height: `${size}px`,
         borderRadius: '50%',
         position: 'relative',
         display: 'flex',
@@ -238,6 +308,8 @@ function CSSOrb({ type, color }: { type: string; color: string }) {
     };
 
     if (type === 'wireframe') {
+        const innerSize = size * 0.66;
+        const coreSize = size * 0.25;
         return (
             <motion.div
                 animate={{ rotate: 360 }}
@@ -245,15 +317,15 @@ function CSSOrb({ type, color }: { type: string; color: string }) {
                 style={{
                     ...baseStyle,
                     border: `2px solid ${color}`,
-                    boxShadow: `0 0 30px ${color}40, inset 0 0 30px ${color}20`,
+                    boxShadow: `0 0 ${size * 0.25}px ${color}40, inset 0 0 ${size * 0.25}px ${color}20`,
                 }}
             >
                 <motion.div
                     animate={{ rotate: -360 }}
                     transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
                     style={{
-                        width: '80px',
-                        height: '80px',
+                        width: `${innerSize}px`,
+                        height: `${innerSize}px`,
                         borderRadius: '50%',
                         border: `1px solid ${color}80`,
                     }}
@@ -261,12 +333,12 @@ function CSSOrb({ type, color }: { type: string; color: string }) {
                 <div
                     style={{
                         position: 'absolute',
-                        width: '30px',
-                        height: '30px',
+                        width: `${coreSize}px`,
+                        height: `${coreSize}px`,
                         borderRadius: '50%',
                         background: color,
                         opacity: 0.6,
-                        boxShadow: `0 0 20px ${color}`,
+                        boxShadow: `0 0 ${coreSize * 0.6}px ${color}`,
                     }}
                 />
             </motion.div>
@@ -308,13 +380,13 @@ function CSSOrb({ type, color }: { type: string; color: string }) {
                     }}
                     style={{
                         position: 'absolute',
-                        width: '6px',
-                        height: '6px',
+                        width: `${size * 0.05}px`,
+                        height: `${size * 0.05}px`,
                         borderRadius: '50%',
                         background: color,
                         top: `${50 + (Math.random() - 0.5) * 80}%`,
                         left: `${50 + (Math.random() - 0.5) * 80}%`,
-                        boxShadow: `0 0 6px ${color}`,
+                        boxShadow: `0 0 ${size * 0.05}px ${color}`,
                     }}
                 />
             ))}

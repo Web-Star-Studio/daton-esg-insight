@@ -47,6 +47,12 @@
   /* Spacing */
   --heimdall-section-padding: clamp(80px, 12vh, 160px);
   --heimdall-container-max: 1440px;
+  /* Lumine Theme - Organic Light */
+  --lumine-bg: #ecf7e7;
+  --lumine-accent: #c4fca1;
+  --lumine-text: #1a2421;
+  --lumine-text-muted: #5e6b66;
+  --lumine-border: rgba(26, 36, 33, 0.08);
 }
 
 /* ============================================
@@ -483,4 +489,25 @@
 .text-stroke-sm {
   -webkit-text-stroke: 1px rgba(0, 0, 0, 0.1);
   color: transparent;
+}
+
+.font-serif {
+  font-family: 'Libre Baskerville', serif;
+}
+
+.lumine-btn-primary {
+  background: var(--lumine-accent);
+  color: var(--lumine-text);
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.lumine-btn-primary:hover {
+  transform: translateY(-2px);
 }

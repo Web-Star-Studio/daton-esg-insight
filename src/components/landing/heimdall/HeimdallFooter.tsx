@@ -20,7 +20,7 @@ export function HeimdallFooter() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        
+
         try {
             // Simula envio (ou integrar com backend)
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -210,7 +210,7 @@ export function HeimdallFooter() {
                         gap: '1rem',
                     }}
                 >
-                <p className="heimdall-body-sm">© {new Date().getFullYear()} Daton. Todos os direitos reservados.</p>
+                    <p className="heimdall-body-sm">© {new Date().getFullYear()} Daton. Todos os direitos reservados.</p>
                     <div style={{ display: 'flex', gap: '1.5rem' }}>
                         <FooterLink label="Privacidade" onClick={() => navigate('/privacidade')} />
                         <FooterLink label="Termos" onClick={() => navigate('/termos')} />
