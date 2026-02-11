@@ -63,7 +63,7 @@
   color: var(--heimdall-text);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.5;
-  overflow-x: hidden;
+  /* overflow-x: hidden; REMOVED to fix sticky positioning */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Menu } from 'lucide-react';
-import { ESG_AREAS, ESG_AREA_LINKS } from './esgAreas';
+import { ESG_AREAS } from './esgAreas';
 import './heimdall.css';
 
 export function HeroSection() {
@@ -12,13 +12,13 @@ export function HeroSection() {
     const actionBarRef = useRef<HTMLDivElement>(null);
     const heroSlides = ESG_AREAS;
     const slideDurationMs = 5000;
-    const legacyQuickMenuLinks = [
+    const quickMenuLinks = [
         { label: 'Soluções', href: '/funcionalidades' },
         { label: 'Tecnologia', href: '/documentacao' },
-        { label: 'Recursos', href: '/faq' },
+        { label: 'Documentação', href: '/documentacao' },
+        { label: 'Sobre Nós', href: '/contato' },
         { label: 'Contato', href: '/contato' },
     ];
-    const quickMenuLinks = [...legacyQuickMenuLinks, ...ESG_AREA_LINKS];
 
     const handleQuickNavigate = (path: string) => {
         setQuickMenuOpen(false);
