@@ -16777,13 +16777,6 @@ export type Database = {
             referencedRelation: "non_conformities"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "nc_immediate_actions_responsible_user_id_fkey"
-            columns: ["responsible_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       nc_tasks: {
