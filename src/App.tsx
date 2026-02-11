@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ENABLED_MODULES } from "@/config/enabledModules";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { DemoProvider } from "@/contexts/DemoContext";
 import { CompanyProvider } from "@/contexts/CompanyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleGuard } from "@/middleware/roleGuard";
@@ -208,6 +209,7 @@ const SystemStatus = lazy(() => import("./pages/SystemStatus"));
 const PlatformAdminDashboard = lazy(() => import("./pages/PlatformAdminDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const DemoDashboard = lazy(() => import("./pages/DemoDashboard"));
+const DemoLayout = lazy(() => import("./components/DemoLayout").then(m => ({ default: m.DemoLayout })));
 
 // Backward-compat alias
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
@@ -260,8 +262,59 @@ const AppContent = () => {
             <Route path="/4" element={<LazyPageWrapper><LandingPulso /></LazyPageWrapper>} />
             <Route path="/5" element={<LazyPageWrapper><LandingSelva /></LazyPageWrapper>} />
 
-            {/* Demo dashboard - público */}
-            <Route path="/demo" element={<LazyPageWrapper><DemoDashboard /></LazyPageWrapper>} />
+            {/* Demo dashboard - público (rota legada) */}
+            <Route path="/demo-old" element={<LazyPageWrapper><DemoDashboard /></LazyPageWrapper>} />
+
+            {/* Demo - réplica da versão real com mock data */}
+            <Route path="/demo" element={
+              <DemoProvider>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" /></div>}>
+                  <DemoLayout />
+                </Suspense>
+              </DemoProvider>
+            }>
+              <Route index element={<LazyPageWrapper><Dashboard /></LazyPageWrapper>} />
+              <Route path="gestao-esg" element={<LazyPageWrapper><GestaoESG /></LazyPageWrapper>} />
+              <Route path="quality-dashboard" element={<LazyPageWrapper><QualityDashboard /></LazyPageWrapper>} />
+              <Route path="gestao-indicadores" element={<LazyPageWrapper><GestaoIndicadores /></LazyPageWrapper>} />
+              <Route path="nao-conformidades" element={<LazyPageWrapper><NaoConformidades /></LazyPageWrapper>} />
+              <Route path="acoes-corretivas" element={<LazyPageWrapper><AcoesCorretivas /></LazyPageWrapper>} />
+              <Route path="controle-documentos" element={<LazyPageWrapper><ControleDocumentos /></LazyPageWrapper>} />
+              <Route path="mapeamento-processos" element={<LazyPageWrapper><MapeamentoProcessos /></LazyPageWrapper>} />
+              <Route path="planejamento-estrategico" element={<LazyPageWrapper><PlanejamentoEstrategico /></LazyPageWrapper>} />
+              <Route path="licenciamento" element={<LazyPageWrapper><Licenciamento /></LazyPageWrapper>} />
+              <Route path="laia" element={<LazyPageWrapper><LAIAUnidades /></LazyPageWrapper>} />
+              <Route path="fornecedores/dashboard" element={<LazyPageWrapper><SupplierManagementDashboard /></LazyPageWrapper>} />
+              <Route path="fornecedores/cadastro" element={<LazyPageWrapper><SupplierRegistration /></LazyPageWrapper>} />
+              <Route path="fornecedores/avaliacoes" element={<LazyPageWrapper><SupplierEvaluations /></LazyPageWrapper>} />
+              <Route path="fornecedores/conexoes" element={<LazyPageWrapper><SupplierConnections /></LazyPageWrapper>} />
+              <Route path="fornecedores/indicadores" element={<LazyPageWrapper><SupplierIndicatorsPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/documentacao" element={<LazyPageWrapper><RequiredDocuments /></LazyPageWrapper>} />
+              <Route path="fornecedores/tipos" element={<LazyPageWrapper><SupplierTypesPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/categorias" element={<LazyPageWrapper><SupplierCategoriesPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/treinamentos" element={<LazyPageWrapper><SupplierTrainingMaterialsPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/entregas" element={<LazyPageWrapper><SupplierDeliveriesPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/falhas" element={<LazyPageWrapper><SupplierFailuresPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/criterios-avaliacao" element={<LazyPageWrapper><SupplierEvaluationCriteriaPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/importar-exportar" element={<LazyPageWrapper><SupplierImportExportPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/associacao-documentos" element={<LazyPageWrapper><DocumentTypeAssociationPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/leituras-obrigatorias" element={<LazyPageWrapper><SupplierMandatoryReadingsPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/pesquisas" element={<LazyPageWrapper><SupplierSurveysManagementPage /></LazyPageWrapper>} />
+              <Route path="social-esg" element={<LazyPageWrapper><SocialESG /></LazyPageWrapper>} />
+              <Route path="gestao-funcionarios" element={<LazyPageWrapper><GestaoFuncionarios /></LazyPageWrapper>} />
+              <Route path="gestao-treinamentos" element={<LazyPageWrapper><GestaoTreinamentos /></LazyPageWrapper>} />
+              <Route path="seguranca-trabalho" element={<LazyPageWrapper><SeguracaTrabalho /></LazyPageWrapper>} />
+              <Route path="desenvolvimento-carreira" element={<LazyPageWrapper><DesenvolvimentoCarreira /></LazyPageWrapper>} />
+              <Route path="descricao-cargos" element={<LazyPageWrapper><DescricaoCargos /></LazyPageWrapper>} />
+              <Route path="estrutura-organizacional" element={<LazyPageWrapper><EstruturaOrganizacional /></LazyPageWrapper>} />
+              <Route path="avaliacao-eficacia" element={<LazyPageWrapper><AvaliacaoEficacia /></LazyPageWrapper>} />
+              <Route path="configuracao" element={<LazyPageWrapper><Configuracao /></LazyPageWrapper>} />
+              <Route path="configuracao-organizacional" element={<LazyPageWrapper><ConfiguracaoOrganizacional /></LazyPageWrapper>} />
+              <Route path="ajuda" element={<LazyPageWrapper><Ajuda /></LazyPageWrapper>} />
+              <Route path="dashboard" element={<LazyPageWrapper><Dashboard /></LazyPageWrapper>} />
+              {/* Catch-all demo → index */}
+              <Route path="*" element={<Navigate to="/demo" replace />} />
+            </Route>
 
             {/* Rota de autenticação - pública */}
             <Route path="/auth" element={<Auth />} />

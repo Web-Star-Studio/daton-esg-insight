@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { BadgeNotification, StatusIndicator } from "@/components/ui/badge-notification"
 import { useNotificationCounts } from "@/hooks/useNotificationCounts"
 import { DISABLED_SECTION_IDS, DISABLED_ESG_CATEGORY_IDS } from "@/config/enabledModules"
+import { useDemo } from "@/contexts/DemoContext"
 import {
   Sidebar,
   SidebarContent,
@@ -391,10 +392,14 @@ export function AppSidebar() {
   const location = useLocation()
   const { state } = useSidebar()
   const collapsed = state === "collapsed"
+  const { isDemo } = useDemo()
   const { user, restartOnboarding } = useAuth()
   const { toast } = useToast()
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
   const isPlatformAdmin = useHasRole('platform_admin')
+  
+  // Demo prefix for all navigation paths
+  const demoPrefix = isDemo ? '/demo' : ''
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'esg': false,
     'environmental-category': false,
@@ -406,7 +411,8 @@ export function AppSidebar() {
   const { data: notificationCounts } = useNotificationCounts()
   
   const currentPath = location.pathname
-  const isActive = (path: string) => currentPath === path
+  const isActive = (path: string) => currentPath === path || currentPath === `${demoPrefix}${path}`
+  const prefixPath = (path: string) => path === '#' ? '#' : `${demoPrefix}${path}`
   
   // Auto-expand category if active page belongs to it
   useState(() => {
@@ -476,7 +482,7 @@ export function AppSidebar() {
     return (
       <SidebarMenuSubItem key={item.id}>
         <SidebarMenuSubButton
-          onClick={() => navigate(item.path)}
+          onClick={() => navigate(prefixPath(item.path))}
           className={`group cursor-pointer ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/30"}`}
         >
           <NavigationTooltip
@@ -604,7 +610,7 @@ export function AppSidebar() {
     return (
       <SidebarMenuItem key={item.id}>
         <SidebarMenuButton
-          onClick={() => navigate(item.path)}
+          onClick={() => navigate(prefixPath(item.path))}
           aria-current={active ? "page" : undefined}
           className={`group transition-all duration-200 hover-scale ${active ? "bg-primary/10 text-primary font-medium shadow-sm" : "hover:bg-muted/50 hover:shadow-sm"}`}
         >
@@ -765,7 +771,7 @@ export function AppSidebar() {
                   return (
                     <SidebarMenuItem key={`fav-${fav.id}`} className="animate-fade-in">
                       <SidebarMenuButton 
-                        onClick={() => navigate(fav.path)}
+                        onClick={() => navigate(prefixPath(fav.path))}
                         className="group transition-all duration-200 hover-scale"
                       >
                         <IconComponent className="h-4 w-4" />
@@ -811,7 +817,7 @@ export function AppSidebar() {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate(prefixPath('/dashboard'))}
                     className={`group transition-all duration-200 hover-scale px-4 ${
                       isActive('/dashboard') ? 'bg-primary/10 text-primary font-medium' : ''
                     }`}
