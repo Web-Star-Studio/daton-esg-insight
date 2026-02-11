@@ -20,7 +20,7 @@ export function HeimdallNavbar() {
                 padding: '2rem max(4vw, 2rem)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'flex-start',
+                justifyContent: 'space-between',
                 background: 'transparent',
             }}
         >
@@ -42,6 +42,37 @@ export function HeimdallNavbar() {
                     }}
                 />
             </button>
+
+            <nav style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                {[
+                    { label: 'Soluções', path: '/funcionalidades' },
+                    { label: 'Tecnologia', path: '/tecnologia' },
+                    { label: 'Documentação', path: '/documentacao' },
+                    { label: 'Sobre Nós', path: '/sobre-nos' },
+                    { label: 'Contato', path: '/contato' },
+                ].map((link) => (
+                    <button
+                        key={link.label}
+                        onClick={() => navigate(link.path)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            fontSize: '0.9rem',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            transition: 'color 0.2s',
+                            fontFamily: 'Inter, system-ui, sans-serif',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)')}
+                    >
+                        {link.label}
+                    </button>
+                ))}
+            </nav>
         </header>
     );
 }

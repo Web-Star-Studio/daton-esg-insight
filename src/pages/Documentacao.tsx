@@ -1,668 +1,387 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronRight, FileText, Zap, Shield, Target, Users, Cpu, Globe, Award, TrendingUp, Clock, CheckCircle, ArrowRight, ExternalLink } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import {
+  FileText, Zap, Shield, Target, Users, Cpu, Globe, TrendingUp,
+  Clock, CheckCircle, ArrowRight, Layers, HelpCircle, ChevronDown
+} from 'lucide-react';
+import { FAQ_categories } from '@/data/faqs';
+import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
+import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
+import '@/components/landing/heimdall/heimdall.css';
 
 const Documentacao = () => {
   const [activeSection, setActiveSection] = useState('overview');
 
   const sections = [
     { id: 'overview', title: 'Visão Geral', icon: FileText },
-    { id: 'modules', title: 'Módulos e Funcionalidades', icon: Zap },
-    { id: 'technologies', title: 'Tecnologias', icon: Cpu },
+    { id: 'modules', title: 'Módulos', icon: Layers },
+
     { id: 'benefits', title: 'Benefícios', icon: Target },
-    { id: 'clients', title: 'Casos de Uso', icon: Users },
     { id: 'security', title: 'Segurança', icon: Shield },
-    { id: 'support', title: 'Suporte', icon: Globe },
-    { id: 'roadmap', title: 'Roadmap', icon: TrendingUp },
+    { id: 'api', title: 'API & Dev', icon: Cpu },
+    { id: 'faq', title: 'Central de Ajuda', icon: HelpCircle },
   ];
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
     const element = document.getElementById(sectionId);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      const offset = 100; // Header offset
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
   };
 
+  // Update active section on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 150;
+
+      for (const section of sections) {
+        const element = document.getElementById(section.id);
+        if (element) {
+          const { offsetTop, offsetHeight } = element;
+          if (
+            scrollPosition >= offsetTop &&
+            scrollPosition < offsetTop + offsetHeight
+          ) {
+            setActiveSection(section.id);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [sections]);
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center space-x-4">
-            <img src="/src/assets/daton-logo.png" alt="Daton" className="h-8 w-auto" />
-            <Separator orientation="vertical" className="h-6" />
-            <h1 className="text-lg font-semibold">Documentação</h1>
-          </div>
-          <Button asChild>
-            <Link to="/" className="flex items-center gap-2">
-              Voltar ao Site <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+    <div className="heimdall-page min-h-screen bg-white selection:bg-[#c4fca1] selection:text-[#1a2421]">
+      <HeimdallNavbar />
+
+      {/* --- HERO SECTION --- */}
+      <section
+        style={{
+          position: "relative",
+          minHeight: "50vh",
+          display: "grid",
+          placeItems: "center",
+          backgroundColor: "#0B0C0E",
+          overflow: "hidden",
+          padding: "120px 2rem 60px",
+        }}
+      >
+        {/* Abstract Background */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 z-0 opacity-20"
+          style={{
+            backgroundImage: `radial-gradient(circle at 50% 50%, #1a2421 1px, transparent 1px)`,
+            backgroundSize: '40px 40px'
+          }}
+        />
+
+        <div className="absolute inset-0 z-0 bg-gradient-to-b from-transparent to-[#0B0C0E]/80" />
+
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <span className="inline-block px-3 py-1 mb-6 text-xs font-mono tracking-widest text-[#c4fca1] border border-[#c4fca1]/30 rounded-full uppercase bg-[#c4fca1]/10">
+              Central de Conhecimento
+            </span>
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
+              Documentação Daton
+            </h1>
+            <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
+              Guia completo de arquitetura, referências de API e manuais de utilização da plataforma ESG mais avançada do mercado.
+            </p>
+          </motion.div>
         </div>
-      </header>
+      </section>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar Navigation */}
-          <aside className="w-64 shrink-0">
-            <div className="sticky top-24">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Navegação</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <ScrollArea className="h-[calc(100vh-200px)]">
-                    <nav className="space-y-1 p-4">
-                      {sections.map((section) => {
-                        const Icon = section.icon;
-                        return (
-                          <button
-                            key={section.id}
-                            onClick={() => scrollToSection(section.id)}
-                            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${
-                              activeSection === section.id ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
-                            }`}
-                          >
-                            <Icon className="h-4 w-4" />
-                            {section.title}
-                          </button>
-                        );
-                      })}
-                    </nav>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+      <main className="max-w-7xl mx-auto px-6 py-16 flex flex-col md:flex-row gap-12">
+        {/* --- SIDEBAR NAVIGATION --- */}
+        <aside className="w-full md:w-64 shrink-0 hidden md:block">
+          <div className="sticky top-32 space-y-8">
+            <div>
+              <h3 className="text-xs font-mono font-bold text-gray-400 uppercase tracking-widest mb-6 px-3">
+                Índice
+              </h3>
+              <nav className="space-y-1">
+                {sections.map((section) => {
+                  const Icon = section.icon;
+                  const isActive = activeSection === section.id;
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => scrollToSection(section.id)}
+                      className={`
+                                                w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 group
+                                                ${isActive
+                          ? 'bg-[#f3f4f6] text-[#1a2421]'
+                          : 'text-gray-500 hover:text-[#1a2421] hover:bg-gray-50'
+                        }
+                                            `}
+                    >
+                      <Icon
+                        size={16}
+                        className={`transition-colors ${isActive ? 'text-[#15c470]' : 'text-gray-400 group-hover:text-gray-600'}`}
+                      />
+                      {section.title}
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeIndicator"
+                          className="ml-auto w-1.5 h-1.5 rounded-full bg-[#15c470]"
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
             </div>
-          </aside>
 
-          {/* Main Content */}
-          <main className="flex-1 space-y-12">
-            {/* Visão Geral */}
-            <section id="overview" className="space-y-6">
-              <div className="space-y-4">
-                <h2 className="text-3xl font-bold tracking-tight">Documentação Daton</h2>
-                <p className="text-xl text-muted-foreground">
-                  A plataforma ESG mais avançada do Brasil para gestão completa de sustentabilidade empresarial
-                </p>
-              </div>
+            <div className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb]">
+              <h4 className="font-bold text-[#1a2421] mb-2">Precisa de ajuda?</h4>
+              <p className="text-sm text-gray-500 mb-4">Nossa equipe de suporte técnico está disponível 24/7.</p>
+              <button className="w-full py-2 px-4 bg-white border border-[#e5e7eb] rounded-lg text-sm font-medium text-[#1a2421] hover:bg-[#e5e7eb] transition-colors shadow-sm">
+                Contatar Suporte
+              </button>
+            </div>
+          </div>
+        </aside>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>O que é o Daton?</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p>
-                    Daton é a plataforma ESG (Environmental, Social & Governance) mais avançada do Brasil, 
-                    desenvolvida para automatizar e otimizar toda a gestão de sustentabilidade empresarial.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex items-center gap-3 p-4 bg-accent/10 rounded-lg">
-                      <Clock className="h-8 w-8 text-primary" />
-                      <div>
-                        <div className="font-semibold">70% menos tempo</div>
-                        <div className="text-sm text-muted-foreground">em relatórios ESG</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-4 bg-accent/10 rounded-lg">
-                      <CheckCircle className="h-8 w-8 text-primary" />
-                      <div>
-                        <div className="font-semibold">99% de precisão</div>
-                        <div className="text-sm text-muted-foreground">em compliance</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-4 bg-accent/10 rounded-lg">
-                      <Zap className="h-8 w-8 text-primary" />
-                      <div>
-                        <div className="font-semibold">15 minutos</div>
-                        <div className="text-sm text-muted-foreground">setup completo</div>
-                      </div>
-                    </div>
+        {/* --- CONTENT AREA --- */}
+        <div className="flex-1 space-y-24">
+
+          {/* VISÃO GERAL */}
+          <section id="overview" className="scroll-mt-32">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-[#1a2421] mb-4">Visão Geral</h2>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                Daton é a plataforma ESG (Environmental, Social & Governance) enterprise-grade que unifica a gestão de sustentabilidade.
+                Projetada para escala, segurança e conformidade automática.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { icon: Clock, label: "Eficiência", title: "70% menos tempo", desc: "em relatórios e coletas de dados manuais." },
+                { icon: CheckCircle, label: "Precisão", title: "99.9% Compliance", desc: "com normas locais e globais (GRI, SASB)." },
+                { icon: Zap, label: "Velocidade", title: "Setup em 15min", desc: "para criar sua primeira conta e dashboard." },
+              ].map((item, idx) => (
+                <div key={idx} className="p-6 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb] hover:border-[#15c470]/50 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-white border border-[#e5e7eb] flex items-center justify-center mb-4 text-[#15c470]">
+                    <item.icon size={20} />
                   </div>
-                </CardContent>
-              </Card>
-            </section>
+                  <span className="text-xs font-mono font-bold text-gray-400 uppercase tracking-widest">{item.label}</span>
+                  <h3 className="text-xl font-bold text-[#1a2421] mt-1 mb-2">{item.title}</h3>
+                  <p className="text-sm text-gray-500">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
 
-            {/* Módulos e Funcionalidades */}
-            <section id="modules" className="space-y-6">
-              <h2 className="text-3xl font-bold">Módulos e Funcionalidades</h2>
-              
-              <div className="grid gap-6">
-                {/* GEE */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-primary" />
-                      Gestão de Emissões GEE
-                    </CardTitle>
-                    <CardDescription>
-                      Monitoramento automático e cálculo preciso de gases de efeito estufa
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {[
-                        'Rastreamento automático de emissões',
-                        'Cálculos por Escopo 1, 2 e 3',
-                        'Biblioteca de fatores atualizados',
-                        'Relatórios em tempo real',
-                        'Alertas de meta',
-                        'Benchmarking setorial'
-                      ].map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-primary" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
+          {/* MÓDULOS */}
+          <section id="modules" className="scroll-mt-32">
+            <h2 className="text-3xl font-bold text-[#1a2421] mb-8">Módulos Essenciais</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                {
+                  title: "Gestão de Emissões GEE",
+                  icon: Globe,
+                  features: ["Escopos 1, 2 e 3 automático", "Biblioteca de fatores DEFRA/IPCC", "Inventário em tempo real"]
+                },
+                {
+                  title: "Compliance & Licenças",
+                  icon: Shield,
+                  features: ["Monitoramento de condicionantes", "Alertas de vencimento", "Rastro de auditoria"]
+                },
+                {
+                  title: "Inteligência Artificial",
+                  icon: Cpu,
+                  features: ["OCR de faturas de energia", "Predição de riscos climáticos", "Assistente jurídico"]
+                },
+                {
+                  title: "Supply Chain",
+                  icon: Users,
+                  features: ["Homologação de fornecedores", "Scorecard ESG", "Portal do fornecedor"]
+                }
+              ].map((mod, idx) => (
+                <div key={idx} className="group p-8 rounded-2xl border border-[#e5e7eb] bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 bg-gray-50 rounded-xl group-hover:bg-[#c4fca1] transition-colors">
+                      <mod.icon size={24} className="text-[#1a2421]" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <h3 className="text-xl font-bold text-[#1a2421]">{mod.title}</h3>
+                  </div>
+                  <ul className="space-y-3">
+                    {mod.features.map((feat, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
+                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#15c470] shrink-0" />
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
 
-                {/* Compliance */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-primary" />
-                      Compliance e Licenciamento
-                    </CardTitle>
-                    <CardDescription>
-                      Gestão inteligente de licenças e conformidade regulatória
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {[
-                        'Gestão inteligente de licenças',
-                        'Alertas de vencimento automáticos',
-                        'Controle de condicionantes',
-                        'Dashboard de status',
-                        'Histórico completo',
-                        'Score de compliance'
-                      ].map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-primary" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* IA e Analytics */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Cpu className="h-5 w-5 text-primary" />
-                      Inteligência Artificial
-                    </CardTitle>
-                    <CardDescription>
-                      IA preditiva e analytics avançado para insights acionáveis
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {[
-                        'IA preditiva para cenários',
-                        'Recomendações automáticas',
-                        'Análise de riscos climáticos',
-                        'Detecção de padrões',
-                        'Processamento de documentos',
-                        'Dashboards inteligentes'
-                      ].map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-primary" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Outros módulos em formato resumido */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Gestão de Resíduos</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="text-sm text-muted-foreground">
-                        Controle completo do ciclo de vida dos resíduos, destinação inteligente e conformidade PNRS.
-                      </div>
-                    </CardContent>
-                  </Card>
+          {/* BENEFÍCIOS */}
+          <section id="benefits" className="scroll-mt-32">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bold text-[#1a2421]">Impacto Real</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#e5e7eb] border border-[#e5e7eb] rounded-2xl overflow-hidden shadow-sm">
+              {[
+                { title: "Automação", desc: "Coleta automática de dados via APIs e integradores." },
+                { title: "Auditoria", desc: "Histórico imutável de todas as ações na plataforma." },
+                { title: "Reporte", desc: "Relatórios prontos para investidores e stakeholders." }
+              ].map((item, idx) => (
+                <div key={idx} className="bg-white p-8 hover:bg-gray-50 transition-colors">
+                  <h3 className="text-lg font-bold text-[#1a2421] mb-2">{item.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Relatórios ESG</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="text-sm text-muted-foreground">
-                        Padrões internacionais GRI, SASB, TCFD, CDP com geração automática e templates personalizáveis.
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Projetos de Carbono</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="text-sm text-muted-foreground">
-                        Portfólio completo, validação de créditos, ROI ambiental e certificações internacionais.
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Metas e KPIs</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="text-sm text-muted-foreground">
-                        Science-Based Targets, tracking automático, benchmarking e alertas de performance.
-                      </div>
-                    </CardContent>
-                  </Card>
+          {/* SEGURANÇA */}
+          <section id="security" className="scroll-mt-32">
+            <h2 className="text-3xl font-bold text-[#1a2421] mb-8">Segurança de Dados</h2>
+            <div className="p-8 rounded-2xl border border-[#e5e7eb] bg-[#f8fafc]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <ul className="space-y-4">
+                  {[
+                    "Criptografia AES-256 em repouso",
+                    "TLS 1.3 para dados em trânsito",
+                    "Autenticação Multi-fator (MFA)",
+                    "Backups automáticos diários"
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-center gap-3 text-[#1a2421] font-medium">
+                      <Shield size={18} className="text-[#15c470]" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <div className="space-y-4">
+                  <h4 className="font-bold text-[#1a2421]">Certificações & Compliance</h4>
+                  <div className="flex flex-wrap gap-3">
+                    <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">ISO 27001 Ready</span>
+                    <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">LGPD</span>
+                    <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">SOC 2 Type II</span>
+                  </div>
                 </div>
               </div>
-            </section>
+            </div>
+          </section>
 
-            {/* Tecnologias */}
-            <section id="technologies" className="space-y-6">
-              <h2 className="text-3xl font-bold">Tecnologias Utilizadas</h2>
-              
-              <div className="grid gap-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Frontend Moderno</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary">React 18.3.1</Badge>
-                        <Badge variant="secondary">TypeScript</Badge>
-                        <Badge variant="secondary">Vite</Badge>
-                        <Badge variant="secondary">Tailwind CSS</Badge>
-                        <Badge variant="secondary">Shadcn/ui</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Interface moderna, responsiva e acessível com componentes reutilizáveis.
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Backend Robusto</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary">Supabase</Badge>
-                        <Badge variant="secondary">PostgreSQL</Badge>
-                        <Badge variant="secondary">Edge Functions</Badge>
-                        <Badge variant="secondary">RLS</Badge>
-                        <Badge variant="secondary">Real-time</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Infraestrutura escalável com segurança granular e atualizações em tempo real.
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Inteligência Artificial</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary">OpenAI GPT-4</Badge>
-                        <Badge variant="secondary">Computer Vision</Badge>
-                        <Badge variant="secondary">OCR</Badge>
-                        <Badge variant="secondary">Machine Learning</Badge>
-                        <Badge variant="secondary">NLP</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        IA proprietária especializada em processamento de documentos e análise ESG.
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Integrações</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary">ERPs</Badge>
-                        <Badge variant="secondary">Power BI</Badge>
-                        <Badge variant="secondary">APIs REST</Badge>
-                        <Badge variant="secondary">Webhooks</Badge>
-                        <Badge variant="secondary">Excel/CSV</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Conectividade total com sistemas existentes e ferramentas de negócio.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
+          {/* API */}
+          <section id="api" className="scroll-mt-32">
+            <h2 className="text-3xl font-bold text-[#1a2421] mb-8">API & Desenvolvedores</h2>
+            <div className="prose prose-gray max-w-none">
+              <p className="text-gray-600 mb-6">
+                A plataforma Daton segue uma abordagem <strong>API-First</strong>. Tudo o que você vê no dashboard está disponível via API.
+              </p>
+              <div className="bg-[#1e293b] rounded-xl p-6 overflow-x-auto text-sm">
+                <code className="text-blue-300">GET</code> <code className="text-gray-300">https://api.daton.app/v1/emissions/summary</code>
+                <pre className="mt-4 text-gray-400 font-mono">
+                  {`{
+  "company_id": "acc_123456",
+  "period": "2024-Q1",
+  "total_co2e": 1250.5,
+  "scope_breakdown": {
+    "scope_1": 450.2,
+    "scope_2": 300.0,
+    "scope_3": 500.3
+  }
+}`}
+                </pre>
               </div>
-            </section>
-
-            {/* Benefícios */}
-            <section id="benefits" className="space-y-6">
-              <h2 className="text-3xl font-bold">Benefícios Comprovados</h2>
-              
-              <div className="grid gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>ROI e Eficiência</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="text-center space-y-2">
-                        <div className="text-3xl font-bold text-primary">70%</div>
-                        <div className="text-sm text-muted-foreground">Redução no tempo de relatórios ESG</div>
-                      </div>
-                      <div className="text-center space-y-2">
-                        <div className="text-3xl font-bold text-primary">300%</div>
-                        <div className="text-sm text-muted-foreground">ROI médio em eficiência operacional</div>
-                      </div>
-                      <div className="text-center space-y-2">
-                        <div className="text-3xl font-bold text-primary">0</div>
-                        <div className="text-sm text-muted-foreground">Multas com alertas inteligentes</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Vantagens Competitivas</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <ul className="space-y-1 text-sm">
-                        <li>• Compliance automatizado</li>
-                        <li>• Decisões baseadas em dados</li>
-                        <li>• Redução de riscos regulatórios</li>
-                        <li>• Melhoria da reputação corporativa</li>
-                        <li>• Preparação contínua para auditoria</li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Impacto em Sustentabilidade</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <ul className="space-y-1 text-sm">
-                        <li>• Monitoramento preciso da pegada de carbono</li>
-                        <li>• Otimização de recursos</li>
-                        <li>• Implementação de economia circular</li>
-                        <li>• Transparência com stakeholders</li>
-                        <li>• Contribuição para ODS da ONU</li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </div>
+              <div className="mt-6">
+                <button className="inline-flex items-center gap-2 text-[#15c470] font-bold hover:underline">
+                  Ver Documentação Completa da API <ArrowRight size={16} />
+                </button>
               </div>
-            </section>
+            </div>
+          </section>
 
-            {/* Casos de Uso e Clientes */}
-            <section id="clients" className="space-y-6">
-              <h2 className="text-3xl font-bold">Casos de Uso e Clientes</h2>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Indústrias Atendidas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {[
-                      { name: 'Mercosul Energia', sector: 'Energia' },
-                      { name: 'ThyssenKrupp', sector: 'Metalurgia' },
-                      { name: 'Cooperlíquidos', sector: 'Agronegócio' },
-                      { name: 'Gabardo', sector: 'Consultoria' },
-                      { name: 'Amcham', sector: 'Organizações' },
-                      { name: 'Safeweb', sector: 'Tecnologia' },
-                    ].map((client, idx) => (
-                      <div key={idx} className="p-3 border rounded-lg">
-                        <div className="font-semibold text-sm">{client.name}</div>
-                        <div className="text-xs text-muted-foreground">{client.sector}</div>
-                      </div>
+          {/* FAQ */}
+          <section id="faq" className="scroll-mt-32">
+            <div className="mb-12">
+              <span className="inline-block px-3 py-1 mb-4 text-xs font-mono tracking-widest text-[#15c470] border border-[#15c470]/30 rounded-full uppercase bg-[#15c470]/10">
+                Suporte
+              </span>
+              <h2 className="text-3xl font-bold text-[#1a2421] mb-4">Central de Ajuda</h2>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                Encontre respostas para as perguntas mais comuns sobre a plataforma.
+              </p>
+            </div>
+
+            <div className="space-y-12">
+              {FAQ_categories.map((category, catIdx) => (
+                <div key={catIdx} className="space-y-6">
+                  <h3 className="text-xl font-bold text-[#1a2421] border-b border-[#e5e7eb] pb-2">
+                    {category.title}
+                  </h3>
+                  <div className="space-y-4">
+                    {category.items.map((item, idx) => (
+                      <FAQItem key={idx} question={item.q} answer={item.a} />
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Depoimentos de Clientes</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <blockquote className="border-l-4 border-primary pl-4 italic">
-                      "Reduzimos 75% do tempo em relatórios ESG, economizando R$ 2.3M anuais."
-                    </blockquote>
-                    <div className="text-sm text-muted-foreground">
-                      — Marina Santos, Gerente de Sustentabilidade, Mercosul Energia
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-3">
-                    <blockquote className="border-l-4 border-primary pl-4 italic">
-                      "Zero multas no último ano graças aos alertas inteligentes da plataforma."
-                    </blockquote>
-                    <div className="text-sm text-muted-foreground">
-                      — Carlos Mendes, Diretor Ambiental, ThyssenKrupp
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
-
-            {/* Segurança */}
-            <section id="security" className="space-y-6">
-              <h2 className="text-3xl font-bold">Segurança e Compliance</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-primary" />
-                      Segurança de Dados
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <ul className="space-y-1 text-sm">
-                      <li>• Criptografia end-to-end</li>
-                      <li>• Row Level Security (RLS)</li>
-                      <li>• Auditoria completa de acessos</li>
-                      <li>• Backup automático</li>
-                      <li>• Conformidade LGPD</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="h-5 w-5 text-primary" />
-                      Certificações
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">Em Processo</Badge>
-                        <span className="text-sm">ISO 27001</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">Em Processo</Badge>
-                        <span className="text-sm">SOC 2 Type II</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">Ativo</Badge>
-                        <span className="text-sm">Conformidade LGPD</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">Ativo</Badge>
-                        <span className="text-sm">Padrões ESG Internacionais</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </section>
-
-            {/* Suporte */}
-            <section id="support" className="space-y-6">
-              <h2 className="text-3xl font-bold">Suporte e Implementação</h2>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Processo de Implementação</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center space-y-2">
-                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                        <span className="text-lg font-bold text-primary">1</span>
-                      </div>
-                      <h4 className="font-semibold">Conectar</h4>
-                      <p className="text-sm text-muted-foreground">Integração com sistemas existentes</p>
-                    </div>
-                    <div className="text-center space-y-2">
-                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                        <span className="text-lg font-bold text-primary">2</span>
-                      </div>
-                      <h4 className="font-semibold">Monitorar</h4>
-                      <p className="text-sm text-muted-foreground">IA processa dados automaticamente</p>
-                    </div>
-                    <div className="text-center space-y-2">
-                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                        <span className="text-lg font-bold text-primary">3</span>
-                      </div>
-                      <h4 className="font-semibold">Relatar</h4>
-                      <p className="text-sm text-muted-foreground">Dashboards e recomendações</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Suporte Completo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center space-y-2">
-                      <Users className="h-8 w-8 text-primary mx-auto" />
-                      <div className="text-sm font-semibold">Onboarding Personalizado</div>
-                    </div>
-                    <div className="text-center space-y-2">
-                      <Globe className="h-8 w-8 text-primary mx-auto" />
-                      <div className="text-sm font-semibold">Suporte 24/7</div>
-                    </div>
-                    <div className="text-center space-y-2">
-                      <Target className="h-8 w-8 text-primary mx-auto" />
-                      <div className="text-sm font-semibold">Consultoria Especializada</div>
-                    </div>
-                    <div className="text-center space-y-2">
-                      <TrendingUp className="h-8 w-8 text-primary mx-auto" />
-                      <div className="text-sm font-semibold">Atualizações Automáticas</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
-
-            {/* Roadmap */}
-            <section id="roadmap" className="space-y-6">
-              <h2 className="text-3xl font-bold">Roadmap e Inovações</h2>
-              
-              <div className="grid gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Funcionalidades em Desenvolvimento</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        'Blockchain para rastreabilidade',
-                        'IoT para monitoramento em tempo real',
-                        'Análise de ciclo de vida (LCA)',
-                        'Relatórios de biodiversidade',
-                        'ESG Score automático',
-                        'Mobile app nativo'
-                      ].map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-primary rounded-full" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Planos de Expansão</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="secondary">2024</Badge>
-                        <span className="text-sm">Expansão para mercado internacional</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge variant="secondary">2025</Badge>
-                        <span className="text-sm">Novos módulos setoriais especializados</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge variant="secondary">2025</Badge>
-                        <span className="text-sm">Marketplace de soluções ESG</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </section>
-
-            {/* Call to Action */}
-            <Card className="bg-gradient-to-r from-primary/10 to-accent/10">
-              <CardContent className="p-8 text-center space-y-4">
-                <h3 className="text-2xl font-bold">Pronto para transformar sua gestão ESG?</h3>
-                <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Junte-se às empresas líderes que já utilizam a Daton para otimizar 
-                  sua performance ambiental e garantir compliance total.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" asChild>
-                    <Link to="/contato" className="flex items-center gap-2">
-                      Agendar Demo <ExternalLink className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button size="lg" variant="outline" asChild>
-                    <Link to="/simulador" className="flex items-center gap-2">
-                      Testar Simulador <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </main>
+              ))}
+            </div>
+          </section>
+
         </div>
-      </div>
+      </main>
+
+      <PublicFooter />
+    </div>
+  );
+};
+
+
+const FAQItem = ({ question, answer }: { question: string, answer: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="border border-[#e5e7eb] rounded-xl bg-white overflow-hidden transition-all duration-200 hover:border-[#15c470]/30">
+        <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="w-full flex items-center justify-between p-5 text-left group"
+        >
+            <span className={`font-medium pr-8 transition-colors ${isOpen ? 'text-[#15c470]' : 'text-[#1a2421] group-hover:text-[#15c470]'}`}>
+                {question}
+            </span>
+            <ChevronDown 
+                size={20} 
+                className={`text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#15c470]' : ''}`} 
+            />
+        </button>
+        <motion.div
+            initial={false}
+            animate={{ height: isOpen ? 'auto' : 0, opacity: isOpen ? 1 : 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden"
+        >
+            <div className="p-5 pt-0 text-gray-600 text-sm leading-relaxed border-t border-transparent">
+                {answer}
+            </div>
+        </motion.div>
     </div>
   );
 };

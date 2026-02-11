@@ -208,16 +208,22 @@ export default function LandingTerra() {
                     </span>
                 </div>
                 <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-                    {['Soluções', 'Impacto', 'Sobre'].map(item => (
-                        <span key={item} style={{
-                            fontSize: '0.85rem', color: 'rgba(232, 228, 217, 0.6)',
-                            cursor: 'pointer', letterSpacing: '0.05em', textTransform: 'uppercase',
-                            transition: 'color 0.3s',
-                        }}
+                    {[
+                        { label: 'Soluções', path: '/funcionalidades' },
+                        { label: 'Impacto', path: '/funcionalidades' },
+                        { label: 'Sobre', path: '/sobre-nos' }
+                    ].map(item => (
+                        <span key={item.label}
+                            onClick={() => navigate(item.path)}
+                            style={{
+                                fontSize: '0.85rem', color: 'rgba(232, 228, 217, 0.6)',
+                                cursor: 'pointer', letterSpacing: '0.05em', textTransform: 'uppercase',
+                                transition: 'color 0.3s',
+                            }}
                             onMouseEnter={e => (e.target as HTMLElement).style.color = '#15c470'}
                             onMouseLeave={e => (e.target as HTMLElement).style.color = 'rgba(232, 228, 217, 0.6)'}
                         >
-                            {item}
+                            {item.label}
                         </span>
                     ))}
                     <motion.button

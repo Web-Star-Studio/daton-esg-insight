@@ -21,6 +21,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
 import { GlobalKeyboardShortcuts } from "@/components/GlobalKeyboardShortcuts";
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications";
+import SmoothScroll from "@/components/layout/SmoothScroll";
+
 
 // Páginas críticas carregadas sincronamente
 import Auth from "./pages/Auth";
@@ -35,9 +37,11 @@ const Index = lazy(() => import("./pages/Index"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Contato = lazy(() => import("./pages/Contato"));
 const ESGAmbiental = lazy(() => import("./pages/ESGAmbiental"));
+const Technology = lazy(() => import("./pages/Technology"));
 const ESGSocial = lazy(() => import("./pages/ESGSocial"));
 const ESGGovernanca = lazy(() => import("./pages/ESGGovernanca"));
 const Documentacao = lazy(() => import("./pages/Documentacao"));
+const SobreNos = lazy(() => import('./pages/SobreNos'));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Ajuda = lazy(() => import("./pages/Ajuda"));
 const InventarioGEE = lazy(() => import("./pages/InventarioGEE"));
@@ -385,6 +389,11 @@ const AppContent = () => {
                 <ESGAmbiental />
               </LazyPageWrapper>
             } />
+            <Route path="/tecnologia" element={
+              <LazyPageWrapper>
+                <Technology />
+              </LazyPageWrapper>
+            } />
             <Route path="/social" element={
               <LazyPageWrapper>
                 <ESGSocial />
@@ -399,6 +408,11 @@ const AppContent = () => {
             <Route path="/documentacao" element={
               <LazyPageWrapper>
                 <Documentacao />
+              </LazyPageWrapper>
+            } />
+            <Route path="/sobre-nos" element={
+              <LazyPageWrapper>
+                <SobreNos />
               </LazyPageWrapper>
             } />
             <Route path="/faq" element={
@@ -899,7 +913,9 @@ const App = () => (
                       v7_relativeSplatPath: true
                     }}
                   >
-                    <AppContent />
+                    <SmoothScroll>
+                      <AppContent />
+                    </SmoothScroll>
                   </BrowserRouter>
                 </SmartToastProvider>
               </TooltipProvider>

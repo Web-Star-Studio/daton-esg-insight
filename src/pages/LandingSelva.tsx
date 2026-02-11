@@ -208,16 +208,22 @@ export default function LandingSelva() {
                     </span>
                 </div>
                 <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-                    {['Soluções', 'Impacto', 'Sobre'].map(item => (
-                        <span key={item} style={{
-                            fontFamily: '"Bricolage Grotesque"', fontSize: '0.9rem',
-                            fontWeight: 500, color: '#8a7d65',
-                            cursor: 'pointer', transition: 'color 0.3s',
-                        }}
+                    {[
+                        { label: 'Soluções', path: '/funcionalidades' },
+                        { label: 'Impacto', path: '/funcionalidades' },
+                        { label: 'Sobre', path: '/sobre-nos' }
+                    ].map(item => (
+                        <span key={item.label}
+                            onClick={() => navigate(item.path)}
+                            style={{
+                                fontFamily: '"Bricolage Grotesque"', fontSize: '0.9rem',
+                                fontWeight: 500, color: '#8a7d65',
+                                cursor: 'pointer', transition: 'color 0.3s',
+                            }}
                             onMouseEnter={e => (e.target as HTMLElement).style.color = '#2a2520'}
                             onMouseLeave={e => (e.target as HTMLElement).style.color = '#8a7d65'}
                         >
-                            {item}
+                            {item.label}
                         </span>
                     ))}
                     <motion.button

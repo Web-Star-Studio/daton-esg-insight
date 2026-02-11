@@ -325,29 +325,6 @@
 }
 
 /* ============================================
-   CUSTOM CURSOR
-   ============================================ */
-.custom-cursor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 10px;
-  height: 10px;
-  background: #ffffff;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: difference;
-  transition: transform 0.15s ease-out, width 0.2s ease, height 0.2s ease;
-}
-
-.custom-cursor.cursor-hover {
-  width: 40px;
-  height: 40px;
-  background: #ffffff;
-}
-
-/* ============================================
    SIBLING FADE EFFECT (Nav Links)
    ============================================ */
 .sibling-fade>* {

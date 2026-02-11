@@ -59,7 +59,7 @@ export function HeimdallFooter() {
         {
             title: 'Empresa',
             links: [
-                { label: 'Sobre nós', href: '/contato' },
+                { label: 'Sobre nós', href: '/sobre-nos' },
                 { label: 'Contato', href: '/contato' },
                 { label: 'Carreiras', href: '/contato' },
                 { label: 'Blog', href: '/faq' },

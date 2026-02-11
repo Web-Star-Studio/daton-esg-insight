@@ -261,12 +261,18 @@ export default function LandingPulso() {
                     Daton
                 </span>
                 <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                    {['Produto', 'Dados', 'Sobre'].map(item => (
-                        <span key={item} style={{
-                            fontSize: '0.8rem', color: '#64748b', fontFamily: '"IBM Plex Mono"',
-                            cursor: 'pointer', padding: '0.4rem 0.8rem', borderRadius: '100px',
-                            transition: 'all 0.2s',
-                        }}
+                    {[
+                        { label: 'Produto', path: '/funcionalidades' },
+                        { label: 'Dados', path: '/funcionalidades' },
+                        { label: 'Sobre', path: '/sobre-nos' }
+                    ].map(item => (
+                        <span key={item.label}
+                            onClick={() => navigate(item.path)}
+                            style={{
+                                fontSize: '0.8rem', color: '#64748b', fontFamily: '"IBM Plex Mono"',
+                                cursor: 'pointer', padding: '0.4rem 0.8rem', borderRadius: '100px',
+                                transition: 'all 0.2s',
+                            }}
                             onMouseEnter={e => {
                                 (e.target as HTMLElement).style.background = 'rgba(0,0,0,0.04)';
                                 (e.target as HTMLElement).style.color = '#0f172a';
@@ -276,7 +282,7 @@ export default function LandingPulso() {
                                 (e.target as HTMLElement).style.color = '#64748b';
                             }}
                         >
-                            {item}
+                            {item.label}
                         </span>
                     ))}
                 </div>

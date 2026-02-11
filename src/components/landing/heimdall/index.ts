@@ -12,4 +12,3 @@ export { TechStack3D } from './TechStack3D';
 
 export { StatsGrid } from './StatsGrid';
 export { HeimdallFooter } from './HeimdallFooter';
-export { CustomCursor } from './CustomCursor';

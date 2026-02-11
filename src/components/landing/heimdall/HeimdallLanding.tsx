@@ -8,16 +8,12 @@
  */
 import { HeimdallNavbar } from './HeimdallNavbar';
 import { HeroSection } from './HeroSection';
-import { CustomCursor } from './CustomCursor';
 import { PublicFooter } from './PublicFooter';
 import './heimdall.css';
 
 export function HeimdallLanding() {
     return (
         <div className="heimdall-page">
-            {/* Custom Cursor */}
-            <CustomCursor />
-
             {/* Living Navbar */}
             <HeimdallNavbar />
 

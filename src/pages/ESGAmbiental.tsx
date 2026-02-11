@@ -34,9 +34,9 @@ const MODULES: ModuleHighlight[] = [
     id: "ambiental",
     index: "001",
     title: "ESG Ambiental",
-    category: "Aesthetics / Design / Architecture",
+    category: "Meio Ambiente / Sustentabilidade / Gestão",
     description:
-      "Monitor emissions, manage licenses, and track resource consumption in real-time dashboards. Automate calculations and accelerate compliance with global regulations.",
+      "Monitore emissões, gerencie licenças e acompanhe o consumo de recursos em painéis em tempo real. Automatize cálculos e acelere a conformidade com regulamentações globais.",
     icon: Leaf,
     image: "/hero-img-01.png",
     color: "#eef9e6",
@@ -50,9 +50,9 @@ const MODULES: ModuleHighlight[] = [
     id: "social",
     index: "002",
     title: "ESG Social",
-    category: "Gastronomy / Futuristic Cuisine",
+    category: "Social / Diversidade / Segurança",
     description:
-      "Track diversity, turnover, and safety metrics in a consolidated panel. Manage the complete employee lifecycle from recruitment to career development.",
+      "Acompanhe métricas de diversidade, rotatividade e segurança em um painel consolidado. Gerencie o ciclo de vida completo do colaborador, do recrutamento ao desenvolvimento de carreira.",
     icon: Users,
     image: "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?q=80&w=2669&auto=format&fit=crop",
     color: "#f0fdf4",
@@ -66,9 +66,9 @@ const MODULES: ModuleHighlight[] = [
     id: "qualidade",
     index: "003",
     title: "Qualidade (SGQ)",
-    category: "Management / Process Control",
+    category: "Gestão / Controle de Processos",
     description:
-      "Register, analyze, and treat non-conformities with structured flows. Control document versions and conduct internal audits with full traceability.",
+      "Registre, analise e trate não conformidades com fluxos estruturados. Controle versões de documentos e conduza auditorias internas com total rastreabilidade.",
     icon: FileCheck,
     image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2670&auto=format&fit=crop",
     color: "#f5f3ff",
@@ -82,9 +82,9 @@ const MODULES: ModuleHighlight[] = [
     id: "fornecedores",
     index: "004",
     title: "Gestão Fornecedores",
-    category: "Supply Chain / Procurement",
+    category: "Cadeia de Suprimentos / Compras",
     description:
-      "Qualify and evaluate suppliers. Monitor contracts and ESG risks in the chain, offering a self-service portal for your partners.",
+      "Qualifique e avalie fornecedores. Monitore contratos e riscos ESG na cadeia, oferecendo um portal de autoatendimento para seus parceiros.",
     icon: TrendingUp,
     image: "https://images.unsplash.com/photo-1586880244406-556ebe35f282?q=80&w=2574&auto=format&fit=crop",
     color: "#fff7ed",
@@ -98,9 +98,9 @@ const MODULES: ModuleHighlight[] = [
     id: "ia",
     index: "005",
     title: "Inteligência Artificial",
-    category: "Technology / Automation",
+    category: "Tecnologia / Automação",
     description:
-      "Analyze data in real-time to generate predictive alerts, identify emerging risks, and suggest continuous improvement actions.",
+      "Analise dados em tempo real para gerar alertas preditivos, identificar riscos emergentes e sugerir ações de melhoria contínua.",
     icon: Brain,
     image: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=2565&auto=format&fit=crop",
     color: "#eff6ff",
@@ -135,32 +135,31 @@ const Card = ({
 
   const imageScale = useTransform(scrollYProgress, [0, 1], [1.2, 1]);
   const scale = useTransform(progress, range, [1, targetScale]);
-  // Calculate blur range: Start blurring ONLY when the *next* card overlaps significantly (30%).
-  // range[0] is when *this* card enters.
-  // range[0] + 0.25 is when the *next* card enters.
-  // range[0] + 0.25 + (0.25 * 0.3) is when next card is 30% visible.
-  // Calculate blur range: Start blurring ONLY when the *next* card overlaps.
-  // We must ensure the input range lies within [0, 1] to avoid WAAPI errors/crashes.
 
+  // Blur Logic
   const step = 0.25;
-  // Reduce threshold to 10% overlap (0.1) so blur starts earlier as requested.
   let blurStart = range[0] + step + (step * 0.1);
-
-  // Safe clamp to ensure we don't exceed 0.95 (leaving room for interpolation)
   if (blurStart > 0.95) blurStart = 0.95;
-
   const blurEnd = 1;
-
-  // If blurStart >= blurEnd, useTransform might behave oddly or offsets error occurs.
-  // We ensure strictly increasing range: [0.95, 1] worst case.
-  // For the last card (or any card where calculation pushes it too far), we just disable blur.
-
   const shouldBlur = i < MODULES.length - 1 && blurStart < blurEnd;
   const blur = useTransform(
     progress,
     shouldBlur ? [blurStart, blurEnd] : [0, 1],
     shouldBlur ? ["blur(0px)", "blur(10px)"] : ["blur(0px)", "blur(0px)"]
   );
+
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const imageWidth = useTransform(scrollYProgress, [0, 1], ["100%", "60%"]);
+  const contentWidth = useTransform(scrollYProgress, [0, 1], ["0%", "40%"]);
+  const contentOpacity = useTransform(scrollYProgress, [0.3, 1], [0, 1]);
 
   return (
     <div
@@ -176,8 +175,14 @@ const Card = ({
         }}
         className="flex flex-col relative w-[95vw] h-[90vh] rounded-[2rem] overflow-hidden shadow-2xl origin-top md:flex-row border border-[rgba(0,0,0,0.05)]"
       >
-        {/* Left Side: Image */}
-        <div className="w-full h-1/2 md:w-[60%] md:h-full overflow-hidden relative group">
+        {/* Background Image: Always Full Size on Desktop */}
+        <motion.div
+          className="absolute inset-0 z-0 overflow-hidden"
+          style={{
+            width: "100%",
+            height: isDesktop ? "100%" : "60%" // Reduce height on mobile to show content below
+          }}
+        >
           <motion.div className="w-full h-full" style={{ scale: imageScale }}>
             <img
               src={module.image}
@@ -185,26 +190,33 @@ const Card = ({
               className="w-full h-full object-cover"
             />
           </motion.div>
-        </div>
+          {/* Overlay gradient for text readability if needed */}
+          <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+        </motion.div>
 
-        {/* Right Side: Content */}
-        <div className="w-full h-1/2 md:w-[40%] md:h-full p-8 md:p-12 lg:p-16 flex flex-col justify-between relative bg-opacity-50 backdrop-blur-sm">
-          {/* Top Meta */}
-          <div className="flex justify-between items-start text-[10px] md:text-xs font-mono tracking-widest text-gray-500 uppercase">
-            <span>[ {module.index} ]</span>
-            <span className="text-right max-w-[150px]">{module.category}</span>
-          </div>
-
+        {/* Content Overlay: Right side glass panel */}
+        <motion.div
+          className="relative z-10 flex flex-col justify-between p-8 md:p-12 lg:p-16 backdrop-blur-md bg-black/40 border-l border-white/10"
+          style={{
+            // Desktop: Animate width from 0% -> 40%. Mobile: Full width, fixed height at bottom
+            width: isDesktop ? contentWidth : "100%",
+            height: isDesktop ? "100%" : "40%",
+            top: isDesktop ? 0 : "auto",
+            bottom: 0,
+            right: 0,
+            position: isDesktop ? "absolute" : "absolute",
+            opacity: isDesktop ? contentOpacity : 1
+          }}
+        >
           {/* Main Content */}
-          <div className="flex flex-col gap-6 mt-8 md:mt-0">
+          <div className="flex flex-col gap-6 mt-8 md:mt-0 pt-16">
             <h2
-              className="text-4xl md:text-5xl lg:text-6xl text-[#1a2421]"
-              style={{ fontFamily: "'Libre Baskerville', serif" }}
+              className="text-3xl md:text-5xl lg:text-6xl text-white font-bold tracking-tight"
             >
               {module.title}
             </h2>
 
-            <p className="text-base md:text-lg text-[#5e6b66] leading-relaxed">
+            <p className="text-sm md:text-lg text-white/80 leading-relaxed max-w-2xl">
               {module.description}
             </p>
 
@@ -213,9 +225,9 @@ const Card = ({
               {module.features.map((feature, idx) => (
                 <li
                   key={idx}
-                  className="flex items-start gap-3 text-sm md:text-base text-[#4a5550]"
+                  className="flex items-start gap-3 text-sm md:text-base text-white/70"
                 >
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#15c470] shrink-0" />
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-white shrink-0" />
                   {feature}
                 </li>
               ))}
@@ -224,28 +236,15 @@ const Card = ({
 
           {/* Bottom Action */}
           <div className="flex items-center gap-4 mt-8 md:mt-0">
-            <button className="group flex items-center gap-2 px-6 py-3 bg-[#c4fca1] hover:bg-[#b0ef8d] transition-colors rounded-full text-xs md:text-sm font-mono font-bold tracking-wider text-[#1a2421] uppercase">
-              Get In Touch
-              <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            <button className="group relative flex items-center justify-center gap-2 px-6 py-3 bg-white overflow-hidden rounded-full text-xs md:text-sm font-mono font-bold tracking-wider text-[#1a2421] uppercase transition-all duration-300 hover:scale-105">
+              <span className="absolute inset-0 bg-[#c4fca1] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out" />
+              <span className="relative z-10 flex items-center gap-2">
+                Entre em contato
+                <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </span>
             </button>
-
-            <div className="flex -space-x-3">
-              {[1, 2, 3].map((j) => (
-                <div
-                  key={j}
-                  className="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden relative"
-                >
-                  <img
-                    src={`https://source.unsplash.com/random/100x100?abstract&sig=${j + Number(module.index) * 10
-                      }`}
-                    className="w-full h-full object-cover opacity-80"
-                    alt=""
-                  />
-                </div>
-              ))}
-            </div>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
     </div>
   );
@@ -260,9 +259,9 @@ export default function ESGAmbiental() {
   // Menu links synced with Home
   const quickMenuLinks = [
     { label: 'Soluções', href: '/funcionalidades' },
-    { label: 'Tecnologia', href: '/documentacao' },
+    { label: 'Tecnologia', href: '/tecnologia' },
     { label: 'Documentação', href: '/documentacao' },
-    { label: 'Sobre Nós', href: '/contato' },
+    { label: 'Sobre Nós', href: '/sobre-nos' },
     { label: 'Contato', href: '/contato' },
   ];
 

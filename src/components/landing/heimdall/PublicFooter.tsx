@@ -40,6 +40,9 @@ export function PublicFooter() {
             Empresa
           </h4>
           <div className="mt-3 space-y-2 text-sm text-white/75">
+            <Link to="/sobre-nos" className="block hover:text-white">
+              Sobre Nós
+            </Link>
             <Link to="/contato" className="block hover:text-white">
               Contato
             </Link>

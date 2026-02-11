@@ -363,6 +363,7 @@ export default function LandingNexus() {
                         </motion.button>
                         <motion.button
                             whileHover={{ borderColor: '#15c470', color: '#15c470' }}
+                            onClick={() => navigate('/documentacao')}
                             style={{
                                 background: 'transparent', color: 'rgba(232, 228, 217, 0.6)',
                                 border: '1px solid rgba(232, 228, 217, 0.2)',
