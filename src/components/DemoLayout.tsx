@@ -25,33 +25,15 @@ export function DemoLayout() {
               <SidebarTrigger className="h-11 w-11 hover:bg-muted/50" />
               <img src={datonLogo} alt="Daton" className="w-24 h-8 hidden sm:block" />
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => navigate("/auth")}
-                className="gap-2"
-              >
-                Criar conta gratuita
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
+            <div className="flex items-center gap-2" />
           </header>
 
           {/* Banner demo */}
           <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center gap-2 text-sm text-primary">
             <Info className="h-4 w-4 flex-shrink-0" />
             <span>
-              Você está na <strong>versão demonstrativa</strong>. Algumas funcionalidades estão desativadas.
+              Sua conta está <strong>aguardando aprovação</strong> do administrador. Enquanto isso, explore a plataforma em modo demonstrativo.
             </span>
-            <Button
-              variant="link"
-              size="sm"
-              className="ml-auto text-primary p-0 h-auto"
-              onClick={() => navigate("/auth")}
-            >
-              Criar conta →
-            </Button>
           </div>
 
           <main id="main-content" className="flex-1 p-3 sm:p-4 md:p-6 bg-muted/10">
