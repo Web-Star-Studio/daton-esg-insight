@@ -217,15 +217,48 @@ class NonConformityService {
   async getImmediateActions(ncId: string): Promise<NCImmediateAction[]> {
     const { data, error } = await supabase
       .from("nc_immediate_actions")
-      .select(`
-        *,
-        responsible:profiles!nc_immediate_actions_responsible_user_id_fkey(id, full_name)
-      `)
+      .select('*')
       .eq('non_conformity_id', ncId)
       .order("created_at", { ascending: true });
     
     if (error) throw error;
-    return data as NCImmediateAction[];
+    
+    // Fetch responsible names from employees table
+    const actions = (data || []) as any[];
+    const responsibleIds = actions
+      .map(a => a.responsible_user_id)
+      .filter(Boolean);
+    
+    let responsibleMap: Record<string, string> = {};
+    if (responsibleIds.length > 0) {
+      const { data: employees } = await supabase
+        .from('employees')
+        .select('id, full_name')
+        .in('id', responsibleIds);
+      
+      if (employees) {
+        responsibleMap = Object.fromEntries(employees.map(e => [e.id, e.full_name]));
+      }
+      
+      // Fallback: check profiles for legacy data
+      const missingIds = responsibleIds.filter((id: string) => !responsibleMap[id]);
+      if (missingIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', missingIds);
+        if (profiles) {
+          profiles.forEach(p => { responsibleMap[p.id] = p.full_name; });
+        }
+      }
+    }
+    
+    return actions.map(a => ({
+      ...a,
+      responsible: a.responsible_user_id 
+        ? { id: a.responsible_user_id, full_name: responsibleMap[a.responsible_user_id] || 'Desconhecido' }
+        : undefined,
+    })) as NCImmediateAction[];
   }
 
   async createImmediateAction(action: Omit<NCImmediateAction, 'id' | 'created_at' | 'updated_at'>): Promise<NCImmediateAction> {

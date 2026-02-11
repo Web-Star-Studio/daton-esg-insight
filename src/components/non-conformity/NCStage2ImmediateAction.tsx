@@ -1,28 +1,30 @@
-import { useState } from "react";
-import { Plus, Trash2, Check, Clock, AlertTriangle, User, Calendar, ArrowRight, Lightbulb, Loader2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, Trash2, Check, Clock, AlertTriangle, User, Calendar, ArrowRight, Lightbulb, Loader2, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { 
   useImmediateActions, 
   useCreateImmediateAction, 
   useUpdateImmediateAction, 
   useDeleteImmediateAction,
-  useCompanyUsers,
   useNonConformity 
 } from "@/hooks/useNonConformity";
+import { useCompanyEmployees } from "@/hooks/data/useCompanyEmployees";
 import { NCImmediateAction } from "@/services/nonConformityService";
 import { format, isPast, isToday, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { StageAdvanceConfirmDialog } from "./StageAdvanceConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface NCStage2ImmediateActionProps {
   ncId: string;
@@ -48,7 +50,8 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
   });
 
   const { data: actions, isLoading } = useImmediateActions(ncId);
-  const { data: users } = useCompanyUsers();
+  const { data: employees } = useCompanyEmployees();
+  const [responsibleOpen, setResponsibleOpen] = useState(false);
   const { data: nc } = useNonConformity(ncId);
   const createMutation = useCreateImmediateAction();
   const updateMutation = useUpdateImmediateAction();
@@ -272,21 +275,49 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="responsible">Responsável</Label>
-                    <Select
-                      value={formData.responsible_user_id}
-                      onValueChange={(value) => setFormData({ ...formData, responsible_user_id: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecionar..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users?.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={responsibleOpen} onOpenChange={setResponsibleOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={responsibleOpen}
+                          className="w-full justify-between font-normal"
+                        >
+                          {formData.responsible_user_id
+                            ? employees?.find(e => e.id === formData.responsible_user_id)?.full_name || "Selecionar..."
+                            : "Selecionar..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Buscar colaborador..." />
+                          <CommandList>
+                            <CommandEmpty>Nenhum colaborador encontrado.</CommandEmpty>
+                            <CommandGroup>
+                              {employees?.map((employee) => (
+                                <CommandItem
+                                  key={employee.id}
+                                  value={employee.full_name}
+                                  onSelect={() => {
+                                    setFormData({ ...formData, responsible_user_id: employee.id });
+                                    setResponsibleOpen(false);
+                                  }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", formData.responsible_user_id === employee.id ? "opacity-100" : "opacity-0")} />
+                                  <div className="flex flex-col">
+                                    <span>{employee.full_name}</span>
+                                    {employee.position && (
+                                      <span className="text-xs text-muted-foreground">{employee.position}</span>
+                                    )}
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   
                   <div>
