@@ -1,52 +1,53 @@
 
 
-## Corrigir listagem de usuarios no Platform Admin
+## Atualizar sidebar e conteúdo do Demo Dashboard para refletir os módulos ativos
 
-### Problema raiz
+### Problema
 
-A query do `PlatformUsersTable` tenta fazer um join embutido `profiles -> user_roles(role)`, mas nao existe uma foreign key direta entre `profiles` e `user_roles`. A FK de `user_roles.user_id` aponta para `auth.users(id)`, nao para `profiles(id)`. Isso causa erro 400 do PostgREST e nenhum usuario e retornado.
+A versão demo (`/demo`) possui uma sidebar simplificada e estática com itens genéricos (Ambiental, Social, Governança, Relatórios, Documentos, Configurações, Ajuda) que não correspondem aos módulos realmente ativos na plataforma para clientes normais.
 
-### Solucao
+Os módulos ativos atualmente (conforme `enabledModules.ts`) são:
+- **ESG** (com subcategorias Ambiental e Social ativas; Governança desabilitada)
+- **Qualidade (SGQ)**
+- **Fornecedores**
+- **Configurações**
+- **Ajuda**
 
-Separar a busca em duas queries:
+### Solução
 
-1. Buscar `profiles` com join em `companies(name)` (que funciona, pois `profiles.company_id` tem FK para `companies`)
-2. Buscar `user_roles` separadamente para os IDs retornados, e combinar no cliente
+Atualizar o `SIDEBAR_ITEMS` do `DemoDashboard.tsx` para refletir exatamente os mesmos módulos/seções visíveis na sidebar real (`AppSidebar.tsx`), respeitando o `enabledModules.ts`.
 
-### Mudancas no arquivo
+### Mudanças no arquivo
 
-**`src/components/platform/PlatformUsersTable.tsx`**
+**`src/pages/DemoDashboard.tsx`**
 
-Alterar a `queryFn` para:
-
-1. Remover `user_roles(role)` do select embutido do profiles
-2. Apos obter os profiles, buscar os roles separadamente:
+1. Atualizar `SIDEBAR_ITEMS` para corresponder às seções ativas da sidebar real:
 
 ```typescript
-// Query 1: profiles + companies
-const { data: profiles, count, error } = await supabase
-  .from("profiles")
-  .select("id, full_name, email, is_active, is_approved, created_at, job_title, company_id, companies(name)", { count: "exact" })
-  .order("created_at", { ascending: false })
-  .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-
-// Query 2: roles para esses usuarios
-const userIds = profiles.map(p => p.id);
-const { data: roles } = await supabase
-  .from("user_roles")
-  .select("user_id, role")
-  .in("user_id", userIds);
-
-// Combinar
-const roleMap = Object.fromEntries(roles.map(r => [r.user_id, r.role]));
-const users = profiles.map(p => ({ ...p, role: roleMap[p.id] }));
+const SIDEBAR_ITEMS = [
+  { icon: LayoutDashboard, label: 'Dashboard', active: true },
+  { icon: Leaf, label: 'ESG' },
+  { icon: Award, label: 'Qualidade' },
+  { icon: Truck, label: 'Fornecedores' },
+  { icon: Settings, label: 'Configurações' },
+  { icon: HelpCircle, label: 'Ajuda' },
+];
 ```
 
-3. Atualizar a renderizacao para usar `user.role` diretamente em vez de `user.user_roles?.[0]?.role`
+2. Adicionar os imports necessários (`Truck`, `Award` ja existem; `Settings` e `HelpCircle` ja estao importados via lucide-react).
 
-### Arquivo modificado
+3. Atualizar os `MOCK_KPI_CARDS` para incluir KPIs relevantes aos módulos ativos (ex: adicionar indicador de Fornecedores, manter Qualidade).
 
-| Arquivo | Mudanca |
+4. Atualizar as `QUICK_ACTIONS` para refletir ações dos módulos ativos:
+   - Manter: Registrar Emissão (ESG Ambiental), Gerar Relatório
+   - Adicionar: Avaliar Fornecedor (Fornecedores), Registrar Não Conformidade (Qualidade)
+   - Remover: Nova Auditoria (Governança desabilitada)
+
+5. Atualizar `RECENT_ACTIVITIES` para incluir atividades dos módulos ativos (SGQ, Fornecedores, Social).
+
+### Resumo de impacto
+
+| Arquivo | Mudança |
 |---------|---------|
-| `src/components/platform/PlatformUsersTable.tsx` | Separar query de roles e combinar no cliente |
+| `src/pages/DemoDashboard.tsx` | Atualizar SIDEBAR_ITEMS, QUICK_ACTIONS, MOCK_KPI_CARDS e RECENT_ACTIVITIES para espelhar módulos ativos |
 
