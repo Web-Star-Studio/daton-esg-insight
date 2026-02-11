@@ -6,14 +6,8 @@ import { toast } from "sonner";
  */
 export function demoAction(isDemo: boolean, realAction: () => void) {
   if (isDemo) {
-    toast.info("Funcionalidade disponível na versão completa", {
-      description: "Crie sua conta para acessar todos os recursos.",
-      action: {
-        label: "Criar conta",
-        onClick: () => {
-          window.location.href = "/auth";
-        },
-      },
+    toast.info("Funcionalidade disponível após aprovação da conta", {
+      description: "Sua conta está aguardando aprovação do administrador.",
     });
     return;
   }
