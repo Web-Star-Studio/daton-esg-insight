@@ -38,6 +38,8 @@ import {
   Settings,
   HelpCircle,
   LogIn,
+  Truck,
+  ClipboardCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { KPICarousel, KPIItem } from '@/components/dashboard/KPICarousel';
@@ -95,6 +97,18 @@ const MOCK_KPI_CARDS: KPIItem[] = [
     route: '#',
   },
   {
+    id: 'suppliers',
+    title: 'Fornecedores',
+    value: '47',
+    change: 3,
+    changeType: 'positive',
+    icon: Truck,
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
+    description: 'Fornecedores ativos qualificados',
+    route: '#',
+  },
+  {
     id: 'energy',
     title: 'Economia de Energia',
     value: '12.5 MWh',
@@ -115,16 +129,6 @@ const MOCK_KPI_CARDS: KPIItem[] = [
     description: 'vs mês anterior',
     route: '#',
   },
-  {
-    id: 'hr-satisfaction',
-    title: 'Satisfação RH',
-    value: '4.7/5',
-    icon: Users,
-    color: 'text-accent',
-    bgColor: 'bg-gradient-to-r from-accent/20 to-warning/20',
-    description: 'Última pesquisa',
-    route: '#',
-  },
 ];
 
 interface QuickAction {
@@ -135,8 +139,8 @@ interface QuickAction {
 
 const QUICK_ACTIONS: QuickAction[] = [
   { id: 'add-emission', title: 'Registrar Emissão', icon: Plus },
-  { id: 'new-audit', title: 'Nova Auditoria', icon: CheckCircle },
-  { id: 'employee-training', title: 'Agendar Treinamento', icon: Calendar },
+  { id: 'evaluate-supplier', title: 'Avaliar Fornecedor', icon: Truck },
+  { id: 'non-conformity', title: 'Não Conformidade', icon: ClipboardCheck },
   { id: 'generate-report', title: 'Gerar Relatório', icon: BarChart3 },
 ];
 
@@ -151,8 +155,8 @@ interface RecentActivity {
 
 const RECENT_ACTIVITIES: RecentActivity[] = [
   { id: '1', title: 'Inventário GEE atualizado', description: 'Novos dados de emissões inseridos para Q4 2024', time: '2 horas atrás', type: 'success', icon: Leaf },
-  { id: '2', title: 'Auditoria SGQ agendada', description: 'Auditoria interna programada para próxima semana', time: '4 horas atrás', type: 'info', icon: Award },
-  { id: '3', title: 'Licença ambiental vencendo', description: 'Licença de operação vence em 30 dias', time: '1 dia atrás', type: 'warning', icon: AlertCircle },
+  { id: '2', title: 'Fornecedor avaliado', description: 'Avaliação do fornecedor ABC Ltda concluída com nota 8.5', time: '4 horas atrás', type: 'info', icon: Truck },
+  { id: '3', title: 'NC registrada no SGQ', description: 'Não conformidade menor identificada no processo de produção', time: '1 dia atrás', type: 'warning', icon: ClipboardCheck },
   { id: '4', title: 'Treinamento concluído', description: '25 colaboradores concluíram capacitação em SST', time: '2 dias atrás', type: 'success', icon: Users },
 ];
 
@@ -191,11 +195,9 @@ const getAlertBorder = (type: 'warning' | 'info') => {
 
 const SIDEBAR_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard', active: true },
-  { icon: Leaf, label: 'Ambiental' },
-  { icon: Users, label: 'Social' },
-  { icon: Shield, label: 'Governança' },
-  { icon: BarChart3, label: 'Relatórios' },
-  { icon: FileText, label: 'Documentos' },
+  { icon: Leaf, label: 'ESG' },
+  { icon: Award, label: 'Qualidade' },
+  { icon: Truck, label: 'Fornecedores' },
   { icon: Settings, label: 'Configurações' },
   { icon: HelpCircle, label: 'Ajuda' },
 ];
