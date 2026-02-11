@@ -33,7 +33,9 @@ import { OnboardingRoute } from "./routes/onboarding";
 const Index = lazy(() => import("./pages/Index"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Contato = lazy(() => import("./pages/Contato"));
-const Funcionalidades = lazy(() => import("./pages/Funcionalidades"));
+const ESGAmbiental = lazy(() => import("./pages/ESGAmbiental"));
+const ESGSocial = lazy(() => import("./pages/ESGSocial"));
+const ESGGovernanca = lazy(() => import("./pages/ESGGovernanca"));
 const Documentacao = lazy(() => import("./pages/Documentacao"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Ajuda = lazy(() => import("./pages/Ajuda"));
@@ -321,11 +323,22 @@ const AppContent = () => {
                 <Contato />
               </LazyPageWrapper>
             } />
-            <Route path="/funcionalidades" element={
+            <Route path="/ambiental" element={
               <LazyPageWrapper>
-                <Funcionalidades />
+                <ESGAmbiental />
               </LazyPageWrapper>
             } />
+            <Route path="/social" element={
+              <LazyPageWrapper>
+                <ESGSocial />
+              </LazyPageWrapper>
+            } />
+            <Route path="/governanca" element={
+              <LazyPageWrapper>
+                <ESGGovernanca />
+              </LazyPageWrapper>
+            } />
+            <Route path="/funcionalidades" element={<Navigate to="/ambiental" replace />} />
             <Route path="/documentacao" element={
               <LazyPageWrapper>
                 <Documentacao />
