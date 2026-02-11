@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { logger } from '@/utils/logger';
 
 export function OnboardingRoute() {
-  const { shouldShowOnboarding, isLoading, user } = useAuth();
+  const { shouldShowOnboarding, isLoading, user, isApproved } = useAuth();
   
   useEffect(() => {
     logger.debug('OnboardingRoute status check', 'ui', {
@@ -33,10 +33,11 @@ export function OnboardingRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect to dashboard if onboarding is already complete
+  // Redirect based on approval status after onboarding
   if (!shouldShowOnboarding) {
-    logger.info('OnboardingRoute: Onboarding complete - redirecting to dashboard', 'ui');
-    return <Navigate to="/" replace />;
+    const destination = isApproved ? '/' : '/demo';
+    logger.info(`OnboardingRoute: Onboarding complete - redirecting to ${destination}`, 'ui');
+    return <Navigate to={destination} replace />;
   }
 
   logger.info('OnboardingRoute: Showing onboarding flow', 'ui');

@@ -1,8 +1,10 @@
 import { Building2, Users, FileText, TrendingUp } from "lucide-react";
 import { PlatformStatsCard } from "@/components/platform/PlatformStatsCard";
 import { CompanyTable } from "@/components/platform/CompanyTable";
+import { PlatformUsersTable } from "@/components/platform/PlatformUsersTable";
 import { usePlatformAnalytics } from "@/hooks/usePlatformAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function PlatformAdminDashboard() {
   const { data: analytics, isLoading } = usePlatformAnalytics('30d');
@@ -78,15 +80,33 @@ export default function PlatformAdminDashboard() {
         </Card>
       )}
 
-      {/* Companies Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Todas as Empresas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CompanyTable />
-        </CardContent>
-      </Card>
+      {/* Tabs: Empresas & Usuários */}
+      <Tabs defaultValue="empresas">
+        <TabsList>
+          <TabsTrigger value="empresas">Empresas</TabsTrigger>
+          <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+        </TabsList>
+        <TabsContent value="empresas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Todas as Empresas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CompanyTable />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="usuarios">
+          <Card>
+            <CardHeader>
+              <CardTitle>Todos os Usuários</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PlatformUsersTable />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

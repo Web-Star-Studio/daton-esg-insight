@@ -37,6 +37,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BranchSelect } from "@/components/BranchSelect";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/contexts/CompanyContext";
 import { parseDateSafe, formatDateForDB } from "@/utils/dateUtils";
 
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +83,7 @@ interface TrainingProgramModalProps {
 }
 
 export function TrainingProgramModal({ open, onOpenChange, program }: TrainingProgramModalProps) {
+  const { selectedCompany } = useCompany();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!program;
@@ -102,23 +104,35 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     enabled: open && !isEditing,
   });
 
-  // Query para buscar funcionários ativos (case-insensitive e múltiplos status)
+  // Query para buscar funcionários ativos filtrados por empresa
   const { data: employees = [] } = useQuery({
-    queryKey: ["employees-for-training-modal"],
+    queryKey: ["employees-for-training-modal", selectedCompany?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("employees")
-        .select("id, full_name, employee_code, department, status")
-        .order("full_name")
-        .range(0, 4999);
-      if (error) throw error;
-      // Filtrar localmente para ser case-insensitive e incluir múltiplos status válidos
+      const PAGE_SIZE = 1000;
+      let allData: any[] = [];
+      let from = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("employees")
+          .select("id, full_name, employee_code, department, status")
+          .eq("company_id", selectedCompany!.id)
+          .order("full_name")
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) throw error;
+        allData = allData.concat(data || []);
+        hasMore = (data?.length || 0) === PAGE_SIZE;
+        from += PAGE_SIZE;
+      }
+
       const activeStatuses = ['ativo', 'férias', 'ferias', 'licença', 'licenca'];
-      return (data || []).filter(emp => 
+      return allData.filter(emp =>
         emp.status && activeStatuses.includes(emp.status.toLowerCase())
       );
     },
-    enabled: open,
+    enabled: open && !!selectedCompany?.id,
     staleTime: 0, // Sempre buscar dados frescos ao abrir o modal
   });
 

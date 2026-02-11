@@ -8,6 +8,7 @@ export interface AuthUser {
   email: string;
   job_title?: string;
   role: 'platform_admin' | 'super_admin' | 'admin' | 'manager' | 'analyst' | 'operator' | 'viewer' | 'auditor';
+  is_approved: boolean;
   company: {
     id: string;
     name: string;
@@ -131,6 +132,7 @@ class AuthService {
           email: session.user.email!,
           job_title: undefined,
           role: 'viewer' as const,
+          is_approved: false,
           company: {
             id: session.user.user_metadata?.company_id || '',
             name: session.user.user_metadata?.company_name || 'Empresa não configurada'
@@ -195,6 +197,7 @@ class AuthService {
         email: session.user.email!,
         job_title: profile.job_title,
         role: finalRole,
+        is_approved: profile.is_approved ?? false,
         company: {
           id: company?.id || profile.company_id || '',
           name: company?.name || 'Empresa não configurada'
