@@ -38,6 +38,12 @@ export function PublicFooter() {
             <Link to="/contato" className="block hover:text-white">
               Contato
             </Link>
+            <Link to="/privacidade" className="block hover:text-white">
+              Privacidade
+            </Link>
+            <Link to="/termos" className="block hover:text-white">
+              Termos de Uso
+            </Link>
           </div>
         </div>
       </div>
