@@ -491,29 +491,8 @@ const SobreNos = () => {
                 </div>
             </section>
 
-            {/* --- CTA --- */}
-            <section className="py-24 px-6">
-                <div className="max-w-5xl mx-auto bg-[#1a2421] rounded-3xl p-12 md:p-16 text-center relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
-                        <Zap size={200} className="text-white" />
-                    </div>
 
-                    <div className="relative z-10">
-                        <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Pronto para transformar sua gestão ESG?</h2>
-                        <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-                            Crie sua conta e tenha seu primeiro dashboard operacional em menos de 48 horas.
-                        </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <button className="px-8 py-4 bg-[#15c470] text-white font-bold rounded-lg hover:bg-[#12a35d] transition-colors flex items-center gap-2">
-                                Começar agora <ArrowRight size={20} />
-                            </button>
-                            <button className="px-8 py-4 bg-transparent border border-white/20 text-white font-bold rounded-lg hover:bg-white/10 transition-colors">
-                                Falar com especialista
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
+
 
             <PublicFooter />
         </div>
