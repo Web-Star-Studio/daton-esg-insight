@@ -1,46 +1,47 @@
 
+# Mover seções "Infraestrutura" e "Performance" para /ambiental
 
-## Corrigir tamanho dos cards "Seguranca enterprise" e "Conformidade sem complicacao"
+## Objetivo
+Mover as seções **"Infraestrutura de classe mundial."** (grid de 4 cards: IA, Arquitetura, Seguranca, Integracoes) e **"Performance"** (metricas LCP, IA Response, Uptime, Dados) da pagina `/tecnologia` para a pagina `/ambiental`, posicionando-as logo abaixo dos cards animados (scroll-stack cards).
 
-### Problema
+## O que muda
 
-Os cards "Conformidade sem complicacao" e "Seguranca enterprise" estao com `lg:col-span-1` no grid de 6 colunas, ficando muito estreitos comparados aos demais.
+### 1. `/ambiental` (ESGAmbiental.tsx)
+- Adicionar os dados dos 4 modulos de infraestrutura (IA, Arquitetura, Seguranca, Integracoes) e do modulo Performance com suas metricas
+- Adicionar os componentes `FeatureCard` e `PerformanceSection` (adaptados do Technology.tsx)
+- Inserir as duas novas secoes entre o `</main>` dos cards animados e o `<PublicFooter />`
 
-### Solucao
+### 2. `/tecnologia` (Technology.tsx)
+- Remover a secao "Infraestrutura de classe mundial." (header + grid de FeatureCards)
+- Remover a secao "Performance" (PerformanceSection)
+- Remover os dados MODULES, o componente FeatureCard e PerformanceSection que ficam orfaos
+- Manter apenas o Hero, a secao "Nossas Solucoes" (SolutionDetailSection) e o Footer
 
-Redistribuir os spans para que todos os cards tenham tamanho adequado. Nova distribuicao:
+## Detalhes tecnicos
 
-```text
-Linha 1:
-+------------------+------------------+
-|  Card 1 (3col)   |  Card 2 (3col)   |
-+----------+-------+------+-----------+
-Linha 2:
-+----------+----------+----------+
-| Card 3   | Card 4   | Card 5   |
-| (2col)   | (2col)   | (2col)   |
-+----------+----------+----------+
-Linha 3 (card 6 sozinho, centralizado):
-      +------------------+
-      | Card 6 (2col)    |  -- ou col-span-6 para largura total
-      +------------------+
+**Dados a copiar para ESGAmbiental.tsx:**
+- Array `MODULES` com os 5 itens (4 feature + 1 performance) e a interface `ModuleHighlight` (versao do Technology.tsx que inclui `metrics`)
+- Renomear para evitar conflito com o `MODULES` ja existente (ex: `INFRA_MODULES`)
+
+**Componentes a copiar para ESGAmbiental.tsx:**
+- `FeatureCard` -- card de grid com index, titulo, descricao e lista de features
+- `PerformanceSection` -- layout 2 colunas com metricas
+
+**Estrutura final de ESGAmbiental.tsx:**
+```
+Hero
+Cards animados (scroll-stack) -- ja existente
+Secao "Infraestrutura de classe mundial." (header + grid 2x2)
+Secao "Performance" (metricas)
+Footer
 ```
 
-**Alternativa mais equilibrada** (6 cards em 2 linhas de 3):
-- Linha 1: Card 1 (2col), Card 2 (2col), Card 3 (2col)
-- Linha 2: Card 4 (2col), Card 5 (2col), Card 6 (2col)
+**Estrutura final de Technology.tsx:**
+```
+Hero
+Secao "Nossas Solucoes" (SolutionDetailSection)
+Footer
+```
 
-Todos iguais com `lg:col-span-2`, preenchendo as 6 colunas uniformemente mas mantendo o efeito hover.
-
-### Detalhe tecnico
-
-**Arquivo**: `src/pages/SobreNos.tsx`, linhas 442-447
-
-Alterar os spans:
-- "Conformidade sem complicacao": de `lg:col-span-1` para `lg:col-span-2`
-- "Seguranca enterprise": de `lg:col-span-1` para `lg:col-span-2`
-- "Tudo em um so lugar": de `lg:col-span-3` para `lg:col-span-2`
-- "Suporte humano": de `lg:col-span-3` para `lg:col-span-2`
-
-Resultado: todos os 6 cards com `lg:col-span-2`, formando 2 linhas equilibradas de 3 cards cada, mantendo o efeito bento hover intacto.
-
+**Imports adicionais em ESGAmbiental.tsx:**
+- `Server`, `ShieldCheck`, `Network`, `Zap` do lucide-react (icones dos cards de infraestrutura)
