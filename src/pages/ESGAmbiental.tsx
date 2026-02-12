@@ -18,6 +18,7 @@ import esgSocialCardImg from "@/assets/esg-social-card.png";
 import esgQualityCardImg from "@/assets/esg-quality-card.png";
 import esgAmbientalHeroImg from "@/assets/esg-ambiental-hero.png";
 import esgSuppliersCardImg from "@/assets/esg-suppliers-card.png";
+import esgAiCardImg from "@/assets/esg-ai-card.png";
 
 // --- DATA ---
 
@@ -106,7 +107,7 @@ const MODULES: ModuleHighlight[] = [
     description:
       "Analise dados em tempo real para gerar alertas preditivos, identificar riscos emergentes e sugerir ações de melhoria contínua.",
     icon: Brain,
-    image: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=2565&auto=format&fit=crop",
+    image: esgAiCardImg,
     color: "#eff6ff",
     features: [
       "Alertas inteligentes de prazos",
