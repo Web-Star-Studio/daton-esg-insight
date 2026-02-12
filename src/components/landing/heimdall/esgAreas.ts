@@ -1,3 +1,5 @@
+import heroImg01 from '@/assets/hero-floresta.png';
+
 export type ESGAreaSlug = "ambiental" | "social" | "governanca";
 
 export interface ESGAreaDefinition {
@@ -14,7 +16,7 @@ export const ESG_AREAS: ESGAreaDefinition[] = [
     slug: "ambiental",
     label: "Ambiental",
     href: "/ambiental",
-    image: "/hero-img-01.png",
+    image: heroImg01,
     headline:
       "Gestão Ambiental em tempo real para monitorar emissões, resíduos e indicadores críticos com precisão.",
     subheadline:
