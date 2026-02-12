@@ -1,40 +1,27 @@
 
 
-## Atualizar links do Footer para espelhar o menu hamburger
+## Adicionar links de Termos e Privacidade ao Footer
 
-### O que muda
+### Mudanca
 
-O footer atual (`PublicFooter.tsx`) tem duas colunas de links:
-- "Areas ESG": Ambiental, Social, Governanca
-- "Empresa": Sobre Nos, Contato, Privacidade, Termos
+Adicionar dois links ao final da coluna "Navegacao" no footer:
+- Privacidade (`/privacidade`)
+- Termos de Uso (`/termos`)
 
-O menu hamburger (action bar) tem estes links:
-- Solucoes (/funcionalidades)
-- Tecnologia (/tecnologia)
-- Documentacao (/documentacao)
-- Sobre Nos (/sobre-nos)
-- Contato (/contato)
+### Arquivo
 
-### Correcao
+**`src/components/landing/heimdall/PublicFooter.tsx`**
 
-**Arquivo: `src/components/landing/heimdall/PublicFooter.tsx`**
+Inserir apos o link "Contato":
 
-Substituir as duas colunas de links atuais por uma unica coluna "Navegacao" com exatamente os mesmos links do menu hamburger:
+```tsx
+<Link to="/privacidade" className="block hover:text-white">
+  Privacidade
+</Link>
+<Link to="/termos" className="block hover:text-white">
+  Termos de Uso
+</Link>
+```
 
-| Link | Rota |
-|---|---|
-| Solucoes | /funcionalidades |
-| Tecnologia | /tecnologia |
-| Documentacao | /documentacao |
-| Sobre Nos | /sobre-nos |
-| Contato | /contato |
-
-A estrutura do footer permanece com o logo e descricao a esquerda, e a coluna de links a direita. O grid passara de 4 colunas para 3 (logo ocupa 2, links ocupa 1).
-
-### Detalhes tecnicos
-
-- Remover a coluna "Areas ESG" (Ambiental, Social, Governanca)
-- Remover a coluna "Empresa" (Sobre Nos, Contato, Privacidade, Termos)
-- Adicionar uma coluna "Navegacao" com os 5 links do menu hamburger
-- Ajustar o grid de `md:grid-cols-4` para `md:grid-cols-3`
+Nenhum outro arquivo precisa ser alterado -- as rotas `/privacidade` e `/termos` ja existem no projeto.
 
