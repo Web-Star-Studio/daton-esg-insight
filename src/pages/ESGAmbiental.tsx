@@ -442,7 +442,7 @@ export default function ESGAmbiental() {
   const quickMenuLinks = [
     { label: 'Soluções', href: '/funcionalidades' },
     
-    { label: 'Documentação', href: '/documentacao' },
+    { label: 'Central de Ajuda', href: '/documentacao' },
     { label: 'Sobre Nós', href: '/sobre-nos' },
     { label: 'Contato', href: '/contato' },
   ];
