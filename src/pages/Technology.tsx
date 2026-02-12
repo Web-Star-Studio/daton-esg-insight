@@ -16,7 +16,7 @@ import {
     CheckCircle2
 } from "lucide-react";
 import solutionAmbiental from "@/assets/solution-ambiental.jpg";
-import solutionSocial from "@/assets/solution-social.jpg";
+import solutionSocial from "@/assets/tech-social-screenshot.png";
 import solutionQualidade from "@/assets/solution-qualidade.jpg";
 import solutionFornecedores from "@/assets/solution-fornecedores.jpg";
 import solutionIA from "@/assets/solution-ia.jpg";
