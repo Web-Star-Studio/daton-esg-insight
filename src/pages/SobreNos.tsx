@@ -489,8 +489,9 @@ const SobreNos = () => {
 
             {/* --- WORTON --- */}
             <section className="py-20 px-6 bg-[#1a2421]">
-                <div className="max-w-7xl mx-auto flex flex-col items-start w-fit gap-0.5">
-                    <p className="text-white/60 text-sm uppercase tracking-widest font-mono ml-1">Uma empresa</p>
+                <div className="max-w-7xl mx-auto flex justify-center">
+                  <div className="relative w-fit">
+                    <p className="absolute -top-4 left-1 text-white/60 text-sm uppercase tracking-widest font-mono z-10">Uma empresa</p>
                     <a href="https://www.worton.com.br/" target="_blank" rel="noopener noreferrer">
                         <img
                             src={wortonLogo}
@@ -499,6 +500,7 @@ const SobreNos = () => {
                             style={{ filter: "brightness(0) invert(1)" }}
                         />
                     </a>
+                  </div>
                 </div>
             </section>
 
