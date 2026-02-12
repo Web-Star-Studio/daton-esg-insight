@@ -529,17 +529,26 @@ const SobreNos = () => {
                         transition: 'grid-template-rows 0.4s ease, grid-template-columns 0.4s ease',
                       }}
                     >
-                      {[socio1, socio2, socio3, socio4].map((src, idx) => (
+                      {[
+                        { src: socio1, name: "Felipe Antunes", bio: "Empreendedor multidisciplinar com mais de 15 anos de experiência em tecnologia, automação e marketing digital, Felipe é especialista em aplicar inteligência artificial e soluções digitais para impulsionar resultados de negócios. Formado em Administração pela Dublin Business School e MBA em Inteligência Artificial para Negócios, lidera projetos de transformação tecnológica com foco em escalabilidade, eficiência e impacto sustentável." },
+                        { src: socio2, name: "Cristiano Braga", bio: "Advogado Especializado em Propriedade Intelectual e Inovação. Cristiano Prestes Braga é advogado e destacado por sua expertise em Propriedade Industrial, Direito Autoral, Direito Digital, Direito de Imagem, Software, Contratos e Direito Empresarial. Reconhecido em 2022 como um dos escritórios de Propriedade Intelectual mais admirados da Região Sul pela Análise Editorial, possui um Mestrado em Propriedade Intelectual e Inovação e é pós-graduado em Direito Processual Civil.\n\nAlém de sua prática legal, Cristiano é professor conteudista em Propriedade Intelectual e ex-pesquisador na PUCRS, contribuindo significativamente para o campo acadêmico e prático. Autor de diversos artigos e capítulos de livros, ele é membro ativo de grupos de estudo e associações profissionais, trazendo uma combinação rica de conhecimento teórico e experiência prática para o mundo do direito e da inovação." },
+                        { src: socio3, name: "Bruno de Rosso", bio: "Engenheiro Mecânico, Mestre em engenharia, pós-graduado em Agricultura de Baixa Emissão de Carbono, pós-graduado em Geoprocessamento e Geotecnologias, especialista em Sistemas de Refrigeração e Doutorando em Economia.\n\nHá 10 anos é professor da PUCRS para a graduação em engenharias e diretor de descarbonização da Worton, onde atua nos campos de inventário de emissões de GEE, energia, ativos ambientais e descarbonização.\n\nBruno é coordenador e professor do curso de Pós-Graduação em Crédito de Carbono: projeto e mercado da PUCRS, coordenador da pós-graduação em Refrigeração e Climatização, coordenador do curso de MBA em Processos e Produtos de Baixo Carbono, coordenador do curso de pós-graduação em Tecnologia e Produtividade no Agronegócio, onde atua nas áreas de aplicação de processos de baixo carbono visando a geração de ativos ambientais.\n\nAtualmente é assessor da pró-reitoria da PUCRS para negócios e descarbonização. Autor do livro Psicrometria Aplicada à Refrigeração e Climatização (2022)." },
+                        { src: socio4, name: "Guilherme Haygert", bio: "Secretário Municipal do Meio Ambiente de Canoas (RS). Pós-doutorando em Administração (Fundação Dom Cabral), é Doutor em Gestão (Unisinos) e Mestre em Direito de Empresa e dos Negócios (Unisinos).\n\nPossui MBA em Finanças (ESPM), MBA em Compliance (PUCRS), MBA em Direito Tributário (FGV) e Especialização em Processo Civil (ABDPC). Graduado em Direito. Certificado como Conselheiro de Administração pela Fundação Dom Cabral (FDC) e Certificado em Compliance pelo Insper.\n\nNa Worton, Guilherme é responsável pela área de Elaboração de Estratégia e Implementação ESG nas Organizações." },
+                      ].map((socio, idx) => (
                         <div
                           key={idx}
-                          className="overflow-hidden rounded-xl cursor-pointer"
+                          className="relative overflow-hidden rounded-xl cursor-pointer"
                           onMouseEnter={() => setHoveredIdx(idx)}
                         >
                           <img
-                            src={src}
-                            alt={`Sócio ${idx + 1}`}
+                            src={socio.src}
+                            alt={socio.name}
                             className="w-full h-full object-cover grayscale"
                           />
+                          <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-3 transition-opacity duration-300 ${hoveredIdx === idx ? 'opacity-100' : 'opacity-0'}`}>
+                            <h4 className="text-white font-bold text-sm md:text-base leading-tight mb-1">{socio.name}</h4>
+                            <p className="text-white/80 text-[10px] md:text-xs leading-snug overflow-y-auto max-h-[60%] pr-1">{socio.bio}</p>
+                          </div>
                         </div>
                       ))}
                     </div>
