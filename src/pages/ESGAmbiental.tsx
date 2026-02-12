@@ -9,7 +9,11 @@ import {
   FileCheck,
   TrendingUp,
   Brain,
-  Menu
+  Menu,
+  Server,
+  ShieldCheck,
+  Network,
+  Zap,
 } from "lucide-react";
 import { HeimdallNavbar } from "@/components/landing/heimdall/HeimdallNavbar";
 import { PublicFooter } from "@/components/landing/heimdall/PublicFooter";
@@ -116,6 +120,179 @@ const MODULES: ModuleHighlight[] = [
     ],
   },
 ];
+
+// --- INFRA DATA & COMPONENTS (moved from Technology) ---
+
+interface InfraModuleHighlight {
+  id: string;
+  index: string;
+  title: string;
+  category: string;
+  description: string;
+  features: string[];
+  icon: React.ElementType;
+  image: string;
+  color: string;
+  metrics?: { label: string; value: string; desc: string }[];
+}
+
+const INFRA_MODULES: InfraModuleHighlight[] = [
+  {
+    id: "ia",
+    index: "001",
+    title: "Inteligência Artificial",
+    category: "IA Nativa / Contexto / Automação",
+    description:
+      "IA nativa em cada camada da plataforma. Não é um chatbot genérico. É inteligência treinada no contexto da sua empresa para prever e agir.",
+    icon: Brain,
+    image: "",
+    color: "#eef2ff",
+    features: [
+      "Modelos Preditivos e Machine Learning (ML)",
+      "NLP (Processamento de Linguagem Natural)",
+      "Processamento Inteligente de Documentos (IDP)",
+      "Assistente Contextual IA Generativa",
+    ],
+  },
+  {
+    id: "arquitetura",
+    index: "002",
+    title: "Arquitetura & Infraestrutura",
+    category: "Cloud-Native / Serverless / Escala",
+    description:
+      "Construída para escalar com a sua operação. Arquitetura cloud-native com isolamento de dados por empresa e performance otimizada.",
+    icon: Server,
+    image: "",
+    color: "#f8fafc",
+    features: [
+      "Infraestrutura Serverless auto-escalável",
+      "Isolamento Multi-Tenant com segurança a nível de linha",
+      "Edge Computing para menor latência",
+      "Cache Inteligente em múltiplas camadas",
+    ],
+  },
+  {
+    id: "seguranca",
+    index: "003",
+    title: "Segurança & Compliance",
+    category: "Cibersegurança / LGPD / Auditoria",
+    description:
+      "Segurança não é funcionalidade. É fundação. Proteção de dados em conformidade com LGPD e padrões internacionais rigorosos.",
+    icon: ShieldCheck,
+    image: "",
+    color: "#f0f9ff",
+    features: [
+      "Criptografia Militar (AES-256 e TLS 1.3)",
+      "Autenticação via JWT com suporte a MFA",
+      "Segurança em Nível de Linha (RLS)",
+      "Compliance Nativo com LGPD",
+      "Auditoria Completa e Rastreabilidade",
+    ],
+  },
+  {
+    id: "integracoes",
+    index: "004",
+    title: "Integrações & Dados",
+    category: "API First / Conectividade / Ecossistema",
+    description:
+      "Conectada ao seu ecossistema. Importe, exporte e sincronize dados com as ferramentas que sua equipe já utiliza no dia a dia.",
+    icon: Network,
+    image: "",
+    color: "#fdf4ff",
+    features: [
+      "Importação Flexível (Excel, CSV, PDF, Imagens)",
+      "API RESTful documentada para ERPs e BI",
+      "Exportação Multi-Formato",
+      "Webhooks & Notificações configuráveis",
+    ],
+  },
+  {
+    id: "performance",
+    index: "005",
+    title: "Performance",
+    category: "Velocidade / Otimização / Uptime",
+    description:
+      "Velocidade que acompanha sua operação. Otimizações em cada camada para uma experiência fluida, mesmo com grandes volumes de dados.",
+    icon: Zap,
+    image: "",
+    color: "#fffbeb",
+    features: [],
+    metrics: [
+      { label: "LCP", value: "< 2.5s", desc: "Carregamento da página principal" },
+      { label: "IA Response", value: "< 5s", desc: "Respostas do assistente inteligente" },
+      { label: "Uptime", value: "99.9%", desc: "Disponibilidade da plataforma" },
+      { label: "Dados", value: "Milhões", desc: "Registros processados simultaneamente" },
+    ],
+  },
+];
+
+const InfraFeatureCard = ({ module }: { module: InfraModuleHighlight }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-50px" }}
+    transition={{ duration: 0.5 }}
+    className="group relative flex flex-col bg-white p-8 md:p-10 border-b border-r border-[#e5e7eb] hover:bg-[#fafafa] transition-colors duration-300"
+  >
+    <span className="text-xs font-mono text-[#9ca3af] mb-6 tracking-widest">{module.index}</span>
+    <div className="flex items-start justify-between mb-6">
+      <h3 className="text-2xl font-bold text-[#1a2421] tracking-tight">{module.title}</h3>
+    </div>
+    <p className="text-[#4b5563] leading-relaxed mb-8 h-20">{module.description}</p>
+    <ul className="space-y-3 mt-auto">
+      {module.features.map((feature, idx) => (
+        <li key={idx} className="flex items-start gap-3 text-sm text-[#4b5563]">
+          <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#c4fca1] shrink-0" />
+          {feature}
+        </li>
+      ))}
+    </ul>
+  </motion.div>
+);
+
+const InfraPerformanceSection = ({ module }: { module: InfraModuleHighlight }) => {
+  if (!module.metrics) return null;
+  return (
+    <section className="bg-[#f8fafc] w-full py-24 border-t border-[#e5e7eb]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+          >
+            <span className="block text-xs font-mono text-[#6b7280] mb-4 tracking-widest uppercase">
+              {module.category}
+            </span>
+            <h2 className="text-4xl md:text-5xl font-bold text-[#1a2421] mb-6 tracking-tight">
+              {module.title}
+            </h2>
+            <p className="text-lg text-[#4b5563] leading-relaxed max-w-xl">
+              {module.description}
+            </p>
+          </motion.div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            {module.metrics.map((metric, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="relative pl-6 border-l-2 border-[#e5e7eb]"
+              >
+                <span className="absolute left-[-5px] top-0 w-2 h-2 rounded-full bg-[#c4fca1]" />
+                <p className="text-4xl font-bold text-[#1a2421] mb-1">{metric.value}</p>
+                <p className="text-sm font-bold text-[#374151] mb-1">{metric.label}</p>
+                <p className="text-xs text-[#6b7280]">{metric.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
 
 // --- CARD COMPONENT ---
 
@@ -551,6 +728,41 @@ export default function ESGAmbiental() {
           );
         })}
       </main>
+
+      {/* --- INFRAESTRUTURA SECTION --- */}
+      <main className="max-w-7xl mx-auto px-6 py-24">
+        <div className="mb-20">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-3xl md:text-5xl font-bold text-[#1a2421] mb-6 tracking-tight bg-clip-text"
+          >
+            Infraestrutura de classe mundial.
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-lg md:text-xl text-[#6b7280] max-w-2xl leading-relaxed"
+          >
+            Cada componente da plataforma Daton foi desenhado para segurança, escalabilidade e performance. Sem concessões.
+          </motion.p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-px bg-[#e5e7eb] border border-[#e5e7eb] rounded-2xl overflow-hidden shadow-sm">
+          {INFRA_MODULES.filter(m => m.id !== "performance").map((module) => (
+            <InfraFeatureCard key={module.id} module={module} />
+          ))}
+        </div>
+      </main>
+
+      {/* --- PERFORMANCE SECTION --- */}
+      {(() => {
+        const perfModule = INFRA_MODULES.find(m => m.id === "performance");
+        return perfModule ? <InfraPerformanceSection module={perfModule} /> : null;
+      })()}
 
       {/* --- ORIGINAL FOOTER --- */}
       <PublicFooter />
