@@ -1,26 +1,50 @@
 
 
-# Fix: Grid deve manter tamanho fixo no hover
+# Fix: Imagens inferiores do grid nao respondem ao hover
 
 ## Problema
-O container do grid tem `aspect-square` que faz o grid inteiro redimensionar quando as proporcoes `3fr/1fr` mudam. O grid deveria manter seu tamanho original e apenas redistribuir o espaco interno entre as 4 imagens.
+Quando uma imagem superior e hovereada, a linha inferior encolhe para `1fr` (cerca de 25% da altura). As imagens inferiores ficam muito finas mas ainda existem -- o problema e que o `onMouseEnter` esta diretamente no `<img>`, e quando o mouse se move para baixo, ele sai da imagem superior (resetando o grid para `1fr 1fr`) antes de chegar na imagem inferior. Isso cria uma "corrida" onde o grid reseta antes do mouse alcancar a imagem de baixo.
+
+Alem disso, cada `<img>` com `onMouseEnter` tem uma area de deteccao que depende do tamanho renderizado da imagem -- quando ela esta comprimida, a area e minuscula.
 
 ## Solucao
-Remover `aspect-square` do container externo e definir uma altura fixa para o grid. O container do grid precisa de dimensoes fixas para que o CSS Grid apenas redistribua o espaco interno sem alterar o tamanho total.
+Envolver cada imagem em um `<div>` container que ocupe toda a celula do grid. O `onMouseEnter` vai no `<div>` em vez do `<img>`. Isso garante que a area de hover seja a celula inteira do grid (mesmo quando comprimida), nao apenas a imagem renderizada.
+
+Tambem adicionar `cursor-pointer` para feedback visual.
 
 ### Arquivo editado
 - `src/pages/SobreNos.tsx`
 
-### Mudancas
-1. Remover `aspect-square` do div container externo (`md:w-[70%]`)
-2. Adicionar uma altura fixa ao grid interno, por exemplo `h-[500px]` ou usar `aspect-square` no container externo mas com `overflow-hidden` -- na verdade, o correto e manter `aspect-square` no container externo mas garantir que o grid interno use `w-full h-full` sem que o container mude de tamanho
-3. O problema real: o container externo com `aspect-square` esta correto, mas o grid interno esta fazendo o container crescer. A solucao e adicionar `overflow-hidden` ao container externo para que ele mantenha suas dimensoes fixas, e o grid interno redistribua o espaco dentro dessas dimensoes fixas
+### Mudanca concreta
+Substituir:
+```tsx
+{[socio1, socio2, socio3, socio4].map((src, idx) => (
+  <img
+    key={idx}
+    src={src}
+    alt={`Socio ${idx + 1}`}
+    className="w-full h-full object-cover rounded-xl grayscale"
+    onMouseEnter={() => setHoveredIdx(idx)}
+  />
+))}
+```
 
-Na verdade, revisando melhor: `aspect-square` com `md:w-[70%]` define a altura com base na largura. O grid interno com `w-full h-full` deveria preencher esse espaco. O problema pode ser que o grid esta empurrando o container. A solucao e garantir que o container externo tenha dimensoes fixas e o grid nao o expanda.
+Por:
+```tsx
+{[socio1, socio2, socio3, socio4].map((src, idx) => (
+  <div
+    key={idx}
+    className="overflow-hidden rounded-xl cursor-pointer"
+    onMouseEnter={() => setHoveredIdx(idx)}
+  >
+    <img
+      src={src}
+      alt={`Socio ${idx + 1}`}
+      className="w-full h-full object-cover grayscale"
+    />
+  </div>
+))}
+```
 
-### Correcao concreta
-- No div externo (`md:w-[70%] aspect-square`): adicionar `overflow-hidden` para conter o grid
-- No div do grid (`grid w-full h-full gap-2`): esta correto, ele preenche o container
-- O `aspect-square` no container garante que ele mantem formato quadrado baseado na largura (70% do pai)
+O `<div>` ocupa 100% da celula do grid automaticamente, entao mesmo quando a celula esta pequena (1fr), toda a area da celula e sensivel ao hover. O `rounded-xl` e `overflow-hidden` ficam no div para manter o visual arredondado.
 
-Se o grid ainda crescer, a alternativa e remover `aspect-square` e usar uma altura calculada via CSS (`aspect-ratio: 1/1` no style inline) junto com `overflow-hidden`.
