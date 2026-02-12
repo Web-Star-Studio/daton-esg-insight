@@ -13,7 +13,7 @@ const fetchCompanyEmployees = async (companyId: string): Promise<CompanyEmployee
     .from('employees')
     .select('id, full_name, position')
     .eq('company_id', companyId)
-    .eq('status', 'active')
+    .eq('status', 'Ativo')
     .order('full_name')
     .range(0, 4999);
 
