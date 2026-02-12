@@ -123,7 +123,9 @@ export default function Auth() {
           className="text-center mb-8"
         >
           <div className="flex items-center justify-center mb-3">
-            <img src={datonLogo} alt="Daton" className="h-9" />
+            <button onClick={() => navigate('/')} className="bg-transparent border-none cursor-pointer p-0">
+              <img src={datonLogo} alt="Daton" className="h-9" />
+            </button>
           </div>
         </motion.div>
 
