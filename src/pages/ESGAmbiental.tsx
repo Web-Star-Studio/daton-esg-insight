@@ -15,6 +15,7 @@ import { HeimdallNavbar } from "@/components/landing/heimdall/HeimdallNavbar";
 import { PublicFooter } from "@/components/landing/heimdall/PublicFooter";
 import "@/components/landing/heimdall/heimdall.css";
 import esgSocialCardImg from "@/assets/esg-social-card.png";
+import esgQualityCardImg from "@/assets/esg-quality-card.png";
 
 // --- DATA ---
 
@@ -71,7 +72,7 @@ const MODULES: ModuleHighlight[] = [
     description:
       "Registre, analise e trate não conformidades com fluxos estruturados. Controle versões de documentos e conduza auditorias internas com total rastreabilidade.",
     icon: FileCheck,
-    image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2670&auto=format&fit=crop",
+    image: esgQualityCardImg,
     color: "#f5f3ff",
     features: [
       "Gestão completa de não conformidades",
