@@ -1,72 +1,88 @@
 
 
-## Onboarding obrigatorio antes do demo + detalhes do usuario no painel admin
+## Modulos dinamicos: demo com tudo + controle no painel admin
 
-### Problema atual
+### Contexto atual
 
-1. **Redirecionamento pos-onboarding**: `CleanOnboardingMain` sempre redireciona para `/dashboard` apos concluir. Embora o `ProtectedRoute` eventualmente redirecione usuarios nao aprovados para `/demo`, isso causa um flash de redirect desnecessario.
-
-2. **Sem pagina de detalhes do usuario**: O painel de platform admin (`PlatformUsersTable`) mostra apenas a listagem basica. Nao ha como ver os dados de onboarding (modulos selecionados, perfil da empresa, configuracoes) que o usuario preencheu.
+- A visibilidade dos modulos e controlada por um arquivo estatico (`src/config/enabledModules.ts`) com valores `true/false` hardcoded.
+- A sidebar (`AppSidebar.tsx`) usa `DISABLED_SECTION_IDS` e `DISABLED_ESG_CATEGORY_IDS` para filtrar modulos - sem distincao entre demo e live.
+- A versao demo exibe os mesmos modulos filtrados que a versao live.
 
 ### Solucao
 
-#### 1. Corrigir redirecionamento pos-onboarding
+Mover o controle de modulos para o banco de dados e criar uma UI administrativa para gerencia-los.
 
-**Arquivo: `src/components/onboarding/CleanOnboardingMain.tsx`**
+#### 1. Criar tabela `platform_module_settings` no Supabase
 
-Alterar `handleStartUsingPlatform`, `handleSkipOnboarding` e `handleEmergencyComplete` para verificar `isApproved` do `useAuth()` e redirecionar para `/demo` quando o usuario nao esta aprovado, em vez de sempre ir para `/dashboard`.
-
+```text
+platform_module_settings
+- id: uuid (PK)
+- module_key: text (unique) -- ex: 'financial', 'esgGovernance'
+- module_name: text -- nome de exibicao
+- enabled_live: boolean (default false) -- visivel na versao live
+- enabled_demo: boolean (default true) -- visivel na versao demo
+- updated_at: timestamptz
+- updated_by_user_id: uuid (FK profiles)
 ```
-const destination = isApproved ? '/dashboard' : '/demo';
-navigate(destination, { replace: true });
-```
 
-Pontos de alteracao:
-- Linha 105: `handleSkipOnboarding` - trocar `navigate('/dashboard')` por logica condicional
-- Linha 152: `handleStartUsingPlatform` - trocar `navigate('/dashboard', ...)` por logica condicional
-- Linha 293: `handleEmergencyComplete` - trocar `navigate('/dashboard', ...)` por logica condicional
-- Linha 305: fallback de erro - idem
+Seed com todos os modulos atuais, migrando os valores do `enabledModules.ts`:
 
-#### 2. Criar modal de detalhes do usuario no painel admin
-
-**Novo arquivo: `src/components/platform/UserDetailsModal.tsx`**
-
-Um Dialog/Sheet que exibe informacoes detalhadas de um usuario selecionado, incluindo:
-
-- **Dados do perfil**: nome, email, cargo, empresa, data de cadastro, status de aprovacao
-- **Dados de onboarding** (da tabela `onboarding_selections`):
-  - Modulos selecionados (`selected_modules`)
-  - Configuracoes de modulos (`module_configurations`)
-  - Perfil da empresa informado no onboarding (`company_profile`)
-  - Status de conclusao e data (`is_completed`, `completed_at`)
-  - Etapa atual do onboarding (`current_step` / `total_steps`)
-
-O modal buscara os dados de `onboarding_selections` via query separada filtrada por `user_id`.
-
-#### 3. Integrar modal na tabela de usuarios
-
-**Arquivo: `src/components/platform/PlatformUsersTable.tsx`**
-
-- Adicionar botao "Ver detalhes" (icone Eye) na coluna de acoes de cada usuario
-- Ao clicar, abrir o `UserDetailsModal` passando o `userId`
-- O botao ficara ao lado do botao de Aprovar/Revogar existente
-
-### Estrutura dos dados de onboarding exibidos
-
-A tabela `onboarding_selections` ja contem todos os campos necessarios:
-
-| Campo | Descricao | Exibicao |
+| module_key | enabled_live | enabled_demo |
 |---|---|---|
-| `selected_modules` | Array de IDs dos modulos escolhidos | Lista com badges |
-| `module_configurations` | JSON com configs por modulo | Accordion expandivel |
-| `company_profile` | JSON com setor, porte, etc. | Cards informativos |
-| `is_completed` | Se finalizou o onboarding | Badge status |
-| `completed_at` | Data/hora de conclusao | Data formatada |
-| `current_step` | Etapa atual (se nao concluiu) | Progress indicator |
+| financial | false | true |
+| dataReports | false | true |
+| esgEnvironmental | true | true |
+| esgGovernance | false | true |
+| esgSocial | true | true |
+| quality | true | true |
+| suppliers | true | true |
+| settings | true | true |
+| help | true | true |
+| esgManagement | true | true |
+
+RLS: somente platform_admins podem ler/escrever.
+
+#### 2. Hook `useModuleSettings`
+
+Novo hook (`src/hooks/useModuleSettings.ts`) que:
+- Busca os dados de `platform_module_settings`
+- Expoe funcao `isModuleVisible(moduleKey)` que verifica:
+  - Se `isDemo` === true: usa `enabled_demo`
+  - Se `isDemo` === false: usa `enabled_live`
+- Inclui mutation para atualizar `enabled_live` / `enabled_demo`
+
+#### 3. Atualizar `AppSidebar.tsx`
+
+Substituir a logica estatica de filtragem (`DISABLED_SECTION_IDS`, `DISABLED_ESG_CATEGORY_IDS`) pelo hook `useModuleSettings`:
+
+- Em vez de importar constantes de `enabledModules.ts`, usar o hook para determinar quais secoes/categorias mostrar
+- No modo demo (`isDemo === true`), todos os modulos com `enabled_demo = true` aparecem (por padrao, todos)
+- No modo live, apenas modulos com `enabled_live = true` aparecem
+
+#### 4. Atualizar `enabledModules.ts`
+
+Manter o arquivo como fallback (caso o banco nao responda), mas a fonte primaria passa a ser o banco. As funcoes `isRouteDisabled` tambem serao atualizadas para consultar o hook.
+
+#### 5. Nova aba "Modulos" no Platform Admin Dashboard
+
+**Arquivo: `src/components/platform/ModuleSettingsPanel.tsx`** (novo)
+
+Uma tabela com todos os modulos, cada linha contendo:
+- Nome do modulo
+- Toggle para "Live" (enabled_live)
+- Toggle para "Demo" (enabled_demo)
+- Indicacao de ultima atualizacao
+
+**Arquivo: `src/pages/PlatformAdminDashboard.tsx`**
+
+Adicionar nova aba "Modulos" ao `TabsList` existente (ao lado de "Empresas" e "Usuarios"), renderizando o `ModuleSettingsPanel`.
 
 ### Arquivos modificados
 
-- `src/components/onboarding/CleanOnboardingMain.tsx` - redirecionar para `/demo` se nao aprovado
-- `src/components/platform/UserDetailsModal.tsx` - novo componente de detalhes
-- `src/components/platform/PlatformUsersTable.tsx` - integrar botao e modal
+- **Migration SQL**: criar tabela `platform_module_settings` com seed
+- `src/hooks/useModuleSettings.ts` -- novo hook
+- `src/components/platform/ModuleSettingsPanel.tsx` -- novo painel admin
+- `src/pages/PlatformAdminDashboard.tsx` -- adicionar aba "Modulos"
+- `src/components/AppSidebar.tsx` -- substituir filtragem estatica por dinamica
+- `src/config/enabledModules.ts` -- manter como fallback
 
