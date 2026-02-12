@@ -38,7 +38,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Contato = lazy(() => import("./pages/Contato"));
 const ESGAmbiental = lazy(() => import("./pages/ESGAmbiental"));
-const Technology = lazy(() => import("./pages/Technology"));
+
 const ESGSocial = lazy(() => import("./pages/ESGSocial"));
 const ESGGovernanca = lazy(() => import("./pages/ESGGovernanca"));
 const Documentacao = lazy(() => import("./pages/Documentacao"));
@@ -434,11 +434,6 @@ const AppContent = () => {
             <Route path="/ambiental" element={
               <LazyPageWrapper>
                 <ESGAmbiental />
-              </LazyPageWrapper>
-            } />
-            <Route path="/tecnologia" element={
-              <LazyPageWrapper>
-                <Technology />
               </LazyPageWrapper>
             } />
             <Route path="/social" element={

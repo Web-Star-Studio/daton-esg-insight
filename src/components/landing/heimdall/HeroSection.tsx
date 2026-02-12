@@ -14,7 +14,7 @@ export function HeroSection() {
     const slideDurationMs = 5000;
     const quickMenuLinks = [
         { label: 'Soluções', href: '/funcionalidades' },
-        { label: 'Tecnologia', href: '/tecnologia' },
+        
         { label: 'Documentação', href: '/documentacao' },
         { label: 'Sobre Nós', href: '/sobre-nos' },
         { label: 'Contato', href: '/contato' },
