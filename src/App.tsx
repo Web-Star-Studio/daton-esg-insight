@@ -11,6 +11,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DemoProvider } from "@/contexts/DemoContext";
 import { CompanyProvider } from "@/contexts/CompanyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { DemoRoute } from "@/components/DemoRoute";
 import { RoleGuard } from "@/middleware/roleGuard";
 import { LazyPageWrapper } from "@/components/LazyPageWrapper";
 import { ProtectedLazyPageWrapper } from "@/components/ProtectedLazyPageWrapper";
@@ -271,13 +272,15 @@ const AppContent = () => {
             {/* Demo dashboard - público (rota legada) */}
             <Route path="/demo-old" element={<LazyPageWrapper><DemoDashboard /></LazyPageWrapper>} />
 
-            {/* Demo - réplica da versão real com mock data */}
+            {/* Demo - apenas para usuários autenticados não aprovados */}
             <Route path="/demo" element={
-              <DemoProvider>
-                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" /></div>}>
-                  <DemoLayout />
-                </Suspense>
-              </DemoProvider>
+              <DemoRoute>
+                <DemoProvider>
+                  <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" /></div>}>
+                    <DemoLayout />
+                  </Suspense>
+                </DemoProvider>
+              </DemoRoute>
             }>
               <Route index element={<LazyPageWrapper><Dashboard /></LazyPageWrapper>} />
               <Route path="gestao-esg" element={<LazyPageWrapper><GestaoESG /></LazyPageWrapper>} />
