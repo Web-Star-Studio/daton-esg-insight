@@ -488,7 +488,7 @@ const SobreNos = () => {
             </section>
 
             {/* --- WORTON --- */}
-            <section className="py-10 px-6 bg-[#1a2421]">
+            <section className="pt-10 pb-8 px-6 bg-[#1a2421]">
                 <div className="max-w-7xl mx-auto flex justify-center">
                   <div className="relative w-fit">
                     <p className="absolute top-6 left-7 text-white/60 text-sm uppercase tracking-widest font-mono z-10">Uma empresa</p>
