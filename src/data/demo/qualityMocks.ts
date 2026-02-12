@@ -34,6 +34,14 @@ export const qualityMockEntries = [
       { id: '8', name: 'Taxa de Defeitos', code: 'IND-008', target_value: 1.0, current_value: 0.8, unit: '%', status: 'No Alvo', frequency: 'Semanal', responsible: 'Pedro Almeida', company_id: DEMO_COMPANY_ID },
     ],
   },
+  // Quality indicators (base)
+  {
+    queryKey: ['quality-indicators'],
+    data: [
+      { id: '1', name: 'Índice de Retrabalho', code: 'IND-001', target_value: 2.0, current_value: 1.8, unit: '%', status: 'No Alvo' },
+      { id: '2', name: 'Satisfação do Cliente', code: 'IND-002', target_value: 85, current_value: 88.5, unit: '%', status: 'No Alvo' },
+    ],
+  },
   // Non-conformities
   {
     queryKey: ['quality', 'non-conformities', DEMO_COMPANY_ID],
@@ -44,6 +52,39 @@ export const qualityMockEntries = [
       { id: '4', nc_number: 'NC-2025-015', title: 'Treinamento obrigatório não realizado', category: 'Pessoas', severity: 'Menor', status: 'Concluída', origin: 'Auditoria', department: 'RH', responsible_user_id: 'emp-3', description: '5 colaboradores sem NR-35', created_at: '2025-11-10', company_id: DEMO_COMPANY_ID },
       { id: '5', nc_number: 'NC-2025-014', title: 'Produto não conforme liberado', category: 'Produto', severity: 'Maior', status: 'Concluída', origin: 'Reclamação Cliente', department: 'Produção', responsible_user_id: 'emp-8', description: 'Lote 2025-120 com defeito visual', created_at: '2025-10-25', company_id: DEMO_COMPANY_ID },
     ],
+  },
+  // Non-conformities (base)
+  {
+    queryKey: ['non-conformities'],
+    data: [
+      { id: '1', nc_number: 'NC-2026-001', title: 'Desvio de temperatura na câmara fria', category: 'Processo', severity: 'Maior', status: 'Em Tratamento' },
+      { id: '2', nc_number: 'NC-2026-002', title: 'Documento desatualizado', category: 'Documentação', severity: 'Menor', status: 'Aberta' },
+      { id: '3', nc_number: 'NC-2026-003', title: 'Falha na calibração', category: 'Equipamento', severity: 'Crítica', status: 'Em Análise' },
+    ],
+  },
+  // NC Dashboard stats
+  {
+    queryKey: ['nc-dashboard-stats'],
+    data: {
+      totalNCs: 8,
+      openNCs: 3,
+      closedNCs: 5,
+      criticalNCs: 1,
+      avgResolutionDays: 12,
+      onTimeRate: 85.7,
+      byCategory: [
+        { category: 'Processo', count: 2 },
+        { category: 'Documentação', count: 2 },
+        { category: 'Equipamento', count: 1 },
+        { category: 'Pessoas', count: 1 },
+        { category: 'Produto', count: 2 },
+      ],
+      bySeverity: [
+        { severity: 'Crítica', count: 1 },
+        { severity: 'Maior', count: 3 },
+        { severity: 'Menor', count: 4 },
+      ],
+    },
   },
   // Corrective actions
   {
@@ -56,6 +97,14 @@ export const qualityMockEntries = [
       { id: '5', action_number: 'AC-2025-011', title: 'Implementar inspeção visual reforçada', nc_id: '5', status: 'Concluída', responsible: 'Lucas Mendes', deadline: '2025-11-30', progress: 100, company_id: DEMO_COMPANY_ID },
     ],
   },
+  // Corrective actions (base)
+  {
+    queryKey: ['corrective-actions'],
+    data: [
+      { id: '1', action_number: 'AC-2026-001', title: 'Instalar alarme de temperatura', status: 'Em Execução', progress: 65 },
+      { id: '2', action_number: 'AC-2026-002', title: 'Revisar e atualizar PO-005', status: 'Planejada', progress: 0 },
+    ],
+  },
   // Processes
   {
     queryKey: ['quality', 'processes', DEMO_COMPANY_ID],
@@ -66,6 +115,23 @@ export const qualityMockEntries = [
       { id: '4', name: 'Gestão de Fornecedores', category: 'Suporte', owner: 'Ana Silva', status: 'Documentado', last_review: '2025-11-20', version: '3.0', company_id: DEMO_COMPANY_ID },
     ],
   },
+  // Process maps
+  {
+    queryKey: ['processMaps'],
+    data: [
+      { id: 'pm-1', name: 'Mapa de Processo - Produção', description: 'Fluxo completo do processo produtivo', status: 'Ativo', version: '2.1', owner: 'Lucas Mendes', last_review: '2026-01-15' },
+      { id: 'pm-2', name: 'Mapa de Processo - Qualidade', description: 'Fluxo de inspeção e controle de qualidade', status: 'Ativo', version: '3.0', owner: 'Pedro Almeida', last_review: '2025-12-01' },
+      { id: 'pm-3', name: 'Mapa de Processo - Logística', description: 'Fluxo de recebimento e expedição', status: 'Em Revisão', version: '1.5', owner: 'Ana Silva', last_review: '2025-10-01' },
+    ],
+  },
+  // Strategic maps
+  {
+    queryKey: ['strategic-maps'],
+    data: [
+      { id: 'sm-1', title: 'Mapa Estratégico 2025-2027', perspectives: ['Financeira', 'Clientes', 'Processos', 'Aprendizado'], objectives_count: 16, status: 'Ativo' },
+      { id: 'sm-2', title: 'BSC - Sustentabilidade', perspectives: ['Ambiental', 'Social', 'Governança'], objectives_count: 12, status: 'Ativo' },
+    ],
+  },
   // Strategic planning
   {
     queryKey: ['strategic-planning', DEMO_COMPANY_ID],
@@ -73,6 +139,13 @@ export const qualityMockEntries = [
       { id: '1', title: 'Plano Estratégico 2025-2027', status: 'Ativo', objectives_count: 12, completed_objectives: 4, progress: 33, company_id: DEMO_COMPANY_ID },
       { id: '2', title: 'PDCA - Redução de Custos', status: 'Em Andamento', objectives_count: 5, completed_objectives: 2, progress: 40, company_id: DEMO_COMPANY_ID },
       { id: '3', title: 'Programa 5S', status: 'Ativo', objectives_count: 8, completed_objectives: 6, progress: 75, company_id: DEMO_COMPANY_ID },
+    ],
+  },
+  // Strategic planning (base)
+  {
+    queryKey: ['strategic-planning'],
+    data: [
+      { id: '1', title: 'Plano Estratégico 2025-2027', status: 'Ativo', objectives_count: 12, completed_objectives: 4, progress: 33 },
     ],
   },
   // Controlled documents
@@ -86,6 +159,14 @@ export const qualityMockEntries = [
       { id: '5', title: 'Procedimento Operacional - PO-005', code: 'PO-005', category: 'Procedimento', version: '2.0', status: 'Em Revisão', review_date: '2026-02-28', responsible: 'Pedro Almeida' },
     ],
   },
+  // Controlled documents (base)
+  {
+    queryKey: ['controlled-documents'],
+    data: [
+      { id: '1', title: 'Manual da Qualidade', code: 'MQ-001', category: 'Manual', version: '6.0', status: 'Vigente' },
+      { id: '2', title: 'Procedimento de Inspeção', code: 'PO-003', category: 'Procedimento', version: '4.1', status: 'Vigente' },
+    ],
+  },
   // LAIA
   {
     queryKey: ['laia-units', DEMO_COMPANY_ID],
@@ -94,12 +175,47 @@ export const qualityMockEntries = [
       { id: '2', name: 'Centro de Distribuição RJ', branch_id: 'branch-2', total_aspects: 12, significant_aspects: 3, last_review: '2025-11-15' },
     ],
   },
+  // LAIA (base)
+  {
+    queryKey: ['laia-units'],
+    data: [
+      { id: '1', name: 'Unidade Industrial SP', total_aspects: 25, significant_aspects: 8 },
+    ],
+  },
   // Action plans
   {
     queryKey: ['action-plans', DEMO_COMPANY_ID],
     data: [
       { id: '1', title: 'Plano de Ação - Melhoria Contínua Q1 2026', status: 'Em Andamento', items_count: 8, completed_items: 3, company_id: DEMO_COMPANY_ID },
       { id: '2', title: 'Plano de Adequação NR-12', status: 'Em Andamento', items_count: 12, completed_items: 7, company_id: DEMO_COMPANY_ID },
+    ],
+  },
+  // Action plans (base)
+  {
+    queryKey: ['action-plans'],
+    data: [
+      { id: '1', title: 'Plano de Ação - Melhoria Contínua Q1 2026', status: 'Em Andamento', items_count: 8, completed_items: 3 },
+    ],
+  },
+  // Audit stats
+  {
+    queryKey: ['audit-stats'],
+    data: {
+      totalAudits: 3,
+      completedAudits: 2,
+      plannedAudits: 1,
+      totalFindings: 8,
+      openFindings: 3,
+      avgScore: 82.5,
+    },
+  },
+  // Knowledge base articles
+  {
+    queryKey: ['knowledge-articles'],
+    data: [
+      { id: 'ka-1', title: 'Guia de Boas Práticas Ambientais', category: 'Ambiental', status: 'Publicado', views: 245 },
+      { id: 'ka-2', title: 'Procedimento de Resposta a Emergências', category: 'SST', status: 'Publicado', views: 189 },
+      { id: 'ka-3', title: 'Manual do Colaborador', category: 'RH', status: 'Publicado', views: 532 },
     ],
   },
 ];
