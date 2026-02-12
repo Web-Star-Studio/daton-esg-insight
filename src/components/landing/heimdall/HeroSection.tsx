@@ -179,7 +179,7 @@ export function HeroSection() {
                 >
                     <h1
                         style={{
-                            fontSize: 'clamp(2rem, 4.5vw, 3.8rem)',
+                            fontSize: 'clamp(1.6rem, 3.5vw, 2.8rem)',
                             lineHeight: '1.1',
                             letterSpacing: '-0.025em',
                             fontWeight: 800,
