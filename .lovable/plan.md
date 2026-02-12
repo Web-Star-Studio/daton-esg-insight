@@ -1,47 +1,30 @@
 
 
-## Adicionar secoes detalhadas dos modulos de /ambiental na pagina /tecnologia
+## Reorganizar links do Footer em categorias
 
-### Contexto
+Atualmente todos os 7 links estao sob uma unica coluna "Navegacao". A proposta e separa-los em 3 colunas tematicas, criando um footer mais organizado e profissional.
 
-A pagina `/ambiental` (ESGAmbiental.tsx) exibe 5 cards de modulos:
+### Nova estrutura
 
-| # | Modulo | Categoria |
-|---|--------|-----------|
-| 001 | ESG Ambiental | Meio Ambiente / Sustentabilidade |
-| 002 | ESG Social | Social / Diversidade / Seguranca |
-| 003 | Qualidade (SGQ) | Gestao / Controle de Processos |
-| 004 | Gestao Fornecedores | Cadeia de Suprimentos |
-| 005 | Inteligencia Artificial | Tecnologia / Automacao |
+O grid passara de `md:grid-cols-3` para `md:grid-cols-4`, com a seguinte distribuicao:
 
-A pagina `/tecnologia` (Technology.tsx) atualmente tem seus proprios cards sobre aspectos tecnicos (IA, Arquitetura, Seguranca, Integracoes, Performance).
-
-### O que sera adicionado
-
-Uma nova secao abaixo do grid de tecnologia e acima do footer, intitulada algo como **"Modulos da Plataforma"**, contendo blocos detalhados para cada um dos 5 modulos de `/ambiental`.
-
-Cada bloco tera:
-- Numero do indice (001, 002, etc.)
-- Titulo e categoria
-- Descricao completa
-- Lista de features
-- Imagem do modulo
-- Botao de CTA direcionando para `/funcionalidades`
-
-O layout sera alternado (imagem esquerda/direita) para criar ritmo visual, seguindo o estilo Heimdall com animacoes framer-motion no scroll.
+| Coluna 1 (span 1) | Coluna 2 | Coluna 3 | Coluna 4 |
+|---|---|---|---|
+| Logo + descricao | **Plataforma** | **Empresa** | **Legal** |
+| | Solucoes | Sobre Nos | Privacidade |
+| | Tecnologia | Contato | Termos de Uso |
+| | Documentacao | | |
 
 ### Detalhes tecnicos
 
-**Arquivo: `src/pages/Technology.tsx`**
+**Arquivo: `src/components/landing/heimdall/PublicFooter.tsx`**
 
-1. Importar os dados MODULES de `/ambiental` como uma constante separada (`SOLUTION_MODULES`) dentro do proprio arquivo Technology.tsx, replicando os 5 modulos para evitar acoplamento entre paginas.
-
-2. Criar um componente `SolutionDetailSection` que renderiza cada modulo em layout alternado (texto + imagem lado a lado, invertendo a cada item).
-
-3. Inserir a nova secao entre a `PerformanceSection` e o `PublicFooter`, com:
-   - Titulo da secao: "Nossas Solucoes" com subtitulo
-   - 5 blocos detalhados com animacao `whileInView`
-   - Estilo consistente com o resto da pagina (cores, tipografia, espacamento)
+1. Alterar o grid de `md:grid-cols-3` para `md:grid-cols-4`, e a coluna do logo de `md:col-span-2` para manter apenas `md:col-span-1`.
+2. Substituir a coluna unica "Navegacao" por 3 colunas:
+   - **Plataforma**: Solucoes (`/funcionalidades`), Tecnologia (`/tecnologia`), Documentacao (`/documentacao`)
+   - **Empresa**: Sobre Nos (`/sobre-nos`), Contato (`/contato`)
+   - **Legal**: Privacidade (`/privacidade`), Termos de Uso (`/termos`)
+3. Manter o estilo visual identico (mesmas classes de tipografia, cores e espacamento).
 
 Nenhum outro arquivo precisa ser alterado.
 
