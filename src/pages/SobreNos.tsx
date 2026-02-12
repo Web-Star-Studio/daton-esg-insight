@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
 import pilaresImg from '@/assets/pilares-esg.png';
+import soberaniaImg from '@/assets/esg-soberania.png';
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 import '@/components/landing/heimdall/heimdall.css';
 
@@ -454,19 +455,25 @@ const SobreNos = () => {
 
             {/* --- PRIVACY --- */}
             <section className="py-24 px-6 bg-[#f8fafc] border-t border-[#e5e7eb]">
-                <div className="max-w-4xl mx-auto text-center">
-                    <div className="w-16 h-16 bg-[#1a2421] rounded-2xl flex items-center justify-center mx-auto mb-8 text-[#c4fca1]">
-                        <Lock size={32} />
+                <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+                    <div className="relative">
+                        <img 
+                            src={soberaniaImg} 
+                            alt="Profissionais analisando dados ESG em tablet" 
+                            className="w-full rounded-3xl object-cover shadow-lg"
+                        />
                     </div>
-                    <h2 className="text-3xl font-bold text-[#1a2421] mb-6">Seus dados, sua soberania</h2>
-                    <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                        Privacidade não é funcionalidade opcional — é arquitetura. Cada empresa opera em um ambiente logicamente isolado com Row Level Security no nível do banco de dados. Todos os dados são criptografados em trânsito (TLS 1.3) e em repouso (AES-256). Estamos em conformidade com a LGPD e seguimos as melhores práticas de segurança da informação, incluindo logs de auditoria completos e controle de acesso baseado em papéis com quatro níveis de permissão.
-                    </p>
-                    <div className="flex justify-center gap-4 flex-wrap">
-                        <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">AES-256 Encryption</span>
-                        <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">TLS 1.3</span>
-                        <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">Row Level Security</span>
-                        <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">LGPD Compliant</span>
+                    <div>
+                        <h2 className="text-3xl font-bold text-[#1a2421] mb-6">Seus dados, sua soberania</h2>
+                        <p className="text-lg text-gray-600 leading-relaxed mb-8">
+                            Privacidade não é funcionalidade opcional — é arquitetura. Cada empresa opera em um ambiente logicamente isolado com Row Level Security no nível do banco de dados. Todos os dados são criptografados em trânsito (TLS 1.3) e em repouso (AES-256). Estamos em conformidade com a LGPD e seguimos as melhores práticas de segurança da informação, incluindo logs de auditoria completos e controle de acesso baseado em papéis com quatro níveis de permissão.
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">AES-256 Encryption</span>
+                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">TLS 1.3</span>
+                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">Row Level Security</span>
+                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">LGPD Compliant</span>
+                        </div>
                     </div>
                 </div>
             </section>
