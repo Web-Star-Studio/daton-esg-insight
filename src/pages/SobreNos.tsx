@@ -489,7 +489,7 @@ const SobreNos = () => {
 
             {/* --- WORTON --- */}
             <section className="py-20 px-6 bg-[#1a2421]">
-                <div className="max-w-7xl mx-auto flex flex-row items-center justify-center gap-6">
+                <div className="max-w-7xl mx-auto flex flex-col items-start justify-center w-fit mx-auto gap-2">
                     <p className="text-white/60 text-sm uppercase tracking-widest font-mono">Uma empresa</p>
                     <a href="https://www.worton.com.br/" target="_blank" rel="noopener noreferrer">
                         <img
