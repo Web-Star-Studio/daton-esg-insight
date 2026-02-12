@@ -488,15 +488,17 @@ const SobreNos = () => {
             </section>
 
             {/* --- WORTON --- */}
-            <section className="py-16 px-6 bg-[#1a2421]">
-                <div className="max-w-7xl mx-auto flex flex-col items-center justify-center text-center gap-4">
-                    <p className="text-white/60 text-sm uppercase tracking-widest font-mono">Uma empresa</p>
-                    <img
-                        src={wortonLogo}
-                        alt="Worton"
-                        className="h-10"
-                        style={{ filter: "brightness(0) invert(1)" }}
-                    />
+            <section className="py-20 px-6 bg-[#1a2421]">
+                <div className="max-w-7xl mx-auto flex flex-row items-center justify-center gap-5">
+                    <p className="text-white/60 text-lg uppercase tracking-widest font-mono">Uma empresa</p>
+                    <a href="https://www.worton.com.br/" target="_blank" rel="noopener noreferrer">
+                        <img
+                            src={wortonLogo}
+                            alt="Worton"
+                            className="h-14 hover:opacity-80 transition-opacity"
+                            style={{ filter: "brightness(0) invert(1)" }}
+                        />
+                    </a>
                 </div>
             </section>
 
