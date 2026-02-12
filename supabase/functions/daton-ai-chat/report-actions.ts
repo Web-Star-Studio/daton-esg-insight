@@ -128,7 +128,7 @@ export async function handleGenerateSmartReport(
     console.error('Error in handleGenerateSmartReport:', error);
     return {
       success: false,
-      message: `Erro ao gerar relatório: ${error.message}`
+      message: `Erro ao gerar relatório: ${(error as Error).message}`
     };
   }
 }
@@ -213,7 +213,7 @@ export async function handleCreateChart(
     console.error('Error in handleCreateChart:', error);
     return {
       success: false,
-      message: `Erro ao criar gráfico: ${error.message}`
+      message: `Erro ao criar gráfico: ${(error as Error).message}`
     };
   }
 }
@@ -257,7 +257,7 @@ export async function handleScheduleReport(
     console.error('Error in handleScheduleReport:', error);
     return {
       success: false,
-      message: `Erro ao agendar relatório: ${error.message}`
+      message: `Erro ao agendar relatório: ${(error as Error).message}`
     };
   }
 }
@@ -327,7 +327,7 @@ export async function handleAnalyzeTrends(
     console.error('Error in handleAnalyzeTrends:', error);
     return {
       success: false,
-      message: `Erro ao analisar tendências: ${error.message}`
+      message: `Erro ao analisar tendências: ${(error as Error).message}`
     };
   }
 }
