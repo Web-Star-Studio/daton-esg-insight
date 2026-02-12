@@ -1,40 +1,36 @@
 
 
-## Remover links de navegacao duplicados da navbar
+## Redirecionar botoes para /auth e proteger rota /demo
 
-Os links (Solucoes, Tecnologia, Documentacao, Sobre Nos, Contato) aparecem em dois lugares:
+### 1. Botoes "INICIAR AGORA" e "EXPLORAR DEMONSTRACAO" devem levar para /auth
 
-1. **HeimdallNavbar.tsx** - na barra superior fixa (o que aparece na screenshot)
-2. **HeroSection.tsx** - no menu hamburguer (que deve ser mantido)
+Atualmente esses botoes navegam para rotas erradas:
 
-### Alteracao
+| Arquivo | Botao | Destino atual | Novo destino |
+|---|---|---|---|
+| `HeroSection.tsx` (linha 319) | INICIAR AGORA | `/ambiental` | `/auth` |
+| `ESGAmbiental.tsx` (linha 520) | EXPLORAR DEMONSTRACAO | `/demo` | `/auth` |
+| `Technology.tsx` (linha 462) | EXPLORAR DEMONSTRACAO | `/demo` | `/auth` |
+| `SobreNos.tsx` (linha 269) | EXPLORAR DEMONSTRACAO | `/demo` | `/auth` |
 
-**Arquivo: `src/components/landing/heimdall/HeimdallNavbar.tsx`**
+Todos terao o `onClick` alterado para `navigate('/auth')`.
 
-Remover o bloco `<nav>` inteiro (linhas 46-68) que contem os 5 links de navegacao. A navbar ficara apenas com o logo da Daton, mantendo o layout limpo ja que a navegacao esta acessivel pelo menu hamburguer no hero.
+### 2. Proteger a rota /demo para usuarios logados nao aprovados
 
-### Correcao de build errors (edge functions)
+Atualmente a rota `/demo` em `App.tsx` e publica (qualquer visitante acessa). Ela deve ser acessivel apenas por usuarios autenticados que ainda nao foram aprovados pelo admin.
 
-Alem disso, os erros de build nas edge functions `company-health-score` e `daton-ai-chat` serao corrigidos:
+Sera criado um wrapper `DemoRoute` que:
+- Verifica se o usuario esta autenticado (senao, redireciona para `/auth`)
+- Verifica se o usuario **nao** esta aprovado (se ja estiver aprovado, redireciona para `/` pois ja tem acesso completo)
+- Se autenticado e nao aprovado, renderiza o `DemoProvider` + `DemoLayout` normalmente
 
-**`company-health-score/index.ts`** (linha 197):
-- Casting de `error` como `Error` para resolver `TS18046`
+Isso sera feito diretamente no `App.tsx`, envolvendo a rota `/demo` com um componente de guarda que usa o `useAuth` do contexto existente.
 
-**`daton-ai-chat/index.ts`**:
-- Linha 1693: `toolResults` -> usar a variavel correta ja declarada no escopo
-- Linhas 1930/1998: `attachmentsContext` -> `attachmentContext` (typo)
-- Linhas 1030/1178/1943/2011: Supabase client type mismatch -> adicionar `as any` cast
+### Arquivos modificados
 
-**`daton-ai-chat/report-actions.ts`** (linhas 131/216/260/330):
-- Casting de `error` como `Error`
-
-**`daton-ai-chat/intelligent-suggestions.ts`**:
-- Linhas 54/57/63: Adicionar `|| []` fallback para parametros nullable
-- Linha 229: Declarar variavel `daysUntilExpiry` ausente
-
-**`daton-ai-chat/tool-executors.ts`**:
-- Linha 42: Importar/declarar `getComprehensiveCompanyData`
-- Linha 169: Cast de `error`
-- Linhas 236/344/408/411: Tipar objetos de summary com `Record<string, number>`
-- Linhas 443/447/448: Tipar parametros de callbacks com `any`
+- `src/components/landing/heimdall/HeroSection.tsx` -- alterar navigate de `/ambiental` para `/auth`
+- `src/pages/ESGAmbiental.tsx` -- alterar navigate de `/demo` para `/auth`
+- `src/pages/Technology.tsx` -- alterar navigate de `/demo` para `/auth`
+- `src/pages/SobreNos.tsx` -- alterar navigate de `/demo` para `/auth`
+- `src/App.tsx` -- envolver rota `/demo` com guarda de autenticacao (usuario logado + nao aprovado)
 
