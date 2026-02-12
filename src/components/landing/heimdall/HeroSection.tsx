@@ -177,27 +177,28 @@ export function HeroSection() {
                         textShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
                     }}
                 >
-                    <p
+                    <h1
                         style={{
-                            fontSize: 'clamp(1.4rem, 2.8vw, 2.4rem)',
-                            lineHeight: '1.35',
-                            letterSpacing: '-0.01em',
-                            fontWeight: 600,
+                            fontSize: 'clamp(2rem, 4.5vw, 3.8rem)',
+                            lineHeight: '1.1',
+                            letterSpacing: '-0.025em',
+                            fontWeight: 800,
                             margin: 0,
                             textAlign: 'left',
                         }}
                     >
                         {heroSlides[currentSlide].headline}
-                    </p>
+                    </h1>
                     <p
                         style={{
                             display: 'block',
-                            marginTop: '0.75rem',
+                            marginTop: '1rem',
                             marginBottom: 0,
-                            color: 'rgba(255, 255, 255, 0.88)',
-                            fontSize: 'clamp(0.82rem, 1.05vw, 0.95rem)',
+                            color: 'rgba(255, 255, 255, 0.85)',
+                            fontSize: 'clamp(0.85rem, 1.1vw, 1rem)',
                             fontWeight: 400,
-                            lineHeight: 1.4,
+                            lineHeight: 1.55,
+                            maxWidth: '600px',
                         }}
                     >
                         {heroSlides[currentSlide].subheadline}
