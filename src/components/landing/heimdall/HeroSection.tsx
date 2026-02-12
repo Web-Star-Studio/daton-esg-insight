@@ -195,7 +195,7 @@ export function HeroSection() {
                             marginTop: '1rem',
                             marginBottom: 0,
                             color: 'rgba(255, 255, 255, 0.85)',
-                            fontSize: 'clamp(0.85rem, 1.1vw, 1rem)',
+                            fontSize: 'clamp(0.95rem, 1.3vw, 1.15rem)',
                             fontWeight: 400,
                             lineHeight: 1.55,
                             maxWidth: '600px',
