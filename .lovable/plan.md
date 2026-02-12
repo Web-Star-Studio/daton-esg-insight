@@ -1,47 +1,42 @@
 
-# Mover seções "Infraestrutura" e "Performance" para /ambiental
 
-## Objetivo
-Mover as seções **"Infraestrutura de classe mundial."** (grid de 4 cards: IA, Arquitetura, Seguranca, Integracoes) e **"Performance"** (metricas LCP, IA Response, Uptime, Dados) da pagina `/tecnologia` para a pagina `/ambiental`, posicionando-as logo abaixo dos cards animados (scroll-stack cards).
+# Reorganizar seções em /ambiental e /sobre-nos
 
-## O que muda
+## Alteracoes
 
-### 1. `/ambiental` (ESGAmbiental.tsx)
-- Adicionar os dados dos 4 modulos de infraestrutura (IA, Arquitetura, Seguranca, Integracoes) e do modulo Performance com suas metricas
-- Adicionar os componentes `FeatureCard` e `PerformanceSection` (adaptados do Technology.tsx)
-- Inserir as duas novas secoes entre o `</main>` dos cards animados e o `<PublicFooter />`
+### 1. ESGAmbiental.tsx - Reordenar e adicionar secao de metricas
 
-### 2. `/tecnologia` (Technology.tsx)
-- Remover a secao "Infraestrutura de classe mundial." (header + grid de FeatureCards)
-- Remover a secao "Performance" (PerformanceSection)
-- Remover os dados MODULES, o componente FeatureCard e PerformanceSection que ficam orfaos
-- Manter apenas o Hero, a secao "Nossas Solucoes" (SolutionDetailSection) e o Footer
+**Mover "Infraestrutura de classe mundial." para antes dos cards animados:**
+- A secao de infraestrutura (grid 2x2 + header, linhas 732-758) sera movida para logo apos o hero e antes do `<main ref={container}>` dos scroll-stack cards.
+
+**Adicionar secao de metricas (vinda de /sobre-nos) apos os cards animados:**
+- Copiar a secao "Metrics" do SobreNos.tsx (fundo escuro `#1a2421`, grid de 4 stats: "6+ Frameworks", "12+ Modulos", "< 48h Implantacao", "99.9% Disponibilidade") para o ESGAmbiental.tsx, posicionando-a entre o fim dos scroll-stack cards e a secao "Performance".
+
+**Aumentar espacamento entre "Performance" e Footer:**
+- Adicionar um espacador (ex: `mb-24` ou `py-32`) apos a secao Performance e antes do `<PublicFooter />`.
+
+**Ordem final das secoes em /ambiental:**
+```text
+Hero
+Infraestrutura de classe mundial (grid 2x2)
+Cards animados (scroll-stack)
+Metricas (barra escura com 4 stats - movida de /sobre-nos)
+Performance
+[espacamento extra]
+Footer
+```
+
+### 2. SobreNos.tsx - Remover secao de metricas
+
+- Remover a secao "Metrics" (linhas 413-431) que contem o grid de 4 stats com fundo escuro.
+- Aumentar o espacamento entre a secao "Pillars" e a secao "Why Daton" que ficam adjacentes apos a remocao.
 
 ## Detalhes tecnicos
 
-**Dados a copiar para ESGAmbiental.tsx:**
-- Array `MODULES` com os 5 itens (4 feature + 1 performance) e a interface `ModuleHighlight` (versao do Technology.tsx que inclui `metrics`)
-- Renomear para evitar conflito com o `MODULES` ja existente (ex: `INFRA_MODULES`)
+**Dados da secao de metricas a copiar:**
+- Array inline com 4 itens: `{ value: "6+", label: "Frameworks suportados", desc: "GRI, SASB, CDP, TCFD..." }`, etc.
+- Estilo: `bg-[#1a2421]`, texto branco, valores em `text-[#c4fca1]`, grid `grid-cols-2 md:grid-cols-4` com `divide-x divide-white/10`
 
-**Componentes a copiar para ESGAmbiental.tsx:**
-- `FeatureCard` -- card de grid com index, titulo, descricao e lista de features
-- `PerformanceSection` -- layout 2 colunas com metricas
-
-**Estrutura final de ESGAmbiental.tsx:**
-```
-Hero
-Cards animados (scroll-stack) -- ja existente
-Secao "Infraestrutura de classe mundial." (header + grid 2x2)
-Secao "Performance" (metricas)
-Footer
-```
-
-**Estrutura final de Technology.tsx:**
-```
-Hero
-Secao "Nossas Solucoes" (SolutionDetailSection)
-Footer
-```
-
-**Imports adicionais em ESGAmbiental.tsx:**
-- `Server`, `ShieldCheck`, `Network`, `Zap` do lucide-react (icones dos cards de infraestrutura)
+**Arquivos modificados:**
+- `src/pages/ESGAmbiental.tsx` - reordenar secoes e adicionar metricas
+- `src/pages/SobreNos.tsx` - remover secao de metricas
