@@ -17,6 +17,7 @@ import "@/components/landing/heimdall/heimdall.css";
 import esgSocialCardImg from "@/assets/esg-social-card.png";
 import esgQualityCardImg from "@/assets/esg-quality-card.png";
 import esgAmbientalHeroImg from "@/assets/esg-ambiental-hero.png";
+import esgSuppliersCardImg from "@/assets/esg-suppliers-card.png";
 
 // --- DATA ---
 
@@ -89,7 +90,7 @@ const MODULES: ModuleHighlight[] = [
     description:
       "Qualifique e avalie fornecedores. Monitore contratos e riscos ESG na cadeia, oferecendo um portal de autoatendimento para seus parceiros.",
     icon: TrendingUp,
-    image: "https://images.unsplash.com/photo-1586880244406-556ebe35f282?q=80&w=2574&auto=format&fit=crop",
+    image: esgSuppliersCardImg,
     color: "#fff7ed",
     features: [
       "Cadastro e homologação de fornecedores",
