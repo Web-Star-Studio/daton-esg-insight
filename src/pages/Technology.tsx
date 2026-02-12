@@ -8,8 +8,18 @@ import {
     ShieldCheck,
     Network,
     Zap,
-    Menu
+    Menu,
+    Leaf,
+    Users,
+    FileCheck,
+    TrendingUp,
+    CheckCircle2
 } from "lucide-react";
+import solutionAmbiental from "@/assets/solution-ambiental.jpg";
+import solutionSocial from "@/assets/solution-social.jpg";
+import solutionQualidade from "@/assets/solution-qualidade.jpg";
+import solutionFornecedores from "@/assets/solution-fornecedores.jpg";
+import solutionIA from "@/assets/solution-ia.jpg";
 import { HeimdallNavbar } from "@/components/landing/heimdall/HeimdallNavbar";
 import { PublicFooter } from "@/components/landing/heimdall/PublicFooter";
 import "@/components/landing/heimdall/heimdall.css";
@@ -199,6 +209,210 @@ const PerformanceSection = ({ module }: { module: ModuleHighlight }) => {
         </section>
     );
 };
+
+// --- SOLUTION MODULES DATA ---
+
+interface SolutionModule {
+    id: string;
+    index: string;
+    title: string;
+    category: string;
+    description: string;
+    features: string[];
+    icon: React.ElementType;
+    image: string;
+}
+
+const SOLUTION_MODULES: SolutionModule[] = [
+    {
+        id: "ambiental",
+        index: "001",
+        title: "ESG Ambiental",
+        category: "Meio Ambiente / Sustentabilidade / Gestão",
+        description:
+            "Monitore emissões, gerencie licenças e acompanhe o consumo de recursos em painéis em tempo real. Automatize cálculos de inventário GEE e acelere a conformidade com regulamentações globais como GRI, SASB e CDP.",
+        icon: Leaf,
+        image: solutionAmbiental,
+        features: [
+            "Inventário de emissões GEE (Escopos 1, 2, 3)",
+            "Gestão de licenças e condicionantes ambientais",
+            "Monitoramento de água, energia e resíduos",
+            "Dashboards de performance ambiental em tempo real",
+            "Relatórios automáticos para órgãos reguladores",
+        ],
+    },
+    {
+        id: "social",
+        index: "002",
+        title: "ESG Social",
+        category: "Social / Diversidade / Segurança",
+        description:
+            "Acompanhe métricas de diversidade, rotatividade e segurança em um painel consolidado. Gerencie o ciclo de vida completo do colaborador, do recrutamento ao desenvolvimento de carreira, com LMS integrado.",
+        icon: Users,
+        image: solutionSocial,
+        features: [
+            "Dashboard de métricas sociais e diversidade",
+            "LMS integrado para capacitação e treinamentos",
+            "Gestão de saúde e segurança do trabalho",
+            "Engajamento de stakeholders e comunidades",
+            "Relatórios de impacto social automatizados",
+        ],
+    },
+    {
+        id: "qualidade",
+        index: "003",
+        title: "Qualidade (SGQ)",
+        category: "Gestão / Controle de Processos",
+        description:
+            "Registre, analise e trate não conformidades com fluxos estruturados. Controle versões de documentos, conduza auditorias internas e gerencie ações corretivas com total rastreabilidade ISO 9001.",
+        icon: FileCheck,
+        image: solutionQualidade,
+        features: [
+            "Gestão completa de não conformidades",
+            "Ações corretivas e preventivas com 5W2H",
+            "Controle de documentos com versionamento",
+            "Auditorias internas com checklists dinâmicos",
+            "Indicadores de qualidade e KPIs em tempo real",
+        ],
+    },
+    {
+        id: "fornecedores",
+        index: "004",
+        title: "Gestão Fornecedores",
+        category: "Cadeia de Suprimentos / Compras",
+        description:
+            "Qualifique e avalie fornecedores com critérios ESG integrados. Monitore contratos, riscos e desempenho da cadeia de suprimentos com portal de autoatendimento para parceiros.",
+        icon: TrendingUp,
+        image: solutionFornecedores,
+        features: [
+            "Cadastro e homologação de fornecedores",
+            "Portal do fornecedor com autoatendimento",
+            "Monitoramento de riscos ESG na cadeia",
+            "Avaliação de desempenho e scoring",
+            "Gestão de contratos e SLAs",
+        ],
+    },
+    {
+        id: "ia",
+        index: "005",
+        title: "Inteligência Artificial",
+        category: "Tecnologia / Automação / Predição",
+        description:
+            "Analise dados em tempo real para gerar alertas preditivos, identificar riscos emergentes e sugerir ações de melhoria contínua. IA nativa treinada no contexto da sua operação ESG.",
+        icon: Brain,
+        image: solutionIA,
+        features: [
+            "Alertas inteligentes de prazos e vencimentos",
+            "Extração automática de documentos (IDP)",
+            "Insights contextuais com IA generativa",
+            "Modelos preditivos para riscos ESG",
+            "Automação de relatórios e compliance",
+        ],
+    },
+];
+
+// --- SOLUTION DETAIL SECTION ---
+
+const SolutionDetailSection = ({ modules, onNavigate }: { modules: SolutionModule[]; onNavigate: (path: string) => void }) => (
+    <section className="w-full bg-[#fafafa] border-t border-[#e5e7eb]">
+        <div className="max-w-7xl mx-auto px-6 py-24">
+            {/* Section Header */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="mb-20"
+            >
+                <span className="block text-xs font-mono text-[#6b7280] mb-4 tracking-widest uppercase">
+                    Módulos da Plataforma
+                </span>
+                <h2 className="text-3xl md:text-5xl font-bold text-[#1a2421] mb-6 tracking-tight">
+                    Nossas Soluções
+                </h2>
+                <p className="text-lg md:text-xl text-[#6b7280] max-w-2xl leading-relaxed">
+                    Cada módulo foi projetado para resolver desafios reais de gestão ESG, qualidade e cadeia de suprimentos — com inteligência artificial nativa.
+                </p>
+            </motion.div>
+
+            {/* Module Blocks */}
+            <div className="space-y-24">
+                {modules.map((module, idx) => {
+                    const isReversed = idx % 2 !== 0;
+                    const Icon = module.icon;
+
+                    return (
+                        <motion.div
+                            key={module.id}
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-80px" }}
+                            transition={{ duration: 0.6 }}
+                            className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center ${isReversed ? "lg:direction-rtl" : ""}`}
+                        >
+                            {/* Text Side */}
+                            <div className={`space-y-6 ${isReversed ? "lg:order-2" : "lg:order-1"}`}>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs font-mono text-[#9ca3af] tracking-widest">{module.index}</span>
+                                    <span className="w-8 h-px bg-[#d1d5db]" />
+                                    <span className="text-xs font-medium text-[#6b7280] uppercase tracking-wider">{module.category}</span>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-[#0B1210] flex items-center justify-center">
+                                        <Icon className="w-5 h-5 text-[#c4fca1]" />
+                                    </div>
+                                    <h3 className="text-2xl md:text-3xl font-bold text-[#1a2421] tracking-tight">{module.title}</h3>
+                                </div>
+
+                                <p className="text-[#4b5563] leading-relaxed text-base md:text-lg">
+                                    {module.description}
+                                </p>
+
+                                <ul className="space-y-3 pt-2">
+                                    {module.features.map((feature, fIdx) => (
+                                        <li key={fIdx} className="flex items-start gap-3 text-sm text-[#374151]">
+                                            <CheckCircle2 className="w-4 h-4 mt-0.5 text-[#00bf63] shrink-0" />
+                                            {feature}
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <motion.button
+                                    onClick={() => onNavigate("/funcionalidades")}
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    className="inline-flex items-center gap-2 mt-4 px-6 py-3 rounded-xl bg-[#0B1210] text-white text-sm font-semibold hover:bg-[#1a2e28] transition-colors"
+                                >
+                                    Explorar módulo
+                                    <ArrowRight size={16} />
+                                </motion.button>
+                            </div>
+
+                            {/* Image Side */}
+                            <div className={`${isReversed ? "lg:order-1" : "lg:order-2"}`}>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    whileInView={{ opacity: 1, scale: 1 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: 0.15 }}
+                                    className="relative rounded-2xl overflow-hidden shadow-xl border border-[#e5e7eb]"
+                                >
+                                    <img
+                                        src={module.image}
+                                        alt={`Módulo ${module.title} - Dashboard`}
+                                        loading="lazy"
+                                        className="w-full h-auto object-cover aspect-[3/2]"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+                                </motion.div>
+                            </div>
+                        </motion.div>
+                    );
+                })}
+            </div>
+        </div>
+    </section>
+)
 
 export default function Technology() {
     const navigate = useNavigate();
@@ -503,6 +717,9 @@ export default function Technology() {
 
             {/* --- PERFORMANCE SECTION --- */}
             {performanceModule && <PerformanceSection module={performanceModule} />}
+
+            {/* --- SOLUTION MODULES SECTION --- */}
+            <SolutionDetailSection modules={SOLUTION_MODULES} onNavigate={navigate} />
 
             <PublicFooter />
         </div>
