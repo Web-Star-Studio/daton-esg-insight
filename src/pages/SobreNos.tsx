@@ -439,12 +439,12 @@ const SobreNos = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                     {[
-                        { title: "Tudo em um só lugar", desc: "Chega de planilhas dispersas e sistemas desconectados.", details: "ESG, qualidade, fornecedores, auditorias e indicadores financeiros — tudo em um único login, com dados integrados e rastreáveis.", span: "lg:col-span-3" },
-                        { title: "IA que trabalha por você", desc: "Extração automática de documentos e alertas proativos.", details: "Cálculos de emissões, classificação de documentos e sugestões inteligentes para que sua equipe foque no que importa: estratégia.", span: "lg:col-span-2" },
-                        { title: "Conformidade sem complicação", desc: "Relatórios GRI, SASB e TCFD gerados automaticamente.", details: "Dados já validados e auditáveis, prontos para envio a reguladores e stakeholders com um clique.", span: "lg:col-span-1" },
-                        { title: "Segurança enterprise", desc: "Criptografia AES-256 e isolamento por empresa.", details: "Row Level Security, RBAC granular com quatro níveis de permissão e conformidade total com a LGPD.", span: "lg:col-span-1" },
-                        { title: "Suporte humano", desc: "Equipe especializada em ESG e qualidade.", details: "Profissionais que entendem o contexto regulatório brasileiro e acompanham sua jornada de maturidade.", span: "lg:col-span-3" },
-                        { title: "Monitoramento em tempo real", desc: "Indicadores e metas atualizados minuto a minuto.", details: "Dashboards dinâmicos com alertas configuráveis, não apenas relatórios no fechamento do mês.", span: "lg:col-span-2" },
+                         { title: "Tudo em um só lugar", desc: "Chega de planilhas dispersas e sistemas desconectados.", details: "ESG, qualidade, fornecedores, auditorias e indicadores financeiros — tudo em um único login, com dados integrados e rastreáveis.", span: "lg:col-span-2" },
+                         { title: "IA que trabalha por você", desc: "Extração automática de documentos e alertas proativos.", details: "Cálculos de emissões, classificação de documentos e sugestões inteligentes para que sua equipe foque no que importa: estratégia.", span: "lg:col-span-2" },
+                         { title: "Conformidade sem complicação", desc: "Relatórios GRI, SASB e TCFD gerados automaticamente.", details: "Dados já validados e auditáveis, prontos para envio a reguladores e stakeholders com um clique.", span: "lg:col-span-2" },
+                         { title: "Segurança enterprise", desc: "Criptografia AES-256 e isolamento por empresa.", details: "Row Level Security, RBAC granular com quatro níveis de permissão e conformidade total com a LGPD.", span: "lg:col-span-2" },
+                         { title: "Suporte humano", desc: "Equipe especializada em ESG e qualidade.", details: "Profissionais que entendem o contexto regulatório brasileiro e acompanham sua jornada de maturidade.", span: "lg:col-span-2" },
+                         { title: "Monitoramento em tempo real", desc: "Indicadores e metas atualizados minuto a minuto.", details: "Dashboards dinâmicos com alertas configuráveis, não apenas relatórios no fechamento do mês.", span: "lg:col-span-2" },
                     ].map((item, idx) => (
                         <motion.div
                             key={idx}
