@@ -14,6 +14,7 @@ import '@/components/landing/heimdall/heimdall.css';
 const SobreNos = () => {
     const navigate = useNavigate();
     const [quickMenuOpen, setQuickMenuOpen] = useState(false);
+    const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
     const actionBarRef = useRef<HTMLDivElement>(null);
 
     const quickMenuLinks = [
@@ -436,19 +437,46 @@ const SobreNos = () => {
                     <h2 className="text-3xl md:text-4xl font-bold text-[#1a2421] mt-2">Por que empresas escolhem a Daton</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                     {[
-                        { title: "Tudo em um só lugar", desc: "Chega de planilhas dispersas e sistemas desconectados. ESG, qualidade e fornecedores em um único login." },
-                        { title: "IA que trabalha por você", desc: "Extração automática de documentos, cálculos de emissões e alertas proativos para que sua equipe foque no que importa: estratégia." },
-                        { title: "Conformidade sem complicação", desc: "Relatórios GRI, SASB e TCFD gerados automaticamente com dados já validados e auditáveis." },
-                        { title: "Segurança de nível enterprise", desc: "Criptografia AES-256, isolamento de dados por empresa (Row Level Security), RBAC granular e conformidade total com a LGPD." },
-                        { title: "Suporte humano, não genérico", desc: "Equipe especializada em ESG e qualidade que entende o contexto regulatório brasileiro." },
-                        { title: "Monitoramento em tempo real", desc: "Acompanhe seus indicadores e metas minuto a minuto, não apenas no fechamento do mês." }
+                        { title: "Tudo em um só lugar", desc: "Chega de planilhas dispersas e sistemas desconectados.", details: "ESG, qualidade, fornecedores, auditorias e indicadores financeiros — tudo em um único login, com dados integrados e rastreáveis.", span: "lg:col-span-3" },
+                        { title: "IA que trabalha por você", desc: "Extração automática de documentos e alertas proativos.", details: "Cálculos de emissões, classificação de documentos e sugestões inteligentes para que sua equipe foque no que importa: estratégia.", span: "lg:col-span-2" },
+                        { title: "Conformidade sem complicação", desc: "Relatórios GRI, SASB e TCFD gerados automaticamente.", details: "Dados já validados e auditáveis, prontos para envio a reguladores e stakeholders com um clique.", span: "lg:col-span-1" },
+                        { title: "Segurança enterprise", desc: "Criptografia AES-256 e isolamento por empresa.", details: "Row Level Security, RBAC granular com quatro níveis de permissão e conformidade total com a LGPD.", span: "lg:col-span-1" },
+                        { title: "Suporte humano", desc: "Equipe especializada em ESG e qualidade.", details: "Profissionais que entendem o contexto regulatório brasileiro e acompanham sua jornada de maturidade.", span: "lg:col-span-3" },
+                        { title: "Monitoramento em tempo real", desc: "Indicadores e metas atualizados minuto a minuto.", details: "Dashboards dinâmicos com alertas configuráveis, não apenas relatórios no fechamento do mês.", span: "lg:col-span-2" },
                     ].map((item, idx) => (
-                        <div key={idx} className="p-8 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb] hover:bg-white hover:shadow-md transition-all">
-                            <h3 className="text-lg font-bold text-[#1a2421] mb-3">{item.title}</h3>
+                        <motion.div
+                            key={idx}
+                            className={`${item.span} col-span-1 md:col-span-1 p-8 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb] cursor-pointer transition-all duration-300 ${
+                                hoveredIdx !== null && hoveredIdx !== idx
+                                    ? 'opacity-50 scale-[0.97]'
+                                    : ''
+                            } ${
+                                hoveredIdx === idx
+                                    ? 'bg-white shadow-lg scale-[1.02] border-[#15c470]/30'
+                                    : ''
+                            }`}
+                            onMouseEnter={() => setHoveredIdx(idx)}
+                            onMouseLeave={() => setHoveredIdx(null)}
+                            layout
+                        >
+                            <h3 className="text-lg font-bold text-[#1a2421] mb-2">{item.title}</h3>
                             <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
-                        </div>
+                            <AnimatePresence>
+                                {hoveredIdx === idx && (
+                                    <motion.p
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.25 }}
+                                        className="text-gray-500 text-sm mt-3 leading-relaxed overflow-hidden"
+                                    >
+                                        {item.details}
+                                    </motion.p>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
                     ))}
                 </div>
             </section>
