@@ -5,7 +5,7 @@ import * as icons from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { BadgeNotification, StatusIndicator } from "@/components/ui/badge-notification"
 import { useNotificationCounts } from "@/hooks/useNotificationCounts"
-import { DISABLED_SECTION_IDS, DISABLED_ESG_CATEGORY_IDS } from "@/config/enabledModules"
+import { useModuleSettings } from "@/hooks/useModuleSettings"
 import { useDemo } from "@/contexts/DemoContext"
 import {
   Sidebar,
@@ -686,22 +686,22 @@ export function AppSidebar() {
     })
   }
 
-  // Filter sections based on enabled modules configuration
+  const { isSectionVisible, isEsgCategoryVisible } = useModuleSettings()
+
+  // Filter sections based on enabled modules configuration (dynamic from DB)
   const modulesFilteredSections = useMemo(() => {
     return menuSections
-      // Filter out disabled top-level sections (financial, data-reports)
-      .filter(section => !DISABLED_SECTION_IDS.includes(section.id))
-      // Filter out disabled ESG categories within ESG section
+      .filter(section => isSectionVisible(section.id))
       .map(section => {
         if (section.id === 'esg') {
           return {
             ...section,
-            items: section.items.filter(item => !DISABLED_ESG_CATEGORY_IDS.includes(item.id))
+            items: section.items.filter(item => isEsgCategoryVisible(item.id))
           }
         }
         return section
       })
-  }, [])
+  }, [isSectionVisible, isEsgCategoryVisible])
 
   const filteredSections = searchQuery.trim() 
     ? modulesFilteredSections

@@ -18146,6 +18146,44 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_module_settings: {
+        Row: {
+          enabled_demo: boolean
+          enabled_live: boolean
+          id: string
+          module_key: string
+          module_name: string
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          enabled_demo?: boolean
+          enabled_live?: boolean
+          id?: string
+          module_key: string
+          module_name: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          enabled_demo?: boolean
+          enabled_live?: boolean
+          id?: string
+          module_key?: string
+          module_name?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_module_settings_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       positions: {
         Row: {
           company_id: string
