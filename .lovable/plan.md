@@ -1,48 +1,46 @@
 
 
-# Redesign da Pagina /auth com Design Language Heimdall
+# Grid de Socios na Secao Worton
 
-## Objetivo
-Transformar a pagina de autenticacao atual (fundo branco simples com card basico) para seguir a identidade visual Heimdall usada nas paginas institucionais, mantendo toda a logica de negocio, fluxos e textos intactos.
+## O que muda
+A secao "Uma empresa Worton" sera reorganizada em um layout lado a lado: o conjunto texto + logo Worton ficara a esquerda (30% da largura) e um grid 2x2 com as fotos dos 4 socios ficara a direita (70% da largura).
 
-## Mudancas Visuais Planejadas
+## Layout
 
-1. **Fundo e atmosfera**: Substituir o `bg-background` por um fundo Heimdall com gradiente sutil e precision-grid (pattern de linhas finas), usando as cores `--heimdall-bg` e `--heimdall-bg-secondary`.
+```text
++----------- max-w-7xl -----------+
+|  30%          |      70%        |
+| "Uma empresa" |  [foto] [foto]  |
+|  [Worton logo] |  [foto] [foto]  |
+|               |                 |
++---------------------------------+
+```
 
-2. **Container principal**: Aplicar a classe `heimdall-page` ao wrapper e importar o `heimdall.css`.
-
-3. **Card de autenticacao**: Aplicar estilo `glass-card` (glassmorphism com backdrop-blur e borda sutil) no lugar do card solido atual.
-
-4. **Header/Logo**: Substituir o icone `Building2` pelo logo da Daton com estilo alinhado ao Heimdall -- label monospace com tracking-widest acima ("PLATAFORMA ESG") e titulo com fonte bold/grotesca.
-
-5. **Inputs**: Estilizar com bordas sutis (`--heimdall-border`), fundo levemente translucido e foco com borda verde accent.
-
-6. **Botao principal**: Estilizar como `heimdall-btn-primary` -- pill shape, cor verde accent (#15c470), com hover suave.
-
-7. **Tabs (Login/Criar Conta)**: Estilizar com visual mais clean, sem background grosso, usando bordas inferiores e tipografia monospace para as labels.
-
-8. **Links e texto secundario**: Usar cores `--heimdall-text-secondary` e `--heimdall-text-muted`.
-
-9. **Animacoes**: Adicionar fade-up sutil via framer-motion no card ao montar.
-
-10. **Footer links (Termos/Privacidade)**: Manter, mas com estilo muted alinhado ao Heimdall.
+- As 4 fotos serao exibidas em um grid 2x2 com gap entre elas
+- Todas as imagens terao filtro CSS `grayscale(100%)` para preto e branco
+- As fotos terao bordas arredondadas e aspect-ratio quadrado com `object-cover`
+- Em telas menores (mobile), o layout empilhara verticalmente: logo em cima, grid embaixo
 
 ## Detalhes Tecnicos
 
+### Assets
+- Copiar as 4 imagens dos socios para `src/assets/`:
+  - `socio-1.jpeg` (WhatsApp_Image_2026-02-12_at_18.26.57.jpeg)
+  - `socio-2.jpeg` (WhatsApp_Image_2026-02-12_at_18.21.21.jpeg)
+  - `socio-3.jpeg` (WhatsApp_Image_2026-02-12_at_18.21.21_1.jpeg)
+  - `socio-4.jpeg` (WhatsApp_Image_2026-02-12_at_18.21.03.jpeg)
+
 ### Arquivo editado
-- `src/pages/Auth.tsx`
+- `src/pages/SobreNos.tsx`
 
-### Dependencias utilizadas (ja instaladas)
-- `framer-motion` para animacao de entrada
-- CSS do Heimdall (`heimdall.css`) para classes utilitarias
+### Mudancas no JSX
+- Substituir o `flex justify-center` atual por `flex flex-col md:flex-row items-center`
+- Lado esquerdo (30%): manter o bloco "Uma empresa" + logo Worton com `md:w-[30%]`
+- Lado direito (70%): novo `md:w-[70%]` contendo um `grid grid-cols-2 gap-4`
+- Cada celula do grid tera a foto do socio com `className="grayscale"` do Tailwind, `rounded-xl`, e `object-cover` com aspect-ratio quadrado
 
-### O que NAO muda
-- Toda a logica de login, registro, validacao de senha, CNPJ
-- Todos os textos e labels existentes
-- Estrutura de campos e formularios
-- Rotas e navegacao
-- ForgotPasswordModal e sua integracao
-
-### Abordagem
-Refatorar o JSX/classes do `Auth.tsx` diretamente, aplicando classes Heimdall e estilos inline/Tailwind para obter a estetica premium sem criar novos componentes. O card usara glassmorphism, o fundo tera o precision-grid sutil, e todo o formulario tera a tipografia e espacamento consistentes com as paginas Sobre Nos, Solucoes e Landing Page.
-
+### O que nao muda
+- O fundo `bg-[#1a2421]` da secao
+- O link da Worton para `https://www.worton.com.br/`
+- O texto "Uma empresa" com seu posicionamento
+- O filtro de inversao do logo Worton
