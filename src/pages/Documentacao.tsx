@@ -117,11 +117,8 @@ const Documentacao = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <span className="inline-block px-3 py-1 mb-6 text-xs font-mono tracking-widest text-[#c4fca1] border border-[#c4fca1]/30 rounded-full uppercase bg-[#c4fca1]/10">
-              Central de Conhecimento
-            </span>
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
-              Documentação Daton
+              Documentação
             </h1>
             <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
               Guia completo de arquitetura, referências de API e manuais de utilização da plataforma ESG mais avançada do mercado.
