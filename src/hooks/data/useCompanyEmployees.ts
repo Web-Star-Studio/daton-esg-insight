@@ -8,17 +8,31 @@ export interface CompanyEmployee {
   position?: string;
 }
 
-const fetchCompanyEmployees = async (companyId: string): Promise<CompanyEmployee[]> => {
-  const { data, error } = await supabase
-    .from('employees')
-    .select('id, full_name, position')
-    .eq('company_id', companyId)
-    .eq('status', 'Ativo')
-    .order('full_name')
-    .range(0, 4999);
+const BATCH_SIZE = 1000;
 
-  if (error) throw error;
-  return (data || []) as CompanyEmployee[];
+const fetchCompanyEmployees = async (companyId: string): Promise<CompanyEmployee[]> => {
+  let allData: CompanyEmployee[] = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('id, full_name, position')
+      .eq('company_id', companyId)
+      .eq('status', 'Ativo')
+      .order('full_name')
+      .range(from, from + BATCH_SIZE - 1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+
+    allData = allData.concat(data as CompanyEmployee[]);
+
+    if (data.length < BATCH_SIZE) break;
+    from += BATCH_SIZE;
+  }
+
+  return allData;
 };
 
 export const useCompanyEmployees = () => {
