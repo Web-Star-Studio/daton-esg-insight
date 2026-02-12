@@ -1,51 +1,33 @@
 
 
-## Gerar imagens realistas dos modulos e substituir em /tecnologia
+## Substituir imagem na secao "Uma plataforma, todos os pilares"
 
-### Objetivo
+### O que sera feito
 
-Substituir as 5 imagens genericas da secao "Nossas Solucoes" em `/tecnologia` por screenshots gerados via IA que reproduzam fielmente a interface real de cada modulo do sistema.
+Substituir o visual placeholder atual (grid de cards com fundo escuro e icones) pela imagem enviada (cubos de madeira com icones ESG verdes).
 
-### Modulos e suas interfaces reais
+### Passos
 
-| # | Modulo | Pagina real | Elementos visuais principais |
-|---|--------|------------|------------------------------|
-| 001 | ESG Ambiental | GestaoESG.tsx | Score ESG circular grande, 3 pillar cards (Ambiental/Social/Governanca) com badges de pontuacao, KPIs, cards de alertas inteligentes e painel preditivo |
-| 002 | ESG Social | SocialESG.tsx | Tabs (overview, treinamentos, projetos), 4 ModuleSummaryCards (Colaboradores, Seguranca, Treinamentos, Impacto Social), tabela de projetos sociais, graficos de treinamento por localizacao/setor |
-| 003 | Qualidade (SGQ) | UnifiedQualityDashboard.tsx | Tabs (overview, indicadores, tendencias, etc), cards com nao conformidades, acoes corretivas, documentos controlados, matriz de qualidade, insights de IA |
-| 004 | Gestao Fornecedores | SupplierDashboard.tsx | Cards de metricas (total fornecedores, avaliacoes, documentos), tabela de fornecedores com status/badges, botoes de acoes rapidas |
-| 005 | Inteligencia Artificial | IntelligenceCenter.tsx | 6 tabs (Analisar, Extraidos, Nao Classificados, Automacao, Analytics, Performance IA), area de upload, dashboards de performance IA |
+1. **Copiar a imagem** enviada para `src/assets/pilares-esg.png`
+2. **Importar a imagem** no componente `SobreNos.tsx`
+3. **Substituir o bloco visual** (linhas 400-432 aproximadamente) - remover o `div` com grid de cards escuros e colocar um `img` com a nova imagem, mantendo o `rounded-3xl` e aspect ratio adequado
 
-### Implementacao
+### Detalhe tecnico
 
-**Passo 1 - Gerar 5 imagens via AI Image Generation**
+O bloco atual (linhas 400-432) contem um grid de 4 cards com icones dentro de um container escuro. Sera substituido por:
 
-Para cada modulo, gerar uma imagem com prompt detalhado descrevendo a interface real do sistema:
-- Layout com sidebar escura a esquerda e conteudo principal a direita
-- Cards brancos com bordas suaves, badges coloridas
-- Graficos, tabelas e metricas consistentes com o design system (cores verdes, azuis, roxas)
-- Tipografia limpa, estilo SaaS profissional
-- Resolucao 1920x1080 (aspecto dashboard)
+```tsx
+<div className="relative">
+  <img 
+    src={pilaresImg} 
+    alt="Pilares ESG" 
+    className="w-full rounded-3xl object-cover shadow-lg"
+  />
+</div>
+```
 
-**Passo 2 - Substituir imagens em src/assets/**
+### Arquivos afetados
 
-Sobrescrever os 5 arquivos existentes:
-- `src/assets/solution-ambiental.jpg`
-- `src/assets/solution-social.jpg`
-- `src/assets/solution-qualidade.jpg`
-- `src/assets/solution-fornecedores.jpg`
-- `src/assets/solution-ia.jpg`
-
-**Passo 3 - Nenhuma alteracao de codigo necessaria**
-
-Os imports em `Technology.tsx` ja referenciam estes arquivos, entao basta substituir as imagens.
-
-### Detalhes dos prompts de geracao
-
-Cada prompt incluira:
-- Descricao precisa do layout da pagina real (baseada no codigo-fonte analisado)
-- Elementos UI especificos: circular progress, pillar cards, tabs, tabelas, badges
-- Paleta de cores do sistema: verde (#00bf63), fundo claro, cards brancos
-- Estilo visual: SaaS dashboard, clean, profissional, dados realistas
-- Sidebar com icones e menu de navegacao
+- `src/assets/pilares-esg.png` (novo - copia da imagem enviada)
+- `src/pages/SobreNos.tsx` (editar import + substituir bloco visual)
 
