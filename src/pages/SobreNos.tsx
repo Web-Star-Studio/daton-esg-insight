@@ -9,6 +9,7 @@ import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
 import pilaresImg from '@/assets/pilares-esg.png';
 import soberaniaImg from '@/assets/esg-soberania.png';
 import wortonLogo from '@/assets/worton-logo.png';
+import sobreNosHero from '@/assets/sobre-nos-hero.png';
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 import '@/components/landing/heimdall/heimdall.css';
 
@@ -65,7 +66,7 @@ const SobreNos = () => {
             >
                 {/* Background Image */}
                 <img
-                    src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2670&auto=format&fit=crop"
+                    src={sobreNosHero}
                     alt="Daton Team"
                     aria-hidden="true"
                     style={{
