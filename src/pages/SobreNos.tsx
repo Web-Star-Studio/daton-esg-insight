@@ -10,6 +10,10 @@ import pilaresImg from '@/assets/pilares-esg.png';
 import soberaniaImg from '@/assets/esg-soberania.png';
 import wortonLogo from '@/assets/worton-logo.png';
 import sobreNosHero from '@/assets/sobre-nos-hero.png';
+import socio1 from '@/assets/socio-1.jpeg';
+import socio2 from '@/assets/socio-2.jpeg';
+import socio3 from '@/assets/socio-3.jpeg';
+import socio4 from '@/assets/socio-4.jpeg';
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 import '@/components/landing/heimdall/heimdall.css';
 
@@ -489,18 +493,33 @@ const SobreNos = () => {
             </section>
 
             {/* --- WORTON --- */}
-            <section className="pt-10 pb-2 px-6 bg-[#1a2421]">
-                <div className="max-w-7xl mx-auto flex justify-center">
-                  <div className="relative w-fit">
-                    <p className="absolute top-6 left-7 text-white/60 text-sm uppercase tracking-widest font-mono z-10">Uma empresa</p>
-                    <a href="https://www.worton.com.br/" target="_blank" rel="noopener noreferrer">
-                        <img
-                            src={wortonLogo}
-                            alt="Worton"
-                            className="h-56 hover:opacity-80 transition-opacity"
-                            style={{ filter: "brightness(0) invert(1)" }}
-                        />
-                    </a>
+            <section className="py-16 px-6 bg-[#1a2421]">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-8 md:gap-12">
+                  {/* Left: Worton branding (30%) */}
+                  <div className="md:w-[30%] flex justify-center">
+                    <div className="relative w-fit">
+                      <p className="absolute top-6 left-7 text-white/60 text-sm uppercase tracking-widest font-mono z-10">Uma empresa</p>
+                      <a href="https://www.worton.com.br/" target="_blank" rel="noopener noreferrer">
+                          <img
+                              src={wortonLogo}
+                              alt="Worton"
+                              className="h-56 hover:opacity-80 transition-opacity"
+                              style={{ filter: "brightness(0) invert(1)" }}
+                          />
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Right: Partners grid (70%) */}
+                  <div className="md:w-[70%] grid grid-cols-2 gap-4">
+                    {[socio1, socio2, socio3, socio4].map((src, idx) => (
+                      <img
+                        key={idx}
+                        src={src}
+                        alt={`Sócio ${idx + 1}`}
+                        className="w-full aspect-square object-cover rounded-xl grayscale"
+                      />
+                    ))}
                   </div>
                 </div>
             </section>
