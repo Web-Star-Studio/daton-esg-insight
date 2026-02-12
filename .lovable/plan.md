@@ -1,27 +1,35 @@
 
 
-## Adicionar links de Termos e Privacidade ao Footer
+## Corrigir erro "useUnifiedTour must be used within UnifiedTourProvider"
 
-### Mudanca
+### Causa
 
-Adicionar dois links ao final da coluna "Navegacao" no footer:
-- Privacidade (`/privacidade`)
-- Termos de Uso (`/termos`)
+Ao substituir o header manual do `DemoLayout` pelo `AppHeader`, introduzimos uma dependencia no hook `useUnifiedTour`. Esse hook exige que o componente esteja dentro de um `UnifiedTourProvider`, que existe no `MainLayout` mas nao no `DemoLayout`.
 
-### Arquivo
+### Correcao
 
-**`src/components/landing/heimdall/PublicFooter.tsx`**
+**Arquivo: `src/components/DemoLayout.tsx`**
 
-Inserir apos o link "Contato":
+Envolver o conteudo do `DemoLayout` com `UnifiedTourProvider` (e `TutorialProvider`, que tambem e usado pelo `AppHeader`), espelhando a estrutura do `MainLayout`.
 
 ```tsx
-<Link to="/privacidade" className="block hover:text-white">
-  Privacidade
-</Link>
-<Link to="/termos" className="block hover:text-white">
-  Termos de Uso
-</Link>
+import { UnifiedTourProvider } from "@/contexts/UnifiedTourContext";
+import { TutorialProvider } from "@/contexts/TutorialContext";
+
+export function DemoLayout() {
+  return (
+    <DemoDataSeeder>
+      <TutorialProvider>
+        <UnifiedTourProvider>
+          <SidebarProvider defaultOpen={true}>
+            {/* ... conteudo existente ... */}
+          </SidebarProvider>
+        </UnifiedTourProvider>
+      </TutorialProvider>
+    </DemoDataSeeder>
+  );
+}
 ```
 
-Nenhum outro arquivo precisa ser alterado -- as rotas `/privacidade` e `/termos` ja existem no projeto.
+Nenhum outro arquivo precisa ser alterado. Apenas a adicao dos dois providers resolve o crash.
 
