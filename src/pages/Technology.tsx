@@ -20,6 +20,7 @@ import solutionSocial from "@/assets/solution-social.jpg";
 import solutionQualidade from "@/assets/solution-qualidade.jpg";
 import solutionFornecedores from "@/assets/solution-fornecedores.jpg";
 import solutionIA from "@/assets/solution-ia.jpg";
+import techHeroImg from "@/assets/tech-hero.png";
 import { HeimdallNavbar } from "@/components/landing/heimdall/HeimdallNavbar";
 import { PublicFooter } from "@/components/landing/heimdall/PublicFooter";
 import "@/components/landing/heimdall/heimdall.css";
@@ -469,7 +470,7 @@ export default function Technology() {
                 }}
             >
                 <img
-                    src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2670&auto=format&fit=crop"
+                    src={techHeroImg}
                     alt=""
                     aria-hidden="true"
                     style={{
