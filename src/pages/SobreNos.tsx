@@ -6,6 +6,7 @@ import {
     FileText, Layers, Award, ArrowRight, Lock, Menu
 } from 'lucide-react';
 import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
+import pilaresImg from '@/assets/pilares-esg.png';
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 import '@/components/landing/heimdall/heimdall.css';
 
@@ -398,32 +399,11 @@ const SobreNos = () => {
                         </div>
                     </div>
                     <div className="relative">
-                        {/* Placeholder for platform visual/graphic */}
-                        <div className="aspect-square bg-gradient-to-tr from-[#1a2421] to-[#0f1513] rounded-3xl p-8 flex items-center justify-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
-                            <div className="grid grid-cols-2 gap-4 w-full max-w-md relative z-10">
-                                <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10">
-                                    <Globe className="text-[#c4fca1] mb-2" size={32} />
-                                    <div className="text-white text-lg font-bold">Ambiental</div>
-                                    <div className="text-white/60 text-xs">Gestão Completa</div>
-                                </div>
-                                <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10 translate-y-8">
-                                    <Users className="text-[#c4fca1] mb-2" size={32} />
-                                    <div className="text-white text-lg font-bold">Social</div>
-                                    <div className="text-white/60 text-xs">Impacto Humano</div>
-                                </div>
-                                <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10 -translate-y-8">
-                                    <Award className="text-[#c4fca1] mb-2" size={32} />
-                                    <div className="text-white text-lg font-bold">Qualidade</div>
-                                    <div className="text-white/60 text-xs">Normas ISO</div>
-                                </div>
-                                <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10">
-                                    <Zap className="text-[#c4fca1] mb-2" size={32} />
-                                    <div className="text-white text-lg font-bold">IA</div>
-                                    <div className="text-white/60 text-xs">Automática</div>
-                                </div>
-                            </div>
-                        </div>
+                        <img 
+                            src={pilaresImg} 
+                            alt="Pilares ESG - cubos representando os pilares ambiental, social e governança" 
+                            className="w-full rounded-3xl object-cover shadow-lg"
+                        />
                     </div>
                 </div>
             </section>
