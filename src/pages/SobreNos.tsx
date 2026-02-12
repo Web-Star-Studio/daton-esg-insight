@@ -511,15 +511,34 @@ const SobreNos = () => {
                   </div>
 
                   {/* Right: Partners grid (70%) */}
-                  <div className="md:w-[70%] grid grid-cols-2 gap-4">
-                    {[socio1, socio2, socio3, socio4].map((src, idx) => (
-                      <img
-                        key={idx}
-                        src={src}
-                        alt={`Sócio ${idx + 1}`}
-                        className="w-full aspect-square object-cover rounded-xl grayscale"
-                      />
-                    ))}
+                  <div
+                    className="md:w-[70%] aspect-square"
+                    onMouseLeave={() => setHoveredIdx(null)}
+                  >
+                    <div
+                      className="grid w-full h-full gap-2"
+                      style={{
+                        gridTemplateColumns:
+                          hoveredIdx === null ? '1fr 1fr'
+                          : hoveredIdx === 0 || hoveredIdx === 2 ? '3fr 1fr'
+                          : '1fr 3fr',
+                        gridTemplateRows:
+                          hoveredIdx === null ? '1fr 1fr'
+                          : hoveredIdx === 0 || hoveredIdx === 1 ? '3fr 1fr'
+                          : '1fr 3fr',
+                        transition: 'grid-template-rows 0.4s ease, grid-template-columns 0.4s ease',
+                      }}
+                    >
+                      {[socio1, socio2, socio3, socio4].map((src, idx) => (
+                        <img
+                          key={idx}
+                          src={src}
+                          alt={`Sócio ${idx + 1}`}
+                          className="w-full h-full object-cover rounded-xl grayscale"
+                          onMouseEnter={() => setHoveredIdx(idx)}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
             </section>
