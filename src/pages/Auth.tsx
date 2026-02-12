@@ -104,7 +104,7 @@ export default function Auth() {
         password: registerData.password
       });
       
-      setActiveTab('login');
+      navigate('/onboarding');
     } catch (error) {
       // Erro já tratado no context com toast
     }
