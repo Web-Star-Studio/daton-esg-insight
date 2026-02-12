@@ -1,34 +1,43 @@
 
-
-## Correcao: Colaboradores nao aparecem na selecao de responsavel
+## Correcao: Lista de colaboradores truncada na letra J
 
 ### Causa raiz
 
-O hook `useCompanyEmployees.ts` (linha 16) filtra os funcionarios com `.eq('status', 'active')`, porem os dados no banco estao armazenados com o valor em portugues: `'Ativo'` (com inicial maiuscula).
-
-Resultado da consulta no banco:
-- `Ativo`: 1.891 registros
-- `Inativo`: 2 registros
-- `active`: 0 registros
+O Supabase/PostgREST tem um limite padrao de 1.000 linhas por requisicao. Embora o hook use `.range(0, 4999)`, o servidor pode truncar o resultado em 1.000 registros. Com ~1.891 colaboradores ativos ordenados por nome, a lista para na letra J (aproximadamente o registro 1.000).
 
 ### Correcao
 
-**Arquivo: `src/hooks/data/useCompanyEmployees.ts`** (linha 16)
+**Arquivo: `src/hooks/data/useCompanyEmployees.ts`**
 
-Alterar o filtro de status de `'active'` para `'Ativo'`:
+Substituir a busca unica por um padrao de busca recursiva em lotes (recursive batching) de 1.000 registros:
 
 ```typescript
-// Antes:
-.eq('status', 'active')
+const BATCH_SIZE = 1000;
 
-// Depois:
-.eq('status', 'Ativo')
+const fetchCompanyEmployees = async (companyId: string): Promise<CompanyEmployee[]> => {
+  let allData: CompanyEmployee[] = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('id, full_name, position')
+      .eq('company_id', companyId)
+      .eq('status', 'Ativo')
+      .order('full_name')
+      .range(from, from + BATCH_SIZE - 1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+
+    allData = allData.concat(data as CompanyEmployee[]);
+
+    if (data.length < BATCH_SIZE) break; // ultimo lote
+    from += BATCH_SIZE;
+  }
+
+  return allData;
+};
 ```
 
-### Impacto
-
-Essa unica alteracao corrige a selecao de responsavel em todos os locais que usam o hook `useCompanyEmployees`, incluindo:
-- Acoes Imediatas (Etapa 2 da NC) -- o caso reportado
-- Planejamento 5W2H (Etapa 4)
-- Qualquer outro componente que use esse hook
-
+Isso busca todos os ~1.891 registros em 2 requisicoes (0-999 e 1000-1890), garantindo que a lista completa de A a Z apareca no seletor de responsavel.
