@@ -1,51 +1,46 @@
 
 
-## Bento Grid interativo para "Por que empresas escolhem a Daton"
+## Corrigir tamanho dos cards "Seguranca enterprise" e "Conformidade sem complicacao"
 
-### O que sera feito
+### Problema
 
-Transformar o grid atual de 6 cards uniformes em um **bento grid** com layout assimetrico. Ao fazer hover em um card, ele **expande** mostrando mais detalhes, enquanto os outros **encolhem** suavemente, criando um efeito de foco interativo.
+Os cards "Conformidade sem complicacao" e "Seguranca enterprise" estao com `lg:col-span-1` no grid de 6 colunas, ficando muito estreitos comparados aos demais.
 
-### Layout do Bento Grid
+### Solucao
+
+Redistribuir os spans para que todos os cards tenham tamanho adequado. Nova distribuicao:
 
 ```text
-Desktop (sem hover):
-+------------------+----------+----------+
-|                  |          |          |
-|   Card 1 (2col) | Card 2   | Card 3   |
-|                  |          |          |
-+----------+------+----------+----------+
-|          |                  |          |
-| Card 4   |   Card 5 (2col) | Card 6   |
-|          |                  |          |
-+----------+------------------+----------+
+Linha 1:
++------------------+------------------+
+|  Card 1 (3col)   |  Card 2 (3col)   |
++----------+-------+------+-----------+
+Linha 2:
++----------+----------+----------+
+| Card 3   | Card 4   | Card 5   |
+| (2col)   | (2col)   | (2col)   |
++----------+----------+----------+
+Linha 3 (card 6 sozinho, centralizado):
+      +------------------+
+      | Card 6 (2col)    |  -- ou col-span-6 para largura total
+      +------------------+
 ```
 
-Ao hover em qualquer card:
-- O card ativo expande (escala sutil + mais conteudo visivel)
-- Os outros cards reduzem opacidade e escala levemente
-- Transicao suave com CSS transitions (~300ms)
+**Alternativa mais equilibrada** (6 cards em 2 linhas de 3):
+- Linha 1: Card 1 (2col), Card 2 (2col), Card 3 (2col)
+- Linha 2: Card 4 (2col), Card 5 (2col), Card 6 (2col)
 
-### Detalhes tecnicos
+Todos iguais com `lg:col-span-2`, preenchendo as 6 colunas uniformemente mas mantendo o efeito hover.
 
-**Arquivo**: `src/pages/SobreNos.tsx` (linhas 432-454)
+### Detalhe tecnico
 
-1. **Adicionar estado** `hoveredIdx` com `useState<number | null>(null)`
-2. **Expandir os dados** dos cards com um campo extra `details` para conteudo adicional exibido no hover
-3. **Substituir o grid uniforme** por um layout bento usando `grid-cols-6` com spans variaveis:
-   - Cards 1 e 5: `col-span-3` (maiores)
-   - Cards 2, 3, 4, 6: `col-span-2` (menores) -- ajustado para preencher 6 colunas por linha
-   - Alternativa: cards 1 e 5 com `col-span-2`, outros com `col-span-1` em grid de 4 colunas
-4. **Efeito hover**:
-   - Card ativo: `scale-[1.02]`, `shadow-lg`, exibe paragrafo `details`
-   - Cards inativos: `opacity-60`, `scale-[0.97]`
-   - Sem hover ativo: todos normais
-5. **Responsividade**:
-   - Mobile: stack vertical (`col-span-full`)
-   - Tablet: 2 colunas
-   - Desktop: bento grid completo
+**Arquivo**: `src/pages/SobreNos.tsx`, linhas 442-447
 
-### Resultado esperado
+Alterar os spans:
+- "Conformidade sem complicacao": de `lg:col-span-1` para `lg:col-span-2`
+- "Seguranca enterprise": de `lg:col-span-1` para `lg:col-span-2`
+- "Tudo em um so lugar": de `lg:col-span-3` para `lg:col-span-2`
+- "Suporte humano": de `lg:col-span-3` para `lg:col-span-2`
 
-Um grid visualmente dinamico onde o usuario "explora" cada diferencial passando o mouse, com transicoes fluidas e conteudo extra revelado sob demanda.
+Resultado: todos os 6 cards com `lg:col-span-2`, formando 2 linhas equilibradas de 3 cards cada, mantendo o efeito bento hover intacto.
 
