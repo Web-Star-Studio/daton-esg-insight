@@ -9,6 +9,7 @@ import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 import { supabase } from '@/integrations/supabase/client';
 import '@/components/landing/heimdall/heimdall.css';
+import docsHeroImg from '@/assets/docs-hero.png';
 
 const Documentacao = () => {
   const [activeSection, setActiveSection] = useState('faq');
@@ -99,14 +100,12 @@ const Documentacao = () => {
           padding: "120px 2rem 60px",
         }}
       >
-        {/* Abstract Background */}
-        <div
+        {/* Hero Background Image */}
+        <img
+          src={docsHeroImg}
+          alt=""
           aria-hidden="true"
-          className="absolute inset-0 z-0 opacity-20"
-          style={{
-            backgroundImage: `radial-gradient(circle at 50% 50%, #1a2421 1px, transparent 1px)`,
-            backgroundSize: '40px 40px'
-          }}
+          className="absolute inset-0 z-0 w-full h-full object-cover"
         />
 
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-transparent to-[#0B0C0E]/80" />
