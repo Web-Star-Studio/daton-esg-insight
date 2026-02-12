@@ -1,33 +1,51 @@
 
 
-## Substituir imagem na secao "Uma plataforma, todos os pilares"
+## Bento Grid interativo para "Por que empresas escolhem a Daton"
 
 ### O que sera feito
 
-Substituir o visual placeholder atual (grid de cards com fundo escuro e icones) pela imagem enviada (cubos de madeira com icones ESG verdes).
+Transformar o grid atual de 6 cards uniformes em um **bento grid** com layout assimetrico. Ao fazer hover em um card, ele **expande** mostrando mais detalhes, enquanto os outros **encolhem** suavemente, criando um efeito de foco interativo.
 
-### Passos
+### Layout do Bento Grid
 
-1. **Copiar a imagem** enviada para `src/assets/pilares-esg.png`
-2. **Importar a imagem** no componente `SobreNos.tsx`
-3. **Substituir o bloco visual** (linhas 400-432 aproximadamente) - remover o `div` com grid de cards escuros e colocar um `img` com a nova imagem, mantendo o `rounded-3xl` e aspect ratio adequado
-
-### Detalhe tecnico
-
-O bloco atual (linhas 400-432) contem um grid de 4 cards com icones dentro de um container escuro. Sera substituido por:
-
-```tsx
-<div className="relative">
-  <img 
-    src={pilaresImg} 
-    alt="Pilares ESG" 
-    className="w-full rounded-3xl object-cover shadow-lg"
-  />
-</div>
+```text
+Desktop (sem hover):
++------------------+----------+----------+
+|                  |          |          |
+|   Card 1 (2col) | Card 2   | Card 3   |
+|                  |          |          |
++----------+------+----------+----------+
+|          |                  |          |
+| Card 4   |   Card 5 (2col) | Card 6   |
+|          |                  |          |
++----------+------------------+----------+
 ```
 
-### Arquivos afetados
+Ao hover em qualquer card:
+- O card ativo expande (escala sutil + mais conteudo visivel)
+- Os outros cards reduzem opacidade e escala levemente
+- Transicao suave com CSS transitions (~300ms)
 
-- `src/assets/pilares-esg.png` (novo - copia da imagem enviada)
-- `src/pages/SobreNos.tsx` (editar import + substituir bloco visual)
+### Detalhes tecnicos
+
+**Arquivo**: `src/pages/SobreNos.tsx` (linhas 432-454)
+
+1. **Adicionar estado** `hoveredIdx` com `useState<number | null>(null)`
+2. **Expandir os dados** dos cards com um campo extra `details` para conteudo adicional exibido no hover
+3. **Substituir o grid uniforme** por um layout bento usando `grid-cols-6` com spans variaveis:
+   - Cards 1 e 5: `col-span-3` (maiores)
+   - Cards 2, 3, 4, 6: `col-span-2` (menores) -- ajustado para preencher 6 colunas por linha
+   - Alternativa: cards 1 e 5 com `col-span-2`, outros com `col-span-1` em grid de 4 colunas
+4. **Efeito hover**:
+   - Card ativo: `scale-[1.02]`, `shadow-lg`, exibe paragrafo `details`
+   - Cards inativos: `opacity-60`, `scale-[0.97]`
+   - Sem hover ativo: todos normais
+5. **Responsividade**:
+   - Mobile: stack vertical (`col-span-full`)
+   - Tablet: 2 colunas
+   - Desktop: bento grid completo
+
+### Resultado esperado
+
+Um grid visualmente dinamico onde o usuario "explora" cada diferencial passando o mouse, com transicoes fluidas e conteudo extra revelado sob demanda.
 
