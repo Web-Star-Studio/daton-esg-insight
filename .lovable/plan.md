@@ -1,28 +1,40 @@
 
-## Acesso condicional na pagina de Documentacao
 
-### Comportamento desejado
+## Correcao: Redirecionar para onboarding apos cadastro
 
-| Usuario | Secoes visiveis |
-|---|---|
-| Nao logado | Central de Ajuda (FAQ) + card "Precisa de ajuda?" |
-| Logado | Todas as secoes (Visao Geral, Modulos, Beneficios, Seguranca, API, FAQ) |
+### Causa raiz
 
-### Implementacao
+Apos o registro, o Supabase faz login automatico do usuario (`immediate_login_after_signup`). O `handleRegister` em `Auth.tsx` apenas muda a aba para "login" (`setActiveTab('login')`) sem navegar para `/onboarding`. Como o roteamento padrao envia usuarios nao aprovados para `/demo` (via `ProtectedRoute`), o usuario nunca passa pelo onboarding.
 
-**Arquivo: `src/pages/Documentacao.tsx`**
+### Fluxo atual (com bug)
 
-1. Importar `supabase` de `@/integrations/supabase/client`
-2. Adicionar estado `isAuthenticated` com `useState(false)`
-3. No `useEffect`, chamar `supabase.auth.getSession()` para verificar se ha sessao ativa e escutar `onAuthStateChange` para reagir a login/logout
-4. Na sidebar, mostrar apenas o item "Central de Ajuda" e o card "Precisa de ajuda?" quando nao autenticado; mostrar todos os itens quando autenticado
-5. Na area de conteudo, renderizar as secoes condicionalmente:
-   - `overview`, `modules`, `benefits`, `security`, `api`: apenas se `isAuthenticated`
-   - `faq`: sempre visivel
+```text
+Registro -> Auto-login -> Auth.tsx mostra aba "login" -> Usuario clica login -> ProtectedRoute -> /demo
+```
 
-### Detalhes tecnicos
+### Fluxo correto
 
-- A verificacao de autenticacao sera feita diretamente via `supabase.auth.getSession()` (sem depender do AuthContext, ja que esta e uma pagina publica)
-- O listener `onAuthStateChange` garante que a pagina reaja imediatamente se o usuario fizer login/logout em outra aba
-- A lista `sections` (usada pela sidebar) sera filtrada com base em `isAuthenticated`
-- As secoes de conteudo serao envolvidas em blocos `{isAuthenticated && (...)}` para os itens restritos
+```text
+Registro -> Auto-login -> Navega para /onboarding -> Completa onboarding -> /demo (aguardando aprovacao)
+```
+
+### Correcao
+
+**Arquivo: `src/pages/Auth.tsx`**
+
+1. Apos o `register()` ser bem-sucedido (linha 99-105), em vez de apenas trocar para a aba de login, navegar para `/onboarding` usando `useNavigate`:
+
+```typescript
+// Antes:
+await register({ ... });
+setActiveTab('login');
+
+// Depois:
+await register({ ... });
+navigate('/onboarding');
+```
+
+2. Adicionar `useNavigate` do react-router-dom nas importacoes e no componente.
+
+Essa mudanca garante que, ao ser auto-logado pelo Supabase apos o cadastro, o usuario seja imediatamente levado ao fluxo de onboarding. A rota `/onboarding` (via `OnboardingRoute`) ja verifica `shouldShowOnboarding` e exibe o componente correto.
+
