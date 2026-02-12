@@ -167,7 +167,7 @@
 
 .heimdall-btn-primary {
   background: var(--heimdall-accent);
-  color: var(--heimdall-text);
+  color: #ffffff;
 }
 
 .heimdall-btn-primary:hover {

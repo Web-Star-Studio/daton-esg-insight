@@ -125,10 +125,6 @@ export default function Auth() {
           <div className="flex items-center justify-center mb-3">
             <img src={datonLogo} alt="Daton" className="h-9" />
           </div>
-          <span className="heimdall-label-accent text-[0.65rem]">PLATAFORMA ESG</span>
-          <p className="heimdall-body-sm mt-1">
-            Plataforma de Gestão ESG Inteligente
-          </p>
         </motion.div>
 
         {/* Auth Card - Glassmorphism */}
