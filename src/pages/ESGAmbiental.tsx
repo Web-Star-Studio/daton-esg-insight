@@ -16,6 +16,7 @@ import { PublicFooter } from "@/components/landing/heimdall/PublicFooter";
 import "@/components/landing/heimdall/heimdall.css";
 import esgSocialCardImg from "@/assets/esg-social-card.png";
 import esgQualityCardImg from "@/assets/esg-quality-card.png";
+import esgAmbientalHeroImg from "@/assets/esg-ambiental-hero.png";
 
 // --- DATA ---
 
@@ -312,7 +313,7 @@ export default function ESGAmbiental() {
         }}
       >
         <img
-          src="/hero-img-01.png"
+          src={esgAmbientalHeroImg}
           alt=""
           aria-hidden="true"
           style={{
