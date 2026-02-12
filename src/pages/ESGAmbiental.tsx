@@ -14,6 +14,7 @@ import {
 import { HeimdallNavbar } from "@/components/landing/heimdall/HeimdallNavbar";
 import { PublicFooter } from "@/components/landing/heimdall/PublicFooter";
 import "@/components/landing/heimdall/heimdall.css";
+import esgSocialCardImg from "@/assets/esg-social-card.png";
 
 // --- DATA ---
 
@@ -54,7 +55,7 @@ const MODULES: ModuleHighlight[] = [
     description:
       "Acompanhe métricas de diversidade, rotatividade e segurança em um painel consolidado. Gerencie o ciclo de vida completo do colaborador, do recrutamento ao desenvolvimento de carreira.",
     icon: Users,
-    image: "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?q=80&w=2669&auto=format&fit=crop",
+    image: esgSocialCardImg,
     color: "#f0fdf4",
     features: [
       "Dashboard de métricas sociais e diversidade",
