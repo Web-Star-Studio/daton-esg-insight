@@ -16,6 +16,24 @@ export const dataReportsMockEntries = [
       { id: 'dc-5', name: 'Dados Financeiros ESG', description: 'Classificar despesas por categoria ESG', status: 'Em Atraso', task_type: 'Mensal', due_date: '2026-02-05', assigned_to: 'Juliana Lima', company_id: DEMO_COMPANY_ID },
     ],
   },
+  // Data collection tasks (base - global)
+  {
+    queryKey: ['data-collection-tasks'],
+    data: [
+      { id: 'dc-1', name: 'Coleta Mensal de Consumo de Água', status: 'Pendente', task_type: 'Mensal', due_date: '2026-02-28', assigned_to: 'Carlos Santos' },
+      { id: 'dc-2', name: 'Inventário de Resíduos Q1', status: 'Em Andamento', task_type: 'Trimestral', due_date: '2026-03-31', assigned_to: 'Carlos Santos' },
+      { id: 'dc-3', name: 'Dados de Emissão Fev/26', status: 'Pendente', task_type: 'Mensal', due_date: '2026-03-10', assigned_to: 'Ana Silva' },
+    ],
+  },
+  // Import jobs
+  {
+    queryKey: ['import-jobs'],
+    data: [
+      { id: 'ij-1', file_name: 'emissoes_2025.xlsx', status: 'Concluído', records_imported: 145, errors: 0, created_at: '2026-01-20T10:00:00Z', type: 'Emissões' },
+      { id: 'ij-2', file_name: 'funcionarios_jan26.csv', status: 'Concluído', records_imported: 342, errors: 2, created_at: '2026-02-01T14:30:00Z', type: 'Funcionários' },
+      { id: 'ij-3', file_name: 'residuos_q4.xlsx', status: 'Erro', records_imported: 0, errors: 5, created_at: '2026-02-05T09:00:00Z', type: 'Resíduos' },
+    ],
+  },
   // Documents
   {
     queryKey: ['documents', DEMO_COMPANY_ID],
@@ -25,6 +43,14 @@ export const dataReportsMockEntries = [
       { id: 'doc-3', file_name: 'Licença de Operação - LO-2024-001.pdf', file_type: 'application/pdf', file_size: 800000, upload_date: '2024-01-15T09:00:00Z', tags: ['licença', 'operação', 'ambiental'], company_id: DEMO_COMPANY_ID },
       { id: 'doc-4', file_name: 'Manual SGQ v6.0.pdf', file_type: 'application/pdf', file_size: 3200000, upload_date: '2025-12-01T16:00:00Z', tags: ['qualidade', 'manual', 'SGQ'], company_id: DEMO_COMPANY_ID },
       { id: 'doc-5', file_name: 'Política Ambiental 2026.pdf', file_type: 'application/pdf', file_size: 320000, upload_date: '2026-01-05T08:00:00Z', tags: ['política', 'ambiental'], company_id: DEMO_COMPANY_ID },
+    ],
+  },
+  // Documents (base)
+  {
+    queryKey: ['documents'],
+    data: [
+      { id: 'doc-1', file_name: 'Relatório de Sustentabilidade 2025.pdf', file_type: 'application/pdf' },
+      { id: 'doc-2', file_name: 'Inventário GEE 2025.xlsx', file_type: 'application/xlsx' },
     ],
   },
   // Document extractions
@@ -41,6 +67,13 @@ export const dataReportsMockEntries = [
       { id: 'ir-3', title: 'Inventário GEE 2025', framework: 'GHG Protocol', status: 'Em Revisão', completion_percentage: 85, year: 2025, company_id: DEMO_COMPANY_ID },
     ],
   },
+  // Integrated reports (base)
+  {
+    queryKey: ['integrated-reports'],
+    data: [
+      { id: 'ir-1', title: 'Relatório de Sustentabilidade 2025', framework: 'GRI Standards', status: 'Publicado', completion_percentage: 100 },
+    ],
+  },
   // SDG Dashboard
   {
     queryKey: ['sdg-contributions', DEMO_COMPANY_ID],
@@ -51,6 +84,15 @@ export const dataReportsMockEntries = [
       { sdg: 12, name: 'Consumo e Produção Responsáveis', contribution: 68, actions: 6 },
       { sdg: 13, name: 'Ação Contra a Mudança Global do Clima', contribution: 58, actions: 7 },
       { sdg: 15, name: 'Vida Terrestre', contribution: 42, actions: 3 },
+    ],
+  },
+  // SDG (base)
+  {
+    queryKey: ['sdg-contributions'],
+    data: [
+      { sdg: 6, name: 'Água Potável e Saneamento', contribution: 72, actions: 5 },
+      { sdg: 8, name: 'Trabalho Decente', contribution: 85, actions: 8 },
+      { sdg: 13, name: 'Ação Contra a Mudança Global do Clima', contribution: 58, actions: 7 },
     ],
   },
   // Recommended indicators
@@ -64,6 +106,13 @@ export const dataReportsMockEntries = [
       { id: 'ri-5', code: 'GRI 404-1', name: 'Horas de Treinamento', value: 42, unit: 'h/func', benchmark: 40, status: 'Acima da Média' },
     ],
   },
+  // Recommended indicators (base)
+  {
+    queryKey: ['recommended-indicators'],
+    data: [
+      { id: 'ri-1', code: 'GRI 305-1', name: 'Emissões Diretas (Escopo 1)', value: 485.3, unit: 'tCO2e' },
+    ],
+  },
   // Assets
   {
     queryKey: ['assets', DEMO_COMPANY_ID],
@@ -72,6 +121,13 @@ export const dataReportsMockEntries = [
       { id: 'a-2', name: 'Caldeira Industrial', asset_type: 'Equipamento', location: 'Unidade SP', operational_status: 'Operacional', installation_year: 2020, company_id: DEMO_COMPANY_ID },
       { id: 'a-3', name: 'Sistema de Tratamento de Efluentes', asset_type: 'Infraestrutura', location: 'Unidade SP', operational_status: 'Operacional', installation_year: 2019, company_id: DEMO_COMPANY_ID },
       { id: 'a-4', name: 'Frota de Caminhões (5 veículos)', asset_type: 'Veículo', location: 'CD Rio', operational_status: 'Operacional', installation_year: 2022, company_id: DEMO_COMPANY_ID },
+    ],
+  },
+  // Assets (base)
+  {
+    queryKey: ['assets'],
+    data: [
+      { id: 'a-1', name: 'Linha de Produção A', asset_type: 'Equipamento', operational_status: 'Operacional' },
     ],
   },
 ];

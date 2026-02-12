@@ -81,4 +81,44 @@ export const dashboardMockEntries = [
       lastCheck: new Date().toISOString(),
     },
   },
+  // Additional dashboard keys used by Index.tsx
+  {
+    queryKey: ['esg-dashboard'],
+    data: {
+      overall: 72.5,
+      environmental: 68.0,
+      social: 78.2,
+      governance: 71.3,
+      trend: 'up',
+    },
+  },
+  {
+    queryKey: ['emission-stats'],
+    data: {
+      totalEmissions: 1247.5,
+      scope1: 485.3,
+      scope2: 312.8,
+      scope3: 449.4,
+      trend: -8.3,
+    },
+  },
+  {
+    queryKey: ['license-stats'],
+    data: {
+      total: 3,
+      active: 2,
+      expiring: 1,
+      expired: 0,
+    },
+  },
+  {
+    queryKey: ['waste-dashboard'],
+    data: {
+      totalGenerated: 94.8,
+      recyclingRate: 72.5,
+      hazardous: 12.5,
+      nonHazardous: 82.3,
+      trend: -4.1,
+    },
+  },
 ];

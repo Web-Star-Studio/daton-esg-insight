@@ -20,6 +20,17 @@ export const organizationMockEntries = [
       { id: 'dept-9', name: 'Produção', description: 'Linha de produção e manufatura', parent_department_id: 'dept-2', manager_employee_id: 'emp-8', budget: 3500000, cost_center: 'CC-001', company_id: DEMO_COMPANY_ID, employee_count: 90, created_at: '2020-01-01', updated_at: '2026-01-01' },
     ],
   },
+  // Departments (base)
+  {
+    queryKey: ['departments'],
+    data: [
+      { id: 'dept-1', name: 'Diretoria', employee_count: 5 },
+      { id: 'dept-2', name: 'Operações', employee_count: 120 },
+      { id: 'dept-3', name: 'Meio Ambiente', employee_count: 15 },
+      { id: 'dept-4', name: 'Recursos Humanos', employee_count: 12 },
+      { id: 'dept-9', name: 'Produção', employee_count: 90 },
+    ],
+  },
   // Positions
   {
     queryKey: ['positions', DEMO_COMPANY_ID],
@@ -32,6 +43,14 @@ export const organizationMockEntries = [
       { id: 'pos-6', title: 'Engenheiro(a) de Qualidade', department_id: 'dept-7', level: 'Pleno', salary_range_min: 7000, salary_range_max: 12000, company_id: DEMO_COMPANY_ID, created_at: '2020-01-01', updated_at: '2026-01-01' },
       { id: 'pos-7', title: 'Supervisor(a) de Produção', department_id: 'dept-9', level: 'Supervisão', salary_range_min: 8000, salary_range_max: 13000, company_id: DEMO_COMPANY_ID, created_at: '2020-01-01', updated_at: '2026-01-01' },
       { id: 'pos-8', title: 'Operador(a) de Máquinas', department_id: 'dept-9', level: 'Operacional', salary_range_min: 2500, salary_range_max: 4500, company_id: DEMO_COMPANY_ID, created_at: '2020-01-01', updated_at: '2026-01-01' },
+    ],
+  },
+  // Positions (base)
+  {
+    queryKey: ['positions'],
+    data: [
+      { id: 'pos-1', title: 'Diretor(a) Geral', level: 'Executivo' },
+      { id: 'pos-2', title: 'Gerente de Operações', level: 'Gerência' },
     ],
   },
   // Org chart
@@ -76,6 +95,18 @@ export const organizationMockEntries = [
       },
     ],
   },
+  // Org chart (base)
+  {
+    queryKey: ['org-chart'],
+    data: [
+      {
+        id: 'oc-1', employee_id: 'emp-5',
+        employee: { id: 'emp-5', full_name: 'Juliana Lima', position: 'Diretora Geral' },
+        department: { id: 'dept-1', name: 'Diretoria' },
+        subordinates: [],
+      },
+    ],
+  },
   // Job descriptions
   {
     queryKey: ['job-descriptions', DEMO_COMPANY_ID],
@@ -83,6 +114,13 @@ export const organizationMockEntries = [
       { id: 'jd-1', title: 'Analista Ambiental', department: 'Meio Ambiente', level: 'Pleno', status: 'Ativo', requirements: ['Graduação em Engenharia Ambiental', 'Experiência com inventário GEE'], company_id: DEMO_COMPANY_ID },
       { id: 'jd-2', title: 'Técnico de Segurança do Trabalho', department: 'SST', level: 'Técnico', status: 'Ativo', requirements: ['Formação técnica em SST', 'NR-12, NR-35'], company_id: DEMO_COMPANY_ID },
       { id: 'jd-3', title: 'Operador de Produção', department: 'Produção', level: 'Operacional', status: 'Ativo', requirements: ['Ensino Médio', 'Experiência industrial'], company_id: DEMO_COMPANY_ID },
+    ],
+  },
+  // Job descriptions (base)
+  {
+    queryKey: ['job-descriptions'],
+    data: [
+      { id: 'jd-1', title: 'Analista Ambiental', department: 'Meio Ambiente', level: 'Pleno', status: 'Ativo' },
     ],
   },
   // Organizational config
@@ -94,6 +132,15 @@ export const organizationMockEntries = [
       size: 'Médio Porte',
       total_departments: 9,
       total_positions: 28,
+      total_employees: 342,
+    },
+  },
+  // Org config (base)
+  {
+    queryKey: ['org-config'],
+    data: {
+      company_name: 'EcoTech Indústria e Comércio S.A.',
+      sector: 'Industrial',
       total_employees: 342,
     },
   },

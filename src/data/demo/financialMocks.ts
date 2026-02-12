@@ -21,6 +21,20 @@ export const financialMockEntries = [
       expenseChange: 5.2,
     },
   },
+  // Financial dashboard (base)
+  {
+    queryKey: ['financial-dashboard'],
+    data: {
+      totalRevenue: 12500000,
+      totalExpenses: 9800000,
+      netProfit: 2700000,
+      profitMargin: 21.6,
+      cashBalance: 3200000,
+      accountsPayable: 1450000,
+      accountsReceivable: 2100000,
+      esgInvestment: 850000,
+    },
+  },
   // Chart of accounts
   {
     queryKey: ['chart-of-accounts', DEMO_COMPANY_ID],
@@ -35,6 +49,16 @@ export const financialMockEntries = [
       { id: 'coa-8', code: '4', name: 'DESPESAS', type: 'Despesa', level: 1, parent_id: null, is_active: true, company_id: DEMO_COMPANY_ID },
     ],
   },
+  // Chart of accounts (base)
+  {
+    queryKey: ['chart-of-accounts'],
+    data: [
+      { id: 'coa-1', code: '1', name: 'ATIVO', type: 'Ativo', level: 1 },
+      { id: 'coa-5', code: '2', name: 'PASSIVO', type: 'Passivo', level: 1 },
+      { id: 'coa-7', code: '3', name: 'RECEITAS', type: 'Receita', level: 1 },
+      { id: 'coa-8', code: '4', name: 'DESPESAS', type: 'Despesa', level: 1 },
+    ],
+  },
   // Accounting entries
   {
     queryKey: ['accounting-entries', DEMO_COMPANY_ID],
@@ -42,6 +66,13 @@ export const financialMockEntries = [
       { id: 'ae-1', entry_number: 'LC-2026-001', description: 'Pagamento fornecedor Aço Verde', entry_date: '2026-02-01', accounting_date: '2026-02-01', total_debit: 45000, total_credit: 45000, status: 'Aprovado', company_id: DEMO_COMPANY_ID },
       { id: 'ae-2', entry_number: 'LC-2026-002', description: 'Receita de vendas Janeiro', entry_date: '2026-01-31', accounting_date: '2026-01-31', total_debit: 1200000, total_credit: 1200000, status: 'Aprovado', company_id: DEMO_COMPANY_ID },
       { id: 'ae-3', entry_number: 'LC-2026-003', description: 'Folha de pagamento Jan/26', entry_date: '2026-02-05', accounting_date: '2026-02-05', total_debit: 580000, total_credit: 580000, status: 'Pendente', company_id: DEMO_COMPANY_ID },
+    ],
+  },
+  // Accounting entries (base)
+  {
+    queryKey: ['accounting-entries'],
+    data: [
+      { id: 'ae-1', entry_number: 'LC-2026-001', description: 'Pagamento fornecedor Aço Verde', total_debit: 45000, status: 'Aprovado' },
     ],
   },
   // Accounts payable
@@ -53,6 +84,33 @@ export const financialMockEntries = [
       { id: 'ap-3', invoice_number: 'NF-45650', supplier_name: 'Energia Elétrica SP', category: 'Utilidades', original_amount: 32000, final_amount: 32000, due_date: '2026-02-10', status: 'Pago', payment_date: '2026-02-08', company_id: DEMO_COMPANY_ID },
     ],
   },
+  // Accounts payable (base)
+  {
+    queryKey: ['accounts-payable'],
+    data: [
+      { id: 'ap-1', invoice_number: 'NF-45678', supplier_name: 'Aço Verde S.A.', original_amount: 45000, status: 'Pendente' },
+    ],
+  },
+  // Payables stats
+  {
+    queryKey: ['payables-stats'],
+    data: {
+      totalPayable: 1450000,
+      overdue: 85000,
+      dueSoon: 320000,
+      paid: 980000,
+      overdueCount: 3,
+      pendingCount: 12,
+    },
+  },
+  // Payable wastes
+  {
+    queryKey: ['payable-wastes'],
+    data: [
+      { id: 'pw-1', waste_type: 'Resíduos Classe I', amount: 15000, status: 'Pendente', due_date: '2026-02-28' },
+      { id: 'pw-2', waste_type: 'Resíduos Classe IIA', amount: 8500, status: 'Pago', due_date: '2026-01-31' },
+    ],
+  },
   // Accounts receivable
   {
     queryKey: ['accounts-receivable', DEMO_COMPANY_ID],
@@ -60,6 +118,13 @@ export const financialMockEntries = [
       { id: 'ar-1', invoice_number: 'NF-S-2026-001', customer_name: 'Indústria ABC Ltda', category: 'Vendas', original_amount: 120000, final_amount: 120000, due_date: '2026-02-28', status: 'A Receber', company_id: DEMO_COMPANY_ID },
       { id: 'ar-2', invoice_number: 'NF-S-2026-002', customer_name: 'Construtora XYZ', category: 'Serviços', original_amount: 85000, final_amount: 85000, due_date: '2026-03-15', status: 'A Receber', company_id: DEMO_COMPANY_ID },
       { id: 'ar-3', invoice_number: 'NF-S-2025-120', customer_name: 'Distribuidora Nacional', category: 'Vendas', original_amount: 200000, final_amount: 200000, due_date: '2026-01-30', status: 'Recebido', receipt_date: '2026-01-29', company_id: DEMO_COMPANY_ID },
+    ],
+  },
+  // Accounts receivable (base)
+  {
+    queryKey: ['accounts-receivable'],
+    data: [
+      { id: 'ar-1', invoice_number: 'NF-S-2026-001', customer_name: 'Indústria ABC Ltda', original_amount: 120000, status: 'A Receber' },
     ],
   },
   // Cost centers
@@ -73,6 +138,15 @@ export const financialMockEntries = [
       { id: 'cc-5', name: 'Sustentabilidade', code: 'CC-005', budget: 850000, spent: 580000, company_id: DEMO_COMPANY_ID },
     ],
   },
+  // Cost centers (base)
+  {
+    queryKey: ['cost-centers'],
+    data: [
+      { id: 'cc-1', name: 'Produção', code: 'CC-001', budget: 5000000, spent: 3800000 },
+      { id: 'cc-2', name: 'Administrativo', code: 'CC-002', budget: 1500000, spent: 1200000 },
+      { id: 'cc-3', name: 'Comercial', code: 'CC-003', budget: 800000, spent: 650000 },
+    ],
+  },
   // Cash flow
   {
     queryKey: ['cash-flow', DEMO_COMPANY_ID],
@@ -82,6 +156,17 @@ export const financialMockEntries = [
         { month: 'Out/25', inflow: 1100000, outflow: 890000, balance: 210000 },
         { month: 'Nov/25', inflow: 980000, outflow: 850000, balance: 130000 },
         { month: 'Dez/25', inflow: 1300000, outflow: 1050000, balance: 250000 },
+        { month: 'Jan/26', inflow: 1200000, outflow: 950000, balance: 250000 },
+        { month: 'Fev/26', inflow: 1150000, outflow: 900000, balance: 250000 },
+      ],
+      currentBalance: 3200000,
+    },
+  },
+  // Cash flow (base)
+  {
+    queryKey: ['cash-flow'],
+    data: {
+      monthly: [
         { month: 'Jan/26', inflow: 1200000, outflow: 950000, balance: 250000 },
         { month: 'Fev/26', inflow: 1150000, outflow: 900000, balance: 250000 },
       ],
@@ -104,12 +189,28 @@ export const financialMockEntries = [
       ],
     },
   },
+  // Budget (base)
+  {
+    queryKey: ['budget'],
+    data: {
+      totalBudget: 12000000,
+      totalSpent: 8200000,
+      utilization: 68.3,
+    },
+  },
   // Financial approvals
   {
     queryKey: ['financial-approvals', DEMO_COMPANY_ID],
     data: [
       { id: 'fa-1', type: 'Conta a Pagar', description: 'NF-45680 - Manutenção Industrial', amount: 15000, requester: 'Ana Silva', status: 'Pendente', created_at: '2026-02-08' },
       { id: 'fa-2', type: 'Orçamento', description: 'Projeto de Energia Solar', amount: 180000, requester: 'Carlos Santos', status: 'Pendente', created_at: '2026-02-05' },
+    ],
+  },
+  // Financial approvals (base)
+  {
+    queryKey: ['financial-approvals'],
+    data: [
+      { id: 'fa-1', type: 'Conta a Pagar', description: 'NF-45680 - Manutenção Industrial', amount: 15000, status: 'Pendente' },
     ],
   },
   // ESG Financial dashboard
@@ -124,10 +225,30 @@ export const financialMockEntries = [
       carbon_impact: 1247.5,
     },
   },
+  // ESG Financial (base)
+  {
+    queryKey: ['esg-financial'],
+    data: {
+      environmental_costs: 350000,
+      social_costs: 280000,
+      governance_costs: 220000,
+      total_esg_costs: 850000,
+    },
+  },
   // Financial reports
   {
     queryKey: ['financial-reports', DEMO_COMPANY_ID],
-    data: [],
+    data: [
+      { id: 'fr-1', title: 'Relatório Financeiro Jan/2026', type: 'Mensal', status: 'Publicado', period: '2026-01' },
+      { id: 'fr-2', title: 'DRE Q4 2025', type: 'Trimestral', status: 'Publicado', period: '2025-Q4' },
+    ],
+  },
+  // Financial reports (base)
+  {
+    queryKey: ['financial-reports'],
+    data: [
+      { id: 'fr-1', title: 'Relatório Financeiro Jan/2026', type: 'Mensal', status: 'Publicado' },
+    ],
   },
   // Profitability
   {
@@ -140,5 +261,31 @@ export const financialMockEntries = [
         { name: 'Serviços', revenue: 3500000, cost: 2300000, margin: 34.3 },
       ],
     },
+  },
+  // Profitability (base)
+  {
+    queryKey: ['profitability'],
+    data: {
+      roi: 22.5,
+      categories: [
+        { name: 'Produto A', revenue: 5000000, cost: 3500000, margin: 30 },
+      ],
+    },
+  },
+  // Bank accounts
+  {
+    queryKey: ['bank-accounts'],
+    data: [
+      { id: 'ba-1', bank_name: 'Banco do Brasil', account_number: '12345-6', agency: '1234', balance: 1850000, type: 'Corrente' },
+      { id: 'ba-2', bank_name: 'Itaú', account_number: '78901-2', agency: '5678', balance: 1350000, type: 'Corrente' },
+    ],
+  },
+  // Projects
+  {
+    queryKey: ['projects'],
+    data: [
+      { id: 'proj-1', name: 'Energia Solar Unidade 2', budget: 180000, spent: 95000, status: 'Em Andamento' },
+      { id: 'proj-2', name: 'Reflorestamento Norte', budget: 250000, spent: 120000, status: 'Em Andamento' },
+    ],
   },
 ];

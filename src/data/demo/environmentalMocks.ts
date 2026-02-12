@@ -26,6 +26,15 @@ export const environmentalMockEntries = [
       { id: '5', source_name: 'Viagens Aéreas', scope: 3, category: 'Viagens a Negócio', description: 'Deslocamentos aéreos corporativos', status: 'Ativo', company_id: DEMO_COMPANY_ID, created_at: '2025-01-01', updated_at: '2026-01-15' },
     ],
   },
+  // Emission sources (base)
+  {
+    queryKey: ['emission-sources'],
+    data: [
+      { id: '1', source_name: 'Frota de Veículos', scope: 1, category: 'Combustão Móvel', status: 'Ativo' },
+      { id: '2', source_name: 'Caldeira Industrial', scope: 1, category: 'Combustão Estacionária', status: 'Ativo' },
+      { id: '3', source_name: 'Energia Elétrica', scope: 2, category: 'Eletricidade Comprada', status: 'Ativo' },
+    ],
+  },
   // GHG Dashboard
   {
     queryKey: ['emissions', 'dashboard', DEMO_COMPANY_ID],
@@ -45,6 +54,34 @@ export const environmentalMockEntries = [
       monthly: monitoringData.map(d => ({ month: d.month, value: d.emissions })),
     },
   },
+  // Emissions monitoring (for year-based queries)
+  {
+    queryKey: ['emissions-monitoring'],
+    data: {
+      totalEmissions: 1247.5,
+      scope1: 485.3,
+      scope2: 312.8,
+      scope3: 449.4,
+      trend: -8.3,
+      monthly: monitoringData.map(d => ({ month: d.month, value: d.emissions })),
+    },
+  },
+  // Inventory summary
+  {
+    queryKey: ['inventory-summary'],
+    data: {
+      year: 2025,
+      totalEmissions: 1247.5,
+      scope1: 485.3,
+      scope2: 312.8,
+      scope3: 449.4,
+      biogenicEmissions: 45.2,
+      removals: 150.0,
+      netEmissions: 1097.5,
+      methodology: 'GHG Protocol',
+      status: 'Em Revisão',
+    },
+  },
   // Monitoring ESG
   {
     queryKey: ['monitoring-esg', DEMO_COMPANY_ID],
@@ -62,6 +99,15 @@ export const environmentalMockEntries = [
       trend: -5.2,
     },
   },
+  // Monitoring water (base)
+  {
+    queryKey: ['monitoring-water'],
+    data: {
+      total: monitoringData.reduce((s, d) => s + d.water, 0),
+      average: Math.round(monitoringData.reduce((s, d) => s + d.water, 0) / 12),
+      trend: -5.2,
+    },
+  },
   {
     queryKey: ['monitoring-energy', DEMO_COMPANY_ID],
     data: {
@@ -71,6 +117,14 @@ export const environmentalMockEntries = [
       })),
       total: monitoringData.reduce((s, d) => s + d.energy, 0),
       average: Math.round(monitoringData.reduce((s, d) => s + d.energy, 0) / 12),
+      trend: -3.8,
+    },
+  },
+  // Monitoring energy (base)
+  {
+    queryKey: ['monitoring-energy'],
+    data: {
+      total: monitoringData.reduce((s, d) => s + d.energy, 0),
       trend: -3.8,
     },
   },
@@ -107,6 +161,14 @@ export const environmentalMockEntries = [
       { id: '4', waste_type: 'Orgânico', quantity: 8.3, unit: 'ton', destination: 'Compostagem', transporter: 'BioSol Ltda', log_date: '2026-02-01', status: 'Coletado', company_id: DEMO_COMPANY_ID },
     ],
   },
+  // Waste (base)
+  {
+    queryKey: ['waste'],
+    data: [
+      { id: '1', waste_type: 'Classe I - Perigoso', quantity: 12.5, status: 'Destinado' },
+      { id: '2', waste_type: 'Classe IIA - Não Perigoso', quantity: 45.2, status: 'Destinado' },
+    ],
+  },
   // Carbon projects
   {
     queryKey: ['conservation-activities', DEMO_COMPANY_ID],
@@ -116,6 +178,13 @@ export const environmentalMockEntries = [
       { id: '3', activity_name: 'Proteção Nascentes', activity_type: 'Conservação', area_size: 15, area_unit: 'ha', status: 'Planejada', investment_amount: 75000, carbon_impact_estimate: 35, start_date: '2026-04-01', company_id: DEMO_COMPANY_ID },
     ],
   },
+  // Conservation activities (base)
+  {
+    queryKey: ['conservation-activities'],
+    data: [
+      { id: '1', activity_name: 'Reflorestamento Área Norte', activity_type: 'Reflorestamento', status: 'Em Andamento' },
+    ],
+  },
   // Licenses
   {
     queryKey: ['licenses', DEMO_COMPANY_ID],
@@ -123,6 +192,14 @@ export const environmentalMockEntries = [
       { id: '1', license_name: 'Licença de Operação', license_number: 'LO-2024-001', license_type: 'Operação', status: 'Ativa', issue_date: '2024-01-15', expiry_date: '2027-01-15', issuing_body: 'IBAMA', company_id: DEMO_COMPANY_ID },
       { id: '2', license_name: 'Outorga de Uso de Água', license_number: 'OUT-2023-045', license_type: 'Recursos Hídricos', status: 'Ativa', issue_date: '2023-06-01', expiry_date: '2026-06-01', issuing_body: 'ANA', company_id: DEMO_COMPANY_ID },
       { id: '3', license_name: 'Licença de Instalação', license_number: 'LI-2025-012', license_type: 'Instalação', status: 'Em Análise', issue_date: '2025-09-01', expiry_date: '2028-09-01', issuing_body: 'CETESB', company_id: DEMO_COMPANY_ID },
+    ],
+  },
+  // Licenses (base)
+  {
+    queryKey: ['licenses'],
+    data: [
+      { id: '1', license_name: 'Licença de Operação', license_number: 'LO-2024-001', status: 'Ativa' },
+      { id: '2', license_name: 'Outorga de Uso de Água', license_number: 'OUT-2023-045', status: 'Ativa' },
     ],
   },
   // Emission factors
@@ -145,5 +222,33 @@ export const environmentalMockEntries = [
       { id: '4', goal_name: 'Energia Renovável', target_value: 30, current_value: 18.5, unit: '%', deadline: '2027-06-30', status: 'Em Andamento' },
       { id: '5', goal_name: 'Neutralidade de Carbono', target_value: 100, current_value: 25, unit: '%', deadline: '2030-12-31', status: 'Planejada' },
     ],
+  },
+  // Sustainability goals (base)
+  {
+    queryKey: ['sustainability-goals'],
+    data: [
+      { id: '1', goal_name: 'Redução de Emissões GEE', target_value: 15, current_value: 8.3, status: 'Em Andamento' },
+    ],
+  },
+  // Activity data
+  {
+    queryKey: ['activity-data'],
+    data: [],
+  },
+  // Water monitoring
+  {
+    queryKey: ['water-monitoring'],
+    data: {
+      total: monitoringData.reduce((s, d) => s + d.water, 0),
+      trend: -5.2,
+    },
+  },
+  // Energy monitoring
+  {
+    queryKey: ['energy-monitoring'],
+    data: {
+      total: monitoringData.reduce((s, d) => s + d.energy, 0),
+      trend: -3.8,
+    },
   },
 ];
