@@ -313,32 +313,53 @@ const SobreNos = () => {
             {/* --- VALUES --- */}
             <section className="py-24 px-6 bg-[#f8fafc] border-y border-[#e5e7eb]">
                 <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16">
-                        <span className="text-[#15c470] font-mono text-xs uppercase tracking-widest font-bold">Valores</span>
-                        <h2 className="text-3xl md:text-4xl font-bold text-[#1a2421] mt-2">O que nos guia</h2>
+                    <div className="mb-20">
+                        <motion.h2
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="text-3xl md:text-5xl font-bold text-[#1a2421] mb-6 tracking-tight"
+                        >
+                            O que nos guia.
+                        </motion.h2>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
+                            className="text-lg md:text-xl text-[#6b7280] max-w-2xl leading-relaxed"
+                        >
+                            Nossos valores fundamentais definem cada decisão que tomamos e cada funcionalidade que construímos.
+                        </motion.p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-px bg-[#e5e7eb] border border-[#e5e7eb] rounded-2xl overflow-hidden shadow-sm">
                         {[
-                            { title: "Transparência radical", desc: "Dados abertos, rastreabilidade total e auditabilidade em cada processo.", icon: FileText },
-                            { title: "Impacto mensurável", desc: "Cada funcionalidade existe para gerar resultado concreto — não apenas relatórios.", icon: TrendingUp },
-                            { title: "Simplicidade intencional", desc: "Complexidade nos bastidores, clareza na interface. Tecnologia que qualquer equipe consegue usar.", icon: CheckCircle },
-                            { title: "Inovação responsável", desc: "IA e automação a serviço da sustentabilidade, com ética e privacidade como premissa.", icon: Zap },
-                            { title: "Parceria de longo prazo", desc: "Não vendemos software — construímos capacidade ESG dentro das organizações.", icon: Users },
+                            { index: "001", title: "Transparência radical", desc: "Dados abertos, rastreabilidade total e auditabilidade em cada processo.", features: ["Auditoria completa de ações", "Rastreabilidade de dados ponta a ponta", "Logs imutáveis de operações"] },
+                            { index: "002", title: "Impacto mensurável", desc: "Cada funcionalidade existe para gerar resultado concreto — não apenas relatórios.", features: ["KPIs acionáveis e contextuais", "Dashboards com metas tangíveis", "Relatórios orientados a resultado"] },
+                            { index: "003", title: "Simplicidade intencional", desc: "Complexidade nos bastidores, clareza na interface. Tecnologia que qualquer equipe consegue usar.", features: ["Interface intuitiva e acessível", "Onboarding guiado e progressivo", "Automações invisíveis ao usuário"] },
+                            { index: "004", title: "Inovação responsável", desc: "IA e automação a serviço da sustentabilidade, com ética e privacidade como premissa.", features: ["IA explicável e auditável", "Privacidade por design (LGPD)", "Governança ética de algoritmos"] },
+                            { index: "005", title: "Parceria de longo prazo", desc: "Não vendemos software — construímos capacidade ESG dentro das organizações.", features: ["Suporte consultivo especializado", "Evolução contínua da plataforma", "Comunidade de práticas ESG"] },
                         ].map((val, idx) => (
                             <motion.div
                                 key={idx}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.4, delay: idx * 0.1 }}
-                                className="bg-white p-8 rounded-2xl border border-[#e5e7eb] hover:shadow-lg transition-all duration-300 group hover:-translate-y-1"
+                                viewport={{ once: true, margin: "-50px" }}
+                                transition={{ duration: 0.5 }}
+                                className="group relative flex flex-col bg-white p-8 md:p-10 border-b border-r border-[#e5e7eb] hover:bg-[#fafafa] transition-colors duration-300"
                             >
-                                <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-4 group-hover:bg-[#c4fca1] transition-colors">
-                                    <val.icon size={20} className="text-[#1a2421]" />
-                                </div>
-                                <h3 className="text-xl font-bold text-[#1a2421] mb-3">{val.title}</h3>
-                                <p className="text-gray-600 text-sm leading-relaxed">{val.desc}</p>
+                                <span className="text-xs font-mono text-[#9ca3af] mb-6 tracking-widest">{val.index}</span>
+                                <h3 className="text-2xl font-bold text-[#1a2421] tracking-tight mb-6">{val.title}</h3>
+                                <p className="text-[#4b5563] leading-relaxed mb-8">{val.desc}</p>
+                                <ul className="space-y-3 mt-auto">
+                                    {val.features.map((f, i) => (
+                                        <li key={i} className="flex items-start gap-3 text-sm text-[#4b5563]">
+                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#c4fca1] shrink-0" />
+                                            {f}
+                                        </li>
+                                    ))}
+                                </ul>
                             </motion.div>
                         ))}
                     </div>
