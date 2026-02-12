@@ -20,7 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronLeft, ChevronRight, CheckCircle, XCircle } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, CheckCircle, XCircle, Eye } from "lucide-react";
+import { UserDetailsModal } from "./UserDetailsModal";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -41,6 +42,7 @@ export function PlatformUsersTable() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [approvalFilter, setApprovalFilter] = useState("all");
   const [page, setPage] = useState(0);
+  const [detailsUser, setDetailsUser] = useState<any>(null);
   const debouncedSearch = useDebounce(search, 400);
   const queryClient = useQueryClient();
 
@@ -276,27 +278,38 @@ export function PlatformUsersTable() {
                         : "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {!isPlatformAdmin && (
+                      <div className="flex items-center justify-end gap-1">
                         <Button
-                          variant={user.is_approved ? "ghost" : "default"}
+                          variant="ghost"
                           size="sm"
-                          onClick={() => toggleApproval.mutate({ userId: user.id, approve: !user.is_approved })}
-                          disabled={toggleApproval.isPending}
+                          onClick={() => setDetailsUser(user)}
                           className="gap-1.5"
                         >
-                          {user.is_approved ? (
-                            <>
-                              <XCircle className="h-3.5 w-3.5" />
-                              Revogar
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="h-3.5 w-3.5" />
-                              Aprovar
-                            </>
-                          )}
+                          <Eye className="h-3.5 w-3.5" />
+                          Detalhes
                         </Button>
-                      )}
+                        {!isPlatformAdmin && (
+                          <Button
+                            variant={user.is_approved ? "ghost" : "default"}
+                            size="sm"
+                            onClick={() => toggleApproval.mutate({ userId: user.id, approve: !user.is_approved })}
+                            disabled={toggleApproval.isPending}
+                            className="gap-1.5"
+                          >
+                            {user.is_approved ? (
+                              <>
+                                <XCircle className="h-3.5 w-3.5" />
+                                Revogar
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                Aprovar
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -334,6 +347,23 @@ export function PlatformUsersTable() {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* User Details Modal */}
+      {detailsUser && (
+        <UserDetailsModal
+          open={!!detailsUser}
+          onOpenChange={(open) => { if (!open) setDetailsUser(null); }}
+          userId={detailsUser.id}
+          userName={detailsUser.full_name}
+          userEmail={detailsUser.email}
+          userCompany={(detailsUser.companies as any)?.name ?? "—"}
+          userJobTitle={detailsUser.job_title}
+          userIsApproved={detailsUser.is_approved}
+          userIsActive={detailsUser.is_active}
+          userCreatedAt={detailsUser.created_at}
+          userRole={detailsUser.role}
+        />
       )}
     </div>
   );

@@ -23,7 +23,7 @@ function CleanOnboardingContent() {
   const navigate = useNavigate();
   const { startTour } = useUnifiedTour();
   const { restartOnboarding } = useTutorial();
-  const { skipOnboarding, user } = useAuth();
+  const { skipOnboarding, user, isApproved } = useAuth();
   const { toast } = useToast();
   const [showValidation, setShowValidation] = useState(false);
   const [showDataSetup, setShowDataSetup] = useState(false);
@@ -102,7 +102,7 @@ function CleanOnboardingContent() {
   const handleSkipOnboarding = async () => {
     try {
       await skipOnboarding();
-      navigate('/dashboard');
+      navigate(isApproved ? '/dashboard' : '/demo', { replace: true });
     } catch (error) {
       logger.error('Error skipping onboarding', error, 'ui');
     }
@@ -149,7 +149,7 @@ function CleanOnboardingContent() {
       
       // Small delay to ensure state updates
       setTimeout(() => {
-        navigate('/dashboard', { replace: true });
+        navigate(isApproved ? '/dashboard' : '/demo', { replace: true });
       }, 500);
       
     } catch (error) {
@@ -290,7 +290,7 @@ function CleanOnboardingContent() {
       });
       
       setTimeout(() => {
-        navigate('/dashboard', { replace: true });
+        navigate(isApproved ? '/dashboard' : '/demo', { replace: true });
       }, 500);
       
     } catch (error: any) {
@@ -303,7 +303,7 @@ function CleanOnboardingContent() {
       
       // Force navigation on error
       setTimeout(() => {
-        navigate('/dashboard', { replace: true });
+        navigate(isApproved ? '/dashboard' : '/demo', { replace: true });
       }, 1000);
     }
   };
