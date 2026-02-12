@@ -1,43 +1,28 @@
 
-## Correcao: Lista de colaboradores truncada na letra J
+## Acesso condicional na pagina de Documentacao
 
-### Causa raiz
+### Comportamento desejado
 
-O Supabase/PostgREST tem um limite padrao de 1.000 linhas por requisicao. Embora o hook use `.range(0, 4999)`, o servidor pode truncar o resultado em 1.000 registros. Com ~1.891 colaboradores ativos ordenados por nome, a lista para na letra J (aproximadamente o registro 1.000).
+| Usuario | Secoes visiveis |
+|---|---|
+| Nao logado | Central de Ajuda (FAQ) + card "Precisa de ajuda?" |
+| Logado | Todas as secoes (Visao Geral, Modulos, Beneficios, Seguranca, API, FAQ) |
 
-### Correcao
+### Implementacao
 
-**Arquivo: `src/hooks/data/useCompanyEmployees.ts`**
+**Arquivo: `src/pages/Documentacao.tsx`**
 
-Substituir a busca unica por um padrao de busca recursiva em lotes (recursive batching) de 1.000 registros:
+1. Importar `supabase` de `@/integrations/supabase/client`
+2. Adicionar estado `isAuthenticated` com `useState(false)`
+3. No `useEffect`, chamar `supabase.auth.getSession()` para verificar se ha sessao ativa e escutar `onAuthStateChange` para reagir a login/logout
+4. Na sidebar, mostrar apenas o item "Central de Ajuda" e o card "Precisa de ajuda?" quando nao autenticado; mostrar todos os itens quando autenticado
+5. Na area de conteudo, renderizar as secoes condicionalmente:
+   - `overview`, `modules`, `benefits`, `security`, `api`: apenas se `isAuthenticated`
+   - `faq`: sempre visivel
 
-```typescript
-const BATCH_SIZE = 1000;
+### Detalhes tecnicos
 
-const fetchCompanyEmployees = async (companyId: string): Promise<CompanyEmployee[]> => {
-  let allData: CompanyEmployee[] = [];
-  let from = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('id, full_name, position')
-      .eq('company_id', companyId)
-      .eq('status', 'Ativo')
-      .order('full_name')
-      .range(from, from + BATCH_SIZE - 1);
-
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-
-    allData = allData.concat(data as CompanyEmployee[]);
-
-    if (data.length < BATCH_SIZE) break; // ultimo lote
-    from += BATCH_SIZE;
-  }
-
-  return allData;
-};
-```
-
-Isso busca todos os ~1.891 registros em 2 requisicoes (0-999 e 1000-1890), garantindo que a lista completa de A a Z apareca no seletor de responsavel.
+- A verificacao de autenticacao sera feita diretamente via `supabase.auth.getSession()` (sem depender do AuthContext, ja que esta e uma pagina publica)
+- O listener `onAuthStateChange` garante que a pagina reaja imediatamente se o usuario fizer login/logout em outra aba
+- A lista `sections` (usada pela sidebar) sera filtrada com base em `isAuthenticated`
+- As secoes de conteudo serao envolvidas em blocos `{isAuthenticated && (...)}` para os itens restritos
