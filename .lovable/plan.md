@@ -1,42 +1,28 @@
 
 
-# Exibir bio dos socios no hover
+# Fix: Imagem antiga do hero persistindo (cache do navegador)
 
-## Comportamento
-Quando o hover acontece em uma imagem, alem de ela expandir, um overlay escuro semitransparente aparece sobre a imagem com o nome do socio em destaque e o texto da bio. O texto aparece com uma animacao suave (fade in). Quando nao ha hover, nenhum texto e visivel.
+## Problema
+O arquivo `public/hero-img-01.png` foi substituido, mas o navegador mantem a versao antiga em cache. Como o caminho URL nao muda (`/hero-img-01.png`), o browser nao busca a nova versao.
 
-## Detalhes tecnicos
+## Solucao
+Importar a imagem da floresta diretamente como modulo no `esgAreas.ts`, usando o arquivo ja copiado em `src/assets/hero-floresta.png`. O Vite gera um hash unico no nome do arquivo no build, quebrando o cache automaticamente.
 
-### Arquivo editado
-- `src/pages/SobreNos.tsx`
+### Arquivos editados
 
-### Mudancas
+**1. `src/components/landing/heimdall/esgAreas.ts`**
+- Importar `heroImg01` de `@/assets/hero-floresta.png`
+- Substituir `"/hero-img-01.png"` pela variavel importada
 
-1. **Criar array de dados dos socios** com nome e bio para cada um dos 4 socios, substituindo o array simples de imagens por um array de objetos:
+```ts
+import heroImg01 from '@/assets/hero-floresta.png';
 
-```tsx
-const socios = [
-  { src: socio1, name: "Felipe Antunes", bio: "Empreendedor multidisciplinar com mais de 15 anos..." },
-  { src: socio2, name: "Cristiano Braga", bio: "Advogado Especializado em Propriedade Intelectual..." },
-  { src: socio3, name: "Bruno de Rosso", bio: "Engenheiro Mecanico, Mestre em engenharia..." },
-  { src: socio4, name: "Guilherme Haygert", bio: "Secretario Municipal do Meio Ambiente..." },
-]
+// No objeto do slide Ambiental:
+image: heroImg01,  // antes: "/hero-img-01.png"
 ```
 
-2. **Adicionar overlay de texto** dentro de cada div wrapper da imagem. O overlay sera um div posicionado absolutamente sobre a imagem, com fundo gradiente escuro (de baixo para cima) para legibilidade. O texto so aparece quando `hoveredIdx === idx`.
-
-3. **Estrutura do overlay**:
-   - Container com `position: relative` no wrapper
-   - Overlay com `absolute inset-0` e gradiente `bg-gradient-to-t from-black/80 via-black/40 to-transparent`
-   - Nome do socio em texto grande e bold
-   - Bio em texto menor com scroll se necessario
-   - Transicao de opacidade: `opacity-0` quando nao hovereado, `opacity-100` quando hovereado, com `transition-opacity duration-300`
-
-4. **Textos completos** dos 4 socios conforme fornecidos pelo usuario serao incluidos integralmente.
-
 ### O que nao muda
-- Logica de grid `3fr/1fr`
-- Efeito grayscale nas imagens
-- Tamanho do container (63%)
-- Animacao de transicao do grid
+- Os outros slides (hero-img-02 e hero-img-03) continuam iguais
+- Nenhuma logica do HeroSection muda
+- Layout, animacoes e comportamento permanecem identicos
 
