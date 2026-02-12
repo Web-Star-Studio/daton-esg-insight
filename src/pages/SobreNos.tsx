@@ -530,13 +530,17 @@ const SobreNos = () => {
                       }}
                     >
                       {[socio1, socio2, socio3, socio4].map((src, idx) => (
-                        <img
+                        <div
                           key={idx}
-                          src={src}
-                          alt={`Sócio ${idx + 1}`}
-                          className="w-full h-full object-cover rounded-xl grayscale"
+                          className="overflow-hidden rounded-xl cursor-pointer"
                           onMouseEnter={() => setHoveredIdx(idx)}
-                        />
+                        >
+                          <img
+                            src={src}
+                            alt={`Sócio ${idx + 1}`}
+                            className="w-full h-full object-cover grayscale"
+                          />
+                        </div>
                       ))}
                     </div>
                   </div>
