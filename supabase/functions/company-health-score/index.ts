@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in company-health-score:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Erro ao calcular health score' 
+      error: (error as Error).message || 'Erro ao calcular health score' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

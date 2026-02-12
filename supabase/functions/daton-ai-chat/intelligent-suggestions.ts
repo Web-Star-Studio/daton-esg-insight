@@ -226,7 +226,7 @@ async function generateLicenseSuggestions(
       issue_date: licenseData?.issue_date,
       expiry_date: licenseData?.expiry_date
     },
-    priority: daysUntilExpiry < 90 ? 'high' : 'medium',
+    priority: (licenseData?.expiry_date ? Math.floor((new Date(licenseData.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) < 90 : true) ? 'high' : 'medium',
     estimatedImpact: 'Mantém controle de compliance regulatório'
   });
 

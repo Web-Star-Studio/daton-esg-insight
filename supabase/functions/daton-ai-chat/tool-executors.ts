@@ -26,6 +26,7 @@ import {
   queryBankAccounts,
   analyzeFinancialTrends
 } from './financial-tool-executors.ts';
+import { getComprehensiveCompanyData } from './comprehensive-data.ts';
 
 export async function executeReadTool(
   toolName: string,
@@ -166,7 +167,7 @@ export async function executeReadTool(
     }
   } catch (error) {
     console.error(`Error executing tool ${toolName}:`, error);
-    return { error: error.message };
+    return { error: (error as Error).message };
   }
 }
 

@@ -1927,7 +1927,7 @@ ${attachmentContext}`;
       
       // VALIDATION: Ensure message is valid after tool calls
       const validMessage = ensureValidMessage(assistantMessage, {
-        hasAttachments: attachmentsContext.length > 0,
+        hasAttachments: attachmentContext.length > 0,
         hasToolCalls: true,
         currentPage
       });
@@ -1995,7 +1995,7 @@ ${attachmentContext}`;
     
     // VALIDATION: Ensure message is valid for direct response
     const validMessage = ensureValidMessage(assistantMessage, {
-      hasAttachments: attachmentsContext.length > 0,
+      hasAttachments: attachmentContext.length > 0,
       hasToolCalls: false,
       currentPage
     });
