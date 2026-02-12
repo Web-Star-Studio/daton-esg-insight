@@ -26,9 +26,6 @@ export function PublicFooter() {
             <Link to="/funcionalidades" className="block hover:text-white">
               Soluções
             </Link>
-            <Link to="/tecnologia" className="block hover:text-white">
-              Tecnologia
-            </Link>
             <Link to="/documentacao" className="block hover:text-white">
               Documentação
             </Link>

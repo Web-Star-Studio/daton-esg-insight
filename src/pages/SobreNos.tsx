@@ -19,7 +19,7 @@ const SobreNos = () => {
 
     const quickMenuLinks = [
         { label: 'Soluções', href: '/funcionalidades' },
-        { label: 'Tecnologia', href: '/tecnologia' },
+        
         { label: 'Documentação', href: '/documentacao' },
         { label: 'Sobre Nós', href: '/sobre-nos' },
         { label: 'Contato', href: '/contato' },
