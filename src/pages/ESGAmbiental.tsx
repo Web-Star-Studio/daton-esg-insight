@@ -784,8 +784,6 @@ export default function ESGAmbiental() {
         return perfModule ? <InfraPerformanceSection module={perfModule} /> : null;
       })()}
 
-      {/* Spacer before footer */}
-      <div className="py-24" />
 
       {/* --- ORIGINAL FOOTER --- */}
       <PublicFooter />
