@@ -8,6 +8,7 @@ import {
 import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
 import pilaresImg from '@/assets/pilares-esg.png';
 import soberaniaImg from '@/assets/esg-soberania.png';
+import wortonLogo from '@/assets/worton-logo.png';
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 import '@/components/landing/heimdall/heimdall.css';
 
@@ -486,8 +487,18 @@ const SobreNos = () => {
                 </div>
             </section>
 
-
-
+            {/* --- WORTON --- */}
+            <section className="py-16 px-6 bg-[#1a2421]">
+                <div className="max-w-7xl mx-auto flex flex-col items-center justify-center text-center gap-4">
+                    <p className="text-white/60 text-sm uppercase tracking-widest font-mono">Uma empresa</p>
+                    <img
+                        src={wortonLogo}
+                        alt="Worton"
+                        className="h-10"
+                        style={{ filter: "brightness(0) invert(1)" }}
+                    />
+                </div>
+            </section>
 
             <PublicFooter />
         </div>
