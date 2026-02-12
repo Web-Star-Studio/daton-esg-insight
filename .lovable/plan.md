@@ -1,40 +1,40 @@
 
 
-## Corrigir select de Responsavel nas Acoes Imediatas de NC
+## Remover links de navegacao duplicados da navbar
 
-### Problema identificado
+Os links (Solucoes, Tecnologia, Documentacao, Sobre Nos, Contato) aparecem em dois lugares:
 
-O dropdown de "Responsavel" na tela de Acoes Imediatas busca dados da tabela `profiles` (usuarios com login na plataforma), que tem apenas ~10 registros para a empresa. Porem, a empresa tem ~1.898 colaboradores na tabela `employees`.
+1. **HeimdallNavbar.tsx** - na barra superior fixa (o que aparece na screenshot)
+2. **HeroSection.tsx** - no menu hamburguer (que deve ser mantido)
 
-Resultado: apenas usuarios com conta na plataforma aparecem no select, quando o esperado e que todos os colaboradores da empresa estejam disponiveis.
+### Alteracao
 
-### Solucao
+**Arquivo: `src/components/landing/heimdall/HeimdallNavbar.tsx`**
 
-Alterar o componente `NCStage2ImmediateAction.tsx` para usar o hook `useCompanyEmployees` (que busca da tabela `employees`) em vez do `useCompanyUsers` (que busca de `profiles`).
+Remover o bloco `<nav>` inteiro (linhas 46-68) que contem os 5 links de navegacao. A navbar ficara apenas com o logo da Daton, mantendo o layout limpo ja que a navegacao esta acessivel pelo menu hamburguer no hero.
 
-O hook `useCompanyEmployees` ja existe em `src/hooks/data/useCompanyEmployees.ts` e faz exatamente o necessario: busca funcionarios ativos filtrados por `company_id` com paginacao ate 5.000 registros.
+### Correcao de build errors (edge functions)
 
-### Detalhes tecnicos
+Alem disso, os erros de build nas edge functions `company-health-score` e `daton-ai-chat` serao corrigidos:
 
-**Arquivo: `src/components/non-conformity/NCStage2ImmediateAction.tsx`**
+**`company-health-score/index.ts`** (linha 197):
+- Casting de `error` como `Error` para resolver `TS18046`
 
-1. Substituir a importacao de `useCompanyUsers` por `useCompanyEmployees` de `@/hooks/data/useCompanyEmployees`
-2. Trocar `const { data: users } = useCompanyUsers()` por `const { data: users } = useCompanyEmployees()`
-3. O campo `responsible_user_id` continua funcionando pois ambas as tabelas usam UUID como `id` e possuem `full_name`
+**`daton-ai-chat/index.ts`**:
+- Linha 1693: `toolResults` -> usar a variavel correta ja declarada no escopo
+- Linhas 1930/1998: `attachmentsContext` -> `attachmentContext` (typo)
+- Linhas 1030/1178/1943/2011: Supabase client type mismatch -> adicionar `as any` cast
 
-**Consideracao importante**: O campo na tabela `nc_immediate_actions` se chama `responsible_user_id`, indicando que originalmente referenciava `profiles.id`. Se houver foreign key constraint apontando para `profiles`, sera necessario:
-- Remover a FK constraint, ou
-- Adicionar uma coluna separada `responsible_employee_id` referenciando `employees.id`
+**`daton-ai-chat/report-actions.ts`** (linhas 131/216/260/330):
+- Casting de `error` como `Error`
 
-Vou verificar isso antes de implementar e, se necessario, ajustar o schema.
+**`daton-ai-chat/intelligent-suggestions.ts`**:
+- Linhas 54/57/63: Adicionar `|| []` fallback para parametros nullable
+- Linha 229: Declarar variavel `daysUntilExpiry` ausente
 
-**Arquivo: `src/hooks/useNonConformity.ts`**
-
-- A funcao `useCompanyUsers` exportada pode ser mantida para outros usos, mas o componente de acoes imediatas deixara de usa-la.
-
-### Impacto
-
-- O dropdown passara a listar todos os colaboradores ativos da empresa (~1.898)
-- Com muitos registros, o select pode ficar lento; considerar adicionar busca/filtro com `Command` (combobox) em vez de `Select` simples
-- Paginas que ja usam `useCompanyEmployees` continuam funcionando normalmente
+**`daton-ai-chat/tool-executors.ts`**:
+- Linha 42: Importar/declarar `getComprehensiveCompanyData`
+- Linha 169: Cast de `error`
+- Linhas 236/344/408/411: Tipar objetos de summary com `Record<string, number>`
+- Linhas 443/447/448: Tipar parametros de callbacks com `any`
 
