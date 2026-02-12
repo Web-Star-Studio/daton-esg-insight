@@ -495,7 +495,7 @@ const SobreNos = () => {
                         <img
                             src={wortonLogo}
                             alt="Worton"
-                            className="h-20 hover:opacity-80 transition-opacity"
+                            className="h-56 hover:opacity-80 transition-opacity"
                             style={{ filter: "brightness(0) invert(1)" }}
                         />
                     </a>
