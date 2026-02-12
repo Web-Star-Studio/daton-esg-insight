@@ -321,6 +321,50 @@ const AppContent = () => {
               <Route path="configuracao-organizacional" element={<LazyPageWrapper><ConfiguracaoOrganizacional /></LazyPageWrapper>} />
               <Route path="ajuda" element={<LazyPageWrapper><Ajuda /></LazyPageWrapper>} />
               <Route path="dashboard" element={<LazyPageWrapper><Dashboard /></LazyPageWrapper>} />
+              {/* Rotas faltantes - Ambiental */}
+              <Route path="monitoramento-esg" element={<LazyPageWrapper><MonitoramentoESG /></LazyPageWrapper>} />
+              <Route path="monitoramento-agua" element={<LazyPageWrapper><MonitoramentoAgua /></LazyPageWrapper>} />
+              <Route path="monitoramento-energia" element={<LazyPageWrapper><MonitoramentoEnergia /></LazyPageWrapper>} />
+              <Route path="monitoramento-emissoes" element={<LazyPageWrapper><MonitoramentoEmissoes /></LazyPageWrapper>} />
+              <Route path="monitoramento-residuos" element={<LazyPageWrapper><MonitoramentoResiduos /></LazyPageWrapper>} />
+              <Route path="inventario-gee" element={<LazyPageWrapper><InventarioGEE /></LazyPageWrapper>} />
+              <Route path="dashboard-ghg" element={<LazyPageWrapper><DashboardGHG /></LazyPageWrapper>} />
+              <Route path="projetos-carbono" element={<LazyPageWrapper><ProjetosCarbono /></LazyPageWrapper>} />
+              <Route path="residuos" element={<LazyPageWrapper><Residuos /></LazyPageWrapper>} />
+              <Route path="metas" element={<LazyPageWrapper><Metas /></LazyPageWrapper>} />
+              <Route path="metas-sustentabilidade" element={<Navigate to="/demo/metas" replace />} />
+              {/* Rotas faltantes - Governança */}
+              <Route path="governanca-esg" element={<LazyPageWrapper><GovernancaESG /></LazyPageWrapper>} />
+              <Route path="gestao-riscos" element={<LazyPageWrapper><GestaoRiscos /></LazyPageWrapper>} />
+              <Route path="compliance" element={<LazyPageWrapper><Compliance /></LazyPageWrapper>} />
+              <Route path="auditoria" element={<LazyPageWrapper><Auditoria /></LazyPageWrapper>} />
+              <Route path="gestao-stakeholders" element={<LazyPageWrapper><GestaoStakeholders /></LazyPageWrapper>} />
+              <Route path="analise-materialidade" element={<LazyPageWrapper><AnaliseMaterialidade /></LazyPageWrapper>} />
+              {/* Rotas faltantes - Financeiro */}
+              <Route path="financeiro/dashboard" element={<LazyPageWrapper><DashboardFinanceiro /></LazyPageWrapper>} />
+              <Route path="financeiro/plano-contas" element={<LazyPageWrapper><PlanoContas /></LazyPageWrapper>} />
+              <Route path="financeiro/lancamentos-contabeis" element={<LazyPageWrapper><LancamentosContabeis /></LazyPageWrapper>} />
+              <Route path="financeiro/contas-pagar" element={<LazyPageWrapper><ContasAPagar /></LazyPageWrapper>} />
+              <Route path="financeiro/contas-receber" element={<LazyPageWrapper><ContasAReceber /></LazyPageWrapper>} />
+              <Route path="financeiro/aprovacoes" element={<LazyPageWrapper><AprovacoesFinanceiras /></LazyPageWrapper>} />
+              <Route path="financeiro/esg-dashboard" element={<LazyPageWrapper><ESGFinancialDashboard /></LazyPageWrapper>} />
+              <Route path="financeiro/orcamento" element={<LazyPageWrapper><GestaoOrcamento /></LazyPageWrapper>} />
+              <Route path="financeiro/fluxo-caixa" element={<LazyPageWrapper><FluxoCaixa /></LazyPageWrapper>} />
+              <Route path="financeiro/centros-custo" element={<LazyPageWrapper><CentroCustos /></LazyPageWrapper>} />
+              <Route path="financeiro/relatorios" element={<LazyPageWrapper><RelatoriosFinanceiros /></LazyPageWrapper>} />
+              <Route path="financeiro/rentabilidade" element={<LazyPageWrapper><AnaliseRentabilidade /></LazyPageWrapper>} />
+              {/* Rotas faltantes - Dados e Relatórios */}
+              <Route path="coleta-dados" element={<LazyPageWrapper><ColetaDados /></LazyPageWrapper>} />
+              <Route path="documentos" element={<LazyPageWrapper><DocumentosHub /></LazyPageWrapper>} />
+              <Route path="relatorios-integrados" element={<LazyPageWrapper><RelatoriosIntegrados /></LazyPageWrapper>} />
+              <Route path="sdg-dashboard" element={<LazyPageWrapper><SDGDashboard /></LazyPageWrapper>} />
+              <Route path="indicadores-recomendados" element={<LazyPageWrapper><IndicadoresRecomendados /></LazyPageWrapper>} />
+              <Route path="ativos" element={<LazyPageWrapper><Ativos /></LazyPageWrapper>} />
+              {/* Rotas faltantes - Configurações */}
+              <Route path="gestao-filiais" element={<LazyPageWrapper><GestaoFiliais /></LazyPageWrapper>} />
+              <Route path="biblioteca-fatores" element={<LazyPageWrapper><BibliotecaFatores /></LazyPageWrapper>} />
+              <Route path="gestao-usuarios" element={<LazyPageWrapper><GestaoUsuarios /></LazyPageWrapper>} />
+              <Route path="formularios-customizados" element={<LazyPageWrapper><FormulariosCustomizados /></LazyPageWrapper>} />
               {/* Catch-all demo → index */}
               <Route path="*" element={<Navigate to="/demo" replace />} />
             </Route>

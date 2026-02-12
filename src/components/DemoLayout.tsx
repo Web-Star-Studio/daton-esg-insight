@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Info } from "lucide-react";
 import datonLogo from "@/assets/daton-logo-header.png";
+import { DemoDataSeeder } from "@/components/DemoDataSeeder";
 
 export function DemoLayout() {
   const navigate = useNavigate();
 
   return (
+    <DemoDataSeeder>
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-background" data-sidebar>
         <nav aria-label="Navegação principal">
@@ -43,5 +45,6 @@ export function DemoLayout() {
         </div>
       </div>
     </SidebarProvider>
+    </DemoDataSeeder>
   );
 }
