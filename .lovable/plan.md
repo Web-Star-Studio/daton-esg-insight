@@ -1,50 +1,42 @@
 
 
-# Fix: Imagens inferiores do grid nao respondem ao hover
+# Exibir bio dos socios no hover
 
-## Problema
-Quando uma imagem superior e hovereada, a linha inferior encolhe para `1fr` (cerca de 25% da altura). As imagens inferiores ficam muito finas mas ainda existem -- o problema e que o `onMouseEnter` esta diretamente no `<img>`, e quando o mouse se move para baixo, ele sai da imagem superior (resetando o grid para `1fr 1fr`) antes de chegar na imagem inferior. Isso cria uma "corrida" onde o grid reseta antes do mouse alcancar a imagem de baixo.
+## Comportamento
+Quando o hover acontece em uma imagem, alem de ela expandir, um overlay escuro semitransparente aparece sobre a imagem com o nome do socio em destaque e o texto da bio. O texto aparece com uma animacao suave (fade in). Quando nao ha hover, nenhum texto e visivel.
 
-Alem disso, cada `<img>` com `onMouseEnter` tem uma area de deteccao que depende do tamanho renderizado da imagem -- quando ela esta comprimida, a area e minuscula.
-
-## Solucao
-Envolver cada imagem em um `<div>` container que ocupe toda a celula do grid. O `onMouseEnter` vai no `<div>` em vez do `<img>`. Isso garante que a area de hover seja a celula inteira do grid (mesmo quando comprimida), nao apenas a imagem renderizada.
-
-Tambem adicionar `cursor-pointer` para feedback visual.
+## Detalhes tecnicos
 
 ### Arquivo editado
 - `src/pages/SobreNos.tsx`
 
-### Mudanca concreta
-Substituir:
+### Mudancas
+
+1. **Criar array de dados dos socios** com nome e bio para cada um dos 4 socios, substituindo o array simples de imagens por um array de objetos:
+
 ```tsx
-{[socio1, socio2, socio3, socio4].map((src, idx) => (
-  <img
-    key={idx}
-    src={src}
-    alt={`Socio ${idx + 1}`}
-    className="w-full h-full object-cover rounded-xl grayscale"
-    onMouseEnter={() => setHoveredIdx(idx)}
-  />
-))}
+const socios = [
+  { src: socio1, name: "Felipe Antunes", bio: "Empreendedor multidisciplinar com mais de 15 anos..." },
+  { src: socio2, name: "Cristiano Braga", bio: "Advogado Especializado em Propriedade Intelectual..." },
+  { src: socio3, name: "Bruno de Rosso", bio: "Engenheiro Mecanico, Mestre em engenharia..." },
+  { src: socio4, name: "Guilherme Haygert", bio: "Secretario Municipal do Meio Ambiente..." },
+]
 ```
 
-Por:
-```tsx
-{[socio1, socio2, socio3, socio4].map((src, idx) => (
-  <div
-    key={idx}
-    className="overflow-hidden rounded-xl cursor-pointer"
-    onMouseEnter={() => setHoveredIdx(idx)}
-  >
-    <img
-      src={src}
-      alt={`Socio ${idx + 1}`}
-      className="w-full h-full object-cover grayscale"
-    />
-  </div>
-))}
-```
+2. **Adicionar overlay de texto** dentro de cada div wrapper da imagem. O overlay sera um div posicionado absolutamente sobre a imagem, com fundo gradiente escuro (de baixo para cima) para legibilidade. O texto so aparece quando `hoveredIdx === idx`.
 
-O `<div>` ocupa 100% da celula do grid automaticamente, entao mesmo quando a celula esta pequena (1fr), toda a area da celula e sensivel ao hover. O `rounded-xl` e `overflow-hidden` ficam no div para manter o visual arredondado.
+3. **Estrutura do overlay**:
+   - Container com `position: relative` no wrapper
+   - Overlay com `absolute inset-0` e gradiente `bg-gradient-to-t from-black/80 via-black/40 to-transparent`
+   - Nome do socio em texto grande e bold
+   - Bio em texto menor com scroll se necessario
+   - Transicao de opacidade: `opacity-0` quando nao hovereado, `opacity-100` quando hovereado, com `transition-opacity duration-300`
+
+4. **Textos completos** dos 4 socios conforme fornecidos pelo usuario serao incluidos integralmente.
+
+### O que nao muda
+- Logica de grid `3fr/1fr`
+- Efeito grayscale nas imagens
+- Tamanho do container (63%)
+- Animacao de transicao do grid
 
