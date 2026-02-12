@@ -281,21 +281,20 @@ const SobreNos = () => {
 
             {/* --- MISSION & VISION --- */}
             <section className="py-24 px-6 max-w-7xl mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-24">
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-8 lg:gap-12 items-start">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
                     >
-                        <div className="w-12 h-12 rounded-xl bg-[#c4fca1]/20 flex items-center justify-center mb-6 text-[#15c470]">
-                            <Target size={24} />
-                        </div>
                         <h2 className="text-3xl font-bold text-[#1a2421] mb-6">Nossa Missão</h2>
                         <p className="text-lg text-gray-600 leading-relaxed">
                             Simplificar a gestão de sustentabilidade corporativa, tornando dados ESG acessíveis, acionáveis e estratégicos para organizações de qualquer porte. Acreditamos que a transparência ambiental, social e de governança não é apenas uma obrigação regulatória — é a base para empresas mais resilientes e competitivas.
                         </p>
                     </motion.div>
+
+                    <div className="hidden md:block w-px self-stretch bg-[#15c470]/30" />
 
                     <motion.div
                         initial={{ opacity: 0, x: 20 }}
@@ -303,9 +302,6 @@ const SobreNos = () => {
                         viewport={{ once: true }}
                         transition={{ duration: 0.6, delay: 0.2 }}
                     >
-                        <div className="w-12 h-12 rounded-xl bg-[#c4fca1]/20 flex items-center justify-center mb-6 text-[#15c470]">
-                            <Globe size={24} />
-                        </div>
                         <h2 className="text-3xl font-bold text-[#1a2421] mb-6">Nossa Visão</h2>
                         <p className="text-lg text-gray-600 leading-relaxed">
                             Ser a plataforma de referência em gestão ESG na América Latina, reconhecida por transformar complexidade regulatória em clareza operacional e por empoderar empresas a alcançar metas de sustentabilidade com inteligência de dados.
