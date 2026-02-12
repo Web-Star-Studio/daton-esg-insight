@@ -1,35 +1,26 @@
 
 
-# Efeito de Hover Interativo no Grid de Socios
+# Fix: Grid deve manter tamanho fixo no hover
 
-## Comportamento
-Ao passar o mouse sobre uma das 4 imagens do grid, ela cresce (ocupa ~70% do espaco) enquanto as outras 3 encolhem (~30%), mantendo o conjunto total como um quadrado. As 5 combinacoes sao: nenhum hover (4 iguais), hover no top-left, top-right, bottom-left, bottom-right -- exatamente como nos diagramas de referencia.
+## Problema
+O container do grid tem `aspect-square` que faz o grid inteiro redimensionar quando as proporcoes `3fr/1fr` mudam. O grid deveria manter seu tamanho original e apenas redistribuir o espaco interno entre as 4 imagens.
 
-## Abordagem Tecnica
-
-Substituir o `grid grid-cols-2` por um layout CSS Grid com `grid-template-rows` e `grid-template-columns` controlados por estado React (`hoveredIndex`).
-
-- **Estado default (nenhum hover)**: `grid-template-columns: 1fr 1fr` e `grid-template-rows: 1fr 1fr` -- 4 quadrados iguais.
-- **Hover no indice 0 (top-left)**: columns `3fr 1fr`, rows `3fr 1fr` -- top-left grande, os outros 3 pequenos.
-- **Hover no indice 1 (top-right)**: columns `1fr 3fr`, rows `3fr 1fr`.
-- **Hover no indice 2 (bottom-left)**: columns `3fr 1fr`, rows `1fr 3fr`.
-- **Hover no indice 3 (bottom-right)**: columns `1fr 3fr`, rows `1fr 3fr`.
-
-A transicao sera suave com `transition: grid-template-rows 0.4s, grid-template-columns 0.4s` via style inline.
+## Solucao
+Remover `aspect-square` do container externo e definir uma altura fixa para o grid. O container do grid precisa de dimensoes fixas para que o CSS Grid apenas redistribua o espaco interno sem alterar o tamanho total.
 
 ### Arquivo editado
 - `src/pages/SobreNos.tsx`
 
-### Detalhes
-- Adicionar `useState<number | null>(null)` para `hoveredIndex`
-- Cada imagem recebe `onMouseEnter={() => setHoveredIndex(idx)}` e o container `onMouseLeave={() => setHoveredIndex(null)}`
-- O `aspect-square` sera removido das imagens individuais -- o aspecto quadrado do conjunto sera mantido pelo container com `aspect-square`
-- As imagens usarao `w-full h-full object-cover` para preencher suas celulas
-- Transicao CSS de 400ms ease para um efeito fluido
-- Em mobile, o efeito permanece funcional (touch) sem quebrar o layout
+### Mudancas
+1. Remover `aspect-square` do div container externo (`md:w-[70%]`)
+2. Adicionar uma altura fixa ao grid interno, por exemplo `h-[500px]` ou usar `aspect-square` no container externo mas com `overflow-hidden` -- na verdade, o correto e manter `aspect-square` no container externo mas garantir que o grid interno use `w-full h-full` sem que o container mude de tamanho
+3. O problema real: o container externo com `aspect-square` esta correto, mas o grid interno esta fazendo o container crescer. A solucao e adicionar `overflow-hidden` ao container externo para que ele mantenha suas dimensoes fixas, e o grid interno redistribua o espaco dentro dessas dimensoes fixas
 
-### O que nao muda
-- As imagens, filtro grayscale, bordas arredondadas
-- O layout 30/70 com a Worton
-- O fundo escuro da secao
+Na verdade, revisando melhor: `aspect-square` com `md:w-[70%]` define a altura com base na largura. O grid interno com `w-full h-full` deveria preencher esse espaco. O problema pode ser que o grid esta empurrando o container. A solucao e garantir que o container externo tenha dimensoes fixas e o grid nao o expanda.
 
+### Correcao concreta
+- No div externo (`md:w-[70%] aspect-square`): adicionar `overflow-hidden` para conter o grid
+- No div do grid (`grid w-full h-full gap-2`): esta correto, ele preenche o container
+- O `aspect-square` no container garante que ele mantem formato quadrado baseado na largura (70% do pai)
+
+Se o grid ainda crescer, a alternativa e remover `aspect-square` e usar uma altura calculada via CSS (`aspect-ratio: 1/1` no style inline) junto com `overflow-hidden`.
