@@ -1,42 +1,36 @@
 
+# Adicionar destaque "Uma empresa Worton" na pagina /sobre-nos
 
-# Reorganizar seções em /ambiental e /sobre-nos
+## O que sera feito
 
-## Alteracoes
+Adicionar uma secao de destaque entre a secao "Privacy" (Seus dados, sua soberania) e o Footer, informando que a Daton e uma empresa do grupo Worton. A secao tera um design elegante e minimalista, com o logo do Worton (imagem enviada) e um texto curto.
 
-### 1. ESGAmbiental.tsx - Reordenar e adicionar secao de metricas
+## Design da secao
 
-**Mover "Infraestrutura de classe mundial." para antes dos cards animados:**
-- A secao de infraestrutura (grid 2x2 + header, linhas 732-758) sera movida para logo apos o hero e antes do `<main ref={container}>` dos scroll-stack cards.
-
-**Adicionar secao de metricas (vinda de /sobre-nos) apos os cards animados:**
-- Copiar a secao "Metrics" do SobreNos.tsx (fundo escuro `#1a2421`, grid de 4 stats: "6+ Frameworks", "12+ Modulos", "< 48h Implantacao", "99.9% Disponibilidade") para o ESGAmbiental.tsx, posicionando-a entre o fim dos scroll-stack cards e a secao "Performance".
-
-**Aumentar espacamento entre "Performance" e Footer:**
-- Adicionar um espacador (ex: `mb-24` ou `py-32`) apos a secao Performance e antes do `<PublicFooter />`.
-
-**Ordem final das secoes em /ambiental:**
-```text
-Hero
-Infraestrutura de classe mundial (grid 2x2)
-Cards animados (scroll-stack)
-Metricas (barra escura com 4 stats - movida de /sobre-nos)
-Performance
-[espacamento extra]
-Footer
-```
-
-### 2. SobreNos.tsx - Remover secao de metricas
-
-- Remover a secao "Metrics" (linhas 413-431) que contem o grid de 4 stats com fundo escuro.
-- Aumentar o espacamento entre a secao "Pillars" e a secao "Why Daton" que ficam adjacentes apos a remocao.
+- Fundo escuro (`bg-[#1a2421]`) para contrastar com a secao clara acima e o footer
+- Layout centralizado com o logo Worton (filtro `brightness(0) invert(1)` para ficar branco) ao lado do texto "Daton e uma empresa"
+- Texto em branco/cinza claro, tipografia elegante
+- Padding generoso (`py-16`) para dar respiro
 
 ## Detalhes tecnicos
 
-**Dados da secao de metricas a copiar:**
-- Array inline com 4 itens: `{ value: "6+", label: "Frameworks suportados", desc: "GRI, SASB, CDP, TCFD..." }`, etc.
-- Estilo: `bg-[#1a2421]`, texto branco, valores em `text-[#c4fca1]`, grid `grid-cols-2 md:grid-cols-4` com `divide-x divide-white/10`
+**Arquivo modificado:** `src/pages/SobreNos.tsx`
 
-**Arquivos modificados:**
-- `src/pages/ESGAmbiental.tsx` - reordenar secoes e adicionar metricas
-- `src/pages/SobreNos.tsx` - remover secao de metricas
+1. Copiar a imagem do logo Worton para `src/assets/worton-logo.png`
+2. Importar o logo no componente
+3. Inserir nova secao entre a secao "Privacy" (linha 487) e o `<PublicFooter />` (linha 492):
+
+```tsx
+{/* --- WORTON --- */}
+<section className="py-16 px-6 bg-[#1a2421]">
+  <div className="max-w-7xl mx-auto flex flex-col items-center justify-center text-center gap-4">
+    <p className="text-white/60 text-sm uppercase tracking-widest font-mono">Uma empresa</p>
+    <img
+      src={wortonLogo}
+      alt="Worton"
+      className="h-10"
+      style={{ filter: "brightness(0) invert(1)" }}
+    />
+  </div>
+</section>
+```
