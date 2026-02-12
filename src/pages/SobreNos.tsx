@@ -339,7 +339,6 @@ const SobreNos = () => {
                             { index: "002", title: "Impacto mensurável", desc: "Cada funcionalidade existe para gerar resultado concreto — não apenas relatórios.", features: ["KPIs acionáveis e contextuais", "Dashboards com metas tangíveis", "Relatórios orientados a resultado"] },
                             { index: "003", title: "Simplicidade intencional", desc: "Complexidade nos bastidores, clareza na interface. Tecnologia que qualquer equipe consegue usar.", features: ["Interface intuitiva e acessível", "Onboarding guiado e progressivo", "Automações invisíveis ao usuário"] },
                             { index: "004", title: "Inovação responsável", desc: "IA e automação a serviço da sustentabilidade, com ética e privacidade como premissa.", features: ["IA explicável e auditável", "Privacidade por design (LGPD)", "Governança ética de algoritmos"] },
-                            { index: "005", title: "Parceria de longo prazo", desc: "Não vendemos software — construímos capacidade ESG dentro das organizações.", features: ["Suporte consultivo especializado", "Evolução contínua da plataforma", "Comunidade de práticas ESG"] },
                         ].map((val, idx) => (
                             <motion.div
                                 key={idx}
