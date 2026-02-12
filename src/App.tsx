@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { ENABLED_MODULES } from "@/config/enabledModules";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DemoProvider } from "@/contexts/DemoContext";
@@ -955,6 +956,7 @@ const App = () => (
                       v7_relativeSplatPath: true
                     }}
                   >
+                    <ScrollToTop />
                     <SmoothScroll>
                       <AppContent />
                     </SmoothScroll>
