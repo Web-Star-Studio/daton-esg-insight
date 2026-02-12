@@ -5,6 +5,7 @@ import { PlatformUsersTable } from "@/components/platform/PlatformUsersTable";
 import { usePlatformAnalytics } from "@/hooks/usePlatformAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ModuleSettingsPanel } from "@/components/platform/ModuleSettingsPanel";
 
 export default function PlatformAdminDashboard() {
   const { data: analytics, isLoading } = usePlatformAnalytics('30d');
@@ -85,6 +86,7 @@ export default function PlatformAdminDashboard() {
         <TabsList>
           <TabsTrigger value="empresas">Empresas</TabsTrigger>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+          <TabsTrigger value="modulos">Módulos</TabsTrigger>
         </TabsList>
         <TabsContent value="empresas">
           <Card>
@@ -103,6 +105,16 @@ export default function PlatformAdminDashboard() {
             </CardHeader>
             <CardContent>
               <PlatformUsersTable />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="modulos">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuração de Módulos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ModuleSettingsPanel />
             </CardContent>
           </Card>
         </TabsContent>
