@@ -1,46 +1,35 @@
 
 
-# Grid de Socios na Secao Worton
+# Efeito de Hover Interativo no Grid de Socios
 
-## O que muda
-A secao "Uma empresa Worton" sera reorganizada em um layout lado a lado: o conjunto texto + logo Worton ficara a esquerda (30% da largura) e um grid 2x2 com as fotos dos 4 socios ficara a direita (70% da largura).
+## Comportamento
+Ao passar o mouse sobre uma das 4 imagens do grid, ela cresce (ocupa ~70% do espaco) enquanto as outras 3 encolhem (~30%), mantendo o conjunto total como um quadrado. As 5 combinacoes sao: nenhum hover (4 iguais), hover no top-left, top-right, bottom-left, bottom-right -- exatamente como nos diagramas de referencia.
 
-## Layout
+## Abordagem Tecnica
 
-```text
-+----------- max-w-7xl -----------+
-|  30%          |      70%        |
-| "Uma empresa" |  [foto] [foto]  |
-|  [Worton logo] |  [foto] [foto]  |
-|               |                 |
-+---------------------------------+
-```
+Substituir o `grid grid-cols-2` por um layout CSS Grid com `grid-template-rows` e `grid-template-columns` controlados por estado React (`hoveredIndex`).
 
-- As 4 fotos serao exibidas em um grid 2x2 com gap entre elas
-- Todas as imagens terao filtro CSS `grayscale(100%)` para preto e branco
-- As fotos terao bordas arredondadas e aspect-ratio quadrado com `object-cover`
-- Em telas menores (mobile), o layout empilhara verticalmente: logo em cima, grid embaixo
+- **Estado default (nenhum hover)**: `grid-template-columns: 1fr 1fr` e `grid-template-rows: 1fr 1fr` -- 4 quadrados iguais.
+- **Hover no indice 0 (top-left)**: columns `3fr 1fr`, rows `3fr 1fr` -- top-left grande, os outros 3 pequenos.
+- **Hover no indice 1 (top-right)**: columns `1fr 3fr`, rows `3fr 1fr`.
+- **Hover no indice 2 (bottom-left)**: columns `3fr 1fr`, rows `1fr 3fr`.
+- **Hover no indice 3 (bottom-right)**: columns `1fr 3fr`, rows `1fr 3fr`.
 
-## Detalhes Tecnicos
-
-### Assets
-- Copiar as 4 imagens dos socios para `src/assets/`:
-  - `socio-1.jpeg` (WhatsApp_Image_2026-02-12_at_18.26.57.jpeg)
-  - `socio-2.jpeg` (WhatsApp_Image_2026-02-12_at_18.21.21.jpeg)
-  - `socio-3.jpeg` (WhatsApp_Image_2026-02-12_at_18.21.21_1.jpeg)
-  - `socio-4.jpeg` (WhatsApp_Image_2026-02-12_at_18.21.03.jpeg)
+A transicao sera suave com `transition: grid-template-rows 0.4s, grid-template-columns 0.4s` via style inline.
 
 ### Arquivo editado
 - `src/pages/SobreNos.tsx`
 
-### Mudancas no JSX
-- Substituir o `flex justify-center` atual por `flex flex-col md:flex-row items-center`
-- Lado esquerdo (30%): manter o bloco "Uma empresa" + logo Worton com `md:w-[30%]`
-- Lado direito (70%): novo `md:w-[70%]` contendo um `grid grid-cols-2 gap-4`
-- Cada celula do grid tera a foto do socio com `className="grayscale"` do Tailwind, `rounded-xl`, e `object-cover` com aspect-ratio quadrado
+### Detalhes
+- Adicionar `useState<number | null>(null)` para `hoveredIndex`
+- Cada imagem recebe `onMouseEnter={() => setHoveredIndex(idx)}` e o container `onMouseLeave={() => setHoveredIndex(null)}`
+- O `aspect-square` sera removido das imagens individuais -- o aspecto quadrado do conjunto sera mantido pelo container com `aspect-square`
+- As imagens usarao `w-full h-full object-cover` para preencher suas celulas
+- Transicao CSS de 400ms ease para um efeito fluido
+- Em mobile, o efeito permanece funcional (touch) sem quebrar o layout
 
 ### O que nao muda
-- O fundo `bg-[#1a2421]` da secao
-- O link da Worton para `https://www.worton.com.br/`
-- O texto "Uma empresa" com seu posicionamento
-- O filtro de inversao do logo Worton
+- As imagens, filtro grayscale, bordas arredondadas
+- O layout 30/70 com a Worton
+- O fundo escuro da secao
+
