@@ -7,20 +7,41 @@ import {
 import { FAQ_categories } from '@/data/faqs';
 import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
+import { supabase } from '@/integrations/supabase/client';
 import '@/components/landing/heimdall/heimdall.css';
 
 const Documentacao = () => {
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState('faq');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const sections = [
+  // Check auth state
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+      if (session) setActiveSection('overview');
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+      if (session) setActiveSection('overview');
+      else setActiveSection('faq');
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const allSections = [
     { id: 'overview', title: 'Visão Geral', icon: FileText },
     { id: 'modules', title: 'Módulos', icon: Layers },
-
     { id: 'benefits', title: 'Benefícios', icon: Target },
     { id: 'security', title: 'Segurança', icon: Shield },
     { id: 'api', title: 'API & Dev', icon: Cpu },
     { id: 'faq', title: 'Central de Ajuda', icon: HelpCircle },
   ];
+
+  const sections = isAuthenticated
+    ? allSections
+    : allSections.filter(s => s.id === 'faq');
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
@@ -163,142 +184,142 @@ const Documentacao = () => {
         {/* --- CONTENT AREA --- */}
         <div className="flex-1 space-y-24">
 
-          {/* VISÃO GERAL */}
-          <section id="overview" className="scroll-mt-32">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-[#1a2421] mb-4">Visão Geral</h2>
-              <p className="text-lg text-gray-600 leading-relaxed">
-                Daton é a plataforma ESG (Environmental, Social & Governance) enterprise-grade que unifica a gestão de sustentabilidade.
-                Projetada para escala, segurança e conformidade automática.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { icon: Clock, label: "Eficiência", title: "70% menos tempo", desc: "em relatórios e coletas de dados manuais." },
-                { icon: CheckCircle, label: "Precisão", title: "99.9% Compliance", desc: "com normas locais e globais (GRI, SASB)." },
-                { icon: Zap, label: "Velocidade", title: "Setup em 15min", desc: "para criar sua primeira conta e dashboard." },
-              ].map((item, idx) => (
-                <div key={idx} className="p-6 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb] hover:border-[#15c470]/50 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-white border border-[#e5e7eb] flex items-center justify-center mb-4 text-[#15c470]">
-                    <item.icon size={20} />
-                  </div>
-                  <span className="text-xs font-mono font-bold text-gray-400 uppercase tracking-widest">{item.label}</span>
-                  <h3 className="text-xl font-bold text-[#1a2421] mt-1 mb-2">{item.title}</h3>
-                  <p className="text-sm text-gray-500">{item.desc}</p>
+          {/* VISÃO GERAL - apenas logado */}
+          {isAuthenticated && (
+            <>
+              <section id="overview" className="scroll-mt-32">
+                <div className="mb-8">
+                  <h2 className="text-3xl font-bold text-[#1a2421] mb-4">Visão Geral</h2>
+                  <p className="text-lg text-gray-600 leading-relaxed">
+                    Daton é a plataforma ESG (Environmental, Social & Governance) enterprise-grade que unifica a gestão de sustentabilidade.
+                    Projetada para escala, segurança e conformidade automática.
+                  </p>
                 </div>
-              ))}
-            </div>
-          </section>
 
-          {/* MÓDULOS */}
-          <section id="modules" className="scroll-mt-32">
-            <h2 className="text-3xl font-bold text-[#1a2421] mb-8">Módulos Essenciais</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                {
-                  title: "Gestão de Emissões GEE",
-                  icon: Globe,
-                  features: ["Escopos 1, 2 e 3 automático", "Biblioteca de fatores DEFRA/IPCC", "Inventário em tempo real"]
-                },
-                {
-                  title: "Compliance & Licenças",
-                  icon: Shield,
-                  features: ["Monitoramento de condicionantes", "Alertas de vencimento", "Rastro de auditoria"]
-                },
-                {
-                  title: "Inteligência Artificial",
-                  icon: Cpu,
-                  features: ["OCR de faturas de energia", "Predição de riscos climáticos", "Assistente jurídico"]
-                },
-                {
-                  title: "Supply Chain",
-                  icon: Users,
-                  features: ["Homologação de fornecedores", "Scorecard ESG", "Portal do fornecedor"]
-                }
-              ].map((mod, idx) => (
-                <div key={idx} className="group p-8 rounded-2xl border border-[#e5e7eb] bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-gray-50 rounded-xl group-hover:bg-[#c4fca1] transition-colors">
-                      <mod.icon size={24} className="text-[#1a2421]" />
-                    </div>
-                    <h3 className="text-xl font-bold text-[#1a2421]">{mod.title}</h3>
-                  </div>
-                  <ul className="space-y-3">
-                    {mod.features.map((feat, i) => (
-                      <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
-                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#15c470] shrink-0" />
-                        {feat}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </section>
-
-
-
-          {/* BENEFÍCIOS */}
-          <section id="benefits" className="scroll-mt-32">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-[#1a2421]">Impacto Real</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#e5e7eb] border border-[#e5e7eb] rounded-2xl overflow-hidden shadow-sm">
-              {[
-                { title: "Automação", desc: "Coleta automática de dados via APIs e integradores." },
-                { title: "Auditoria", desc: "Histórico imutável de todas as ações na plataforma." },
-                { title: "Reporte", desc: "Relatórios prontos para investidores e stakeholders." }
-              ].map((item, idx) => (
-                <div key={idx} className="bg-white p-8 hover:bg-gray-50 transition-colors">
-                  <h3 className="text-lg font-bold text-[#1a2421] mb-2">{item.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* SEGURANÇA */}
-          <section id="security" className="scroll-mt-32">
-            <h2 className="text-3xl font-bold text-[#1a2421] mb-8">Segurança de Dados</h2>
-            <div className="p-8 rounded-2xl border border-[#e5e7eb] bg-[#f8fafc]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <ul className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {[
-                    "Criptografia AES-256 em repouso",
-                    "TLS 1.3 para dados em trânsito",
-                    "Autenticação Multi-fator (MFA)",
-                    "Backups automáticos diários"
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center gap-3 text-[#1a2421] font-medium">
-                      <Shield size={18} className="text-[#15c470]" />
-                      {item}
-                    </li>
+                    { icon: Clock, label: "Eficiência", title: "70% menos tempo", desc: "em relatórios e coletas de dados manuais." },
+                    { icon: CheckCircle, label: "Precisão", title: "99.9% Compliance", desc: "com normas locais e globais (GRI, SASB)." },
+                    { icon: Zap, label: "Velocidade", title: "Setup em 15min", desc: "para criar sua primeira conta e dashboard." },
+                  ].map((item, idx) => (
+                    <div key={idx} className="p-6 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb] hover:border-[#15c470]/50 transition-colors">
+                      <div className="w-10 h-10 rounded-full bg-white border border-[#e5e7eb] flex items-center justify-center mb-4 text-[#15c470]">
+                        <item.icon size={20} />
+                      </div>
+                      <span className="text-xs font-mono font-bold text-gray-400 uppercase tracking-widest">{item.label}</span>
+                      <h3 className="text-xl font-bold text-[#1a2421] mt-1 mb-2">{item.title}</h3>
+                      <p className="text-sm text-gray-500">{item.desc}</p>
+                    </div>
                   ))}
-                </ul>
-                <div className="space-y-4">
-                  <h4 className="font-bold text-[#1a2421]">Certificações & Compliance</h4>
-                  <div className="flex flex-wrap gap-3">
-                    <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">ISO 27001 Ready</span>
-                    <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">LGPD</span>
-                    <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">SOC 2 Type II</span>
+                </div>
+              </section>
+
+              {/* MÓDULOS */}
+              <section id="modules" className="scroll-mt-32">
+                <h2 className="text-3xl font-bold text-[#1a2421] mb-8">Módulos Essenciais</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    {
+                      title: "Gestão de Emissões GEE",
+                      icon: Globe,
+                      features: ["Escopos 1, 2 e 3 automático", "Biblioteca de fatores DEFRA/IPCC", "Inventário em tempo real"]
+                    },
+                    {
+                      title: "Compliance & Licenças",
+                      icon: Shield,
+                      features: ["Monitoramento de condicionantes", "Alertas de vencimento", "Rastro de auditoria"]
+                    },
+                    {
+                      title: "Inteligência Artificial",
+                      icon: Cpu,
+                      features: ["OCR de faturas de energia", "Predição de riscos climáticos", "Assistente jurídico"]
+                    },
+                    {
+                      title: "Supply Chain",
+                      icon: Users,
+                      features: ["Homologação de fornecedores", "Scorecard ESG", "Portal do fornecedor"]
+                    }
+                  ].map((mod, idx) => (
+                    <div key={idx} className="group p-8 rounded-2xl border border-[#e5e7eb] bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="p-3 bg-gray-50 rounded-xl group-hover:bg-[#c4fca1] transition-colors">
+                          <mod.icon size={24} className="text-[#1a2421]" />
+                        </div>
+                        <h3 className="text-xl font-bold text-[#1a2421]">{mod.title}</h3>
+                      </div>
+                      <ul className="space-y-3">
+                        {mod.features.map((feat, i) => (
+                          <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
+                            <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#15c470] shrink-0" />
+                            {feat}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* BENEFÍCIOS */}
+              <section id="benefits" className="scroll-mt-32">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-3xl font-bold text-[#1a2421]">Impacto Real</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#e5e7eb] border border-[#e5e7eb] rounded-2xl overflow-hidden shadow-sm">
+                  {[
+                    { title: "Automação", desc: "Coleta automática de dados via APIs e integradores." },
+                    { title: "Auditoria", desc: "Histórico imutável de todas as ações na plataforma." },
+                    { title: "Reporte", desc: "Relatórios prontos para investidores e stakeholders." }
+                  ].map((item, idx) => (
+                    <div key={idx} className="bg-white p-8 hover:bg-gray-50 transition-colors">
+                      <h3 className="text-lg font-bold text-[#1a2421] mb-2">{item.title}</h3>
+                      <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* SEGURANÇA */}
+              <section id="security" className="scroll-mt-32">
+                <h2 className="text-3xl font-bold text-[#1a2421] mb-8">Segurança de Dados</h2>
+                <div className="p-8 rounded-2xl border border-[#e5e7eb] bg-[#f8fafc]">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <ul className="space-y-4">
+                      {[
+                        "Criptografia AES-256 em repouso",
+                        "TLS 1.3 para dados em trânsito",
+                        "Autenticação Multi-fator (MFA)",
+                        "Backups automáticos diários"
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-center gap-3 text-[#1a2421] font-medium">
+                          <Shield size={18} className="text-[#15c470]" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-[#1a2421]">Certificações & Compliance</h4>
+                      <div className="flex flex-wrap gap-3">
+                        <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">ISO 27001 Ready</span>
+                        <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">LGPD</span>
+                        <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">SOC 2 Type II</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </section>
+              </section>
 
-          {/* API */}
-          <section id="api" className="scroll-mt-32">
-            <h2 className="text-3xl font-bold text-[#1a2421] mb-8">API & Desenvolvedores</h2>
-            <div className="prose prose-gray max-w-none">
-              <p className="text-gray-600 mb-6">
-                A plataforma Daton segue uma abordagem <strong>API-First</strong>. Tudo o que você vê no dashboard está disponível via API.
-              </p>
-              <div className="bg-[#1e293b] rounded-xl p-6 overflow-x-auto text-sm">
-                <code className="text-blue-300">GET</code> <code className="text-gray-300">https://api.daton.app/v1/emissions/summary</code>
-                <pre className="mt-4 text-gray-400 font-mono">
-                  {`{
+              {/* API */}
+              <section id="api" className="scroll-mt-32">
+                <h2 className="text-3xl font-bold text-[#1a2421] mb-8">API & Desenvolvedores</h2>
+                <div className="prose prose-gray max-w-none">
+                  <p className="text-gray-600 mb-6">
+                    A plataforma Daton segue uma abordagem <strong>API-First</strong>. Tudo o que você vê no dashboard está disponível via API.
+                  </p>
+                  <div className="bg-[#1e293b] rounded-xl p-6 overflow-x-auto text-sm">
+                    <code className="text-blue-300">GET</code> <code className="text-gray-300">https://api.daton.app/v1/emissions/summary</code>
+                    <pre className="mt-4 text-gray-400 font-mono">
+                      {`{
   "company_id": "acc_123456",
   "period": "2024-Q1",
   "total_co2e": 1250.5,
@@ -308,15 +329,17 @@ const Documentacao = () => {
     "scope_3": 500.3
   }
 }`}
-                </pre>
-              </div>
-              <div className="mt-6">
-                <button className="inline-flex items-center gap-2 text-[#15c470] font-bold hover:underline">
-                  Ver Documentação Completa da API <ArrowRight size={16} />
-                </button>
-              </div>
-            </div>
-          </section>
+                    </pre>
+                  </div>
+                  <div className="mt-6">
+                    <button className="inline-flex items-center gap-2 text-[#15c470] font-bold hover:underline">
+                      Ver Documentação Completa da API <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
 
           {/* FAQ */}
           <section id="faq" className="scroll-mt-32">
