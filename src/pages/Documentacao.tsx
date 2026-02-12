@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FileText, Zap, Shield, Target, Users, Cpu, Globe, TrendingUp,
@@ -170,9 +171,9 @@ const Documentacao = () => {
             <div className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb]">
               <h4 className="font-bold text-[#1a2421] mb-2">Precisa de ajuda?</h4>
               <p className="text-sm text-gray-500 mb-4">Nossa equipe de suporte técnico está disponível 24/7.</p>
-              <button className="w-full py-2 px-4 bg-white border border-[#e5e7eb] rounded-lg text-sm font-medium text-[#1a2421] hover:bg-[#e5e7eb] transition-colors shadow-sm">
+              <Link to="/contato" className="w-full py-2 px-4 bg-white border border-[#e5e7eb] rounded-lg text-sm font-medium text-[#1a2421] hover:bg-[#e5e7eb] transition-colors shadow-sm block text-center">
                 Contatar Suporte
-              </button>
+              </Link>
             </div>
           </div>
         </aside>
