@@ -712,23 +712,6 @@ export default function ESGAmbiental() {
         </div>
       </section>
 
-      {/* --- MAIN SCROLL CONTENT --- */}
-      <main ref={container} className="relative mt-[50px] mb-[100px]">
-        {MODULES.map((module, i) => {
-          const targetScale = 1 - (MODULES.length - i) * 0.05;
-          return (
-            <Card
-              key={module.id}
-              i={i}
-              module={module}
-              progress={scrollYProgress}
-              range={[i * 0.25, 1]}
-              targetScale={targetScale}
-            />
-          );
-        })}
-      </main>
-
       {/* --- INFRAESTRUTURA SECTION --- */}
       <main className="max-w-7xl mx-auto px-6 py-24">
         <div className="mb-20">
@@ -758,11 +741,51 @@ export default function ESGAmbiental() {
         </div>
       </main>
 
+      {/* --- MAIN SCROLL CONTENT --- */}
+      <main ref={container} className="relative mt-[50px] mb-[100px]">
+        {MODULES.map((module, i) => {
+          const targetScale = 1 - (MODULES.length - i) * 0.05;
+          return (
+            <Card
+              key={module.id}
+              i={i}
+              module={module}
+              progress={scrollYProgress}
+              range={[i * 0.25, 1]}
+              targetScale={targetScale}
+            />
+          );
+        })}
+      </main>
+
+      {/* --- METRICS SECTION (from SobreNos) --- */}
+      <section className="py-20 bg-[#1a2421] text-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 text-center divide-x divide-white/10">
+            {[
+              { value: "6+", label: "Frameworks suportados", desc: "GRI, SASB, CDP, TCFD..." },
+              { value: "12+", label: "Módulos integrados", desc: "ESG, SGQ, RH, Financeiro..." },
+              { value: "< 48h", label: "Tempo de implantação", desc: "Do cadastro ao dashboard" },
+              { value: "99.9%", label: "Disponibilidade", desc: "Infraestrutura cloud-native" },
+            ].map((stat, idx) => (
+              <div key={idx} className={`px-4 ${idx === 0 ? 'border-none' : ''}`}>
+                <div className="text-4xl md:text-5xl font-bold text-[#c4fca1] mb-2">{stat.value}</div>
+                <div className="font-bold text-lg mb-1">{stat.label}</div>
+                <div className="text-sm text-gray-400">{stat.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* --- PERFORMANCE SECTION --- */}
       {(() => {
         const perfModule = INFRA_MODULES.find(m => m.id === "performance");
         return perfModule ? <InfraPerformanceSection module={perfModule} /> : null;
       })()}
+
+      {/* Spacer before footer */}
+      <div className="py-24" />
 
       {/* --- ORIGINAL FOOTER --- */}
       <PublicFooter />
