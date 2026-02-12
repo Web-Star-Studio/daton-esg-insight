@@ -512,7 +512,7 @@ const SobreNos = () => {
 
                   {/* Right: Partners grid (70%) */}
                   <div
-                    className="md:w-[70%] aspect-square"
+                    className="md:w-[70%] aspect-square overflow-hidden"
                     onMouseLeave={() => setHoveredIdx(null)}
                   >
                     <div
