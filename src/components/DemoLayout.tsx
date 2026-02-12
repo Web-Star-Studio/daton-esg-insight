@@ -5,10 +5,14 @@ import { AppHeader } from "@/components/AppHeader";
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
 import { Info } from "lucide-react";
 import { DemoDataSeeder } from "@/components/DemoDataSeeder";
+import { TutorialProvider } from "@/contexts/TutorialContext";
+import { UnifiedTourProvider } from "@/contexts/UnifiedTourContext";
 
 export function DemoLayout() {
   return (
     <DemoDataSeeder>
+    <TutorialProvider>
+    <UnifiedTourProvider>
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-background" data-sidebar>
         <nav aria-label="Navegação principal">
@@ -33,6 +37,8 @@ export function DemoLayout() {
         </div>
       </div>
     </SidebarProvider>
+    </UnifiedTourProvider>
+    </TutorialProvider>
     </DemoDataSeeder>
   );
 }
