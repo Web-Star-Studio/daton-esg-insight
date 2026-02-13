@@ -512,4 +512,8 @@
   .hero-section-root {
     padding-bottom: clamp(10rem, 24vh, 16rem) !important;
   }
+  .lumine-btn-primary {
+    font-size: clamp(0.7rem, 2.8vw, 0.85rem);
+    white-space: nowrap;
+  }
 }
