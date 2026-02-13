@@ -214,12 +214,12 @@ export default function SupplierImportExportPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'suppliers' | 'documents')}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="suppliers" className="flex items-center gap-2">
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="suppliers" className="min-w-fit shrink-0 flex items-center gap-2">
             <Users className="h-4 w-4" />
             Fornecedores
           </TabsTrigger>
-          <TabsTrigger value="documents" className="flex items-center gap-2">
+          <TabsTrigger value="documents" className="min-w-fit shrink-0 flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Documentos Obrigatórios
           </TabsTrigger>
