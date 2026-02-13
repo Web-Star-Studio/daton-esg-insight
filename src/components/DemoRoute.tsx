@@ -8,7 +8,7 @@ interface DemoRouteProps {
 }
 
 export function DemoRoute({ children }: DemoRouteProps) {
-  const { user, isLoading, isApproved } = useAuth();
+  const { user, isLoading, isApproved, shouldShowOnboarding } = useAuth();
 
   if (isLoading) {
     return (
@@ -33,6 +33,11 @@ export function DemoRoute({ children }: DemoRouteProps) {
   // Already approved → go to main dashboard
   if (isApproved) {
     return <Navigate to="/" replace />;
+  }
+
+  // Must complete onboarding before accessing demo
+  if (shouldShowOnboarding) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   // Authenticated but not approved → show demo
