@@ -200,11 +200,11 @@ export default function ConfiguracaoOrganizacional() {
         </div>
 
         <Tabs defaultValue="basico" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="basico">Informações Básicas</TabsTrigger>
-            <TabsTrigger value="estrutura">Estrutura Organizacional</TabsTrigger>
-            <TabsTrigger value="escopo">Escopo de Relato</TabsTrigger>
-            <TabsTrigger value="financeiro">Dados Financeiros</TabsTrigger>
+          <TabsList className="flex w-full overflow-x-auto">
+            <TabsTrigger value="basico" className="min-w-fit shrink-0">Informações Básicas</TabsTrigger>
+            <TabsTrigger value="estrutura" className="min-w-fit shrink-0">Estrutura Organizacional</TabsTrigger>
+            <TabsTrigger value="escopo" className="min-w-fit shrink-0">Escopo de Relato</TabsTrigger>
+            <TabsTrigger value="financeiro" className="min-w-fit shrink-0">Dados Financeiros</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basico" className="space-y-6">
