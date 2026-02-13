@@ -590,8 +590,8 @@ export default function ESGAmbiental() {
           ref={actionBarRef}
           style={{
             position: "absolute",
-            bottom: "4vh",
-            right: "max(2vw, 1rem)",
+            bottom: "2vh",
+            right: "max(1vw, 0.5rem)",
             zIndex: 10,
             display: "flex",
             flexDirection: "column",
