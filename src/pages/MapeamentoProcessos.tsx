@@ -258,19 +258,19 @@ const MapeamentoProcessos = () => {
 
       <Tabs defaultValue="processes" className="w-full">
         <TabsList className="flex w-full overflow-x-auto">
-          <TabsTrigger value="processes" className="min-w-fit gap-2">
+          <TabsTrigger value="processes" className="min-w-fit shrink-0 gap-2">
             <Map className="h-4 w-4" />
             Processos
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="min-w-fit gap-2">
+          <TabsTrigger value="analytics" className="min-w-fit shrink-0 gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
           </TabsTrigger>
-          <TabsTrigger value="methodology" className="min-w-fit gap-2">
+          <TabsTrigger value="methodology" className="min-w-fit shrink-0 gap-2">
             <Target className="h-4 w-4" />
             Metodologia
           </TabsTrigger>
-          <TabsTrigger value="integration" className="min-w-fit gap-2">
+          <TabsTrigger value="integration" className="min-w-fit shrink-0 gap-2">
             <Network className="h-4 w-4" />
             Integração
           </TabsTrigger>
