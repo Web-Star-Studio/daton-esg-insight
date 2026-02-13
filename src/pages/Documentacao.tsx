@@ -162,13 +162,12 @@ const Documentacao = () => {
         {/* Bottom Right Action Bar (Hamburger Menu) */}
         <div
           ref={actionBarRef}
-          className="absolute bottom-[4vh] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-[max(4vw,2rem)]"
+          className="absolute bottom-[4vh] left-1/2 -translate-x-1/2 w-[90vw] md:w-fit md:left-auto md:translate-x-0 md:right-[max(4vw,2rem)]"
           style={{
             zIndex: 10,
             display: "flex",
             flexDirection: "column",
             alignItems: "stretch",
-            width: "fit-content",
             borderRadius: "14px",
             border: "1px solid rgba(255, 255, 255, 0.35)",
             background: "rgba(0, 0, 0, 0.32)",
