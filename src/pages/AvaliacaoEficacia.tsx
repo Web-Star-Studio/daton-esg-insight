@@ -70,11 +70,11 @@ const AvaliacaoEficacia = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">Todos ({evaluations.length})</TabsTrigger>
-              <TabsTrigger value="pending">Pendentes ({metrics?.pending || 0})</TabsTrigger>
-              <TabsTrigger value="overdue">Atrasados ({metrics?.overdue || 0})</TabsTrigger>
-              <TabsTrigger value="evaluated">Avaliados ({metrics?.evaluated || 0})</TabsTrigger>
+            <TabsList className="flex w-full overflow-x-auto mb-4">
+              <TabsTrigger value="all" className="min-w-fit">Todos ({evaluations.length})</TabsTrigger>
+              <TabsTrigger value="pending" className="min-w-fit">Pendentes ({metrics?.pending || 0})</TabsTrigger>
+              <TabsTrigger value="overdue" className="min-w-fit">Atrasados ({metrics?.overdue || 0})</TabsTrigger>
+              <TabsTrigger value="evaluated" className="min-w-fit">Avaliados ({metrics?.evaluated || 0})</TabsTrigger>
             </TabsList>
             <TabsContent value={activeTab}>
               {isLoading ? (
