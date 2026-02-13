@@ -76,7 +76,7 @@ const LegislationsHub: React.FC = () => {
       </Helmet>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
@@ -95,7 +95,7 @@ const LegislationsHub: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Importar Excel
@@ -129,13 +129,13 @@ const LegislationsHub: React.FC = () => {
         <CardContent className="space-y-4">
           {/* Tabs by Jurisdiction */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">Todas</TabsTrigger>
-              <TabsTrigger value="federal">Federal</TabsTrigger>
-              <TabsTrigger value="estadual">Estadual</TabsTrigger>
-              <TabsTrigger value="municipal">Municipal</TabsTrigger>
-              <TabsTrigger value="nbr">NBR</TabsTrigger>
-              <TabsTrigger value="internacional">Internacional</TabsTrigger>
+            <TabsList className="flex overflow-x-auto mb-4">
+              <TabsTrigger value="all" className="min-w-fit shrink-0">Todas</TabsTrigger>
+              <TabsTrigger value="federal" className="min-w-fit shrink-0">Federal</TabsTrigger>
+              <TabsTrigger value="estadual" className="min-w-fit shrink-0">Estadual</TabsTrigger>
+              <TabsTrigger value="municipal" className="min-w-fit shrink-0">Municipal</TabsTrigger>
+              <TabsTrigger value="nbr" className="min-w-fit shrink-0">NBR</TabsTrigger>
+              <TabsTrigger value="internacional" className="min-w-fit shrink-0">Internacional</TabsTrigger>
             </TabsList>
 
             {/* Filters */}
