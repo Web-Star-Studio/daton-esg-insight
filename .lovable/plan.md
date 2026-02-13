@@ -1,55 +1,28 @@
 
-## Correcoes de Responsividade: 3 Problemas Visuais
 
-### Problema 1: Botao sobre o texto (Landing Hero)
-**Arquivo:** `src/components/landing/heimdall/HeroSection.tsx`
+## Corrigir Sobreposicao do Botao sobre o Texto no Hero Mobile
 
-Na versao mobile, o texto do subtitulo e a action bar (botao "INICIAR AGORA") estao muito proximos ou sobrepostos. O `gap-6` no container flex nao e suficiente.
+### Problema
+O botao "EXPLORAR DEMONSTRACAO" continua sobrepondo o subtitulo no mobile. A causa raiz e que o container usa `min-height: 100vh` com `justify-content: flex-end`, empurrando todo o conteudo para o fundo. O padding inferior (`clamp(2rem, 5vh, 80px)`) e insuficiente, e o `gap-8` sozinho nao resolve porque o espaco disponivel no fundo e limitado.
 
-**Correcao:**
-- Aumentar o gap no container mobile para `gap-8`
-- Adicionar `pb-4` no bloco de texto para criar mais espaco antes da action bar
-- Garantir que a action bar ocupe `w-full` em mobile para nao competir por espaco horizontal
+### Solucao
 
-### Problema 2: Texto dos cards cortado (ESG Ambiental - Cards com scroll)
-**Arquivo:** `src/pages/ESGAmbiental.tsx`
+**Arquivo: `src/components/landing/heimdall/HeroSection.tsx`**
 
-O componente `Card` usa `height: "40%"` para o painel de conteudo em mobile (linha 385). Com 40% de 90vh, ha apenas ~36vh para titulo, descricao, features e botao, insuficiente para textos longos como o do "ESG Social".
+1. Aumentar o padding inferior do container da section para dar mais respiro ao conteudo empilhado em mobile: trocar `clamp(2rem, 5vh, 80px)` por `clamp(6rem, 12vh, 80px)` no bottom padding
+2. Na action bar, remover `w-full` em mobile (que faz o botao ocupar 100% e competir visualmente) e usar `self-end` para alinhar a direita sem sobrepor
+3. Adicionar `shrink-0` na action bar para impedir que o flexbox a comprima sobre o texto
 
-**Correcao:**
-- Aumentar a altura do painel de conteudo mobile de `40%` para `55%`
-- Reduzir a altura da imagem de fundo de `60%` para `45%` (linha 365)
-- Adicionar `overflow-y-auto` no container de texto para permitir scroll quando necessario
-- Reduzir o `pt-16` para `pt-6` em mobile para economizar espaco vertical
+**Alteracao concreta (linha 73):**
+```
+padding: 'clamp(100px, 15vw, 120px) clamp(1rem, 4vw, 2rem) clamp(6rem, 12vh, 80px)'
+```
 
-### Problema 3: Hamburger menu nao centralizado (Documentacao)
-**Arquivo:** `src/pages/Documentacao.tsx`
+**Alteracao na action bar (linha 210):**
+- Trocar `w-full md:w-fit` por `self-end shrink-0 md:w-fit`
 
-A action bar esta posicionada com `position: absolute; bottom: 4vh; right: max(4vw, 2rem)`. Em mobile, deveria estar centralizada horizontalmente.
+Isso garante que o conteudo textual tenha espaco suficiente antes da action bar, sem sobreposicao em nenhum breakpoint.
 
-**Correcao:**
-- Em mobile (< 768px), alterar o posicionamento para: `left: 50%; transform: translateX(-50%); right: auto`
-- Usar classes responsivas ou media query no CSS para aplicar centralizacao
-- Aplicar a mesma correcao na action bar do `SobreNos.tsx` e `HeroSection.tsx` para consistencia
+### Arquivo a editar
+- `src/components/landing/heimdall/HeroSection.tsx` (2 linhas)
 
-### Detalhes Tecnicos
-
-**HeroSection.tsx (linhas 164, 206-208):**
-- Alterar `gap-6` para `gap-8 md:gap-6` no container flex
-- Na action bar, adicionar classes `w-full md:w-fit` para expandir em mobile
-
-**ESGAmbiental.tsx (linhas 358-431):**
-- Card mobile: mudar height do content de `40%` para `55%`
-- Image height: de `60%` para `45%`
-- Container de texto: adicionar `overflow-y-auto` e reduzir padding top
-
-**Documentacao.tsx (linhas 163-182):**
-- Substituir posicionamento absoluto right-aligned por centralizacao em mobile
-- Usar classes CSS: `left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-[max(4vw,2rem)]`
-- Aplicar mesma logica em SobreNos.tsx e HeroSection.tsx para a action bar
-
-**Arquivos a editar:**
-1. `src/components/landing/heimdall/HeroSection.tsx`
-2. `src/pages/ESGAmbiental.tsx`
-3. `src/pages/Documentacao.tsx`
-4. `src/pages/SobreNos.tsx` (consistencia da action bar)
