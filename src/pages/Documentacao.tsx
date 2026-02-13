@@ -162,7 +162,7 @@ const Documentacao = () => {
           ref={actionBarRef}
           style={{
             position: "absolute",
-            bottom: "10vh",
+            bottom: "4vh",
             right: "max(4vw, 2rem)",
             zIndex: 10,
             display: "flex",
