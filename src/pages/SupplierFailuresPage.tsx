@@ -179,7 +179,7 @@ export default function SupplierFailuresPage() {
   return (
     <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate("/fornecedores/dashboard")}>
               <ArrowLeft className="h-5 w-5" />
@@ -191,7 +191,7 @@ export default function SupplierFailuresPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Button variant="outline" asChild>
               <Link to="/fornecedores/falhas/configuracao">
                 <Settings className="h-4 w-4 mr-2" />
