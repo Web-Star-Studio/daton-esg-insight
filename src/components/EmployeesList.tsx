@@ -199,7 +199,7 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
       {/* Filters and Actions */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
@@ -209,7 +209,7 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
                 Gerencie informações dos colaboradores da organização
               </CardDescription>
             </div>
-            <Button onClick={onCreateEmployee}>
+            <Button onClick={onCreateEmployee} className="w-full sm:w-auto">
               <UserPlus className="h-4 w-4 mr-2" />
               Novo Funcionário
             </Button>
@@ -271,65 +271,65 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
       <div className="grid gap-4">
         {employees.map((employee) => (
           <Card key={employee.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="bg-primary/10 text-primary font-medium">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                  <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
+                    <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm">
                       {getInitials(employee.full_name)}
                     </AvatarFallback>
                   </Avatar>
                   
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-semibold text-lg">{employee.full_name}</h3>
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-semibold text-base sm:text-lg truncate">{employee.full_name}</h3>
                       <Badge className={getStatusColor(employee.status)}>
                         {employee.status}
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="font-medium text-primary">{employee.cpf || 'CPF não informado'}</span>
                       {employee.position && (
                         <>
                           <span className="text-muted-foreground">•</span>
-                          <span className="text-muted-foreground">{employee.position}</span>
+                          <span className="text-muted-foreground truncate">{employee.position}</span>
                         </>
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                       {employee.department && (
                         <div className="flex items-center gap-1">
-                          <Building className="w-3 h-3" />
-                          {employee.department}
+                          <Building className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{employee.department}</span>
                         </div>
                       )}
                       
                       {employee.location && (
                         <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {employee.location}
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{employee.location}</span>
                         </div>
                       )}
                       
                       <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                        <Calendar className="w-3 h-3 shrink-0" />
                         Admitido em: {formatDateDisplay(employee.hire_date)}
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                       {employee.email && (
                         <div className="flex items-center gap-1">
-                          <Mail className="w-3 h-3" />
-                          {employee.email}
+                          <Mail className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{employee.email}</span>
                         </div>
                       )}
                       
                       {employee.phone && (
                         <div className="flex items-center gap-1">
-                          <Phone className="w-3 h-3" />
+                          <Phone className="w-3 h-3 shrink-0" />
                           {employee.phone}
                         </div>
                       )}
@@ -337,11 +337,12 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onViewEmployee(employee)}
+                    className="flex-1 sm:flex-none"
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     Visualizar
@@ -350,6 +351,7 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
                     variant="outline"
                     size="sm"
                     onClick={() => onEditEmployee(employee)}
+                    className="flex-1 sm:flex-none"
                   >
                     <Edit className="h-4 w-4 mr-1" />
                     Editar
