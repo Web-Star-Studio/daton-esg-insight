@@ -1,31 +1,61 @@
 
-## Excluir Usuarios pelo Platform Admin
+
+## Multi-Select e Acoes em Lote no Platform Admin
 
 ### Resumo
-Adicionar um botao "Excluir" na tabela de usuarios do painel Platform Admin (`/platform-admin`), com dialogo de confirmacao. A exclusao remove o perfil, roles e o registro de autenticacao do usuario.
+Adicionar checkboxes de selecao multipla nas tabelas de **Usuarios** e **Empresas** do painel Platform Admin, com uma barra de acoes em lote flutuante que aparece quando ha itens selecionados.
 
-### Alteracoes
+---
 
-**1. Edge Function `manage-platform/index.ts`**
-- Adicionar a action `deleteUser` ao tipo de request
-- Criar um segundo client Supabase com `SUPABASE_SERVICE_ROLE_KEY` (necessario para `auth.admin.deleteUser()`)
-- O fluxo de exclusao:
-  1. Limpar referencias em `user_roles.assigned_by_user_id`
-  2. Deletar registros em `user_roles` do usuario
-  3. Deletar o perfil em `profiles`
-  4. Deletar o usuario em `auth.users` via admin API
-- Impedir a exclusao de outros platform admins (seguranca)
+### 1. Tabela de Usuarios (`PlatformUsersTable.tsx`)
 
-**2. Componente `PlatformUsersTable.tsx`**
-- Adicionar botao "Excluir" (icone Trash2) nas acoes de cada usuario
-- O botao nao aparece para usuarios com role `platform_admin`
-- Ao clicar, exibir um `AlertDialog` de confirmacao com aviso claro
-- Mutation que chama `supabase.functions.invoke('manage-platform', { body: { action: 'deleteUser', data: { userId } } })`
-- Invalidar cache apos sucesso
+**Selecao:**
+- Adicionar coluna de checkbox no header (selecionar todos da pagina) e em cada linha
+- Estado `selectedUserIds: Set<string>` para rastrear selecao
+- Platform admins nao podem ser selecionados (checkbox desabilitado)
+
+**Barra de acoes em lote** (flutuante no bottom, similar ao `BulkActionsBar` existente):
+- **Aprovar** - aprovar todos os selecionados
+- **Revogar aprovacao** - revogar aprovacao dos selecionados
+- **Excluir** - excluir todos os selecionados (com dialogo de confirmacao)
+- Badge com contagem de selecionados + botao limpar selecao
+
+**Backend:**
+- Adicionar action `bulkDeleteUsers` na edge function `manage-platform` que recebe um array de `userIds` e executa o mesmo fluxo de limpeza para cada um (loop sobre a logica existente de `deleteUser`)
+- A aprovacao/revogacao em lote sera feita diretamente pelo client (update em `profiles` para cada ID, reutilizando a mutation existente)
+
+---
+
+### 2. Tabela de Empresas (`CompanyTable.tsx`)
+
+**Selecao:**
+- Mesmo padrao de checkboxes (header + linhas)
+- Estado `selectedCompanyIds: Set<string>`
+
+**Barra de acoes em lote:**
+- **Suspender** - suspender todas as selecionadas
+- **Ativar** - ativar todas as selecionadas
+
+**Backend:**
+- Adicionar action `bulkSuspendCompanies` e `bulkActivateCompanies` na edge function, reutilizando a logica existente de `suspendCompany`/`activateCompany` em loop
+
+---
 
 ### Detalhes Tecnicos
 
-- A edge function `manage-platform` ja verifica se o chamador e platform admin via tabela `platform_admins`
-- O `SUPABASE_SERVICE_ROLE_KEY` ja esta disponivel como variavel de ambiente padrao nas edge functions do Supabase
-- A acao sera registrada na tabela `platform_admin_actions` (ja implementado no fluxo existente)
-- Nenhuma migracao de banco de dados e necessaria
+**Edge Function `manage-platform/index.ts`:**
+- Novas actions: `bulkDeleteUsers`, `bulkSuspendCompanies`, `bulkActivateCompanies`
+- `bulkDeleteUsers` recebe `{ userIds: string[] }`, valida que nenhum e platform admin, e executa a exclusao sequencial com o service role client
+- `bulkSuspendCompanies` e `bulkActivateCompanies` recebem `{ companyIds: string[] }` e fazem update em lote
+
+**Componentes UI:**
+- Importar `Checkbox` de `@/components/ui/checkbox`
+- A barra de acoes em lote sera inline no proprio componente (div fixed no bottom com z-50), seguindo o padrao do `BulkActionsBar.tsx` existente
+- Ao concluir uma acao em lote, limpar selecao e invalidar queries
+- `colSpan` das linhas de loading/vazio sera incrementado em 1 (nova coluna de checkbox)
+
+**Arquivos a editar:**
+- `supabase/functions/manage-platform/index.ts` - novas actions em lote
+- `src/components/platform/PlatformUsersTable.tsx` - checkboxes + barra de acoes
+- `src/components/platform/CompanyTable.tsx` - checkboxes + barra de acoes
+
