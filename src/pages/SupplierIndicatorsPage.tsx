@@ -138,7 +138,7 @@ export default function SupplierIndicatorsPage() {
             </p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Select value={period} onValueChange={(v) => setPeriod(v as 'month' | 'year')}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
@@ -190,16 +190,16 @@ export default function SupplierIndicatorsPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="ava1" className="flex items-center gap-2">
+          <TabsList className="flex w-full overflow-x-auto">
+            <TabsTrigger value="ava1" className="min-w-fit shrink-0 flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Conformidade Documental [AVA1]
             </TabsTrigger>
-            <TabsTrigger value="ava2" className="flex items-center gap-2">
+            <TabsTrigger value="ava2" className="min-w-fit shrink-0 flex items-center gap-2">
               <Star className="h-4 w-4" />
               Conformidade de Fornecimento [AVA2]
             </TabsTrigger>
-            <TabsTrigger value="ext1" className="flex items-center gap-2">
+            <TabsTrigger value="ext1" className="min-w-fit shrink-0 flex items-center gap-2">
               <Users className="h-4 w-4" />
               Participação no Portal [EXT1]
             </TabsTrigger>
