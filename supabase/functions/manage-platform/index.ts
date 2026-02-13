@@ -8,7 +8,7 @@ const corsHeaders = {
 interface ManagePlatformRequest {
   action: 'listCompanies' | 'getCompanyDetails' | 'suspendCompany' | 
           'activateCompany' | 'updateCompanyPlan' | 'impersonateCompany' |
-          'getPlatformStats' | 'listAllUsers' | 'auditLogs';
+          'getPlatformStats' | 'listAllUsers' | 'auditLogs' | 'deleteUser';
   data?: any;
 }
 
@@ -241,6 +241,54 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
         result = { logs };
+        break;
+      }
+
+      case 'deleteUser': {
+        const { userId } = data;
+        if (!userId) throw new Error('userId é obrigatório');
+
+        // Impedir exclusão de platform admins
+        const { data: targetAdmin } = await supabaseClient
+          .from('platform_admins')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (targetAdmin) {
+          throw new Error('Não é permitido excluir um Platform Admin');
+        }
+
+        // Criar client com service role para deletar auth user
+        const supabaseAdmin = createClient(
+          'https://dqlvioijqzlvnvvajmft.supabase.co',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+
+        // 1. Limpar referências em user_roles.assigned_by_user_id
+        await supabaseAdmin
+          .from('user_roles')
+          .update({ assigned_by_user_id: null })
+          .eq('assigned_by_user_id', userId);
+
+        // 2. Deletar registros em user_roles
+        await supabaseAdmin
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId);
+
+        // 3. Deletar perfil
+        await supabaseAdmin
+          .from('profiles')
+          .delete()
+          .eq('id', userId);
+
+        // 4. Deletar usuário em auth.users
+        const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        if (deleteAuthError) throw deleteAuthError;
+
+        result = { success: true, message: 'Usuário excluído com sucesso' };
         break;
       }
 
