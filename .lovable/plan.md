@@ -1,26 +1,44 @@
 
-## Fix: First Tab Label Cut Off in /configuracao-organizacional
 
-### Problem
-The first tab "Informacoes Basicas" is displaying only the letter "s" on mobile. The remaining tabs ("Estrutura Organizacional", "Escopo de Relato", "Dados Financeiros") appear fine. This is caused by the `TabsList` having `w-full` which constrains maximum width to the container, but the combined tab widths exceed that space. Even though `shrink-0` is set, the `w-full` constraint can cause clipping of the first element before the scroll position.
+## Plano: Alterar card "Gestão Fornecedores" para "ESG Governanca" na pagina /ambiental
 
-### Solution
-Replace `flex w-full overflow-x-auto` with `flex overflow-x-auto w-max min-w-full` on the `TabsList`. This ensures the tab list takes the natural width of its children (allowing horizontal scroll) while having a minimum of the container width.
+### O que sera feito
 
-### Technical Details
+No arquivo `src/pages/ESGAmbiental.tsx`, o card de indice "004" (atualmente "Gestão Fornecedores") sera atualizado:
 
-**File: `src/pages/ConfiguracaoOrganizacional.tsx` (line 203)**
+1. **Titulo**: De "Gestão Fornecedores" para "ESG Governanca"
+2. **Categoria**: De "Cadeia de Suprimentos / Compras" para algo como "Governanca Corporativa"
+3. **Descricao**: Texto atualizado para refletir governanca (ex: "Centralize politicas, auditorias, riscos e compliance para elevar transparencia e confianca institucional.")
+4. **Bullet points**: Substituir os 3 itens atuais por itens de governanca, como:
+   - Politicas e compliance corporativo
+   - Gestao de riscos e auditorias
+   - Transparencia e etica empresarial
+5. **ID**: De "fornecedores" para "governanca"
 
-Change:
-```tsx
-<TabsList className="flex w-full overflow-x-auto">
+### Detalhes tecnicos
+
+Arquivo: `src/pages/ESGAmbiental.tsx`, linhas 90-105.
+
+Alteracao pontual no objeto do array `INFRASTRUCTURE_CARDS`:
+
+```typescript
+{
+  id: "governanca",
+  index: "004",
+  title: "ESG Governança",
+  category: "Governança Corporativa",
+  description:
+    "Centralize políticas, auditorias, riscos e compliance para elevar transparência e confiança institucional.",
+  icon: TrendingUp,
+  image: esgSuppliersCardImg,
+  color: "#fff7ed",
+  features: [
+    "Políticas e compliance corporativo",
+    "Gestão de riscos e auditorias",
+    "Transparência e ética empresarial",
+  ],
+},
 ```
-To:
-```tsx
-<TabsList className="flex overflow-x-auto w-max min-w-full">
-```
 
-This single-line change ensures:
-- `w-max`: The list takes the intrinsic width of all tabs combined, preventing compression
-- `min-w-full`: Ensures the list is at least as wide as the container when tabs fit
-- `overflow-x-auto`: Enables horizontal scrolling when tabs exceed container width
+A imagem e o icone serao mantidos, pois nao foi solicitada alteracao visual alem do texto.
+
