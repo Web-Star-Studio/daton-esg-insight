@@ -274,7 +274,7 @@ const ControleDocumentos = () => {
   return (
     <div className="container mx-auto p-6 space-y-8">
       <div className="flex flex-col space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Controle de Documentos</h1>
             <p className="text-muted-foreground">Sistema de gestão documental do SGQ</p>
