@@ -80,17 +80,18 @@ export function SystemStatusDashboard() {
       {/* System Info Card */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle>{PRODUCTION_CONFIG.SYSTEM_NAME}</CardTitle>
               <CardDescription>Versão {PRODUCTION_CONFIG.VERSION}</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto shrink-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={runChecks}
                 disabled={isChecking}
+                className="flex-1 sm:flex-none whitespace-nowrap"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isChecking ? 'animate-spin' : ''}`} />
                 Verificar Novamente
@@ -100,6 +101,7 @@ export function SystemStatusDashboard() {
                   variant="outline"
                   size="sm"
                   onClick={downloadReport}
+                  className="flex-1 sm:flex-none whitespace-nowrap"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Baixar Relatório
@@ -109,28 +111,28 @@ export function SystemStatusDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Modo Desenvolvimento</p>
               <p className="text-2xl font-bold">
                 {process.env.NODE_ENV === 'production' ? 'Não' : 'Sim'}
               </p>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Mock Data</p>
-              <p className="text-2xl font-bold">
+            <div className="space-y-1 min-w-0">
+              <p className="text-sm text-muted-foreground truncate">Mock Data</p>
+              <p className="text-xl sm:text-2xl font-bold truncate">
                 {PRODUCTION_CONFIG.FEATURES.MOCK_DATA_DISABLED ? 'Desabilitado' : 'Habilitado'}
               </p>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <p className="text-sm text-muted-foreground">Cache</p>
-              <p className="text-2xl font-bold">
+              <p className="text-xl sm:text-2xl font-bold">
                 {PRODUCTION_CONFIG.PERFORMANCE.ENABLE_CACHING ? 'Ativo' : 'Inativo'}
               </p>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <p className="text-sm text-muted-foreground">Logging</p>
-              <p className="text-2xl font-bold capitalize">
+              <p className="text-xl sm:text-2xl font-bold capitalize">
                 {PRODUCTION_CONFIG.LOGGING.LEVEL}
               </p>
             </div>
@@ -142,7 +144,7 @@ export function SystemStatusDashboard() {
       {healthResult && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="h-5 w-5" />
@@ -150,7 +152,7 @@ export function SystemStatusDashboard() {
                 </CardTitle>
                 <CardDescription>Status dos serviços do sistema</CardDescription>
               </div>
-              <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+              <div className={`px-3 py-1 rounded-full text-sm font-semibold shrink-0 ${
                 healthResult.status === 'healthy' 
                   ? 'bg-success/10 text-success' 
                   : healthResult.status === 'degraded'
