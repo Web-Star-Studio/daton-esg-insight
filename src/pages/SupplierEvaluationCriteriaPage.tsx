@@ -149,7 +149,7 @@ export default function SupplierEvaluationCriteriaPage() {
   return (
     <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
               <Settings className="h-8 w-8" />
@@ -159,7 +159,7 @@ export default function SupplierEvaluationCriteriaPage() {
               Defina os critérios e pesos para avaliação de fornecedores
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 shrink-0">
             {(!criteria || criteria.length === 0) && (
               <Button variant="outline" onClick={() => initMutation.mutate()}>
                 <Wand2 className="h-4 w-4 mr-2" />
