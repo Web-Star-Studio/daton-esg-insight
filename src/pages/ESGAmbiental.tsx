@@ -707,7 +707,7 @@ export default function ESGAmbiental() {
               className="lumine-btn-primary"
               style={{ color: "#000000" }}
             >
-              EXPLORAR DEMONSTRAÇÃO
+              INICIAR AGORA
               <ArrowRight size={18} />
             </motion.button>
           </motion.div>

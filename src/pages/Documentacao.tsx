@@ -253,7 +253,7 @@ const Documentacao = () => {
               className="lumine-btn-primary whitespace-nowrap text-[clamp(0.8rem,3.2vw,1rem)] flex-1 justify-center"
               style={{ color: "#000000" }}
             >
-              EXPLORAR DEMONSTRAÇÃO
+              INICIAR AGORA
               <ArrowRight size={18} />
             </motion.button>
           </motion.div>
