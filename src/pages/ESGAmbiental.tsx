@@ -88,19 +88,19 @@ const MODULES: ModuleHighlight[] = [
     ],
   },
   {
-    id: "fornecedores",
+    id: "governanca",
     index: "004",
-    title: "Gestão Fornecedores",
-    category: "Cadeia de Suprimentos / Compras",
+    title: "ESG Governança",
+    category: "Governança Corporativa",
     description:
-      "Qualifique e avalie fornecedores. Monitore contratos e riscos ESG na cadeia, oferecendo um portal de autoatendimento para seus parceiros.",
+      "Centralize políticas, auditorias, riscos e compliance para elevar transparência e confiança institucional.",
     icon: TrendingUp,
     image: esgSuppliersCardImg,
     color: "#fff7ed",
     features: [
-      "Cadastro e homologação de fornecedores",
-      "Portal do fornecedor",
-      "Monitoramento de riscos ESG",
+      "Políticas e compliance corporativo",
+      "Gestão de riscos e auditorias",
+      "Transparência e ética empresarial",
     ],
   },
   {
