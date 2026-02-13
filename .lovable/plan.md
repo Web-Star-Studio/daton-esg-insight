@@ -1,54 +1,32 @@
 
 
-## Corrigir Redirecionamento: Onboarding antes do Demo
+## Corrigir Erro "useUnifiedTour must be used within UnifiedTourProvider" no Onboarding
 
 ### Problema
-Quando um novo usuario se registra, o `ProtectedRoute` verifica apenas se ele esta aprovado. Como nao esta, redireciona diretamente para `/demo`, pulando o onboarding. O fluxo correto e:
+Apos o registro, o usuario e redirecionado para `/onboarding`, que renderiza `CleanOnboardingMain`. Esse componente chama `useUnifiedTour()`, mas a rota `/onboarding` nao esta envolvida por nenhum `UnifiedTourProvider`. O provider so existe dentro de `MainLayout` e `DemoLayout`, que nao sao usados na rota de onboarding.
 
-**Registro -> Onboarding -> Demo (aguardando aprovacao) -> Dashboard (aprovado)**
+### Solucao
+Envolver o conteudo do `OnboardingRoute` com os providers necessarios: `TutorialProvider` e `UnifiedTourProvider`.
 
-### Causa Raiz
-Dois componentes de rota ignoram o estado de onboarding:
+### Alteracao
 
-1. **`ProtectedRoute.tsx`** (linha 53): Redireciona usuarios nao aprovados para `/demo` sem verificar `shouldShowOnboarding`
-2. **`DemoRoute.tsx`** (linha 40): Permite acesso ao demo sem verificar se o onboarding foi concluido
+**Arquivo: `src/routes/onboarding.tsx`**
+- Importar `UnifiedTourProvider` e `TutorialProvider`
+- Envolver o `<CleanOnboardingMain />` com ambos os providers
 
-### Correcoes
+O resultado sera:
+```tsx
+import { TutorialProvider } from '@/contexts/TutorialContext';
+import { UnifiedTourProvider } from '@/contexts/UnifiedTourContext';
 
-**1. `src/components/ProtectedRoute.tsx`**
-- Importar `shouldShowOnboarding` do `useAuth()`
-- Antes do redirecionamento para `/demo`, verificar se `shouldShowOnboarding` e `true`
-- Se sim, redirecionar para `/onboarding` em vez de `/demo`
-
-**2. `src/components/DemoRoute.tsx`**
-- Importar `shouldShowOnboarding` do `useAuth()`
-- Antes de renderizar o demo, verificar se o onboarding ainda nao foi concluido
-- Se `shouldShowOnboarding` for `true`, redirecionar para `/onboarding`
-
-### Detalhes Tecnicos
-
-No `ProtectedRoute.tsx`, o bloco de redirecionamento (linhas 52-56) sera alterado de:
-```
-if (!isApproved) {
-  return <Navigate to="/demo" replace />;
-}
-```
-Para:
-```
-if (!isApproved) {
-  if (shouldShowOnboarding) {
-    return <Navigate to="/onboarding" replace />;
-  }
-  return <Navigate to="/demo" replace />;
-}
+// ... dentro do render:
+return (
+  <TutorialProvider>
+    <UnifiedTourProvider>
+      <CleanOnboardingMain />
+    </UnifiedTourProvider>
+  </TutorialProvider>
+);
 ```
 
-No `DemoRoute.tsx`, adicionar antes do `return <>{children}</>`:
-```
-if (shouldShowOnboarding) {
-  return <Navigate to="/onboarding" replace />;
-}
-```
-
-Sao alteracoes de poucas linhas em 2 arquivos, sem impacto em nenhuma outra funcionalidade.
-
+Apenas 1 arquivo editado, sem impacto em nenhuma outra rota.
