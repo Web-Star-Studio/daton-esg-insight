@@ -489,6 +489,7 @@ export default function ESGAmbiental() {
           backgroundColor: "var(--lumine-bg)",
           overflow: "hidden",
           padding: "120px 2rem 80px",
+          paddingBottom: window.innerWidth < 768 ? 'clamp(10rem, 22vh, 14rem)' : '80px',
         }}
       >
         <img
@@ -520,7 +521,7 @@ export default function ESGAmbiental() {
         <div
           style={{
             position: "absolute",
-            bottom: "10vh",
+            bottom: window.innerWidth < 768 ? "18vh" : "10vh",
             left: "max(4vw, 2rem)",
             maxWidth: "820px",
             zIndex: 10,
@@ -590,8 +591,9 @@ export default function ESGAmbiental() {
           ref={actionBarRef}
           style={{
             position: "absolute",
-            bottom: "2vh",
-            right: "max(1vw, 0.5rem)",
+            bottom: window.innerWidth < 768 ? "8vh" : "2vh",
+            right: window.innerWidth < 768 ? "max(1vw, 0.5rem)" : "max(1vw, 0.5rem)",
+            left: window.innerWidth < 768 ? "max(1vw, 0.5rem)" : "auto",
             zIndex: 10,
             display: "flex",
             flexDirection: "column",

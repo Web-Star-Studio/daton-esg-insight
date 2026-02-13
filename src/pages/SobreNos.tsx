@@ -66,7 +66,8 @@ const SobreNos = () => {
                     justifyContent: "flex-end",
                     backgroundColor: "var(--lumine-bg)",
                     overflow: "hidden",
-                    padding: "clamp(100px, 15vw, 120px) clamp(1rem, 4vw, 2rem) clamp(2rem, 5vh, 80px)",
+                    padding: "clamp(100px, 15vw, 120px) clamp(1rem, 4vw, 2rem) clamp(6rem, 12vh, 80px)",
+                    paddingBottom: window.innerWidth < 768 ? 'clamp(10rem, 22vh, 14rem)' : 'clamp(6rem, 12vh, 80px)',
                 }}
             >
                 {/* Background Image */}
