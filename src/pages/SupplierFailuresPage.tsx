@@ -375,15 +375,15 @@ export default function SupplierFailuresPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="failures" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="failures">
+          <TabsList className="flex w-full overflow-x-auto">
+            <TabsTrigger value="failures" className="min-w-fit shrink-0">
               Histórico de Falhas ({failures?.length || 0})
             </TabsTrigger>
-            <TabsTrigger value="at-risk" className="flex items-center gap-2">
+            <TabsTrigger value="at-risk" className="min-w-fit shrink-0 flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
               Em Risco ({suppliersAtRisk?.length || 0})
             </TabsTrigger>
-            <TabsTrigger value="inactivated" className="flex items-center gap-2">
+            <TabsTrigger value="inactivated" className="min-w-fit shrink-0 flex items-center gap-2">
               <ShieldAlert className="h-4 w-4" />
               Inativados ({inactivatedSuppliers?.length || 0})
             </TabsTrigger>
