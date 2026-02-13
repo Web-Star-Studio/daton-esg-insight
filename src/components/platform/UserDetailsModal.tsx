@@ -18,7 +18,83 @@ import {
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusIndicator } from "@/components/ui/status-indicator";
-import { User, Building2, Calendar, Settings, Package, Briefcase } from "lucide-react";
+import { User, Building2, Calendar, Settings, Package, Briefcase, CheckCircle2, XCircle } from "lucide-react";
+import { MODULE_MAP_BY_ID } from "@/components/onboarding/modulesCatalog";
+
+// ── Dicionários de tradução ──────────────────────────────────────
+
+const COMPANY_PROFILE_LABELS: Record<string, string> = {
+  size: "Porte da empresa",
+  sector: "Setor de atuação",
+  goals: "Objetivos ESG",
+  maturity_level: "Nível de maturidade",
+  maturityLevel: "Nível de maturidade",
+  current_challenges: "Desafios atuais",
+  currentChallenges: "Desafios atuais",
+  employees_count: "Nº de funcionários",
+};
+
+const VALUE_TRANSLATIONS: Record<string, string> = {
+  // Porte
+  micro: "Micro", small: "Pequena", medium: "Média", large: "Grande", enterprise: "Corporação",
+  // Setor
+  services: "Serviços", industry: "Indústria", commerce: "Comércio", agriculture: "Agropecuária",
+  technology: "Tecnologia", construction: "Construção", education: "Educação", health: "Saúde",
+  // Maturidade
+  beginner: "Iniciante", intermediate: "Intermediário", advanced: "Avançado", leader: "Líder",
+  // Objetivos / Desafios
+  quality: "Qualidade", compliance: "Compliance", performance: "Performance",
+  innovation: "Inovação", cost_reduction: "Redução de custos",
+  health_safety: "Saúde e Segurança", water_management: "Gestão de água",
+  waste_reduction: "Redução de resíduos", carbon_neutrality: "Neutralidade de carbono",
+  energy_efficiency: "Eficiência energética", social_responsibility: "Responsabilidade social",
+  regulatory: "Regulatório", data_collection: "Coleta de dados",
+  stakeholder_engagement: "Engajamento de stakeholders",
+  supply_chain: "Cadeia de suprimentos",
+};
+
+const FEATURE_LABELS: Record<string, string> = {
+  // Inventário GEE
+  auto_calculate: "Cálculo automático", import_data: "Importação de dados", notifications: "Notificações",
+  // Energia
+  medir_consumo: "Medição de consumo", metas_reducao: "Metas de redução", alertas_pico: "Alertas de pico",
+  // Resíduos
+  segregacao: "Segregação", manifestos_digitais: "Manifestos digitais", rastreio_coleta: "Rastreio de coleta",
+  // Qualidade
+  audit_scheduling: "Agendamento de auditorias", procedure_management: "Gestão de procedimentos",
+  nonconformity_tracking: "Rastreio de não-conformidades",
+  // S&S
+  incidentes: "Registro de incidentes", inspecoes: "Inspeções", treinamentos_obrigatorios: "Treinamentos obrigatórios",
+  // Performance
+  kpi_tracking: "Acompanhamento de KPIs", dashboards: "Dashboards", benchmarking: "Benchmarking",
+  // Análise de Dados
+  data_visualization: "Visualização de dados", custom_reports: "Relatórios customizados", export: "Exportação",
+  // Gestão de Pessoas
+  training_tracking: "Acompanhamento de treinamentos", performance_reviews: "Avaliações de desempenho",
+  goal_setting: "Definição de metas",
+  // Documentos
+  version_control: "Controle de versão", approval_workflow: "Fluxo de aprovação", search: "Busca",
+  // Economia Circular
+  rastrear_materiais: "Rastreio de materiais", parceiros_reciclagem: "Parceiros de reciclagem",
+  indicadores_circularidade: "Indicadores de circularidade",
+  // Inovação
+  portfolio_ideias: "Portfólio de ideias", pipeline_poc: "Pipeline de PoC", indicadores_inovacao: "Indicadores de inovação",
+  // Stakeholders
+  mapa_stakeholders: "Mapa de stakeholders", pesquisas_satisfacao: "Pesquisas de satisfação",
+  registro_interacoes: "Registro de interações",
+};
+
+function translateValue(value: string): string {
+  return VALUE_TRANSLATIONS[value] ?? value.replace(/_/g, " ");
+}
+
+function getModuleName(id: string): string {
+  return MODULE_MAP_BY_ID[id]?.name ?? id.replace(/_/g, " ");
+}
+
+function getFeatureLabel(key: string): string {
+  return FEATURE_LABELS[key] ?? key.replace(/_/g, " ");
+}
 
 interface UserDetailsModalProps {
   open: boolean;
@@ -180,7 +256,7 @@ export function UserDetailsModal({
                       <div className="flex flex-wrap gap-1.5">
                         {selectedModules.map((m) => (
                           <Badge key={m} variant="outline" className="text-xs">
-                            {m.replace(/_/g, " ")}
+                            {getModuleName(m)}
                           </Badge>
                         ))}
                       </div>
@@ -194,12 +270,26 @@ export function UserDetailsModal({
                         <Building2 className="h-3.5 w-3.5" /> Perfil da empresa (onboarding)
                       </p>
                       <div className="grid grid-cols-2 gap-2">
-                        {Object.entries(companyProfile).map(([key, value]) => (
-                          <div key={key} className="text-xs">
-                            <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}</span>
-                            <p className="font-medium truncate">{String(value ?? "—")}</p>
-                          </div>
-                        ))}
+                        {Object.entries(companyProfile).map(([key, value]) => {
+                          const label = COMPANY_PROFILE_LABELS[key] ?? key.replace(/_/g, " ");
+                          const isArray = Array.isArray(value);
+                          return (
+                            <div key={key} className={`text-xs ${isArray ? "col-span-2" : ""}`}>
+                              <span className="text-muted-foreground">{label}</span>
+                              {isArray ? (
+                                <div className="flex flex-wrap gap-1 mt-0.5">
+                                  {(value as string[]).length > 0 ? (value as string[]).map((v) => (
+                                    <Badge key={v} variant="secondary" className="text-xs">
+                                      {translateValue(v)}
+                                    </Badge>
+                                  )) : <p className="font-medium">—</p>}
+                                </div>
+                              ) : (
+                                <p className="font-medium">{translateValue(String(value ?? "—"))}</p>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -214,9 +304,25 @@ export function UserDetailsModal({
                           </span>
                         </AccordionTrigger>
                         <AccordionContent>
-                          <pre className="text-xs bg-muted/50 rounded-md p-3 overflow-auto max-h-48">
-                            {JSON.stringify(moduleConfigs, null, 2)}
-                          </pre>
+                          <div className="space-y-3">
+                            {Object.entries(moduleConfigs).map(([moduleId, features]) => (
+                              <div key={moduleId}>
+                                <p className="text-xs font-semibold mb-1">{getModuleName(moduleId)}</p>
+                                <div className="space-y-0.5 pl-1">
+                                  {Object.entries(features as Record<string, boolean>).map(([feat, enabled]) => (
+                                    <div key={feat} className="flex items-center gap-1.5 text-xs">
+                                      {enabled ? (
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
+                                      ) : (
+                                        <XCircle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                                      )}
+                                      <span className={enabled ? "" : "text-muted-foreground"}>{getFeatureLabel(feat)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
