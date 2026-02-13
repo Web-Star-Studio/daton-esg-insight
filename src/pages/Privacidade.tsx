@@ -1,24 +1,28 @@
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
+import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 
 export default function Privacidade() {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <HeimdallNavbar />
+
+      <div className="max-w-4xl mx-auto pt-24 pb-12 px-4 sm:px-6 lg:px-8">
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
-          className="mb-6"
+          className="mb-6 h-11"
           aria-label="Voltar para a página anterior"
         >
           <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
           Voltar
         </Button>
 
-        <h1 className="text-3xl font-bold text-foreground mb-8">Política de Privacidade</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-8">Política de Privacidade</h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
           <p className="text-muted-foreground">
@@ -112,6 +116,8 @@ export default function Privacidade() {
           </section>
         </div>
       </div>
+
+      <PublicFooter />
     </div>
   );
 }

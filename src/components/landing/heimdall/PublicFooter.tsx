@@ -4,8 +4,8 @@ import datonLogo from "@/assets/daton-logo-header.png";
 export function PublicFooter() {
   return (
     <footer className="border-t border-[#233a30] bg-[#0f1f18] px-4 py-10 text-white md:px-8">
-      <div className="mx-auto grid w-full max-w-7xl gap-8 md:grid-cols-4">
-        <div>
+      <div className="mx-auto grid w-full max-w-7xl gap-8 grid-cols-2 md:grid-cols-4">
+        <div className="col-span-2 md:col-span-1">
           <img
             src={datonLogo}
             alt="Daton"

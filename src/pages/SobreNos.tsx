@@ -61,11 +61,12 @@ const SobreNos = () => {
                 style={{
                     position: "relative",
                     minHeight: "100vh",
-                    display: "grid",
-                    placeItems: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "flex-end",
                     backgroundColor: "var(--lumine-bg)",
                     overflow: "hidden",
-                    padding: "120px 2rem 80px",
+                    padding: "clamp(100px, 15vw, 120px) clamp(1rem, 4vw, 2rem) clamp(2rem, 5vh, 80px)",
                 }}
             >
                 {/* Background Image */}
@@ -95,93 +96,85 @@ const SobreNos = () => {
                     }}
                 />
 
-                {/* Bottom Left Title */}
-                <div
-                    style={{
-                        position: "absolute",
-                        bottom: "10vh",
-                        left: "max(4vw, 2rem)",
-                        maxWidth: "820px",
-                        zIndex: 10,
-                    }}
-                >
-                    <motion.div
-                        initial={{ opacity: 0, y: 40 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
+                {/* Bottom Content - Stacks on mobile */}
+                <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between mt-auto">
+                    {/* Title */}
+                    <div className="hero-content-wrapper max-w-[820px]">
+                        <motion.div
+                            initial={{ opacity: 0, y: 40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8, delay: 0.2 }}
+                            style={{
+                                color: "#ffffff",
+                                margin: 0,
+                                fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                                textShadow: "0 4px 20px rgba(0, 0, 0, 0.35)",
+                            }}
+                        >
+                            <span
+                                style={{
+                                    display: "inline-flex",
+                                    marginBottom: "0.9rem",
+                                    borderRadius: "999px",
+                                    border: "1px solid rgba(255,255,255,0.5)",
+                                    background: "rgba(255,255,255,0.08)",
+                                    padding: "0.3rem 0.75rem",
+                                    fontSize: "0.74rem",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.14em",
+                                    textTransform: "uppercase",
+                                }}
+                            >
+                                Sobre a Daton
+                            </span>
+                            <h1
+                                style={{
+                                    fontSize: "clamp(1.8rem, 4.8vw, 4.2rem)",
+                                    lineHeight: "1.15",
+                                    letterSpacing: "-0.02em",
+                                    fontWeight: 650,
+                                    margin: 0,
+                                    textAlign: "left",
+                                }}
+                            >
+                                Transformamos dados em decisões que movem o futuro.
+                            </h1>
+                            <p
+                                style={{
+                                    display: "block",
+                                    marginTop: "1rem",
+                                    marginBottom: 0,
+                                    color: "rgba(255, 255, 255, 0.9)",
+                                    fontSize: "clamp(0.95rem, 1.3vw, 1.2rem)",
+                                    fontWeight: 400,
+                                    lineHeight: 1.5,
+                                    maxWidth: "720px",
+                                }}
+                            >
+                                A Daton nasceu da convicção de que sustentabilidade e performance caminham juntas. Somos a plataforma que conecta indicadores ESG, qualidade e governança em um único ecossistema inteligente.
+                            </p>
+                        </motion.div>
+                    </div>
+
+                    {/* Action Bar */}
+                    <div
+                        ref={actionBarRef}
+                        className="hero-action-bar"
                         style={{
-                            color: "#ffffff",
-                            margin: 0,
-                            fontFamily: "Inter, system-ui, -apple-system, sans-serif",
-                            textShadow: "0 4px 20px rgba(0, 0, 0, 0.35)",
+                            zIndex: 10,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "stretch",
+                            width: "fit-content",
+                            borderRadius: "14px",
+                            border: "1px solid rgba(255, 255, 255, 0.35)",
+                            background: "rgba(0, 0, 0, 0.32)",
+                            backdropFilter: "blur(10px)",
+                            WebkitBackdropFilter: "blur(10px)",
+                            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.3)",
+                            overflow: "hidden",
                         }}
                     >
-                        <span
-                            style={{
-                                display: "inline-flex",
-                                marginBottom: "0.9rem",
-                                borderRadius: "999px",
-                                border: "1px solid rgba(255,255,255,0.5)",
-                                background: "rgba(255,255,255,0.08)",
-                                padding: "0.3rem 0.75rem",
-                                fontSize: "0.74rem",
-                                fontWeight: 700,
-                                letterSpacing: "0.14em",
-                                textTransform: "uppercase",
-                            }}
-                        >
-                            Sobre a Daton
-                        </span>
-                        <h1
-                            style={{
-                                fontSize: "clamp(2rem, 4.8vw, 4.2rem)",
-                                lineHeight: "1.15",
-                                letterSpacing: "-0.02em",
-                                fontWeight: 650,
-                                margin: 0,
-                                textAlign: "left",
-                            }}
-                        >
-                            Transformamos dados em decisões que movem o futuro.
-                        </h1>
-                        <p
-                            style={{
-                                display: "block",
-                                marginTop: "1rem",
-                                marginBottom: 0,
-                                color: "rgba(255, 255, 255, 0.9)",
-                                fontSize: "clamp(0.95rem, 1.3vw, 1.2rem)",
-                                fontWeight: 400,
-                                lineHeight: 1.5,
-                                maxWidth: "720px",
-                            }}
-                        >
-                            A Daton nasceu da convicção de que sustentabilidade e performance caminham juntas. Somos a plataforma que conecta indicadores ESG, qualidade e governança em um único ecossistema inteligente.
-                        </p>
-                    </motion.div>
-                </div>
-
-                {/* Bottom Right Action Bar */}
-                <div
-                    ref={actionBarRef}
-                    style={{
-                        position: "absolute",
-                        bottom: "10vh",
-                        right: "max(4vw, 2rem)",
-                        zIndex: 10,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "stretch",
-                        width: "fit-content",
-                        borderRadius: "14px",
-                        border: "1px solid rgba(255, 255, 255, 0.35)",
-                        background: "rgba(0, 0, 0, 0.32)",
-                        backdropFilter: "blur(10px)",
-                        WebkitBackdropFilter: "blur(10px)",
-                        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.3)",
-                        overflow: "hidden",
-                    }}
-                >
                     <AnimatePresence>
                         {quickMenuOpen && (
                             <motion.div
@@ -286,10 +279,11 @@ const SobreNos = () => {
                         </motion.button>
                     </motion.div>
                 </div>
+                </div>
             </section>
 
             {/* --- MISSION & VISION --- */}
-            <section className="py-24 px-6 max-w-7xl mx-auto">
+            <section className="py-12 px-4 md:py-24 md:px-6 max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-8 lg:gap-12 items-start">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
@@ -320,7 +314,7 @@ const SobreNos = () => {
             </section>
 
             {/* --- VALUES --- */}
-            <section className="py-24 px-6 bg-[#f8fafc] border-y border-[#e5e7eb]">
+            <section className="py-12 px-4 md:py-24 md:px-6 bg-[#f8fafc] border-y border-[#e5e7eb]">
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-20">
                         <motion.h2
@@ -375,7 +369,7 @@ const SobreNos = () => {
             </section>
 
             {/* --- PILLARS --- */}
-            <section className="py-24 px-6 max-w-7xl mx-auto">
+            <section className="py-12 px-4 md:py-24 md:px-6 max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                     <div>
                         <span className="text-[#15c470] font-mono text-xs uppercase tracking-widest font-bold">O que fazemos</span>
@@ -417,24 +411,24 @@ const SobreNos = () => {
             </section>
 
             {/* --- WHY DATON --- */}
-            <section className="py-24 px-6 max-w-7xl mx-auto">
+            <section className="py-12 px-4 md:py-24 md:px-6 max-w-7xl mx-auto">
                 <div className="text-center mb-16">
                     <span className="text-[#15c470] font-mono text-xs uppercase tracking-widest font-bold">Diferenciais</span>
                     <h2 className="text-3xl md:text-4xl font-bold text-[#1a2421] mt-2">Por que empresas escolhem a Daton</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[
-                         { title: "Tudo em um só lugar", desc: "Chega de planilhas dispersas e sistemas desconectados.", details: "ESG, qualidade, fornecedores, auditorias e indicadores financeiros — tudo em um único login, com dados integrados e rastreáveis.", span: "lg:col-span-2" },
-                         { title: "IA que trabalha por você", desc: "Extração automática de documentos e alertas proativos.", details: "Cálculos de emissões, classificação de documentos e sugestões inteligentes para que sua equipe foque no que importa: estratégia.", span: "lg:col-span-2" },
-                         { title: "Conformidade sem complicação", desc: "Relatórios GRI, SASB e TCFD gerados automaticamente.", details: "Dados já validados e auditáveis, prontos para envio a reguladores e stakeholders com um clique.", span: "lg:col-span-2" },
-                         { title: "Segurança enterprise", desc: "Criptografia AES-256 e isolamento por empresa.", details: "Row Level Security, RBAC granular com quatro níveis de permissão e conformidade total com a LGPD.", span: "lg:col-span-2" },
-                         { title: "Suporte humano", desc: "Equipe especializada em ESG e qualidade.", details: "Profissionais que entendem o contexto regulatório brasileiro e acompanham sua jornada de maturidade.", span: "lg:col-span-2" },
-                         { title: "Monitoramento em tempo real", desc: "Indicadores e metas atualizados minuto a minuto.", details: "Dashboards dinâmicos com alertas configuráveis, não apenas relatórios no fechamento do mês.", span: "lg:col-span-2" },
+                         { title: "Tudo em um só lugar", desc: "Chega de planilhas dispersas e sistemas desconectados.", details: "ESG, qualidade, fornecedores, auditorias e indicadores financeiros — tudo em um único login, com dados integrados e rastreáveis." },
+                         { title: "IA que trabalha por você", desc: "Extração automática de documentos e alertas proativos.", details: "Cálculos de emissões, classificação de documentos e sugestões inteligentes para que sua equipe foque no que importa: estratégia." },
+                         { title: "Conformidade sem complicação", desc: "Relatórios GRI, SASB e TCFD gerados automaticamente.", details: "Dados já validados e auditáveis, prontos para envio a reguladores e stakeholders com um clique." },
+                         { title: "Segurança enterprise", desc: "Criptografia AES-256 e isolamento por empresa.", details: "Row Level Security, RBAC granular com quatro níveis de permissão e conformidade total com a LGPD." },
+                         { title: "Suporte humano", desc: "Equipe especializada em ESG e qualidade.", details: "Profissionais que entendem o contexto regulatório brasileiro e acompanham sua jornada de maturidade." },
+                         { title: "Monitoramento em tempo real", desc: "Indicadores e metas atualizados minuto a minuto.", details: "Dashboards dinâmicos com alertas configuráveis, não apenas relatórios no fechamento do mês." },
                     ].map((item, idx) => (
                         <motion.div
                             key={idx}
-                            className={`${item.span} col-span-1 md:col-span-1 p-8 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb] cursor-pointer transition-all duration-300 ${
+                            className={`p-6 md:p-8 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb] cursor-pointer transition-all duration-300 ${
                                 hoveredIdx !== null && hoveredIdx !== idx
                                     ? 'opacity-50 scale-[0.97]'
                                     : ''
@@ -468,7 +462,7 @@ const SobreNos = () => {
             </section>
 
             {/* --- PRIVACY --- */}
-            <section className="py-24 px-6 bg-[#f8fafc] border-t border-[#e5e7eb]">
+            <section className="py-12 px-4 md:py-24 md:px-6 bg-[#f8fafc] border-t border-[#e5e7eb]">
                 <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
                     <div className="relative">
                         <img 
@@ -493,7 +487,7 @@ const SobreNos = () => {
             </section>
 
             {/* --- WORTON --- */}
-            <section className="py-16 px-6 bg-[#1a2421]">
+            <section className="py-10 px-4 md:py-16 md:px-6 bg-[#1a2421]">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-8 md:gap-12">
                   {/* Left: Worton branding (30%) */}
                   <div className="md:w-[30%] flex justify-center">
@@ -512,7 +506,7 @@ const SobreNos = () => {
 
                   {/* Right: Partners grid (70%) */}
                   <div
-                    className="md:w-[63%] aspect-square overflow-hidden"
+                    className="md:w-[63%] aspect-square overflow-hidden max-w-[500px] mx-auto md:max-w-none"
                     onMouseLeave={() => setHoveredIdx(null)}
                   >
                     <div

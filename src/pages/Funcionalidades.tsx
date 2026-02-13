@@ -425,6 +425,18 @@ const Funcionalidades = () => {
               </Button>
             </Link>
           </nav>
+          <div className="flex items-center gap-3 md:hidden">
+            <Link to="/auth">
+              <Button size="sm" variant="ghost" className="text-sm text-[#335245]">
+                Login
+              </Button>
+            </Link>
+            <Link to="/simulador">
+              <Button size="sm" className="rounded-xl bg-[#c4fca1] px-3 text-black hover:bg-[#b4ef8f]">
+                Simulador
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -614,16 +626,16 @@ const Funcionalidades = () => {
                 os módulos à realidade da sua operação.
               </p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3 w-full sm:w-auto sm:flex-row">
               <Link to="/contato">
-                <Button className="rounded-xl bg-black px-6 text-white hover:bg-black/85">
+                <Button className="w-full sm:w-auto rounded-xl bg-black px-6 text-white hover:bg-black/85">
                   Agendar demonstração
                 </Button>
               </Link>
               <Link to="/simulador">
                 <Button
                   variant="outline"
-                  className="rounded-xl border-black/35 bg-transparent px-6 text-black hover:bg-black hover:text-white"
+                  className="w-full sm:w-auto rounded-xl border-black/35 bg-transparent px-6 text-black hover:bg-black hover:text-white"
                 >
                   Testar simulador
                 </Button>
@@ -634,8 +646,8 @@ const Funcionalidades = () => {
       </main>
 
       <footer className="border-t border-[#d4e4da] bg-white/70 px-4 py-10 md:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-4">
-          <div className="md:col-span-2">
+        <div className="mx-auto grid max-w-7xl gap-8 grid-cols-2 md:grid-cols-4">
+          <div className="col-span-2 md:col-span-2">
             <img src={datonLogo} alt="Daton" className="h-8" />
             <p className="mt-4 max-w-xl text-sm text-[#4d685a]">
               Plataforma completa para gestão ESG com foco em execução,
