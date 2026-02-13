@@ -39,7 +39,7 @@ export function TrainingDashboardCharts({
   }));
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-6 md:grid-cols-2 [&_.recharts-wrapper]:!overflow-visible">
       {/* Trainings by Department */}
       <Card className="shadow-md border-border/50">
         <CardHeader className="pb-2">
@@ -48,7 +48,7 @@ export function TrainingDashboardCharts({
             Distribuição de treinamentos entre departamentos
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <ChartContainer
             config={{
               value: {
@@ -56,7 +56,7 @@ export function TrainingDashboardCharts({
                 color: "hsl(var(--chart-1))",
               },
             }}
-            className="h-[300px]"
+            className="h-[300px] min-w-[400px]"
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={departmentData} margin={{ top: 20, right: 20, bottom: 60, left: 20 }}>
@@ -106,7 +106,7 @@ export function TrainingDashboardCharts({
             Treinamentos concluídos vs inscritos por mês
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <ChartContainer
             config={{
               completed: {
@@ -118,7 +118,7 @@ export function TrainingDashboardCharts({
                 color: "hsl(var(--chart-2))",
               },
             }}
-            className="h-[300px]"
+            className="h-[300px] min-w-[400px]"
           >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyTrend} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
@@ -183,7 +183,7 @@ export function TrainingDashboardCharts({
             Tipos de treinamento realizados
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <ChartContainer
             config={{
               value: {
@@ -191,7 +191,7 @@ export function TrainingDashboardCharts({
                 color: "hsl(var(--chart-1))",
               },
             }}
-            className="h-[300px]"
+            className="h-[300px] min-w-[300px]"
           >
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -235,7 +235,7 @@ export function TrainingDashboardCharts({
             Status atual dos treinamentos
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <ChartContainer
             config={{
               value: {
@@ -243,7 +243,7 @@ export function TrainingDashboardCharts({
                 color: "hsl(var(--chart-4))",
               },
             }}
-            className="h-[300px]"
+            className="h-[300px] min-w-[400px]"
           >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={statusData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
