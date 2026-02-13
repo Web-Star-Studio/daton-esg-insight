@@ -250,7 +250,7 @@ const Documentacao = () => {
               onClick={() => navigate("/auth")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="lumine-btn-primary"
+              className="lumine-btn-primary whitespace-nowrap text-[clamp(0.7rem,2.8vw,0.95rem)]"
               style={{ color: "#000000" }}
             >
               EXPLORAR DEMONSTRAÇÃO
