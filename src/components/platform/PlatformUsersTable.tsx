@@ -20,7 +20,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronLeft, ChevronRight, CheckCircle, XCircle, Eye } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, CheckCircle, XCircle, Eye, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { UserDetailsModal } from "./UserDetailsModal";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -43,6 +53,7 @@ export function PlatformUsersTable() {
   const [approvalFilter, setApprovalFilter] = useState("all");
   const [page, setPage] = useState(0);
   const [detailsUser, setDetailsUser] = useState<any>(null);
+  const [deleteUser, setDeleteUser] = useState<any>(null);
   const debouncedSearch = useDebounce(search, 400);
   const queryClient = useQueryClient();
 
@@ -129,6 +140,25 @@ export function PlatformUsersTable() {
     },
     onError: () => {
       toast.error("Erro ao alterar aprovação do usuário");
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("manage-platform", {
+        body: { action: "deleteUser", data: { userId } },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["platform-users"] });
+      toast.success("Usuário excluído com sucesso");
+      setDeleteUser(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erro ao excluir usuário");
     },
   });
 
@@ -309,6 +339,17 @@ export function PlatformUsersTable() {
                             )}
                           </Button>
                         )}
+                        {!isPlatformAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteUser(user)}
+                            className="gap-1.5 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Excluir
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -365,6 +406,29 @@ export function PlatformUsersTable() {
           userRole={detailsUser.role}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteUser} onOpenChange={(open) => { if (!open) setDeleteUser(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteUser?.full_name || deleteUser?.email}</strong>?
+              Esta ação é irreversível e removerá o perfil, permissões e o registro de autenticação do usuário.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteUserMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteUser && deleteUserMutation.mutate(deleteUser.id)}
+              disabled={deleteUserMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteUserMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
