@@ -180,14 +180,14 @@ export default function FormulariosCustomizados() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Formulários Customizados</h1>
           <p className="text-muted-foreground">
             Crie, gerencie e colete dados através de formulários personalizados
           </p>
         </div>
-        <Button onClick={handleCreateForm}>
+        <Button onClick={handleCreateForm} className="shrink-0 w-full sm:w-auto justify-center whitespace-nowrap">
           <Plus className="mr-2 h-4 w-4" />
           Criar Novo Formulário
         </Button>
