@@ -61,14 +61,16 @@ export function HeroSection() {
 
     return (
         <section
+            className="hero-section-root"
             style={{
                 position: 'relative',
                 minHeight: '100vh',
-                display: 'grid',
-                placeItems: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-end',
                 backgroundColor: 'var(--lumine-bg)',
                 overflow: 'hidden',
-                padding: '120px 2rem 80px',
+                padding: 'clamp(100px, 15vw, 120px) clamp(1rem, 4vw, 2rem) clamp(2rem, 5vh, 80px)',
             }}
         >
             <AnimatePresence mode="sync">
@@ -158,75 +160,69 @@ export function HeroSection() {
                 ))}
             </div>
 
-            {/* Bottom Left Title */}
-            <div style={{
-                position: 'absolute',
-                bottom: '10vh',
-                left: 'max(4vw, 2rem)',
-                maxWidth: '700px',
-                zIndex: 10,
-            }}>
-                <motion.div
-                    initial={{ opacity: 0, y: 40 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
+            {/* Bottom Content - Stacks on mobile */}
+            <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between mt-auto">
+                {/* Title */}
+                <div className="hero-content-wrapper max-w-[700px]">
+                    <motion.div
+                        initial={{ opacity: 0, y: 40 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                        style={{
+                            color: '#ffffff',
+                            margin: 0,
+                            fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+                            textShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
+                        }}
+                    >
+                        <h1
+                            style={{
+                                fontSize: 'clamp(1.6rem, 3.5vw, 2.8rem)',
+                                lineHeight: '1.1',
+                                letterSpacing: '-0.025em',
+                                fontWeight: 800,
+                                margin: 0,
+                                textAlign: 'left',
+                            }}
+                        >
+                            {heroSlides[currentSlide].headline}
+                        </h1>
+                        <p
+                            style={{
+                                display: 'block',
+                                marginTop: '1rem',
+                                marginBottom: 0,
+                                color: 'rgba(255, 255, 255, 0.85)',
+                                fontSize: 'clamp(0.95rem, 1.3vw, 1.15rem)',
+                                fontWeight: 400,
+                                lineHeight: 1.55,
+                                maxWidth: '600px',
+                            }}
+                        >
+                            {heroSlides[currentSlide].subheadline}
+                        </p>
+                    </motion.div>
+                </div>
+
+                {/* Action Bar */}
+                <div
+                    ref={actionBarRef}
+                    className="hero-action-bar"
                     style={{
-                        color: '#ffffff',
-                        margin: 0,
-                        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-                        textShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
+                        zIndex: 10,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'stretch',
+                        width: 'fit-content',
+                        borderRadius: '14px',
+                        border: '1px solid rgba(255, 255, 255, 0.35)',
+                        background: 'rgba(0, 0, 0, 0.32)',
+                        backdropFilter: 'blur(10px)',
+                        WebkitBackdropFilter: 'blur(10px)',
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                        overflow: 'hidden',
                     }}
                 >
-                    <h1
-                        style={{
-                            fontSize: 'clamp(1.6rem, 3.5vw, 2.8rem)',
-                            lineHeight: '1.1',
-                            letterSpacing: '-0.025em',
-                            fontWeight: 800,
-                            margin: 0,
-                            textAlign: 'left',
-                        }}
-                    >
-                        {heroSlides[currentSlide].headline}
-                    </h1>
-                    <p
-                        style={{
-                            display: 'block',
-                            marginTop: '1rem',
-                            marginBottom: 0,
-                            color: 'rgba(255, 255, 255, 0.85)',
-                            fontSize: 'clamp(0.95rem, 1.3vw, 1.15rem)',
-                            fontWeight: 400,
-                            lineHeight: 1.55,
-                            maxWidth: '600px',
-                        }}
-                    >
-                        {heroSlides[currentSlide].subheadline}
-                    </p>
-                </motion.div>
-            </div>
-
-            {/* Bottom Right Action Bar */}
-            <div
-                ref={actionBarRef}
-                style={{
-                    position: 'absolute',
-                    bottom: '10vh',
-                    right: 'max(4vw, 2rem)',
-                    zIndex: 10,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'stretch',
-                    width: 'fit-content',
-                    borderRadius: '14px',
-                    border: '1px solid rgba(255, 255, 255, 0.35)',
-                    background: 'rgba(0, 0, 0, 0.32)',
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-                    overflow: 'hidden',
-                }}
-            >
                 <AnimatePresence>
                     {quickMenuOpen && (
                         <motion.div
@@ -328,17 +324,7 @@ export function HeroSection() {
                     </motion.button>
                 </motion.div>
             </div>
-
-            {/* Mobile adjustments */}
-            <style>{`
-                @media (max-width: 1024px) {
-                    section { place-items: center; padding-top: 200px; display: flex; flexDirection: column; justify-content: space-between; }
-                    div[style*="top: 160px"] { position: relative; top: 0; right: 0; width: 100%; max-width: 100%; padding: 0 1rem; }
-                    div[style*="bottom: 10vh"] { position: relative; bottom: 0; left: 0; right: 0; padding: 2rem 1rem; text-align: center; }
-                    div[style*="width: 500px"] { transform: scale(0.6); }
-                    h1 { text-align: center; }
-                }
-            `}</style>
+            </div>
         </section>
     );
 }

@@ -139,8 +139,8 @@ export default function FAQ() {
                   Nossa equipe está pronta para ajudar você
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4">
+              <CardContent className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4">
                   <MessageCircle className="h-5 w-5" />
                   <div className="text-center">
                     <div className="font-medium">Chat ao vivo</div>
@@ -148,7 +148,7 @@ export default function FAQ() {
                   </div>
                 </Button>
 
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4" asChild>
+                <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4" asChild>
                   <a href="mailto:suporte@plataforma.com">
                     <Mail className="h-5 w-5" />
                     <div className="text-center">
@@ -158,7 +158,7 @@ export default function FAQ() {
                   </a>
                 </Button>
 
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4" asChild>
+                <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4" asChild>
                   <a href="tel:0800-xxx-xxxx">
                     <Phone className="h-5 w-5" />
                     <div className="text-center">
@@ -168,7 +168,7 @@ export default function FAQ() {
                   </a>
                 </Button>
 
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4" asChild>
+                <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4" asChild>
                   <a href="https://ajuda.plataforma.com" target="_blank" rel="noopener noreferrer">
                     <FileText className="h-5 w-5" />
                     <div className="text-center">

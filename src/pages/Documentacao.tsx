@@ -125,11 +125,13 @@ const Documentacao = () => {
         style={{
           position: "relative",
           minHeight: "50vh",
-          display: "grid",
-          placeItems: "center",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
           backgroundColor: "#0B0C0E",
           overflow: "hidden",
-          padding: "120px 2rem 60px",
+          padding: "clamp(100px, 15vw, 120px) clamp(1rem, 4vw, 2rem) clamp(3rem, 6vh, 60px)",
         }}
       >
         {/* Hero Background Image */}
@@ -261,7 +263,7 @@ const Documentacao = () => {
         </div>
       </section>
 
-      <main className="max-w-7xl mx-auto px-6 py-16 flex flex-col md:flex-row gap-12">
+      <main className="max-w-7xl mx-auto px-4 py-8 md:px-6 md:py-16 flex flex-col md:flex-row gap-8 md:gap-12">
         {/* --- SIDEBAR NAVIGATION --- */}
         <aside className="w-full md:w-64 shrink-0 hidden md:block">
           <div className="sticky top-32 space-y-8">

@@ -32,12 +32,12 @@ export default function Contato() {
       <section
         style={{
           position: "relative",
-          minHeight: "100dvh",
+          minHeight: "auto",
           overflow: "hidden",
-          paddingTop: "156px",
-          paddingRight: "max(4vw, 2rem)",
+          paddingTop: "clamp(100px, 15vw, 156px)",
+          paddingRight: "clamp(1rem, 4vw, 2rem)",
           paddingBottom: "24px",
-          paddingLeft: "max(4vw, 2rem)",
+          paddingLeft: "clamp(1rem, 4vw, 2rem)",
         }}
       >
         <img
@@ -65,7 +65,7 @@ export default function Contato() {
           }}
         />
 
-        <div className="relative z-10 flex w-full flex-col gap-8 md:min-h-[calc(100dvh-180px)] md:flex-row md:items-start md:justify-between">
+        <div className="relative z-10 flex w-full flex-col gap-8 md:min-h-[calc(100dvh-180px)] md:flex-row md:items-start md:justify-between pb-8">
           <div
             style={{
               color: "#ffffff",

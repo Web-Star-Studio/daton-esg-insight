@@ -17,7 +17,7 @@ export function HeimdallNavbar() {
                 left: 0,
                 right: 0,
                 zIndex: 1000,
-                padding: '2rem max(4vw, 2rem)',
+                padding: 'clamp(1rem, 3vw, 2rem) max(4vw, 1rem)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -37,7 +37,7 @@ export function HeimdallNavbar() {
                     src={datonLogo}
                     alt="Daton"
                     style={{
-                        height: '52px',
+                        height: 'clamp(36px, 8vw, 52px)',
                         filter: 'brightness(0) invert(1)',
                     }}
                 />
