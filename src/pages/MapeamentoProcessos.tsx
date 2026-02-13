@@ -129,7 +129,7 @@ const MapeamentoProcessos = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Mapeamento de Processos</h1>
           <p className="text-muted-foreground mt-2">
@@ -257,20 +257,20 @@ const MapeamentoProcessos = () => {
       )}
 
       <Tabs defaultValue="processes" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="processes" className="gap-2">
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="processes" className="min-w-fit gap-2">
             <Map className="h-4 w-4" />
             Processos
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-2">
+          <TabsTrigger value="analytics" className="min-w-fit gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
           </TabsTrigger>
-          <TabsTrigger value="methodology" className="gap-2">
+          <TabsTrigger value="methodology" className="min-w-fit gap-2">
             <Target className="h-4 w-4" />
             Metodologia
           </TabsTrigger>
-          <TabsTrigger value="integration" className="gap-2">
+          <TabsTrigger value="integration" className="min-w-fit gap-2">
             <Network className="h-4 w-4" />
             Integração
           </TabsTrigger>
