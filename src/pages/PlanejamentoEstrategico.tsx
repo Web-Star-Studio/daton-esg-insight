@@ -108,7 +108,7 @@ export default function PlanejamentoEstrategico() {
 
   return (
     <>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Planejamento Estratégico</h1>
           <p className="text-muted-foreground mt-2">
@@ -196,13 +196,13 @@ export default function PlanejamentoEstrategico() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="maps">Mapas</TabsTrigger>
-          <TabsTrigger value="bsc">BSC</TabsTrigger>
-          <TabsTrigger value="okrs">OKRs</TabsTrigger>
-          <TabsTrigger value="swot">SWOT</TabsTrigger>
-          <TabsTrigger value="initiatives">Iniciativas</TabsTrigger>
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="maps" className="min-w-fit">Mapas</TabsTrigger>
+          <TabsTrigger value="bsc" className="min-w-fit">BSC</TabsTrigger>
+          <TabsTrigger value="okrs" className="min-w-fit">OKRs</TabsTrigger>
+          <TabsTrigger value="swot" className="min-w-fit">SWOT</TabsTrigger>
+          <TabsTrigger value="initiatives" className="min-w-fit">Iniciativas</TabsTrigger>
+          <TabsTrigger value="dashboard" className="min-w-fit">Dashboard</TabsTrigger>
         </TabsList>
 
         <TabsContent value="maps" className="space-y-4">
