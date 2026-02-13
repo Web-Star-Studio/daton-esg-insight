@@ -195,14 +195,14 @@ export default function Licenciamento() {
   return (
     <div className="space-y-6 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between" data-tour="licenciamento-header">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4" data-tour="licenciamento-header">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Licenciamento</h1>
             <p className="text-muted-foreground">
               Gestão completa de licenças e autorizações com análise inteligente
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button 
               variant="outline"
               onClick={() => navigate('/licenciamento/processar')}
@@ -223,20 +223,20 @@ export default function Licenciamento() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard" className="gap-2">
+          <TabsList className="flex w-full overflow-x-auto">
+            <TabsTrigger value="dashboard" className="min-w-fit shrink-0 gap-2">
               <Shield className="w-4 h-4" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="licenses" className="gap-2">
+            <TabsTrigger value="licenses" className="min-w-fit shrink-0 gap-2">
               <FileText className="w-4 h-4" />
               Licenças
             </TabsTrigger>
-            <TabsTrigger value="ai-analysis" className="gap-2">
+            <TabsTrigger value="ai-analysis" className="min-w-fit shrink-0 gap-2">
               <Brain className="w-4 h-4" />
               Análise IA
             </TabsTrigger>
-            <TabsTrigger value="workflow" className="gap-2">
+            <TabsTrigger value="workflow" className="min-w-fit shrink-0 gap-2">
               <Workflow className="w-4 h-4" />
               Workflow
             </TabsTrigger>
