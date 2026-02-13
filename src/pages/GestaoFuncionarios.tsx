@@ -123,28 +123,28 @@ export default function GestaoFuncionarios() {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="dashboard" className="flex items-center space-x-2">
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2 min-w-fit">
             <TrendingUp className="w-4 h-4" />
             <span>Dashboard</span>
           </TabsTrigger>
-          <TabsTrigger value="funcionarios" className="flex items-center space-x-2">
+          <TabsTrigger value="funcionarios" className="flex items-center gap-2 min-w-fit">
             <Users className="w-4 h-4" />
             <span>Funcionários</span>
           </TabsTrigger>
-          <TabsTrigger value="importacao" className="flex items-center space-x-2">
+          <TabsTrigger value="importacao" className="flex items-center gap-2 min-w-fit">
             <Upload className="w-4 h-4" />
             <span>Importação</span>
           </TabsTrigger>
-          <TabsTrigger value="diversidade" className="flex items-center space-x-2">
+          <TabsTrigger value="diversidade" className="flex items-center gap-2 min-w-fit">
             <Building2 className="w-4 h-4" />
             <span>Diversidade</span>
           </TabsTrigger>
-          <TabsTrigger value="beneficios" className="flex items-center space-x-2">
+          <TabsTrigger value="beneficios" className="flex items-center gap-2 min-w-fit">
             <Gift className="w-4 h-4" />
             <span>Benefícios</span>
           </TabsTrigger>
-          <TabsTrigger value="relatorios" className="flex items-center space-x-2">
+          <TabsTrigger value="relatorios" className="flex items-center gap-2 min-w-fit">
             <Calendar className="w-4 h-4" />
             <span>Relatórios</span>
           </TabsTrigger>
