@@ -1,37 +1,34 @@
 
 
-# Loading Screen com Icone de Arvore Minimalista (fill animation)
+# Correcao do Redirecionamento Pos-Cadastro
 
-## O que sera feito
-Criar uma tela de loading centralizada com um icone SVG de arvore minimalista que preenche progressivamente com cor verde musgo (#5A6E4B) enquanto as paginas carregam. Esse loading substituira o fallback atual do `LazyPageWrapper` e do `EnhancedLoading`.
+## Problema Identificado
+Apos o registro bem-sucedido, o fluxo segue este caminho quebrado:
 
-## Detalhes visuais
-- Fundo escuro (seguindo o padrao Carbon Emerald do projeto: #0B1210)
-- Icone SVG de arvore minimalista centralizado na tela (~80px)
-- Animacao de preenchimento de baixo para cima com cor verde musgo (#5A6E4B)
-- Efeito suave e elegante, sem texto "Carregando..."
+1. `Auth.tsx` faz `navigate('/onboarding')` apos o cadastro
+2. `OnboardingRoute` verifica se ha usuario autenticado
+3. Como o Supabase pode exigir confirmacao de email, o usuario ainda nao esta autenticado
+4. `OnboardingRoute` redireciona para `/login` -- **mas essa rota nao existe** (a rota correta e `/auth`)
+5. O resultado e um erro 404
 
-## Arquivos editados
+## Correcoes Necessarias
 
-### 1. `src/components/TreeLoadingScreen.tsx` (novo)
-- Componente com SVG de arvore minimalista (silhueta simples)
-- Animacao CSS de clip-path ou mask que preenche o icone de baixo para cima com verde musgo
-- Centralizado vertical e horizontalmente na tela (h-screen, flex center)
-- Fundo escuro semi-transparente
+### 1. Corrigir rota inexistente em `src/routes/onboarding.tsx`
+- Linha 33: Trocar `<Navigate to="/login" replace />` por `<Navigate to="/auth" replace />`
+- Isso garante que, caso o usuario nao esteja autenticado, ele sera levado para a pagina de login correta
 
-### 2. `src/components/EnhancedLoading.tsx`
-- Substituir o conteudo do loading padrao pelo novo `TreeLoadingScreen`
-- Manter a interface de props para compatibilidade
+### 2. Ajustar fluxo pos-registro em `src/pages/Auth.tsx`
+- Linha 106: Apos o registro, verificar se o usuario precisa confirmar email antes de navegar para `/onboarding`
+- Se o Supabase exigir confirmacao de email, manter o usuario na tela de auth com uma mensagem informativa em vez de redirecionar para onboarding
+- Se nao exigir (auto-confirm habilitado), redirecionar para `/onboarding` normalmente
 
-### 3. `src/components/LazyPageWrapper.tsx`
-- Atualizar o fallback do Suspense para usar `TreeLoadingScreen` em vez do `EnhancedLoading`
+### Detalhes Tecnicos
 
-### 4. `src/components/LoadingFallback.tsx`
-- Atualizar o componente principal para tambem usar o `TreeLoadingScreen`
+**Arquivo `src/routes/onboarding.tsx` (linha 33):**
+- Alterar redirect de `/login` para `/auth`
 
-## Detalhes tecnicos
-- SVG inline customizado (arvore minimalista com tronco e copa)
-- Animacao via CSS `@keyframes` com `clip-path: inset(X% 0 0 0)` para efeito de preenchimento vertical
-- Duracao da animacao: ~1.5s em loop
-- Sem dependencias externas, apenas CSS + SVG inline
+**Arquivo `src/pages/Auth.tsx` (linhas 97-109):**
+- Apos o `register()`, verificar se o usuario foi autenticado automaticamente (session existe)
+- Se sim: `navigate('/onboarding')`
+- Se nao (precisa confirmar email): exibir mensagem de sucesso e manter na tela de auth, sem redirecionar para onboarding
 
