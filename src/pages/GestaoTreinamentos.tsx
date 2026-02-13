@@ -398,27 +398,27 @@ export default function GestaoTreinamentos() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Gestão de Treinamentos</h1>
           <p className="text-muted-foreground">
             Gerencie programas de treinamento, desenvolvimento e certificações
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsReportsModalOpen(true)} variant="outline">
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => setIsReportsModalOpen(true)} variant="outline" className="flex-1 sm:flex-none">
             <Download className="w-4 h-4 mr-2" />
             Relatórios
           </Button>
-          <Button onClick={() => setIsExportHoursModalOpen(true)} variant="outline">
+          <Button onClick={() => setIsExportHoursModalOpen(true)} variant="outline" className="flex-1 sm:flex-none">
             <Clock className="w-4 h-4 mr-2" />
             Exportar Horas
           </Button>
-          <Button onClick={handleNewEmployeeTraining} variant="outline">
+          <Button onClick={handleNewEmployeeTraining} variant="outline" className="flex-1 sm:flex-none">
             <UserPlus className="w-4 h-4 mr-2" />
             Novo Registro
           </Button>
-          <Button onClick={handleNewProgram}>
+          <Button onClick={handleNewProgram} className="flex-1 sm:flex-none">
             <Plus className="w-4 h-4 mr-2" />
             Novo Programa
           </Button>
@@ -426,24 +426,24 @@ export default function GestaoTreinamentos() {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="dashboard" className="flex items-center space-x-2">
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2 min-w-fit">
             <TrendingUp className="w-4 h-4" />
             <span>Dashboard</span>
           </TabsTrigger>
-          <TabsTrigger value="compliance" className="flex items-center space-x-2">
+          <TabsTrigger value="compliance" className="flex items-center gap-2 min-w-fit">
             <Target className="w-4 h-4" />
             <span>Compliance</span>
           </TabsTrigger>
-          <TabsTrigger value="programas" className="flex items-center space-x-2">
+          <TabsTrigger value="programas" className="flex items-center gap-2 min-w-fit">
             <BookOpen className="w-4 h-4" />
             <span>Programas</span>
           </TabsTrigger>
-          <TabsTrigger value="calendario" className="flex items-center space-x-2">
+          <TabsTrigger value="calendario" className="flex items-center gap-2 min-w-fit">
             <Calendar className="w-4 h-4" />
             <span>Calendário</span>
           </TabsTrigger>
-          <TabsTrigger value="certificacoes" className="flex items-center space-x-2">
+          <TabsTrigger value="certificacoes" className="flex items-center gap-2 min-w-fit">
             <Award className="w-4 h-4" />
             <span>Certificações</span>
           </TabsTrigger>
