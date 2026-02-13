@@ -30,7 +30,7 @@ export function OnboardingRoute() {
   // Redirect to dashboard if user is not logged in
   if (!user) {
     logger.warn('OnboardingRoute: No user - redirecting to login', 'auth');
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // Redirect based on approval status after onboarding
