@@ -1,6 +1,8 @@
 import { Navigate } from 'react-router-dom';
 import { CleanOnboardingMain } from '@/components/onboarding/CleanOnboardingMain';
 import { useAuth } from '@/contexts/AuthContext';
+import { TutorialProvider } from '@/contexts/TutorialContext';
+import { UnifiedTourProvider } from '@/contexts/UnifiedTourContext';
 import { useEffect } from 'react';
 import { logger } from '@/utils/logger';
 
@@ -41,5 +43,11 @@ export function OnboardingRoute() {
   }
 
   logger.info('OnboardingRoute: Showing onboarding flow', 'ui');
-  return <CleanOnboardingMain />;
+  return (
+    <TutorialProvider>
+      <UnifiedTourProvider>
+        <CleanOnboardingMain />
+      </UnifiedTourProvider>
+    </TutorialProvider>
+  );
 }
