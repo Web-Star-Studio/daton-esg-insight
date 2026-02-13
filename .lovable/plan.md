@@ -1,44 +1,36 @@
 
 
-## Plano: Alterar card "Gestão Fornecedores" para "ESG Governanca" na pagina /ambiental
+## Problema
 
-### O que sera feito
+O modal de detalhes do usuario em `/platform-admin` mostra "Onboarding nao iniciado" para todos os usuarios porque a tabela `onboarding_selections` tem uma politica RLS que so permite cada usuario ver seus proprios dados (`user_id = auth.uid()`). O administrador da plataforma nao consegue ler as selecoes de onboarding de outros usuarios.
 
-No arquivo `src/pages/ESGAmbiental.tsx`, o card de indice "004" (atualmente "Gestão Fornecedores") sera atualizado:
+## Solucao
 
-1. **Titulo**: De "Gestão Fornecedores" para "ESG Governanca"
-2. **Categoria**: De "Cadeia de Suprimentos / Compras" para algo como "Governanca Corporativa"
-3. **Descricao**: Texto atualizado para refletir governanca (ex: "Centralize politicas, auditorias, riscos e compliance para elevar transparencia e confianca institucional.")
-4. **Bullet points**: Substituir os 3 itens atuais por itens de governanca, como:
-   - Politicas e compliance corporativo
-   - Gestao de riscos e auditorias
-   - Transparencia e etica empresarial
-5. **ID**: De "fornecedores" para "governanca"
+Adicionar uma politica RLS na tabela `onboarding_selections` que permita platform admins lerem os dados de onboarding de qualquer usuario.
 
-### Detalhes tecnicos
+## Etapas
 
-Arquivo: `src/pages/ESGAmbiental.tsx`, linhas 90-105.
+1. **Criar nova politica RLS** na tabela `onboarding_selections` que permita SELECT para usuarios que sao `platform_admin`. A verificacao sera feita consultando a tabela `platform_admins` (mesmo padrao ja usado em outras tabelas do sistema).
 
-Alteracao pontual no objeto do array `INFRASTRUCTURE_CARDS`:
-
-```typescript
-{
-  id: "governanca",
-  index: "004",
-  title: "ESG Governança",
-  category: "Governança Corporativa",
-  description:
-    "Centralize políticas, auditorias, riscos e compliance para elevar transparência e confiança institucional.",
-  icon: TrendingUp,
-  image: esgSuppliersCardImg,
-  color: "#fff7ed",
-  features: [
-    "Políticas e compliance corporativo",
-    "Gestão de riscos e auditorias",
-    "Transparência e ética empresarial",
-  ],
-},
+```sql
+CREATE POLICY "Platform admins can view all onboarding selections"
+  ON public.onboarding_selections
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.platform_admins
+      WHERE platform_admins.user_id = auth.uid()
+    )
+  );
 ```
 
-A imagem e o icone serao mantidos, pois nao foi solicitada alteracao visual alem do texto.
+2. **Nenhuma alteracao de codigo necessaria** - o componente `UserDetailsModal.tsx` ja implementa toda a logica de exibicao dos dados de onboarding (modulos selecionados, perfil da empresa, configuracoes, progresso). O problema e exclusivamente de permissao no banco de dados.
+
+## Detalhes Tecnicos
+
+- Tabela afetada: `onboarding_selections`
+- Politica atual: `Users can manage their own onboarding selections` (ALL, `user_id = auth.uid()`)
+- Nova politica: SELECT apenas, restrita a platform admins via lookup na tabela `platform_admins`
+- Nenhum arquivo de codigo sera alterado
+- A migracao SQL sera criada em `supabase/migrations/`
 
