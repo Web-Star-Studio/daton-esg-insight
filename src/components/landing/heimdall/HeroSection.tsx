@@ -70,7 +70,7 @@ export function HeroSection() {
                 justifyContent: 'flex-end',
                 backgroundColor: 'var(--lumine-bg)',
                 overflow: 'hidden',
-                padding: 'clamp(100px, 15vw, 120px) clamp(1rem, 4vw, 2rem) clamp(2rem, 5vh, 80px)',
+                padding: 'clamp(100px, 15vw, 120px) clamp(1rem, 4vw, 2rem) clamp(6rem, 12vh, 80px)',
             }}
         >
             <AnimatePresence mode="sync">
@@ -207,7 +207,7 @@ export function HeroSection() {
                 {/* Action Bar */}
                 <div
                     ref={actionBarRef}
-                    className="hero-action-bar w-full md:w-fit"
+                    className="hero-action-bar self-end shrink-0 md:w-fit"
                     style={{
                         zIndex: 10,
                         display: 'flex',
