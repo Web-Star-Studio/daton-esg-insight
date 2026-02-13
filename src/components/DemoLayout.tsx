@@ -7,6 +7,7 @@ import { Info } from "lucide-react";
 import { DemoDataSeeder } from "@/components/DemoDataSeeder";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { UnifiedTourProvider } from "@/contexts/UnifiedTourContext";
+import { UnifiedTourSystem } from "@/components/tutorial/unified/UnifiedTourSystem";
 
 export function DemoLayout() {
   return (
@@ -36,6 +37,7 @@ export function DemoLayout() {
           </main>
         </div>
       </div>
+      <UnifiedTourSystem />
     </SidebarProvider>
     </UnifiedTourProvider>
     </TutorialProvider>
