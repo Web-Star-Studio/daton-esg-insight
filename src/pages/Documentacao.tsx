@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   FileText, Zap, Shield, Target, Users, Cpu, Globe, TrendingUp,
-  Clock, CheckCircle, ArrowRight, Layers, HelpCircle, ChevronDown
+  Clock, CheckCircle, ArrowRight, Layers, HelpCircle, ChevronDown, Menu
 } from 'lucide-react';
 import { FAQ_categories } from '@/data/faqs';
 import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
@@ -13,8 +13,39 @@ import '@/components/landing/heimdall/heimdall.css';
 import docsHeroImg from '@/assets/docs-hero.png';
 
 const Documentacao = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('faq');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [quickMenuOpen, setQuickMenuOpen] = useState(false);
+  const actionBarRef = useRef<HTMLDivElement>(null);
+
+  const quickMenuLinks = [
+    { label: 'Soluções', href: '/funcionalidades' },
+    { label: 'Central de Ajuda', href: '/documentacao' },
+    { label: 'Sobre Nós', href: '/sobre-nos' },
+    { label: 'Contato', href: '/contato' },
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (!quickMenuOpen) return;
+      const target = event.target as Node;
+      if (actionBarRef.current && !actionBarRef.current.contains(target)) {
+        setQuickMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setQuickMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [quickMenuOpen]);
 
   // Check auth state
   useEffect(() => {
@@ -123,6 +154,109 @@ const Documentacao = () => {
             <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
               Guia completo de arquitetura, referências de API e manuais de utilização da plataforma ESG mais avançada do mercado.
             </p>
+          </motion.div>
+        </div>
+
+        {/* Bottom Right Action Bar (Hamburger Menu) */}
+        <div
+          ref={actionBarRef}
+          style={{
+            position: "absolute",
+            bottom: "10vh",
+            right: "max(4vw, 2rem)",
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            width: "fit-content",
+            borderRadius: "14px",
+            border: "1px solid rgba(255, 255, 255, 0.35)",
+            background: "rgba(0, 0, 0, 0.32)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.3)",
+            overflow: "hidden",
+          }}
+        >
+          <AnimatePresence>
+            {quickMenuOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                style={{ width: "100%", overflow: "hidden" }}
+              >
+                <nav style={{ display: "grid", gap: "0.15rem", padding: "0.35rem 0.35rem 0.2rem" }}>
+                  {quickMenuLinks.map((link, index) => (
+                    <motion.button
+                      key={index}
+                      onClick={() => { setQuickMenuOpen(false); navigate(link.href); }}
+                      whileHover={{ scale: 1.03, backgroundColor: "#c4fca1", color: "#000000" }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ duration: 0.16, ease: "easeOut" }}
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        background: "rgba(255, 255, 255, 0.06)",
+                        border: "none",
+                        borderRadius: "9px",
+                        color: "#ffffff",
+                        fontSize: "0.92rem",
+                        fontWeight: 500,
+                        padding: "0.68rem 0.85rem",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {link.label}
+                    </motion.button>
+                  ))}
+                </nav>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.div
+            style={{
+              display: "flex",
+              width: "100%",
+              alignItems: "center",
+              gap: "0.5rem",
+              padding: "0.35rem",
+            }}
+          >
+            <button
+              onClick={() => setQuickMenuOpen((prev) => !prev)}
+              aria-label="Abrir menu"
+              aria-expanded={quickMenuOpen}
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "10px",
+                border: "1px solid rgba(255, 255, 255, 0.45)",
+                background: "rgba(255, 255, 255, 0.06)",
+                color: "#ffffff",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <Menu size={18} />
+            </button>
+
+            <div aria-hidden="true" style={{ width: "1px", height: "28px", background: "rgba(255, 255, 255, 0.28)" }} />
+
+            <motion.button
+              onClick={() => navigate("/auth")}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="lumine-btn-primary"
+              style={{ color: "#000000" }}
+            >
+              EXPLORAR DEMONSTRAÇÃO
+              <ArrowRight size={18} />
+            </motion.button>
           </motion.div>
         </div>
       </section>
