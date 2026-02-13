@@ -238,7 +238,7 @@ const InfraFeatureCard = ({ module }: { module: InfraModuleHighlight }) => (
     <div className="flex items-start justify-between mb-6">
       <h3 className="text-2xl font-bold text-[#1a2421] tracking-tight">{module.title}</h3>
     </div>
-    <p className="text-[#4b5563] leading-relaxed mb-8 h-20">{module.description}</p>
+    <p className="text-[#4b5563] leading-relaxed mb-8 min-h-20">{module.description}</p>
     <ul className="space-y-3 mt-auto">
       {module.features.map((feature, idx) => (
         <li key={idx} className="flex items-start gap-3 text-sm text-[#4b5563]">
