@@ -1,5 +1,5 @@
 import React from 'react';
-import { EnhancedLoading } from '@/components/EnhancedLoading';
+import { TreeLoadingScreen } from '@/components/TreeLoadingScreen';
 import { unifiedToast } from '@/utils/unifiedToast';
 import { EnhancedErrorBoundary } from '@/components/ui/enhanced-error-boundary';
 
@@ -10,7 +10,7 @@ interface LazyPageWrapperProps {
 // Wrapper otimizado para páginas lazy com loading e error boundary
 export const LazyPageWrapper: React.FC<LazyPageWrapperProps> = ({ children }) => {
   return (
-    <React.Suspense fallback={<EnhancedLoading message="Carregando página..." />}>
+    <React.Suspense fallback={<TreeLoadingScreen />}>
       <EnhancedErrorBoundary
         onError={(error, errorInfo) => {
           unifiedToast.error("Erro na página", {

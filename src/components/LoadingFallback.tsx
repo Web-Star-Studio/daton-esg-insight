@@ -1,21 +1,12 @@
-import { Loader2 } from "lucide-react";
+import { TreeLoadingScreen } from "@/components/TreeLoadingScreen";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface LoadingFallbackProps {
   message?: string;
 }
 
-export function LoadingFallback({ message = "Carregando..." }: LoadingFallbackProps) {
-  return (
-    <div className="flex items-center justify-center min-h-[400px] w-full">
-      <Card className="w-full max-w-md">
-        <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground text-center">{message}</p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+export function LoadingFallback(_props: LoadingFallbackProps) {
+  return <TreeLoadingScreen />;
 }
 
 // Skeleton específicos para diferentes tipos de conteúdo
