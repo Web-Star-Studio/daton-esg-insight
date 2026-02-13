@@ -366,20 +366,20 @@ export default function SeguracaTrabalho() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Segurança do Trabalho</h1>
           <p className="text-muted-foreground">
             Gestão de incidentes, auditorias e segurança ocupacional
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <DatePickerWithRange
             date={dateRange}
             onDateChange={setDateRange}
-            className="w-auto"
+            className="w-full sm:w-auto"
           />
-          <Button variant="outline">
+          <Button variant="outline" className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
