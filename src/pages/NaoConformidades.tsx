@@ -363,14 +363,14 @@ export default function NaoConformidades() {
 
   return (
     <>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Não Conformidades</h1>
           <p className="text-muted-foreground mt-2">
             Sistema completo de gestão de não conformidades
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setIsWorkflowManagerOpen(true)}>
             <Settings className="h-4 w-4 mr-2" />
             Workflows
@@ -564,22 +564,22 @@ export default function NaoConformidades() {
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="dashboard" className="min-w-fit shrink-0 flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Dashboard
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
+          <TabsTrigger value="analytics" className="min-w-fit shrink-0 flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Analytics
           </TabsTrigger>
-          <TabsTrigger value="list" className="flex items-center gap-2">
+          <TabsTrigger value="list" className="min-w-fit shrink-0 flex items-center gap-2">
             <Activity className="h-4 w-4" />
             Lista
           </TabsTrigger>
           <TabsTrigger 
             value="tasks" 
-            className="flex items-center gap-2"
+            className="min-w-fit shrink-0 flex items-center gap-2"
             onClick={() => navigate("/nc-tarefas")}
           >
             <ClipboardList className="h-4 w-4" />
