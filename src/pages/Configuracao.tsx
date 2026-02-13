@@ -342,17 +342,17 @@ export default function Configuracao() {
         <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col md:flex-row gap-6">
         {/* Navigation Sidebar */}
-        <div className="w-60 space-y-1">
-          <nav className="space-y-1">
+        <div className="w-full md:w-60 shrink-0">
+          <nav className="flex md:flex-col gap-1 overflow-x-auto pb-2 md:pb-0">
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Button
                   key={item.id}
                   variant={activeSection === item.id ? "default" : "ghost"}
-                  className="w-full justify-start"
+                  className="justify-start whitespace-nowrap shrink-0"
                   onClick={() => setActiveSection(item.id)}
                 >
                   <Icon className="mr-2 h-4 w-4" />
@@ -364,7 +364,7 @@ export default function Configuracao() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {activeSection === "perfil" && (
             <Card>
               <CardHeader>
