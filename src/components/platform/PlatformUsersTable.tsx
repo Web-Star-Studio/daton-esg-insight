@@ -5,6 +5,8 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -20,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronLeft, ChevronRight, CheckCircle, XCircle, Eye, Trash2 } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, CheckCircle, XCircle, Eye, Trash2, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +56,8 @@ export function PlatformUsersTable() {
   const [page, setPage] = useState(0);
   const [detailsUser, setDetailsUser] = useState<any>(null);
   const [deleteUser, setDeleteUser] = useState<any>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const debouncedSearch = useDebounce(search, 400);
   const queryClient = useQueryClient();
 
@@ -72,7 +76,6 @@ export function PlatformUsersTable() {
   const { data, isLoading } = useQuery({
     queryKey: ["platform-users", debouncedSearch, companyFilter, statusFilter, approvalFilter, page],
     queryFn: async () => {
-      // Query 1: profiles + companies (sem user_roles, pois não há FK direta)
       let query = supabase
         .from("profiles")
         .select(
@@ -87,27 +90,15 @@ export function PlatformUsersTable() {
           `full_name.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%`
         );
       }
-
-      if (companyFilter !== "all") {
-        query = query.eq("company_id", companyFilter);
-      }
-
-      if (statusFilter === "active") {
-        query = query.eq("is_active", true);
-      } else if (statusFilter === "inactive") {
-        query = query.eq("is_active", false);
-      }
-
-      if (approvalFilter === "approved") {
-        query = query.eq("is_approved", true);
-      } else if (approvalFilter === "pending") {
-        query = query.eq("is_approved", false);
-      }
+      if (companyFilter !== "all") query = query.eq("company_id", companyFilter);
+      if (statusFilter === "active") query = query.eq("is_active", true);
+      else if (statusFilter === "inactive") query = query.eq("is_active", false);
+      if (approvalFilter === "approved") query = query.eq("is_approved", true);
+      else if (approvalFilter === "pending") query = query.eq("is_approved", false);
 
       const { data: profiles, error, count } = await query;
       if (error) throw error;
 
-      // Query 2: buscar roles separadamente
       const userIds = (profiles ?? []).map((p: any) => p.id);
       let roles: any[] = [];
       if (userIds.length > 0) {
@@ -118,7 +109,6 @@ export function PlatformUsersTable() {
         roles = rolesData ?? [];
       }
 
-      // Combinar profiles + roles
       const roleMap: Record<string, string> = {};
       roles.forEach((r: any) => { roleMap[r.user_id] = r.role; });
       const users = (profiles ?? []).map((p: any) => ({ ...p, role: roleMap[p.id] }));
@@ -138,9 +128,7 @@ export function PlatformUsersTable() {
       queryClient.invalidateQueries({ queryKey: ["platform-users"] });
       toast.success(approve ? "Usuário aprovado com sucesso" : "Aprovação revogada");
     },
-    onError: () => {
-      toast.error("Erro ao alterar aprovação do usuário");
-    },
+    onError: () => toast.error("Erro ao alterar aprovação do usuário"),
   });
 
   const deleteUserMutation = useMutation({
@@ -157,14 +145,68 @@ export function PlatformUsersTable() {
       toast.success("Usuário excluído com sucesso");
       setDeleteUser(null);
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Erro ao excluir usuário");
+    onError: (err: any) => toast.error(err.message || "Erro ao excluir usuário"),
+  });
+
+  // Bulk mutations
+  const bulkApprovalMutation = useMutation({
+    mutationFn: async ({ userIds, approve }: { userIds: string[]; approve: boolean }) => {
+      for (const uid of userIds) {
+        const { error } = await (supabase.from("profiles") as any)
+          .update({ is_approved: approve })
+          .eq("id", uid);
+        if (error) throw error;
+      }
     },
+    onSuccess: (_, { approve }) => {
+      queryClient.invalidateQueries({ queryKey: ["platform-users"] });
+      setSelectedUserIds(new Set());
+      toast.success(approve ? "Usuários aprovados com sucesso" : "Aprovações revogadas");
+    },
+    onError: () => toast.error("Erro ao alterar aprovação em lote"),
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (userIds: string[]) => {
+      const { data, error } = await supabase.functions.invoke("manage-platform", {
+        body: { action: "bulkDeleteUsers", data: { userIds } },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["platform-users"] });
+      setSelectedUserIds(new Set());
+      setShowBulkDeleteConfirm(false);
+      toast.success(data?.message || "Usuários excluídos com sucesso");
+    },
+    onError: (err: any) => toast.error(err.message || "Erro ao excluir usuários em lote"),
   });
 
   const users = data?.users ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const selectableUsers = users.filter((u: any) => u.role !== 'platform_admin');
+  const allSelectableSelected = selectableUsers.length > 0 && selectableUsers.every((u: any) => selectedUserIds.has(u.id));
+
+  const toggleSelectAll = () => {
+    if (allSelectableSelected) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(selectableUsers.map((u: any) => u.id)));
+    }
+  };
+
+  const toggleSelectUser = (userId: string) => {
+    const next = new Set(selectedUserIds);
+    if (next.has(userId)) next.delete(userId);
+    else next.add(userId);
+    setSelectedUserIds(next);
+  };
+
+  const selectedCount = selectedUserIds.size;
 
   return (
     <div className="space-y-4">
@@ -175,58 +217,27 @@ export function PlatformUsersTable() {
           <Input
             placeholder="Buscar por nome ou email..."
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
             className="pl-9"
           />
         </div>
-        <Select
-          value={companyFilter}
-          onValueChange={(v) => {
-            setCompanyFilter(v);
-            setPage(0);
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-[220px]">
-            <SelectValue placeholder="Todas as empresas" />
-          </SelectTrigger>
+        <Select value={companyFilter} onValueChange={(v) => { setCompanyFilter(v); setPage(0); }}>
+          <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Todas as empresas" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as empresas</SelectItem>
-            {companies?.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
+            {companies?.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
           </SelectContent>
         </Select>
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => {
-            setStatusFilter(v);
-            setPage(0);
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
+          <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="active">Ativos</SelectItem>
             <SelectItem value="inactive">Inativos</SelectItem>
           </SelectContent>
         </Select>
-        <Select
-          value={approvalFilter}
-          onValueChange={(v) => {
-            setApprovalFilter(v);
-            setPage(0);
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="Aprovação" />
-          </SelectTrigger>
+        <Select value={approvalFilter} onValueChange={(v) => { setApprovalFilter(v); setPage(0); }}>
+          <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Aprovação" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="approved">Aprovados</SelectItem>
@@ -240,6 +251,13 @@ export function PlatformUsersTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allSelectableSelected && selectableUsers.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Selecionar todos"
+                />
+              </TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Empresa</TableHead>
@@ -254,43 +272,40 @@ export function PlatformUsersTable() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                   Nenhum usuário encontrado.
                 </TableCell>
               </TableRow>
             ) : (
               users.map((user: any) => {
                 const role = user.role;
-                const companyName =
-                  (user.companies as any)?.name ?? "—";
+                const companyName = (user.companies as any)?.name ?? "—";
                 const isPlatformAdmin = role === 'platform_admin';
                 return (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.full_name || "—"}
+                  <TableRow key={user.id} data-state={selectedUserIds.has(user.id) ? "selected" : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedUserIds.has(user.id)}
+                        onCheckedChange={() => toggleSelectUser(user.id)}
+                        disabled={isPlatformAdmin}
+                        aria-label={`Selecionar ${user.full_name}`}
+                      />
                     </TableCell>
+                    <TableCell className="font-medium">{user.full_name || "—"}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{companyName}</TableCell>
                     <TableCell>{user.job_title || "—"}</TableCell>
                     <TableCell>
-                      {role ? (
-                        <Badge variant="secondary">
-                          {roleLabels[role] ?? role}
-                        </Badge>
-                      ) : (
-                        "—"
-                      )}
+                      {role ? <Badge variant="secondary">{roleLabels[role] ?? role}</Badge> : "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={user.is_active ? "success-subtle" : "destructive-subtle"}
-                      >
+                      <Badge variant={user.is_active ? "success-subtle" : "destructive-subtle"}>
                         {user.is_active ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
@@ -303,20 +318,12 @@ export function PlatformUsersTable() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {user.created_at
-                        ? format(new Date(user.created_at), "dd/MM/yyyy")
-                        : "—"}
+                      {user.created_at ? format(new Date(user.created_at), "dd/MM/yyyy") : "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDetailsUser(user)}
-                          className="gap-1.5"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          Detalhes
+                        <Button variant="ghost" size="sm" onClick={() => setDetailsUser(user)} className="gap-1.5">
+                          <Eye className="h-3.5 w-3.5" /> Detalhes
                         </Button>
                         {!isPlatformAdmin && (
                           <Button
@@ -326,28 +333,12 @@ export function PlatformUsersTable() {
                             disabled={toggleApproval.isPending}
                             className="gap-1.5"
                           >
-                            {user.is_approved ? (
-                              <>
-                                <XCircle className="h-3.5 w-3.5" />
-                                Revogar
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-3.5 w-3.5" />
-                                Aprovar
-                              </>
-                            )}
+                            {user.is_approved ? <><XCircle className="h-3.5 w-3.5" /> Revogar</> : <><CheckCircle className="h-3.5 w-3.5" /> Aprovar</>}
                           </Button>
                         )}
                         {!isPlatformAdmin && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeleteUser(user)}
-                            className="gap-1.5 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Excluir
+                          <Button variant="ghost" size="sm" onClick={() => setDeleteUser(user)} className="gap-1.5 text-destructive hover:text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" /> Excluir
                           </Button>
                         )}
                       </div>
@@ -367,25 +358,60 @@ export function PlatformUsersTable() {
             {total} usuário{total !== 1 ? "s" : ""} encontrado{total !== 1 ? "s" : ""}
           </p>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-            >
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-muted-foreground">
-              {page + 1} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-            >
+            <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
               <ChevronRight className="h-4 w-4" />
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Actions Bar */}
+      {selectedCount > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="bg-background border rounded-lg shadow-lg p-4 min-w-[500px]">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Badge variant="secondary" className="text-sm">{selectedCount} selecionado(s)</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedUserIds(new Set())} className="h-6 w-6 p-0">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <Separator orientation="vertical" className="h-6" />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  disabled={bulkApprovalMutation.isPending}
+                  onClick={() => bulkApprovalMutation.mutate({ userIds: Array.from(selectedUserIds), approve: true })}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" /> Aprovar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  disabled={bulkApprovalMutation.isPending}
+                  onClick={() => bulkApprovalMutation.mutate({ userIds: Array.from(selectedUserIds), approve: false })}
+                >
+                  <XCircle className="h-4 w-4 mr-2" /> Revogar
+                </Button>
+                <Separator orientation="vertical" className="h-6" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-destructive hover:text-destructive"
+                  disabled={bulkDeleteMutation.isPending}
+                  onClick={() => setShowBulkDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -407,7 +433,7 @@ export function PlatformUsersTable() {
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Single User Dialog */}
       <AlertDialog open={!!deleteUser} onOpenChange={(open) => { if (!open) setDeleteUser(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -425,6 +451,29 @@ export function PlatformUsersTable() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteUserMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selectedCount} usuário(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{selectedCount} usuário(s)</strong>?
+              Esta ação é irreversível e removerá os perfis, permissões e registros de autenticação.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => bulkDeleteMutation.mutate(Array.from(selectedUserIds))}
+              disabled={bulkDeleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleteMutation.isPending ? "Excluindo..." : "Excluir todos"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

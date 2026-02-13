@@ -8,7 +8,8 @@ const corsHeaders = {
 interface ManagePlatformRequest {
   action: 'listCompanies' | 'getCompanyDetails' | 'suspendCompany' | 
           'activateCompany' | 'updateCompanyPlan' | 'impersonateCompany' |
-          'getPlatformStats' | 'listAllUsers' | 'auditLogs' | 'deleteUser';
+          'getPlatformStats' | 'listAllUsers' | 'auditLogs' | 'deleteUser' |
+          'bulkDeleteUsers' | 'bulkSuspendCompanies' | 'bulkActivateCompanies';
   data?: any;
 }
 
@@ -289,6 +290,89 @@ Deno.serve(async (req) => {
         if (deleteAuthError) throw deleteAuthError;
 
         result = { success: true, message: 'Usuário excluído com sucesso' };
+        break;
+      }
+
+      case 'bulkDeleteUsers': {
+        const { userIds } = data;
+        if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+          throw new Error('userIds é obrigatório e deve ser um array não vazio');
+        }
+
+        // Verificar se algum é platform admin
+        const { data: admins } = await supabaseClient
+          .from('platform_admins')
+          .select('user_id')
+          .in('user_id', userIds)
+          .eq('is_active', true);
+
+        if (admins && admins.length > 0) {
+          throw new Error('Não é permitido excluir Platform Admins');
+        }
+
+        const supabaseAdmin = createClient(
+          'https://dqlvioijqzlvnvvajmft.supabase.co',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+
+        const errors: string[] = [];
+        for (const uid of userIds) {
+          try {
+            await supabaseAdmin.from('user_roles').update({ assigned_by_user_id: null }).eq('assigned_by_user_id', uid);
+            await supabaseAdmin.from('user_roles').delete().eq('user_id', uid);
+            await supabaseAdmin.from('profiles').delete().eq('id', uid);
+            const { error: delErr } = await supabaseAdmin.auth.admin.deleteUser(uid);
+            if (delErr) errors.push(`${uid}: ${delErr.message}`);
+          } catch (e) {
+            errors.push(`${uid}: ${(e as Error).message}`);
+          }
+        }
+
+        result = { 
+          success: true, 
+          message: `${userIds.length - errors.length} usuário(s) excluído(s)`,
+          errors: errors.length > 0 ? errors : undefined 
+        };
+        break;
+      }
+
+      case 'bulkSuspendCompanies': {
+        const { companyIds } = data;
+        if (!companyIds || !Array.isArray(companyIds) || companyIds.length === 0) {
+          throw new Error('companyIds é obrigatório');
+        }
+
+        const { error } = await supabaseClient
+          .from('companies')
+          .update({ 
+            status: 'suspended',
+            suspended_at: new Date().toISOString(),
+            suspension_reason: data.reason || 'Suspensão em lote pelo Platform Admin'
+          })
+          .in('id', companyIds);
+
+        if (error) throw error;
+        result = { success: true, message: `${companyIds.length} empresa(s) suspensa(s)` };
+        break;
+      }
+
+      case 'bulkActivateCompanies': {
+        const { companyIds } = data;
+        if (!companyIds || !Array.isArray(companyIds) || companyIds.length === 0) {
+          throw new Error('companyIds é obrigatório');
+        }
+
+        const { error } = await supabaseClient
+          .from('companies')
+          .update({ 
+            status: 'active',
+            suspended_at: null,
+            suspension_reason: null
+          })
+          .in('id', companyIds);
+
+        if (error) throw error;
+        result = { success: true, message: `${companyIds.length} empresa(s) ativada(s)` };
         break;
       }
 
