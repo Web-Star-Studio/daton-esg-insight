@@ -162,10 +162,8 @@ const Documentacao = () => {
         {/* Bottom Right Action Bar (Hamburger Menu) */}
         <div
           ref={actionBarRef}
+          className="absolute bottom-[4vh] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-[max(4vw,2rem)]"
           style={{
-            position: "absolute",
-            bottom: "4vh",
-            right: "max(4vw, 2rem)",
             zIndex: 10,
             display: "flex",
             flexDirection: "column",

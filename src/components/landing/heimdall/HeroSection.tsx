@@ -161,9 +161,9 @@ export function HeroSection() {
             </div>
 
             {/* Bottom Content - Stacks on mobile */}
-            <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between mt-auto">
+            <div className="relative z-10 flex flex-col gap-8 md:gap-6 md:flex-row md:items-end md:justify-between mt-auto">
                 {/* Title */}
-                <div className="hero-content-wrapper max-w-[700px]">
+                <div className="hero-content-wrapper max-w-[700px] pb-4 md:pb-0">
                     <motion.div
                         initial={{ opacity: 0, y: 40 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -207,13 +207,12 @@ export function HeroSection() {
                 {/* Action Bar */}
                 <div
                     ref={actionBarRef}
-                    className="hero-action-bar"
+                    className="hero-action-bar w-full md:w-fit"
                     style={{
                         zIndex: 10,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'stretch',
-                        width: 'fit-content',
                         borderRadius: '14px',
                         border: '1px solid rgba(255, 255, 255, 0.35)',
                         background: 'rgba(0, 0, 0, 0.32)',
