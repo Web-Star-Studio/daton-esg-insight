@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -103,7 +104,12 @@ export default function Auth() {
         password: registerData.password
       });
       
-      navigate('/onboarding');
+      // Check if user got auto-logged in (no email confirmation required)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/onboarding');
+      }
+      // If no session, user needs to confirm email - toast already shown by register()
     } catch (error) {
       // Erro já tratado no context com toast
     }
