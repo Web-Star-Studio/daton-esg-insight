@@ -10,7 +10,7 @@ import pilaresImg from '@/assets/pilares-esg.png';
 import soberaniaImg from '@/assets/esg-soberania.png';
 import wortonLogo from '@/assets/worton-logo.png';
 import sobreNosHero from '@/assets/sobre-nos-hero.png';
-import socio1 from '@/assets/socio-1.jpeg';
+import socio1 from '@/assets/socio-felipe.jpeg';
 import socio2 from '@/assets/socio-2.jpeg';
 import socio3 from '@/assets/socio-3.jpeg';
 import socio4 from '@/assets/socio-4.jpeg';
