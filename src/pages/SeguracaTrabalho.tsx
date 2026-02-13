@@ -463,12 +463,12 @@ export default function SeguracaTrabalho() {
 
       {/* Main Content */}
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="incidents">Incidentes</TabsTrigger>
-          <TabsTrigger value="inspections">Inspeções</TabsTrigger>
-          <TabsTrigger value="training">Treinamentos</TabsTrigger>
-          <TabsTrigger value="reports">Relatórios</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="dashboard" className="min-w-fit">Dashboard</TabsTrigger>
+          <TabsTrigger value="incidents" className="min-w-fit">Incidentes</TabsTrigger>
+          <TabsTrigger value="inspections" className="min-w-fit">Inspeções</TabsTrigger>
+          <TabsTrigger value="training" className="min-w-fit">Treinamentos</TabsTrigger>
+          <TabsTrigger value="reports" className="min-w-fit">Relatórios</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
