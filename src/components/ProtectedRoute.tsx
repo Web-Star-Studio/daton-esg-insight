@@ -19,7 +19,7 @@ const mapRoleToUIRole = (serviceRole: string): 'Admin' | 'Editor' | 'Leitor' => 
 };
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user, isLoading, isApproved } = useAuth();
+  const { user, isLoading, isApproved, shouldShowOnboarding } = useAuth();
 
   logger.debug('ProtectedRoute check', 'auth', { 
     hasUser: !!user, 
@@ -49,8 +49,12 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect unapproved users to demo dashboard
+  // Redirect unapproved users: onboarding first, then demo
   if (!isApproved) {
+    if (shouldShowOnboarding) {
+      logger.info('User not approved & needs onboarding - redirecting to onboarding', 'auth', { userId: user.id });
+      return <Navigate to="/onboarding" replace />;
+    }
     logger.info('User not approved - redirecting to demo', 'auth', { userId: user.id });
     return <Navigate to="/demo" replace />;
   }
