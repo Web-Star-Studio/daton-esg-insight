@@ -1,36 +1,72 @@
 
 
-## Problema
+## Formatar dados de onboarding no modal de detalhes do usuario
 
-O modal de detalhes do usuario em `/platform-admin` mostra "Onboarding nao iniciado" para todos os usuarios porque a tabela `onboarding_selections` tem uma politica RLS que so permite cada usuario ver seus proprios dados (`user_id = auth.uid()`). O administrador da plataforma nao consegue ler as selecoes de onboarding de outros usuarios.
+### Problema
+O modal exibe dados de onboarding de forma crua:
+- Perfil da empresa mostra chaves em ingles sem traducao (ex: "Size", "MaturityLevel", "CurrentChallenges")
+- Configuracoes de modulos exibidas como JSON bruto (`JSON.stringify`)
 
-## Solucao
+### Solucao
 
-Adicionar uma politica RLS na tabela `onboarding_selections` que permita platform admins lerem os dados de onboarding de qualquer usuario.
+Reformatar a exibicao no arquivo `src/components/platform/UserDetailsModal.tsx`:
 
-## Etapas
+**1. Perfil da empresa - Mapeamento de labels**
 
-1. **Criar nova politica RLS** na tabela `onboarding_selections` que permita SELECT para usuarios que sao `platform_admin`. A verificacao sera feita consultando a tabela `platform_admins` (mesmo padrao ja usado em outras tabelas do sistema).
+Criar um dicionario para traduzir as chaves do company profile:
 
-```sql
-CREATE POLICY "Platform admins can view all onboarding selections"
-  ON public.onboarding_selections
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.platform_admins
-      WHERE platform_admins.user_id = auth.uid()
-    )
-  );
+| Chave original | Label formatado |
+|---|---|
+| size | Porte da empresa |
+| sector | Setor de atuacao |
+| goals | Objetivos ESG |
+| maturity_level / MaturityLevel | Nivel de maturidade |
+| current_challenges / CurrentChallenges | Desafios atuais |
+| employees_count | Numero de funcionarios |
+
+Os valores tambem serao traduzidos quando aplicavel (ex: "small" -> "Pequena", "intermediate" -> "Intermediario", "water_management" -> "Gestao de agua").
+
+Valores que sao arrays serao exibidos como badges em vez de texto simples.
+
+**2. Configuracoes de modulos - Exibicao estruturada**
+
+Substituir o `JSON.stringify` por uma lista organizada por modulo:
+
+- Cada modulo vira um bloco com o nome traduzido como titulo
+- As sub-configuracoes serao exibidas como itens com indicadores visuais (check verde para ativado, X cinza para desativado)
+
+Exemplo visual:
+```
+Residuos
+  [check] Segregacao
+  [check] Manifestos digitais
+
+Qualidade
+  [check] Agendamento de auditorias
+  [check] Gestao de procedimentos
 ```
 
-2. **Nenhuma alteracao de codigo necessaria** - o componente `UserDetailsModal.tsx` ja implementa toda a logica de exibicao dos dados de onboarding (modulos selecionados, perfil da empresa, configuracoes, progresso). O problema e exclusivamente de permissao no banco de dados.
+**3. Dicionarios de traducao para modulos e features**
 
-## Detalhes Tecnicos
+Criar mapeamentos para nomes de modulos e sub-features:
 
-- Tabela afetada: `onboarding_selections`
-- Politica atual: `Users can manage their own onboarding selections` (ALL, `user_id = auth.uid()`)
-- Nova politica: SELECT apenas, restrita a platform admins via lookup na tabela `platform_admins`
-- Nenhum arquivo de codigo sera alterado
-- A migracao SQL sera criada em `supabase/migrations/`
+| Chave | Label |
+|---|---|
+| residuos | Residuos |
+| qualidade | Qualidade |
+| gestao_pessoas | Gestao de Pessoas |
+| saude_seguranca | Saude e Seguranca |
+| segregacao | Segregacao |
+| manifestos_digitais | Manifestos digitais |
+| audit_scheduling | Agendamento de auditorias |
+| procedure_management | Gestao de procedimentos |
+| training_tracking | Acompanhamento de treinamentos |
+
+### Detalhes tecnicos
+
+- Arquivo: `src/components/platform/UserDetailsModal.tsx`
+- Alteracoes nas linhas 190-223 (secao company profile e module configurations)
+- Adicionar dicionarios de mapeamento no topo do arquivo (constantes)
+- Usar `Badge` para valores de array e `CheckCircle2`/`XCircle` para configuracoes booleanas
+- Importar icones adicionais de `lucide-react`: `CheckCircle2`, `XCircle`
 
