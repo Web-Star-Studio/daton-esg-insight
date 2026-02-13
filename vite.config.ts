@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     force: true,
-    include: ["react", "react-dom"],
-    exclude: ["react-quill", "quill", "react-leaflet", "@react-leaflet/core", "leaflet"],
+    include: ["react", "react-dom", "leaflet", "react-leaflet", "@react-leaflet/core"],
+    exclude: ["react-quill", "quill"],
   },
   build: {
     commonjsOptions: {
