@@ -362,7 +362,7 @@ const Card = ({
           className="absolute inset-0 z-0 overflow-hidden"
           style={{
             width: "100%",
-            height: isDesktop ? "100%" : "60%" // Reduce height on mobile to show content below
+            height: isDesktop ? "100%" : "45%"
           }}
         >
           <motion.div className="w-full h-full" style={{ scale: imageScale }}>
@@ -382,7 +382,7 @@ const Card = ({
           style={{
             // Desktop: Animate width from 0% -> 40%. Mobile: Full width, fixed height at bottom
             width: isDesktop ? contentWidth : "100%",
-            height: isDesktop ? "100%" : "40%",
+            height: isDesktop ? "100%" : "55%",
             top: isDesktop ? 0 : "auto",
             bottom: 0,
             right: 0,
@@ -391,7 +391,7 @@ const Card = ({
           }}
         >
           {/* Main Content */}
-          <div className="flex flex-col gap-6 mt-8 md:mt-0 pt-16">
+          <div className="flex flex-col gap-4 md:gap-6 mt-4 md:mt-0 pt-6 md:pt-16 overflow-y-auto">
             <h2
               className="text-3xl md:text-5xl lg:text-6xl text-white font-bold tracking-tight"
             >
