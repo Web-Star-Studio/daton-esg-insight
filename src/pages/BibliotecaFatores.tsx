@@ -211,7 +211,7 @@ export default function BibliotecaFatores() {
   return (
     <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold">Biblioteca de Fatores de Emissão</h1>
             <p className="text-muted-foreground">
@@ -225,8 +225,8 @@ export default function BibliotecaFatores() {
               <span>{stats.categories} categorias</span>
             </div>
           </div>
-          <div className="flex gap-3 flex-wrap">
-            <Button variant="outline" onClick={() => setShowMethodology(!showMethodology)}>
+          <div className="flex gap-3 flex-wrap shrink-0">
+            <Button variant="outline" onClick={() => setShowMethodology(!showMethodology)} className="flex-1 sm:flex-none justify-center whitespace-nowrap">
               <Info className="mr-2 h-4 w-4" />
               {showMethodology ? 'Ocultar' : 'Ver'} Metodologia
             </Button>
@@ -234,7 +234,7 @@ export default function BibliotecaFatores() {
             <Button 
               onClick={handleUpdateGHG2025} 
               disabled={isUpdatingGHG2025}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
+              className="flex-1 sm:flex-none justify-center whitespace-nowrap bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
             >
               {isUpdatingGHG2025 ? (
                 <>
@@ -249,17 +249,17 @@ export default function BibliotecaFatores() {
               )}
             </Button>
             
-            <Button onClick={() => setIsImportModalOpen(true)} className="bg-primary text-primary-foreground">
+            <Button onClick={() => setIsImportModalOpen(true)} className="flex-1 sm:flex-none justify-center whitespace-nowrap bg-primary text-primary-foreground">
               <Upload className="mr-2 h-4 w-4" />
               Central de Importação
             </Button>
             
-            <Button variant="outline" onClick={() => setIsExportModalOpen(true)}>
+            <Button variant="outline" onClick={() => setIsExportModalOpen(true)} className="flex-1 sm:flex-none justify-center whitespace-nowrap">
               <Download className="mr-2 h-4 w-4" />
               Exportar Biblioteca
             </Button>
             
-            <Button variant="outline" onClick={() => setIsAddModalOpen(true)}>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(true)} className="flex-1 sm:flex-none justify-center whitespace-nowrap">
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Fator Manual
             </Button>
