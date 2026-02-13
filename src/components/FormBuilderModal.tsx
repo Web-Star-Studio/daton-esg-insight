@@ -264,14 +264,14 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editingForm ? "Editar Formulário" : "Criar Novo Formulário"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(90vh-120px)]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:h-[calc(90vh-120px)]">
           {/* Left Panel - Form Settings */}
           <div className="space-y-4 overflow-y-auto">
             <Card>
