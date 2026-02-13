@@ -315,7 +315,7 @@ export function HeroSection() {
                         onClick={() => navigate('/auth')}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="lumine-btn-primary"
+                        className="lumine-btn-primary whitespace-nowrap text-[clamp(0.8rem,3.2vw,1rem)] flex-1 justify-center"
                         style={{ color: '#000000' }}
                     >
                         INICIAR AGORA
