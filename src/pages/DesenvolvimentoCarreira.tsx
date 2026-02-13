@@ -185,23 +185,23 @@ export default function DesenvolvimentoCarreira() {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Desenvolvimento de Carreira</h1>
           <p className="text-muted-foreground mt-2">
             Planejamento de carreiras, sucessão e crescimento profissional
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsCompetencyMatrixModalOpen(true)}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setIsCompetencyMatrixModalOpen(true)} className="flex-1 sm:flex-none">
             <BookOpen className="w-4 h-4 mr-2" />
             Matriz de Competências
           </Button>
-          <Button variant="outline" onClick={() => setIsMentorshipModalOpen(true)}>
+          <Button variant="outline" onClick={() => setIsMentorshipModalOpen(true)} className="flex-1 sm:flex-none">
             <MessageSquare className="w-4 h-4 mr-2" />
             Mentoria
           </Button>
-          <Button onClick={() => setIsNewPDIModalOpen(true)}>
+          <Button onClick={() => setIsNewPDIModalOpen(true)} className="flex-1 sm:flex-none">
             <Plus className="w-4 h-4 mr-2" />
             Novo PDI
           </Button>
@@ -209,12 +209,12 @@ export default function DesenvolvimentoCarreira() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="pdi">PDIs</TabsTrigger>
-          <TabsTrigger value="sucessao">Sucessão</TabsTrigger>
-          <TabsTrigger value="vagas">Vagas Internas</TabsTrigger>
-          <TabsTrigger value="mentoria">Mentoria</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="dashboard" className="min-w-fit">Dashboard</TabsTrigger>
+          <TabsTrigger value="pdi" className="min-w-fit">PDIs</TabsTrigger>
+          <TabsTrigger value="sucessao" className="min-w-fit">Sucessão</TabsTrigger>
+          <TabsTrigger value="vagas" className="min-w-fit">Vagas Internas</TabsTrigger>
+          <TabsTrigger value="mentoria" className="min-w-fit">Mentoria</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
