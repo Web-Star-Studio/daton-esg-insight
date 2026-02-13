@@ -100,9 +100,9 @@ export function MailingListDetailsModal({
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-muted/50 rounded-lg p-4 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <Users className="h-5 w-5 text-primary" />
                   </div>
                   <div>
@@ -111,7 +111,7 @@ export function MailingListDetailsModal({
                   </div>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-4 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <FileSpreadsheet className="h-5 w-5 text-primary" />
                   </div>
                   <div>
@@ -161,18 +161,18 @@ export function MailingListDetailsModal({
                       {list.contacts.map((contact) => (
                         <div
                           key={contact.id}
-                          className="flex items-center justify-between p-2 rounded hover:bg-muted/50 group"
+                          className="flex items-center justify-between p-2 rounded hover:bg-muted/50 group gap-2"
                         >
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex items-center gap-3 min-w-0 overflow-hidden">
                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                               <User className="h-4 w-4 text-primary" />
                             </div>
-                            <div className="min-w-0">
-                              <p className="font-medium truncate">{contact.email}</p>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <div className="min-w-0 overflow-hidden">
+                              <p className="font-medium truncate text-sm">{contact.email}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground overflow-hidden">
                                 {contact.company_name && (
                                   <span className="flex items-center gap-1 truncate">
-                                    <Building2 className="h-3 w-3" />
+                                    <Building2 className="h-3 w-3 shrink-0" />
                                     {contact.company_name}
                                   </span>
                                 )}
@@ -185,7 +185,7 @@ export function MailingListDetailsModal({
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             <Badge
                               variant={contact.status === 'active' ? 'default' : 'secondary'}
                               className="text-xs"
