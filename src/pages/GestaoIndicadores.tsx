@@ -42,7 +42,7 @@ export default function GestaoIndicadores() {
               Monitore e gerencie os indicadores de desempenho da organização
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
               <SelectTrigger className="w-[120px]">
                 <Calendar className="h-4 w-4 mr-2" />
@@ -54,11 +54,11 @@ export default function GestaoIndicadores() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => setShowImport(true)}>
+            <Button variant="outline" onClick={() => setShowImport(true)} className="flex-1 sm:flex-none">
               <Upload className="h-4 w-4 mr-2" />
               Importar
             </Button>
-            <Button onClick={() => setShowNewIndicator(true)}>
+            <Button onClick={() => setShowNewIndicator(true)} className="flex-1 sm:flex-none">
               <Plus className="h-4 w-4 mr-2" />
               Novo Indicador
             </Button>
@@ -70,14 +70,14 @@ export default function GestaoIndicadores() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="dashboard">
+          <TabsList className="flex w-full overflow-x-auto">
+            <TabsTrigger value="dashboard" className="min-w-fit">
               <BarChart3 className="h-4 w-4 mr-2" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="indicators">Indicadores</TabsTrigger>
-            <TabsTrigger value="collection">Coleta</TabsTrigger>
-            <TabsTrigger value="groups">
+            <TabsTrigger value="indicators" className="min-w-fit">Indicadores</TabsTrigger>
+            <TabsTrigger value="collection" className="min-w-fit">Coleta</TabsTrigger>
+            <TabsTrigger value="groups" className="min-w-fit">
               <Settings className="h-4 w-4 mr-2" />
               Grupos
             </TabsTrigger>
