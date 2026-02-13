@@ -134,7 +134,7 @@ export default function LAIAUnidadePage() {
           </div>
 
           {activeTab === "assessments" && viewMode === "list" && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => setImportOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" />
                 Importar Excel
@@ -163,16 +163,16 @@ export default function LAIAUnidadePage() {
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
-              <TabsTrigger value="dashboard" className="gap-2">
+            <TabsList className="flex w-full overflow-x-auto">
+              <TabsTrigger value="dashboard" className="min-w-fit shrink-0 gap-2">
                 <LayoutDashboard className="h-4 w-4" />
                 <span className="hidden sm:inline">Visão Geral</span>
               </TabsTrigger>
-              <TabsTrigger value="assessments" className="gap-2">
+              <TabsTrigger value="assessments" className="min-w-fit shrink-0 gap-2">
                 <FileSpreadsheet className="h-4 w-4" />
                 <span className="hidden sm:inline">Avaliações</span>
               </TabsTrigger>
-              <TabsTrigger value="sectors" className="gap-2">
+              <TabsTrigger value="sectors" className="min-w-fit shrink-0 gap-2">
                 <Building2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Setores</span>
               </TabsTrigger>
