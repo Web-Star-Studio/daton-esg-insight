@@ -200,7 +200,7 @@ export default function ConfiguracaoOrganizacional() {
         </div>
 
         <Tabs defaultValue="basico" className="space-y-6">
-          <TabsList className="flex w-full overflow-x-auto">
+          <TabsList className="flex overflow-x-auto w-max min-w-full">
             <TabsTrigger value="basico" className="min-w-fit shrink-0">Informações Básicas</TabsTrigger>
             <TabsTrigger value="estrutura" className="min-w-fit shrink-0">Estrutura Organizacional</TabsTrigger>
             <TabsTrigger value="escopo" className="min-w-fit shrink-0">Escopo de Relato</TabsTrigger>
