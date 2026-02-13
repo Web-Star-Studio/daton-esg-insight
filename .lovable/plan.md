@@ -1,61 +1,54 @@
 
 
-## Multi-Select e Acoes em Lote no Platform Admin
+## Corrigir Redirecionamento: Onboarding antes do Demo
 
-### Resumo
-Adicionar checkboxes de selecao multipla nas tabelas de **Usuarios** e **Empresas** do painel Platform Admin, com uma barra de acoes em lote flutuante que aparece quando ha itens selecionados.
+### Problema
+Quando um novo usuario se registra, o `ProtectedRoute` verifica apenas se ele esta aprovado. Como nao esta, redireciona diretamente para `/demo`, pulando o onboarding. O fluxo correto e:
 
----
+**Registro -> Onboarding -> Demo (aguardando aprovacao) -> Dashboard (aprovado)**
 
-### 1. Tabela de Usuarios (`PlatformUsersTable.tsx`)
+### Causa Raiz
+Dois componentes de rota ignoram o estado de onboarding:
 
-**Selecao:**
-- Adicionar coluna de checkbox no header (selecionar todos da pagina) e em cada linha
-- Estado `selectedUserIds: Set<string>` para rastrear selecao
-- Platform admins nao podem ser selecionados (checkbox desabilitado)
+1. **`ProtectedRoute.tsx`** (linha 53): Redireciona usuarios nao aprovados para `/demo` sem verificar `shouldShowOnboarding`
+2. **`DemoRoute.tsx`** (linha 40): Permite acesso ao demo sem verificar se o onboarding foi concluido
 
-**Barra de acoes em lote** (flutuante no bottom, similar ao `BulkActionsBar` existente):
-- **Aprovar** - aprovar todos os selecionados
-- **Revogar aprovacao** - revogar aprovacao dos selecionados
-- **Excluir** - excluir todos os selecionados (com dialogo de confirmacao)
-- Badge com contagem de selecionados + botao limpar selecao
+### Correcoes
 
-**Backend:**
-- Adicionar action `bulkDeleteUsers` na edge function `manage-platform` que recebe um array de `userIds` e executa o mesmo fluxo de limpeza para cada um (loop sobre a logica existente de `deleteUser`)
-- A aprovacao/revogacao em lote sera feita diretamente pelo client (update em `profiles` para cada ID, reutilizando a mutation existente)
+**1. `src/components/ProtectedRoute.tsx`**
+- Importar `shouldShowOnboarding` do `useAuth()`
+- Antes do redirecionamento para `/demo`, verificar se `shouldShowOnboarding` e `true`
+- Se sim, redirecionar para `/onboarding` em vez de `/demo`
 
----
-
-### 2. Tabela de Empresas (`CompanyTable.tsx`)
-
-**Selecao:**
-- Mesmo padrao de checkboxes (header + linhas)
-- Estado `selectedCompanyIds: Set<string>`
-
-**Barra de acoes em lote:**
-- **Suspender** - suspender todas as selecionadas
-- **Ativar** - ativar todas as selecionadas
-
-**Backend:**
-- Adicionar action `bulkSuspendCompanies` e `bulkActivateCompanies` na edge function, reutilizando a logica existente de `suspendCompany`/`activateCompany` em loop
-
----
+**2. `src/components/DemoRoute.tsx`**
+- Importar `shouldShowOnboarding` do `useAuth()`
+- Antes de renderizar o demo, verificar se o onboarding ainda nao foi concluido
+- Se `shouldShowOnboarding` for `true`, redirecionar para `/onboarding`
 
 ### Detalhes Tecnicos
 
-**Edge Function `manage-platform/index.ts`:**
-- Novas actions: `bulkDeleteUsers`, `bulkSuspendCompanies`, `bulkActivateCompanies`
-- `bulkDeleteUsers` recebe `{ userIds: string[] }`, valida que nenhum e platform admin, e executa a exclusao sequencial com o service role client
-- `bulkSuspendCompanies` e `bulkActivateCompanies` recebem `{ companyIds: string[] }` e fazem update em lote
+No `ProtectedRoute.tsx`, o bloco de redirecionamento (linhas 52-56) sera alterado de:
+```
+if (!isApproved) {
+  return <Navigate to="/demo" replace />;
+}
+```
+Para:
+```
+if (!isApproved) {
+  if (shouldShowOnboarding) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  return <Navigate to="/demo" replace />;
+}
+```
 
-**Componentes UI:**
-- Importar `Checkbox` de `@/components/ui/checkbox`
-- A barra de acoes em lote sera inline no proprio componente (div fixed no bottom com z-50), seguindo o padrao do `BulkActionsBar.tsx` existente
-- Ao concluir uma acao em lote, limpar selecao e invalidar queries
-- `colSpan` das linhas de loading/vazio sera incrementado em 1 (nova coluna de checkbox)
+No `DemoRoute.tsx`, adicionar antes do `return <>{children}</>`:
+```
+if (shouldShowOnboarding) {
+  return <Navigate to="/onboarding" replace />;
+}
+```
 
-**Arquivos a editar:**
-- `supabase/functions/manage-platform/index.ts` - novas actions em lote
-- `src/components/platform/PlatformUsersTable.tsx` - checkboxes + barra de acoes
-- `src/components/platform/CompanyTable.tsx` - checkboxes + barra de acoes
+Sao alteracoes de poucas linhas em 2 arquivos, sem impacto em nenhuma outra funcionalidade.
 
