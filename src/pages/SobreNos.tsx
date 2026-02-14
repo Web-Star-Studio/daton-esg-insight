@@ -160,7 +160,7 @@ const SobreNos = () => {
                     {/* Action Bar */}
                     <div
                         ref={actionBarRef}
-                        className="hero-action-bar w-full md:w-fit"
+                        className="hero-action-bar self-end shrink-0 md:w-fit"
                         style={{
                             zIndex: 10,
                             display: "flex",
@@ -271,7 +271,7 @@ const SobreNos = () => {
                             onClick={() => navigate("/auth")}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="lumine-btn-primary"
+                            className="lumine-btn-primary whitespace-nowrap text-[clamp(0.8rem,3.2vw,1rem)] flex-1 justify-center"
                             style={{ color: "#000000" }}
                         >
                             INICIAR AGORA
