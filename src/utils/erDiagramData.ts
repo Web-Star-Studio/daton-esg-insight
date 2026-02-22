@@ -5,6 +5,8 @@
  */
 
 import { Database } from '@/integrations/supabase/types';
+// @ts-ignore - Vite raw import
+import typesRawText from '@/integrations/supabase/types.ts?raw';
 
 type Tables = Database['public']['Tables'];
 
@@ -419,31 +421,55 @@ function getStaticTableData(): Record<string, { columns: Array<{ name: string; t
  * Uses the actual type structure which encodes Row types and Relationships.
  */
 function extractTablesFromSupabaseTypes() {
-  // Since TypeScript types are erased at runtime, we need to use the
-  // Supabase generated client which has runtime access to table schemas.
-  // However, for ER diagram purposes, we build from the types file statically.
-  
-  // This function returns a comprehensive static mapping derived from
-  // the types.ts file. We parse the Row type keys and Relationships arrays.
-  
-  // For the ER diagram, we use the TABLE_DOMAIN mapping as our source of truth
-  // for table names, and hardcode the relationships extracted from the types file.
-  
   const result: Record<string, { columns: Array<{ name: string; type: string; nullable: boolean }>; relationships: Array<{ foreignKeyName: string; columns: string[]; referencedRelation: string; referencedColumns: string[]; isOneToOne: boolean }> }> = {};
-  
-  // We'll populate this with data from the actual Supabase types
-  // For each table in TABLE_DOMAIN, create an entry with known relationships
-  
-  for (const tableName of Object.keys(TABLE_DOMAIN)) {
-    result[tableName] = {
-      columns: [{ name: 'id', type: 'UUID', nullable: false }],
-      relationships: [],
-    };
+
+  // Parse the raw types.ts file to extract Row definitions for each table
+  const tableBlockRegex = /(\w+):\s*\{\s*Row:\s*\{([^}]+)\}/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = tableBlockRegex.exec(typesRawText)) !== null) {
+    const tableName = match[1];
+    const rowBody = match[2];
+
+    const columns: Array<{ name: string; type: string; nullable: boolean }> = [];
+    const colRegex = /(\w+):\s*([^\n]+)/g;
+    let colMatch: RegExpExecArray | null;
+
+    while ((colMatch = colRegex.exec(rowBody)) !== null) {
+      const colName = colMatch[1].trim();
+      const rawType = colMatch[2].trim().replace(/,$/, '');
+      const nullable = rawType.includes('| null');
+      const cleanType = rawType.replace(/\s*\|\s*null/g, '').trim();
+
+      let mappedType = 'TEXT';
+      if (colName === 'id') mappedType = 'UUID';
+      else if (cleanType === 'string') mappedType = 'TEXT';
+      else if (cleanType === 'number') mappedType = 'NUMBER';
+      else if (cleanType === 'boolean') mappedType = 'BOOLEAN';
+      else if (cleanType === 'Json') mappedType = 'JSON';
+      else if (cleanType.includes('string[]')) mappedType = 'TEXT[]';
+      else if (cleanType.includes('number[]')) mappedType = 'NUMBER[]';
+      else if (colName.endsWith('_id')) mappedType = 'UUID';
+      else if (colName.endsWith('_at') || colName.endsWith('_date') || colName === 'date') mappedType = 'TIMESTAMP';
+
+      columns.push({ name: colName, type: mappedType, nullable });
+    }
+
+    if (columns.length > 0) {
+      result[tableName] = { columns, relationships: [] };
+    }
   }
-  
-  // Add all known FK relationships (extracted from types.ts Relationships arrays)
+
+  for (const tableName of Object.keys(TABLE_DOMAIN)) {
+    if (!result[tableName]) {
+      result[tableName] = {
+        columns: [{ name: 'id', type: 'UUID', nullable: false }],
+        relationships: [],
+      };
+    }
+  }
+
   addRelationships(result);
-  
   return result;
 }
 

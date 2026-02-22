@@ -58,22 +58,27 @@ export const EREntityBox = React.memo(function EREntityBox({
         <div className="px-3 py-2 space-y-1.5 text-[11px] max-h-60 overflow-y-auto">
           {/* Columns */}
           <div className="flex items-center gap-1 text-muted-foreground font-medium border-b border-border/40 pb-1 mb-1">
-            <Key className="h-2.5 w-2.5" /> Columns
+            <Key className="h-2.5 w-2.5" /> Columns ({table.columns.length})
           </div>
           <div className="font-mono space-y-0.5">
-            <div className="flex items-center gap-1.5 text-primary font-semibold">
-              <Key className="h-2.5 w-2.5 text-amber-500" />
-              <span>id</span>
-              <span className="text-muted-foreground ml-auto">UUID</span>
-            </div>
-            {/* Show company_id if it has a FK to companies */}
-            {table.relationships.some(r => r.targetTable === 'companies') && (
-              <div className="flex items-center gap-1.5">
-                <Link2 className="h-2.5 w-2.5 text-blue-500" />
-                <span>company_id</span>
-                <span className="text-muted-foreground ml-auto">UUID</span>
+            {table.columns.map(col => (
+              <div
+                key={col.name}
+                className={`flex items-center gap-1.5 ${col.isPrimaryKey ? 'text-primary font-semibold' : ''}`}
+              >
+                {col.isPrimaryKey ? (
+                  <Key className="h-2.5 w-2.5 text-amber-500 flex-shrink-0" />
+                ) : col.isForeignKey ? (
+                  <Link2 className="h-2.5 w-2.5 text-blue-500 flex-shrink-0" />
+                ) : (
+                  <span className="w-2.5 flex-shrink-0" />
+                )}
+                <span className={`truncate ${col.nullable ? 'text-muted-foreground' : ''}`}>
+                  {col.name}
+                </span>
+                <span className="text-muted-foreground ml-auto text-[10px] flex-shrink-0">{col.type}</span>
               </div>
-            )}
+            ))}
           </div>
 
           {/* Relationships */}
