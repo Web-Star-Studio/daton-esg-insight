@@ -196,6 +196,7 @@ const GestaoUsuarios = lazy(() => import("./pages/GestaoUsuarios"));
 const IntelligenceCenter = lazy(() => import("./pages/IntelligenceCenter"));
 const SDGDashboard = lazy(() => import("./pages/SDGDashboard"));
 const DatabaseDocumentation = lazy(() => import("./pages/DatabaseDocumentation"));
+const ERDiagram = lazy(() => import("./pages/ERDiagram"));
 
 // Lazy loading para Monitoramento ESG (FASE 1)
 const MonitoramentoESG = lazy(() => import("./pages/MonitoramentoESG"));
@@ -513,6 +514,13 @@ const AppContent = () => {
               <ProtectedLazyPageWrapper>
                 <DatabaseDocumentation />
               </ProtectedLazyPageWrapper>
+            } />
+
+            {/* ER Diagram - public access */}
+            <Route path="/er-diagram" element={
+              <LazyPageWrapper>
+                <ERDiagram />
+              </LazyPageWrapper>
             } />
 
             {/* Inventário e GHG */}
