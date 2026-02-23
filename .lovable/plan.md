@@ -1,48 +1,55 @@
 
+# Fix: usePermissions lendo role da tabela errada
 
-# Fix Build Errors: Onboarding Type Incompatibilities
+## Problema
 
-## Problem
+O hook `usePermissions` (usado pelo `AdminDashboard` para verificar acesso) busca o role do usuario na tabela `profiles.role` em vez da tabela autoritativa `user_roles.role`. Douglas Araujo tem:
 
-The `ModuleConfig` type (`{ [key: string]: unknown }`) and `companyProfile: unknown` from the onboarding flow are not compatible with the Supabase `Json` type. TypeScript rejects `unknown` values where `Json` is expected.
+- `profiles.role` = `viewer` (desatualizado)
+- `user_roles.role` = `platform_admin` (correto)
 
-## Solution
+Resultado: o dashboard mostra "Voce nao tem permissao" mesmo sendo platform_admin.
 
-Cast the incompatible values to `Json` at the boundary where data is passed to Supabase queries. This is safe because these values are always serializable JSON objects.
+## Solucao
 
-### File 1: `src/contexts/onboarding-flow/types.ts`
+### 1. Corrigir `src/hooks/usePermissions.tsx`
 
-Change `ModuleConfig` and `companyProfile` to use `Json`-compatible types:
+Alterar a query `user-role` para buscar da tabela `user_roles` em vez de `profiles`:
+
 ```typescript
-export interface ModuleConfig {
-  [key: string]: any;  // changed from unknown to any
-}
+// ANTES (incorreto - le de profiles)
+const { data } = await supabase
+  .from('profiles')
+  .select('role')
+  .eq('id', user.id)
+  .single();
+
+// DEPOIS (correto - le de user_roles)
+const { data } = await supabase
+  .from('user_roles')
+  .select('role')
+  .eq('user_id', user.id)
+  .maybeSingle();
 ```
-And change `companyProfile` from `unknown` to `Record<string, any> | null`.
 
-### File 2: `src/contexts/onboarding-flow/persistence.ts`
+### 2. Corrigir build errors nos outros arquivos
 
-Cast `moduleConfigurations` and `companyProfile` to `Json` at lines 87-88 and 128-129:
-```typescript
-module_configurations: state.moduleConfigurations as unknown as Json,
-company_profile: (state.companyProfile || {}) as unknown as Json,
-```
+Alem do fix principal, corrigir os erros de build reportados:
 
-### File 3: `src/components/onboarding/CleanOnboardingMain.tsx`
+**`src/components/BenefitConfigurationModal.tsx`** - Tornar `position` opcional no tipo `Employee` local ou usar o tipo importado de `services/employees`.
 
-- Line 201: Fix spread of potentially undefined value by adding a fallback:
-  ```typescript
-  ...(moduleConfigurations['inventario_gee'] as Record<string, any> || {}),
-  ```
-- Lines 261-262: Cast to `Json`:
-  ```typescript
-  module_configurations: (state.moduleConfigurations || {}) as unknown as Json,
-  company_profile: (state.companyProfile || {}) as unknown as Json,
-  ```
+**`src/pages/GestaoTreinamentos.tsx`** - Adicionar type assertions para valores `unknown` vindos de calculos/queries (cast para `number`, `Record<string, number>`, arrays tipados, `ReactNode`).
 
-## Impact
+**`src/pages/SeguracaTrabalho.tsx`** - Adicionar type assertions para valores `unknown` (cast para `number`, `LTIFRMetadata`, `ReactNode`).
 
-- Only type-level changes, no runtime behavior changes
-- Fixes all 5 reported TypeScript errors
-- Maintains type safety at the Supabase boundary
+**`src/pages/SocialESG.tsx`** - Adicionar type assertions para valores `unknown` (cast para `number`, `string | number`, `ReactNode`).
 
+**`src/services/esgRecommendedIndicators.ts`** - Cast valores `unknown` para `number`.
+
+**`src/utils/erDiagramData.ts`** - Remover diretiva `@ts-expect-error` desnecessaria.
+
+## Impacto
+
+- Douglas (e qualquer platform_admin/super_admin/admin) tera acesso imediato ao Admin Dashboard
+- Corrige a inconsistencia entre `profiles.role` e `user_roles.role` na camada de permissoes
+- Resolve todos os erros de build pendentes
