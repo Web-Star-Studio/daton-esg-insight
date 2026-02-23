@@ -1,52 +1,48 @@
 
 
-# Fix ER Diagram to Show All Columns
+# Fix Build Errors: Onboarding Type Incompatibilities
 
 ## Problem
 
-The ER diagram only shows the `id` column for every table because of two issues:
-
-1. **Data layer**: `extractTablesFromSupabaseTypes()` in `erDiagramData.ts` hardcodes `columns: [{ name: 'id', type: 'UUID', nullable: false }]` for every table instead of actually parsing the columns from the Supabase types.
-2. **UI layer**: `EREntityBox.tsx` has hardcoded `id` and `company_id` columns instead of iterating over `table.columns`.
+The `ModuleConfig` type (`{ [key: string]: unknown }`) and `companyProfile: unknown` from the onboarding flow are not compatible with the Supabase `Json` type. TypeScript rejects `unknown` values where `Json` is expected.
 
 ## Solution
 
-### Step 1: Parse real columns from Supabase types
+Cast the incompatible values to `Json` at the boundary where data is passed to Supabase queries. This is safe because these values are always serializable JSON objects.
 
-Update `extractTablesFromSupabaseTypes()` in `src/utils/erDiagramData.ts` to dynamically read the `Row` type of each table from the `Database['public']['Tables']` object. For each table, iterate over the keys of the `Row` type to extract column names and infer types (string, number, boolean, etc.) and nullability.
+### File 1: `src/contexts/onboarding-flow/types.ts`
 
-### Step 2: Update EREntityBox to render all columns
-
-Update `src/components/er-diagram/EREntityBox.tsx` to iterate over `table.columns` instead of hardcoding `id` and `company_id`. Each column will show:
-- A key icon for the primary key (`id`)
-- A link icon for foreign key columns
-- The column name and its type
-- Visual distinction for nullable vs required columns
-
-## Technical Details
-
-**`src/utils/erDiagramData.ts`** - In `extractTablesFromSupabaseTypes()`, replace the hardcoded single-column approach:
-
+Change `ModuleConfig` and `companyProfile` to use `Json`-compatible types:
 ```typescript
-// Instead of:
-columns: [{ name: 'id', type: 'UUID', nullable: false }]
+export interface ModuleConfig {
+  [key: string]: any;  // changed from unknown to any
+}
+```
+And change `companyProfile` from `unknown` to `Record<string, any> | null`.
 
-// Actually read from the Database type at runtime:
-const tables = (await import('@/integrations/supabase/types')).Database.public.Tables;
-// For each table, extract Row keys and map to column metadata
+### File 2: `src/contexts/onboarding-flow/persistence.ts`
+
+Cast `moduleConfigurations` and `companyProfile` to `Json` at lines 87-88 and 128-129:
+```typescript
+module_configurations: state.moduleConfigurations as unknown as Json,
+company_profile: (state.companyProfile || {}) as unknown as Json,
 ```
 
-Since the Supabase types are TypeScript-only (erased at runtime), we'll use the `Tables` object which IS available at runtime via the generated types export. We'll read `Insert` type keys (which show nullability via optional fields) to determine column metadata.
+### File 3: `src/components/onboarding/CleanOnboardingMain.tsx`
 
-**`src/components/er-diagram/EREntityBox.tsx`** - Replace hardcoded columns section with:
+- Line 201: Fix spread of potentially undefined value by adding a fallback:
+  ```typescript
+  ...(moduleConfigurations['inventario_gee'] as Record<string, any> || {}),
+  ```
+- Lines 261-262: Cast to `Json`:
+  ```typescript
+  module_configurations: (state.moduleConfigurations || {}) as unknown as Json,
+  company_profile: (state.companyProfile || {}) as unknown as Json,
+  ```
 
-```typescript
-{table.columns.map(col => (
-  <div key={col.name} className="flex items-center gap-1.5">
-    {col.isPrimaryKey ? <Key /> : col.isForeignKey ? <Link2 /> : <span />}
-    <span>{col.name}</span>
-    <span className="ml-auto">{col.type}</span>
-  </div>
-))}
-```
+## Impact
+
+- Only type-level changes, no runtime behavior changes
+- Fixes all 5 reported TypeScript errors
+- Maintains type safety at the Supabase boundary
 

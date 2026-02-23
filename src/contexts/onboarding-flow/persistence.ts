@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 import type { OnboardingFlowState, OnboardingUser } from "./types";
 
@@ -8,8 +9,8 @@ interface OnboardingSelectionRecord {
   company_id: string;
   current_step: number;
   selected_modules: string[];
-  module_configurations: Record<string, unknown>;
-  company_profile: unknown;
+  module_configurations: Json;
+  company_profile: Json;
   is_completed: boolean;
   updated_at?: string;
   completed_at?: string;
@@ -84,8 +85,8 @@ export const upsertOnboardingProgress = async ({
     company_id: companyId,
     current_step: state.currentStep,
     selected_modules: state.selectedModules,
-    module_configurations: state.moduleConfigurations,
-    company_profile: state.companyProfile || {},
+    module_configurations: state.moduleConfigurations as unknown as Json,
+    company_profile: (state.companyProfile || {}) as unknown as Json,
     is_completed: state.isCompleted,
     updated_at: new Date().toISOString(),
   };
@@ -125,8 +126,8 @@ export const finalizeOnboardingInDatabase = async ({
           is_completed: true,
           completed_at: new Date().toISOString(),
           selected_modules: state.selectedModules,
-          module_configurations: state.moduleConfigurations,
-          company_profile: state.companyProfile || {},
+          module_configurations: state.moduleConfigurations as unknown as Json,
+          company_profile: (state.companyProfile || {}) as unknown as Json,
           current_step: state.totalSteps - 1,
         },
       ],
