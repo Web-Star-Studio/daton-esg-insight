@@ -1,55 +1,30 @@
 
-# Fix: usePermissions lendo role da tabela errada
+# Fix: Dropdown de Unidades vazio no modulo Nao Conformidades
 
 ## Problema
 
-O hook `usePermissions` (usado pelo `AdminDashboard` para verificar acesso) busca o role do usuario na tabela `profiles.role` em vez da tabela autoritativa `user_roles.role`. Douglas Araujo tem:
+O select de "Unidade" no formulario de criacao de Nao Conformidades nao mostra nenhuma filial. A causa raiz e uma inconsistencia no campo `status` da tabela `branches`:
 
-- `profiles.role` = `viewer` (desatualizado)
-- `user_roles.role` = `platform_admin` (correto)
-
-Resultado: o dashboard mostra "Voce nao tem permissao" mesmo sendo platform_admin.
+- O codigo filtra por `.eq("status", "Ativo")` (masculino)
+- Mas 16 de 18 filiais no banco usam `status = 'Ativa'` (feminino)
+- Apenas 1 filial tem `status = 'Ativo'`, entao a maioria dos usuarios ve a lista vazia
 
 ## Solucao
 
-### 1. Corrigir `src/hooks/usePermissions.tsx`
+### Arquivo: `src/pages/NaoConformidades.tsx` (linha ~91)
 
-Alterar a query `user-role` para buscar da tabela `user_roles` em vez de `profiles`:
+Trocar o filtro `.eq("status", "Ativo")` por `.in("status", ["Ativo", "Ativa"])` para aceitar ambas as variantes, seguindo o padrao ja usado em `LAIAUnidades.tsx` e `UnitMappingStep.tsx`.
 
 ```typescript
-// ANTES (incorreto - le de profiles)
-const { data } = await supabase
-  .from('profiles')
-  .select('role')
-  .eq('id', user.id)
-  .single();
+// ANTES
+.eq("status", "Ativo")
 
-// DEPOIS (correto - le de user_roles)
-const { data } = await supabase
-  .from('user_roles')
-  .select('role')
-  .eq('user_id', user.id)
-  .maybeSingle();
+// DEPOIS
+.in("status", ["Ativo", "Ativa"])
 ```
 
-### 2. Corrigir build errors nos outros arquivos
+### Impacto
 
-Alem do fix principal, corrigir os erros de build reportados:
-
-**`src/components/BenefitConfigurationModal.tsx`** - Tornar `position` opcional no tipo `Employee` local ou usar o tipo importado de `services/employees`.
-
-**`src/pages/GestaoTreinamentos.tsx`** - Adicionar type assertions para valores `unknown` vindos de calculos/queries (cast para `number`, `Record<string, number>`, arrays tipados, `ReactNode`).
-
-**`src/pages/SeguracaTrabalho.tsx`** - Adicionar type assertions para valores `unknown` (cast para `number`, `LTIFRMetadata`, `ReactNode`).
-
-**`src/pages/SocialESG.tsx`** - Adicionar type assertions para valores `unknown` (cast para `number`, `string | number`, `ReactNode`).
-
-**`src/services/esgRecommendedIndicators.ts`** - Cast valores `unknown` para `number`.
-
-**`src/utils/erDiagramData.ts`** - Remover diretiva `@ts-expect-error` desnecessaria.
-
-## Impacto
-
-- Douglas (e qualquer platform_admin/super_admin/admin) tera acesso imediato ao Admin Dashboard
-- Corrige a inconsistencia entre `profiles.role` e `user_roles.role` na camada de permissoes
-- Resolve todos os erros de build pendentes
+- Correcao pontual de 1 linha
+- Sem mudanca de comportamento para filiais ja com status "Ativo"
+- Filiais com status "Ativa" passarao a aparecer corretamente no dropdown
