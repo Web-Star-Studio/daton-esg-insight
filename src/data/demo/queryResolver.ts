@@ -55,6 +55,33 @@ function buildSeriesData() {
   ];
 }
 
+const LIST_LIKE_KEYWORDS = [
+  "suppliers",
+  "documents",
+  "deliveries",
+  "failures",
+  "workflows",
+  "forms",
+  "categories",
+  "types",
+  "users",
+  "employees",
+  "goals",
+  "tasks",
+  "reports",
+  "assets",
+  "items",
+  "list",
+  "alerts",
+  "notifications",
+  "activities",
+  "predictions",
+  "insights",
+  "messages",
+  "events",
+  "logs",
+];
+
 function buildFallbackData(queryKey: readonly unknown[]): unknown {
   const tokens = queryKey
     .filter((segment): segment is string => typeof segment === "string")
@@ -99,24 +126,7 @@ function buildFallbackData(queryKey: readonly unknown[]): unknown {
 
   if (
     tokens.some((token) =>
-      [
-        "suppliers",
-        "documents",
-        "deliveries",
-        "failures",
-        "workflows",
-        "forms",
-        "categories",
-        "types",
-        "users",
-        "employees",
-        "goals",
-        "tasks",
-        "reports",
-        "assets",
-        "items",
-        "list",
-      ].some((word) => token.includes(word)),
+      LIST_LIKE_KEYWORDS.some((word) => token.includes(word)),
     )
   ) {
     return [

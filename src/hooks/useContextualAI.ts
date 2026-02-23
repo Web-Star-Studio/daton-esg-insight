@@ -46,6 +46,11 @@ interface BusinessContext {
   [key: string]: unknown;
 }
 
+const toArrayOfRecords = (value: unknown): Record<string, unknown>[] =>
+  Array.isArray(value)
+    ? value.filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+    : [];
+
 export const useContextualAI = () => {
   const [insights, setInsights] = useState<ContextualInsight[]>([]);
   const [context, setContext] = useState<BusinessContext | null>(null);
@@ -84,25 +89,37 @@ export const useContextualAI = () => {
   const businessContext = useMemo(() => {
     if (!contextData) return null;
 
-    const { company, goals, emissions, licenses, assets } = contextData;
+    const company = (contextData as Record<string, unknown>).company as Record<string, unknown> | undefined;
+    const goals = toArrayOfRecords((contextData as Record<string, unknown>).goals);
+    const emissions = toArrayOfRecords((contextData as Record<string, unknown>).emissions);
+    const licenses = toArrayOfRecords((contextData as Record<string, unknown>).licenses);
+    const assets = toArrayOfRecords((contextData as Record<string, unknown>).assets);
+    const assetCount = assets.length;
     
     return {
-      industryType: company?.sector || 'Industrial',
-      companySize: assets.length > 50 ? 'large' : assets.length > 10 ? 'medium' : 'small',
-      locations: [...new Set(assets.map(a => a.location).filter(Boolean))],
-      currentGoals: goals.map(g => ({
-        id: g.id,
-        title: g.name || 'Meta sem nome',
-        name: g.name,
-        deadline: g.deadline_date,
-        deadline_date: g.deadline_date,
-        created_at: g.created_at,
-        current_progress: 0, // Could be calculated from actual progress
+      industryType: (company?.sector as string) || 'Industrial',
+      companySize: assetCount > 50 ? 'large' : assetCount > 10 ? 'medium' : 'small',
+      locations: [...new Set(assets.map(a => a.location).filter((location): location is string => typeof location === 'string' && location.length > 0))],
+      currentGoals: goals.map((g, index) => ({
+        id: String(g.id || `context-goal-${index + 1}`),
+        title: (g.name as string) || (g.title as string) || 'Meta sem nome',
+        name: (g.name as string) || (g.title as string) || 'Meta sem nome',
+        deadline: (g.deadline_date as string) || (g.deadline as string),
+        deadline_date: (g.deadline_date as string) || (g.deadline as string),
+        created_at: (g.created_at as string) || new Date().toISOString(),
+        current_progress: typeof g.current_progress === 'number' ? g.current_progress : 0, // Could be calculated from actual progress
       })) as Goal[],
       recentActivity: {
         emissionsCount: emissions.length,
         licensesExpiring: licenses.filter(l => {
-          const expDate = new Date(l.expiration_date);
+          const expirationDate = typeof l.expiration_date === 'string'
+            ? l.expiration_date
+            : typeof l.expiry_date === 'string'
+            ? l.expiry_date
+            : '';
+          if (!expirationDate) return false;
+
+          const expDate = new Date(expirationDate);
           const thirtyDaysFromNow = new Date();
           thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
           return expDate <= thirtyDaysFromNow;
@@ -146,7 +163,10 @@ export const useContextualAI = () => {
 
       // 2. Emissions Trend Analysis
       if (businessContext.recentActivity.emissionsCount > 0) {
-        const emissionsTrend = await analyzeEmissionsTrend(contextData?.emissions || []);
+        const emissionsInput = contextData && typeof contextData === 'object'
+          ? (contextData as Record<string, unknown>).emissions
+          : [];
+        const emissionsTrend = await analyzeEmissionsTrend(toArrayOfRecords(emissionsInput));
         if (emissionsTrend.isIncreasing) {
           newInsights.push({
             id: 'emissions-trend',
@@ -210,12 +230,14 @@ export const useContextualAI = () => {
   };
 
   // Helper functions
-  const analyzeEmissionsTrend = async (emissions: any[]) => {
-    // Simple trend analysis - in production, this would use more sophisticated ML
-    if (emissions.length < 2) return { isIncreasing: false, percentage: 0, confidence: 0 };
+  const analyzeEmissionsTrend = async (emissions: unknown) => {
+    const safeEmissions = Array.isArray(emissions) ? emissions : [];
 
-    const recent = emissions.slice(-30); // Last 30 records
-    const older = emissions.slice(-60, -30); // Previous 30 records
+    // Simple trend analysis - in production, this would use more sophisticated ML
+    if (safeEmissions.length < 2) return { isIncreasing: false, percentage: 0, confidence: 0 };
+
+    const recent = safeEmissions.slice(-30); // Last 30 records
+    const older = safeEmissions.slice(-60, -30); // Previous 30 records
 
     const recentAvg = recent.reduce((sum, e) => sum + (e.total_co2e || 0), 0) / recent.length;
     const olderAvg = older.reduce((sum, e) => sum + (e.total_co2e || 0), 0) / (older.length || 1);
@@ -233,9 +255,26 @@ export const useContextualAI = () => {
 
   const predictGoalAchievement = (goal: any) => {
     // Simple prediction model - in production, this would use ML algorithms
-    const timeRemaining = new Date(goal.deadline).getTime() - Date.now();
-    const timeElapsed = Date.now() - new Date(goal.created_at).getTime();
-    const totalTime = new Date(goal.deadline).getTime() - new Date(goal.created_at).getTime();
+    const deadline = new Date(goal.deadline);
+    const createdAt = new Date(goal.created_at);
+    const deadlineMs = deadline.getTime();
+    const createdAtMs = createdAt.getTime();
+    if (!Number.isFinite(deadlineMs) || !Number.isFinite(createdAtMs) || deadlineMs <= createdAtMs) {
+      return {
+        risk: 'medium' as const,
+        probability: Math.round(Math.max(0, Math.min(100, Number(goal.current_progress) || 0))),
+        confidence: 0.5,
+        suggestedActions: [
+          'Revisar datas da meta',
+          'Confirmar progresso atual',
+          'Replanejar marcos intermediários'
+        ]
+      };
+    }
+
+    const timeRemaining = deadlineMs - Date.now();
+    const timeElapsed = Date.now() - createdAtMs;
+    const totalTime = deadlineMs - createdAtMs;
     
     const progressRate = (goal.current_progress || 0) / (timeElapsed / totalTime);
     const projectedProgress = progressRate * (totalTime / (totalTime - timeRemaining));
@@ -278,7 +317,11 @@ export const useContextualAI = () => {
     }
 
     // Carbon credits opportunity
-    if (context.currentGoals.some(g => g.title.toLowerCase().includes('carbono'))) {
+    if (
+      context.currentGoals.some((goal) =>
+        typeof goal.title === 'string' && goal.title.toLowerCase().includes('carbono'),
+      )
+    ) {
       opportunities.push({
         id: 'carbon-credits',
         type: 'opportunity',

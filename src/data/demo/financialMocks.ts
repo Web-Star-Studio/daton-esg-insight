@@ -4,6 +4,109 @@
 
 const DEMO_COMPANY_ID = 'demo-company-001';
 
+const DEMO_OVERDUE_PAYABLES = [
+  {
+    id: 'op-1',
+    invoice_number: 'NF-44501',
+    supplier_name: 'Logística Verde Ltda',
+    category: 'Transporte',
+    original_amount: 18250,
+    final_amount: 18250,
+    due_date: '2026-01-12',
+    status: 'Vencido',
+    approval_status: 'Aprovado',
+    company_id: DEMO_COMPANY_ID,
+  },
+  {
+    id: 'op-2',
+    invoice_number: 'NF-44532',
+    supplier_name: 'Energia Elétrica SP',
+    category: 'Utilidades',
+    original_amount: 32400,
+    final_amount: 32400,
+    due_date: '2026-01-18',
+    status: 'Vencido',
+    approval_status: 'Pendente',
+    company_id: DEMO_COMPANY_ID,
+  },
+  {
+    id: 'op-3',
+    invoice_number: 'NF-44610',
+    supplier_name: 'Eco Tratamento de Resíduos',
+    category: 'Resíduos',
+    original_amount: 9670,
+    final_amount: 9670,
+    due_date: '2026-02-03',
+    status: 'Vencido',
+    approval_status: 'Pendente',
+    company_id: DEMO_COMPANY_ID,
+  },
+];
+
+const DEMO_OVERDUE_RECEIVABLES = [
+  {
+    id: 'or-1',
+    invoice_number: 'NF-S-2025-155',
+    customer_name: 'Construtora Delta',
+    category: 'Serviços',
+    original_amount: 45200,
+    final_amount: 45200,
+    due_date: '2026-01-20',
+    status: 'Vencido',
+    company_id: DEMO_COMPANY_ID,
+  },
+  {
+    id: 'or-2',
+    invoice_number: 'NF-S-2025-163',
+    customer_name: 'Indústria Norte',
+    category: 'Vendas',
+    original_amount: 61500,
+    final_amount: 61500,
+    due_date: '2026-01-27',
+    status: 'Vencido',
+    company_id: DEMO_COMPANY_ID,
+  },
+];
+
+const DEMO_APPROVAL_REQUESTS = [
+  {
+    id: 'apr-1',
+    company_id: DEMO_COMPANY_ID,
+    workflow_id: 'aw-fin-1',
+    entity_type: 'accounts_payable',
+    entity_id: 'op-2',
+    requested_by_user_id: 'demo-user-003',
+    current_step: 1,
+    status: 'Pendente',
+    created_at: '2026-02-17T13:10:00Z',
+    updated_at: '2026-02-17T13:10:00Z',
+  },
+  {
+    id: 'apr-2',
+    company_id: DEMO_COMPANY_ID,
+    workflow_id: 'aw-fin-1',
+    entity_type: 'accounting_entry',
+    entity_id: 'ae-3',
+    requested_by_user_id: 'demo-user-002',
+    current_step: 2,
+    status: 'Em Análise',
+    created_at: '2026-02-16T09:35:00Z',
+    updated_at: '2026-02-18T08:20:00Z',
+  },
+  {
+    id: 'apr-3',
+    company_id: DEMO_COMPANY_ID,
+    workflow_id: 'aw-fin-2',
+    entity_type: 'accounts_receivable',
+    entity_id: 'or-1',
+    requested_by_user_id: 'demo-user-001',
+    current_step: 1,
+    status: 'Pendente',
+    created_at: '2026-02-15T16:45:00Z',
+    updated_at: '2026-02-15T16:45:00Z',
+  },
+];
+
 export const financialMockEntries = [
   // Financial dashboard
   {
@@ -91,6 +194,11 @@ export const financialMockEntries = [
       { id: 'ap-1', invoice_number: 'NF-45678', supplier_name: 'Aço Verde S.A.', original_amount: 45000, status: 'Pendente' },
     ],
   },
+  // Overdue payables
+  {
+    queryKey: ['overdue-payables'],
+    data: DEMO_OVERDUE_PAYABLES,
+  },
   // Payables stats
   {
     queryKey: ['payables-stats'],
@@ -126,6 +234,11 @@ export const financialMockEntries = [
     data: [
       { id: 'ar-1', invoice_number: 'NF-S-2026-001', customer_name: 'Indústria ABC Ltda', original_amount: 120000, status: 'A Receber' },
     ],
+  },
+  // Overdue receivables
+  {
+    queryKey: ['overdue-receivables'],
+    data: DEMO_OVERDUE_RECEIVABLES,
   },
   // Cost centers
   {
@@ -212,6 +325,11 @@ export const financialMockEntries = [
     data: [
       { id: 'fa-1', type: 'Conta a Pagar', description: 'NF-45680 - Manutenção Industrial', amount: 15000, status: 'Pendente' },
     ],
+  },
+  // Pending approval requests
+  {
+    queryKey: ['approval-requests-pending'],
+    data: DEMO_APPROVAL_REQUESTS,
   },
   // ESG Financial dashboard
   {

@@ -65,14 +65,14 @@ const StakeholderEngagementMatrix = () => {
   });
 
   const categories = [
-    'Investidores',
-    'Clientes',
-    'Funcionários',
-    'Comunidade',
-    'Fornecedores',
-    'Governo',
-    'ONGs',
-    'Mídia'
+    { value: 'investors', label: 'Investidores' },
+    { value: 'customers', label: 'Clientes' },
+    { value: 'employees', label: 'Funcionários' },
+    { value: 'community', label: 'Comunidade' },
+    { value: 'suppliers', label: 'Fornecedores' },
+    { value: 'regulators', label: 'Governo' },
+    { value: 'ngos', label: 'ONGs' },
+    { value: 'media', label: 'Mídia' },
   ];
 
   const getInfluenceColor = (influence_level: string) => {
@@ -145,7 +145,7 @@ const StakeholderEngagementMatrix = () => {
 
   const filteredStakeholders = stakeholders?.filter(stakeholder => {
     const categoryMatch = filterCategory === 'all' || stakeholder.category === filterCategory;
-    const influenceMatch = filterInfluence === 'all' || stakeholder.influence_level === filterInfluence.toLowerCase();
+    const influenceMatch = filterInfluence === 'all' || stakeholder.influence_level === filterInfluence;
     return categoryMatch && influenceMatch;
   });
 
@@ -189,8 +189,10 @@ const StakeholderEngagementMatrix = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.value} value={category.value}>
+                  {category.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -200,9 +202,9 @@ const StakeholderEngagementMatrix = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="Alta">Alta</SelectItem>
-              <SelectItem value="Média">Média</SelectItem>
-              <SelectItem value="Baixa">Baixa</SelectItem>
+              <SelectItem value="high">Alta</SelectItem>
+              <SelectItem value="medium">Média</SelectItem>
+              <SelectItem value="low">Baixa</SelectItem>
             </SelectContent>
           </Select>
         </div>

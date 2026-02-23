@@ -97,11 +97,29 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
     },
   });
 
-  const users = paginatedData?.users || [];
+  const normalizedData = paginatedData as unknown;
+  const users = Array.isArray(normalizedData)
+    ? (normalizedData as UserProfile[])
+    : Array.isArray((normalizedData as PaginatedResponse | undefined)?.users)
+      ? ((normalizedData as PaginatedResponse).users || [])
+      : [];
+
+  const totalUsers = Array.isArray(normalizedData)
+    ? normalizedData.length
+    : (normalizedData as PaginatedResponse | undefined)?.total || users.length;
+  const currentPage = Array.isArray(normalizedData)
+    ? (filters.page || 1)
+    : (normalizedData as PaginatedResponse | undefined)?.page || 1;
+  const currentLimit = Array.isArray(normalizedData)
+    ? (filters.limit || 20)
+    : (normalizedData as PaginatedResponse | undefined)?.limit || 20;
+  const totalPages = Array.isArray(normalizedData)
+    ? Math.max(1, Math.ceil(totalUsers / Math.max(1, currentLimit)))
+    : (normalizedData as PaginatedResponse | undefined)?.totalPages || 1;
   
   // Calculate stats
   const stats: UserStats = {
-    total: paginatedData?.total || 0,
+    total: totalUsers,
     active: users.filter(u => u.is_active !== false).length,
     admins: users.filter(u => ['admin', 'super_admin', 'platform_admin'].includes(u.role)).length,
     lastLogin24h: users.filter(u => {
@@ -301,10 +319,10 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
     users,
     stats,
     pagination: {
-      page: paginatedData?.page || 1,
-      limit: paginatedData?.limit || 20,
-      total: paginatedData?.total || 0,
-      totalPages: paginatedData?.totalPages || 1,
+      page: currentPage,
+      limit: currentLimit,
+      total: totalUsers,
+      totalPages,
     },
     filters,
     

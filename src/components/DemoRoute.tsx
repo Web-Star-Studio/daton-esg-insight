@@ -7,6 +7,10 @@ interface DemoRouteProps {
   children: React.ReactNode;
 }
 
+const isDevDemoBypass =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_BYPASS_DEMO_ROUTE === 'true';
+
 export function DemoRoute({ children }: DemoRouteProps) {
   const { user, isLoading, isApproved, shouldShowOnboarding } = useAuth();
 
@@ -28,6 +32,11 @@ export function DemoRoute({ children }: DemoRouteProps) {
   // Not authenticated → go to auth
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // DEV ONLY: allows authenticated users to access /demo for local testing
+  if (isDevDemoBypass) {
+    return <>{children}</>;
   }
 
   // Already approved → go to main dashboard

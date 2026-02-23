@@ -123,6 +123,11 @@ export default function Metas() {
     queryKey: ['goals'],
     queryFn: getGoals,
   });
+  const normalizedGoals = Array.isArray(goals)
+    ? goals
+    : Array.isArray((goals as { data?: unknown[] } | undefined)?.data)
+    ? ((goals as { data?: GoalListItem[] }).data ?? [])
+    : [];
 
   // Fetch dashboard stats
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -138,7 +143,7 @@ export default function Metas() {
     resetFilters,
     totalCount,
     filteredCount,
-  } = useGoalsFilters(goals);
+  } = useGoalsFilters(normalizedGoals);
 
   const isLoading = goalsLoading || statsLoading;
 

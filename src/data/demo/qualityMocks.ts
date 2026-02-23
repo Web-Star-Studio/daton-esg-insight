@@ -4,6 +4,156 @@
 
 const DEMO_COMPANY_ID = 'demo-company-001';
 
+const DEMO_NON_CONFORMITY_DETAILS: Record<string, any> = {
+  '1': {
+    id: '1',
+    nc_number: 'NC-2026-001',
+    title: 'Desvio de temperatura na câmara fria',
+    description: 'Temperatura acima do limite operacional por 2 horas durante turno noturno.',
+    category: 'Processo',
+    severity: 'Maior',
+    source: 'Auditoria Interna',
+    detected_date: '2026-01-05',
+    status: 'Em Tratamento',
+    created_at: '2026-01-05T08:30:00Z',
+    damage_level: 'Médio',
+    impact_analysis: 'Risco de perda de lote e não atendimento de requisitos de qualidade.',
+    root_cause_analysis: 'Falha no plano de manutenção preventiva do sistema de refrigeração.',
+    corrective_actions: 'Substituição de sensor e revisão do plano de inspeção diária.',
+    preventive_actions: 'Treinamento da equipe e checklist digital com alertas.',
+    effectiveness_evaluation: 'Ações em implementação com monitoramento semanal.',
+    effectiveness_date: null,
+    responsible_user_id: 'emp-8',
+    approved_by_user_id: 'demo-user-002',
+    approval_date: '2026-01-08T10:00:00Z',
+    approval_notes: 'Aprovado para execução imediata.',
+    attachments: [],
+    due_date: '2026-03-01',
+    completion_date: null,
+    recurrence_count: 1,
+    responsible: { id: 'emp-8', full_name: 'Lucas Mendes' },
+    approved_by: { id: 'demo-user-002', full_name: 'Mariana Lopes' },
+  },
+  '2': {
+    id: '2',
+    nc_number: 'NC-2026-002',
+    title: 'Documento de procedimento desatualizado',
+    description: 'PO-005 estava sem revisão há mais de 18 meses.',
+    category: 'Documentação',
+    severity: 'Menor',
+    source: 'Inspeção',
+    detected_date: '2026-01-12',
+    status: 'Aberta',
+    created_at: '2026-01-12T11:00:00Z',
+    damage_level: 'Baixo',
+    impact_analysis: 'Risco de uso de versão obsoleta de instruções.',
+    root_cause_analysis: 'Ausência de gatilho automático para revisão documental.',
+    corrective_actions: 'Atualização do procedimento e republicação no SGQ.',
+    preventive_actions: 'Agenda automática de revisão semestral.',
+    effectiveness_evaluation: null,
+    effectiveness_date: null,
+    responsible_user_id: 'emp-6',
+    approved_by_user_id: null,
+    approval_date: null,
+    approval_notes: null,
+    attachments: [],
+    due_date: '2026-03-20',
+    completion_date: null,
+    recurrence_count: 0,
+    responsible: { id: 'emp-6', full_name: 'Pedro Almeida' },
+    approved_by: null,
+  },
+  '3': {
+    id: '3',
+    nc_number: 'NC-2026-003',
+    title: 'Falha na calibração de instrumento',
+    description: 'Balança analítica fora da faixa de tolerância.',
+    category: 'Equipamento',
+    severity: 'Crítica',
+    source: 'Verificação',
+    detected_date: '2026-01-20',
+    status: 'Em Análise',
+    created_at: '2026-01-20T14:10:00Z',
+    damage_level: 'Alto',
+    impact_analysis: 'Pode comprometer resultados laboratoriais e decisões de qualidade.',
+    root_cause_analysis: 'Plano de calibração não executado no prazo.',
+    corrective_actions: 'Bloqueio do equipamento e calibração emergencial.',
+    preventive_actions: 'Integração com manutenção preditiva e alertas.',
+    effectiveness_evaluation: null,
+    effectiveness_date: null,
+    responsible_user_id: 'emp-6',
+    approved_by_user_id: 'demo-user-003',
+    approval_date: '2026-01-21T09:20:00Z',
+    approval_notes: 'Prioridade máxima aprovada.',
+    attachments: [],
+    due_date: '2026-02-20',
+    completion_date: null,
+    recurrence_count: 2,
+    responsible: { id: 'emp-6', full_name: 'Pedro Almeida' },
+    approved_by: { id: 'demo-user-003', full_name: 'Carlos Andrade' },
+  },
+};
+
+const DEMO_NC_IMMEDIATE_ACTIONS = [
+  {
+    id: 'ncia-1',
+    non_conformity_id: '1',
+    description: 'Isolar lote impactado e registrar rastreabilidade.',
+    status: 'Concluída',
+    responsible: { id: 'emp-8', full_name: 'Lucas Mendes' },
+  },
+  {
+    id: 'ncia-2',
+    non_conformity_id: '1',
+    description: 'Verificar funcionamento de alarmes e sensores da câmara.',
+    status: 'Em Andamento',
+    responsible: { id: 'emp-6', full_name: 'Pedro Almeida' },
+  },
+];
+
+const DEMO_NC_CAUSE_ANALYSIS = {
+  id: 'ncca-1',
+  non_conformity_id: '1',
+  analysis_method: '5_whys',
+  root_cause: 'Falta de inspeção preventiva no sistema de refrigeração.',
+  five_whys_data: [
+    { pergunta: 'Por que a temperatura subiu?', resposta: 'Falha no sensor principal.' },
+    { pergunta: 'Por que o sensor falhou?', resposta: 'Desgaste sem troca preventiva.' },
+    { pergunta: 'Por que não houve troca preventiva?', resposta: 'Plano de manutenção não revisado.' },
+    { pergunta: 'Por que o plano não foi revisado?', resposta: 'Ausência de gatilho no sistema.' },
+    { pergunta: 'Por que não há gatilho?', resposta: 'Processo não estava digitalizado.' },
+  ],
+};
+
+const DEMO_NC_ACTION_PLANS = [
+  {
+    id: 'ncap-1',
+    non_conformity_id: '1',
+    status: 'Em Execução',
+    what_action: 'Substituir sensor e validar leitura por 7 dias',
+    why_reason: 'Eliminar causa imediata do desvio',
+    who_responsible: { id: 'emp-6', full_name: 'Pedro Almeida' },
+    when_deadline: '2026-02-28',
+  },
+  {
+    id: 'ncap-2',
+    non_conformity_id: '1',
+    status: 'Planejada',
+    what_action: 'Implantar checklist digital com alarme',
+    why_reason: 'Prevenir recorrência operacional',
+    who_responsible: { id: 'emp-8', full_name: 'Lucas Mendes' },
+    when_deadline: '2026-03-10',
+  },
+];
+
+const DEMO_NC_EFFECTIVENESS = {
+  id: 'ncef-1',
+  non_conformity_id: '1',
+  is_effective: true,
+  evaluated_at: '2026-02-15',
+  risk_update_notes: 'Risco residual reduzido para nível baixo após 30 dias sem recorrência.',
+};
+
 export const qualityMockEntries = [
   // Quality Dashboard
   {
@@ -61,6 +211,39 @@ export const qualityMockEntries = [
       { id: '2', nc_number: 'NC-2026-002', title: 'Documento desatualizado', category: 'Documentação', severity: 'Menor', status: 'Aberta' },
       { id: '3', nc_number: 'NC-2026-003', title: 'Falha na calibração', category: 'Equipamento', severity: 'Crítica', status: 'Em Análise' },
     ],
+  },
+  // Non-conformity details and lifecycle data
+  {
+    queryKey: ['non-conformity'],
+    data: DEMO_NON_CONFORMITY_DETAILS['1'],
+  },
+  {
+    queryKey: ['non-conformity', '1'],
+    data: DEMO_NON_CONFORMITY_DETAILS['1'],
+  },
+  {
+    queryKey: ['non-conformity', '2'],
+    data: DEMO_NON_CONFORMITY_DETAILS['2'],
+  },
+  {
+    queryKey: ['non-conformity', '3'],
+    data: DEMO_NON_CONFORMITY_DETAILS['3'],
+  },
+  {
+    queryKey: ['nc-immediate-actions-modal'],
+    data: DEMO_NC_IMMEDIATE_ACTIONS,
+  },
+  {
+    queryKey: ['nc-cause-analysis-modal'],
+    data: DEMO_NC_CAUSE_ANALYSIS,
+  },
+  {
+    queryKey: ['nc-action-plans-modal'],
+    data: DEMO_NC_ACTION_PLANS,
+  },
+  {
+    queryKey: ['nc-effectiveness-modal'],
+    data: DEMO_NC_EFFECTIVENESS,
   },
   // NC Dashboard stats
   {

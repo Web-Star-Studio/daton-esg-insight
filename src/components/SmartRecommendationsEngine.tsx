@@ -48,6 +48,19 @@ interface SmartRecommendation {
   createdAt: Date;
 }
 
+interface RecommendationsContext {
+  goals: Record<string, unknown>[];
+  emissions: Record<string, unknown>[];
+  licenses: Record<string, unknown>[];
+  assets: Record<string, unknown>[];
+  metrics: Record<string, unknown>[];
+}
+
+const toRecordArray = (value: unknown): Record<string, unknown>[] =>
+  Array.isArray(value)
+    ? value.filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
+    : [];
+
 export const SmartRecommendationsEngine: React.FC = () => {
   const [recommendations, setRecommendations] = useState<SmartRecommendation[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'environmental' | 'social' | 'governance' | 'operational'>('all');
@@ -83,9 +96,24 @@ export const SmartRecommendationsEngine: React.FC = () => {
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
+  const safeContext: RecommendationsContext = React.useMemo(() => {
+    if (!contextData || typeof contextData !== "object") {
+      return { goals: [], emissions: [], licenses: [], assets: [], metrics: [] };
+    }
+
+    const rawContext = contextData as Record<string, unknown>;
+    return {
+      goals: toRecordArray(rawContext.goals),
+      emissions: toRecordArray(rawContext.emissions),
+      licenses: toRecordArray(rawContext.licenses),
+      assets: toRecordArray(rawContext.assets),
+      metrics: toRecordArray(rawContext.metrics),
+    };
+  }, [contextData]);
+
   // Generate smart recommendations based on context
   const generateRecommendations = async () => {
-    if (!contextData || isGenerating) return;
+    if (isGenerating) return;
 
     setIsGenerating(true);
     
@@ -93,8 +121,11 @@ export const SmartRecommendationsEngine: React.FC = () => {
       const newRecommendations: SmartRecommendation[] = [];
 
       // 1. Energy Efficiency Recommendations
-      if (contextData.emissions.length > 0) {
-        const avgEmissions = contextData.emissions.reduce((sum, e) => sum + (e.total_co2e || 0), 0) / contextData.emissions.length;
+      if (safeContext.emissions.length > 0) {
+        const avgEmissions = safeContext.emissions.reduce((sum, emission) => {
+          const totalCo2e = typeof emission.total_co2e === 'number' ? emission.total_co2e : 0;
+          return sum + totalCo2e;
+        }, 0) / safeContext.emissions.length;
         
         if (avgEmissions > 100) { // Threshold for energy efficiency recommendation
           newRecommendations.push({
@@ -132,14 +163,17 @@ export const SmartRecommendationsEngine: React.FC = () => {
               'Considere sensores de presença para maximizar economia',
               'Negocie desconto por volume com fornecedores'
             ],
-            relatedGoals: contextData.goals.filter(g => g.name.toLowerCase().includes('energia')).map(g => g.id),
+            relatedGoals: safeContext.goals
+              .filter((goal) => (goal.name ?? '').toString().toLowerCase().includes('energia'))
+              .map((goal) => goal.id)
+              .filter((id): id is string => typeof id === 'string'),
             createdAt: new Date()
           });
         }
       }
 
       // 2. Digital Transformation Recommendations
-      if (contextData.assets.length > 10) {
+      if (safeContext.assets.length > 10) {
         newRecommendations.push({
           id: 'iot-monitoring',
           type: 'automation',
@@ -180,7 +214,7 @@ export const SmartRecommendationsEngine: React.FC = () => {
       }
 
       // 3. Compliance Automation
-      if (contextData.licenses.length > 5) {
+      if (safeContext.licenses.length > 5) {
         newRecommendations.push({
           id: 'compliance-automation',
           type: 'automation',
@@ -210,18 +244,21 @@ export const SmartRecommendationsEngine: React.FC = () => {
           expectedROI: 300,
           confidenceScore: 0.95,
           aiGenerated: true,
-          implementationTips: [
-            'Configure múltiplos lembretes para garantir ação',
-            'Inclua responsáveis e backup em cada alerta',
-            'Mantenha documentos digitalizados e acessíveis'
-          ],
-          relatedGoals: contextData.goals.filter(g => g.name.toLowerCase().includes('compliance')).map(g => g.id),
-          createdAt: new Date()
-        });
+            implementationTips: [
+              'Configure múltiplos lembretes para garantir ação',
+              'Inclua responsáveis e backup em cada alerta',
+              'Mantenha documentos digitalizados e acessíveis'
+            ],
+            relatedGoals: safeContext.goals
+              .filter((goal) => (goal.name ?? '').toString().toLowerCase().includes('compliance'))
+              .map((goal) => goal.id)
+              .filter((id): id is string => typeof id === 'string'),
+            createdAt: new Date()
+          });
       }
 
       // 4. Data Analytics Enhancement
-      if (contextData.metrics.length > 0) {
+      if (safeContext.metrics.length > 0) {
         newRecommendations.push({
           id: 'advanced-analytics',
           type: 'opportunity',
@@ -322,10 +359,10 @@ export const SmartRecommendationsEngine: React.FC = () => {
 
   // Auto-generate on data load
   React.useEffect(() => {
-    if (contextData && !isLoading && recommendations.length === 0) {
+    if (!isLoading && recommendations.length === 0) {
       generateRecommendations();
     }
-  }, [contextData, isLoading]);
+  }, [safeContext, isLoading]);
 
   // Filter recommendations
   const filteredRecommendations = selectedCategory === 'all' 

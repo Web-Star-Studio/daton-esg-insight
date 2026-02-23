@@ -14,6 +14,415 @@ const monitoringData = months.map((m, i) => ({
   waste: 45 + Math.round(Math.sin(i * 0.7) * 12),
 }));
 
+const DEMO_EMISSIONS_DATA = monitoringData.flatMap((dataPoint, index) => {
+  const monthStart = new Date(2025, index, 1).toISOString();
+  const monthEnd = new Date(2025, index + 1, 0).toISOString();
+  const calculationDate = new Date(2025, index, 15).toISOString();
+
+  return [
+    {
+      id: `demo-emission-${index + 1}-s1`,
+      total_co2e: Number((dataPoint.emissions * 0.39).toFixed(2)),
+      calculation_date: calculationDate,
+      activity_data: {
+        period_start_date: monthStart,
+        period_end_date: monthEnd,
+        emission_sources: {
+          scope: 1,
+          category: 'Combustão Estacionária',
+          name: 'Caldeira Industrial',
+        },
+      },
+    },
+    {
+      id: `demo-emission-${index + 1}-s2`,
+      total_co2e: Number((dataPoint.emissions * 0.26).toFixed(2)),
+      calculation_date: calculationDate,
+      activity_data: {
+        period_start_date: monthStart,
+        period_end_date: monthEnd,
+        emission_sources: {
+          scope: 2,
+          category: 'Eletricidade Comprada',
+          name: 'Energia Elétrica',
+        },
+      },
+    },
+    {
+      id: `demo-emission-${index + 1}-s3`,
+      total_co2e: Number((dataPoint.emissions * 0.35).toFixed(2)),
+      calculation_date: calculationDate,
+      activity_data: {
+        period_start_date: monthStart,
+        period_end_date: monthEnd,
+        emission_sources: {
+          scope: 3,
+          category: 'Transporte',
+          name: 'Frota Terceirizada',
+        },
+      },
+    },
+  ];
+});
+
+const DEMO_ASSETS_HIERARCHY = [
+  {
+    id: 'asset-root-1',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Unidade Industrial SP',
+    asset_type: 'Unidade Industrial',
+    location: 'São Paulo - SP',
+    description: 'Principal unidade fabril com linhas de produção e utilidades.',
+    parent_asset_id: null,
+    operational_status: 'Ativo',
+    pollution_potential: 'Médio',
+    productive_capacity: 4200,
+    capacity_unit: 'ton/mês',
+    installation_year: 2019,
+    monitoring_frequency: 'Mensal',
+    monitoring_responsible: 'Equipe de Meio Ambiente',
+    critical_parameters: ['NOx', 'Material Particulado', 'CO2'],
+    created_at: '2024-01-02T08:00:00Z',
+    updated_at: '2026-02-12T11:20:00Z',
+    children: [
+      {
+        id: 'asset-boiler-1',
+        company_id: DEMO_COMPANY_ID,
+        name: 'Caldeira 01',
+        asset_type: 'Fonte Fixa de Combustão',
+        location: 'Bloco A',
+        parent_asset_id: 'asset-root-1',
+        operational_status: 'Ativo',
+        pollution_potential: 'Alto',
+        created_at: '2024-02-10T08:00:00Z',
+        updated_at: '2026-02-12T11:20:00Z',
+        children: [],
+      },
+      {
+        id: 'asset-stack-1',
+        company_id: DEMO_COMPANY_ID,
+        name: 'Chaminé Norte',
+        asset_type: 'Chaminé/Stack',
+        location: 'Bloco A',
+        parent_asset_id: 'asset-root-1',
+        operational_status: 'Ativo',
+        pollution_potential: 'Médio',
+        created_at: '2024-02-10T08:00:00Z',
+        updated_at: '2026-02-12T11:20:00Z',
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 'asset-root-2',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Centro de Distribuição RJ',
+    asset_type: 'Infraestrutura Auxiliar',
+    location: 'Rio de Janeiro - RJ',
+    description: 'Centro logístico para distribuição nacional.',
+    parent_asset_id: null,
+    operational_status: 'Ativo',
+    pollution_potential: 'Baixo',
+    productive_capacity: 1800,
+    capacity_unit: 'pallets/dia',
+    installation_year: 2021,
+    monitoring_frequency: 'Trimestral',
+    monitoring_responsible: 'Time de Operações',
+    critical_parameters: ['Consumo de Energia', 'Ruído'],
+    created_at: '2024-03-15T08:00:00Z',
+    updated_at: '2026-02-11T10:00:00Z',
+    children: [
+      {
+        id: 'asset-vehicle-1',
+        company_id: DEMO_COMPANY_ID,
+        name: 'Caminhão Baú 14T',
+        asset_type: 'Fonte Móvel',
+        location: 'Pátio RJ',
+        parent_asset_id: 'asset-root-2',
+        operational_status: 'Ativo',
+        pollution_potential: 'Médio',
+        created_at: '2024-04-01T08:00:00Z',
+        updated_at: '2026-02-11T10:00:00Z',
+        children: [],
+      },
+    ],
+  },
+];
+
+const DEMO_ASSET_DETAILS_BY_ID: Record<string, any> = {
+  'asset-root-1': {
+    id: 'asset-root-1',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Unidade Industrial SP',
+    asset_type: 'Unidade Industrial',
+    location: 'São Paulo - SP',
+    description: 'Principal unidade fabril com linhas de produção e utilidades.',
+    parent_asset_id: null,
+    productive_capacity: 4200,
+    capacity_unit: 'ton/mês',
+    installation_year: 2019,
+    operational_status: 'Ativo',
+    pollution_potential: 'Médio',
+    cnae_code: '20.51-7/00',
+    monitoring_frequency: 'Mensal',
+    critical_parameters: ['NOx', 'Material Particulado', 'CO2'],
+    monitoring_responsible: 'Equipe de Meio Ambiente',
+    created_at: '2024-01-02T08:00:00Z',
+    updated_at: '2026-02-12T11:20:00Z',
+    linked_emission_sources: [
+      { id: 'es-1', name: 'Caldeira 01', category: 'Combustão Estacionária', scope: 1, status: 'Ativo' },
+      { id: 'es-2', name: 'Energia Elétrica', category: 'Eletricidade Comprada', scope: 2, status: 'Ativo' },
+    ],
+    linked_licenses: [
+      { id: 'lic-1', name: 'Licença de Operação', type: 'Operação', status: 'Ativa', expiration_date: '2027-01-15', issuing_body: 'CETESB' },
+      { id: 'lic-2', name: 'Outorga de Água', type: 'Recursos Hídricos', status: 'Ativa', expiration_date: '2026-10-20', issuing_body: 'DAEE' },
+    ],
+    linked_waste_logs: [
+      { id: 'wl-1', mtr_number: 'MTR-2026-001', waste_description: 'Lodo industrial classe I', quantity: 4.2, unit: 'ton', collection_date: '2026-02-10', status: 'Coletado' },
+      { id: 'wl-2', mtr_number: 'MTR-2026-002', waste_description: 'Embalagens contaminadas', quantity: 1.1, unit: 'ton', collection_date: '2026-02-06', status: 'Destinação Finalizada' },
+    ],
+    kpis: {
+      total_emissions: 2,
+      active_licenses: 2,
+      waste_records: 2,
+    },
+  },
+  'asset-boiler-1': {
+    id: 'asset-boiler-1',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Caldeira 01',
+    asset_type: 'Fonte Fixa de Combustão',
+    location: 'Bloco A',
+    description: 'Caldeira a gás natural para geração de vapor.',
+    parent_asset_id: 'asset-root-1',
+    operational_status: 'Ativo',
+    pollution_potential: 'Alto',
+    cnae_code: '35.30-1/00',
+    monitoring_frequency: 'Semanal',
+    critical_parameters: ['NOx', 'CO'],
+    monitoring_responsible: 'Operação de Utilidades',
+    created_at: '2024-02-10T08:00:00Z',
+    updated_at: '2026-02-12T11:20:00Z',
+    linked_emission_sources: [
+      { id: 'es-1', name: 'Caldeira 01', category: 'Combustão Estacionária', scope: 1, status: 'Ativo' },
+    ],
+    linked_licenses: [
+      { id: 'lic-1', name: 'Licença de Operação', type: 'Operação', status: 'Ativa', expiration_date: '2027-01-15', issuing_body: 'CETESB' },
+    ],
+    linked_waste_logs: [
+      { id: 'wl-1', mtr_number: 'MTR-2026-001', waste_description: 'Lodo industrial classe I', quantity: 4.2, unit: 'ton', collection_date: '2026-02-10', status: 'Coletado' },
+    ],
+    kpis: {
+      total_emissions: 1,
+      active_licenses: 1,
+      waste_records: 1,
+    },
+  },
+  'asset-stack-1': {
+    id: 'asset-stack-1',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Chaminé Norte',
+    asset_type: 'Chaminé/Stack',
+    location: 'Bloco A',
+    description: 'Ponto de monitoramento contínuo de emissões.',
+    parent_asset_id: 'asset-root-1',
+    operational_status: 'Ativo',
+    pollution_potential: 'Médio',
+    monitoring_frequency: 'Mensal',
+    critical_parameters: ['Particulados', 'NOx'],
+    monitoring_responsible: 'Laboratório Ambiental',
+    created_at: '2024-02-10T08:00:00Z',
+    updated_at: '2026-02-12T11:20:00Z',
+    linked_emission_sources: [],
+    linked_licenses: [],
+    linked_waste_logs: [],
+    kpis: {
+      total_emissions: 0,
+      active_licenses: 0,
+      waste_records: 0,
+    },
+  },
+  'asset-root-2': {
+    id: 'asset-root-2',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Centro de Distribuição RJ',
+    asset_type: 'Infraestrutura Auxiliar',
+    location: 'Rio de Janeiro - RJ',
+    description: 'Centro logístico para distribuição nacional.',
+    parent_asset_id: null,
+    operational_status: 'Ativo',
+    pollution_potential: 'Baixo',
+    monitoring_frequency: 'Trimestral',
+    critical_parameters: ['Consumo de Energia', 'Ruído'],
+    monitoring_responsible: 'Time de Operações',
+    created_at: '2024-03-15T08:00:00Z',
+    updated_at: '2026-02-11T10:00:00Z',
+    linked_emission_sources: [
+      { id: 'es-3', name: 'Frota Leve', category: 'Combustão Móvel', scope: 1, status: 'Ativo' },
+    ],
+    linked_licenses: [],
+    linked_waste_logs: [],
+    kpis: {
+      total_emissions: 1,
+      active_licenses: 0,
+      waste_records: 0,
+    },
+  },
+  'asset-vehicle-1': {
+    id: 'asset-vehicle-1',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Caminhão Baú 14T',
+    asset_type: 'Fonte Móvel',
+    location: 'Pátio RJ',
+    description: 'Veículo para entregas regionais.',
+    parent_asset_id: 'asset-root-2',
+    operational_status: 'Ativo',
+    pollution_potential: 'Médio',
+    monitoring_frequency: 'Mensal',
+    critical_parameters: ['Consumo Diesel', 'KM Rodado'],
+    monitoring_responsible: 'Gestão de Frota',
+    created_at: '2024-04-01T08:00:00Z',
+    updated_at: '2026-02-11T10:00:00Z',
+    linked_emission_sources: [
+      { id: 'es-3', name: 'Frota Leve', category: 'Combustão Móvel', scope: 1, status: 'Ativo' },
+    ],
+    linked_licenses: [],
+    linked_waste_logs: [],
+    kpis: {
+      total_emissions: 1,
+      active_licenses: 0,
+      waste_records: 0,
+    },
+  },
+};
+
+const DEMO_WASTE_LOGS = [
+  {
+    id: 'wl-1',
+    mtr_number: 'MTR-2026-001',
+    waste_description: 'Lodo industrial classe I',
+    collection_date: '10/02/2026',
+    quantity: 4.2,
+    unit: 'tonelada',
+    status: 'Coletado',
+    waste_class: 'Classe I - Perigoso',
+    destination_name: 'EcoDestino Tratamentos',
+  },
+  {
+    id: 'wl-2',
+    mtr_number: 'MTR-2026-002',
+    waste_description: 'Embalagens contaminadas',
+    collection_date: '06/02/2026',
+    quantity: 1.1,
+    unit: 'tonelada',
+    status: 'Destinação Finalizada',
+    waste_class: 'Classe II A - Não Inerte',
+    destination_name: 'ReciclaSul',
+  },
+  {
+    id: 'wl-3',
+    mtr_number: 'MTR-2026-003',
+    waste_description: 'Resíduo plástico reciclável',
+    collection_date: '02/02/2026',
+    quantity: 2.8,
+    unit: 'tonelada',
+    status: 'Em Trânsito',
+    waste_class: 'Classe II B - Inerte',
+    destination_name: 'Cooperativa Nova Vida',
+  },
+];
+
+const DEMO_WASTE_LOG_DETAIL = {
+  id: 'wl-1',
+  mtr_number: 'MTR-2026-001',
+  waste_description: 'Lodo industrial classe I',
+  collection_date: '2026-02-10',
+  quantity: 4.2,
+  unit: 'tonelada',
+  status: 'Coletado',
+  waste_class: 'Classe I - Perigoso',
+  transporter_name: 'EcoTransp Ltda',
+  transporter_cnpj: '12345678000191',
+  destination_name: 'EcoDestino Tratamentos',
+  destination_cnpj: '98765432000109',
+  final_treatment_type: 'Incineração',
+  cost: 12800,
+  company_id: DEMO_COMPANY_ID,
+  created_at: '2026-02-10T11:00:00Z',
+  updated_at: '2026-02-10T11:00:00Z',
+};
+
+const DEMO_WASTE_LOG_DOCUMENTS = [
+  {
+    id: 'wd-1',
+    file_name: 'MTR-2026-001.pdf',
+    file_path: 'waste-logs/wl-1/mtr-2026-001.pdf',
+    created_at: '2026-02-10T11:05:00Z',
+  },
+  {
+    id: 'wd-2',
+    file_name: 'CDF-2026-001.pdf',
+    file_path: 'waste-logs/wl-1/cdf-2026-001.pdf',
+    created_at: '2026-02-12T15:30:00Z',
+  },
+];
+
+const DEMO_ACTIVE_PGRS_PLAN = {
+  id: 'pgrs-plan-1',
+  plan_name: 'PGRS 2026',
+  status: 'Ativo',
+  goals: [
+    {
+      id: 'pgrs-goal-1',
+      pgrs_plan_id: 'pgrs-plan-1',
+      goal_type: 'Reduzir geração de resíduos perigosos',
+      baseline_value: 120,
+      target_value: 90,
+      current_value: 98,
+      unit: 'ton/ano',
+      deadline: '2026-12-31',
+      status: 'Em andamento',
+      progress_percentage: 73,
+    },
+    {
+      id: 'pgrs-goal-2',
+      pgrs_plan_id: 'pgrs-plan-1',
+      goal_type: 'Aumentar taxa de reciclagem',
+      baseline_value: 55,
+      target_value: 75,
+      current_value: 69,
+      unit: '%',
+      deadline: '2026-12-31',
+      status: 'Em andamento',
+      progress_percentage: 70,
+    },
+    {
+      id: 'pgrs-goal-3',
+      pgrs_plan_id: 'pgrs-plan-1',
+      goal_type: 'Treinar operadores em segregação',
+      baseline_value: 0,
+      target_value: 100,
+      current_value: 88,
+      unit: '%',
+      deadline: '2026-10-31',
+      status: 'Em andamento',
+      progress_percentage: 88,
+    },
+  ],
+};
+
+const DEMO_PGRS_STATUS = {
+  id: DEMO_ACTIVE_PGRS_PLAN.id,
+  plan_name: DEMO_ACTIVE_PGRS_PLAN.plan_name,
+  status: 'Ativo',
+  creation_date: new Date('2026-01-05T00:00:00Z'),
+  next_review_date: new Date('2026-07-05T00:00:00Z'),
+  completion_percentage: 84,
+  goals_count: DEMO_ACTIVE_PGRS_PLAN.goals.length,
+  procedures_count: 6,
+  sources_count: 4,
+};
+
 export const environmentalMockEntries = [
   // Emission sources
   {
@@ -65,6 +474,40 @@ export const environmentalMockEntries = [
       trend: -8.3,
       monthly: monitoringData.map(d => ({ month: d.month, value: d.emissions })),
     },
+  },
+  {
+    queryKey: ['emissions-data'],
+    data: DEMO_EMISSIONS_DATA,
+  },
+  // Assets hierarchy for environmental assets module
+  {
+    queryKey: ['assets-hierarchy'],
+    data: DEMO_ASSETS_HIERARCHY,
+  },
+  // Base and specific asset details
+  {
+    queryKey: ['asset-details'],
+    data: DEMO_ASSET_DETAILS_BY_ID['asset-root-1'],
+  },
+  {
+    queryKey: ['asset-details', 'asset-root-1'],
+    data: DEMO_ASSET_DETAILS_BY_ID['asset-root-1'],
+  },
+  {
+    queryKey: ['asset-details', 'asset-boiler-1'],
+    data: DEMO_ASSET_DETAILS_BY_ID['asset-boiler-1'],
+  },
+  {
+    queryKey: ['asset-details', 'asset-stack-1'],
+    data: DEMO_ASSET_DETAILS_BY_ID['asset-stack-1'],
+  },
+  {
+    queryKey: ['asset-details', 'asset-root-2'],
+    data: DEMO_ASSET_DETAILS_BY_ID['asset-root-2'],
+  },
+  {
+    queryKey: ['asset-details', 'asset-vehicle-1'],
+    data: DEMO_ASSET_DETAILS_BY_ID['asset-vehicle-1'],
   },
   // Inventory summary
   {
@@ -168,6 +611,28 @@ export const environmentalMockEntries = [
       { id: '1', waste_type: 'Classe I - Perigoso', quantity: 12.5, status: 'Destinado' },
       { id: '2', waste_type: 'Classe IIA - Não Perigoso', quantity: 45.2, status: 'Destinado' },
     ],
+  },
+  // Waste logs and details for residuos module
+  {
+    queryKey: ['waste-logs'],
+    data: DEMO_WASTE_LOGS,
+  },
+  {
+    queryKey: ['waste-logs', 'detail'],
+    data: DEMO_WASTE_LOG_DETAIL,
+  },
+  {
+    queryKey: ['waste-logs', 'documents'],
+    data: DEMO_WASTE_LOG_DOCUMENTS,
+  },
+  // PGRS status and active plan
+  {
+    queryKey: ['pgrs-status'],
+    data: DEMO_PGRS_STATUS,
+  },
+  {
+    queryKey: ['active-pgrs-goals'],
+    data: DEMO_ACTIVE_PGRS_PLAN,
   },
   // Carbon projects
   {

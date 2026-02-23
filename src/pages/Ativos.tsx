@@ -600,6 +600,7 @@ export default function Ativos() {
     queryKey: ['assets-hierarchy'],
     queryFn: getAssetsHierarchy
   });
+  const assetsList = Array.isArray(assets) ? assets : [];
 
   const handleToggleExpanded = (assetId: string) => {
     const newExpanded = new Set(expandedNodes);
@@ -684,9 +685,9 @@ export default function Ativos() {
                   </div>
                 )}
                 
-                {assets && assets.length > 0 && (
+                {assetsList.length > 0 && (
                   <div className="p-2">
-                    {assets.map((asset) => (
+                    {assetsList.map((asset) => (
                       <AssetTreeItem
                         key={asset.id}
                         asset={asset}
@@ -702,7 +703,7 @@ export default function Ativos() {
                   </div>
                 )}
                 
-                {assets && assets.length === 0 && (
+                {assetsList.length === 0 && !isLoading && !error && (
                   <div className="text-center text-muted-foreground p-8">
                     <HardDrive className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>Nenhum ativo encontrado</p>

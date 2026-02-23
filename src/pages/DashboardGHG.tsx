@@ -99,7 +99,13 @@ const useDashboardGHGComponent = () => {
 
   // Process data for charts
   const { monthlyData, escopoData, fontesEscopo1Data, totals } = useMemo(() => {
-    if (!emissionsData || emissionsData.length === 0) {
+    const normalizedEmissionsData = Array.isArray(emissionsData)
+      ? emissionsData
+      : Array.isArray((emissionsData as { data?: unknown[] } | undefined)?.data)
+      ? ((emissionsData as { data?: unknown[] }).data as typeof emissionsData)
+      : [];
+
+    if (normalizedEmissionsData.length === 0) {
       return {
         monthlyData: [],
         escopoData: [],
@@ -113,7 +119,7 @@ const useDashboardGHGComponent = () => {
     const scopeTotals = { escopo1: 0, escopo2: 0, escopo3: 0 }
     const categoryTotals: Record<string, number> = {}
 
-    emissionsData.forEach(emission => {
+    normalizedEmissionsData.forEach((emission) => {
       const scope = emission.activity_data?.emission_sources?.scope
       const category = emission.activity_data?.emission_sources?.category || 'Outros'
       const co2e = emission.total_co2e || 0
@@ -506,7 +512,7 @@ const useDashboardGHGComponent = () => {
         {/* Enhanced Analytics Dashboard */}
         <EmissionInsightsDashboard 
           dateRange={dateRange?.from && dateRange?.to ? dateRange as { from: Date; to: Date } : undefined}
-          emissionData={emissionsData || []}
+          emissionData={Array.isArray(emissionsData) ? emissionsData : []}
         />
       </div>
   )

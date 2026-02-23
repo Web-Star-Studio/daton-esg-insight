@@ -6,10 +6,33 @@ import { AlertTriangle, TrendingUp, Droplets, Zap, Cloud, Trash2 } from 'lucide-
 import { AlertMonitoringService } from '@/services/alertMonitoring';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+interface IntelligentAlert {
+  type: 'water' | 'energy' | 'emissions' | 'waste';
+  value: number;
+  average: number;
+  percentage: number;
+}
+
+const VALID_ALERT_TYPES: IntelligentAlert['type'][] = ['water', 'energy', 'emissions', 'waste'];
+
+const isIntelligentAlert = (value: unknown): value is IntelligentAlert => {
+  if (!value || typeof value !== 'object') return false;
+  const alert = value as Record<string, unknown>;
+
+  return (
+    typeof alert.type === 'string' &&
+    VALID_ALERT_TYPES.includes(alert.type as IntelligentAlert['type']) &&
+    typeof alert.value === 'number' &&
+    typeof alert.average === 'number' &&
+    typeof alert.percentage === 'number'
+  );
+};
 
 export function AlertsPanel() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [companyId, setCompanyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,12 +54,13 @@ export function AlertsPanel() {
     fetchCompanyId();
   }, []);
 
-  const { data: alerts = [], isLoading } = useQuery({
+  const { data: alertsData, isLoading } = useQuery({
     queryKey: ['intelligent-alerts', companyId],
     queryFn: () => companyId ? AlertMonitoringService.checkAllAlerts(companyId) : [],
     enabled: !!companyId,
     refetchInterval: 5 * 60 * 1000, // Check every 5 minutes
   });
+  const alerts = Array.isArray(alertsData) ? alertsData.filter(isIntelligentAlert) : [];
 
   if (!companyId || isLoading) return null;
   if (alerts.length === 0) return null;
@@ -53,12 +77,19 @@ export function AlertsPanel() {
 
   const getRoute = (type: string) => {
     const routes = {
-      water: '/agua',
-      energy: '/energia',
-      emissions: '/emissoes',
+      water: '/monitoramento-agua',
+      energy: '/monitoramento-energia',
+      emissions: '/inventario-gee',
       waste: '/residuos'
     };
-    return routes[type as keyof typeof routes];
+    const targetRoute = routes[type as keyof typeof routes];
+    const isDemoRoute = location.pathname.startsWith('/demo');
+
+    if (!targetRoute) {
+      return isDemoRoute ? '/demo' : '/dashboard';
+    }
+
+    return isDemoRoute ? `/demo${targetRoute}` : targetRoute;
   };
 
   const getTypeLabel = (type: string) => {
@@ -83,10 +114,11 @@ export function AlertsPanel() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {alerts.map((alert, index) => {
+        {alerts.map((alert) => {
           const Icon = getIcon(alert.type);
+          const alertKey = `${alert.type}-${alert.value}-${alert.average}-${alert.percentage}`;
           return (
-            <Alert key={index} variant="destructive">
+            <Alert key={alertKey} variant="destructive">
               <Icon className="h-4 w-4" />
               <AlertTitle className="flex items-center justify-between">
                 <span>{getTypeLabel(alert.type)}</span>

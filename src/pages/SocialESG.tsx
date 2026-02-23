@@ -82,6 +82,7 @@ export default function SocialESG() {
     queryKey: ['social-projects'],
     queryFn: getSocialProjects
   });
+  const projectsList = Array.isArray(projects) ? projects : [];
 
   const { data: filteredMetrics } = useQuery({
     queryKey: ['filtered-training-metrics', filters],
@@ -435,7 +436,7 @@ export default function SocialESG() {
                   <Skeleton className="h-12 w-full" />
                   <Skeleton className="h-12 w-full" />
                 </div>
-              ) : !projects || projects.length === 0 ? (
+              ) : projectsList.length === 0 ? (
                 <div className="text-center py-8">
                   <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium">Nenhum projeto cadastrado</h3>
@@ -463,7 +464,7 @@ export default function SocialESG() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {projects.map((project) => (
+                    {projectsList.map((project) => (
                       <TableRow key={project.id}>
                         <TableCell className="font-medium">{project.name}</TableCell>
                         <TableCell>

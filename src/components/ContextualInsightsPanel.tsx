@@ -77,6 +77,7 @@ export const ContextualInsightsPanel: React.FC = () => {
         return insights;
     }
   };
+  const filteredInsights = Array.isArray(getFilteredInsights()) ? getFilteredInsights() : [];
 
   const handleActionClick = (insight: any) => {
     toast.success('Ação iniciada', {
@@ -176,7 +177,7 @@ export const ContextualInsightsPanel: React.FC = () => {
 
       <CardContent className="p-0">
         <ScrollArea className="h-[500px]">
-          {getFilteredInsights().length === 0 ? (
+          {filteredInsights.length === 0 ? (
             <div className="p-6 text-center text-muted-foreground">
               <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
               {isAnalyzing ? (
@@ -190,7 +191,7 @@ export const ContextualInsightsPanel: React.FC = () => {
             </div>
           ) : (
             <div className="divide-y">
-              {getFilteredInsights().map((insight) => (
+              {filteredInsights.map((insight) => (
                 <div key={insight.id} className="p-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center space-x-2">

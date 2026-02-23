@@ -71,9 +71,9 @@ const getKPICards = (stats: any): KPIItem[] => [
   {
     id: 'emissions',
     title: 'Emissões CO₂',
-    value: formatEmissionValue(stats?.emissions.value || 0),
-    change: stats?.emissions.change || 0,
-    changeType: stats?.emissions.changeType || 'neutral',
+    value: formatEmissionValue(stats?.emissions?.value ?? 0),
+    change: stats?.emissions?.change ?? 0,
+    changeType: stats?.emissions?.changeType || 'neutral',
     icon: Leaf,
     color: 'text-success',
     bgColor: 'bg-success/10',
@@ -83,9 +83,9 @@ const getKPICards = (stats: any): KPIItem[] => [
   {
     id: 'compliance',
     title: 'Conformidade',
-    value: formatPercentage(stats?.compliance.value || 0),
-    change: stats?.compliance.change || 0,
-    changeType: stats?.compliance.changeType || 'neutral',
+    value: formatPercentage(stats?.compliance?.value ?? 0),
+    change: stats?.compliance?.change ?? 0,
+    changeType: stats?.compliance?.changeType || 'neutral',
     icon: Shield,
     color: 'text-primary',
     bgColor: 'bg-primary/10',
@@ -95,9 +95,9 @@ const getKPICards = (stats: any): KPIItem[] => [
   {
     id: 'employees',
     title: 'Colaboradores',
-    value: formatEmployeeCount(stats?.employees.value || 0),
-    change: stats?.employees.change || 0,
-    changeType: stats?.employees.changeType || 'neutral',
+    value: formatEmployeeCount(stats?.employees?.value ?? 0),
+    change: stats?.employees?.change ?? 0,
+    changeType: stats?.employees?.changeType || 'neutral',
     icon: Users,
     color: 'text-accent',
     bgColor: 'bg-accent/10',
@@ -107,9 +107,9 @@ const getKPICards = (stats: any): KPIItem[] => [
   {
     id: 'quality',
     title: 'Qualidade',
-    value: formatPercentage(stats?.quality.value || 0),
-    change: stats?.quality.change || 0,
-    changeType: stats?.quality.changeType || 'neutral',
+    value: formatPercentage(stats?.quality?.value ?? 0),
+    change: stats?.quality?.change ?? 0,
+    changeType: stats?.quality?.changeType || 'neutral',
     icon: Award,
     color: 'text-warning',
     bgColor: 'bg-warning/10',
@@ -271,7 +271,7 @@ export default function Dashboard() {
   };
 
   const { data: dashboardStats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ['dashboard-stats', dateRange],
+    queryKey: ['dashboard-overview-stats', dateRange],
     queryFn: () => getDashboardStats('month'),
     refetchInterval: 60000,
   });

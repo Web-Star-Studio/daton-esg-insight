@@ -15,6 +15,298 @@ const demoEmployees = [
   { id: 'emp-8', full_name: 'Lucas Mendes', position: 'Supervisor de Produção', department: 'Produção', status: 'Ativo', gender: 'Masculino', hire_date: '2019-11-01', email: 'lucas.mendes@demo.com', company_id: DEMO_COMPANY_ID },
 ];
 
+const DEMO_TRAINING_CATEGORIES = [
+  { id: 'cat-1', name: 'Segurança', description: 'Treinamentos obrigatórios de SST', company_id: DEMO_COMPANY_ID, created_at: '2025-01-10T00:00:00Z', updated_at: '2026-01-10T00:00:00Z' },
+  { id: 'cat-2', name: 'Ambiental', description: 'Capacitações de gestão ambiental', company_id: DEMO_COMPANY_ID, created_at: '2025-01-10T00:00:00Z', updated_at: '2026-01-10T00:00:00Z' },
+  { id: 'cat-3', name: 'Desenvolvimento', description: 'Desenvolvimento de liderança e competências', company_id: DEMO_COMPANY_ID, created_at: '2025-01-10T00:00:00Z', updated_at: '2026-01-10T00:00:00Z' },
+  { id: 'cat-4', name: 'Compliance', description: 'Ética, LGPD e controles internos', company_id: DEMO_COMPANY_ID, created_at: '2025-01-10T00:00:00Z', updated_at: '2026-01-10T00:00:00Z' },
+];
+
+const DEMO_EMPLOYEE_TRAININGS = [
+  {
+    id: 'et-1',
+    employee_id: 'emp-1',
+    training_program_id: '1',
+    status: 'Concluído',
+    score: 92,
+    completion_date: '2026-01-30',
+    created_at: '2026-01-05T09:00:00Z',
+    employee: { id: 'emp-1', full_name: 'Ana Silva', employee_code: 'A001', department: 'Operações' },
+    training_program: { id: '1', name: 'NR-12 Segurança em Máquinas', category: 'Segurança', is_mandatory: true, duration_hours: 16 },
+  },
+  {
+    id: 'et-2',
+    employee_id: 'emp-2',
+    training_program_id: '2',
+    status: 'Concluído',
+    score: 88,
+    completion_date: '2026-01-25',
+    created_at: '2026-01-07T10:15:00Z',
+    employee: { id: 'emp-2', full_name: 'Carlos Santos', employee_code: 'A002', department: 'Meio Ambiente' },
+    training_program: { id: '2', name: 'Gestão de Resíduos Sólidos', category: 'Ambiental', is_mandatory: true, duration_hours: 8 },
+  },
+  {
+    id: 'et-3',
+    employee_id: 'emp-3',
+    training_program_id: '3',
+    status: 'Inscrito',
+    score: null,
+    completion_date: null,
+    created_at: '2026-02-03T14:40:00Z',
+    employee: { id: 'emp-3', full_name: 'Mariana Costa', employee_code: 'A003', department: 'Recursos Humanos' },
+    training_program: { id: '3', name: 'Liderança e Gestão de Equipes', category: 'Desenvolvimento', is_mandatory: false, duration_hours: 24 },
+  },
+  {
+    id: 'et-4',
+    employee_id: 'emp-4',
+    training_program_id: '1',
+    status: 'Concluído',
+    score: 84,
+    completion_date: '2026-02-02',
+    created_at: '2026-01-09T08:20:00Z',
+    employee: { id: 'emp-4', full_name: 'Roberto Oliveira', employee_code: 'A004', department: 'SST' },
+    training_program: { id: '1', name: 'NR-12 Segurança em Máquinas', category: 'Segurança', is_mandatory: true, duration_hours: 16 },
+  },
+  {
+    id: 'et-5',
+    employee_id: 'emp-6',
+    training_program_id: '5',
+    status: 'Concluído',
+    score: 95,
+    completion_date: '2025-12-20',
+    created_at: '2025-11-01T09:10:00Z',
+    employee: { id: 'emp-6', full_name: 'Pedro Almeida', employee_code: 'A006', department: 'Qualidade' },
+    training_program: { id: '5', name: 'ISO 14001 - Auditor Interno', category: 'Compliance', is_mandatory: false, duration_hours: 40 },
+  },
+];
+
+const DEMO_TRAINING_METRICS = {
+  totalTrainings: 126,
+  completedTrainings: 98,
+  completionRate: 77.8,
+  averageScore: 87.6,
+  totalHoursTrained: 1428,
+  averageHoursPerEmployee: 38.4,
+  categoryDistribution: {
+    Segurança: 42,
+    Ambiental: 31,
+    Desenvolvimento: 28,
+    Compliance: 25,
+  },
+  expiringIn30Days: 7,
+  expiringIn60Days: 13,
+  expiredCount: 3,
+  complianceRate: 82.4,
+  trainingsByDepartment: {
+    Operações: 34,
+    'Meio Ambiente': 21,
+    'Recursos Humanos': 15,
+    SST: 18,
+    Qualidade: 22,
+    Financeiro: 16,
+  },
+  monthlyTrend: [
+    { month: 'Set', completed: 12, enrolled: 15 },
+    { month: 'Out', completed: 14, enrolled: 17 },
+    { month: 'Nov', completed: 15, enrolled: 18 },
+    { month: 'Dez', completed: 18, enrolled: 21 },
+    { month: 'Jan', completed: 19, enrolled: 23 },
+    { month: 'Fev', completed: 20, enrolled: 24 },
+  ],
+  topPerformers: [
+    { employee: 'Pedro Almeida', avgScore: 95, count: 6 },
+    { employee: 'Ana Silva', avgScore: 92, count: 5 },
+    { employee: 'Carlos Santos', avgScore: 88, count: 4 },
+    { employee: 'Roberto Oliveira', avgScore: 84, count: 5 },
+  ],
+  departmentRanking: [
+    { department: 'Qualidade', avgScore: 91.2, completionRate: 84.4 },
+    { department: 'Operações', avgScore: 88.5, completionRate: 80.2 },
+    { department: 'Meio Ambiente', avgScore: 87.1, completionRate: 78.4 },
+    { department: 'SST', avgScore: 83.3, completionRate: 75.0 },
+  ],
+  statusDistribution: {
+    Concluído: 98,
+    Inscrito: 18,
+    'Em Andamento': 10,
+  },
+};
+
+const DEMO_SAFETY_METRICS = {
+  totalIncidents: 3,
+  daysLostTotal: 6,
+  withMedicalTreatment: 2,
+  accidentsWithLostTime: 1,
+  ltifr: 1.72,
+  severityRate: 8.44,
+  avgResolutionTime: 9.5,
+  severityDistribution: {
+    Baixa: 1,
+    Moderada: 1,
+    Alta: 1,
+  },
+  incidentTrend: [
+    { month: 1, incidents: 1 },
+    { month: 2, incidents: 0 },
+    { month: 3, incidents: 0 },
+    { month: 4, incidents: 1 },
+    { month: 5, incidents: 0 },
+    { month: 6, incidents: 0 },
+    { month: 7, incidents: 0 },
+    { month: 8, incidents: 1 },
+    { month: 9, incidents: 0 },
+    { month: 10, incidents: 0 },
+    { month: 11, incidents: 0 },
+    { month: 12, incidents: 0 },
+  ],
+  ltifr_metadata: {
+    worked_hours: 582000,
+    calculation_method: 'timesheets+employees',
+    data_quality: 'high',
+    confidence_level: 'high',
+    formula: 'LTIFR = (Nº Acidentes com Afastamento × 1.000.000) / Horas Trabalhadas',
+    compliance: 'OIT/ISO 45001',
+  },
+};
+
+const DEMO_SOCIAL_PROJECTS = [
+  {
+    id: 'sp-1',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Jovem Futuro',
+    description: 'Programa de qualificação para jovens em situação de vulnerabilidade.',
+    objective: 'Empregabilidade e inclusão social',
+    target_audience: 'Jovens de 16 a 24 anos',
+    location: 'São Paulo - SP',
+    start_date: '2025-08-01',
+    end_date: '2026-07-31',
+    budget: 280000,
+    invested_amount: 195000,
+    status: 'Em Andamento',
+    impact_metrics: { beneficiaries_reached: 180 },
+    created_at: '2025-07-10T10:00:00Z',
+    updated_at: '2026-02-10T09:30:00Z',
+  },
+  {
+    id: 'sp-2',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Saúde na Comunidade',
+    description: 'Mutirões de saúde preventiva em bairros próximos às operações.',
+    objective: 'Promoção de saúde básica',
+    target_audience: 'Comunidade local',
+    location: 'Rio de Janeiro - RJ',
+    start_date: '2025-10-15',
+    end_date: '2026-10-15',
+    budget: 240000,
+    invested_amount: 112500,
+    status: 'Em Andamento',
+    impact_metrics: { beneficiaries_reached: 620 },
+    created_at: '2025-09-20T14:00:00Z',
+    updated_at: '2026-02-12T16:10:00Z',
+  },
+  {
+    id: 'sp-3',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Mulheres na Indústria',
+    description: 'Capacitação técnica e mentoria para mulheres na operação.',
+    objective: 'Diversidade e inclusão',
+    target_audience: 'Mulheres em início de carreira',
+    location: 'Belo Horizonte - MG',
+    start_date: '2024-11-01',
+    end_date: '2025-12-31',
+    budget: 180000,
+    invested_amount: 180000,
+    status: 'Concluído',
+    impact_metrics: { beneficiaries_reached: 95 },
+    created_at: '2024-10-12T10:30:00Z',
+    updated_at: '2026-01-05T11:00:00Z',
+  },
+];
+
+const DEMO_SOCIAL_METRICS = {
+  totalProjects: DEMO_SOCIAL_PROJECTS.length,
+  activeProjects: DEMO_SOCIAL_PROJECTS.filter((project) => project.status === 'Em Andamento').length,
+  completedProjects: DEMO_SOCIAL_PROJECTS.filter((project) => project.status === 'Concluído').length,
+  totalInvestment: DEMO_SOCIAL_PROJECTS.reduce((sum, project) => sum + (project.invested_amount || 0), 0),
+  totalBudget: DEMO_SOCIAL_PROJECTS.reduce((sum, project) => sum + (project.budget || 0), 0),
+  budgetUtilization: 75.5,
+  statusDistribution: {
+    Planejado: 0,
+    'Em Andamento': 2,
+    Concluído: 1,
+    Cancelado: 0,
+  },
+  beneficiariesReached: 895,
+  averageInvestmentPerProject: 162500,
+};
+
+const DEMO_FILTERED_TRAINING_METRICS = {
+  totalEmployees: 8,
+  totalHours: 304,
+  avgHours: 38,
+  employeeDetails: [
+    { employee_id: 'emp-6', employee_name: 'Pedro Almeida', location: 'São Paulo', department: 'Qualidade', position: 'Engenheiro de Qualidade', hours: 56 },
+    { employee_id: 'emp-1', employee_name: 'Ana Silva', location: 'São Paulo', department: 'Operações', position: 'Gerente de Operações', hours: 48 },
+    { employee_id: 'emp-2', employee_name: 'Carlos Santos', location: 'Rio de Janeiro', department: 'Meio Ambiente', position: 'Analista Ambiental Sr', hours: 44 },
+    { employee_id: 'emp-4', employee_name: 'Roberto Oliveira', location: 'São Paulo', department: 'SST', position: 'Técnico de Segurança', hours: 40 },
+    { employee_id: 'emp-3', employee_name: 'Mariana Costa', location: 'São Paulo', department: 'Recursos Humanos', position: 'Coordenadora de RH', hours: 36 },
+  ],
+  hoursByLocation: [
+    { name: 'São Paulo', hours: 224, avgHours: 37.3, employees: 6 },
+    { name: 'Rio de Janeiro', hours: 80, avgHours: 40.0, employees: 2 },
+  ],
+  hoursByDepartment: [
+    { name: 'Operações', hours: 82, avgHours: 41.0, employees: 2 },
+    { name: 'Qualidade', hours: 56, avgHours: 56.0, employees: 1 },
+    { name: 'Meio Ambiente', hours: 44, avgHours: 44.0, employees: 1 },
+    { name: 'SST', hours: 40, avgHours: 40.0, employees: 1 },
+    { name: 'Recursos Humanos', hours: 36, avgHours: 36.0, employees: 1 },
+  ],
+  hoursByPosition: [
+    { name: 'Gerente de Operações', hours: 48, avgHours: 48, employees: 1 },
+    { name: 'Analista Ambiental Sr', hours: 44, avgHours: 44, employees: 1 },
+    { name: 'Engenheiro de Qualidade', hours: 56, avgHours: 56, employees: 1 },
+  ],
+};
+
+const DEMO_EFFICACY_EVALUATIONS = [
+  {
+    training_program_id: '1',
+    training_name: 'NR-12 Segurança em Máquinas',
+    category: 'Segurança',
+    deadline: '2026-03-15',
+    status: 'Pendente',
+    days_remaining: 20,
+    participants_count: 45,
+  },
+  {
+    training_program_id: '2',
+    training_name: 'Gestão de Resíduos Sólidos',
+    category: 'Ambiental',
+    deadline: '2026-02-20',
+    status: 'Atrasado',
+    days_remaining: -5,
+    participants_count: 30,
+  },
+  {
+    training_program_id: '5',
+    training_name: 'ISO 14001 - Auditor Interno',
+    category: 'Compliance',
+    deadline: '2026-01-31',
+    status: 'Avaliado',
+    days_remaining: -25,
+    evaluation_id: 'eff-5',
+    participants_count: 8,
+  },
+];
+
+const DEMO_EFFICACY_DASHBOARD_METRICS = {
+  total: DEMO_EFFICACY_EVALUATIONS.length,
+  pending: DEMO_EFFICACY_EVALUATIONS.filter((item) => item.status === 'Pendente').length,
+  evaluated: DEMO_EFFICACY_EVALUATIONS.filter((item) => item.status === 'Avaliado').length,
+  overdue: DEMO_EFFICACY_EVALUATIONS.filter((item) => item.status === 'Atrasado').length,
+};
+
 export const socialMockEntries = [
   // Employees list
   {
@@ -242,5 +534,43 @@ export const socialMockEntries = [
       { id: 'ce-2', course_id: 'c-2', employee_id: 'emp-3', employee_name: 'Carlos Lima', progress: 78, status: 'Em Andamento', enrolled_at: '2026-01-18' },
       { id: 'ce-3', course_id: 'c-3', employee_id: 'emp-5', employee_name: 'Juliana Pereira', progress: 42, status: 'Em Andamento', enrolled_at: '2026-02-02' },
     ],
+  },
+  // Efficacy evaluation dashboard
+  {
+    queryKey: ['my-efficacy-evaluations'],
+    data: DEMO_EFFICACY_EVALUATIONS,
+  },
+  {
+    queryKey: ['efficacy-dashboard-metrics'],
+    data: DEMO_EFFICACY_DASHBOARD_METRICS,
+  },
+  // Training and social dashboards
+  {
+    queryKey: ['training-categories'],
+    data: DEMO_TRAINING_CATEGORIES,
+  },
+  {
+    queryKey: ['employee-trainings'],
+    data: DEMO_EMPLOYEE_TRAININGS,
+  },
+  {
+    queryKey: ['training-metrics'],
+    data: DEMO_TRAINING_METRICS,
+  },
+  {
+    queryKey: ['safety-metrics'],
+    data: DEMO_SAFETY_METRICS,
+  },
+  {
+    queryKey: ['social-projects'],
+    data: DEMO_SOCIAL_PROJECTS,
+  },
+  {
+    queryKey: ['social-metrics'],
+    data: DEMO_SOCIAL_METRICS,
+  },
+  {
+    queryKey: ['filtered-training-metrics'],
+    data: DEMO_FILTERED_TRAINING_METRICS,
   },
 ];

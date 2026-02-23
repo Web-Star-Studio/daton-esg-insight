@@ -11,6 +11,17 @@ interface AlertThreshold {
 
 export class AlertMonitoringService {
   private static THRESHOLD_PERCENTAGE = 20; // Alert if 20% above average
+  private static getAlertRoute(type: AlertThreshold['type'], isDemoRoute: boolean) {
+    const routes = {
+      water: '/monitoramento-agua',
+      energy: '/monitoramento-energia',
+      emissions: '/inventario-gee',
+      waste: '/residuos',
+    };
+
+    const targetRoute = routes[type] || '/dashboard';
+    return isDemoRoute ? `/demo${targetRoute}` : targetRoute;
+  }
 
   static async checkWaterConsumption(companyId: string): Promise<AlertThreshold | null> {
     try {
@@ -172,14 +183,9 @@ export class AlertMonitoringService {
       action: {
         label: 'Ver Detalhes',
         onClick: () => {
-          // Navigate to relevant monitoring page
-          const routes = {
-            water: '/agua',
-            energy: '/energia',
-            emissions: '/emissoes',
-            waste: '/residuos'
-          };
-          window.location.href = routes[alert.type];
+          const isDemoRoute = window.location.pathname.startsWith('/demo');
+          const targetRoute = this.getAlertRoute(alert.type, isDemoRoute);
+          window.location.assign(targetRoute);
         }
       }
     });

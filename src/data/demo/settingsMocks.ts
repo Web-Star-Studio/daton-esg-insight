@@ -4,6 +4,64 @@
 
 const DEMO_COMPANY_ID = 'demo-company-001';
 
+const DEMO_USER_DIRECTORY = [
+  {
+    id: 'demo-user-001',
+    full_name: 'Usuário Demonstração',
+    email: 'demo@ecotech.com.br',
+    username: 'demo.user',
+    role: 'viewer',
+    company_id: DEMO_COMPANY_ID,
+    department: 'Sustentabilidade',
+    is_active: true,
+    created_at: '2025-11-01T08:30:00Z',
+  },
+  {
+    id: 'demo-user-002',
+    full_name: 'Mariana Lopes',
+    email: 'mariana.lopes@ecotech.com.br',
+    username: 'mariana.lopes',
+    role: 'admin',
+    company_id: DEMO_COMPANY_ID,
+    department: 'Qualidade',
+    is_active: true,
+    created_at: '2025-08-15T09:00:00Z',
+  },
+  {
+    id: 'demo-user-003',
+    full_name: 'Carlos Andrade',
+    email: 'carlos.andrade@ecotech.com.br',
+    username: 'carlos.andrade',
+    role: 'manager',
+    company_id: DEMO_COMPANY_ID,
+    department: 'Operações',
+    is_active: true,
+    created_at: '2025-06-20T10:10:00Z',
+  },
+  {
+    id: 'demo-user-004',
+    full_name: 'Fernanda Rocha',
+    email: 'fernanda.rocha@ecotech.com.br',
+    username: 'fernanda.rocha',
+    role: 'analyst',
+    company_id: DEMO_COMPANY_ID,
+    department: 'Compliance',
+    is_active: true,
+    created_at: '2025-09-05T11:20:00Z',
+  },
+  {
+    id: 'demo-user-005',
+    full_name: 'Paulo Alves',
+    email: 'paulo.alves@ecotech.com.br',
+    username: 'paulo.alves',
+    role: 'auditor',
+    company_id: DEMO_COMPANY_ID,
+    department: 'Auditoria',
+    is_active: false,
+    created_at: '2024-12-10T14:50:00Z',
+  },
+];
+
 export const settingsMockEntries = [
   // Company/branches
   {
@@ -61,19 +119,35 @@ export const settingsMockEntries = [
   // Users list
   {
     queryKey: ['company-users', undefined],
-    data: [
-      { id: 'demo-user-001', full_name: 'Usuário Demonstração', role: 'viewer' },
-      { id: 'demo-user-002', full_name: 'Mariana Lopes', role: 'admin' },
-      { id: 'demo-user-003', full_name: 'Carlos Andrade', role: 'manager' },
-    ],
+    data: DEMO_USER_DIRECTORY,
   },
   // Company users (base)
   {
     queryKey: ['company-users'],
+    data: DEMO_USER_DIRECTORY,
+  },
+  // Generic users list (compliance/tasks)
+  {
+    queryKey: ['users'],
+    data: DEMO_USER_DIRECTORY,
+  },
+  // Users list with roles for permission tab
+  {
+    queryKey: ['company-users-roles'],
+    data: DEMO_USER_DIRECTORY.map((user) => ({
+      id: user.id,
+      full_name: user.full_name,
+      company_id: user.company_id,
+      role: user.role,
+    })),
+  },
+  // Branches used by non-conformity flow
+  {
+    queryKey: ['branches-for-nc'],
     data: [
-      { id: 'demo-user-001', full_name: 'Usuário Demonstração', role: 'viewer' },
-      { id: 'demo-user-002', full_name: 'Mariana Lopes', role: 'admin' },
-      { id: 'demo-user-003', full_name: 'Carlos Andrade', role: 'manager' },
+      { id: 'branch-1', name: 'Unidade Industrial SP', is_headquarters: true },
+      { id: 'branch-2', name: 'Centro de Distribuição RJ', is_headquarters: false },
+      { id: 'branch-3', name: 'Escritório Administrativo', is_headquarters: false },
     ],
   },
   // Custom forms

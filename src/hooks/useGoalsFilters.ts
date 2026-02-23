@@ -17,14 +17,18 @@ export function useGoalsFilters(goals: GoalListItem[] = []) {
   });
 
   const filteredAndSortedGoals = useMemo(() => {
-    let filtered = [...goals];
+    const normalizedGoals = Array.isArray(goals)
+      ? goals.filter((goal): goal is GoalListItem => !!goal && typeof goal === 'object')
+      : [];
+
+    let filtered = [...normalizedGoals];
 
     // Apply search filter
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(goal => 
-        goal.name.toLowerCase().includes(searchLower) ||
-        goal.metric_key.toLowerCase().includes(searchLower)
+        (goal.name || '').toLowerCase().includes(searchLower) ||
+        (goal.metric_key || '').toLowerCase().includes(searchLower)
       );
     }
 
@@ -40,8 +44,8 @@ export function useGoalsFilters(goals: GoalListItem[] = []) {
 
       switch (filters.sortBy) {
         case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
+          aValue = (a.name || '').toLowerCase();
+          bValue = (b.name || '').toLowerCase();
           break;
         case 'deadline':
           aValue = new Date(a.deadline_date).getTime();
@@ -56,8 +60,8 @@ export function useGoalsFilters(goals: GoalListItem[] = []) {
           bValue = b.target_value;
           break;
         default:
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
+          aValue = (a.name || '').toLowerCase();
+          bValue = (b.name || '').toLowerCase();
       }
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -95,7 +99,7 @@ export function useGoalsFilters(goals: GoalListItem[] = []) {
     filteredAndSortedGoals,
     updateFilter,
     resetFilters,
-    totalCount: goals.length,
+    totalCount: Array.isArray(goals) ? goals.length : 0,
     filteredCount: filteredAndSortedGoals.length,
   };
 }
