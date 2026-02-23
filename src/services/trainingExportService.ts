@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
+import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
 
 export interface TrainingExportConfig {
   type: 'total' | 'by_location' | 'by_department' | 'by_position' | 'by_training' | 'detailed';
@@ -18,7 +19,36 @@ export interface ExportData {
   };
 }
 
+const normalizeExportData = (data: unknown): ExportData => {
+  const typed = (data || {}) as Partial<ExportData>;
+  const headers = Array.isArray(typed.headers) ? typed.headers : [];
+  const rows = Array.isArray(typed.rows)
+    ? typed.rows.map((row) => (Array.isArray(row) ? row : []))
+    : [];
+
+  const summary = typed.summary
+    ? {
+        totalHours: typed.summary.totalHours || 0,
+        totalEmployees: typed.summary.totalEmployees || 0,
+        avgHours: typed.summary.avgHours || 0,
+      }
+    : undefined;
+
+  return { headers, rows, summary };
+};
+
 export const getTrainingExportData = async (config: TrainingExportConfig): Promise<ExportData> => {
+  if (isDemoRuntimeEnabled()) {
+    return normalizeExportData(
+      resolveDemoData<ExportData>([
+        'training-export-preview',
+        config.type,
+        config.dateFrom?.toISOString(),
+        config.dateTo?.toISOString(),
+      ]),
+    );
+  }
+
   // Fetch employees
   const { data: employees, error: empError } = await supabase
     .from('employees')

@@ -1,0 +1,61 @@
+    /demo/nao-conformidades -> pageerror: Invalid time value
+    /demo/acoes-corretivas -> pageerror: timeline?.map is not a function | pageerror: Invalid time value | pageerror: timeline?.map is not a function
+    /demo/licenciamento -> visible error boundary/message in UI
+    /demo/licenciamento -> console: Erro ao gerar predições: TypeError: upcomingConditions.forEach is not a function
+        at http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:90:26
+        at http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:117:37
+        at updateMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:12210:27)
+        at Object.useMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:12726:24)
+        at useMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=209dc417:1094:29)
+        at IntelligentAlertsSystem (http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:117:23)
+        at renderWithHooks (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:11548:26)
+        at updateFunctionComponent (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:14582:28)
+        at beginWork (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:15924:22)
+        at beginWork$1 (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:19753:22) | console: Erro ao gerar predições: TypeError: upcomingConditions.forEach is not a function
+        at http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:90:26
+        at http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:117:37
+        at updateMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:12210:27)
+        at Object.useMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:12726:24)
+        at useMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=209dc417:1094:29)
+        at IntelligentAlertsSystem (http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:117:23)
+        at renderWithHooks (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:11548:26)
+        at updateFunctionComponent (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:14582:28)
+        at beginWork (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:15924:22)
+        at HTMLUnknownElement.callCallback2 (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:3674:22) | pageerror: upcomingConditions?.filter is not a function | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | console: Erro ao gerar predições: TypeError: upcomingConditions.forEach is not a function
+        at http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:90:26
+        at http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:117:37
+        at updateMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:12210:27)
+        at Object.useMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:12726:24)
+        at useMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=209dc417:1094:29)
+        at IntelligentAlertsSystem (http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:117:23)
+        at renderWithHooks (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:11548:26)
+        at updateFunctionComponent (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:14582:28)
+        at beginWork (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:15924:22)
+        at beginWork$1 (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:19753:22) | console: Erro ao gerar predições: TypeError: upcomingConditions.forEach is not a function
+        at http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:90:26
+        at http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:117:37
+        at updateMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:12210:27)
+        at Object.useMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:12726:24)
+        at useMemo (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=209dc417:1094:29)
+        at IntelligentAlertsSystem (http://127.0.0.1:4173/src/components/IntelligentAlertsSystem.tsx:117:23)
+        at renderWithHooks (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:11548:26)
+        at updateFunctionComponent (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:14582:28)
+        at beginWork (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:15924:22)
+        at HTMLUnknownElement.callCallback2 (http://127.0.0.1:4173/node_modules/.vite/deps/chunk-2EG2ZD3U.js?v=209dc417:3674:22) | pageerror: upcomingConditions?.filter is not a function | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length')
+    /demo/social-esg -> visible error boundary/message in UI
+    /demo/social-esg -> pageerror: Cannot read properties of undefined (reading 'map') | pageerror: Cannot read properties of undefined (reading 'map')
+    /demo/gestao-funcionarios -> visible error boundary/message in UI
+    /demo/gestao-funcionarios -> pageerror: enrollments.map is not a function | pageerror: enrollments.map is not a function
+    /demo/seguranca-trabalho -> visible error boundary/message in UI
+    /demo/seguranca-trabalho -> pageerror: inspections.filter is not a function | pageerror: inspections.filter is not a function
+    /demo/desenvolvimento-carreira -> visible error boundary/message in UI
+    /demo/desenvolvimento-carreira -> pageerror: careerPlans?.filter is not a function | pageerror: careerPlans?.filter is not a function
+    /demo/dashboard-ghg -> visible error boundary/message in UI
+    /demo/dashboard-ghg -> pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length')
+    /demo/metas -> visible error boundary/message in UI
+    /demo/metas -> pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length')
+    /demo/metas-sustentabilidade -> visible error boundary/message in UI
+    /demo/metas-sustentabilidade -> pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length') | pageerror: Cannot read properties of undefined (reading 'length')
+    /demo/gestao-riscos -> visible error boundary/message in UI
+    /demo/gestao-riscos -> pageerror: riskMatrices?.map is not a function | pageerror: riskMatrices?.map is not a function | pageerror: riskMatrices?.map is not a function | pageerror: riskMatrices?.map is not a function
+

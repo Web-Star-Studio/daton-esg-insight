@@ -28,6 +28,13 @@ export default function GestaoIndicadores() {
   const { data: indicators, isLoading: loadingIndicators } = useIndicatorsWithData(selectedYear);
   const { data: stats, isLoading: loadingStats } = useIndicatorStats(selectedYear);
   const { data: groups, isLoading: loadingGroups } = useIndicatorGroups();
+  const indicatorsList = Array.isArray(indicators) ? indicators : [];
+  const groupsList = Array.isArray(groups) ? groups : [];
+  const criticalIndicators = indicatorsList.filter((indicator) =>
+    Array.isArray(indicator.period_data)
+      ? indicator.period_data.some((period) => period.status === "critical")
+      : false,
+  );
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
@@ -92,7 +99,7 @@ export default function GestaoIndicadores() {
                 </CardHeader>
                 <CardContent>
                   <IndicatorChart 
-                    indicators={indicators || []} 
+                    indicators={indicatorsList} 
                     year={selectedYear}
                   />
                 </CardContent>
@@ -103,13 +110,13 @@ export default function GestaoIndicadores() {
                   <CardTitle>Indicadores Críticos</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {indicators?.filter(i => i.period_data?.some(pd => pd.status === 'critical')).length === 0 ? (
+                  {criticalIndicators.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">
                       Nenhum indicador em estado crítico
                     </p>
                   ) : (
                     <div className="space-y-2">
-                      {indicators?.filter(i => i.period_data?.some(pd => pd.status === 'critical')).slice(0, 5).map(ind => (
+                      {criticalIndicators.slice(0, 5).map(ind => (
                         <div key={ind.id} className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg">
                           <span className="font-medium">{ind.name}</span>
                           <span className="text-destructive font-bold">Crítico</span>
@@ -138,8 +145,8 @@ export default function GestaoIndicadores() {
 
           <TabsContent value="indicators" className="mt-6">
             <IndicatorList 
-              indicators={indicators || []}
-              groups={groups || []}
+              indicators={indicatorsList}
+              groups={groupsList}
               isLoading={loadingIndicators || loadingGroups}
               onSelectIndicator={(indicator) => navigate(`/indicador/${indicator.id}`)}
             />
@@ -147,7 +154,7 @@ export default function GestaoIndicadores() {
 
           <TabsContent value="collection" className="mt-6">
             <CollectionForm 
-              indicators={indicators || []}
+              indicators={indicatorsList}
               selectedIndicatorId={selectedIndicator}
               onSelectIndicator={setSelectedIndicator}
               year={selectedYear}
@@ -166,13 +173,13 @@ export default function GestaoIndicadores() {
                 </div>
               </CardHeader>
               <CardContent>
-                {groups?.length === 0 ? (
+                {groupsList.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">
                     Nenhum grupo cadastrado
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {groups?.map(group => (
+                    {groupsList.map(group => (
                       <div key={group.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-3">
                           {group.icon && <span className="text-xl">{group.icon}</span>}
@@ -198,7 +205,7 @@ export default function GestaoIndicadores() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <IndicatorFormWizard 
             onClose={() => setShowNewIndicator(false)}
-            groups={groups || []}
+            groups={groupsList}
           />
         </DialogContent>
       </Dialog>

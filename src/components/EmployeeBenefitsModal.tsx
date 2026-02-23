@@ -78,12 +78,14 @@ export function EmployeeBenefitsModal({ isOpen, onClose, employee }: EmployeeBen
     },
     enabled: isOpen && !!employee?.id,
   });
+  const normalizedBenefits = Array.isArray(benefits) ? benefits : [];
+  const normalizedEnrollments = Array.isArray(enrollments) ? enrollments : [];
 
   // Update selected benefits when enrollments load
   const enrollmentIds = React.useMemo(() => {
-    if (!enrollments || enrollments.length === 0) return [];
-    return enrollments.map((e: BenefitEnrollment) => e.benefit_id);
-  }, [JSON.stringify(enrollments?.map((e: BenefitEnrollment) => e.benefit_id))]);
+    if (normalizedEnrollments.length === 0) return [];
+    return normalizedEnrollments.map((e: BenefitEnrollment) => e.benefit_id);
+  }, [normalizedEnrollments]);
 
   React.useEffect(() => {
     setSelectedBenefits(enrollmentIds);
@@ -121,10 +123,18 @@ export function EmployeeBenefitsModal({ isOpen, onClose, employee }: EmployeeBen
   };
 
   const calculateTotalMonthlyCost = () => {
-    return benefits
+    return normalizedBenefits
       .filter((benefit: Benefit) => selectedBenefits.includes(benefit.id))
       .reduce((total, benefit) => total + (benefit.monthly_cost || 0), 0);
   };
+  const latestEnrollmentDate = React.useMemo(() => {
+    const timestamps = normalizedEnrollments
+      .map((e: BenefitEnrollment) => new Date(e.enrollment_date).getTime())
+      .filter((time) => Number.isFinite(time));
+
+    if (timestamps.length === 0) return "Nunca";
+    return new Date(Math.max(...timestamps)).toLocaleDateString("pt-BR");
+  }, [normalizedEnrollments]);
 
   if (!employee) return null;
 
@@ -177,10 +187,7 @@ export function EmployeeBenefitsModal({ isOpen, onClose, employee }: EmployeeBen
                   <div>
                     <p className="text-sm font-medium">Última Atualização</p>
                     <p className="text-sm text-muted-foreground">
-                      {enrollments.length > 0 
-                        ? new Date(Math.max(...enrollments.map((e: BenefitEnrollment) => new Date(e.enrollment_date).getTime()))).toLocaleDateString('pt-BR')
-                        : 'Nunca'
-                      }
+                      {latestEnrollmentDate}
                     </p>
                   </div>
                 </div>
@@ -207,7 +214,7 @@ export function EmployeeBenefitsModal({ isOpen, onClose, employee }: EmployeeBen
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {benefits.map((benefit: Benefit) => (
+                  {normalizedBenefits.map((benefit: Benefit) => (
                     <div
                       key={benefit.id}
                       className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -254,7 +261,7 @@ export function EmployeeBenefitsModal({ isOpen, onClose, employee }: EmployeeBen
                     </div>
                   ))}
                   
-                  {benefits.length === 0 && (
+                  {normalizedBenefits.length === 0 && (
                     <div className="text-center py-8">
                       <Gift className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">Nenhum benefício disponível</h3>

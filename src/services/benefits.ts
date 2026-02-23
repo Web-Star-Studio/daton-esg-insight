@@ -40,7 +40,7 @@ export const useBenefits = () => {
   return {
     queryKey: ['benefits'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: benefitsData, error } = await supabase
         .from('employee_benefits')
         .select(`
           *,
@@ -54,6 +54,7 @@ export const useBenefits = () => {
         toast.error('Erro ao carregar benefícios');
         throw error;
       }
+      const benefits = Array.isArray(benefitsData) ? benefitsData : [];
 
       // Get total employees count
       const { count: totalEmployees } = await supabase
@@ -61,11 +62,11 @@ export const useBenefits = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'Ativo');
 
-      return data?.map((benefit) => ({
+      return benefits.map((benefit) => ({
         ...benefit,
         participants: benefit.enrollments?.[0]?.count || 0,
         total_employees: totalEmployees || 0,
-      })) || [];
+      }));
     },
   };
 };

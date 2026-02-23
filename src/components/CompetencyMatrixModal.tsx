@@ -46,6 +46,9 @@ export function CompetencyMatrixModal({ open, onOpenChange }: CompetencyMatrixMo
     queryFn: generateCompetencyGapReport,
     enabled: open
   });
+  const competenciesList = Array.isArray(competencies) ? competencies : [];
+  const assessmentsList = Array.isArray(assessments) ? assessments : [];
+  const gapAnalysisList = Array.isArray(gapAnalysis) ? gapAnalysis : [];
 
   const handleEditCompetency = (competency: CompetencyMatrix) => {
     setSelectedCompetency(competency);
@@ -57,9 +60,9 @@ export function CompetencyMatrixModal({ open, onOpenChange }: CompetencyMatrixMo
     setIsCompetencyModalOpen(true);
   };
 
-  const totalCompetencies = competencies.length;
-  const totalAssessments = assessments.length;
-  const criticalGaps = gapAnalysis.filter(gap => gap.average_gap >= 2).length;
+  const totalCompetencies = competenciesList.length;
+  const totalAssessments = assessmentsList.length;
+  const criticalGaps = gapAnalysisList.filter(gap => gap.average_gap >= 2).length;
 
   return (
     <>
@@ -147,7 +150,7 @@ export function CompetencyMatrixModal({ open, onOpenChange }: CompetencyMatrixMo
                       </div>
                     ) : (
                       <CompetencyTable
-                        competencies={competencies}
+                        competencies={competenciesList}
                         onEdit={handleEditCompetency}
                       />
                     )}
@@ -168,7 +171,7 @@ export function CompetencyMatrixModal({ open, onOpenChange }: CompetencyMatrixMo
                       <div className="text-center py-8">
                         <p className="text-muted-foreground">Carregando avaliações...</p>
                       </div>
-                    ) : assessments.length === 0 ? (
+                    ) : assessmentsList.length === 0 ? (
                       <div className="text-center py-12">
                         <Target className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                         <h3 className="text-lg font-semibold mb-2">Nenhuma avaliação encontrada</h3>
@@ -182,7 +185,15 @@ export function CompetencyMatrixModal({ open, onOpenChange }: CompetencyMatrixMo
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {assessments.map((assessment: any) => (
+                        {assessmentsList.map((assessment: any) => {
+                          const assessmentDate = assessment?.assessment_date
+                            ? new Date(assessment.assessment_date)
+                            : null;
+                          const formattedAssessmentDate = assessmentDate && !Number.isNaN(assessmentDate.getTime())
+                            ? format(assessmentDate, "dd/MM/yyyy", { locale: ptBR })
+                            : "Data inválida";
+
+                          return (
                           <div key={assessment.id} className="border rounded-lg p-4">
                             <div className="flex items-start justify-between">
                               <div>
@@ -195,7 +206,7 @@ export function CompetencyMatrixModal({ open, onOpenChange }: CompetencyMatrixMo
                               </div>
                               <div className="text-right">
                                 <p className="text-sm font-medium">
-                                  {format(new Date(assessment.assessment_date), "dd/MM/yyyy", { locale: ptBR })}
+                                  {formattedAssessmentDate}
                                 </p>
                               </div>
                             </div>
@@ -229,7 +240,8 @@ export function CompetencyMatrixModal({ open, onOpenChange }: CompetencyMatrixMo
                               </div>
                             )}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </CardContent>
@@ -242,7 +254,7 @@ export function CompetencyMatrixModal({ open, onOpenChange }: CompetencyMatrixMo
                     <p className="text-muted-foreground">Carregando análise de gaps...</p>
                   </div>
                 ) : (
-                  <CompetencyGapChart data={gapAnalysis} />
+                  <CompetencyGapChart data={gapAnalysisList} />
                 )}
               </TabsContent>
             </Tabs>

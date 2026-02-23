@@ -32,6 +32,14 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
   });
 
   const isLoading = isMetricsLoading || isPredictionsLoading;
+  const metricsData = metrics && typeof metrics === 'object' && !Array.isArray(metrics) ? metrics : null;
+  const predictionsData = predictions && typeof predictions === 'object' && !Array.isArray(predictions) ? predictions : null;
+  const trendsData = Array.isArray(trends) ? trends : [];
+  const patterns = Array.isArray(predictionsData?.patterns) ? predictionsData.patterns : [];
+  const recommendations = Array.isArray(predictionsData?.recommendations) ? predictionsData.recommendations : [];
+  const riskLevel = typeof predictionsData?.riskLevel === 'string' ? predictionsData.riskLevel : 'low';
+  const nextMonthNCs = Number(predictionsData?.nextMonthNCs) || 0;
+  const qualityScore = Number(metricsData?.qualityScore) || 0;
 
   const getRiskColor = (level: string) => {
     switch (level) {
@@ -75,7 +83,7 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
     );
   }
 
-  if (!metrics || !predictions) {
+  if (!metricsData || !predictionsData) {
     return (
       <Card className={className}>
         <CardContent className="text-center py-8">
@@ -86,8 +94,8 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
     );
   }
 
-  const trendDirection = trends && trends.length > 1 ? 
-    trends[trends.length - 1].qualityScore > trends[0].qualityScore ? 'up' : 'down' : 'stable';
+  const trendDirection = trendsData.length > 1 ?
+    (Number(trendsData[trendsData.length - 1]?.qualityScore) > Number(trendsData[0]?.qualityScore) ? 'up' : 'down') : 'stable';
 
   return (
     <Card className={`${className} hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary/20`}>
@@ -95,7 +103,7 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
         <CardTitle className="flex items-center space-x-2">
           <Brain className="h-5 w-5 text-primary animate-pulse" />
           <span>Análise Preditiva</span>
-          {getRiskIcon(predictions.riskLevel)}
+          {getRiskIcon(riskLevel)}
         </CardTitle>
         <CardDescription>
           Insights baseados em IA para seu Sistema de Qualidade
@@ -108,17 +116,17 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
           <div className="flex items-center justify-between p-3 rounded-lg border bg-background hover:shadow-md transition-all duration-200 group">
             <div className="flex items-center space-x-2">
               <div className="group-hover:scale-110 transition-transform">
-                {getRiskIcon(predictions.riskLevel)}
+                {getRiskIcon(riskLevel)}
               </div>
               <span className="text-sm font-medium">Nível de Risco</span>
             </div>
             <Badge 
-              variant={predictions.riskLevel === 'high' ? 'destructive' : 
-                      predictions.riskLevel === 'medium' ? 'default' : 'secondary'}
-              className={`${getRiskColor(predictions.riskLevel)} animate-in slide-in-from-right duration-500`}
+              variant={riskLevel === 'high' ? 'destructive' :
+                      riskLevel === 'medium' ? 'default' : 'secondary'}
+              className={`${getRiskColor(riskLevel)} animate-in slide-in-from-right duration-500`}
             >
-              {predictions.riskLevel === 'high' ? 'Alto' : 
-               predictions.riskLevel === 'medium' ? 'Médio' : 'Baixo'}
+              {riskLevel === 'high' ? 'Alto' :
+               riskLevel === 'medium' ? 'Médio' : 'Baixo'}
             </Badge>
           </div>
 
@@ -126,12 +134,12 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
           <div className="p-3 rounded-lg border bg-muted/50 space-y-2 hover:shadow-md transition-all duration-200 group">
             <div className="flex justify-between items-center text-sm">
               <span className="font-medium text-foreground">NCs Previstas</span>
-              <span className="font-bold text-lg text-foreground group-hover:scale-105 transition-transform animate-in slide-in-from-right duration-700">
-                {predictions.nextMonthNCs}
+                <span className="font-bold text-lg text-foreground group-hover:scale-105 transition-transform animate-in slide-in-from-right duration-700">
+                {nextMonthNCs}
               </span>
             </div>
             <Progress 
-              value={Math.min((predictions.nextMonthNCs / 10) * 100, 100)} 
+              value={Math.min((nextMonthNCs / 10) * 100, 100)}
               className="h-2 transition-all duration-1000"
             />
             <p className="text-xs text-muted-foreground">Próximo mês</p>
@@ -152,12 +160,12 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
                   )}
                 </div>
                 <span className="font-bold text-lg text-foreground group-hover:scale-105 transition-transform animate-in slide-in-from-right duration-900">
-                  {metrics.qualityScore}%
+                  {qualityScore}%
                 </span>
               </div>
             </div>
             <Progress 
-              value={metrics.qualityScore} 
+              value={qualityScore}
               className="h-2 transition-all duration-1000"
             />
             <p className="text-xs text-muted-foreground">Tendência atual</p>
@@ -167,37 +175,37 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
         {/* Bottom Section - Insights */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Top Pattern */}
-          {predictions.patterns.length > 0 && (
+          {patterns.length > 0 && (
             <div className="p-3 rounded-lg bg-muted/30 border-l-4 border-l-primary hover:bg-muted/40 transition-all duration-200 group">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm font-medium group-hover:text-primary transition-colors">Padrão Detectado</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {predictions.patterns[0].description}
+                    {patterns[0].description}
                   </p>
                 </div>
                 <Badge variant="outline" className="text-xs animate-in slide-in-from-top duration-500">
-                  {predictions.patterns[0].confidence}% confiança
+                  {patterns[0].confidence}% confiança
                 </Badge>
               </div>
             </div>
           )}
 
           {/* Top Recommendation */}
-          {predictions.recommendations.length > 0 && (
+          {recommendations.length > 0 && (
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all duration-200 group cursor-pointer">
               <p className="text-sm font-medium text-primary group-hover:text-primary/80 transition-colors">
                 Recomendação IA
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {predictions.recommendations[0].description}
+                {recommendations[0].description}
               </p>
               <div className="flex items-center justify-between mt-2">
                 <Badge variant="outline" className="text-xs animate-in slide-in-from-left duration-500">
-                  Impacto: {predictions.recommendations[0].impact}
+                  Impacto: {recommendations[0].impact}
                 </Badge>
                 <Badge variant="secondary" className="text-xs animate-in slide-in-from-right duration-700">
-                  Prioridade: {predictions.recommendations[0].priority}
+                  Prioridade: {recommendations[0].priority}
                 </Badge>
               </div>
             </div>

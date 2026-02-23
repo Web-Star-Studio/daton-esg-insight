@@ -26,6 +26,9 @@ export function SocialDashboardFilters({
     queryKey: ['social-filter-options'],
     queryFn: getFilterOptions,
   });
+  const locations = Array.isArray(options?.locations) ? options.locations : [];
+  const departments = Array.isArray(options?.departments) ? options.departments : [];
+  const positions = Array.isArray(options?.positions) ? options.positions : [];
 
   return (
     <Card className="p-4 mb-6">
@@ -70,7 +73,7 @@ export function SocialDashboardFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as filiais</SelectItem>
-              {options?.locations.map((loc) => (
+              {locations.map((loc) => (
                 <SelectItem key={loc} value={loc}>
                   {loc}
                 </SelectItem>
@@ -97,7 +100,7 @@ export function SocialDashboardFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os setores</SelectItem>
-              {options?.departments.map((dept) => (
+              {departments.map((dept) => (
                 <SelectItem key={dept} value={dept}>
                   {dept}
                 </SelectItem>
@@ -124,7 +127,7 @@ export function SocialDashboardFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as funções</SelectItem>
-              {options?.positions.map((pos) => (
+              {positions.map((pos) => (
                 <SelectItem key={pos} value={pos}>
                   {pos}
                 </SelectItem>

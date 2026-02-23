@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Clock, User, FileText, CheckCircle, AlertTriangle } from "lucide-react";
 
@@ -48,6 +48,7 @@ export function NonConformityTimelineModal({
     },
     enabled: open && !!nonConformityId,
   });
+  const normalizedTimeline = Array.isArray(timeline) ? timeline : [];
 
   const getActionIcon = (actionType: string) => {
     switch (actionType) {
@@ -96,7 +97,7 @@ export function NonConformityTimelineModal({
               {/* Timeline line */}
               <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border"></div>
               
-              {timeline?.map((entry, index) => (
+              {normalizedTimeline.map((entry, index) => (
                 <div key={entry.id} className="relative flex items-start space-x-4 pb-6">
                   {/* Timeline dot */}
                   <div className="relative flex-shrink-0">
@@ -113,7 +114,9 @@ export function NonConformityTimelineModal({
                           {entry.action_description}
                         </Badge>
                         <span className="text-sm text-muted-foreground">
-                          {format(new Date(entry.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          {isValid(new Date(entry.created_at))
+                            ? format(new Date(entry.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                            : "Data inválida"}
                         </span>
                       </div>
                       
@@ -145,7 +148,7 @@ export function NonConformityTimelineModal({
                         </div>
                       )}
 
-                      {entry.attachments && entry.attachments.length > 0 && (
+                      {Array.isArray(entry.attachments) && entry.attachments.length > 0 && (
                         <>
                           <Separator className="my-2" />
                           <div className="text-sm">

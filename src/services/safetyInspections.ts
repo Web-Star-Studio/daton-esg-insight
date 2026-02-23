@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
+import { isDemoRuntimeEnabled, resolveDemoData } from './demoResolver';
 
 export interface ChecklistItem {
   id: string;
@@ -40,14 +41,20 @@ const parseChecklistItems = (items: Json | null): ChecklistItem[] => {
 };
 
 export const getSafetyInspections = async (): Promise<SafetyInspection[]> => {
+  if (isDemoRuntimeEnabled()) {
+    const inspections = resolveDemoData<SafetyInspection[]>(['safety-inspections']);
+    return Array.isArray(inspections) ? inspections : [];
+  }
+
   const { data, error } = await supabase
     .from('safety_inspections')
     .select('*')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  
-  return (data || []).map(item => ({
+  const inspections = Array.isArray(data) ? data : [];
+
+  return inspections.map(item => ({
     ...item,
     checklist_items: parseChecklistItems(item.checklist_items),
   }));
@@ -149,13 +156,26 @@ export interface SafetyInspectionMetrics {
 }
 
 export const getSafetyInspectionMetrics = async (): Promise<SafetyInspectionMetrics> => {
+  if (isDemoRuntimeEnabled()) {
+    const metrics = resolveDemoData<SafetyInspectionMetrics>(['safety-inspection-metrics']);
+    return {
+      total: metrics?.total || 0,
+      pending: metrics?.pending || 0,
+      inProgress: metrics?.inProgress || 0,
+      completed: metrics?.completed || 0,
+      conformeRate: metrics?.conformeRate || 0,
+      thisMonth: metrics?.thisMonth || 0,
+      lastMonth: metrics?.lastMonth || 0,
+    };
+  }
+
   const { data, error } = await supabase
     .from('safety_inspections')
     .select('*');
 
   if (error) throw error;
 
-  const inspections = data || [];
+  const inspections = Array.isArray(data) ? data : [];
   const now = new Date();
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();

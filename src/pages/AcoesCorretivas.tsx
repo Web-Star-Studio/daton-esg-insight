@@ -86,7 +86,7 @@ const AcoesCorretivas = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setActionPlans(data || []);
+      setActionPlans(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Erro ao carregar planos de ação:', error);
       toast({
@@ -288,8 +288,8 @@ const AcoesCorretivas = () => {
   };
 
   const filteredActionPlans = actionPlans.filter(plan =>
-    plan.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    plan.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (plan.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (plan.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     ''
   );
 

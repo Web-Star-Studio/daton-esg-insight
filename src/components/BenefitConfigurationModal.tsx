@@ -84,14 +84,16 @@ export function BenefitConfigurationModal({
     },
     enabled: !!benefit?.id && open,
   });
+  const normalizedEmployees = Array.isArray(employees) ? employees : [];
+  const normalizedEnrollments = Array.isArray(enrollments) ? enrollments : [];
 
-  const filteredEmployees = employees.filter((employee: Employee) =>
-    employee.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.department.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEmployees = normalizedEmployees.filter((employee: Employee) =>
+    (employee.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (employee.position || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (employee.department || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const enrolledEmployeeIds = enrollments.map((enrollment: BenefitEnrollment) => enrollment.employee_id);
+  const enrolledEmployeeIds = normalizedEnrollments.map((enrollment: BenefitEnrollment) => enrollment.employee_id);
 
   const handleEnrollEmployee = async (employeeId: string) => {
     if (!benefit?.id) return;

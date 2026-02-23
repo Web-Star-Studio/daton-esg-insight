@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/utils/logger";
+import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
 
 export interface EfficacyEvaluationItem {
   training_program_id: string;
@@ -24,6 +25,11 @@ export interface EfficacyDashboardMetrics {
  * Buscar avaliações de eficácia pendentes para o usuário logado
  */
 export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[]> => {
+  if (isDemoRuntimeEnabled()) {
+    const evaluations = resolveDemoData<EfficacyEvaluationItem[]>(['my-efficacy-evaluations']);
+    return Array.isArray(evaluations) ? evaluations : [];
+  }
+
   const { data: userData, error: authError } = await supabase.auth.getUser();
   if (authError || !userData?.user) {
     logger.warn('User not authenticated', 'training');
@@ -107,6 +113,16 @@ export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[
 };
 
 export const getEvaluationDashboardMetrics = async (): Promise<EfficacyDashboardMetrics> => {
+  if (isDemoRuntimeEnabled()) {
+    const metrics = resolveDemoData<EfficacyDashboardMetrics>(['efficacy-dashboard-metrics']);
+    return {
+      total: metrics?.total || 0,
+      pending: metrics?.pending || 0,
+      evaluated: metrics?.evaluated || 0,
+      overdue: metrics?.overdue || 0,
+    };
+  }
+
   const evaluations = await getMyPendingEvaluations();
   return {
     total: evaluations.length,

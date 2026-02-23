@@ -253,12 +253,12 @@ export default function SocialESG() {
 
               {/* Gráficos de Análise */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <TrainingByLocationChart data={filteredMetrics.hoursByLocation} />
-                <TrainingBySectorChart data={filteredMetrics.hoursByDepartment} />
+                <TrainingByLocationChart data={Array.isArray(filteredMetrics.hoursByLocation) ? filteredMetrics.hoursByLocation : []} />
+                <TrainingBySectorChart data={Array.isArray(filteredMetrics.hoursByDepartment) ? filteredMetrics.hoursByDepartment : []} />
               </div>
 
               {/* Tabela de Funcionários */}
-              <EmployeeTrainingTable data={filteredMetrics.employeeDetails} />
+              <EmployeeTrainingTable data={Array.isArray(filteredMetrics.employeeDetails) ? filteredMetrics.employeeDetails : []} />
             </>
           )}
 

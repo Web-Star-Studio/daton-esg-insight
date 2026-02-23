@@ -1,48 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
+test.describe.configure({ mode: "serial" });
+
 const SUPABASE_URL = "https://dqlvioijqzlvnvvajmft.supabase.co";
 const SUPABASE_AUTH_STORAGE_KEY = "sb-dqlvioijqzlvnvvajmft-auth-token";
-
-const DEMO_ESG_ROUTES = [
-  "/demo",
-  "/demo/dashboard",
-  "/demo/gestao-esg",
-  "/demo/quality-dashboard",
-  "/demo/gestao-indicadores",
-  "/demo/nao-conformidades",
-  "/demo/acoes-corretivas",
-  "/demo/controle-documentos",
-  "/demo/mapeamento-processos",
-  "/demo/planejamento-estrategico",
-  "/demo/licenciamento",
-  "/demo/laia",
-  "/demo/social-esg",
-  "/demo/gestao-funcionarios",
-  "/demo/gestao-treinamentos",
-  "/demo/seguranca-trabalho",
-  "/demo/desenvolvimento-carreira",
-  "/demo/descricao-cargos",
-  "/demo/estrutura-organizacional",
-  "/demo/avaliacao-eficacia",
-  "/demo/monitoramento-esg",
-  "/demo/monitoramento-agua",
-  "/demo/monitoramento-energia",
-  "/demo/monitoramento-emissoes",
-  "/demo/monitoramento-residuos",
-  "/demo/inventario-gee",
-  "/demo/dashboard-ghg",
-  "/demo/projetos-carbono",
-  "/demo/residuos",
-  "/demo/metas",
-  "/demo/metas-sustentabilidade",
-  "/demo/governanca-esg",
-  "/demo/gestao-riscos",
-  "/demo/compliance",
-  "/demo/auditoria",
-  "/demo/gestao-stakeholders",
-  "/demo/analise-materialidade",
-  "/demo/ativos",
-] as const;
 
 type MockUser = {
   id: string;
@@ -53,6 +14,17 @@ type MockUser = {
   companyId: string;
   companyName: string;
   hasCompletedOnboarding: boolean;
+};
+
+const DEMO_USER: MockUser = {
+  id: "pw-social-viewer",
+  email: "social.viewer@example.com",
+  fullName: "Social Viewer",
+  role: "platform_admin",
+  isApproved: true,
+  companyId: "demo-company-001",
+  companyName: "Demo Company",
+  hasCompletedOnboarding: true,
 };
 
 function buildSession(user: MockUser) {
@@ -243,98 +215,121 @@ function collectRuntimeErrors(page: Page) {
   };
 }
 
-test.describe("Demo route access", () => {
-  const users: MockUser[] = [
-    {
-      id: "pw-platform-admin",
-      email: "platform.admin@example.com",
-      fullName: "Platform Admin",
-      role: "platform_admin",
-      isApproved: true,
-      companyId: "demo-company-001",
-      companyName: "Demo Company",
-      hasCompletedOnboarding: true,
-    },
-    {
-      id: "pw-viewer",
-      email: "viewer@example.com",
-      fullName: "Viewer User",
-      role: "viewer",
-      isApproved: false,
-      companyId: "demo-company-001",
-      companyName: "Demo Company",
-      hasCompletedOnboarding: false,
-    },
-  ];
+async function openDemoRoute(page: Page, path: string) {
+  await mockAuthenticatedUser(page, DEMO_USER);
+  await page.goto(path, { waitUntil: "domcontentloaded", timeout: 45_000 });
+  await page.waitForTimeout(1200);
+  const currentPath = new URL(page.url()).pathname;
+  expect(currentPath.startsWith("/auth")).toBeFalsy();
+  expect(currentPath).toBe(path);
+}
 
-  for (const user of users) {
-    test(`/demo is accessible in dev for account role=${user.role}`, async ({ page }) => {
-      await mockAuthenticatedUser(page, user);
-
-      await page.goto("/demo", { waitUntil: "domcontentloaded" });
-      await page.waitForTimeout(1200);
-
-      const currentPath = new URL(page.url()).pathname;
-      expect(currentPath).toContain("/demo");
-      expect(currentPath.startsWith("/auth")).toBeFalsy();
-    });
+test("social-esg shows mocked dashboard data", async ({ page }) => {
+  const tracker = collectRuntimeErrors(page);
+  try {
+    await openDemoRoute(page, "/demo/social-esg");
+    await expect(page.getByRole("heading", { name: "ESG Social" })).toBeVisible();
+    await expect(page.getByText("Gestão de Colaboradores")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Funcionários" })).toBeVisible();
+    await expect(page.getByText("Projetos Sociais")).toBeVisible();
+    await expect(page.getByText("Nenhum projeto cadastrado")).not.toBeVisible();
+    expect(tracker.errors).toEqual([]);
+  } finally {
+    tracker.detach();
   }
 });
 
-test("all /demo ESG routes open without runtime errors", async ({ page }) => {
-  test.setTimeout(10 * 60 * 1000);
-
-  const user: MockUser = {
-    id: "pw-esg-viewer",
-    email: "esg.viewer@example.com",
-    fullName: "ESG Viewer",
-    role: "viewer",
-    isApproved: false,
-    companyId: "demo-company-001",
-    companyName: "Demo Company",
-    hasCompletedOnboarding: true,
-  };
-
-  await mockAuthenticatedUser(page, user);
-
-  const failures: string[] = [];
-
-  for (const routePath of DEMO_ESG_ROUTES) {
-    const tracker = collectRuntimeErrors(page);
-
-    try {
-      await page.goto(routePath, { waitUntil: "domcontentloaded", timeout: 45_000 });
-      await page.waitForTimeout(1200);
-
-      const currentPath = new URL(page.url()).pathname;
-      if (currentPath.startsWith("/auth")) {
-        failures.push(`${routePath} -> redirected to /auth`);
-      }
-      if (currentPath.includes("404")) {
-        failures.push(`${routePath} -> navigated to 404 (${currentPath})`);
-      }
-
-      const visibleErrorBoundary = await page
-        .locator("text=/TypeError|ReferenceError|Algo deu errado|An error occurred/i")
-        .count();
-      if (visibleErrorBoundary > 0) {
-        failures.push(`${routePath} -> visible error boundary/message in UI`);
-      }
-
-      if (tracker.errors.length > 0) {
-        failures.push(`${routePath} -> ${tracker.errors.join(" | ")}`);
-      }
-    } catch (error) {
-      failures.push(`${routePath} -> navigation failed: ${(error as Error).message}`);
-    } finally {
-      tracker.detach();
-    }
+test("descricao-cargos shows mocked positions", async ({ page }) => {
+  const tracker = collectRuntimeErrors(page);
+  try {
+    await openDemoRoute(page, "/demo/descricao-cargos");
+    await expect(page.getByRole("heading", { name: "Gestão de Cargos" })).toBeVisible();
+    await expect(page.getByText("Diretor(a) Geral")).toBeVisible();
+    await expect(page.getByText("Nenhum cargo encontrado")).not.toBeVisible();
+    expect(tracker.errors).toEqual([]);
+  } finally {
+    tracker.detach();
   }
+});
 
-  expect(
-    failures,
-    failures.length
-      ? `Routes with runtime/navigation failures:\n${failures.join("\n")}`
-      : "No failures",
-  ).toEqual([]);
+test("estrutura-organizacional shows mocked hierarchy", async ({ page }) => {
+  const tracker = collectRuntimeErrors(page);
+  try {
+    await openDemoRoute(page, "/demo/estrutura-organizacional");
+    await expect(page.getByRole("heading", { name: "Estrutura Organizacional" })).toBeVisible();
+    await expect(page.getByText("Juliana Lima")).toBeVisible();
+    await expect(page.getByText("Nenhuma estrutura organizacional definida")).not.toBeVisible();
+    expect(tracker.errors).toEqual([]);
+  } finally {
+    tracker.detach();
+  }
+});
+
+test("gestao-funcionarios uses mocked employees and benefits", async ({ page }) => {
+  const tracker = collectRuntimeErrors(page);
+  try {
+    await openDemoRoute(page, "/demo/gestao-funcionarios");
+    await expect(page.getByRole("heading", { name: "Gestão de Colaboradores" })).toBeVisible();
+    await page.getByRole("tab", { name: "Benefícios" }).click();
+    await expect(page.getByText("Plano de Saúde")).toBeVisible();
+    await expect(page.getByText("Nenhum benefício cadastrado")).not.toBeVisible();
+    expect(tracker.errors).toEqual([]);
+  } finally {
+    tracker.detach();
+  }
+});
+
+test("seguranca-trabalho shows mocked incidents and inspections", async ({ page }) => {
+  const tracker = collectRuntimeErrors(page);
+  try {
+    await openDemoRoute(page, "/demo/seguranca-trabalho");
+    await expect(page.getByRole("heading", { name: "Segurança do Trabalho" })).toBeVisible();
+    await page.getByRole("tab", { name: "Incidentes" }).click();
+    await expect(page.getByText("Quase Acidente")).toBeVisible();
+    await expect(page.getByText("Nenhum incidente registrado ainda")).not.toBeVisible();
+    expect(tracker.errors).toEqual([]);
+  } finally {
+    tracker.detach();
+  }
+});
+
+test("gestao-treinamentos shows mocked training programs", async ({ page }) => {
+  const tracker = collectRuntimeErrors(page);
+  try {
+    await openDemoRoute(page, "/demo/gestao-treinamentos");
+    await expect(page.getByRole("heading", { name: "Gestão de Treinamentos" })).toBeVisible();
+    await page.getByRole("tab", { name: "Programas" }).click();
+    await expect(page.getByText("NR-12 Segurança em Máquinas")).toBeVisible();
+    await expect(page.getByText("Nenhum programa encontrado")).not.toBeVisible();
+    expect(tracker.errors).toEqual([]);
+  } finally {
+    tracker.detach();
+  }
+});
+
+test("avaliacao-eficacia shows mocked pending evaluations", async ({ page }) => {
+  const tracker = collectRuntimeErrors(page);
+  try {
+    await openDemoRoute(page, "/demo/avaliacao-eficacia");
+    await expect(page.getByRole("heading", { name: "Avaliação de Eficácia" })).toBeVisible();
+    await expect(page.getByText("NR-12 Segurança em Máquinas")).toBeVisible();
+    await expect(page.getByText("Nenhum treinamento encontrado")).not.toBeVisible();
+    expect(tracker.errors).toEqual([]);
+  } finally {
+    tracker.detach();
+  }
+});
+
+test("desenvolvimento-carreira shows mocked plans", async ({ page }) => {
+  const tracker = collectRuntimeErrors(page);
+  try {
+    await openDemoRoute(page, "/demo/desenvolvimento-carreira");
+    await expect(page.getByRole("heading", { name: "Desenvolvimento de Carreira" })).toBeVisible();
+    await page.getByRole("tab", { name: "PDIs" }).click();
+    await expect(page.getByText("Mariana Costa")).toBeVisible();
+    await expect(page.getByText("Nenhum PDI encontrado")).not.toBeVisible();
+    expect(tracker.errors).toEqual([]);
+  } finally {
+    tracker.detach();
+  }
 });

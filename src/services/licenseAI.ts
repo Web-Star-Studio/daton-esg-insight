@@ -187,20 +187,24 @@ export async function getLicenseAIStats(): Promise<LicenseAIStats> {
     supabase.from('license_alerts').select('severity, is_resolved'),
     supabase.from('licenses').select('compliance_score')
   ]);
+  const analysesList = Array.isArray(analyses) ? analyses : [];
+  const conditionsList = Array.isArray(conditions) ? conditions : [];
+  const alertsList = Array.isArray(alerts) ? alerts : [];
+  const licensesList = Array.isArray(licenses) ? licenses : [];
 
-  const totalAnalyzed = analyses?.length || 0;
-  const avgConfidenceScore = analyses?.length 
-    ? analyses.reduce((sum, a) => sum + (a.confidence_score || 0), 0) / analyses.length 
+  const totalAnalyzed = analysesList.length;
+  const avgConfidenceScore = analysesList.length 
+    ? analysesList.reduce((sum, a) => sum + (a.confidence_score || 0), 0) / analysesList.length 
     : 0;
 
-  const totalConditions = conditions?.length || 0;
-  const pendingConditions = conditions?.filter(c => c.status === 'pending').length || 0;
+  const totalConditions = conditionsList.length;
+  const pendingConditions = conditionsList.filter(c => c.status === 'pending').length;
 
-  const totalAlerts = alerts?.length || 0;
-  const criticalAlerts = alerts?.filter(a => a.severity === 'critical' && !a.is_resolved).length || 0;
+  const totalAlerts = alertsList.length;
+  const criticalAlerts = alertsList.filter(a => a.severity === 'critical' && !a.is_resolved).length;
 
-  const complianceScore = licenses?.length
-    ? licenses.reduce((sum, l) => sum + (l.compliance_score || 0), 0) / licenses.length
+  const complianceScore = licensesList.length
+    ? licensesList.reduce((sum, l) => sum + (l.compliance_score || 0), 0) / licensesList.length
     : 0;
 
   return {
@@ -231,7 +235,7 @@ export async function getCriticalAlerts(): Promise<LicenseAlert[]> {
     throw error;
   }
 
-  return data || [];
+  return Array.isArray(data) ? data : [];
 }
 
 // Buscar condicionantes vencendo em breve
@@ -255,5 +259,5 @@ export async function getUpcomingConditions(days: number = 30): Promise<LicenseC
     throw error;
   }
 
-  return data || [];
+  return Array.isArray(data) ? data : [];
 }

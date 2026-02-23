@@ -78,7 +78,7 @@ const calculateGoalStatus = (progress: number, deadline: string): GoalListItem['
 
 // GET /api/v1/goals - List all goals with current progress
 export const getGoals = async (): Promise<GoalListItem[]> => {
-  const { data: goals, error } = await supabase
+  const { data: goalsData, error } = await supabase
     .from('goals')
     .select('*')
     .order('created_at', { ascending: false });
@@ -87,6 +87,7 @@ export const getGoals = async (): Promise<GoalListItem[]> => {
     console.error('Error fetching goals:', error);
     throw error;
   }
+  const goals = Array.isArray(goalsData) ? goalsData : [];
 
   // Get current progress for each goal
   const goalsWithProgress = await Promise.all(

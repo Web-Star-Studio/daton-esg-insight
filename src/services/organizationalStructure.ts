@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { formErrorHandler } from "@/utils/formErrorHandler";
 import { logger } from '@/utils/logger';
+import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
+
+const DEMO_COMPANY_ID = "demo-company-001";
 
 export interface Department {
   id: string;
@@ -79,8 +82,35 @@ export interface OrganizationalChartNode {
   subordinates?: OrganizationalChartNode[];
 }
 
+const flattenDemoChart = (
+  nodes: OrganizationalChartNode[],
+  parentEmployeeId: string | null = null,
+  level = 0,
+): OrganizationalChartNode[] => {
+  return nodes.flatMap((node) => {
+    const { subordinates, ...rest } = node;
+
+    const currentNode: OrganizationalChartNode = {
+      ...rest,
+      hierarchy_level: node.hierarchy_level ?? level,
+      reports_to_employee_id: node.reports_to_employee_id ?? parentEmployeeId ?? undefined,
+    };
+
+    const children = Array.isArray(subordinates)
+      ? flattenDemoChart(subordinates, node.employee_id, level + 1)
+      : [];
+
+    return [currentNode, ...children];
+  });
+};
+
 // Department operations
 export const getDepartments = async (): Promise<Department[]> => {
+  if (isDemoRuntimeEnabled()) {
+    const demoDepartments = resolveDemoData<Department[]>(['departments', DEMO_COMPANY_ID]);
+    return Array.isArray(demoDepartments) ? demoDepartments : [];
+  }
+
   try {
     const { data, error } = await supabase
       .from('departments')
@@ -157,6 +187,11 @@ export const deleteDepartment = async (id: string): Promise<void> => {
 
 // Position operations
 export const getPositions = async (): Promise<Position[]> => {
+  if (isDemoRuntimeEnabled()) {
+    const demoPositions = resolveDemoData<Position[]>(['positions', DEMO_COMPANY_ID]);
+    return Array.isArray(demoPositions) ? demoPositions : [];
+  }
+
   try {
     const { data, error } = await supabase
       .from('positions')
@@ -233,6 +268,17 @@ export const deletePosition = async (id: string): Promise<void> => {
 
 // Organizational chart operations
 export const getOrganizationalChart = async (): Promise<OrganizationalChartNode[]> => {
+  if (isDemoRuntimeEnabled()) {
+    const demoChart = resolveDemoData<OrganizationalChartNode[]>(['org-chart', DEMO_COMPANY_ID]);
+    if (!Array.isArray(demoChart)) return [];
+
+    const hasNestedNodes = demoChart.some(
+      (node) => Array.isArray(node.subordinates) && node.subordinates.length > 0,
+    );
+
+    return hasNestedNodes ? flattenDemoChart(demoChart) : demoChart;
+  }
+
   const { data, error } = await supabase
     .from('organizational_chart')
     .select(`
@@ -359,6 +405,45 @@ export const buildOrganizationalHierarchy = (nodes: OrganizationalChartNode[]): 
 // Get department hierarchy with employee counts
 export const getDepartmentHierarchy = async (): Promise<Department[]> => {
   const departments = await getDepartments();
+
+  if (isDemoRuntimeEnabled()) {
+    const demoEmployees = resolveDemoData<Array<{ department?: string; status?: string }>>(['employees']);
+    const employees = Array.isArray(demoEmployees) ? demoEmployees : [];
+
+    const employeeCountMap = new Map<string, number>();
+    employees.forEach((emp) => {
+      if (emp.department && (!emp.status || emp.status === 'Ativo')) {
+        employeeCountMap.set(emp.department, (employeeCountMap.get(emp.department) || 0) + 1);
+      }
+    });
+
+    const departmentMap = new Map<string, Department>();
+    const rootDepartments: Department[] = [];
+
+    departments.forEach((dept) => {
+      const employeeCount = employeeCountMap.get(dept.name) || dept.employee_count || 0;
+      departmentMap.set(dept.id, { ...dept, employee_count: employeeCount, sub_departments: [] });
+    });
+
+    departments.forEach((dept) => {
+      const currentDept = departmentMap.get(dept.id);
+      if (!currentDept) return;
+
+      if (dept.parent_department_id) {
+        const parentDept = departmentMap.get(dept.parent_department_id);
+        if (parentDept) {
+          parentDept.sub_departments = parentDept.sub_departments || [];
+          parentDept.sub_departments.push(currentDept);
+        } else {
+          rootDepartments.push(currentDept);
+        }
+      } else {
+        rootDepartments.push(currentDept);
+      }
+    });
+
+    return rootDepartments;
+  }
   
   // Get employee count for each department - using a simpler approach
   const { data: employees } = await supabase

@@ -107,10 +107,14 @@ export default function DesenvolvimentoCarreira() {
   };
 
   const { data: careerStats, isLoading: statsLoading } = useCareerStatistics();
-  const { data: careerPlans, isLoading: plansLoading } = useCareerDevelopmentPlans();
-  const { data: successionPlans } = useSuccessionPlans();
-  const { data: internalJobs } = useInternalJobPostings();
-  const { data: mentoringRelationships } = useMentoringRelationships();
+  const { data: careerPlansData, isLoading: plansLoading } = useCareerDevelopmentPlans();
+  const { data: successionPlansData } = useSuccessionPlans();
+  const { data: internalJobsData } = useInternalJobPostings();
+  const { data: mentoringRelationshipsData } = useMentoringRelationships();
+  const careerPlans = Array.isArray(careerPlansData) ? careerPlansData : [];
+  const successionPlans = Array.isArray(successionPlansData) ? successionPlansData : [];
+  const internalJobs = Array.isArray(internalJobsData) ? internalJobsData : [];
+  const mentoringRelationships = Array.isArray(mentoringRelationshipsData) ? mentoringRelationshipsData : [];
 
   const handleViewDetails = (plan: CareerDevelopmentPlan) => {
     setSelectedPlan(plan);
@@ -128,9 +132,9 @@ export default function DesenvolvimentoCarreira() {
     setIsNewPDIModalOpen(true);
   };
 
-  const filteredPlans = careerPlans?.filter(plan => {
-    const matchesSearch = plan.employee?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         plan.employee?.employee_code.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredPlans = careerPlans.filter(plan => {
+    const matchesSearch = (plan.employee?.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (plan.employee?.employee_code || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDepartment = filterDepartment === "all" || plan.employee?.department === filterDepartment;
     const matchesStatus = filterStatus === "all" || plan.status === filterStatus;
     
@@ -331,7 +335,7 @@ export default function DesenvolvimentoCarreira() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filteredPlans?.length === 0 ? (
+                {filteredPlans.length === 0 ? (
                   <div className="text-center py-12">
                     <Target className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                     <h3 className="text-lg font-semibold mb-2">Nenhum PDI encontrado</h3>
@@ -344,7 +348,7 @@ export default function DesenvolvimentoCarreira() {
                     </Button>
                   </div>
                 ) : (
-                  filteredPlans?.map((plan) => (
+                  filteredPlans.map((plan) => (
                     <div key={plan.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-4">
@@ -425,7 +429,7 @@ export default function DesenvolvimentoCarreira() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{successionPlans?.length || 0}</div>
+                <div className="text-2xl font-bold">{successionPlans.length}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Planos ativos
                 </p>
@@ -440,7 +444,7 @@ export default function DesenvolvimentoCarreira() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {successionPlans?.reduce((acc, plan) => acc + (plan.candidates?.length || 0), 0) || 0}
+                  {successionPlans.reduce((acc, plan) => acc + (plan.candidates?.length || 0), 0)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Em desenvolvimento
@@ -457,7 +461,7 @@ export default function DesenvolvimentoCarreira() {
               <CardContent>
                 <div className="text-2xl font-bold">
                   {(() => {
-                    const allCandidates = successionPlans?.flatMap(p => p.candidates || []) || [];
+                    const allCandidates = successionPlans.flatMap(p => p.candidates || []);
                     const avgScore = allCandidates.length > 0
                       ? Math.round(
                           allCandidates.reduce((acc, c) => acc + (c.readiness_score || 0), 0) /
@@ -475,7 +479,7 @@ export default function DesenvolvimentoCarreira() {
           </div>
 
           {/* Succession Plans List */}
-          {successionPlans && successionPlans.length > 0 ? (
+          {successionPlans.length > 0 ? (
             <div className="space-y-4">
               {successionPlans.map((plan) => {
                 const getReadinessColor = (level: string) => {
@@ -625,7 +629,7 @@ export default function DesenvolvimentoCarreira() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-2xl font-bold">
-                      {internalJobs?.filter(j => j.status === "Aberto").length || 0}
+                      {internalJobs.filter(j => j.status === "Aberto").length}
                     </p>
                     <p className="text-sm text-muted-foreground">Vagas Abertas</p>
                   </div>
@@ -638,7 +642,7 @@ export default function DesenvolvimentoCarreira() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold">{internalJobs?.length || 0}</p>
+                    <p className="text-2xl font-bold">{internalJobs.length}</p>
                     <p className="text-sm text-muted-foreground">Total de Vagas</p>
                   </div>
                   <Target className="w-8 h-8 text-muted-foreground" />
@@ -651,7 +655,7 @@ export default function DesenvolvimentoCarreira() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-2xl font-bold">
-                      {internalJobs?.filter(j => j.status === "Preenchido").length || 0}
+                      {internalJobs.filter(j => j.status === "Preenchido").length}
                     </p>
                     <p className="text-sm text-muted-foreground">Vagas Preenchidas</p>
                   </div>
@@ -697,9 +701,9 @@ export default function DesenvolvimentoCarreira() {
           </div>
 
           {/* Job Postings Grid */}
-          {internalJobs?.filter(job => {
-            const matchesSearch = job.title.toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
-                                 job.department.toLowerCase().includes(jobSearchTerm.toLowerCase());
+          {internalJobs.filter(job => {
+            const matchesSearch = (job.title || "").toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
+                                 (job.department || "").toLowerCase().includes(jobSearchTerm.toLowerCase());
             const matchesDepartment = jobFilterDepartment === "all" || job.department === jobFilterDepartment;
             const matchesStatus = jobFilterStatus === "all" || job.status === jobFilterStatus;
             
@@ -723,9 +727,9 @@ export default function DesenvolvimentoCarreira() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {internalJobs
-                ?.filter(job => {
-                  const matchesSearch = job.title.toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
-                                       job.department.toLowerCase().includes(jobSearchTerm.toLowerCase());
+                .filter(job => {
+                  const matchesSearch = (job.title || "").toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
+                                       (job.department || "").toLowerCase().includes(jobSearchTerm.toLowerCase());
                   const matchesDepartment = jobFilterDepartment === "all" || job.department === jobFilterDepartment;
                   const matchesStatus = jobFilterStatus === "all" || job.status === jobFilterStatus;
                   
@@ -817,7 +821,7 @@ export default function DesenvolvimentoCarreira() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold">{mentoringRelationships?.length || 0}</p>
+                    <p className="text-2xl font-bold">{mentoringRelationships.length}</p>
                     <p className="text-sm text-muted-foreground">Relacionamentos Ativos</p>
                   </div>
                   <MessageSquare className="w-8 h-8 text-muted-foreground" />
@@ -827,7 +831,7 @@ export default function DesenvolvimentoCarreira() {
           </div>
 
           <div className="space-y-4">
-            {mentoringRelationships?.length === 0 ? (
+            {mentoringRelationships.length === 0 ? (
               <div className="text-center py-12">
                 <MessageSquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">Nenhuma mentoria ativa</h3>
@@ -840,7 +844,7 @@ export default function DesenvolvimentoCarreira() {
                 </Button>
               </div>
             ) : (
-              mentoringRelationships?.map((relationship) => (
+              mentoringRelationships.map((relationship) => (
                 <Card key={relationship.id}>
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between">
@@ -906,7 +910,9 @@ export default function DesenvolvimentoCarreira() {
           setSelectedSuccessionPlan(null);
         }}
         successionPlanId={selectedSuccessionPlan?.id || ""}
-        existingCandidateIds={selectedSuccessionPlan?.candidates?.map((c: any) => c.employee_id) || []}
+        existingCandidateIds={Array.isArray(selectedSuccessionPlan?.candidates)
+          ? selectedSuccessionPlan.candidates.map((c: any) => c.employee_id)
+          : []}
         onSuccess={() => {
           // Candidates will be automatically refetched via query invalidation
         }}

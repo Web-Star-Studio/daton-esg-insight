@@ -35,7 +35,7 @@ import {
   Line
 } from "recharts";
 import { nonConformityService, NCDashboardStats, NonConformity, NCTask } from "@/services/nonConformityService";
-import { format, differenceInDays, isAfter, isBefore, addDays } from "date-fns";
+import { format, differenceInDays, isAfter, isBefore, addDays, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { isNCClosed } from "@/utils/ncStatusUtils";
 
@@ -72,6 +72,7 @@ interface NCAdvancedDashboardProps {
 }
 
 export function NCAdvancedDashboard({ nonConformities }: NCAdvancedDashboardProps) {
+  const nonConformityList = Array.isArray(nonConformities) ? nonConformities : [];
   // Buscar estatísticas do dashboard
   const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ["nc-dashboard-stats"],
@@ -85,18 +86,19 @@ export function NCAdvancedDashboard({ nonConformities }: NCAdvancedDashboardProp
     queryFn: () => nonConformityService.getTasks(),
     staleTime: 60 * 1000
   });
+  const tasksList = Array.isArray(allTasks) ? allTasks : [];
 
   // Calcular métricas de SLA
-  const slaMetrics = calculateSLAMetrics(allTasks || []);
+  const slaMetrics = calculateSLAMetrics(tasksList);
   
   // Calcular distribuição por severidade
-  const severityData = calculateSeverityDistribution(nonConformities);
+  const severityData = calculateSeverityDistribution(nonConformityList);
   
   // Calcular distribuição por etapa
-  const stageData = calculateStageDistribution(nonConformities);
+  const stageData = calculateStageDistribution(nonConformityList);
   
   // Calcular tendência mensal
-  const monthlyTrend = calculateMonthlyTrend(nonConformities);
+  const monthlyTrend = calculateMonthlyTrend(nonConformityList);
 
   if (loadingStats || loadingTasks) {
     return <DashboardSkeleton />;
@@ -108,16 +110,16 @@ export function NCAdvancedDashboard({ nonConformities }: NCAdvancedDashboardProp
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="NCs Abertas"
-          value={stats?.total_open || nonConformities.filter(nc => !isNCClosed(nc.status)).length}
+          value={stats?.total_open || nonConformityList.filter(nc => !isNCClosed(nc.status)).length}
           icon={<AlertCircle className="h-5 w-5" />}
-          trend={calculateTrend(nonConformities, "open")}
+          trend={calculateTrend(nonConformityList, "open")}
           color="orange"
         />
         <StatCard
           title="NCs Encerradas"
-          value={stats?.total_closed || nonConformities.filter(nc => isNCClosed(nc.status)).length}
+          value={stats?.total_closed || nonConformityList.filter(nc => isNCClosed(nc.status)).length}
           icon={<CheckCircle className="h-5 w-5" />}
-          trend={calculateTrend(nonConformities, "closed")}
+          trend={calculateTrend(nonConformityList, "closed")}
           color="green"
         />
         <StatCard
@@ -130,9 +132,9 @@ export function NCAdvancedDashboard({ nonConformities }: NCAdvancedDashboardProp
         />
         <StatCard
           title="Taxa de Resolução"
-          value={`${calculateResolutionRate(nonConformities).toFixed(1)}%`}
+          value={`${calculateResolutionRate(nonConformityList).toFixed(1)}%`}
           icon={<Target className="h-5 w-5" />}
-          trend={calculateTrend(nonConformities, "resolution")}
+          trend={calculateTrend(nonConformityList, "resolution")}
           color="blue"
         />
       </div>
@@ -321,7 +323,7 @@ export function NCAdvancedDashboard({ nonConformities }: NCAdvancedDashboardProp
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={calculateTasksByType(allTasks || [])}
+                  data={calculateTasksByType(tasksList)}
                   layout="vertical"
                   margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
                 >
@@ -413,13 +415,13 @@ export function NCAdvancedDashboard({ nonConformities }: NCAdvancedDashboardProp
       {/* Linha 5: Cards de Contadores por Severidade */}
       <div className="grid gap-4 md:grid-cols-4">
         {["Crítica", "Alta", "Média", "Baixa"].map((severity) => {
-          const count = nonConformities.filter(nc => nc.severity === severity && !isNCClosed(nc.status)).length;
+          const count = nonConformityList.filter(nc => nc.severity === severity && !isNCClosed(nc.status)).length;
           return (
             <SeverityCard 
               key={severity}
               severity={severity}
               count={count}
-              total={nonConformities.filter(nc => !isNCClosed(nc.status)).length}
+              total={nonConformityList.filter(nc => !isNCClosed(nc.status)).length}
             />
           );
         })}
@@ -603,18 +605,21 @@ function DashboardSkeleton() {
 // ==================== Funções de Cálculo ====================
 
 function calculateSLAMetrics(tasks: NCTask[]) {
+  const tasksList = Array.isArray(tasks) ? tasks : [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const pendingTasks = tasks.filter(t => t.status !== 'Concluída' && t.status !== 'Cancelada');
+  const pendingTasks = tasksList.filter(t => t.status !== 'Concluída' && t.status !== 'Cancelada');
   
   const overdue = pendingTasks.filter(t => {
     const dueDate = new Date(t.due_date);
+    if (!isValid(dueDate)) return false;
     return isBefore(dueDate, today);
   }).length;
   
   const dueToday = pendingTasks.filter(t => {
     const dueDate = new Date(t.due_date);
+    if (!isValid(dueDate)) return false;
     dueDate.setHours(0, 0, 0, 0);
     return dueDate.getTime() === today.getTime();
   }).length;
@@ -622,6 +627,7 @@ function calculateSLAMetrics(tasks: NCTask[]) {
   const threeDaysFromNow = addDays(today, 3);
   const dueSoon = pendingTasks.filter(t => {
     const dueDate = new Date(t.due_date);
+    if (!isValid(dueDate)) return false;
     return isAfter(dueDate, today) && isBefore(dueDate, threeDaysFromNow);
   }).length;
   
@@ -632,7 +638,7 @@ function calculateSLAMetrics(tasks: NCTask[]) {
       const dueDate = new Date(t.due_date);
       return {
         ...t,
-        daysOverdue: differenceInDays(today, dueDate)
+        daysOverdue: isValid(dueDate) ? differenceInDays(today, dueDate) : 0
       };
     })
     .sort((a, b) => b.daysOverdue - a.daysOverdue);
@@ -649,7 +655,8 @@ function calculateSLAMetrics(tasks: NCTask[]) {
 }
 
 function calculateSeverityDistribution(ncs: NonConformity[]) {
-  const openNCs = ncs.filter(nc => nc.status !== "Fechada");
+  const ncsList = Array.isArray(ncs) ? ncs : [];
+  const openNCs = ncsList.filter(nc => nc.status !== "Fechada");
   const severities = ["Crítica", "Alta", "Média", "Baixa"];
   
   return severities.map(severity => ({
@@ -659,7 +666,8 @@ function calculateSeverityDistribution(ncs: NonConformity[]) {
 }
 
 function calculateStageDistribution(ncs: NonConformity[]) {
-  const openNCs = ncs.filter(nc => nc.status !== "Fechada");
+  const ncsList = Array.isArray(ncs) ? ncs : [];
+  const openNCs = ncsList.filter(nc => nc.status !== "Fechada");
   
   return [1, 2, 3, 4, 5, 6].map(stage => ({
     name: STAGE_NAMES[stage],
@@ -669,6 +677,7 @@ function calculateStageDistribution(ncs: NonConformity[]) {
 }
 
 function calculateMonthlyTrend(ncs: NonConformity[]) {
+  const ncsList = Array.isArray(ncs) ? ncs : [];
   const months: Record<string, { abertas: number; fechadas: number }> = {};
   const today = new Date();
   
@@ -679,8 +688,9 @@ function calculateMonthlyTrend(ncs: NonConformity[]) {
     months[monthKey] = { abertas: 0, fechadas: 0 };
   }
   
-  ncs.forEach(nc => {
+  ncsList.forEach(nc => {
     const createdDate = new Date(nc.created_at);
+    if (!isValid(createdDate)) return;
     const monthKey = format(createdDate, "MMM/yy", { locale: ptBR });
     
     if (months[monthKey] !== undefined) {
@@ -689,6 +699,7 @@ function calculateMonthlyTrend(ncs: NonConformity[]) {
     
     if (nc.status === "Fechada" && nc.completion_date) {
       const closedDate = new Date(nc.completion_date);
+      if (!isValid(closedDate)) return;
       const closedMonthKey = format(closedDate, "MMM/yy", { locale: ptBR });
       
       if (months[closedMonthKey] !== undefined) {
@@ -704,6 +715,7 @@ function calculateMonthlyTrend(ncs: NonConformity[]) {
 }
 
 function calculateTasksByType(tasks: NCTask[]) {
+  const tasksList = Array.isArray(tasks) ? tasks : [];
   const taskTypes = {
     'registration': 'Registro',
     'immediate_action': 'Ação Imediata',
@@ -714,7 +726,7 @@ function calculateTasksByType(tasks: NCTask[]) {
   };
   
   return Object.entries(taskTypes).map(([type, name]) => {
-    const typeTasks = tasks.filter(t => t.task_type === type);
+    const typeTasks = tasksList.filter(t => t.task_type === type);
     return {
       name,
       pendentes: typeTasks.filter(t => t.status !== 'Concluída' && t.status !== 'Cancelada').length,
@@ -724,23 +736,27 @@ function calculateTasksByType(tasks: NCTask[]) {
 }
 
 function calculateResolutionRate(ncs: NonConformity[]): number {
-  if (ncs.length === 0) return 0;
-  const closed = ncs.filter(nc => nc.status === "Fechada").length;
-  return (closed / ncs.length) * 100;
+  const ncsList = Array.isArray(ncs) ? ncs : [];
+  if (ncsList.length === 0) return 0;
+  const closed = ncsList.filter(nc => nc.status === "Fechada").length;
+  return (closed / ncsList.length) * 100;
 }
 
 function calculateTrend(ncs: NonConformity[], type: "open" | "closed" | "resolution"): { value: number; isPositive: boolean } | undefined {
+  const ncsList = Array.isArray(ncs) ? ncs : [];
   const today = new Date();
   const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
   const twoMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1);
   
-  const lastMonthNCs = ncs.filter(nc => {
+  const lastMonthNCs = ncsList.filter(nc => {
     const date = new Date(nc.created_at);
+    if (!isValid(date)) return false;
     return date >= lastMonth && date < today;
   });
   
-  const twoMonthsAgoNCs = ncs.filter(nc => {
+  const twoMonthsAgoNCs = ncsList.filter(nc => {
     const date = new Date(nc.created_at);
+    if (!isValid(date)) return false;
     return date >= twoMonthsAgo && date < lastMonth;
   });
   

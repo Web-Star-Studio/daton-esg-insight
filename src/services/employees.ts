@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formErrorHandler } from "@/utils/formErrorHandler";
 import { logger } from '@/utils/logger';
+import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
 
 export interface Employee {
   id: string;
@@ -87,6 +88,11 @@ export interface PaginatedResult<T> {
 }
 
 export const getEmployees = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const demoEmployees = resolveDemoData<Employee[]>(['employees']);
+    return Array.isArray(demoEmployees) ? demoEmployees : [];
+  }
+
   const { data, error } = await supabase
     .from('employees')
     .select('*')
@@ -98,6 +104,49 @@ export const getEmployees = async () => {
 
 // Paginated employees with server-side filtering
 export const getEmployeesPaginated = async (params: PaginatedEmployeesParams): Promise<PaginatedResult<Employee>> => {
+  if (isDemoRuntimeEnabled()) {
+    const { page, pageSize, search, status, department } = params;
+    const allEmployees = resolveDemoData<Employee[]>(['employees']);
+    const employees = Array.isArray(allEmployees) ? [...allEmployees] : [];
+
+    let filteredEmployees = employees;
+
+    if (search && search.trim()) {
+      const searchTerm = search.trim().toLowerCase();
+      filteredEmployees = filteredEmployees.filter((employee) => {
+        return [
+          employee.full_name,
+          employee.cpf,
+          employee.position,
+          employee.employee_code,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(searchTerm));
+      });
+    }
+
+    if (status && status !== 'all') {
+      filteredEmployees = filteredEmployees.filter((employee) => employee.status === status);
+    }
+
+    if (department && department !== 'all') {
+      filteredEmployees = filteredEmployees.filter((employee) => employee.department === department);
+    }
+
+    const totalCount = filteredEmployees.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    const currentPage = Math.min(Math.max(page, 1), totalPages);
+    const from = (currentPage - 1) * pageSize;
+    const to = from + pageSize;
+
+    return {
+      data: filteredEmployees.slice(from, to),
+      totalCount,
+      totalPages,
+      currentPage,
+    };
+  }
+
   const { page, pageSize, search, status, department } = params;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
@@ -140,6 +189,20 @@ export const getEmployeesPaginated = async (params: PaginatedEmployeesParams): P
 
 // Get all departments for filter dropdown
 export const getDepartments = async (): Promise<string[]> => {
+  if (isDemoRuntimeEnabled()) {
+    const demoDepartments = resolveDemoData<string[]>(['employee-departments']);
+    if (Array.isArray(demoDepartments) && demoDepartments.every((item) => typeof item === 'string')) {
+      return demoDepartments;
+    }
+
+    const demoEmployees = resolveDemoData<Array<{ department?: string }>>(['employees']);
+    if (Array.isArray(demoEmployees)) {
+      return [...new Set(demoEmployees.map((e) => e.department).filter(Boolean) as string[])];
+    }
+
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('employees')
     .select('department')
@@ -262,6 +325,13 @@ export const deleteEmployee = async (id: string) => {
 };
 
 export const getEmployeesStats = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const demoStats = resolveDemoData<any>(['employees-stats']);
+    if (demoStats && typeof demoStats === 'object') {
+      return demoStats;
+    }
+  }
+
   // 1. Contar total de funcionários (server-side, sem limite de 1000)
   const { count: totalEmployees, error: totalError } = await supabase
     .from('employees')
@@ -284,7 +354,8 @@ export const getEmployeesStats = async () => {
     .not('department', 'is', null);
 
   if (deptError) throw deptError;
-  const departments = [...new Set(deptData?.map(e => e.department).filter(Boolean))];
+  const departmentsData = Array.isArray(deptData) ? deptData : [];
+  const departments = [...new Set(departmentsData.map(e => e.department).filter(Boolean))];
 
   // 4. Buscar distribuição de gênero com contagens server-side (evita limite de 1000)
   const genderValues = ['Masculino', 'Feminino', 'Não binário', 'Outro'];
@@ -333,7 +404,8 @@ export const getEmployeesStats = async () => {
     .not('salary', 'is', null);
 
   if (salaryError) throw salaryError;
-  const salaries = salaryData?.map(e => e.salary).filter((s): s is number => s !== null) || [];
+  const salariesData = Array.isArray(salaryData) ? salaryData : [];
+  const salaries = salariesData.map(e => e.salary).filter((s): s is number => s !== null);
   const avgSalary = salaries.length > 0 
     ? salaries.reduce((sum, s) => sum + s, 0) / salaries.length 
     : 0;
@@ -365,7 +437,7 @@ export const useEmployeesPaginated = (params: PaginatedEmployeesParams) => {
 
 export const useDepartments = () => {
   return useQuery({
-    queryKey: ['departments'],
+    queryKey: ['employee-departments'],
     queryFn: getDepartments,
   });
 };

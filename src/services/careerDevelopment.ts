@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
 
 // Types
 export interface CareerDevelopmentPlan {
@@ -117,6 +118,11 @@ export interface InternalJobPosting {
 
 // Career Development Plans
 export const getCareerDevelopmentPlans = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const plans = resolveDemoData<CareerDevelopmentPlan[]>(['career-development-plans']);
+    return Array.isArray(plans) ? plans : [];
+  }
+
   const { data, error } = await supabase
     .from('career_development_plans')
     .select(`
@@ -127,7 +133,7 @@ export const getCareerDevelopmentPlans = async () => {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data : [];
 };
 
 // Helper para normalizar UUIDs - converte strings vazias para null
@@ -223,6 +229,11 @@ export const updateCareerDevelopmentPlan = async (id: string, updates: Partial<C
 
 // Succession Plans
 export const getSuccessionPlans = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const plans = resolveDemoData<SuccessionPlan[]>(['succession-plans']);
+    return Array.isArray(plans) ? plans : [];
+  }
+
   // Buscar planos de sucessão (sem FKs definidas, usamos queries separadas)
   const { data: plans, error } = await supabase
     .from('succession_plans')
@@ -230,10 +241,11 @@ export const getSuccessionPlans = async () => {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  if (!plans || plans.length === 0) return [];
+  const plansList = Array.isArray(plans) ? plans : [];
+  if (plansList.length === 0) return [];
 
   // Buscar current_holders
-  const holderIds = plans
+  const holderIds = plansList
     .map(p => p.current_holder_id)
     .filter(Boolean) as string[];
   
@@ -251,7 +263,7 @@ export const getSuccessionPlans = async () => {
   }
 
   // Buscar candidates
-  const planIds = plans.map(p => p.id);
+  const planIds = plansList.map(p => p.id);
   const { data: candidatesData } = await supabase
     .from('succession_candidates')
     .select('*')
@@ -276,7 +288,7 @@ export const getSuccessionPlans = async () => {
   }
 
   // Montar resultado com relacionamentos manuais
-  return plans.map(plan => ({
+  return plansList.map(plan => ({
     ...plan,
     current_holder: plan.current_holder_id 
       ? holders[plan.current_holder_id] || null 
@@ -306,6 +318,11 @@ export const createSuccessionPlan = async (plan: Omit<SuccessionPlan, 'id' | 'cr
 
 // Mentoring Relationships
 export const getMentoringRelationships = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const relationships = resolveDemoData<MentoringRelationship[]>(['mentoring-relationships']);
+    return Array.isArray(relationships) ? relationships : [];
+  }
+
   const { data, error } = await supabase
     .from('mentoring_relationships')
     .select(`
@@ -316,7 +333,7 @@ export const getMentoringRelationships = async () => {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data : [];
 };
 
 export const createMentoringRelationship = async (relationship: Omit<MentoringRelationship, 'id' | 'created_at' | 'updated_at'>) => {
@@ -333,13 +350,18 @@ export const createMentoringRelationship = async (relationship: Omit<MentoringRe
 
 // Internal Job Postings
 export const getInternalJobPostings = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const postings = resolveDemoData<InternalJobPosting[]>(['internal-job-postings']);
+    return Array.isArray(postings) ? postings : [];
+  }
+
   const { data, error } = await supabase
     .from('internal_job_postings')
     .select('*')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data : [];
 };
 
 export const createInternalJobPosting = async (posting: Omit<InternalJobPosting, 'id' | 'created_at' | 'updated_at'>) => {
@@ -356,6 +378,20 @@ export const createInternalJobPosting = async (posting: Omit<InternalJobPosting,
 
 // Career Statistics
 export const getCareerStatistics = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const stats = resolveDemoData<Record<string, unknown>>(['career-statistics']);
+    return {
+      totalEmployees: (stats?.totalEmployees as number) || 0,
+      activeIDPs: (stats?.activeIDPs as number) || 0,
+      promotionsThisYear: (stats?.promotionsThisYear as number) || 0,
+      skillGapsCovered: (stats?.skillGapsCovered as number) || 0,
+      mentoringPairs: (stats?.mentoringPairs as number) || 0,
+      successionsPlanned: (stats?.successionsPlanned as number) || 0,
+      internalMobility: (stats?.internalMobility as number) || 0,
+      careerSatisfaction: (stats?.careerSatisfaction as number) || 0,
+    };
+  }
+
   // Get employees count
   const { data: employees, error: employeesError } = await supabase
     .from('employees')
@@ -363,6 +399,7 @@ export const getCareerStatistics = async () => {
     .eq('status', 'Ativo');
 
   if (employeesError) throw employeesError;
+  const employeesList = Array.isArray(employees) ? employees : [];
 
   // Get active PDIs
   const { data: activePDIs, error: pdisError } = await supabase
@@ -371,6 +408,7 @@ export const getCareerStatistics = async () => {
     .eq('status', 'Em Andamento');
 
   if (pdisError) throw pdisError;
+  const activePDIsList = Array.isArray(activePDIs) ? activePDIs : [];
 
   // Get mentoring relationships
   const { data: mentoring, error: mentoringError } = await supabase
@@ -379,6 +417,7 @@ export const getCareerStatistics = async () => {
     .eq('status', 'Ativo');
 
   if (mentoringError) throw mentoringError;
+  const mentoringList = Array.isArray(mentoring) ? mentoring : [];
 
   // Get internal job postings
   const { data: jobPostings, error: jobsError } = await supabase
@@ -389,11 +428,11 @@ export const getCareerStatistics = async () => {
   if (jobsError) throw jobsError;
 
   return {
-    totalEmployees: employees?.length || 0,
-    activeIDPs: activePDIs?.length || 0,
+    totalEmployees: employeesList.length,
+    activeIDPs: activePDIsList.length,
     promotionsThisYear: 0, // TODO: Track promotions
     skillGapsCovered: 78, // TODO: Calculate from competency assessments
-    mentoringPairs: mentoring?.length || 0,
+    mentoringPairs: mentoringList.length,
     successionsPlanned: 0, // TODO: Count succession plans
     internalMobility: 15, // TODO: Track internal moves
     careerSatisfaction: 4.2 // TODO: From surveys

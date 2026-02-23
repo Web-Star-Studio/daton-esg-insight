@@ -54,9 +54,15 @@ export function RiskManagementDashboard() {
     );
   }
 
-  const stats = dashboardStats || {};
-  const oppMetrics = opportunityMetrics || {};
-  const occMetrics = occurrenceMetrics || {
+  const stats = dashboardStats && typeof dashboardStats === "object" && !Array.isArray(dashboardStats)
+    ? dashboardStats
+    : {};
+  const oppMetrics = opportunityMetrics && typeof opportunityMetrics === "object" && !Array.isArray(opportunityMetrics)
+    ? opportunityMetrics
+    : {};
+  const occMetrics = occurrenceMetrics && typeof occurrenceMetrics === "object" && !Array.isArray(occurrenceMetrics)
+    ? occurrenceMetrics
+    : {
     total: 0,
     thisYear: 0,
     open: 0,
@@ -67,15 +73,23 @@ export function RiskManagementDashboard() {
     totalFinancialImpact: 0,
     avgResolutionDays: 0
   };
+  const complianceRequirements = Array.isArray(complianceStatus?.requirements) ? complianceStatus.requirements : [];
+  const upcomingReviewsList = Array.isArray(upcomingReviews) ? upcomingReviews : [];
 
   // Preparar dados para gráficos
-  const riskTrendData = stats.trend || [];
-  const opportunityLevelData = Object.entries(oppMetrics.byLevel || {}).map(([level, count]) => ({
+  const riskTrendData = Array.isArray(stats.trend) ? stats.trend : [];
+  const opportunityByLevel = oppMetrics.byLevel && typeof oppMetrics.byLevel === "object" && !Array.isArray(oppMetrics.byLevel)
+    ? oppMetrics.byLevel
+    : {};
+  const occurrenceByImpact = occMetrics.byImpact && typeof occMetrics.byImpact === "object" && !Array.isArray(occMetrics.byImpact)
+    ? occMetrics.byImpact
+    : {};
+  const opportunityLevelData = Object.entries(opportunityByLevel).map(([level, count]) => ({
     name: level,
     value: count as number
   }));
 
-  const impactData = Object.entries(occMetrics.byImpact || {}).map(([impact, count]) => ({
+  const impactData = Object.entries(occurrenceByImpact).map(([impact, count]) => ({
     name: impact,
     value: count as number
   }));
@@ -244,7 +258,7 @@ export function RiskManagementDashboard() {
             <Progress value={complianceStatus?.compliance || 0} className="w-full" />
             
             <div className="space-y-2">
-              {complianceStatus?.requirements?.map((req: any, index: number) => (
+              {complianceRequirements.map((req: any, index: number) => (
                 <div key={index} className="flex items-center justify-between text-sm">
                   <span>{req.name}</span>
                   <Badge 
@@ -261,7 +275,7 @@ export function RiskManagementDashboard() {
       </div>
 
       {/* Revisões Pendentes */}
-      {upcomingReviews && upcomingReviews.length > 0 && (
+      {upcomingReviewsList.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -271,7 +285,7 @@ export function RiskManagementDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {upcomingReviews.slice(0, 5).map((item: any) => (
+              {upcomingReviewsList.slice(0, 5).map((item: any) => (
                 <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">

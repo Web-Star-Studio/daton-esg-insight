@@ -41,8 +41,11 @@ interface IntelligentInsightsProps {
 }
 
 export function IntelligentInsights({ insights, recommendations, isLoading }: IntelligentInsightsProps) {
+  const normalizedInsights = Array.isArray(insights) ? insights : [];
+  const normalizedRecommendations = Array.isArray(recommendations) ? recommendations : [];
+
   // Convert string insights to structured format if needed
-  const structuredInsights: Insight[] = insights.map(insight => {
+  const structuredInsights: Insight[] = normalizedInsights.map(insight => {
     if (typeof insight === 'string') {
       return {
         type: insight.includes('redução') || insight.includes('oportunidade') ? 'opportunity' : 
@@ -87,11 +90,11 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
     .sort((a, b) => b.confidence - a.confidence)
     .slice(0, 6);
 
-  const highPriorityRecommendations = recommendations
+  const highPriorityRecommendations = normalizedRecommendations
     .filter(r => r.priority === 'high')
     .slice(0, 3);
 
-  const quickWins = recommendations
+  const quickWins = normalizedRecommendations
     .filter(r => r.potential_reduction && r.potential_reduction >= 10)
     .sort((a, b) => (b.potential_reduction || 0) - (a.potential_reduction || 0))
     .slice(0, 3);
@@ -288,7 +291,7 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
             <Lightbulb className="h-5 w-5" />
             <span>Todas as Recomendações</span>
             <Badge variant="outline" className="ml-auto">
-              {recommendations.length} itens
+              {normalizedRecommendations.length} itens
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -297,7 +300,7 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
             <SmartSkeleton variant="list" className="space-y-3" />
           ) : (
             <div className="space-y-3">
-              {recommendations.map((rec, index) => (
+              {normalizedRecommendations.map((rec, index) => (
                 <div key={index} className="flex items-center space-x-4 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                   <div className="flex-shrink-0">
                     <Badge variant={getPriorityColor(rec.priority) as "default" | "destructive" | "secondary" | "outline"}>
@@ -323,7 +326,7 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
                 </div>
               ))}
               
-              {recommendations.length === 0 && (
+              {normalizedRecommendations.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Lightbulb className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Nenhuma recomendação disponível</p>

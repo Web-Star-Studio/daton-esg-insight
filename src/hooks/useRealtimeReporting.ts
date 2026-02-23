@@ -52,16 +52,18 @@ export const useRealtimeReporting = () => {
   };
 
   const getUrgentReports = () => {
-    return templates?.filter(template => {
+    const templatesList = Array.isArray(templates) ? templates : [];
+    return templatesList.filter(template => {
       const daysUntilGeneration = Math.ceil(
         (new Date(template.next_generation).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
       );
       return daysUntilGeneration <= 3 && daysUntilGeneration > 0;
-    }) || [];
+    });
   };
 
   const getHighPriorityInsights = () => {
-    return insights?.filter(insight => insight.priority === 'high' && insight.actionable) || [];
+    const insightsList = Array.isArray(insights) ? insights : [];
+    return insightsList.filter(insight => insight.priority === 'high' && insight.actionable);
   };
 
   const getReportingStats = () => {

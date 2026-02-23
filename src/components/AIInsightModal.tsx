@@ -28,6 +28,8 @@ export function AIInsightModal({ open, onOpenChange, insight }: AIInsightModalPr
   const navigate = useNavigate()
 
   if (!insight) return null
+  const recommendations = Array.isArray(insight.recommendations) ? insight.recommendations : []
+  const confidence = Number(insight.confidence) || 0
 
   const getInsightIcon = () => {
     switch (insight.insight_type) {
@@ -85,7 +87,7 @@ export function AIInsightModal({ open, onOpenChange, insight }: AIInsightModalPr
             {getInsightIcon()}
             <span>Insights da IA</span>
             <Badge variant="secondary" className="ml-auto">
-              {Math.round(insight.confidence * 100)}% confiança
+              {Math.round(confidence * 100)}% confiança
             </Badge>
           </DialogTitle>
         </DialogHeader>
@@ -138,7 +140,7 @@ export function AIInsightModal({ open, onOpenChange, insight }: AIInsightModalPr
           )}
 
           {/* Recomendações */}
-          {insight.recommendations.length > 0 && (
+          {recommendations.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Lightbulb className="h-5 w-5 text-warning" />
@@ -146,7 +148,7 @@ export function AIInsightModal({ open, onOpenChange, insight }: AIInsightModalPr
               </h3>
               
               <div className="space-y-3">
-                {insight.recommendations.map((recommendation, index) => (
+                {recommendations.map((recommendation, index) => (
                   <Card key={index} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">

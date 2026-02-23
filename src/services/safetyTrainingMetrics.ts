@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
 
 export interface SafetyTrainingMetric {
   programId: string;
@@ -41,6 +42,22 @@ const isSafetyTraining = (programName: string, category: string): boolean => {
 };
 
 export const getSafetyTrainingMetrics = async (companyId: string): Promise<SafetyTrainingMetricsResult> => {
+  if (isDemoRuntimeEnabled()) {
+    const metrics = resolveDemoData<SafetyTrainingMetricsResult>(['safety-training-metrics', companyId]);
+    if (metrics && Array.isArray(metrics.programs)) {
+      return metrics;
+    }
+
+    return {
+      programs: [],
+      overallCompliance: 0,
+      totalHours: 0,
+      totalEmployeesTrained: 0,
+      pendingTrainings: 0,
+      expiredTrainings: 0,
+    };
+  }
+
   const { data: programs, error: programsError } = await supabase
     .from('training_programs')
     .select('id, name, category, duration_hours, status')

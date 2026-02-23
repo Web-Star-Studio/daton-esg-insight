@@ -187,7 +187,7 @@ export async function getLicenses(filters?: LicenseFilters): Promise<LicenseList
       throw error
     }
 
-    return data || []
+    return Array.isArray(data) ? data : []
   } catch (error) {
     logger.error('Error in getLicenses', error, 'compliance')
     throw error
@@ -468,7 +468,7 @@ export async function uploadLicenseDocument(licenseId: string, file: File): Prom
 // Get license statistics for dashboard
 export async function getLicenseStats(): Promise<LicenseStats> {
   try {
-    const { data: licenses, error } = await supabase
+    const { data: licensesData, error } = await supabase
       .from('licenses')
       .select('status, expiration_date')
 
@@ -480,15 +480,16 @@ export async function getLicenseStats(): Promise<LicenseStats> {
     const today = new Date()
     const futureDate = new Date()
     futureDate.setDate(today.getDate() + 90) // 90 days from now
+    const licenses = Array.isArray(licensesData) ? licensesData : []
 
     const stats: LicenseStats = {
-      total: licenses?.length || 0,
+      total: licenses.length,
       active: 0,
       upcoming: 0,
       expired: 0
     }
 
-    licenses?.forEach(license => {
+    licenses.forEach(license => {
       const expirationDate = new Date(license.expiration_date)
       
       if (license.status === 'Ativa') {

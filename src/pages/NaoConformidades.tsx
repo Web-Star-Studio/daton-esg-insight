@@ -176,6 +176,7 @@ export default function NaoConformidades() {
     },
     staleTime: 30 * 1000, // 30 segundos
   });
+  const nonConformitiesList = Array.isArray(nonConformities) ? nonConformities : [];
 
   const createNCMutation = useMutation({
     mutationFn: async (ncData: typeof newNCData) => {
@@ -339,21 +340,21 @@ export default function NaoConformidades() {
   }
 
   // Stats calculations - usando funções normalizadas
-  const totalNCs = nonConformities?.length || 0;
-  const openNCs = nonConformities?.filter(nc => isNCOpen(nc.status)).length || 0;
-  const criticalNCs = nonConformities?.filter(nc => nc.severity === "Crítica" && !isNCClosed(nc.status)).length || 0;
-  const closedNCs = nonConformities?.filter(nc => isNCClosed(nc.status)).length || 0;
+  const totalNCs = nonConformitiesList.length;
+  const openNCs = nonConformitiesList.filter(nc => isNCOpen(nc.status)).length;
+  const criticalNCs = nonConformitiesList.filter(nc => nc.severity === "Crítica" && !isNCClosed(nc.status)).length;
+  const closedNCs = nonConformitiesList.filter(nc => isNCClosed(nc.status)).length;
 
   // Status filter counts
   const statusCounts = {
     all: totalNCs,
-    aberta: nonConformities?.filter(nc => isNCOpen(nc.status)).length || 0,
-    em_tratamento: nonConformities?.filter(nc => isNCInProgress(nc.status)).length || 0,
-    encerrada: nonConformities?.filter(nc => isNCClosed(nc.status)).length || 0,
+    aberta: nonConformitiesList.filter(nc => isNCOpen(nc.status)).length,
+    em_tratamento: nonConformitiesList.filter(nc => isNCInProgress(nc.status)).length,
+    encerrada: nonConformitiesList.filter(nc => isNCClosed(nc.status)).length,
   };
 
   // Filtered NCs based on status filter
-  const filteredNCs = nonConformities?.filter(nc => {
+  const filteredNCs = nonConformitiesList.filter(nc => {
     if (statusFilter === "all") return true;
     if (statusFilter === "aberta") return isNCOpen(nc.status);
     if (statusFilter === "em_tratamento") return isNCInProgress(nc.status);
@@ -588,7 +589,7 @@ export default function NaoConformidades() {
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-6">
-          <NCAdvancedDashboard nonConformities={(nonConformities || []) as any} />
+          <NCAdvancedDashboard nonConformities={nonConformitiesList as any} />
         </TabsContent>
 
       <TabsContent value="analytics" className="mt-6">
@@ -643,7 +644,7 @@ export default function NaoConformidades() {
           </div>
         </CardHeader>
         <CardContent>
-          {nonConformities?.length ? (
+          {nonConformitiesList.length ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -658,7 +659,7 @@ export default function NaoConformidades() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredNCs?.map((nc) => (
+                {filteredNCs.map((nc) => (
                   <TableRow key={nc.id}>
                     <TableCell className="font-mono text-sm">
                       {nc.nc_number}

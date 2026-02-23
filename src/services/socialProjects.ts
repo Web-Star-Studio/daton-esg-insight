@@ -26,7 +26,7 @@ export const getSocialProjects = async () => {
     .order('start_date', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data : [];
 };
 
 export const getSocialProject = async (id: string) => {
@@ -79,18 +79,19 @@ export const getSocialImpactMetrics = async () => {
 
   if (error) throw error;
 
-  const totalProjects = projects.length;
-  const activeProjects = projects.filter(p => p.status === 'Em Andamento').length;
-  const completedProjects = projects.filter(p => p.status === 'Concluído').length;
-  const totalInvestment = projects.reduce((sum, p) => sum + (p.invested_amount || 0), 0);
-  const totalBudget = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
+  const projectsList = Array.isArray(projects) ? projects : [];
+  const totalProjects = projectsList.length;
+  const activeProjects = projectsList.filter(p => p.status === 'Em Andamento').length;
+  const completedProjects = projectsList.filter(p => p.status === 'Concluído').length;
+  const totalInvestment = projectsList.reduce((sum, p) => sum + (p.invested_amount || 0), 0);
+  const totalBudget = projectsList.reduce((sum, p) => sum + (p.budget || 0), 0);
 
-  const statusDistribution = projects.reduce((acc, project) => {
+  const statusDistribution = projectsList.reduce((acc, project) => {
     acc[project.status] = (acc[project.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const beneficiariesReached = projects.reduce((sum, project) => {
+  const beneficiariesReached = projectsList.reduce((sum, project) => {
     const metrics = project.impact_metrics as any;
     return sum + (metrics?.beneficiaries_reached || 0);
   }, 0);

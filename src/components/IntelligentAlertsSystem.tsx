@@ -71,6 +71,8 @@ export function IntelligentAlertsSystem() {
     },
     retry: 2,
   });
+  const normalizedCriticalAlerts = Array.isArray(criticalAlerts) ? criticalAlerts : [];
+  const normalizedUpcomingConditions = Array.isArray(upcomingConditions) ? upcomingConditions : [];
 
   const resolveAlertMutation = useMutation({
     mutationFn: resolveAlert,
@@ -93,7 +95,7 @@ export function IntelligentAlertsSystem() {
 
   // Gerar predições inteligentes com validação robusta
   const generatePredictions = useCallback((): AlertPrediction[] => {
-    if (!upcomingConditions || upcomingConditions.length === 0) {
+    if (normalizedUpcomingConditions.length === 0) {
       return [];
     }
 
@@ -101,7 +103,7 @@ export function IntelligentAlertsSystem() {
     
     try {
       // Predições baseadas em condicionantes vencendo
-      upcomingConditions.forEach(condition => {
+      normalizedUpcomingConditions.forEach(condition => {
         if (!condition.due_date) return;
 
         const dueDate = new Date(condition.due_date);
@@ -130,7 +132,7 @@ export function IntelligentAlertsSystem() {
     }
 
     return predictions;
-  }, [upcomingConditions]);
+  }, [normalizedUpcomingConditions]);
 
   const predictions = useMemo(() => generatePredictions(), [generatePredictions]);
 
@@ -174,13 +176,13 @@ export function IntelligentAlertsSystem() {
 
   // Estatísticas calculadas dinamicamente
   const stats = useMemo(() => {
-    const currentAlerts = criticalAlerts?.length || 0;
-    const upcomingIn7Days = upcomingConditions?.filter(c => {
+    const currentAlerts = normalizedCriticalAlerts.length;
+    const upcomingIn7Days = normalizedUpcomingConditions.filter(c => {
       if (!c.due_date) return false;
       const dueDate = new Date(c.due_date);
       if (!isValid(dueDate)) return false;
       return differenceInDays(dueDate, new Date()) <= 7;
-    }).length || 0;
+    }).length;
 
     return {
       currentAlerts,
@@ -188,7 +190,7 @@ export function IntelligentAlertsSystem() {
       predictionsCount: predictions.length,
       resolutionRate: 95 // TODO: Calcular baseado em dados reais
     };
-  }, [criticalAlerts, upcomingConditions, predictions]);
+  }, [normalizedCriticalAlerts, normalizedUpcomingConditions, predictions]);
 
   if (alertsLoading || conditionsLoading) {
     return (
@@ -293,17 +295,17 @@ export function IntelligentAlertsSystem() {
       </div>
 
       {/* Alertas Críticos */}
-      {criticalAlerts && criticalAlerts.length > 0 && (
+      {normalizedCriticalAlerts.length > 0 && (
         <Card className="border-destructive/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Alertas Críticos Ativos ({criticalAlerts.length})
+              Alertas Críticos Ativos ({normalizedCriticalAlerts.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {criticalAlerts.map((alert, index) => (
+              {normalizedCriticalAlerts.map((alert, index) => (
                 <Alert key={index} className={`${getSeverityColor(alert.severity)} overflow-hidden`}>
                   <div className="flex items-start justify-between w-full gap-2">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -321,7 +323,7 @@ export function IntelligentAlertsSystem() {
                         <AlertDescription className="break-words">
                           {alert.message}
                         </AlertDescription>
-                        {alert.due_date && (
+                        {alert.due_date && isValid(new Date(alert.due_date)) && (
                           <p className="text-xs text-muted-foreground mt-2">
                             Prazo: {format(new Date(alert.due_date), "dd/MM/yyyy", { locale: ptBR })}
                           </p>
@@ -400,7 +402,7 @@ export function IntelligentAlertsSystem() {
       )}
 
       {/* Timeline de Condicionantes */}
-      {upcomingConditions && upcomingConditions.length > 0 && (
+      {normalizedUpcomingConditions.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -410,7 +412,7 @@ export function IntelligentAlertsSystem() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {upcomingConditions
+              {normalizedUpcomingConditions
                 .filter(c => c.due_date)
                 .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
                 .slice(0, 10)

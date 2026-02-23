@@ -37,8 +37,8 @@ export function EmissionInsightsDashboard({ dateRange, emissionData }: EmissionI
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const insights = analyticsData?.insights || [];
-  const recommendations = analyticsData?.recommendations || [];
+  const insights = Array.isArray(analyticsData?.insights) ? analyticsData.insights : [];
+  const recommendations = Array.isArray(analyticsData?.recommendations) ? analyticsData.recommendations : [];
   const summary = analyticsData?.summary;
 
   return (
@@ -139,15 +139,15 @@ export function EmissionInsightsDashboard({ dateRange, emissionData }: EmissionI
 
         <TabsContent value="trends" className="space-y-4">
           <TrendAnalysisChart 
-            data={analyticsData?.monthly_trends || []}
+            data={Array.isArray(analyticsData?.monthly_trends) ? analyticsData.monthly_trends : []}
             isLoading={isLoading}
           />
         </TabsContent>
 
         <TabsContent value="hotspots" className="space-y-4">
           <EmissionHotspots 
-            sources={analyticsData?.top_sources || []}
-            categories={analyticsData?.category_breakdown || []}
+            sources={Array.isArray(analyticsData?.top_sources) ? analyticsData.top_sources : []}
+            categories={Array.isArray(analyticsData?.category_breakdown) ? analyticsData.category_breakdown : []}
             isLoading={isLoading}
           />
         </TabsContent>

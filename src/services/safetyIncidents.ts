@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
 
 export interface SafetyIncident {
   id: string;
@@ -23,13 +24,18 @@ export interface SafetyIncident {
 }
 
 export const getSafetyIncidents = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const incidents = resolveDemoData<SafetyIncident[]>(['safety-incidents']);
+    return Array.isArray(incidents) ? incidents : [];
+  }
+
   const { data, error } = await supabase
     .from('safety_incidents')
     .select('*')
     .order('incident_date', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data : [];
 };
 
 export const getSafetyIncident = async (id: string) => {
@@ -76,14 +82,20 @@ export const deleteSafetyIncident = async (id: string) => {
 };
 
 export const getSafetyMetrics = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const metrics = resolveDemoData<Record<string, unknown>>(['safety-metrics']);
+    return metrics ?? {};
+  }
+
   const { data: incidents, error } = await supabase
     .from('safety_incidents')
     .select('*');
 
   if (error) throw error;
+  const incidentsList = Array.isArray(incidents) ? incidents : [];
 
   const currentYear = new Date().getFullYear();
-  const currentYearIncidents = incidents.filter(incident => 
+  const currentYearIncidents = incidentsList.filter(incident => 
     new Date(incident.incident_date).getFullYear() === currentYear
   );
 

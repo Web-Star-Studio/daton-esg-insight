@@ -166,6 +166,7 @@ export function PredictiveDashboard() {
     queryFn: getPredictiveInsights,
     refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
   })
+  const normalizedPredictions = Array.isArray(predictions) ? predictions : [];
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
@@ -249,14 +250,14 @@ export function PredictiveDashboard() {
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        {predictions.length === 0 ? (
+        {normalizedPredictions.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Lightbulb className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Nenhum insight preditivo disponível no momento</p>
             <p className="text-sm">Continue coletando dados para gerar previsões</p>
           </div>
         ) : (
-          predictions.map((prediction) => (
+          normalizedPredictions.map((prediction) => (
             <div key={prediction.id} className="border rounded-lg p-4 space-y-3 overflow-hidden">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 flex-1 min-w-0">

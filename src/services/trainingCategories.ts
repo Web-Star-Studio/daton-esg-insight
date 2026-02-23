@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
 
 export interface TrainingCategory {
   id: string;
@@ -11,6 +12,11 @@ export interface TrainingCategory {
 }
 
 export async function getTrainingCategories(): Promise<TrainingCategory[]> {
+  if (isDemoRuntimeEnabled()) {
+    const categories = resolveDemoData<TrainingCategory[]>(['training-categories']);
+    return Array.isArray(categories) ? categories : [];
+  }
+
   const { data, error } = await supabase
     .from('training_categories')
     .select('*')

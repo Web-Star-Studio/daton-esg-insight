@@ -82,7 +82,7 @@ export default function GestaoRiscos() {
   });
 
   // Query para matrizes de risco
-  const { data: riskMatrices, isLoading: matricesLoading, refetch } = useQuery({
+  const { data: riskMatricesData, isLoading: matricesLoading, refetch } = useQuery({
     queryKey: ['risk-matrices'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -94,6 +94,7 @@ export default function GestaoRiscos() {
       return data as RiskMatrix[];
     },
   });
+  const riskMatrices = Array.isArray(riskMatricesData) ? riskMatricesData : [];
 
   // Handlers dos modais
   const handleCreateMatrix = async () => {
@@ -318,7 +319,7 @@ export default function GestaoRiscos() {
 
         <TabsContent value="matrices" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {riskMatrices?.map((matrix) => (
+            {riskMatrices.map((matrix) => (
               <Card key={matrix.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -354,7 +355,7 @@ export default function GestaoRiscos() {
               </Card>
             ))}
             
-            {!riskMatrices?.length && (
+            {riskMatrices.length === 0 && (
               <Card className="col-span-full">
                 <CardContent className="text-center py-8">
                   <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

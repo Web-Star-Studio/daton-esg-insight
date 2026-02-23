@@ -48,11 +48,16 @@ export default function SeguracaTrabalho() {
   const [inspectionStatusFilter, setInspectionStatusFilter] = useState("all");
 
   // Real data from API
-  const { data: incidents = [], isLoading: incidentsLoading } = useSafetyIncidents();
+  const { data: incidentsData = [], isLoading: incidentsLoading } = useSafetyIncidents();
   const { data: safetyMetrics, isLoading: metricsLoading } = useSafetyMetrics();
-  const { data: inspections = [], isLoading: inspectionsLoading } = useSafetyInspections();
+  const { data: inspectionsData = [], isLoading: inspectionsLoading } = useSafetyInspections();
   const { data: inspectionMetrics } = useSafetyInspectionMetrics();
   const { data: safetyTrainingMetrics, isLoading: trainingMetricsLoading } = useSafetyTrainingMetrics();
+  const incidents = Array.isArray(incidentsData) ? incidentsData : [];
+  const inspections = Array.isArray(inspectionsData) ? inspectionsData : [];
+  const safetyPrograms = Array.isArray(safetyTrainingMetrics?.programs)
+    ? safetyTrainingMetrics.programs
+    : [];
   
   const deleteMutation = useDeleteSafetyIncident();
   const deleteInspectionMutation = useDeleteSafetyInspection();
@@ -351,7 +356,7 @@ export default function SeguracaTrabalho() {
         Status: "Concluído",
         Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
       },
-      ...safetyTrainingMetrics.programs.map(p => ({
+      ...safetyPrograms.map(p => ({
         Indicador: `Programa: ${p.programName}`,
         Valor: `${p.completionRate}%`,
         Status: p.completionRate >= 90 ? "Adequado" : p.expired > 0 ? "Vencidos: " + p.expired : "Atenção",
@@ -953,7 +958,7 @@ export default function SeguracaTrabalho() {
                 <div className="text-center py-8 text-muted-foreground">
                   Carregando dados de treinamento...
                 </div>
-              ) : !safetyTrainingMetrics?.programs || safetyTrainingMetrics.programs.length === 0 ? (
+              ) : safetyPrograms.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-30" />
                   <p>Nenhum treinamento de segurança cadastrado.</p>
@@ -963,7 +968,7 @@ export default function SeguracaTrabalho() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {safetyTrainingMetrics.programs.map(program => (
+                  {safetyPrograms.map(program => (
                     <div key={program.programId} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex-1">
                         <p className="font-medium">{program.programName}</p>

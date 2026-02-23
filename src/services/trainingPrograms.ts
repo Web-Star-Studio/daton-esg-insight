@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { calculateTrainingStatus } from "@/utils/trainingStatusCalculator";
+import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
 
 export interface TrainingProgram {
   id: string;
@@ -48,6 +49,11 @@ export interface EmployeeTraining {
  * Reduz de N+1 queries para apenas 2 queries (programas + avaliações)
  */
 export const getTrainingPrograms = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const programs = resolveDemoData<TrainingProgram[]>(['training-programs']);
+    return Array.isArray(programs) ? programs : [];
+  }
+
   // Query 1: Buscar todos os programas
   const { data: programs, error } = await supabase
     .from('training_programs')
@@ -258,6 +264,11 @@ export const deleteTrainingProgram = async (id: string) => {
 };
 
 export const getEmployeeTrainings = async () => {
+  if (isDemoRuntimeEnabled()) {
+    const trainings = resolveDemoData<any[]>(['employee-trainings']);
+    return Array.isArray(trainings) ? trainings : [];
+  }
+
   // Get employee trainings first
   const { data: trainings, error: trainingError } = await supabase
     .from('employee_trainings')
@@ -356,24 +367,33 @@ export const updateEmployeeTraining = async (id: string, updates: Partial<Employ
 };
 
 export const getTrainingMetrics = async () => {
-  const { data: trainings, error: trainingsError } = await supabase
+  if (isDemoRuntimeEnabled()) {
+    const metrics = resolveDemoData<Record<string, unknown>>(['training-metrics']);
+    return metrics ?? {};
+  }
+
+  const { data: trainingsData, error: trainingsError } = await supabase
     .from('employee_trainings')
     .select('*');
 
   if (trainingsError) throw trainingsError;
 
-  const { data: programs, error: programsError } = await supabase
+  const { data: programsData, error: programsError } = await supabase
     .from('training_programs')
     .select('*');
 
   if (programsError) throw programsError;
 
-  const { data: employees, error: employeesError } = await supabase
+  const { data: employeesData, error: employeesError } = await supabase
     .from('employees')
     .select('id, full_name, department')
     .eq('status', 'Ativo');
 
   if (employeesError) throw employeesError;
+
+  const trainings = Array.isArray(trainingsData) ? trainingsData : [];
+  const programs = Array.isArray(programsData) ? programsData : [];
+  const employees = Array.isArray(employeesData) ? employeesData : [];
 
   const totalTrainings = trainings.length;
   const completedTrainings = trainings.filter(t => t.status === 'Concluído').length;
@@ -568,6 +588,20 @@ export const checkExistingEnrollments = async (
   programId: string,
   employeeIds: string[]
 ): Promise<{ alreadyEnrolled: string[]; notEnrolled: string[] }> => {
+  if (isDemoRuntimeEnabled()) {
+    const trainings = resolveDemoData<Array<{ training_program_id?: string; employee_id?: string }>>(['employee-trainings']);
+    const enrolledSet = new Set(
+      (Array.isArray(trainings) ? trainings : [])
+        .filter((entry) => entry.training_program_id === programId && Boolean(entry.employee_id))
+        .map((entry) => entry.employee_id as string),
+    );
+
+    return {
+      alreadyEnrolled: employeeIds.filter((id) => enrolledSet.has(id)),
+      notEnrolled: employeeIds.filter((id) => !enrolledSet.has(id)),
+    };
+  }
+
   const { data, error } = await supabase
     .from('employee_trainings')
     .select('employee_id')

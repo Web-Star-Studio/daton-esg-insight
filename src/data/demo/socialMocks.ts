@@ -5,21 +5,130 @@
 const DEMO_COMPANY_ID = 'demo-company-001';
 
 const demoEmployees = [
-  { id: 'emp-1', full_name: 'Ana Silva', position: 'Gerente de Operações', department: 'Operações', status: 'Ativo', gender: 'Feminino', hire_date: '2020-03-15', email: 'ana.silva@demo.com', company_id: DEMO_COMPANY_ID },
-  { id: 'emp-2', full_name: 'Carlos Santos', position: 'Analista Ambiental Sr', department: 'Meio Ambiente', status: 'Ativo', gender: 'Masculino', hire_date: '2019-06-01', email: 'carlos.santos@demo.com', company_id: DEMO_COMPANY_ID },
-  { id: 'emp-3', full_name: 'Mariana Costa', position: 'Coordenadora de RH', department: 'Recursos Humanos', status: 'Ativo', gender: 'Feminino', hire_date: '2021-01-10', email: 'mariana.costa@demo.com', company_id: DEMO_COMPANY_ID },
-  { id: 'emp-4', full_name: 'Roberto Oliveira', position: 'Técnico de Segurança', department: 'SST', status: 'Ativo', gender: 'Masculino', hire_date: '2018-08-20', email: 'roberto.oliveira@demo.com', company_id: DEMO_COMPANY_ID },
-  { id: 'emp-5', full_name: 'Juliana Lima', position: 'Diretora Financeira', department: 'Financeiro', status: 'Ativo', gender: 'Feminino', hire_date: '2017-02-01', email: 'juliana.lima@demo.com', company_id: DEMO_COMPANY_ID },
-  { id: 'emp-6', full_name: 'Pedro Almeida', position: 'Engenheiro de Qualidade', department: 'Qualidade', status: 'Ativo', gender: 'Masculino', hire_date: '2022-04-15', email: 'pedro.almeida@demo.com', company_id: DEMO_COMPANY_ID },
-  { id: 'emp-7', full_name: 'Fernanda Rocha', position: 'Analista de Compliance', department: 'Jurídico', status: 'Ativo', gender: 'Feminino', hire_date: '2023-01-05', email: 'fernanda.rocha@demo.com', company_id: DEMO_COMPANY_ID },
-  { id: 'emp-8', full_name: 'Lucas Mendes', position: 'Supervisor de Produção', department: 'Produção', status: 'Ativo', gender: 'Masculino', hire_date: '2019-11-01', email: 'lucas.mendes@demo.com', company_id: DEMO_COMPANY_ID },
+  { id: 'emp-1', employee_code: 'A001', cpf: '123.456.789-01', full_name: 'Ana Silva', position: 'Gerente de Operações', department: 'Operações', status: 'Ativo', gender: 'Feminino', hire_date: '2020-03-15', employment_type: 'CLT', location: 'São Paulo', salary: 18500, email: 'ana.silva@demo.com', phone: '(11) 99111-0001', company_id: DEMO_COMPANY_ID, created_at: '2020-03-15T09:00:00Z', updated_at: '2026-01-15T09:00:00Z' },
+  { id: 'emp-2', employee_code: 'A002', cpf: '234.567.890-12', full_name: 'Carlos Santos', position: 'Analista Ambiental Sr', department: 'Meio Ambiente', status: 'Ativo', gender: 'Masculino', hire_date: '2019-06-01', employment_type: 'CLT', location: 'Rio de Janeiro', salary: 12400, email: 'carlos.santos@demo.com', phone: '(21) 99222-0002', company_id: DEMO_COMPANY_ID, created_at: '2019-06-01T09:00:00Z', updated_at: '2026-01-15T09:00:00Z' },
+  { id: 'emp-3', employee_code: 'A003', cpf: '345.678.901-23', full_name: 'Mariana Costa', position: 'Coordenadora de RH', department: 'Recursos Humanos', status: 'Ativo', gender: 'Feminino', hire_date: '2021-01-10', employment_type: 'CLT', location: 'São Paulo', salary: 11200, email: 'mariana.costa@demo.com', phone: '(11) 99333-0003', company_id: DEMO_COMPANY_ID, created_at: '2021-01-10T09:00:00Z', updated_at: '2026-01-15T09:00:00Z' },
+  { id: 'emp-4', employee_code: 'A004', cpf: '456.789.012-34', full_name: 'Roberto Oliveira', position: 'Técnico de Segurança', department: 'SST', status: 'Ativo', gender: 'Masculino', hire_date: '2018-08-20', employment_type: 'CLT', location: 'São Paulo', salary: 6900, email: 'roberto.oliveira@demo.com', phone: '(11) 99444-0004', company_id: DEMO_COMPANY_ID, created_at: '2018-08-20T09:00:00Z', updated_at: '2026-01-15T09:00:00Z' },
+  { id: 'emp-5', employee_code: 'A005', cpf: '567.890.123-45', full_name: 'Juliana Lima', position: 'Diretora Financeira', department: 'Financeiro', status: 'Ativo', gender: 'Feminino', hire_date: '2017-02-01', employment_type: 'CLT', location: 'São Paulo', salary: 28000, email: 'juliana.lima@demo.com', phone: '(11) 99555-0005', company_id: DEMO_COMPANY_ID, created_at: '2017-02-01T09:00:00Z', updated_at: '2026-01-15T09:00:00Z' },
+  { id: 'emp-6', employee_code: 'A006', cpf: '678.901.234-56', full_name: 'Pedro Almeida', position: 'Engenheiro de Qualidade', department: 'Qualidade', status: 'Ativo', gender: 'Masculino', hire_date: '2022-04-15', employment_type: 'CLT', location: 'São Paulo', salary: 9800, email: 'pedro.almeida@demo.com', phone: '(11) 99666-0006', company_id: DEMO_COMPANY_ID, created_at: '2022-04-15T09:00:00Z', updated_at: '2026-01-15T09:00:00Z' },
+  { id: 'emp-7', employee_code: 'A007', cpf: '789.012.345-67', full_name: 'Fernanda Rocha', position: 'Analista de Compliance', department: 'Jurídico', status: 'Inativo', gender: 'Feminino', hire_date: '2023-01-05', employment_type: 'CLT', location: 'Belo Horizonte', salary: 9200, email: 'fernanda.rocha@demo.com', phone: '(31) 99777-0007', company_id: DEMO_COMPANY_ID, created_at: '2023-01-05T09:00:00Z', updated_at: '2026-01-15T09:00:00Z' },
+  { id: 'emp-8', employee_code: 'A008', cpf: '890.123.456-78', full_name: 'Lucas Mendes', position: 'Supervisor de Produção', department: 'Produção', status: 'Ativo', gender: 'Masculino', hire_date: '2019-11-01', employment_type: 'CLT', location: 'São Paulo', salary: 8600, email: 'lucas.mendes@demo.com', phone: '(11) 99888-0008', company_id: DEMO_COMPANY_ID, created_at: '2019-11-01T09:00:00Z', updated_at: '2026-01-15T09:00:00Z' },
 ];
+
+const DEMO_EMPLOYEE_DEPARTMENTS = [...new Set(demoEmployees.map((employee) => employee.department))];
+
+const DEMO_EMPLOYEE_STATS = {
+  totalEmployees: demoEmployees.length,
+  activeEmployees: demoEmployees.filter((employee) => employee.status === 'Ativo').length,
+  departments: DEMO_EMPLOYEE_DEPARTMENTS.length,
+  genderDistribution: {
+    Feminino: demoEmployees.filter((employee) => employee.gender === 'Feminino').length,
+    Masculino: demoEmployees.filter((employee) => employee.gender === 'Masculino').length,
+  },
+  avgSalary: Math.round(
+    demoEmployees.reduce((sum, employee) => sum + (employee.salary || 0), 0) / demoEmployees.length,
+  ),
+};
+
+const DEMO_SOCIAL_FILTER_OPTIONS = {
+  locations: [...new Set(demoEmployees.map((employee) => employee.location).filter(Boolean))],
+  departments: DEMO_EMPLOYEE_DEPARTMENTS,
+  positions: [...new Set(demoEmployees.map((employee) => employee.position).filter(Boolean))],
+};
 
 const DEMO_TRAINING_CATEGORIES = [
   { id: 'cat-1', name: 'Segurança', description: 'Treinamentos obrigatórios de SST', company_id: DEMO_COMPANY_ID, created_at: '2025-01-10T00:00:00Z', updated_at: '2026-01-10T00:00:00Z' },
   { id: 'cat-2', name: 'Ambiental', description: 'Capacitações de gestão ambiental', company_id: DEMO_COMPANY_ID, created_at: '2025-01-10T00:00:00Z', updated_at: '2026-01-10T00:00:00Z' },
   { id: 'cat-3', name: 'Desenvolvimento', description: 'Desenvolvimento de liderança e competências', company_id: DEMO_COMPANY_ID, created_at: '2025-01-10T00:00:00Z', updated_at: '2026-01-10T00:00:00Z' },
   { id: 'cat-4', name: 'Compliance', description: 'Ética, LGPD e controles internos', company_id: DEMO_COMPANY_ID, created_at: '2025-01-10T00:00:00Z', updated_at: '2026-01-10T00:00:00Z' },
+];
+
+const DEMO_TRAINING_PROGRAMS = [
+  {
+    id: '1',
+    company_id: DEMO_COMPANY_ID,
+    name: 'NR-12 Segurança em Máquinas',
+    description: 'Capacitação obrigatória para operação segura de máquinas industriais.',
+    category: 'Segurança',
+    duration_hours: 16,
+    is_mandatory: true,
+    valid_for_months: 12,
+    start_date: '2026-01-15',
+    end_date: '2026-01-16',
+    created_by_user_id: 'demo-user-1',
+    status: 'Concluído',
+    responsible_name: 'João Pereira',
+    created_at: '2025-12-10T09:00:00Z',
+    updated_at: '2026-01-30T18:00:00Z',
+  },
+  {
+    id: '2',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Gestão de Resíduos Sólidos',
+    description: 'Boas práticas de segregação, armazenamento e destinação de resíduos.',
+    category: 'Ambiental',
+    duration_hours: 8,
+    is_mandatory: true,
+    valid_for_months: 24,
+    start_date: '2026-01-20',
+    end_date: '2026-01-20',
+    created_by_user_id: 'demo-user-1',
+    status: 'Concluído',
+    responsible_name: 'Maria Santos',
+    created_at: '2025-12-12T10:00:00Z',
+    updated_at: '2026-01-25T17:30:00Z',
+  },
+  {
+    id: '3',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Liderança e Gestão de Equipes',
+    description: 'Treinamento focado em liderança situacional e gestão de desempenho.',
+    category: 'Desenvolvimento',
+    duration_hours: 24,
+    is_mandatory: false,
+    valid_for_months: 36,
+    start_date: '2026-02-01',
+    end_date: '2026-02-03',
+    created_by_user_id: 'demo-user-1',
+    status: 'Em Andamento',
+    responsible_name: 'Ricardo Lima',
+    created_at: '2026-01-05T11:00:00Z',
+    updated_at: '2026-02-03T14:10:00Z',
+  },
+  {
+    id: '4',
+    company_id: DEMO_COMPANY_ID,
+    name: 'Primeiros Socorros',
+    description: 'Procedimentos iniciais de atendimento em emergências ocupacionais.',
+    category: 'Segurança',
+    duration_hours: 12,
+    is_mandatory: true,
+    valid_for_months: 24,
+    start_date: '2026-03-15',
+    end_date: '2026-03-16',
+    created_by_user_id: 'demo-user-1',
+    status: 'Planejado',
+    responsible_name: 'Dra. Ana Souza',
+    created_at: '2026-01-22T09:45:00Z',
+    updated_at: '2026-01-22T09:45:00Z',
+  },
+  {
+    id: '5',
+    company_id: DEMO_COMPANY_ID,
+    name: 'ISO 14001 - Auditor Interno',
+    description: 'Formação para condução de auditorias internas do sistema de gestão ambiental.',
+    category: 'Compliance',
+    duration_hours: 40,
+    is_mandatory: false,
+    valid_for_months: 36,
+    start_date: '2025-11-01',
+    end_date: '2025-11-05',
+    created_by_user_id: 'demo-user-1',
+    status: 'Pendente Avaliação',
+    responsible_name: 'Paulo Alves',
+    created_at: '2025-09-18T08:30:00Z',
+    updated_at: '2026-01-10T12:00:00Z',
+  },
 ];
 
 const DEMO_EMPLOYEE_TRAININGS = [
@@ -79,6 +188,40 @@ const DEMO_EMPLOYEE_TRAININGS = [
     training_program: { id: '5', name: 'ISO 14001 - Auditor Interno', category: 'Compliance', is_mandatory: false, duration_hours: 40 },
   },
 ];
+
+const DEMO_ACTIVE_EMPLOYEES_FOR_TRAINING = demoEmployees
+  .filter((employee) => employee.status === 'Ativo')
+  .map((employee) => ({
+    id: employee.id,
+    full_name: employee.full_name,
+    employee_code: employee.employee_code,
+    department: employee.department,
+  }));
+
+const DEMO_TRAINING_PARTICIPANTS = DEMO_EMPLOYEE_TRAININGS.map((training) => ({
+  id: training.id,
+  employee_id: training.employee_id,
+  employee_name: training.employee?.full_name || "N/A",
+  employee_code: training.employee?.employee_code || "N/A",
+  department: training.employee?.department || "N/A",
+  status: training.status,
+}));
+
+const DEMO_TRAINING_EXPORT_PREVIEW = {
+  headers: ['Funcionário', 'Filial', 'Setor', 'Função', 'Horas Totais', 'Treinamentos'],
+  rows: [
+    ['Pedro Almeida', 'São Paulo', 'Qualidade', 'Engenheiro de Qualidade', 56, 2],
+    ['Ana Silva', 'São Paulo', 'Operações', 'Gerente de Operações', 48, 2],
+    ['Carlos Santos', 'Rio de Janeiro', 'Meio Ambiente', 'Analista Ambiental Sr', 44, 2],
+    ['Roberto Oliveira', 'São Paulo', 'SST', 'Técnico de Segurança', 40, 2],
+    ['Mariana Costa', 'São Paulo', 'Recursos Humanos', 'Coordenadora de RH', 36, 1],
+  ],
+  summary: {
+    totalHours: 224,
+    totalEmployees: 5,
+    avgHours: 44.8,
+  },
+};
 
 const DEMO_TRAINING_METRICS = {
   totalTrainings: 126,
@@ -142,7 +285,7 @@ const DEMO_SAFETY_METRICS = {
   avgResolutionTime: 9.5,
   severityDistribution: {
     Baixa: 1,
-    Moderada: 1,
+    Média: 1,
     Alta: 1,
   },
   incidentTrend: [
@@ -307,6 +450,196 @@ const DEMO_EFFICACY_DASHBOARD_METRICS = {
   overdue: DEMO_EFFICACY_EVALUATIONS.filter((item) => item.status === 'Atrasado').length,
 };
 
+const DEMO_BENEFITS = [
+  { id: 'ben-1', name: 'Vale Refeição', type: 'Alimentação', description: 'Cartão alimentação diário para colaboradores', monthly_cost: 770, is_active: true, participants: 8, total_employees: 8, provider: 'VR Brasil', contract_number: 'VR-2025-001', company_id: DEMO_COMPANY_ID, created_at: '2025-01-10T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+  { id: 'ben-2', name: 'Plano de Saúde', type: 'Saúde', description: 'Plano nacional com cobertura ambulatorial e hospitalar', monthly_cost: 850, is_active: true, participants: 7, total_employees: 8, provider: 'Saúde+ Nacional', contract_number: 'PS-2024-022', company_id: DEMO_COMPANY_ID, created_at: '2024-06-01T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+  { id: 'ben-3', name: 'Vale Transporte', type: 'Transporte', description: 'Subsídio mensal para deslocamento', monthly_cost: 220, is_active: true, participants: 6, total_employees: 8, provider: 'Mobilidade SP', contract_number: 'VT-2024-119', company_id: DEMO_COMPANY_ID, created_at: '2024-06-01T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+  { id: 'ben-4', name: 'Seguro de Vida', type: 'Seguro', description: 'Cobertura de vida e invalidez', monthly_cost: 120, is_active: true, participants: 8, total_employees: 8, provider: 'Seguradora Alfa', contract_number: 'SV-2025-073', company_id: DEMO_COMPANY_ID, created_at: '2025-02-01T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+];
+
+const DEMO_BENEFIT_STATS = {
+  totalBenefitsCost: DEMO_BENEFITS.reduce((sum, benefit) => sum + benefit.monthly_cost, 0),
+  benefitParticipation: 88,
+  totalEnrollments: 29,
+  totalEmployees: demoEmployees.length,
+};
+
+const DEMO_SAFETY_INSPECTIONS = [
+  { id: 'ins-1', company_id: DEMO_COMPANY_ID, title: 'Inspeção mensal linha A', inspection_type: 'area_trabalho', area_location: 'Linha de Produção A', inspector_name: 'Roberto Oliveira', inspection_date: '2026-02-12', status: 'Concluída', result: 'Conforme', score: 94, checklist_items: [], observations: 'Uso correto de EPI em todos os postos', created_at: '2026-02-12T08:00:00Z', updated_at: '2026-02-12T09:00:00Z' },
+  { id: 'ins-2', company_id: DEMO_COMPANY_ID, title: 'Inspeção de empilhadeiras', inspection_type: 'equipamentos', area_location: 'Armazém Central', inspector_name: 'Mariana Costa', inspection_date: '2026-02-19', status: 'Em Andamento', result: undefined, score: undefined, checklist_items: [], observations: 'Treinamento complementar em andamento', created_at: '2026-02-19T09:00:00Z', updated_at: '2026-02-19T10:00:00Z' },
+  { id: 'ins-3', company_id: DEMO_COMPANY_ID, title: 'Inspeção brigada de emergência', inspection_type: 'ronda_seguranca', area_location: 'Bloco Administrativo', inspector_name: 'Ana Silva', inspection_date: '2026-02-25', status: 'Pendente', result: undefined, score: undefined, checklist_items: [], observations: 'Agendada para próxima semana', created_at: '2026-02-18T11:00:00Z', updated_at: '2026-02-18T11:00:00Z' },
+];
+
+const DEMO_SAFETY_INSPECTION_METRICS = {
+  total: DEMO_SAFETY_INSPECTIONS.length,
+  pending: DEMO_SAFETY_INSPECTIONS.filter((inspection) => inspection.status === 'Pendente').length,
+  inProgress: DEMO_SAFETY_INSPECTIONS.filter((inspection) => inspection.status === 'Em Andamento').length,
+  completed: DEMO_SAFETY_INSPECTIONS.filter((inspection) => inspection.status === 'Concluída').length,
+  conformeRate: 100,
+  thisMonth: 3,
+  lastMonth: 2,
+};
+
+const DEMO_SAFETY_TRAINING_METRICS = {
+  programs: [
+    { programId: '1', programName: 'NR-12 Segurança em Máquinas', category: 'Segurança', totalEnrolled: 4, completed: 3, inProgress: 1, pending: 0, completionRate: 75, expired: 0, durationHours: 16 },
+    { programId: '4', programName: 'Primeiros Socorros', category: 'Segurança', totalEnrolled: 3, completed: 1, inProgress: 1, pending: 1, completionRate: 33, expired: 0, durationHours: 12 },
+  ],
+  overallCompliance: 67,
+  totalHours: 60,
+  totalEmployeesTrained: 4,
+  pendingTrainings: 3,
+  expiredTrainings: 0,
+};
+
+const DEMO_CAREER_DEVELOPMENT_PLANS = [
+  {
+    id: 'cdp-1',
+    company_id: DEMO_COMPANY_ID,
+    employee_id: 'emp-3',
+    current_position: 'Coordenadora de RH',
+    target_position: 'Gerente de RH',
+    start_date: '2025-06-01',
+    target_date: '2026-12-15',
+    status: 'Em Andamento',
+    progress_percentage: 58,
+    mentor_id: 'emp-5',
+    goals: [{ title: 'Concluir trilha de liderança', status: 'in_progress' }],
+    skills_to_develop: [{ skill_name: 'Gestão de Pessoas', current_level: 'intermediate', target_level: 'advanced' }],
+    development_activities: [{ activity: 'Mentoria mensal com diretoria', frequency: 'Mensal' }],
+    notes: 'Bom avanço no último trimestre',
+    created_by_user_id: 'demo-user-1',
+    created_at: '2025-06-01T10:00:00Z',
+    updated_at: '2026-02-10T10:00:00Z',
+    employee: { id: 'emp-3', full_name: 'Mariana Costa', employee_code: 'A003', department: 'Recursos Humanos' },
+    mentor: { id: 'emp-5', full_name: 'Juliana Lima' },
+  },
+  {
+    id: 'cdp-2',
+    company_id: DEMO_COMPANY_ID,
+    employee_id: 'emp-6',
+    current_position: 'Engenheiro de Qualidade',
+    target_position: 'Coordenador de Qualidade',
+    start_date: '2025-09-10',
+    target_date: '2026-11-30',
+    status: 'Em Andamento',
+    progress_percentage: 44,
+    mentor_id: 'emp-1',
+    goals: [{ title: 'Certificação Green Belt', status: 'in_progress' }],
+    skills_to_develop: [{ skill_name: 'Gestão de Projetos', current_level: 'beginner', target_level: 'intermediate' }],
+    development_activities: [{ activity: 'Job rotation entre áreas', frequency: 'Bimestral' }],
+    notes: 'Necessita reforço em apresentação executiva',
+    created_by_user_id: 'demo-user-1',
+    created_at: '2025-09-10T10:00:00Z',
+    updated_at: '2026-02-08T10:00:00Z',
+    employee: { id: 'emp-6', full_name: 'Pedro Almeida', employee_code: 'A006', department: 'Qualidade' },
+    mentor: { id: 'emp-1', full_name: 'Ana Silva' },
+  },
+];
+
+const DEMO_SUCCESSION_PLANS = [
+  {
+    id: 'spn-1',
+    company_id: DEMO_COMPANY_ID,
+    position_title: 'Diretora Financeira',
+    department: 'Financeiro',
+    current_holder_id: 'emp-5',
+    critical_level: 'Alto',
+    expected_retirement_date: '2028-12-31',
+    created_by_user_id: 'demo-user-1',
+    created_at: '2025-03-01T10:00:00Z',
+    updated_at: '2026-02-12T10:00:00Z',
+    current_holder: { id: 'emp-5', full_name: 'Juliana Lima' },
+    candidates: [
+      { id: 'spc-1', succession_plan_id: 'spn-1', employee_id: 'emp-3', readiness_level: '1-2 Anos', readiness_score: 72, development_needs: ['Gestão financeira avançada'], notes: 'Plano em evolução', created_at: '2025-03-10T10:00:00Z', updated_at: '2026-02-12T10:00:00Z', employee: { id: 'emp-3', full_name: 'Mariana Costa', position: 'Coordenadora de RH' } },
+    ],
+  },
+];
+
+const DEMO_MENTORING_RELATIONSHIPS = [
+  {
+    id: 'ment-1',
+    company_id: DEMO_COMPANY_ID,
+    mentor_id: 'emp-1',
+    mentee_id: 'emp-6',
+    program_name: 'Liderança Técnica',
+    start_date: '2025-10-01',
+    end_date: '2026-10-01',
+    status: 'Ativo',
+    objectives: ['Aprimorar liderança de projetos'],
+    meeting_frequency: 'Mensal',
+    progress_notes: 'Evolução consistente nas últimas avaliações',
+    created_by_user_id: 'demo-user-1',
+    created_at: '2025-10-01T10:00:00Z',
+    updated_at: '2026-02-12T10:00:00Z',
+    mentor: { id: 'emp-1', full_name: 'Ana Silva' },
+    mentee: { id: 'emp-6', full_name: 'Pedro Almeida' },
+  },
+];
+
+const DEMO_INTERNAL_JOB_POSTINGS = [
+  {
+    id: 'job-1',
+    company_id: DEMO_COMPANY_ID,
+    title: 'Coordenador(a) de Sustentabilidade',
+    department: 'Meio Ambiente',
+    location: 'São Paulo',
+    employment_type: 'CLT',
+    level: 'Sênior',
+    description: 'Liderar iniciativas socioambientais e reportes ESG.',
+    requirements: ['Experiência com GRI', 'Gestão de projetos'],
+    benefits: ['Plano de Saúde', 'PLR'],
+    salary_range_min: 11000,
+    salary_range_max: 15000,
+    application_deadline: '2026-03-31',
+    status: 'Aberto',
+    created_by_user_id: 'demo-user-1',
+    created_at: '2026-01-20T10:00:00Z',
+    updated_at: '2026-02-10T10:00:00Z',
+  },
+];
+
+const DEMO_CAREER_STATISTICS = {
+  totalEmployees: demoEmployees.filter((employee) => employee.status === 'Ativo').length,
+  activeIDPs: DEMO_CAREER_DEVELOPMENT_PLANS.length,
+  promotionsThisYear: 3,
+  skillGapsCovered: 78,
+  mentoringPairs: DEMO_MENTORING_RELATIONSHIPS.length,
+  successionsPlanned: DEMO_SUCCESSION_PLANS.length,
+  internalMobility: 2,
+  careerSatisfaction: 4.2,
+};
+
+const DEMO_MANDATORY_PROGRAMS = DEMO_TRAINING_PROGRAMS.filter((program) => program.is_mandatory).map((program) => ({
+  id: program.id,
+  name: program.name,
+  category: program.category,
+  valid_for_months: program.valid_for_months,
+}));
+
+const DEMO_EMPLOYEE_TRAININGS_COMPLIANCE = DEMO_EMPLOYEE_TRAININGS.map((training) => ({
+  employee_id: training.employee_id,
+  training_program_id: training.training_program_id,
+  status: training.status,
+  completion_date: training.completion_date,
+  expiration_date: null,
+}));
+
+const DEMO_COMPETENCY_MATRIX = [
+  { id: 'comp-1', company_id: DEMO_COMPANY_ID, competency_name: 'Liderança', competency_category: 'Comportamental', description: 'Capacidade de liderar pessoas e resultados', levels: [{ level: 1, name: 'Básico', description: 'Apoia a equipe', behaviors: ['Comunica tarefas'] }], is_active: true, created_at: '2025-01-01T10:00:00Z', updated_at: '2026-01-01T10:00:00Z' },
+  { id: 'comp-2', company_id: DEMO_COMPANY_ID, competency_name: 'Análise de Dados', competency_category: 'Técnica', description: 'Análise para tomada de decisão', levels: [{ level: 1, name: 'Básico', description: 'Interpreta métricas', behaviors: ['Constrói relatórios'] }], is_active: true, created_at: '2025-01-01T10:00:00Z', updated_at: '2026-01-01T10:00:00Z' },
+];
+
+const DEMO_COMPETENCY_ASSESSMENTS = [
+  { id: 'assess-1', company_id: DEMO_COMPANY_ID, employee_id: 'emp-3', competency_id: 'comp-1', current_level: 2, target_level: 4, assessor_user_id: 'demo-user-1', assessment_date: '2026-02-01', development_plan: 'Mentoria quinzenal e prática em projetos', created_at: '2026-02-01T10:00:00Z', updated_at: '2026-02-01T10:00:00Z', competency: { competency_name: 'Liderança', competency_category: 'Comportamental' } },
+  { id: 'assess-2', company_id: DEMO_COMPANY_ID, employee_id: 'emp-6', competency_id: 'comp-2', current_level: 3, target_level: 4, assessor_user_id: 'demo-user-1', assessment_date: '2026-01-22', development_plan: 'Curso avançado de BI', created_at: '2026-01-22T10:00:00Z', updated_at: '2026-01-22T10:00:00Z', competency: { competency_name: 'Análise de Dados', competency_category: 'Técnica' } },
+];
+
+const DEMO_COMPETENCY_GAPS = [
+  { competency_name: 'Liderança', category: 'Comportamental', employees_assessed: 1, average_current_level: 2, average_target_level: 4, average_gap: 2, critical_gaps: 1 },
+  { competency_name: 'Análise de Dados', category: 'Técnica', employees_assessed: 1, average_current_level: 3, average_target_level: 4, average_gap: 1, critical_gaps: 0 },
+];
+
 export const socialMockEntries = [
   // Employees list
   {
@@ -324,26 +657,24 @@ export const socialMockEntries = [
   // Employees stats
   {
     queryKey: ['employees-stats'],
-    data: {
-      totalEmployees: 342,
-      activeEmployees: 335,
-      inactiveEmployees: 7,
-      departments: 9,
-      avgTenure: 4.2,
-      newHires: 18,
-      turnoverRate: 8.2,
-      genderDistribution: { male: 189, female: 153 },
-    },
+    data: DEMO_EMPLOYEE_STATS,
+  },
+  {
+    queryKey: ['employee-stats'],
+    data: DEMO_EMPLOYEE_STATS,
+  },
+  {
+    queryKey: ['employee-departments'],
+    data: DEMO_EMPLOYEE_DEPARTMENTS,
   },
   // Employees paginated (base for prefix match)
   {
     queryKey: ['employees-paginated'],
     data: {
       data: demoEmployees,
-      total: 342,
-      page: 1,
-      pageSize: 10,
-      totalPages: 35,
+      totalCount: demoEmployees.length,
+      totalPages: 1,
+      currentPage: 1,
     },
   },
   // Social ESG Dashboard
@@ -360,44 +691,36 @@ export const socialMockEntries = [
       diversityIndex: 0.62,
     },
   },
+  {
+    queryKey: ['social-filter-options'],
+    data: DEMO_SOCIAL_FILTER_OPTIONS,
+  },
   // Training programs
   {
     queryKey: ['training-programs', DEMO_COMPANY_ID],
-    data: [
-      { id: '1', title: 'NR-12 Segurança em Máquinas', category: 'SST', status: 'Ativo', total_hours: 16, enrolled: 45, completed: 38, instructor: 'João Pereira', start_date: '2026-01-15', company_id: DEMO_COMPANY_ID },
-      { id: '2', title: 'Gestão de Resíduos Sólidos', category: 'Ambiental', status: 'Ativo', total_hours: 8, enrolled: 30, completed: 28, instructor: 'Maria Santos', start_date: '2026-01-20', company_id: DEMO_COMPANY_ID },
-      { id: '3', title: 'Liderança e Gestão de Equipes', category: 'Desenvolvimento', status: 'Ativo', total_hours: 24, enrolled: 15, completed: 10, instructor: 'Ricardo Lima', start_date: '2026-02-01', company_id: DEMO_COMPANY_ID },
-      { id: '4', title: 'Primeiros Socorros', category: 'SST', status: 'Planejado', total_hours: 12, enrolled: 50, completed: 0, instructor: 'Dr. Ana Souza', start_date: '2026-03-15', company_id: DEMO_COMPANY_ID },
-      { id: '5', title: 'ISO 14001 - Auditor Interno', category: 'Qualidade', status: 'Concluído', total_hours: 40, enrolled: 8, completed: 8, instructor: 'Paulo Alves', start_date: '2025-11-01', company_id: DEMO_COMPANY_ID },
-    ],
+    data: DEMO_TRAINING_PROGRAMS,
   },
   // Training programs (base key for prefix)
   {
     queryKey: ['training-programs'],
-    data: [
-      { id: '1', title: 'NR-12 Segurança em Máquinas', category: 'SST', status: 'Ativo', total_hours: 16, enrolled: 45, completed: 38, instructor: 'João Pereira', start_date: '2026-01-15', company_id: DEMO_COMPANY_ID },
-      { id: '2', title: 'Gestão de Resíduos Sólidos', category: 'Ambiental', status: 'Ativo', total_hours: 8, enrolled: 30, completed: 28, instructor: 'Maria Santos', start_date: '2026-01-20', company_id: DEMO_COMPANY_ID },
-      { id: '3', title: 'Liderança e Gestão de Equipes', category: 'Desenvolvimento', status: 'Ativo', total_hours: 24, enrolled: 15, completed: 10, instructor: 'Ricardo Lima', start_date: '2026-02-01', company_id: DEMO_COMPANY_ID },
-      { id: '4', title: 'Primeiros Socorros', category: 'SST', status: 'Planejado', total_hours: 12, enrolled: 50, completed: 0, instructor: 'Dr. Ana Souza', start_date: '2026-03-15', company_id: DEMO_COMPANY_ID },
-      { id: '5', title: 'ISO 14001 - Auditor Interno', category: 'Qualidade', status: 'Concluído', total_hours: 40, enrolled: 8, completed: 8, instructor: 'Paulo Alves', start_date: '2025-11-01', company_id: DEMO_COMPANY_ID },
-    ],
+    data: DEMO_TRAINING_PROGRAMS,
   },
   // Safety incidents
   {
     queryKey: ['safety-incidents', DEMO_COMPANY_ID],
     data: [
-      { id: '1', incident_type: 'Quase Acidente', description: 'Derramamento de produto químico no armazém', severity: 'Moderada', incident_date: '2026-01-10', department: 'Armazém', status: 'Investigado', company_id: DEMO_COMPANY_ID },
-      { id: '2', incident_type: 'Acidente sem afastamento', description: 'Corte superficial na linha de produção', severity: 'Leve', incident_date: '2025-12-05', department: 'Produção', status: 'Concluído', company_id: DEMO_COMPANY_ID },
-      { id: '3', incident_type: 'Quase Acidente', description: 'Falha em equipamento de elevação', severity: 'Alta', incident_date: '2025-11-20', department: 'Manutenção', status: 'Investigado', company_id: DEMO_COMPANY_ID },
+      { id: '1', incident_type: 'Quase Acidente', description: 'Derramamento de produto químico no armazém', severity: 'Média', incident_date: '2026-01-10', location: 'Armazém', days_lost: 0, medical_treatment_required: false, status: 'Em Investigação', company_id: DEMO_COMPANY_ID, reported_by_user_id: 'demo-user-1', created_at: '2026-01-10T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+      { id: '2', incident_type: 'Acidente sem afastamento', description: 'Corte superficial na linha de produção', severity: 'Baixa', incident_date: '2025-12-05', location: 'Produção', days_lost: 0, medical_treatment_required: true, status: 'Resolvido', company_id: DEMO_COMPANY_ID, reported_by_user_id: 'demo-user-1', created_at: '2025-12-05T11:00:00Z', updated_at: '2025-12-08T09:00:00Z' },
+      { id: '3', incident_type: 'Acidente com afastamento', description: 'Queda de nível em manutenção', severity: 'Alta', incident_date: '2025-11-20', location: 'Manutenção', days_lost: 6, medical_treatment_required: true, status: 'Resolvido', company_id: DEMO_COMPANY_ID, reported_by_user_id: 'demo-user-1', created_at: '2025-11-20T08:30:00Z', updated_at: '2025-12-02T14:00:00Z' },
     ],
   },
   // Safety incidents (base)
   {
     queryKey: ['safety-incidents'],
     data: [
-      { id: '1', incident_type: 'Quase Acidente', description: 'Derramamento de produto químico no armazém', severity: 'Moderada', incident_date: '2026-01-10', department: 'Armazém', status: 'Investigado', company_id: DEMO_COMPANY_ID },
-      { id: '2', incident_type: 'Acidente sem afastamento', description: 'Corte superficial na linha de produção', severity: 'Leve', incident_date: '2025-12-05', department: 'Produção', status: 'Concluído', company_id: DEMO_COMPANY_ID },
-      { id: '3', incident_type: 'Quase Acidente', description: 'Falha em equipamento de elevação', severity: 'Alta', incident_date: '2025-11-20', department: 'Manutenção', status: 'Investigado', company_id: DEMO_COMPANY_ID },
+      { id: '1', incident_type: 'Quase Acidente', description: 'Derramamento de produto químico no armazém', severity: 'Média', incident_date: '2026-01-10', location: 'Armazém', days_lost: 0, medical_treatment_required: false, status: 'Em Investigação', company_id: DEMO_COMPANY_ID, reported_by_user_id: 'demo-user-1', created_at: '2026-01-10T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+      { id: '2', incident_type: 'Acidente sem afastamento', description: 'Corte superficial na linha de produção', severity: 'Baixa', incident_date: '2025-12-05', location: 'Produção', days_lost: 0, medical_treatment_required: true, status: 'Resolvido', company_id: DEMO_COMPANY_ID, reported_by_user_id: 'demo-user-1', created_at: '2025-12-05T11:00:00Z', updated_at: '2025-12-08T09:00:00Z' },
+      { id: '3', incident_type: 'Acidente com afastamento', description: 'Queda de nível em manutenção', severity: 'Alta', incident_date: '2025-11-20', location: 'Manutenção', days_lost: 6, medical_treatment_required: true, status: 'Resolvido', company_id: DEMO_COMPANY_ID, reported_by_user_id: 'demo-user-1', created_at: '2025-11-20T08:30:00Z', updated_at: '2025-12-02T14:00:00Z' },
     ],
   },
   // HR performance
@@ -414,18 +737,32 @@ export const socialMockEntries = [
   // Career development plans
   {
     queryKey: ['career-plans', DEMO_COMPANY_ID],
-    data: [
-      { id: '1', employee_id: 'emp-1', employee_name: 'Ana Silva', goals: [{ title: 'MBA em Gestão', status: 'in_progress' }], skills_to_develop: [{ skill_name: 'Liderança Estratégica', current_level: 'advanced', target_level: 'expert' }], status: 'Ativo', created_at: '2025-06-01' },
-      { id: '2', employee_id: 'emp-2', employee_name: 'Carlos Santos', goals: [{ title: 'Certificação ISO 14001', status: 'completed' }], skills_to_develop: [{ skill_name: 'Análise de Dados', current_level: 'intermediate', target_level: 'advanced' }], status: 'Ativo', created_at: '2025-03-15' },
-      { id: '3', employee_id: 'emp-6', employee_name: 'Pedro Almeida', goals: [{ title: 'Especialização em Six Sigma', status: 'in_progress' }], skills_to_develop: [{ skill_name: 'Gestão de Projetos', current_level: 'beginner', target_level: 'intermediate' }], status: 'Ativo', created_at: '2025-09-01' },
-    ],
+    data: DEMO_CAREER_DEVELOPMENT_PLANS,
   },
   // Career plans (base)
   {
     queryKey: ['career-plans'],
-    data: [
-      { id: '1', employee_id: 'emp-1', employee_name: 'Ana Silva', goals: [{ title: 'MBA em Gestão', status: 'in_progress' }], skills_to_develop: [{ skill_name: 'Liderança Estratégica', current_level: 'advanced', target_level: 'expert' }], status: 'Ativo', created_at: '2025-06-01' },
-    ],
+    data: DEMO_CAREER_DEVELOPMENT_PLANS,
+  },
+  {
+    queryKey: ['career-development-plans'],
+    data: DEMO_CAREER_DEVELOPMENT_PLANS,
+  },
+  {
+    queryKey: ['career-statistics'],
+    data: DEMO_CAREER_STATISTICS,
+  },
+  {
+    queryKey: ['succession-plans'],
+    data: DEMO_SUCCESSION_PLANS,
+  },
+  {
+    queryKey: ['mentoring-relationships'],
+    data: DEMO_MENTORING_RELATIONSHIPS,
+  },
+  {
+    queryKey: ['internal-job-postings'],
+    data: DEMO_INTERNAL_JOB_POSTINGS,
   },
   // Attendance/Ponto
   {
@@ -448,33 +785,17 @@ export const socialMockEntries = [
   // Benefits
   {
     queryKey: ['benefits', DEMO_COMPANY_ID],
-    data: [
-      { id: 'ben-1', name: 'Vale Refeição', type: 'Alimentação', value: 35, per: 'dia', eligible_count: 342, active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'ben-2', name: 'Plano de Saúde', type: 'Saúde', value: 850, per: 'mês', eligible_count: 342, active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'ben-3', name: 'Vale Transporte', type: 'Transporte', value: 220, per: 'mês', eligible_count: 280, active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'ben-4', name: 'Seguro de Vida', type: 'Seguro', value: 120, per: 'mês', eligible_count: 342, active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'ben-5', name: 'Auxílio Educação', type: 'Educação', value: 500, per: 'mês', eligible_count: 50, active: true, company_id: DEMO_COMPANY_ID },
-    ],
+    data: DEMO_BENEFITS,
   },
   // Benefits (base)
   {
     queryKey: ['benefits'],
-    data: [
-      { id: 'ben-1', name: 'Vale Refeição', type: 'Alimentação', value: 35, per: 'dia', eligible_count: 342, active: true },
-      { id: 'ben-2', name: 'Plano de Saúde', type: 'Saúde', value: 850, per: 'mês', eligible_count: 342, active: true },
-      { id: 'ben-3', name: 'Vale Transporte', type: 'Transporte', value: 220, per: 'mês', eligible_count: 280, active: true },
-    ],
+    data: DEMO_BENEFITS,
   },
   // Benefit stats
   {
     queryKey: ['benefit-stats'],
-    data: {
-      totalBenefits: 5,
-      totalCost: 485000,
-      avgCostPerEmployee: 1418,
-      mostPopular: 'Plano de Saúde',
-      utilizationRate: 92.3,
-    },
+    data: DEMO_BENEFIT_STATS,
   },
   // Training stats
   {
@@ -554,12 +875,73 @@ export const socialMockEntries = [
     data: DEMO_EMPLOYEE_TRAININGS,
   },
   {
+    queryKey: ['employees-for-training-modal-2'],
+    data: DEMO_ACTIVE_EMPLOYEES_FOR_TRAINING,
+  },
+  {
+    queryKey: ['employees-for-reschedule'],
+    data: DEMO_ACTIVE_EMPLOYEES_FOR_TRAINING,
+  },
+  {
+    queryKey: ['training-participants'],
+    data: DEMO_TRAINING_PARTICIPANTS,
+  },
+  {
+    queryKey: ['training-export-preview'],
+    data: DEMO_TRAINING_EXPORT_PREVIEW,
+  },
+  {
     queryKey: ['training-metrics'],
     data: DEMO_TRAINING_METRICS,
   },
   {
     queryKey: ['safety-metrics'],
     data: DEMO_SAFETY_METRICS,
+  },
+  {
+    queryKey: ['safety-inspections'],
+    data: DEMO_SAFETY_INSPECTIONS,
+  },
+  {
+    queryKey: ['safety-inspection-metrics'],
+    data: DEMO_SAFETY_INSPECTION_METRICS,
+  },
+  {
+    queryKey: ['safety-training-metrics', DEMO_COMPANY_ID],
+    data: DEMO_SAFETY_TRAINING_METRICS,
+  },
+  {
+    queryKey: ['safety-training-metrics'],
+    data: DEMO_SAFETY_TRAINING_METRICS,
+  },
+  {
+    queryKey: ['employees-active'],
+    data: demoEmployees.filter((employee) => employee.status === 'Ativo').map((employee) => ({
+      id: employee.id,
+      full_name: employee.full_name,
+      employee_code: employee.employee_code,
+      department: employee.department,
+    })),
+  },
+  {
+    queryKey: ['mandatory-programs'],
+    data: DEMO_MANDATORY_PROGRAMS,
+  },
+  {
+    queryKey: ['employee-trainings-compliance'],
+    data: DEMO_EMPLOYEE_TRAININGS_COMPLIANCE,
+  },
+  {
+    queryKey: ['competency-matrix'],
+    data: DEMO_COMPETENCY_MATRIX,
+  },
+  {
+    queryKey: ['competency-assessments'],
+    data: DEMO_COMPETENCY_ASSESSMENTS,
+  },
+  {
+    queryKey: ['competency-gaps'],
+    data: DEMO_COMPETENCY_GAPS,
   },
   {
     queryKey: ['social-projects'],
