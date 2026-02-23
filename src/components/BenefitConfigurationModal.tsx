@@ -40,8 +40,8 @@ interface BenefitConfigurationModalProps {
 interface Employee {
   id: string;
   full_name: string;
-  position: string;
-  department: string;
+  position?: string;
+  department?: string;
   status: string;
 }
 

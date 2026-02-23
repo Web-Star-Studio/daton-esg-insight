@@ -357,7 +357,7 @@ export default function GestaoTreinamentos() {
     },
     {
       title: 'Taxa de Compliance',
-      value: trainingMetrics?.complianceRate ? `${Math.round(trainingMetrics.complianceRate)}%` : '0%',
+      value: trainingMetrics?.complianceRate ? `${Math.round(trainingMetrics.complianceRate as number)}%` : '0%',
       icon: Target,
       trend: trainingMetrics?.expiringIn30Days ? `${trainingMetrics.expiringIn30Days} expirando` : 'Todos em dia',
       description: 'treinamentos obrigatórios',
@@ -367,7 +367,7 @@ export default function GestaoTreinamentos() {
       title: 'Horas de Treinamento',
       value: trainingMetrics?.totalHoursTrained || 0,
       icon: Clock,
-      trend: trainingMetrics?.averageHoursPerEmployee?.toFixed(1) + 'h/funcionário',
+      trend: (trainingMetrics?.averageHoursPerEmployee as number | undefined)?.toFixed(1) + 'h/funcionário',
       description: 'horas totais ministradas',
       color: 'text-orange-600'
     }
@@ -460,7 +460,7 @@ export default function GestaoTreinamentos() {
                   <stat.icon className={cn("h-4 w-4", stat.color)} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <div className="text-2xl font-bold">{stat.value as React.ReactNode}</div>
                   <p className="text-xs text-muted-foreground">
                     {stat.trend}
                   </p>
@@ -475,10 +475,10 @@ export default function GestaoTreinamentos() {
           {/* Advanced Charts */}
           {trainingMetrics && (
             <TrainingDashboardCharts
-              trainingsByDepartment={trainingMetrics.trainingsByDepartment || {}}
-              monthlyTrend={trainingMetrics.monthlyTrend || []}
-              categoryDistribution={trainingMetrics.categoryDistribution || {}}
-              statusDistribution={trainingMetrics.statusDistribution || {}}
+              trainingsByDepartment={(trainingMetrics.trainingsByDepartment || {}) as Record<string, number>}
+              monthlyTrend={(trainingMetrics.monthlyTrend || []) as { month: string; completed: number; enrolled: number; }[]}
+              categoryDistribution={(trainingMetrics.categoryDistribution || {}) as Record<string, number>}
+              statusDistribution={(trainingMetrics.statusDistribution || {}) as Record<string, number>}
             />
           )}
 
