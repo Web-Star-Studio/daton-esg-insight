@@ -492,7 +492,7 @@ export const calculateHealthSafetyIndicators = async (): Promise<ESGIndicator[]>
     indicators.push({
       code: 'SAFETY_002',
       name: 'Dias Perdidos',
-      value: safetyMetrics.daysLostTotal,
+      value: safetyMetrics.daysLostTotal as number,
       unit: 'dias',
       formula: '∑Dias de Afastamento',
       category: '6.4',
@@ -520,7 +520,7 @@ export const calculateHealthSafetyIndicators = async (): Promise<ESGIndicator[]>
     indicators.push({
       code: 'SAFETY_004',
       name: 'Total de Incidentes',
-      value: safetyMetrics.totalIncidents,
+      value: safetyMetrics.totalIncidents as number,
       unit: 'incidentes',
       formula: 'Contagem total de incidentes reportados',
       category: '6.4',

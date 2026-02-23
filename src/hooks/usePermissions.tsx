@@ -44,10 +44,10 @@ export const usePermissions = () => {
       if (!user?.id) return null;
       
       const { data } = await supabase
-        .from('profiles')
+        .from('user_roles')
         .select('role')
-        .eq('id', user.id)
-        .single();
+        .eq('user_id', user.id)
+        .maybeSingle();
       
       return data?.role as UserRole | null;
     },

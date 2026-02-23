@@ -5,7 +5,6 @@
  */
 
 import { Database } from '@/integrations/supabase/types';
-// @ts-expect-error - Vite raw import
 import typesRawText from '@/integrations/supabase/types.ts?raw';
 
 type Tables = Database['public']['Tables'];

@@ -145,8 +145,8 @@ export default function SeguracaTrabalho() {
     safetyTrainingCompliance: safetyTrainingMetrics?.overallCompliance || 0,
     activeInspections: inspectionMetrics?.pending || 0,
     resolvedIncidents,
-    avgResolutionTime: safetyMetrics?.avgResolutionTime || 0,
-    safetyScore: safetyMetrics?.ltifr !== undefined ? Math.max(0, 100 - safetyMetrics.ltifr * 10) : 0
+    avgResolutionTime: (safetyMetrics?.avgResolutionTime as number) || 0,
+    safetyScore: safetyMetrics?.ltifr !== undefined ? Math.max(0, 100 - (safetyMetrics.ltifr as number) * 10) : 0
   };
   
   // Filter inspections
@@ -459,9 +459,9 @@ export default function SeguracaTrabalho() {
       {/* LTIFR Dashboard */}
       {safetyMetrics?.ltifr_metadata && (
         <LTIFRDashboard 
-          ltifr={safetyMetrics.ltifr}
-          metadata={safetyMetrics.ltifr_metadata}
-          accidentsWithLostTime={safetyMetrics.accidentsWithLostTime}
+          ltifr={safetyMetrics.ltifr as number}
+          metadata={safetyMetrics.ltifr_metadata as any}
+          accidentsWithLostTime={safetyMetrics.accidentsWithLostTime as number}
           sectorBenchmark={2.5}
         />
       )}
@@ -1077,15 +1077,15 @@ export default function SeguracaTrabalho() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span>Taxa de Frequência (LTIFR)</span>
-                  <span className="font-bold">{safetyMetrics?.ltifr || 0}</span>
+                  <span className="font-bold">{(safetyMetrics?.ltifr as number) || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Taxa de Gravidade</span>
-                  <span className="font-bold">{safetyMetrics?.severityRate || 0}</span>
+                  <span className="font-bold">{(safetyMetrics?.severityRate as number) || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Dias Perdidos</span>
-                  <span className="font-bold">{safetyMetrics?.daysLostTotal || 0}</span>
+                  <span className="font-bold">{(safetyMetrics?.daysLostTotal as number) || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Horas Treinamento</span>

@@ -155,7 +155,7 @@ export default function SocialESG() {
                 <Shield className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{safetyMetrics?.ltifr || 0}</div>
+                <div className="text-2xl font-bold">{(safetyMetrics?.ltifr as number) || 0}</div>
                 <p className="text-xs text-muted-foreground">
                   Taxa de frequência de acidentes
                 </p>
@@ -168,9 +168,9 @@ export default function SocialESG() {
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{trainingMetrics?.totalHoursTrained || 0}</div>
+                <div className="text-2xl font-bold">{(trainingMetrics?.totalHoursTrained as number) || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  {trainingMetrics?.averageHoursPerEmployee || 0} média/funcionário
+                  {(trainingMetrics?.averageHoursPerEmployee as number) || 0} média/funcionário
                 </p>
               </CardContent>
             </Card>
@@ -274,10 +274,10 @@ export default function SocialESG() {
                     <span className="text-sm">{gender}</span>
                     <div className="flex items-center gap-2">
                       <Progress 
-                        value={(count / (employeesStats.totalEmployees || 1)) * 100} 
+                        value={((count as number) / ((employeesStats.totalEmployees as number) || 1)) * 100} 
                         className="w-20" 
                       />
-                      <span className="text-sm text-muted-foreground">{count}</span>
+                      <span className="text-sm text-muted-foreground">{count as React.ReactNode}</span>
                     </div>
                   </div>
                 ))}
@@ -293,19 +293,19 @@ export default function SocialESG() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Total de Incidentes</span>
                   <Badge variant={safetyMetrics?.totalIncidents ? "destructive" : "secondary"}>
-                    {safetyMetrics?.totalIncidents || 0}
+                    {(safetyMetrics?.totalIncidents as number) || 0}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Dias Perdidos</span>
                   <Badge variant="outline">
-                    {safetyMetrics?.daysLostTotal || 0}
+                    {(safetyMetrics?.daysLostTotal as number) || 0}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Com Tratamento Médico</span>
                   <Badge variant="secondary">
-                    {safetyMetrics?.withMedicalTreatment || 0}
+                    {(safetyMetrics?.withMedicalTreatment as number) || 0}
                   </Badge>
                 </div>
               </CardContent>
@@ -332,10 +332,10 @@ export default function SocialESG() {
               description="Sistema de SST e bem-estar ocupacional"
               icon={Shield}
               metrics={[
-                { label: 'LTIFR', value: safetyMetrics?.ltifr?.toFixed(2) || '0.00', variant: 'success' },
-                { label: 'Incidentes', value: safetyMetrics?.totalIncidents || 0, variant: safetyMetrics?.totalIncidents ? 'warning' : 'success' },
-                { label: 'Com Tratamento', value: safetyMetrics?.withMedicalTreatment || 0, variant: 'warning' },
-                { label: 'Dias Perdidos', value: safetyMetrics?.daysLostTotal || 0, variant: 'destructive' }
+                { label: 'LTIFR', value: (safetyMetrics?.ltifr as number)?.toFixed(2) || '0.00', variant: 'success' },
+                { label: 'Incidentes', value: (safetyMetrics?.totalIncidents as number) || 0, variant: safetyMetrics?.totalIncidents ? 'warning' : 'success' },
+                { label: 'Com Tratamento', value: (safetyMetrics?.withMedicalTreatment as number) || 0, variant: 'warning' },
+                { label: 'Dias Perdidos', value: (safetyMetrics?.daysLostTotal as number) || 0, variant: 'destructive' }
               ]}
               onAccess={() => navigate('/seguranca-trabalho')}
             />
@@ -345,10 +345,10 @@ export default function SocialESG() {
               description="Programas de capacitação e desenvolvimento"
               icon={GraduationCap}
               metrics={[
-                { label: 'Horas Totais', value: trainingMetrics?.totalHoursTrained || 0 },
-                { label: 'Média/Funcionário', value: `${trainingMetrics?.averageHoursPerEmployee || 0}h` },
-                { label: 'Taxa Conclusão', value: `${trainingMetrics?.completionRate?.toFixed(1) || 0}%`, variant: 'success' },
-                { label: 'Treinamentos', value: trainingMetrics?.totalTrainings || 0 }
+                { label: 'Horas Totais', value: (trainingMetrics?.totalHoursTrained as number) || 0 },
+                { label: 'Média/Funcionário', value: `${(trainingMetrics?.averageHoursPerEmployee as number) || 0}h` },
+                { label: 'Taxa Conclusão', value: `${(trainingMetrics?.completionRate as number)?.toFixed(1) || 0}%`, variant: 'success' },
+                { label: 'Treinamentos', value: (trainingMetrics?.totalTrainings as number) || 0 }
               ]}
               onAccess={() => navigate('/gestao-treinamentos')}
             />
