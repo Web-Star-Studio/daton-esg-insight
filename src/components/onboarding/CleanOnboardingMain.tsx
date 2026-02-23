@@ -6,6 +6,7 @@ import { useUnifiedTour } from '@/contexts/UnifiedTourContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { logger } from '@/utils/logger';
 import { CleanWelcomeStep } from './CleanWelcomeStep';
 import { CleanModuleSelectionStep } from './CleanModuleSelectionStep';
@@ -198,7 +199,7 @@ function CleanOnboardingContent() {
         break;
       case 'gee-automation':
         updateModuleConfiguration('inventario_gee', {
-          ...moduleConfigurations['inventario_gee'],
+          ...(moduleConfigurations['inventario_gee'] as Record<string, any> || {}),
           automatic_calculation: true
         });
         toast({
@@ -258,8 +259,8 @@ function CleanOnboardingContent() {
               is_completed: true,
               completed_at: new Date().toISOString(),
               selected_modules: state.selectedModules || [],
-              module_configurations: state.moduleConfigurations || {},
-              company_profile: state.companyProfile || {},
+              module_configurations: (state.moduleConfigurations || {}) as unknown as Json,
+              company_profile: (state.companyProfile || {}) as unknown as Json,
               current_step: state.totalSteps - 1
             }], {
               onConflict: 'user_id'
