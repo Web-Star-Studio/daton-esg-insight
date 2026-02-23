@@ -84,7 +84,7 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
             selectedModules: validModules,
             moduleConfigurations:
               (data.module_configurations as ModuleConfig) || {},
-            companyProfile: data.company_profile || null,
+            companyProfile: (data.company_profile as Record<string, any>) || null,
             isCompleted: false,
           }));
         }

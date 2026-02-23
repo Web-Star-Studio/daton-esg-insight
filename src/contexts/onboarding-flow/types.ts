@@ -1,5 +1,5 @@
 export interface ModuleConfig {
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface OnboardingFlowState {
@@ -7,7 +7,7 @@ export interface OnboardingFlowState {
   totalSteps: number;
   selectedModules: string[];
   moduleConfigurations: ModuleConfig;
-  companyProfile: unknown;
+  companyProfile: Record<string, any> | null;
   isCompleted: boolean;
   isLoading: boolean;
 }
@@ -17,8 +17,8 @@ export interface OnboardingFlowContextType {
   nextStep: () => void;
   prevStep: () => void;
   setSelectedModules: (modules: string[]) => void;
-  setCompanyProfile: (profile: unknown) => void;
-  updateModuleConfiguration: (moduleId: string, config: unknown) => void;
+  setCompanyProfile: (profile: Record<string, any> | null) => void;
+  updateModuleConfiguration: (moduleId: string, config: any) => void;
   completeOnboarding: () => Promise<void>;
   restartOnboarding: () => void;
   isStepCompleted: (step: number) => boolean;
