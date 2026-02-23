@@ -88,7 +88,7 @@ export default function NaoConformidades() {
         .from("branches")
         .select("id, name, is_headquarters")
         .eq("company_id", userAndCompany.company_id)
-        .eq("status", "Ativo")
+        .in("status", ["Ativo", "Ativa"])
         .order("name");
       if (error) throw error;
       return data || [];
