@@ -32,7 +32,7 @@ function determineTargetTable(documentType: string, extractedFields: any = {}): 
     fieldContent.includes('mtr_number') ||
     fieldContent.includes('waste_')
   ) {
-    console.log('🗑️ Detected WASTE data from fields');
+    console.warn('🗑️ Detected WASTE data from fields');
     return 'waste_logs';
   }
   
@@ -42,7 +42,7 @@ function determineTargetTable(documentType: string, extractedFields: any = {}): 
     (extractedFields.cnpj && extractedFields.nome) ||
     fieldContent.includes('supplier')
   ) {
-    console.log('🏢 Detected SUPPLIER data from fields');
+    console.warn('🏢 Detected SUPPLIER data from fields');
     return 'suppliers';
   }
   
@@ -52,7 +52,7 @@ function determineTargetTable(documentType: string, extractedFields: any = {}): 
     fieldContent.includes('numero_licenca') ||
     fieldContent.includes('orgao_ambiental')
   ) {
-    console.log('📄 Detected LICENSE data from fields');
+    console.warn('📄 Detected LICENSE data from fields');
     return 'licenses';
   }
   
@@ -74,12 +74,12 @@ function determineTargetTable(documentType: string, extractedFields: any = {}): 
   
   const mappedTable = typeMapping[documentType];
   if (mappedTable) {
-    console.log(`📋 Mapped document type "${documentType}" → ${mappedTable}`);
+    console.warn(`📋 Mapped document type "${documentType}" → ${mappedTable}`);
     return mappedTable;
   }
   
   // 3️⃣ ÚLTIMO RECURSO: suppliers como fallback
-  console.log('⚠️ Using fallback table: suppliers');
+  console.warn('⚠️ Using fallback table: suppliers');
   return 'suppliers';
 }
 
@@ -157,7 +157,7 @@ serve(async (req) => {
       throw new Error('Falha ao criar job de processamento');
     }
 
-    console.log('📄 Processing document:', {
+    console.warn('📄 Processing document:', {
       documentId,
       fileName: document.file_name,
       fileType: document.file_type,
@@ -183,7 +183,7 @@ serve(async (req) => {
       throw new Error('Falha ao baixar arquivo do storage');
     }
 
-    console.log('✅ File downloaded, size:', fileData.size, 'bytes');
+    console.warn('✅ File downloaded, size:', fileData.size, 'bytes');
 
     // 6. Convert to text (basic parsing)
     const fileContent = await fileData.text();
@@ -209,7 +209,7 @@ Por favor, retorne um JSON com a seguinte estrutura:
   "summary": "resumo do documento"
 }`;
 
-    console.log('🤖 Calling Lovable AI for analysis...');
+    console.warn('🤖 Calling Lovable AI for analysis...');
     
     // 8. Call Lovable AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -230,7 +230,7 @@ Por favor, retorne um JSON com a seguinte estrutura:
       })
     });
 
-    console.log('📡 AI Response status:', aiResponse.status);
+    console.warn('📡 AI Response status:', aiResponse.status);
     
     // Handle rate limits and payment errors
     if (aiResponse.status === 429) {
@@ -310,7 +310,7 @@ Por favor, retorne um JSON com a seguinte estrutura:
       const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         analysis = JSON.parse(jsonMatch[0]);
-        console.log('✅ AI analysis parsed successfully:', {
+        console.warn('✅ AI analysis parsed successfully:', {
           documentType: analysis.document_type,
           confidence: analysis.confidence,
           fieldsCount: Object.keys(analysis.extracted_fields || {}).length
@@ -345,7 +345,7 @@ Por favor, retorne um JSON com a seguinte estrutura:
       analysis.extracted_fields || {}
     );
     
-    console.log('💾 Creating data preview:', {
+    console.warn('💾 Creating data preview:', {
       jobId: job.id,
       documentId,
       targetTable,
@@ -399,10 +399,10 @@ Por favor, retorne um JSON com a seguinte estrutura:
       throw new Error(`Preview creation failed: ${previewError.message}`);
     }
 
-    console.log('✅ Preview created successfully:', preview.id);
+    console.warn('✅ Preview created successfully:', preview.id);
 
     // 11. Update job status
-    console.log('✅ Updating job status to Concluído');
+    console.warn('✅ Updating job status to Concluído');
     
     await supabase
       .from('document_extraction_jobs')
@@ -415,7 +415,7 @@ Por favor, retorne um JSON com a seguinte estrutura:
       })
       .eq('id', job.id);
 
-    console.log('🎉 Document processing completed successfully!');
+    console.warn('🎉 Document processing completed successfully!');
 
     return new Response(
       JSON.stringify({

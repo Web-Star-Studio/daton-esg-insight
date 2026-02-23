@@ -75,7 +75,7 @@ serve(async (req) => {
       }
 
       company_id = profile.company_id
-      console.log('Processing ESG dashboard for company:', company_id)
+      console.warn('Processing ESG dashboard for company:', company_id)
     } catch (authError) {
       console.error('Authentication/Profile error:', authError)
       
@@ -141,7 +141,7 @@ serve(async (req) => {
       governance
     }
 
-    console.log('ESG Dashboard data calculated:', JSON.stringify(response, null, 2))
+    console.warn('ESG Dashboard data calculated:', JSON.stringify(response, null, 2))
 
     return new Response(
       JSON.stringify(response),
@@ -189,7 +189,7 @@ serve(async (req) => {
 
 async function calculateEnvironmentalScore(supabase: any, company_id: string): Promise<PillarData> {
   try {
-    console.log('Calculating environmental score for company:', company_id)
+    console.warn('Calculating environmental score for company:', company_id)
 
     // Get emission sources for this company first
     const { data: emissionSources, error: sourcesError } = await supabase
@@ -197,7 +197,7 @@ async function calculateEnvironmentalScore(supabase: any, company_id: string): P
       .select('id')
       .eq('company_id', company_id)
 
-    console.log('Emission sources:', { emissionSources, sourcesError })
+    console.warn('Emission sources:', { emissionSources, sourcesError })
 
     let totalEmissions = 0
     if (emissionSources && emissionSources.length > 0) {
@@ -209,7 +209,7 @@ async function calculateEnvironmentalScore(supabase: any, company_id: string): P
         .select('id')
         .in('emission_source_id', sourceIds)
 
-      console.log('Activity data:', { activityData, activityError })
+      console.warn('Activity data:', { activityData, activityError })
 
       if (activityData && activityData.length > 0) {
         const activityIds = activityData.map((a: any) => a.id)
@@ -220,7 +220,7 @@ async function calculateEnvironmentalScore(supabase: any, company_id: string): P
           .select('total_co2e')
           .in('activity_data_id', activityIds)
 
-        console.log('Emissions data:', { emissions, emissionsError })
+        console.warn('Emissions data:', { emissions, emissionsError })
 
         totalEmissions = emissions?.reduce((sum: number, item: any) => sum + (item.total_co2e || 0), 0) || 0
       }
@@ -232,7 +232,7 @@ async function calculateEnvironmentalScore(supabase: any, company_id: string): P
       .select('status')
       .eq('company_id', company_id)
 
-    console.log('Licenses data:', { licenses, licensesError })
+    console.warn('Licenses data:', { licenses, licensesError })
 
     const activeLicenses = licenses?.filter((l: any) => l.status === 'Ativa').length || 0
     const totalLicenses = licenses?.length || 1
@@ -244,7 +244,7 @@ async function calculateEnvironmentalScore(supabase: any, company_id: string): P
       .select('quantity, destination_name')
       .eq('company_id', company_id)
 
-    console.log('Waste data:', { wasteData, wasteError })
+    console.warn('Waste data:', { wasteData, wasteError })
 
     let recyclingRate = 0
     if (wasteData && wasteData.length > 0) {
@@ -303,7 +303,7 @@ async function calculateEnvironmentalScore(supabase: any, company_id: string): P
     else if (licenseCompliance > 70) environmentalScore += 15
     else if (licenseCompliance > 50) environmentalScore += 10
 
-    console.log('Environmental score calculated:', {
+    console.warn('Environmental score calculated:', {
       totalEmissions,
       recyclingRate,
       licenseCompliance,
@@ -379,7 +379,7 @@ async function calculateSocialScore(supabase: any, company_id: string): Promise<
 
 async function calculateGovernanceScore(supabase: any, company_id: string): Promise<PillarData> {
   try {
-    console.log('Calculating governance score for company:', company_id)
+    console.warn('Calculating governance score for company:', company_id)
 
     // Get goals data
     const { data: goals, error: goalsError } = await supabase
@@ -387,7 +387,7 @@ async function calculateGovernanceScore(supabase: any, company_id: string): Prom
       .select('status')
       .eq('company_id', company_id)
 
-    console.log('Goals data:', { goals, goalsError })
+    console.warn('Goals data:', { goals, goalsError })
 
     const onTrackGoals = goals?.filter((g: any) => g.status === 'No Caminho Certo').length || 0
     const totalGoals = goals?.length || 1
@@ -436,7 +436,7 @@ async function calculateGovernanceScore(supabase: any, company_id: string): Prom
     const boardDiversityBaseScore = 10 // Score neutro
     governanceScore += boardDiversityBaseScore
 
-    console.log('Governance score calculated:', {
+    console.warn('Governance score calculated:', {
       goalsOnTrack,
       governanceScore
     })

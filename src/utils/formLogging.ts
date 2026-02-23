@@ -36,7 +36,7 @@ export const logFormSubmission = (
   };
 
   if (success) {
-    console.log('✅ Form submission successful:', JSON.stringify(logData, null, 2));
+    console.warn('✅ Form submission successful:', JSON.stringify(logData, null, 2));
   } else {
     console.error('❌ Form submission failed:', JSON.stringify(logData, null, 2));
   }
@@ -83,7 +83,7 @@ export const logDatabaseOperation = (
   };
 
   if (success) {
-    console.log(`✅ Database ${operation} successful:`, JSON.stringify(logData, null, 2));
+    console.warn(`✅ Database ${operation} successful:`, JSON.stringify(logData, null, 2));
   } else {
     console.error(`❌ Database ${operation} failed:`, JSON.stringify(logData, null, 2));
   }
@@ -107,7 +107,7 @@ export const createPerformanceLogger = (operationName: string) => {
       };
 
       if (success) {
-        console.log(`⚡ ${operationName} completed in ${Math.round(duration)}ms`);
+        console.warn(`⚡ ${operationName} completed in ${Math.round(duration)}ms`);
       } else {
         console.error(`❌ ${operationName} failed after ${Math.round(duration)}ms:`, error);
       }

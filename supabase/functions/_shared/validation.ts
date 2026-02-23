@@ -155,7 +155,7 @@ export async function validateAuth(
     };
   }
 
-  console.log('✅ User authenticated:', user.id);
+  console.warn('✅ User authenticated:', user.id);
 
   // Get user's company
   const { data: profile, error: profileError } = await supabase
@@ -172,7 +172,7 @@ export async function validateAuth(
     };
   }
 
-  console.log('✅ Company found:', profile.company_id);
+  console.warn('✅ Company found:', profile.company_id);
 
   return {
     user,

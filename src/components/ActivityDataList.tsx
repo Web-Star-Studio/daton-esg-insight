@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,11 +31,7 @@ export function ActivityDataList({ source, onDataChange, onEditData }: ActivityD
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadActivityData();
-  }, [source.id]);
-
-  const loadActivityData = async () => {
+  const loadActivityData = useCallback(async () => {
     await errorHandler.withErrorHandling(
       async () => {
         const { data, error } = await supabase
@@ -55,7 +51,11 @@ export function ActivityDataList({ source, onDataChange, onEditData }: ActivityD
         additionalData: { sourceId: source.id }
       }
     );
-  };
+  }, [source.id]);
+
+  useEffect(() => {
+    void loadActivityData();
+  }, [loadActivityData]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este dado de atividade?')) {

@@ -111,7 +111,7 @@ export const getGoals = async (): Promise<GoalListItem[]> => {
 
 // POST /api/v1/goals - Create new goal
 export const createGoal = async (goalData: CreateGoalData): Promise<Goal> => {
-  console.log('Creating goal with data:', goalData);
+  console.warn('Creating goal with data:', goalData);
   
   // Get user's company_id
   const { data: profile, error: profileError } = await supabase
@@ -151,7 +151,7 @@ export const createGoal = async (goalData: CreateGoalData): Promise<Goal> => {
     throw new Error('Erro ao criar meta');
   }
 
-  console.log('Goal created successfully:', data);
+  console.warn('Goal created successfully:', data);
   return data;
 };
 

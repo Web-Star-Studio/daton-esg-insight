@@ -21,16 +21,18 @@ interface EnhancedOnboardingProgressProps {
   onStepClick?: (step: number) => void;
 }
 
+const EMPTY_MODULE_CONFIGURATIONS: Record<string, unknown> = {};
+
 export function EnhancedOnboardingProgress({ 
   currentStep, 
   totalSteps, 
   stepTitles, 
   selectedModules,
-  moduleConfigurations = {},
+  moduleConfigurations = EMPTY_MODULE_CONFIGURATIONS,
   onStepClick
 }: EnhancedOnboardingProgressProps) {
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [startTime] = useState(Date.now());
+  const [startTime] = useState(() => Date.now());
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -139,12 +141,14 @@ export function EnhancedOnboardingProgress({
                 const status = getStepStatus(index);
                 
                 return (
-                  <div 
-                    key={index}
+                  <button 
+                    type="button"
+                    key={title}
                     className={`flex flex-col items-center gap-1.5 transition-all duration-200 ${
-                      onStepClick ? 'cursor-pointer' : ''
+                      onStepClick ? 'cursor-pointer' : 'cursor-default'
                     }`}
-                    onClick={() => onStepClick?.(index)}
+                    onClick={onStepClick ? () => onStepClick(index) : undefined}
+                    disabled={!onStepClick}
                   >
                     {/* Ícone do step minimalista */}
                     <div className={`
@@ -178,7 +182,7 @@ export function EnhancedOnboardingProgress({
                         </Badge>
                       )}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>

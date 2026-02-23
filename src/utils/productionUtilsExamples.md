@@ -40,8 +40,8 @@ function processData(data: any[]) {
 
 // Get performance statistics
 const stats = performanceMonitor.getMetricStats('fetch_emissions_data');
-console.log(`Average fetch time: ${stats?.average}ms`);
-console.log(`P95: ${stats?.p95}ms`);
+console.warn(`Average fetch time: ${stats?.average}ms`);
+console.warn(`P95: ${stats?.p95}ms`);
 ```
 
 ### Web Vitals Monitoring
@@ -56,7 +56,7 @@ Web Vitals are automatically observed when the app loads. Metrics include:
 const recentMetrics = performanceMonitor.getAllMetrics()
   .filter(m => m.name.startsWith('web_vital_'));
 
-console.log('Web Vitals:', recentMetrics);
+console.warn('Web Vitals:', recentMetrics);
 ```
 
 ## Security Utilities

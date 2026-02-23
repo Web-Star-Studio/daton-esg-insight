@@ -38,7 +38,7 @@ export function useAutoRetryProcessor() {
           return;
         }
 
-        console.log(`🔄 Processando ${pendingRetries.length} job(s) pendente(s) de retry...`);
+        console.warn(`🔄 Processando ${pendingRetries.length} job(s) pendente(s) de retry...`);
 
         // Processar cada job com retry usando nossa utility de retry
         for (const job of pendingRetries) {

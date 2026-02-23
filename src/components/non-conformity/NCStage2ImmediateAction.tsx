@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useId, useMemo, useState } from "react";
 import { Plus, Trash2, Check, Clock, AlertTriangle, User, Calendar, ArrowRight, Lightbulb, Loader2, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +36,7 @@ interface ImmediateSuggestion {
   justification: string;
 }
 
-export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateActionProps) {
+function useNCStage2ImmediateActionComponent({ ncId, onComplete }: NCStage2ImmediateActionProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [editingAction, setEditingAction] = useState<NCImmediateAction | null>(null);
@@ -52,6 +52,7 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
   const { data: actions, isLoading } = useImmediateActions(ncId);
   const { data: employees } = useCompanyEmployees();
   const [responsibleOpen, setResponsibleOpen] = useState(false);
+  const responsibleComboboxId = useId();
   const { data: nc } = useNonConformity(ncId);
   const createMutation = useCreateImmediateAction();
   const updateMutation = useUpdateImmediateAction();
@@ -281,6 +282,7 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
                           variant="outline"
                           role="combobox"
                           aria-expanded={responsibleOpen}
+                          aria-controls={responsibleComboboxId}
                           className="w-full justify-between font-normal"
                         >
                           {formData.responsible_user_id
@@ -289,7 +291,11 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[300px] p-0" align="start">
+                      <PopoverContent
+                        id={responsibleComboboxId}
+                        className="w-[300px] p-0"
+                        align="start"
+                      >
                         <Command>
                           <CommandInput placeholder="Buscar colaborador..." />
                           <CommandList>
@@ -392,9 +398,9 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
 
             {suggestions.length > 0 && (
               <div className="space-y-3">
-                {suggestions.map((suggestion, index) => (
+                {suggestions.map((suggestion) => (
                   <div 
-                    key={index} 
+                    key={`${suggestion.action}-${suggestion.justification}`}
                     className="bg-white rounded-lg p-3 border border-blue-200 hover:border-blue-400 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -543,4 +549,8 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
       />
     </>
   );
+}
+
+export function NCStage2ImmediateAction(props: NCStage2ImmediateActionProps) {
+  return useNCStage2ImmediateActionComponent(props);
 }

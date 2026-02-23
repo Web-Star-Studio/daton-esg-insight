@@ -54,7 +54,7 @@ export function OnboardingAnalytics({
 
   const trackEvent = (eventName: string, properties: any) => {
     // In a real implementation, this would send data to your analytics service
-    console.log('📊 Onboarding Analytics:', eventName, properties);
+    console.warn('📊 Onboarding Analytics:', eventName, properties);
     
     // Store in localStorage for offline tracking
     const events = JSON.parse(localStorage.getItem('onboarding_events') || '[]');

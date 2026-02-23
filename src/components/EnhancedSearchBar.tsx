@@ -153,7 +153,7 @@ export function EnhancedSearchBar() {
     setSearchTerm('');
     
     // Add to recent searches (in real app, this would be stored)
-    console.log(`Navigating to: ${result.title}`);
+    console.warn(`Navigating to: ${result.title}`);
   };
 
   const handleRecentSearchClick = (search: string) => {
@@ -242,6 +242,14 @@ export function EnhancedSearchBar() {
                         <div
                           key={result.id}
                           onClick={() => handleResultClick(result)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              handleResultClick(result);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
                           className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer group transition-all animate-fade-in"
                           style={{ animationDelay: `${index * 50}ms` }}
                         >
@@ -300,6 +308,14 @@ export function EnhancedSearchBar() {
                         <div
                           key={search}
                           onClick={() => handleRecentSearchClick(search)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              handleRecentSearchClick(search);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
                           className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/30 cursor-pointer group transition-colors animate-fade-in"
                           style={{ animationDelay: `${index * 100}ms` }}
                         >

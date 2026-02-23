@@ -24,13 +24,13 @@ serve(async (req) => {
       const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
       
       if (claimsError || !claimsData?.claims) {
-        console.log('JWT validation failed for external call, proceeding as internal job');
+        console.warn('JWT validation failed for external call, proceeding as internal job');
       } else {
-        console.log('Authenticated request from user:', claimsData.claims.sub);
+        console.warn('Authenticated request from user:', claimsData.claims.sub);
       }
     }
 
-    console.log('Processing intelligent alerts...');
+    console.warn('Processing intelligent alerts...');
 
     // Get all companies
     const { data: companies, error: companiesError } = await supabaseClient
@@ -42,7 +42,7 @@ serve(async (req) => {
     const alertsCreated = [];
 
     for (const company of companies || []) {
-      console.log(`Processing alerts for company: ${company.name}`);
+      console.warn(`Processing alerts for company: ${company.name}`);
 
       // 1. Check for expiring licenses (30 days)
       const thirtyDaysFromNow = new Date();
@@ -230,7 +230,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Alerts created: ${alertsCreated.length}`);
+    console.warn(`Alerts created: ${alertsCreated.length}`);
 
     return new Response(
       JSON.stringify({ 

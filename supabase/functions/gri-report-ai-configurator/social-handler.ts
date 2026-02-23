@@ -6,7 +6,7 @@ const corsHeaders = {
 export async function handleAnalyzeSocialData(supabase: any, body: any) {
   const { report_id, form_data, documents, quantitative_data } = body;
 
-  console.log('[Analyze Social Data] Starting...');
+  console.warn('[Analyze Social Data] Starting...');
 
   const { data: report } = await supabase
     .from('gri_reports')
@@ -138,7 +138,7 @@ Gere texto de 1200-1600 palavras integrando TODOS os dados numéricos.`
   const result = await aiResponse.json();
   const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
-  console.log('[Analyze Social Data] Complete');
+  console.warn('[Analyze Social Data] Complete');
 
   return new Response(
     JSON.stringify(analysis),

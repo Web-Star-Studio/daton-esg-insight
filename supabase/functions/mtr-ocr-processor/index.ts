@@ -53,14 +53,14 @@ Deno.serve(async (req) => {
       throw new Error('Nenhum arquivo fornecido');
     }
 
-    console.log(`Processando documento ${documentType}: ${file.name}, tamanho: ${file.size} bytes`);
+    console.warn(`Processando documento ${documentType}: ${file.name}, tamanho: ${file.size} bytes`);
 
     // Convert file to base64
     const fileBuffer = await file.arrayBuffer();
     const base64File = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
     const mimeType = file.type;
 
-    console.log(`Tipo MIME: ${mimeType}, enviando para Lovable AI Gateway...`);
+    console.warn(`Tipo MIME: ${mimeType}, enviando para Lovable AI Gateway...`);
 
     // Call Lovable AI Gateway with Gemini Vision
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
     }
 
     const aiResult = await aiResponse.json();
-    console.log('Resposta da IA recebida');
+    console.warn('Resposta da IA recebida');
 
     // Extract the JSON from the response
     let extractedData;
@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
         throw new Error('Resposta vazia da IA');
       }
       
-      console.log('Conteúdo bruto:', content.substring(0, 500));
+      console.warn('Conteúdo bruto:', content.substring(0, 500));
       
       // Clean markdown code blocks if present
       let cleanContent = content.trim();
@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
     }
 
     // Log successful extraction
-    console.log('Dados extraídos com sucesso:', JSON.stringify(extractedData, null, 2));
+    console.warn('Dados extraídos com sucesso:', JSON.stringify(extractedData, null, 2));
 
     return new Response(
       JSON.stringify({

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -81,26 +80,6 @@ export function AdminUserTable({
       : <ArrowDown className="h-4 w-4" />;
   };
 
-  const SortableHeader = ({ 
-    column, 
-    children 
-  }: { 
-    column: UserFilters['orderBy']; 
-    children: React.ReactNode 
-  }) => (
-    <TableHead>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="-ml-3 h-8 data-[state=open]:bg-accent"
-        onClick={() => onSort(column)}
-      >
-        {children}
-        {getSortIcon(column)}
-      </Button>
-    </TableHead>
-  );
-
   const truncateId = (id: string) => {
     return `${id.slice(0, 8)}...`;
   };
@@ -140,8 +119,8 @@ export function AdminUserTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
+            {[1, 2, 3, 4, 5].map((row) => (
+              <TableRow key={`loading-row-${row}`}>
                 <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-40" /></TableCell>
@@ -192,12 +171,62 @@ export function AdminUserTable({
         <TableHeader>
           <TableRow>
             <TableHead>ID</TableHead>
-            <SortableHeader column="full_name">Nome</SortableHeader>
-            <SortableHeader column="email">Email</SortableHeader>
-            <SortableHeader column="username">Username</SortableHeader>
-            <SortableHeader column="role">Papel</SortableHeader>
+            <TableHead>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+                onClick={() => onSort('full_name')}
+              >
+                Nome
+                {getSortIcon('full_name')}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+                onClick={() => onSort('email')}
+              >
+                Email
+                {getSortIcon('email')}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+                onClick={() => onSort('username')}
+              >
+                Username
+                {getSortIcon('username')}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+                onClick={() => onSort('role')}
+              >
+                Papel
+                {getSortIcon('role')}
+              </Button>
+            </TableHead>
             <TableHead>Status</TableHead>
-            <SortableHeader column="created_at">Criado em</SortableHeader>
+            <TableHead>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+                onClick={() => onSort('created_at')}
+              >
+                Criado em
+                {getSortIcon('created_at')}
+              </Button>
+            </TableHead>
             <TableHead className="w-[70px]">Ações</TableHead>
           </TableRow>
         </TableHeader>

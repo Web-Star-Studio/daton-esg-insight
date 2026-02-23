@@ -25,9 +25,9 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
   const { data: matrices, isLoading: isLoadingMatrices, error: matricesError } = useQuery({
     queryKey: ['risk-matrices'],
     queryFn: async () => {
-      console.log('🔍 Fetching risk matrices...');
+      console.warn('🔍 Fetching risk matrices...');
       const result = await unifiedQualityService.getRiskMatrices();
-      console.log('✅ Risk matrices fetched:', result?.length || 0, 'matrices');
+      console.warn('✅ Risk matrices fetched:', result?.length || 0, 'matrices');
       return result;
     },
     retry: 1,
@@ -37,9 +37,9 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
   const { data: riskMatrix, isLoading, error: matrixError } = useQuery({
     queryKey: ['risk-matrix', selectedMatrixId],
     queryFn: async () => {
-      console.log('🔍 Fetching risk matrix data for:', selectedMatrixId);
+      console.warn('🔍 Fetching risk matrix data for:', selectedMatrixId);
       const result = await unifiedQualityService.getRiskMatrix(selectedMatrixId);
-      console.log('✅ Risk matrix data:', {
+      console.warn('✅ Risk matrix data:', {
         totalRisks: result?.riskCounts?.total || 0,
         matrixCells: result?.matrix?.length || 0
       });
@@ -52,7 +52,7 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
 
   React.useEffect(() => {
     if (!selectedMatrixId && matrices && matrices.length > 0) {
-      console.log('🎯 Auto-selecting first matrix:', matrices[0].id);
+      console.warn('🎯 Auto-selecting first matrix:', matrices[0].id);
       setSelectedMatrixId(matrices[0].id);
     }
   }, [matrices, selectedMatrixId]);

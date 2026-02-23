@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -116,46 +116,7 @@ export const CommunicationTransparencyDataModule = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [companyId, setCompanyId] = useState<string>('');
 
-  useEffect(() => {
-    loadData();
-  }, [reportId]);
-
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (profile) {
-        setCompanyId(profile.company_id);
-        await calculateMetrics(profile.company_id);
-      }
-
-      const { data: existingData } = await supabase
-        .from('gri_communication_transparency_data' as any)
-        .select('*')
-        .eq('report_id', reportId)
-        .maybeSingle();
-
-      if (existingData) {
-        setFormData(existingData);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Erro ao carregar dados');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const calculateMetrics = async (compId: string) => {
+  const calculateMetrics = useCallback(async (compId: string) => {
     try {
       const { data: stakeholders, count: totalStakeholders } = await supabase
         .from('stakeholders')
@@ -212,7 +173,46 @@ export const CommunicationTransparencyDataModule = ({
     } catch (error) {
       console.error('Error calculating metrics:', error);
     }
-  };
+  }, [reportId]);
+
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        setCompanyId(profile.company_id);
+        await calculateMetrics(profile.company_id);
+      }
+
+      const { data: existingData } = await supabase
+        .from('gri_communication_transparency_data' as any)
+        .select('*')
+        .eq('report_id', reportId)
+        .maybeSingle();
+
+      if (existingData) {
+        setFormData(existingData);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [calculateMetrics, reportId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleFieldChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
@@ -625,7 +625,7 @@ export const CommunicationTransparencyDataModule = ({
                 Salvar
               </Button>
               {currentQuestion < COMMUNICATION_TRANSPARENCY_QUESTIONS.length - 1 ? (
-                <Button onClick={() => setCurrentQuestion(currentQuestion + 1)}>
+                <Button onClick={() => setCurrentQuestion((prev) => prev + 1)}>
                   Próxima
                 </Button>
               ) : (

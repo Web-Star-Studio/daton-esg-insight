@@ -22,7 +22,7 @@ import {
 } from "@/services/emissionFactors";
 import { ghg2025FactorsService } from "@/services/ghgProtocol2025Factors";
 
-export default function BibliotecaFatores() {
+function useBibliotecaFatoresComponent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
@@ -140,10 +140,7 @@ export default function BibliotecaFatores() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedFactors = filteredFactors.slice(startIndex, endIndex);
 
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedCategory, selectedType, selectedScope, selectedSource, selectedYear]);
+  const resetToFirstPage = () => setCurrentPage(1);
 
   const handleDeleteFactor = async (id: string) => {
     if (!confirm("Tem certeza que deseja deletar este fator de emissão?")) {
@@ -282,7 +279,10 @@ export default function BibliotecaFatores() {
                   <Input
                     placeholder="Busca inteligente: nome, categoria, fonte, unidade..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      resetToFirstPage();
+                    }}
                     className="pl-10"
                   />
                 </div>
@@ -290,7 +290,10 @@ export default function BibliotecaFatores() {
               
               {/* Filter row */}
               <div className="flex gap-3 flex-wrap">
-                <Select value={selectedScope} onValueChange={setSelectedScope}>
+                <Select value={selectedScope} onValueChange={(value) => {
+                  setSelectedScope(value);
+                  resetToFirstPage();
+                }}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Escopo" />
                   </SelectTrigger>
@@ -302,7 +305,10 @@ export default function BibliotecaFatores() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <Select value={selectedCategory} onValueChange={(value) => {
+                  setSelectedCategory(value);
+                  resetToFirstPage();
+                }}>
                   <SelectTrigger className="w-52">
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
@@ -316,7 +322,10 @@ export default function BibliotecaFatores() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={selectedSource} onValueChange={setSelectedSource}>
+                <Select value={selectedSource} onValueChange={(value) => {
+                  setSelectedSource(value);
+                  resetToFirstPage();
+                }}>
                   <SelectTrigger className="w-52">
                     <Zap className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Fonte" />
@@ -331,7 +340,10 @@ export default function BibliotecaFatores() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <Select value={selectedYear} onValueChange={(value) => {
+                  setSelectedYear(value);
+                  resetToFirstPage();
+                }}>
                   <SelectTrigger className="w-44">
                     <Calendar className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Ano" />
@@ -348,7 +360,10 @@ export default function BibliotecaFatores() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={selectedType} onValueChange={setSelectedType}>
+                <Select value={selectedType} onValueChange={(value) => {
+                  setSelectedType(value);
+                  resetToFirstPage();
+                }}>
                   <SelectTrigger className="w-44">
                     <Building className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Tipo" />
@@ -386,6 +401,7 @@ export default function BibliotecaFatores() {
                       setSelectedScope("all");
                       setSelectedSource("all");
                       setSelectedYear("all");
+                      resetToFirstPage();
                     }}
                     className="h-6 px-2 text-xs"
                   >
@@ -413,7 +429,14 @@ export default function BibliotecaFatores() {
           
           <div className="flex gap-2">
             {searchTerm && (
-              <Button variant="ghost" size="sm" onClick={() => setSearchTerm("")}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  resetToFirstPage();
+                }}
+              >
                 Limpar busca
               </Button>
             )}
@@ -436,6 +459,7 @@ export default function BibliotecaFatores() {
                 setSelectedScope("all");
                 setSelectedSource("all");
                 setSelectedYear("all");
+                resetToFirstPage();
               }} className="mt-2">
                 Limpar todos os filtros
               </Button>
@@ -551,4 +575,8 @@ export default function BibliotecaFatores() {
         />
       </div>
   );
+}
+
+export default function BibliotecaFatores() {
+  return useBibliotecaFatoresComponent();
 }

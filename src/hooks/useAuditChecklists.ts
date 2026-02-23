@@ -2,6 +2,21 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { auditChecklistService, AuditChecklist, ChecklistResponse, ISOStandard } from "@/services/auditChecklist";
 import { useToast } from "@/hooks/use-toast";
 
+export function useChecklistsByStandard(standard: ISOStandard) {
+  return useQuery({
+    queryKey: ["audit-checklists", standard],
+    queryFn: () => auditChecklistService.getChecklistsByStandard(standard),
+  });
+}
+
+export function useResponsesByAudit(auditId: string) {
+  return useQuery({
+    queryKey: ["audit-responses", auditId],
+    queryFn: () => auditChecklistService.getResponsesByAudit(auditId),
+    enabled: !!auditId,
+  });
+}
+
 export function useAuditChecklists() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -14,17 +29,6 @@ export function useAuditChecklists() {
   const { data: templates } = useQuery({
     queryKey: ['audit-checklist-templates'],
     queryFn: () => auditChecklistService.getTemplates(),
-  });
-
-  const getChecklistsByStandard = (standard: ISOStandard) => useQuery({
-    queryKey: ['audit-checklists', standard],
-    queryFn: () => auditChecklistService.getChecklistsByStandard(standard),
-  });
-
-  const getResponsesByAudit = (auditId: string) => useQuery({
-    queryKey: ['audit-responses', auditId],
-    queryFn: () => auditChecklistService.getResponsesByAudit(auditId),
-    enabled: !!auditId,
   });
 
   const createChecklist = useMutation({
@@ -88,8 +92,8 @@ export function useAuditChecklists() {
     checklists,
     templates,
     isLoading,
-    getChecklistsByStandard,
-    getResponsesByAudit,
+    getChecklistsByStandard: useChecklistsByStandard,
+    getResponsesByAudit: useResponsesByAudit,
     createChecklist: createChecklist.mutate,
     createResponse: createResponse.mutate,
     updateResponse: updateResponse.mutate,

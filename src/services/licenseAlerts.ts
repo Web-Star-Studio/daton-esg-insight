@@ -3,7 +3,7 @@ import { Database } from "@/integrations/supabase/types";
 
 type LicenseAlertRow = Database['public']['Tables']['license_alerts']['Row'];
 
-export interface LicenseAlert extends LicenseAlertRow {}
+export type LicenseAlert = LicenseAlertRow;
 
 // Buscar alertas de uma licença
 export const getLicenseAlerts = async (licenseId: string): Promise<any[]> => {

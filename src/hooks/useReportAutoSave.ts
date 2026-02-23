@@ -29,7 +29,7 @@ export function useReportAutoSave({
       isSavingRef.current = true;
       await updateIntegratedReport(reportId, data);
       lastSaveRef.current = currentData;
-      console.log('Auto-save realizado:', new Date().toLocaleTimeString());
+      console.warn('Auto-save realizado:', new Date().toLocaleTimeString());
     } catch (error: any) {
       console.error('Erro no auto-save:', error);
       toast.error('Erro ao salvar automaticamente');

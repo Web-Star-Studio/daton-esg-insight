@@ -199,7 +199,7 @@ export const triggerSmartNotifications = async (eventType: string): Promise<void
     
     // Skip if no valid action for this event type
     if (!action) {
-      console.log(`No smart notification action available for event: ${eventType}`);
+      console.warn(`No smart notification action available for event: ${eventType}`);
       return;
     }
 
@@ -212,7 +212,7 @@ export const triggerSmartNotifications = async (eventType: string): Promise<void
       throw error;
     }
 
-    console.log(`Smart notifications triggered for ${eventType} -> ${action}:`, data);
+    console.warn(`Smart notifications triggered for ${eventType} -> ${action}:`, data);
   } catch (error) {
     console.error(`Failed to trigger smart notifications:`, error);
     throw error;

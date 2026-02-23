@@ -65,7 +65,7 @@ export const useStakeholderAnalytics = (period: string = '3months') => {
 
       // Calculate date range based on period
       const now = new Date();
-      let startDate = new Date();
+      const startDate = new Date();
       switch (period) {
         case '1month':
           startDate.setMonth(now.getMonth() - 1);

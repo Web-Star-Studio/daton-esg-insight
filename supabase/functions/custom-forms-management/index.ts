@@ -21,7 +21,7 @@ serve(async (req) => {
     // PUBLIC ACTIONS - No authentication required
     const publicActions = ['GET_PUBLIC_FORM', 'SUBMIT_PUBLIC_FORM']
     if (publicActions.includes(action)) {
-      console.log('📋 Processing public action:', action)
+      console.warn('📋 Processing public action:', action)
       
       // Validate public request
       try {
@@ -67,7 +67,7 @@ serve(async (req) => {
       )
     }
 
-    console.log('✅ User authenticated:', user.id)
+    console.warn('✅ User authenticated:', user.id)
 
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
@@ -83,14 +83,14 @@ serve(async (req) => {
       )
     }
 
-    console.log('✅ Company found:', profile.company_id)
+    console.warn('✅ Company found:', profile.company_id)
 
     const company_id = profile.company_id
     
     // Validate authenticated request body with Zod
     try {
       const validatedData = ActionSchema.parse(body)
-      console.log('✅ Request validated:', validatedData.action)
+      console.warn('✅ Request validated:', validatedData.action)
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         console.error('❌ Validation failed:', validationError.errors)
@@ -297,7 +297,7 @@ async function deleteForm(supabase: any, company_id: string, form_id: string) {
 }
 
 async function submitForm(supabase: any, company_id: string, user_id: string, submissionData: any) {
-  console.log('📝 Submitting form:', { form_id: submissionData.form_id, employee_id: submissionData.employee_id })
+  console.warn('📝 Submitting form:', { form_id: submissionData.form_id, employee_id: submissionData.employee_id })
   
   const insertData: any = {
     form_id: submissionData.form_id,
@@ -321,7 +321,7 @@ async function submitForm(supabase: any, company_id: string, user_id: string, su
     throw new Error(`Failed to submit form: ${error.message}`)
   }
 
-  console.log('✅ Form submitted successfully:', data.id)
+  console.warn('✅ Form submitted successfully:', data.id)
 
   return new Response(
     JSON.stringify(data),
@@ -375,7 +375,7 @@ async function getSubmissions(supabase: any, company_id: string, form_id: string
 }
 
 async function getEmployeeSubmissions(supabase: any, company_id: string, employee_id: string) {
-  console.log('📋 Fetching submissions for employee:', employee_id)
+  console.warn('📋 Fetching submissions for employee:', employee_id)
   
   const { data, error } = await supabase
     .from('form_submissions')
@@ -411,7 +411,7 @@ async function getEmployeeSubmissions(supabase: any, company_id: string, employe
     })
   )
 
-  console.log('✅ Found', submissionsWithForms.length, 'submissions for employee')
+  console.warn('✅ Found', submissionsWithForms.length, 'submissions for employee')
 
   return new Response(
     JSON.stringify(submissionsWithForms),
@@ -422,7 +422,7 @@ async function getEmployeeSubmissions(supabase: any, company_id: string, employe
 // ============= PUBLIC FUNCTIONS (NO AUTH) =============
 
 async function getPublicForm(supabase: any, form_id: string) {
-  console.log('📋 Fetching public form:', form_id)
+  console.warn('📋 Fetching public form:', form_id)
   
   const { data, error } = await supabase
     .from('custom_forms')
@@ -440,7 +440,7 @@ async function getPublicForm(supabase: any, form_id: string) {
     )
   }
 
-  console.log('✅ Public form found:', data.title)
+  console.warn('✅ Public form found:', data.title)
 
   return new Response(
     JSON.stringify(data),
@@ -449,7 +449,7 @@ async function getPublicForm(supabase: any, form_id: string) {
 }
 
 async function submitPublicForm(supabase: any, submissionData: any) {
-  console.log('📝 Submitting public form:', submissionData.form_id)
+  console.warn('📝 Submitting public form:', submissionData.form_id)
   
   // Verify form exists, is published and is public
   const { data: form, error: formError } = await supabase
@@ -477,7 +477,7 @@ async function submitPublicForm(supabase: any, submissionData: any) {
   
   // Process tracking_id if exists (from campaign email)
   if (submissionData.tracking_id) {
-    console.log('🔍 Processing tracking_id:', submissionData.tracking_id)
+    console.warn('🔍 Processing tracking_id:', submissionData.tracking_id)
     
     const { data: sendRecord, error: sendError } = await supabase
       .from('email_campaign_sends')
@@ -486,7 +486,7 @@ async function submitPublicForm(supabase: any, submissionData: any) {
       .single()
     
     if (sendRecord && !sendError) {
-      console.log('✅ Found campaign send record:', sendRecord.id)
+      console.warn('✅ Found campaign send record:', sendRecord.id)
       
       // Link submission to campaign send
       insertData.campaign_send_id = sendRecord.id
@@ -520,7 +520,7 @@ async function submitPublicForm(supabase: any, submissionData: any) {
       if (rpcError) {
         console.error('⚠️ Failed to increment campaign responded count:', rpcError.message)
       } else {
-        console.log('✅ Campaign tracking updated')
+        console.warn('✅ Campaign tracking updated')
       }
     } else {
       console.warn('⚠️ Tracking ID not found in email_campaign_sends:', submissionData.tracking_id)
@@ -554,7 +554,7 @@ async function submitPublicForm(supabase: any, submissionData: any) {
     throw new Error(`Failed to submit form: ${error.message}`)
   }
 
-  console.log('✅ Public form submitted:', data.id, {
+  console.warn('✅ Public form submitted:', data.id, {
     hasTracking: !!insertData.campaign_send_id,
     hasEmail: !!insertData.respondent_email,
     hasName: !!insertData.respondent_name,
@@ -568,7 +568,7 @@ async function submitPublicForm(supabase: any, submissionData: any) {
 }
 
 async function deleteSubmission(supabase: any, company_id: string, submission_id: string) {
-  console.log('🗑️ Deleting submission:', submission_id)
+  console.warn('🗑️ Deleting submission:', submission_id)
   
   // Verify the submission exists and belongs to the company
   const { data: submission, error: fetchError } = await supabase
@@ -597,7 +597,7 @@ async function deleteSubmission(supabase: any, company_id: string, submission_id
     throw new Error(`Erro ao deletar submissão: ${error.message}`)
   }
 
-  console.log('✅ Submission deleted successfully')
+  console.warn('✅ Submission deleted successfully')
 
   return new Response(
     JSON.stringify({ success: true }),

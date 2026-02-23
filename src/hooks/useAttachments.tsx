@@ -103,8 +103,9 @@ export function useAttachments({
       };
     }
 
-    const problematicChars = /[<>:"|?*\x00-\x1F]/;
-    if (problematicChars.test(file.name)) {
+    const problematicChars = /[<>:"|?*]/;
+    const hasControlChars = [...file.name].some((char) => char.charCodeAt(0) <= 31);
+    if (problematicChars.test(file.name) || hasControlChars) {
       return {
         valid: false,
         error: 'Nome do arquivo contém caracteres inválidos.'
@@ -150,8 +151,10 @@ export function useAttachments({
 
       try {
         // Parse file client-side
-        const { parseFileClientSide } = await import('@/utils/clientSideParsers');
-        const { saveAttachmentFile } = await import('@/utils/localStorageDB');
+        const [{ parseFileClientSide }, { saveAttachmentFile }] = await Promise.all([
+          import('@/utils/clientSideParsers'),
+          import('@/utils/localStorageDB'),
+        ]);
         
         const parsed = await parseFileClientSide(file);
         

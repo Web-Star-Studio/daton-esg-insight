@@ -33,7 +33,7 @@ export async function preloadRoute(routePath: string): Promise<void> {
     if (importFunc) {
       await importFunc();
       preloadedRoutes.add(routePath);
-      console.debug(`✅ Preloaded route: ${routePath}`);
+      console.warn(`✅ Preloaded route: ${routePath}`);
     }
   } catch (error) {
     console.error(`Failed to preload route ${routePath}:`, error);

@@ -195,6 +195,7 @@ export function MobileCombustionModal({ isOpen, onClose, source }: MobileCombust
         case "airport":
           finalQuantity = flights;
           finalUnit = "voos";
+          // eslint-disable-next-line no-case-declarations
           const airport = airportFactors.find(f => f.id === selectedAirport);
           sourceDocument += ` - ${airport?.airport_name}`;
           break;

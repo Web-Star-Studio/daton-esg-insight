@@ -6,7 +6,7 @@ const corsHeaders = {
 export async function handleAnalyzeStakeholderEngagementData(supabase: any, body: any) {
   const { report_id, form_data, documents, quantitative_data } = body;
 
-  console.log('[Analyze Stakeholder Engagement Data] Starting...');
+  console.warn('[Analyze Stakeholder Engagement Data] Starting...');
 
   // 1. Buscar relatório
   const { data: report } = await supabase
@@ -190,7 +190,7 @@ Gere um texto de 1000-1400 palavras integrando TODOS os dados numéricos de form
   const result = await aiResponse.json();
   const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
-  console.log('[Analyze Stakeholder Engagement Data] Complete');
+  console.warn('[Analyze Stakeholder Engagement Data] Complete');
 
   // 4. Salvar no banco
   await supabase

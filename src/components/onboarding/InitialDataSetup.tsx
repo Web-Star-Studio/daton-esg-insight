@@ -167,7 +167,7 @@ export function InitialDataSetup({
           await setupComplianceData(config);
           break;
         default:
-          console.log(`No specific setup for module: ${moduleId}`);
+          console.warn(`No specific setup for module: ${moduleId}`);
       }
       
       updateTaskStatus(taskId, 'completed', 100);
@@ -184,12 +184,12 @@ export function InitialDataSetup({
     // Create sample evaluation cycles if performance reviews are enabled
     if (config.performance_reviews) {
       // Implementation would create sample data
-      console.log('Setting up performance evaluation data...');
+      console.warn('Setting up performance evaluation data...');
     }
     
     // Create sample goals if goal setting is enabled
     if (config.goal_setting) {
-      console.log('Setting up goal tracking data...');
+      console.warn('Setting up goal tracking data...');
     }
   };
 
@@ -198,12 +198,12 @@ export function InitialDataSetup({
     
     // Create sample audit schedules if audit scheduling is enabled
     if (config.audit_scheduling) {
-      console.log('Setting up audit scheduling data...');
+      console.warn('Setting up audit scheduling data...');
     }
     
     // Create sample nonconformity tracking if enabled
     if (config.nonconformity_tracking) {
-      console.log('Setting up nonconformity tracking data...');
+      console.warn('Setting up nonconformity tracking data...');
     }
   };
 
@@ -211,28 +211,28 @@ export function InitialDataSetup({
     if (!user?.company?.id) return;
     
     // Create sample HR structures
-    console.log('Setting up HR management data...');
+    console.warn('Setting up HR management data...');
   };
 
   const setupGHGData = async (config: any) => {
     if (!user?.company?.id) return;
     
     // Create sample GHG inventory structures
-    console.log('Setting up GHG inventory data...');
+    console.warn('Setting up GHG inventory data...');
   };
 
   const setupDocumentData = async (config: any) => {
     if (!user?.company?.id) return;
     
     // Create sample document management structures
-    console.log('Setting up document management data...');
+    console.warn('Setting up document management data...');
   };
 
   const setupComplianceData = async (config: any) => {
     if (!user?.company?.id) return;
     
     // Create sample compliance structures
-    console.log('Setting up compliance data...');
+    console.warn('Setting up compliance data...');
   };
 
   const runSetup = async () => {

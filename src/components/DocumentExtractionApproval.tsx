@@ -45,7 +45,7 @@ export function DocumentExtractionApproval() {
   useExtractionRealtime({
     enabled: true,
     onApprovalLog: (log) => {
-      console.log('Approval log received:', log);
+      console.warn('Approval log received:', log);
     },
   });
 

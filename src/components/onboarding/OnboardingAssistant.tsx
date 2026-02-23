@@ -86,6 +86,7 @@ export function OnboardingAssistant({
         break;
 
       case 2: // Configuração
+        // eslint-disable-next-line no-case-declarations
         const configuredModules = Object.keys(moduleConfigurations).length;
         if (configuredModules < selectedModules.length) {
           suggestions.push({

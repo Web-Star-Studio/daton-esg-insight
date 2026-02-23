@@ -3,7 +3,6 @@ import { getUserAndCompany } from '@/utils/auth';
 import { logger } from '@/utils/logger';
 import type { Json } from '@/integrations/supabase/types';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ActionValues = Json | Record<string, any>;
 
 export interface ActivityHistoryItem {

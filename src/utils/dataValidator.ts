@@ -87,6 +87,7 @@ export function validateExtractedData(
             break;
             
           case 'email':
+            // eslint-disable-next-line no-case-declarations
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (value && !emailRegex.test(value)) {
               errors.push({
@@ -99,6 +100,7 @@ export function validateExtractedData(
             break;
             
           case 'range':
+            // eslint-disable-next-line no-case-declarations
             const numValue = parseFloat(value);
             if (!isNaN(numValue) && rule.params) {
               if (rule.params.min !== undefined && numValue < rule.params.min) {

@@ -167,12 +167,11 @@ export function runAccessibilityAudit(): void {
   ];
 
   if (allIssues.length > 0) {
-    console.group('🔍 Accessibility Audit Results');
-    console.log(`Found ${allIssues.length} potential issues:`);
+    console.warn('🔍 Accessibility Audit Results');
+    console.warn(`Found ${allIssues.length} potential issues:`);
     allIssues.forEach(issue => console.warn(issue));
-    console.groupEnd();
   } else {
-    console.log('✅ Accessibility audit passed');
+    console.warn('✅ Accessibility audit passed');
   }
 }
 

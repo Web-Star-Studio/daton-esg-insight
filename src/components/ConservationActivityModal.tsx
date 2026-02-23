@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,18 +48,54 @@ export function ConservationActivityModal({
   const [formReady, setFormReady] = useState(false);
   const { toast } = useToast();
 
+  const resetForm = useCallback(() => {
+    setFormData({
+      activity_type: "",
+      title: "",
+      description: "",
+      location: "",
+      area_size: 0,
+      start_date: new Date(),
+      end_date: undefined,
+      status: "Planejada" as 'Planejada' | 'Em Andamento' | 'Concluída' | 'Suspensa',
+      investment_amount: 0,
+      carbon_impact_estimate: 0,
+      methodology: "",
+      monitoring_plan: "",
+    });
+  }, []);
+
+  const loadActivityTypes = useCallback(async () => {
+    try {
+      setLoadingTypes(true);
+      console.warn('[ConservationActivityModal] Carregando tipos de atividade...');
+      const types = await carbonCompensationService.getActivityTypes();
+      setActivityTypes(types);
+      console.warn('[ConservationActivityModal] Tipos de atividade carregados:', types.length);
+    } catch (error) {
+      console.error('[ConservationActivityModal] Erro ao carregar tipos de atividade:', error);
+      toast({
+        title: "Erro ao carregar tipos",
+        description: "Não foi possível carregar os tipos de atividade. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingTypes(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
     if (open) {
       const initializeForm = async () => {
         setFormReady(false);
-        console.log('[ConservationActivityModal] Inicializando formulário', { isEdit: !!activity });
+        console.warn('[ConservationActivityModal] Inicializando formulário', { isEdit: !!activity });
         
         // Carregar tipos primeiro
         await loadActivityTypes();
         
         // Depois preencher o formulário
         if (activity) {
-          console.log('[ConservationActivityModal] Preenchendo formulário com atividade:', {
+          console.warn('[ConservationActivityModal] Preenchendo formulário com atividade:', {
             id: activity.id,
             activity_type: activity.activity_type,
             title: activity.title
@@ -80,55 +116,19 @@ export function ConservationActivityModal({
             monitoring_plan: activity.monitoring_plan || "",
           });
         } else {
-          console.log('[ConservationActivityModal] Resetando formulário para nova atividade');
+          console.warn('[ConservationActivityModal] Resetando formulário para nova atividade');
           resetForm();
         }
         
         setFormReady(true);
-        console.log('[ConservationActivityModal] Formulário pronto');
+        console.warn('[ConservationActivityModal] Formulário pronto');
       };
       
-      initializeForm();
+      void initializeForm();
     } else {
       setFormReady(false);
     }
-  }, [open, activity]);
-
-  const loadActivityTypes = async () => {
-    try {
-      setLoadingTypes(true);
-      console.log('[ConservationActivityModal] Carregando tipos de atividade...');
-      const types = await carbonCompensationService.getActivityTypes();
-      setActivityTypes(types);
-      console.log('[ConservationActivityModal] Tipos de atividade carregados:', types.length);
-    } catch (error) {
-      console.error('[ConservationActivityModal] Erro ao carregar tipos de atividade:', error);
-      toast({
-        title: "Erro ao carregar tipos",
-        description: "Não foi possível carregar os tipos de atividade. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingTypes(false);
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      activity_type: "",
-      title: "",
-      description: "",
-      location: "",
-      area_size: 0,
-      start_date: new Date(),
-      end_date: undefined,
-      status: "Planejada" as 'Planejada' | 'Em Andamento' | 'Concluída' | 'Suspensa',
-      investment_amount: 0,
-      carbon_impact_estimate: 0,
-      methodology: "",
-      monitoring_plan: "",
-    });
-  };
+  }, [open, activity, loadActivityTypes, resetForm]);
 
   const calculateCarbonImpact = async () => {
     if (!formData.activity_type || !formData.area_size) {
@@ -173,7 +173,7 @@ export function ConservationActivityModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('[ConservationActivityModal] Iniciando submit', {
+    console.warn('[ConservationActivityModal] Iniciando submit', {
       formData,
       activityTypesLoaded: activityTypes.length,
       loadingTypes,
@@ -333,7 +333,7 @@ export function ConservationActivityModal({
               <Select 
                 value={formData.activity_type} 
                 onValueChange={(value) => {
-                  console.log('[ConservationActivityModal] Tipo selecionado:', value, {
+                  console.warn('[ConservationActivityModal] Tipo selecionado:', value, {
                     hasActivity: !!activity,
                     activityTypesLoaded: activityTypes.length,
                     currentValue: formData.activity_type

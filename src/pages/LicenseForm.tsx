@@ -148,14 +148,14 @@ const LicenseForm = () => {
   }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log('=== FORM SUBMISSION STARTED ===');
-    console.log('Form values:', values);
-    console.log('Form errors:', form.formState.errors);
-    console.log('Is form valid:', form.formState.isValid);
-    console.log('Is submitting:', isSubmitting);
+    console.warn('=== FORM SUBMISSION STARTED ===');
+    console.warn('Form values:', values);
+    console.warn('Form errors:', form.formState.errors);
+    console.warn('Is form valid:', form.formState.isValid);
+    console.warn('Is submitting:', isSubmitting);
     
     if (isSubmitting) {
-      console.log('Already submitting, skipping...');
+      console.warn('Already submitting, skipping...');
       return;
     }
     
@@ -541,9 +541,9 @@ const LicenseForm = () => {
             type="submit" 
             disabled={isSubmitting || createLicenseMutation.isPending || updateLicenseMutation.isPending}
             onClick={() => {
-              console.log('Submit button clicked');
-              console.log('Form values:', form.getValues());
-              console.log('Form errors:', form.formState.errors);
+              console.warn('Submit button clicked');
+              console.warn('Form values:', form.getValues());
+              console.warn('Form errors:', form.formState.errors);
             }}
             className={cn(
               "min-w-[150px]",

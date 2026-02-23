@@ -21,7 +21,7 @@ function intelligentTableDetection(extractedFields: any, declaredTable: string):
     extractedFields.tipos_residuos_quantidades_kg
   ) {
     if (declaredTable !== 'waste_logs') {
-      console.log('🔍 INTELLIGENT DETECTION: Correcting table from', declaredTable, '→ waste_logs');
+      console.warn('🔍 INTELLIGENT DETECTION: Correcting table from', declaredTable, '→ waste_logs');
     }
     return 'waste_logs';
   }
@@ -29,13 +29,13 @@ function intelligentTableDetection(extractedFields: any, declaredTable: string):
   // Detectar fornecedores com alta confiança
   if (extractedFields.cnpj && (extractedFields.nome || extractedFields.razao_social)) {
     if (declaredTable !== 'suppliers') {
-      console.log('🔍 INTELLIGENT DETECTION: Correcting table from', declaredTable, '→ suppliers');
+      console.warn('🔍 INTELLIGENT DETECTION: Correcting table from', declaredTable, '→ suppliers');
     }
     return 'suppliers';
   }
   
   // Manter tabela declarada se não detectar nada específico
-  console.log('🔍 INTELLIGENT DETECTION: Keeping declared table', declaredTable);
+  console.warn('🔍 INTELLIGENT DETECTION: Keeping declared table', declaredTable);
   return declaredTable;
 }
 
@@ -97,7 +97,7 @@ function classifyWaste(description: string): 'I' | 'II-A' | 'II-B' {
 }
 
 function transformWasteData(extractedFields: any, companyId: string): WasteLogInsert[] {
-  console.log('🔄 Transforming waste data:', JSON.stringify(extractedFields).substring(0, 500));
+  console.warn('🔄 Transforming waste data:', JSON.stringify(extractedFields).substring(0, 500));
   
   const records: WasteLogInsert[] = [];
   const residuosPorMes = extractedFields.residuos_por_mes || {};
@@ -132,12 +132,12 @@ function transformWasteData(extractedFields: any, companyId: string): WasteLogIn
     }
   }
   
-  console.log(`✅ Transformed ${records.length} waste records`);
+  console.warn(`✅ Transformed ${records.length} waste records`);
   return records;
 }
 
 function transformSupplierData(extractedFields: any, companyId: string): SupplierInsert[] {
-  console.log('🔄 Transforming supplier data');
+  console.warn('🔄 Transforming supplier data');
   
   const records: SupplierInsert[] = [];
   
@@ -173,7 +173,7 @@ function transformSupplierData(extractedFields: any, companyId: string): Supplie
     }
   }
   
-  console.log(`✅ Transformed ${records.length} supplier records`);
+  console.warn(`✅ Transformed ${records.length} supplier records`);
   return records;
 }
 
@@ -203,7 +203,7 @@ serve(async (req) => {
   }
 
   const startTime = Date.now();
-  console.log('=== 🚀 APPROVAL PROCESS START ===');
+  console.warn('=== 🚀 APPROVAL PROCESS START ===');
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -223,7 +223,7 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    console.log('✅ User authenticated:', user.id);
+    console.warn('✅ User authenticated:', user.id);
 
     // Get user's profile and company
     const { data: profile, error: profileError } = await supabase
@@ -236,7 +236,7 @@ serve(async (req) => {
       throw new Error('Profile not found');
     }
 
-    console.log('✅ Company found:', profile.company_id);
+    console.warn('✅ Company found:', profile.company_id);
 
     // Parse request
     const { preview_id, edited_data, approval_notes }: ApprovalRequest = await req.json();
@@ -245,8 +245,8 @@ serve(async (req) => {
       throw new Error('preview_id é obrigatório');
     }
 
-    console.log('📋 Preview ID:', preview_id);
-    console.log('✏️ Has edited data:', !!edited_data);
+    console.warn('📋 Preview ID:', preview_id);
+    console.warn('✏️ Has edited data:', !!edited_data);
 
     // Get preview data
     const { data: preview, error: previewError } = await supabase
@@ -267,7 +267,7 @@ serve(async (req) => {
       throw new Error('Preview não encontrado');
     }
 
-    console.log('✅ Preview loaded:', {
+    console.warn('✅ Preview loaded:', {
       target_table: preview.target_table,
       validation_status: preview.validation_status
     });
@@ -281,13 +281,13 @@ serve(async (req) => {
     const targetTable = intelligentTableDetection(finalData, declaredTable);
 
     if (targetTable !== declaredTable) {
-      console.log(`⚠️ TABLE MISMATCH DETECTED: "${declaredTable}" → "${targetTable}"`);
-      console.log('📊 Extracted fields sample:', JSON.stringify(finalData).substring(0, 300));
+      console.warn(`⚠️ TABLE MISMATCH DETECTED: "${declaredTable}" → "${targetTable}"`);
+      console.warn('📊 Extracted fields sample:', JSON.stringify(finalData).substring(0, 300));
     }
 
     // Transform and validate data based on target table
     let recordsToInsert: any[] = [];
-    let validationErrors: string[] = [];
+    const validationErrors: string[] = [];
 
     if (targetTable === 'waste_logs') {
       recordsToInsert = transformWasteData(finalData, profile.company_id);
@@ -318,9 +318,9 @@ serve(async (req) => {
       throw new Error(`Erros de validação: ${validationErrors.join(', ')}`);
     }
 
-    console.log(`📊 Records to insert: ${recordsToInsert.length}`);
+    console.warn(`📊 Records to insert: ${recordsToInsert.length}`);
     if (recordsToInsert.length > 0) {
-      console.log('📄 Sample record:', JSON.stringify(recordsToInsert[0]));
+      console.warn('📄 Sample record:', JSON.stringify(recordsToInsert[0]));
     } else {
       console.warn('⚠️ NO RECORDS GENERATED');
       console.warn('📋 Target table:', targetTable);
@@ -345,7 +345,7 @@ serve(async (req) => {
       if (existingMTRs && existingMTRs.length > 0) {
         const existingSet = new Set(existingMTRs.map(e => e.mtr_number));
         recordsToInsert = recordsToInsert.filter((r: any) => !existingSet.has(r.mtr_number));
-        console.log(`⚠️ Filtered ${existingMTRs.length} duplicate MTRs`);
+        console.warn(`⚠️ Filtered ${existingMTRs.length} duplicate MTRs`);
       }
     }
 
@@ -364,9 +364,9 @@ serve(async (req) => {
       }
 
       insertedCount = insertResult?.length || 0;
-      console.log(`✅ Successfully inserted ${insertedCount} records into ${targetTable}`);
+      console.warn(`✅ Successfully inserted ${insertedCount} records into ${targetTable}`);
     } else {
-      console.log('⚠️ No new records to insert (all duplicates or empty)');
+      console.warn('⚠️ No new records to insert (all duplicates or empty)');
     }
 
     // Update preview status
@@ -378,7 +378,7 @@ serve(async (req) => {
     if (updateError) {
       console.error('⚠️ Failed to update preview status:', updateError);
     } else {
-      console.log('✅ Preview status updated to Aprovado');
+      console.warn('✅ Preview status updated to Aprovado');
     }
 
     // Count edited fields
@@ -420,7 +420,7 @@ serve(async (req) => {
     if (auditError) {
       console.error('⚠️ Failed to create audit log:', auditError);
     } else {
-      console.log('✅ Audit log created');
+      console.warn('✅ Audit log created');
     }
 
     const response = {
@@ -431,8 +431,8 @@ serve(async (req) => {
       edited_fields_count: editedFields.length
     };
 
-    console.log('=== ✅ APPROVAL PROCESS COMPLETE ===');
-    console.log('Response:', response);
+    console.warn('=== ✅ APPROVAL PROCESS COMPLETE ===');
+    console.warn('Response:', response);
 
     return new Response(
       JSON.stringify(response),

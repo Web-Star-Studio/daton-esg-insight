@@ -88,6 +88,7 @@ export const getTrainingExportData = async (config: TrainingExportConfig): Promi
       };
 
     case 'by_location':
+      // eslint-disable-next-line no-case-declarations
       const byLocation = groupByField(employeeHours, 'location');
       return {
         headers: ['Filial', 'Horas Totais', 'Funcionários', 'Média por Funcionário'],
@@ -96,6 +97,7 @@ export const getTrainingExportData = async (config: TrainingExportConfig): Promi
       };
 
     case 'by_department':
+      // eslint-disable-next-line no-case-declarations
       const byDept = groupByField(employeeHours, 'department');
       return {
         headers: ['Setor', 'Horas Totais', 'Funcionários', 'Média por Funcionário'],
@@ -104,6 +106,7 @@ export const getTrainingExportData = async (config: TrainingExportConfig): Promi
       };
 
     case 'by_position':
+      // eslint-disable-next-line no-case-declarations
       const byPosition = groupByField(employeeHours, 'position');
       return {
         headers: ['Função', 'Horas Totais', 'Funcionários', 'Média por Funcionário'],
@@ -112,6 +115,7 @@ export const getTrainingExportData = async (config: TrainingExportConfig): Promi
       };
 
     case 'by_training':
+      // eslint-disable-next-line no-case-declarations
       const trainingStats = programs.map(program => {
         const programTrainings = trainings.filter(t => t.training_program_id === program.id);
         const completedCount = programTrainings.length;

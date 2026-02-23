@@ -83,14 +83,14 @@ Saída esperada:
 Sempre um único JSON válido que obedece ao schema. Não adicione explicações nem comentários fora do JSON.`;
 
 serve(async (req) => {
-  console.log('Starting document extraction...');
+  console.warn('Starting document extraction...');
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   const correlationId = crypto.randomUUID();
-  console.log(`[${correlationId}] Starting extraction process`);
+  console.warn(`[${correlationId}] Starting extraction process`);
   
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -108,14 +108,14 @@ serve(async (req) => {
     // Get authenticated user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.log(`[${correlationId}] Authentication failed:`, userError);
+      console.warn(`[${correlationId}] Authentication failed:`, userError);
       return new Response(JSON.stringify({ ok: false, error: 'unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log(`[${correlationId}] Authenticated user: ${user.id}`);
+    console.warn(`[${correlationId}] Authenticated user: ${user.id}`);
 
     const { file_id }: ExtractionRequest = await req.json();
     if (!file_id) {
@@ -134,14 +134,14 @@ serve(async (req) => {
       .single();
 
     if (fileError || !file) {
-      console.log(`[${correlationId}] File not found or access denied:`, fileError);
+      console.warn(`[${correlationId}] File not found or access denied:`, fileError);
       return new Response(JSON.stringify({ ok: false, error: 'file not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log(`[${correlationId}] Processing file: ${file.original_name} (${file.mime})`);
+    console.warn(`[${correlationId}] Processing file: ${file.original_name} (${file.mime})`);
 
     // Download file from storage
     const { data: fileData, error: downloadError } = await supabase.storage
@@ -149,7 +149,7 @@ serve(async (req) => {
       .download(file.storage_path);
 
     if (downloadError || !fileData) {
-      console.log(`[${correlationId}] File download failed:`, downloadError);
+      console.warn(`[${correlationId}] File download failed:`, downloadError);
       
       await supabase.from('files').update({ 
         status: 'failed', 
@@ -166,7 +166,7 @@ serve(async (req) => {
     const fileBuffer = await fileData.arrayBuffer();
     const fileBlob = new Blob([fileBuffer], { type: file.mime });
     
-    console.log(`[${correlationId}] Uploading file to OpenAI...`);
+    console.warn(`[${correlationId}] Uploading file to OpenAI...`);
 
     // Upload file to OpenAI
     const formData = new FormData();
@@ -183,7 +183,7 @@ serve(async (req) => {
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
-      console.log(`[${correlationId}] OpenAI file upload failed:`, errorText);
+      console.warn(`[${correlationId}] OpenAI file upload failed:`, errorText);
       
       await supabase.from('files').update({ 
         status: 'failed', 
@@ -199,8 +199,8 @@ serve(async (req) => {
     const uploadResult = await uploadResponse.json();
     const openaiFileId = uploadResult.id;
     
-    console.log(`[${correlationId}] File uploaded to OpenAI: ${openaiFileId}`);
-    console.log(`[${correlationId}] Calling OpenAI Responses API...`);
+    console.warn(`[${correlationId}] File uploaded to OpenAI: ${openaiFileId}`);
+    console.warn(`[${correlationId}] Calling OpenAI Responses API...`);
 
     // Call OpenAI Responses API
     const responsesResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -241,14 +241,14 @@ serve(async (req) => {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${openaiApiKey}` }
       });
-      console.log(`[${correlationId}] Cleaned up OpenAI file: ${openaiFileId}`);
+      console.warn(`[${correlationId}] Cleaned up OpenAI file: ${openaiFileId}`);
     } catch (cleanupError) {
-      console.log(`[${correlationId}] Failed to cleanup OpenAI file:`, cleanupError);
+      console.warn(`[${correlationId}] Failed to cleanup OpenAI file:`, cleanupError);
     }
 
     if (!responsesResponse.ok) {
       const errorText = await responsesResponse.text();
-      console.log(`[${correlationId}] OpenAI Responses API failed:`, errorText);
+      console.warn(`[${correlationId}] OpenAI Responses API failed:`, errorText);
       
       await supabase.from('files').update({ 
         status: 'failed', 
@@ -264,11 +264,11 @@ serve(async (req) => {
     const aiResult = await responsesResponse.json();
     const extractedData = JSON.parse(aiResult.choices[0].message.content);
     
-    console.log(`[${correlationId}] OpenAI extraction successful, confidence: ${extractedData.confidence}, evidence chars: ${extractedData._evidence_chars}`);
+    console.warn(`[${correlationId}] OpenAI extraction successful, confidence: ${extractedData.confidence}, evidence chars: ${extractedData._evidence_chars}`);
 
     // Validate response quality
     if (extractedData.confidence < 0.5 || extractedData._evidence_chars < 200) {
-      console.log(`[${correlationId}] Document quality insufficient - confidence: ${extractedData.confidence}, evidence: ${extractedData._evidence_chars}`);
+      console.warn(`[${correlationId}] Document quality insufficient - confidence: ${extractedData.confidence}, evidence: ${extractedData._evidence_chars}`);
       
       await supabase.from('files').update({ 
         status: 'failed', 
@@ -297,11 +297,11 @@ serve(async (req) => {
       .single();
 
     if (extractionError || !extraction) {
-      console.log(`[${correlationId}] Failed to create extraction record:`, extractionError);
+      console.warn(`[${correlationId}] Failed to create extraction record:`, extractionError);
       throw new Error('Failed to create extraction record');
     }
 
-    console.log(`[${correlationId}] Created extraction record: ${extraction.id}`);
+    console.warn(`[${correlationId}] Created extraction record: ${extraction.id}`);
 
     // Create staging items
     const stagingItems = [];
@@ -379,9 +379,9 @@ serve(async (req) => {
         .insert(stagingItems);
 
       if (stagingError) {
-        console.log(`[${correlationId}] Failed to create staging items:`, stagingError);
+        console.warn(`[${correlationId}] Failed to create staging items:`, stagingError);
       } else {
-        console.log(`[${correlationId}] Created ${stagingItems.length} staging items`);
+        console.warn(`[${correlationId}] Created ${stagingItems.length} staging items`);
       }
     }
 
@@ -402,7 +402,7 @@ serve(async (req) => {
       }
     });
 
-    console.log(`[${correlationId}] Extraction completed successfully`);
+    console.warn(`[${correlationId}] Extraction completed successfully`);
 
     return new Response(JSON.stringify({ 
       ok: true, 
@@ -414,7 +414,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.log(`[${correlationId}] Extraction failed:`, error);
+    console.warn(`[${correlationId}] Extraction failed:`, error);
     
     return new Response(JSON.stringify({ 
       ok: false, 

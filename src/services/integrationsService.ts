@@ -349,7 +349,7 @@ class IntegrationsService {
   async logIntegrationEvent(integrationId: string, event: string, success: boolean, details?: any): Promise<void> {
     try {
       // Placeholder - would need database table
-      console.log('Integration event:', { integrationId, event, success, details });
+      console.warn('Integration event:', { integrationId, event, success, details });
     } catch (error) {
       console.error('Failed to log integration event:', error);
     }

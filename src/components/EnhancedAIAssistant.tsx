@@ -395,14 +395,14 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
         break;
       case 'export':
         // Implement export functionality
-        console.log('Export action:', action);
+        console.warn('Export action:', action);
         break;
       case 'schedule':
         // Implement scheduling functionality
-        console.log('Schedule action:', action);
+        console.warn('Schedule action:', action);
         break;
       default:
-        console.log('Unknown action:', action);
+        console.warn('Unknown action:', action);
     }
   };
 

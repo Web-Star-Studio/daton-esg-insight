@@ -45,7 +45,6 @@ export function ResponsiveImage({
   };
 
   const imgProps = {
-    alt,
     loading: priority ? "eager" as const : loading,
     onError: handleError,
     className: cn("object-cover", className),
@@ -59,6 +58,7 @@ export function ResponsiveImage({
       <picture>
         <source srcSet={webpSrc} type="image/webp" />
         <img
+          alt={alt}
           src={src}
           srcSet={srcSetString}
           sizes={sizes}
@@ -71,6 +71,7 @@ export function ResponsiveImage({
 
   return (
     <img
+      alt={alt}
       src={hasError && fallback ? fallback : src}
       srcSet={hasError ? undefined : srcSetString}
       sizes={hasError ? undefined : sizes}

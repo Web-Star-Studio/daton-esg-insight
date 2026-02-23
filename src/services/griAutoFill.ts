@@ -104,7 +104,7 @@ export const autoFillIndicator = async (
     result.unit = suggestion.unit;
     result.breakdown = suggestion.breakdown;
     
-    console.log(`Sugestão obtida para ${indicatorData.indicator?.code}:`, {
+    console.warn(`Sugestão obtida para ${indicatorData.indicator?.code}:`, {
       value: suggestion.suggested_value,
       confidence: suggestion.confidence,
       source: suggestion.data_source
@@ -116,6 +116,7 @@ export const autoFillIndicator = async (
 
     switch (dataType) {
       case 'Numérico':
+        // eslint-disable-next-line no-case-declarations
         const numericValue = typeof suggestion.suggested_value === 'number' 
           ? suggestion.suggested_value 
           : parseFloat(String(suggestion.suggested_value).replace(/[^\d.-]/g, ''));
@@ -129,6 +130,7 @@ export const autoFillIndicator = async (
         break;
         
       case 'Percentual':
+        // eslint-disable-next-line no-case-declarations
         const percentValue = typeof suggestion.suggested_value === 'number' 
           ? suggestion.suggested_value 
           : parseFloat(String(suggestion.suggested_value).replace(/[^\d.-]/g, ''));
@@ -146,6 +148,7 @@ export const autoFillIndicator = async (
         break;
         
       case 'Booleano':
+        // eslint-disable-next-line no-case-declarations
         const boolValue = String(suggestion.suggested_value).toLowerCase();
         updateData.boolean_value = boolValue === 'sim' || boolValue === 'true' || boolValue === '1';
         break;

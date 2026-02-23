@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,11 +104,7 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
   const [periodEnd, setPeriodEnd] = useState<string>("");
   const [completionPercentage, setCompletionPercentage] = useState(0);
 
-  useEffect(() => {
-    loadData();
-  }, [reportId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -152,7 +148,7 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
         }
       } else {
         // Calculate initial metrics
-        await calculateMetrics(profile.company_id, start, end);
+        await calculateMetricsRef.current(profile.company_id, start, end);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -160,7 +156,7 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
     } finally {
       setLoading(false);
     }
-  };
+  }, [reportId]);
 
   const calculateMetrics = async (compId: string, start: Date, end: Date) => {
     try {
@@ -250,6 +246,13 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
       setCalculating(false);
     }
   };
+
+  const calculateMetricsRef = useRef(calculateMetrics);
+  calculateMetricsRef.current = calculateMetrics;
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleRecalculate = async () => {
     if (!periodStart || !periodEnd) {

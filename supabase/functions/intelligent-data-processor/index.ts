@@ -19,7 +19,7 @@ serve(async (req) => {
 
     const { unclassified_data_id, action } = await req.json();
 
-    console.log(`Processing data ID: ${unclassified_data_id}, action: ${action}`);
+    console.warn(`Processing data ID: ${unclassified_data_id}, action: ${action}`);
 
     // Get unclassified data
     const { data: unclassifiedData, error: fetchError } = await supabaseClient
@@ -196,7 +196,7 @@ Responda usando a ferramenta fornecida.`;
     }
 
     const executionPlan = JSON.parse(toolCall.function.arguments);
-    console.log('Execution plan:', JSON.stringify(executionPlan, null, 2));
+    console.warn('Execution plan:', JSON.stringify(executionPlan, null, 2));
 
     const results = {
       successful_operations: [],
@@ -294,7 +294,7 @@ Responda usando a ferramenta fornecida.`;
                   isDuplicate = true;
                   duplicateRecord = existingRecords[0];
                   appliedRule = rule;
-                  console.log(`🔍 Duplicate found in ${operation.table_name} using rule: ${rule.rule_name}`);
+                  console.warn(`🔍 Duplicate found in ${operation.table_name} using rule: ${rule.rule_name}`);
                   break;
                 }
               }
@@ -307,7 +307,7 @@ Responda usando a ferramenta fornecida.`;
             // Apply merge strategy based on rule
             switch (appliedRule.merge_strategy) {
               case 'skip_if_exists':
-                console.log(`⏭️ Skipping insert (duplicate found, strategy: skip_if_exists)`);
+                console.warn(`⏭️ Skipping insert (duplicate found, strategy: skip_if_exists)`);
                 results.successful_operations.push({
                   table: operation.table_name,
                   operation: 'SKIPPED',
@@ -323,7 +323,8 @@ Responda usando a ferramenta fornecida.`;
                 continue;
 
               case 'update_existing':
-                console.log(`🔄 Updating existing record (strategy: update_existing)`);
+                console.warn(`🔄 Updating existing record (strategy: update_existing)`);
+                // eslint-disable-next-line no-case-declarations
                 const { data: updateData, error: updateError } = await supabaseClient
                   .from(operation.table_name)
                   .update({
@@ -351,8 +352,9 @@ Responda usando a ferramenta fornecida.`;
                 continue;
 
               case 'merge_fields':
-                console.log(`🔀 Merging fields (strategy: merge_fields)`);
+                console.warn(`🔀 Merging fields (strategy: merge_fields)`);
                 // Merge non-null fields from new data with existing
+                // eslint-disable-next-line no-case-declarations
                 const mergedData = { ...duplicateRecord };
                 for (const [key, value] of Object.entries(dataToInsert)) {
                   if (value !== null && value !== undefined && value !== '') {
@@ -361,6 +363,7 @@ Responda usando a ferramenta fornecida.`;
                 }
                 mergedData.updated_at = new Date().toISOString();
 
+                // eslint-disable-next-line no-case-declarations
                 const { data: mergeData, error: mergeError } = await supabaseClient
                   .from(operation.table_name)
                   .update(mergedData)
@@ -418,7 +421,7 @@ Responda usando a ferramenta fornecida.`;
             result,
           });
 
-          console.log(`✅ Operation successful: ${operation.operation_type} on ${operation.table_name}`);
+          console.warn(`✅ Operation successful: ${operation.operation_type} on ${operation.table_name}`);
         } catch (error) {
           console.error(`❌ Operation failed: ${operation.operation_type} on ${operation.table_name}`, error);
           results.failed_operations.push({

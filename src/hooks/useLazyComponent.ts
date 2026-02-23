@@ -3,7 +3,7 @@ import React, { lazy, LazyExoticComponent, ComponentType, Suspense, useState, us
 // Cache for lazy components to avoid re-imports
 const componentCache = new Map<string, LazyExoticComponent<any>>();
 
-export function createLazyComponent<T = {}>(
+export function createLazyComponent<T = Record<string, unknown>>(
   importFn: () => Promise<{ default: ComponentType<T> }>,
   cacheKey?: string
 ): LazyExoticComponent<ComponentType<T>> {
@@ -95,7 +95,7 @@ export function preloadCriticalComponents() {
   criticalComponents.forEach(componentName => {
     if (LazyComponents[componentName as keyof typeof LazyComponents]) {
       // Trigger the import but don't wait for it
-      LazyComponents[componentName as keyof typeof LazyComponents];
+      void LazyComponents[componentName as keyof typeof LazyComponents];
     }
   });
 }

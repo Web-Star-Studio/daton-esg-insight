@@ -80,7 +80,7 @@ export function useFirstLoginDetection() {
         shouldShowOnboarding = !onboardingData?.is_completed;
       }
 
-      console.log('✅ useFirstLoginDetection: Check complete', {
+      console.warn('✅ useFirstLoginDetection: Check complete', {
         userId: user.id,
         isFirstLogin,
         shouldShowOnboarding
@@ -109,7 +109,7 @@ export function useFirstLoginDetection() {
     }
 
     try {
-      console.log('📝 useFirstLoginDetection: Marking onboarding complete...');
+      console.warn('📝 useFirstLoginDetection: Marking onboarding complete...');
       
       const { error } = await supabase
         .from('profiles')
@@ -127,7 +127,7 @@ export function useFirstLoginDetection() {
         shouldShowOnboarding: false
       }));
 
-      console.log('✅ useFirstLoginDetection: Onboarding marked complete');
+      console.warn('✅ useFirstLoginDetection: Onboarding marked complete');
       return true;
     } catch (error) {
       console.error('❌ useFirstLoginDetection: Error in markOnboardingComplete:', error);

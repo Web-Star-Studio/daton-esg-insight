@@ -363,7 +363,9 @@ export function PublicFormRenderer({
           );
         
         case 'file':
+          // eslint-disable-next-line no-case-declarations
           const MAX_FILE_SIZE_MB = 5;
+          // eslint-disable-next-line no-case-declarations
           const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
           
           return (

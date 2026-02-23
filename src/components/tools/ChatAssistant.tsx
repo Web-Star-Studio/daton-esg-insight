@@ -155,11 +155,11 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   };
 
   const handleFileSelect = async (files: File[]) => {
-    console.log(`ChatAssistant: Processing ${files.length} files`);
+    console.warn(`ChatAssistant: Processing ${files.length} files`);
     
     for (const file of files) {
       try {
-        console.log(`Adding attachment: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+        console.warn(`Adding attachment: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
         await addAttachment(file);
       } catch (error) {
         console.error(`Failed to add attachment ${file.name}:`, error);

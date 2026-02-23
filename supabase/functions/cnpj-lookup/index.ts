@@ -93,7 +93,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[cnpj-lookup] Buscando CNPJ: ${cleanedCNPJ}`);
+    console.warn(`[cnpj-lookup] Buscando CNPJ: ${cleanedCNPJ}`);
 
     // Call ReceitaWS API (free, no API key needed)
     const response = await fetch(`https://receitaws.com.br/v1/cnpj/${cleanedCNPJ}`, {
@@ -122,7 +122,7 @@ serve(async (req) => {
 
     // Check if CNPJ was found
     if (data.situacao === 'ERROR' || !data.nome) {
-      console.log(`[cnpj-lookup] CNPJ not found: ${cleanedCNPJ}`);
+      console.warn(`[cnpj-lookup] CNPJ not found: ${cleanedCNPJ}`);
       return new Response(
         JSON.stringify({ error: 'CNPJ não encontrado na Receita Federal' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -130,7 +130,7 @@ serve(async (req) => {
     }
 
     const transformedData = transformData(data);
-    console.log(`[cnpj-lookup] Success: ${transformedData.name}`);
+    console.warn(`[cnpj-lookup] Success: ${transformedData.name}`);
 
     return new Response(
       JSON.stringify({ 

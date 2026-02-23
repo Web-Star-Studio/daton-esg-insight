@@ -164,10 +164,10 @@ const CriarMeta = () => {
   }, [form.formState.errors])
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log('=== META SUBMISSION STARTED ===');
-    console.log('Form values:', values);
-    console.log('Form errors:', form.formState.errors);
-    console.log('Is form valid:', form.formState.isValid);
+    console.warn('=== META SUBMISSION STARTED ===');
+    console.warn('Form values:', values);
+    console.warn('Form errors:', form.formState.errors);
+    console.warn('Is form valid:', form.formState.isValid);
     
     const goalData: CreateGoalData = {
       name: values.nome,

@@ -6,7 +6,7 @@ export async function bulkImportEmissionsAction(
   userId: string,
   supabase: any
 ) {
-  console.log('[BULK IMPORT] Importing emissions:', { count: args.emissions?.length });
+  console.warn('[BULK IMPORT] Importing emissions:', { count: args.emissions?.length });
 
   if (!args.emissions || !Array.isArray(args.emissions) || args.emissions.length === 0) {
     return {
@@ -117,7 +117,7 @@ export async function bulkImportEmployeesAction(
   userId: string,
   supabase: any
 ) {
-  console.log('[BULK IMPORT] Importing employees:', { count: args.employees?.length });
+  console.warn('[BULK IMPORT] Importing employees:', { count: args.employees?.length });
 
   if (!args.employees || !Array.isArray(args.employees) || args.employees.length === 0) {
     return {
@@ -225,7 +225,7 @@ export async function bulkImportGoalsAction(
   userId: string,
   supabase: any
 ) {
-  console.log('[BULK IMPORT] Importing goals:', { count: args.goals?.length });
+  console.warn('[BULK IMPORT] Importing goals:', { count: args.goals?.length });
 
   if (!args.goals || !Array.isArray(args.goals) || args.goals.length === 0) {
     return {
@@ -320,7 +320,7 @@ export async function bulkImportWasteAction(
   userId: string,
   supabase: any
 ) {
-  console.log('[BULK IMPORT] Importing waste logs:', { count: args.waste?.length });
+  console.warn('[BULK IMPORT] Importing waste logs:', { count: args.waste?.length });
 
   if (!args.waste || !Array.isArray(args.waste) || args.waste.length === 0) {
     return {

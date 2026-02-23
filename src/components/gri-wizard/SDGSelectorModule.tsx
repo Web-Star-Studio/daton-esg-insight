@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,13 +46,7 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterTheme, setFilterTheme] = useState<'all' | 'social' | 'economic' | 'environmental'>('all');
 
-  useEffect(() => {
-    if (reportId) {
-      loadSavedSDGs();
-    }
-  }, [reportId]);
-
-  const loadSavedSDGs = async () => {
+  const loadSavedSDGs = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('sdg_alignment')
@@ -85,7 +79,13 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
       console.error('Error loading SDGs:', error);
       toast.error('Erro ao carregar ODS salvos');
     }
-  };
+  }, [reportId]);
+
+  useEffect(() => {
+    if (reportId) {
+      void loadSavedSDGs();
+    }
+  }, [reportId, loadSavedSDGs]);
 
   const toggleSDG = async (sdgNumber: number) => {
     const newSelected = new Set(selectedSDGs);
@@ -275,9 +275,10 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
           ) : (
             <div className="space-y-2">
               {filteredSDGs.map(sdg => (
-                <div
+                <button
+                  type="button"
                   key={sdg.number}
-                  className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-4 p-4 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer text-left"
                   onClick={() => toggleSDG(sdg.number)}
                 >
                   <div
@@ -296,7 +297,7 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
                       {sdg.description}
                     </p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}

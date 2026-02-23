@@ -314,12 +314,12 @@ class NonConformitiesService {
         .maybeSingle();
 
       if (workflowError) {
-        console.log("Error fetching workflow:", workflowError);
+        console.warn("Error fetching workflow:", workflowError);
         return null;
       }
       
       if (!workflow) {
-        console.log("No active workflow found for", entityType);
+        console.warn("No active workflow found for", entityType);
         return null;
       }
 

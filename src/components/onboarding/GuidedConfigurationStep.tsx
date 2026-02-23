@@ -228,7 +228,7 @@ export function GuidedConfigurationStep({
 
   const goToNextModule = () => {
     if (currentModuleIndex < totalModules - 1) {
-      setCurrentModuleIndex(currentModuleIndex + 1);
+      setCurrentModuleIndex((prev) => prev + 1);
     } else {
       onNext();
     }
@@ -236,7 +236,7 @@ export function GuidedConfigurationStep({
 
   const goToPrevModule = () => {
     if (currentModuleIndex > 0) {
-      setCurrentModuleIndex(currentModuleIndex - 1);
+      setCurrentModuleIndex((prev) => prev - 1);
     } else {
       onPrev();
     }
@@ -345,6 +345,7 @@ export function GuidedConfigurationStep({
         );
 
       case 'multi-input':
+        // eslint-disable-next-line no-case-declarations
         const currentValues = value || [];
         return (
           <div className="space-y-3">

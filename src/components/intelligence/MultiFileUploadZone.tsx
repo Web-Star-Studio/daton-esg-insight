@@ -57,7 +57,7 @@ export function MultiFileUploadZone({
         type.startsWith('.') ? type.slice(1).toLowerCase() : type.toLowerCase()
       );
 
-      let rejectedFiles: { name: string; reason: string }[] = [];
+      const rejectedFiles: { name: string; reason: string }[] = [];
 
       for (const file of fileArray) {
         const fileExtension = file.name.split('.').pop()?.toLowerCase();

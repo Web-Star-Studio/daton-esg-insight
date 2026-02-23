@@ -38,7 +38,7 @@ export async function generateProactiveInsights(
       insights.push(...licenseInsights);
     }
     
-    console.log(`✅ Generated ${insights.length} proactive insights`);
+    console.warn(`✅ Generated ${insights.length} proactive insights`);
   } catch (error) {
     console.error('Error generating proactive insights:', error);
   }

@@ -88,7 +88,7 @@ const RegistrarDestinacao = () => {
   const { data: authUser } = useQuery({
     queryKey: ['auth-check'],
     queryFn: async () => {
-      console.log("🔐 [AUTH] Verificando autenticação...");
+      console.warn("🔐 [AUTH] Verificando autenticação...");
       const { data: { user }, error } = await supabase.auth.getUser();
       
       if (error) {
@@ -113,7 +113,7 @@ const RegistrarDestinacao = () => {
         return null;
       }
       
-      console.log("✅ [AUTH] Usuário autenticado:", user.id);
+      console.warn("✅ [AUTH] Usuário autenticado:", user.id);
       return user;
     },
     retry: false
@@ -210,17 +210,17 @@ const RegistrarDestinacao = () => {
   const createWasteLogMutation = useMutation({
     mutationFn: createWasteLog,
     onMutate: () => {
-      console.log("⏳ [MUTATION] Iniciando mutation...");
+      console.warn("⏳ [MUTATION] Iniciando mutation...");
     },
     onSuccess: async (data) => {
-      console.log("✅ [MUTATION] Registro criado com sucesso:", data);
+      console.warn("✅ [MUTATION] Registro criado com sucesso:", data);
       
       // If there's a file, upload it
       if (uploadedFile) {
-        console.log("📎 [MUTATION] Fazendo upload do documento...");
+        console.warn("📎 [MUTATION] Fazendo upload do documento...");
         try {
           await uploadWasteDocument(data.id, uploadedFile);
-          console.log("✅ [MUTATION] Documento salvo com sucesso");
+          console.warn("✅ [MUTATION] Documento salvo com sucesso");
           toast({
             title: "Sucesso!",
             description: `Registro ${data.mtr_number} e documento salvos com sucesso.`,
@@ -241,14 +241,14 @@ const RegistrarDestinacao = () => {
       }
       
       // Invalidate and refetch waste logs
-      console.log("🔄 [MUTATION] Invalidando queries...");
+      console.warn("🔄 [MUTATION] Invalidando queries...");
       queryClient.invalidateQueries({ queryKey: ['waste-logs'] });
       queryClient.invalidateQueries({ queryKey: ['waste-dashboard'] });
       
       // Small delay to ensure queries are refetched
-      console.log("⏱️ [MUTATION] Aguardando antes de redirecionar...");
+      console.warn("⏱️ [MUTATION] Aguardando antes de redirecionar...");
       setTimeout(() => {
-        console.log("🔀 [MUTATION] Redirecionando para /residuos");
+        console.warn("🔀 [MUTATION] Redirecionando para /residuos");
         navigate("/residuos");
       }, 500);
     },
@@ -266,7 +266,7 @@ const RegistrarDestinacao = () => {
   const sanitizeCNPJ = (v?: string) => (v ? onlyDigits(v) : undefined);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("🚀 [SUBMIT] Formulário submetido com valores:", values);
+    console.warn("🚀 [SUBMIT] Formulário submetido com valores:", values);
     
     // Calcular total_payable automaticamente
     const totalPayable = (values.destinationCostTotal || 0) + (values.transportCost || 0);
@@ -308,8 +308,8 @@ const RegistrarDestinacao = () => {
       cdf_additional_2: values.cdfAdditional2 || undefined,
     };
 
-    console.log("📦 [SUBMIT] Dados formatados para API:", wasteData);
-    console.log("🔄 [SUBMIT] Chamando mutation...");
+    console.warn("📦 [SUBMIT] Dados formatados para API:", wasteData);
+    console.warn("🔄 [SUBMIT] Chamando mutation...");
     createWasteLogMutation.mutate(wasteData);
   }
 
@@ -349,7 +349,7 @@ const RegistrarDestinacao = () => {
               type="submit" 
               form="residuo-form"
               disabled={createWasteLogMutation.isPending || !authUser}
-              onClick={() => console.log("🖱️ [BUTTON] Botão Salvar clicado")}
+              onClick={() => console.warn("🖱️ [BUTTON] Botão Salvar clicado")}
             >
               {createWasteLogMutation.isPending ? (
                 <>
@@ -367,8 +367,8 @@ const RegistrarDestinacao = () => {
           <form 
             id="residuo-form" 
             onSubmit={(e) => {
-              console.log("📝 [FORM] Submit event disparado");
-              console.log("📝 [FORM] Estado do formulário:", {
+              console.warn("📝 [FORM] Submit event disparado");
+              console.warn("📝 [FORM] Estado do formulário:", {
                 isValid: form.formState.isValid,
                 errors: form.formState.errors,
                 isDirty: form.formState.isDirty

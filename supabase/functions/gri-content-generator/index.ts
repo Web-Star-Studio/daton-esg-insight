@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     const requestData: ContentRequest = await req.json();
     const { reportId, sectionKey, contentType, metadataType, context, regenerate, sdgData } = requestData;
 
-    console.log('Generating content for:', { reportId, sectionKey, contentType, metadataType, regenerate });
+    console.warn('Generating content for:', { reportId, sectionKey, contentType, metadataType, regenerate });
 
     // Get company context
     const { data: profile } = await supabaseClient
@@ -503,7 +503,7 @@ async function generateContentWithAI(
   const systemPrompt = buildSystemPrompt(sectionKey, contentType);
   const userPrompt = buildUserPrompt(sectionKey, companyName, report, companyContext, additionalContext);
 
-  console.log('Calling Lovable AI for content generation...');
+  console.warn('Calling Lovable AI for content generation...');
 
   try {
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -545,7 +545,7 @@ async function generateContentWithAI(
       return generateFallbackContent(sectionKey, companyName, report, companyContext);
     }
 
-    console.log('Content generated successfully with AI');
+    console.warn('Content generated successfully with AI');
     return generatedText;
 
   } catch (error) {

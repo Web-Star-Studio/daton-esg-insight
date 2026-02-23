@@ -130,7 +130,7 @@ export function EditCustomFactorModal({ open, onOpenChange, factor }: EditCustom
 
     try {
       setIsLoading(true)
-      console.log("Editando fator customizado:", { ...data, vigencia: dateRange })
+      console.warn("Editando fator customizado:", { ...data, vigencia: dateRange })
       
       // Prepare the data for update
       const updateData = {

@@ -45,7 +45,7 @@ export function useOptimizedRealtime(configs: RealtimeConfig[]) {
     limitedConfigs.forEach((config, index) => {
       const channelName = `realtime-${config.table}-${index}`;
 
-      let subscriptionConfig: any = {
+      const subscriptionConfig: any = {
         event: '*',
         schema: 'public',
         table: config.table,

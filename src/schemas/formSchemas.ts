@@ -108,12 +108,12 @@ export const cpfSchema = z.string()
     // CPF check digit algorithm
     let sum = 0;
     for (let i = 0; i < 9; i++) sum += parseInt(v[i]) * (10 - i);
-    let d1 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    const d1 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
     if (parseInt(v[9]) !== d1) return false;
     
     sum = 0;
     for (let i = 0; i < 10; i++) sum += parseInt(v[i]) * (11 - i);
-    let d2 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    const d2 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
     return parseInt(v[10]) === d2;
   }, { message: 'CPF inválido' })
   .optional()
@@ -135,12 +135,12 @@ export const cnpjSchema = z.string()
     
     let sum = 0;
     for (let i = 0; i < 12; i++) sum += parseInt(v[i]) * weights1[i];
-    let d1 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    const d1 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
     if (parseInt(v[12]) !== d1) return false;
     
     sum = 0;
     for (let i = 0; i < 13; i++) sum += parseInt(v[i]) * weights2[i];
-    let d2 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    const d2 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
     return parseInt(v[13]) === d2;
   }, { message: 'CNPJ inválido' })
   .optional()
@@ -160,12 +160,12 @@ export const requiredCnpjSchema = z.string()
     
     let sum = 0;
     for (let i = 0; i < 12; i++) sum += parseInt(v[i]) * weights1[i];
-    let d1 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    const d1 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
     if (parseInt(v[12]) !== d1) return false;
     
     sum = 0;
     for (let i = 0; i < 13; i++) sum += parseInt(v[i]) * weights2[i];
-    let d2 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    const d2 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
     return parseInt(v[13]) === d2;
   }, { message: 'CNPJ inválido' });
 

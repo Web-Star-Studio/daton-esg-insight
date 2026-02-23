@@ -56,7 +56,50 @@ export const dataReportsMockEntries = [
   // Document extractions
   {
     queryKey: ['documents', 'extractions', DEMO_COMPANY_ID],
-    data: [],
+    data: [
+      {
+        id: 'ext-1',
+        document_id: 'doc-1',
+        document_name: 'Relatório de Sustentabilidade 2025.pdf',
+        status: 'approved',
+        confidence: 0.96,
+        extracted_at: '2026-02-01T10:10:00Z',
+        fields_extracted: 28,
+      },
+      {
+        id: 'ext-2',
+        document_id: 'doc-2',
+        document_name: 'Inventário GEE 2025.xlsx',
+        status: 'processing',
+        confidence: 0.89,
+        extracted_at: '2026-02-06T14:30:00Z',
+        fields_extracted: 17,
+      },
+    ],
+  },
+  // Document extractions (base)
+  {
+    queryKey: ['documents', 'extractions'],
+    data: [
+      {
+        id: 'ext-1',
+        document_id: 'doc-1',
+        document_name: 'Relatório de Sustentabilidade 2025.pdf',
+        status: 'approved',
+        confidence: 0.96,
+        extracted_at: '2026-02-01T10:10:00Z',
+        fields_extracted: 28,
+      },
+      {
+        id: 'ext-2',
+        document_id: 'doc-2',
+        document_name: 'Inventário GEE 2025.xlsx',
+        status: 'processing',
+        confidence: 0.89,
+        extracted_at: '2026-02-06T14:30:00Z',
+        fields_extracted: 17,
+      },
+    ],
   },
   // Integrated reports
   {

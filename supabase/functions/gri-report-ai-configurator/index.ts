@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // Helper functions defined first
 async function handleDocumentUpload(supabase: any, reportId: string, fileContent: string, fileType: string) {
-  console.log('[Upload] Processing document...');
+  console.warn('[Upload] Processing document...');
   
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) {
@@ -86,7 +86,7 @@ async function handleDocumentUpload(supabase: any, reportId: string, fileContent
   const toolCall = result.choices[0].message.tool_calls[0];
   const analysis = JSON.parse(toolCall.function.arguments);
 
-  console.log('[Upload] Document analyzed:', analysis);
+  console.warn('[Upload] Document analyzed:', analysis);
 
   return new Response(
     JSON.stringify({ 
@@ -99,7 +99,7 @@ async function handleDocumentUpload(supabase: any, reportId: string, fileContent
 }
 
 async function handleExtractInfo(supabase: any, reportId: string, phase: string) {
-  console.log(`[Extract Info] Phase: ${phase}`);
+  console.warn(`[Extract Info] Phase: ${phase}`);
   
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) {
@@ -179,7 +179,7 @@ async function handleExtractInfo(supabase: any, reportId: string, phase: string)
 }
 
 async function handleGenerateContent(supabase: any, reportId: string, sectionKey: string) {
-  console.log(`[Generate Content] Section: ${sectionKey}`);
+  console.warn(`[Generate Content] Section: ${sectionKey}`);
   
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) {
@@ -477,7 +477,7 @@ REGRAS DE OURO:
 }
 
 async function handleSuggestIndicators(supabase: any, reportId: string, category: string) {
-  console.log(`[Suggest Indicators] Category: ${category}`);
+  console.warn(`[Suggest Indicators] Category: ${category}`);
   
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) {
@@ -552,7 +552,7 @@ async function handleSuggestIndicators(supabase: any, reportId: string, category
 }
 
 async function handleGenerateVisuals(supabase: any, reportId: string, dataType: string) {
-  console.log(`[Generate Visuals] Data Type: ${dataType}`);
+  console.warn(`[Generate Visuals] Data Type: ${dataType}`);
   
   // Get relevant data from database
   const { data: indicatorData } = await supabase
@@ -586,7 +586,7 @@ async function handleGenerateVisuals(supabase: any, reportId: string, dataType: 
 }
 
 async function handleProcessGuidelines(supabase: any, reportId: string) {
-  console.log('[Process Guidelines] Starting...');
+  console.warn('[Process Guidelines] Starting...');
   
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) {
@@ -729,7 +729,7 @@ Analise a planilha de diretrizes fornecida e extraia configurações estruturada
 
   const interpretation = JSON.parse(toolCall.function.arguments);
 
-  console.log('[Process Guidelines] Interpretation complete:', interpretation);
+  console.warn('[Process Guidelines] Interpretation complete:', interpretation);
 
   // 5. Save interpreted configurations to report
   const { error: updateError } = await supabase
@@ -761,7 +761,7 @@ Analise a planilha de diretrizes fornecida e extraia configurações estruturada
 async function handleAnalyzeStrategyData(supabase: any, body: any) {
   const { report_id, form_data, documents } = body;
 
-  console.log('[Analyze Strategy Data] Starting analysis for report:', report_id);
+  console.warn('[Analyze Strategy Data] Starting analysis for report:', report_id);
 
   // 1. Buscar dados do relatório
   const { data: report } = await supabase
@@ -785,7 +785,7 @@ async function handleAnalyzeStrategyData(supabase: any, body: any) {
     })
   ).then(results => results.filter(Boolean));
 
-  console.log('[Analyze Strategy Data] Processed', documentContents.length, 'documents');
+  console.warn('[Analyze Strategy Data] Processed', documentContents.length, 'documents');
 
   // 3. Chamar Lovable AI para análise
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -892,7 +892,7 @@ Gere um texto de 500-800 palavras integrando essas informações de forma coesa.
   const result = await aiResponse.json();
   const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
-  console.log('[Analyze Strategy Data] Analysis complete. Confidence:', analysis.confidence_score);
+  console.warn('[Analyze Strategy Data] Analysis complete. Confidence:', analysis.confidence_score);
 
   return new Response(
     JSON.stringify(analysis),
@@ -903,7 +903,7 @@ Gere um texto de 500-800 palavras integrando essas informações de forma coesa.
 async function handleAnalyzeEconomicData(supabase: any, body: any) {
   const { report_id, form_data, documents, quantitative_data } = body;
 
-  console.log('[Analyze Economic Data] Starting...');
+  console.warn('[Analyze Economic Data] Starting...');
 
   // 1. Get report data
   const { data: report } = await supabase
@@ -1113,7 +1113,7 @@ Gere um texto de 1000-1400 palavras integrando TODOS os dados numéricos de form
   const result = await aiResponse.json();
   const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
-  console.log('[Analyze Economic Data] Complete with quantitative data');
+  console.warn('[Analyze Economic Data] Complete with quantitative data');
 
   return new Response(
     JSON.stringify(analysis),
@@ -1124,7 +1124,7 @@ Gere um texto de 1000-1400 palavras integrando TODOS os dados numéricos de form
 async function handleAnalyzeEnvironmentalData(supabase: any, body: any) {
   const { report_id, form_data, documents, quantitative_data } = body;
 
-  console.log('[Analyze Environmental Data] Starting analysis...');
+  console.warn('[Analyze Environmental Data] Starting analysis...');
 
   // 1. Buscar dados do relatório
   const { data: report, error: reportError } = await supabase
@@ -1309,7 +1309,7 @@ Gere um texto de 1000-1500 palavras integrando TODOS os dados numéricos de form
   const result = await aiResponse.json();
   const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
-  console.log('[Analyze Environmental Data] Analysis complete with quantitative data');
+  console.warn('[Analyze Environmental Data] Analysis complete with quantitative data');
 
   return new Response(
     JSON.stringify(analysis),
@@ -1320,7 +1320,7 @@ Gere um texto de 1000-1500 palavras integrando TODOS os dados numéricos de form
 async function handleAnalyzeGovernanceData(supabase: any, body: any) {
   const { report_id, form_data, documents } = body;
 
-  console.log('[Analyze Governance Data] Starting analysis...');
+  console.warn('[Analyze Governance Data] Starting analysis...');
 
   const { data: report } = await supabase
     .from('gri_reports')
@@ -1429,7 +1429,7 @@ Gere texto de 800-1200 palavras com números específicos.`
   const result = await aiResponse.json();
   const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
-  console.log('[Analyze Governance Data] Complete. Confidence:', analysis.confidence_score);
+  console.warn('[Analyze Governance Data] Complete. Confidence:', analysis.confidence_score);
 
   return new Response(
     JSON.stringify(analysis),
@@ -1456,7 +1456,7 @@ serve(async (req) => {
 
     const { action, report_id, file_content, file_type, phase, section_key, category, data_type } = await req.json();
 
-    console.log(`[GRI AI Configurator] Action: ${action}, Report ID: ${report_id}`);
+    console.warn(`[GRI AI Configurator] Action: ${action}, Report ID: ${report_id}`);
 
     switch (action) {
       case 'upload_document':
@@ -1511,11 +1511,6 @@ serve(async (req) => {
         return await handleAnalyzeInnovationData(supabaseClient, await req.json());
       }
       
-    case 'analyze_reporting_standards_data': {
-      const { handleAnalyzeReportingStandardsData } = await import('./reporting-standards-handler.ts');
-      return await handleAnalyzeReportingStandardsData(supabaseClient, await req.json());
-    }
-
     case 'analyze_communication_transparency_data': {
       const { handleAnalyzeCommunicationTransparencyData } = await import('./communication-transparency-handler.ts');
       return await handleAnalyzeCommunicationTransparencyData(supabaseClient, await req.json());

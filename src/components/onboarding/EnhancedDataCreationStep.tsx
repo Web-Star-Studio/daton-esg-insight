@@ -238,7 +238,7 @@ export function EnhancedDataCreationStep({
 
   const goToNextModule = () => {
     if (currentModuleIndex < selectedModules.length - 1) {
-      setCurrentModuleIndex(currentModuleIndex + 1);
+      setCurrentModuleIndex((prev) => prev + 1);
     } else {
       onNext();
     }
@@ -246,7 +246,7 @@ export function EnhancedDataCreationStep({
 
   const goToPrevModule = () => {
     if (currentModuleIndex > 0) {
-      setCurrentModuleIndex(currentModuleIndex - 1);
+      setCurrentModuleIndex((prev) => prev - 1);
     } else {
       onPrev();
     }
@@ -260,9 +260,9 @@ export function EnhancedDataCreationStep({
 
   if (!moduleInfo) {
     // Debug: Log para identificar o módulo problemático
-    console.log('Módulo não encontrado:', currentModule);
-    console.log('Módulos disponíveis:', Object.keys(MODULE_SHORTCUTS));
-    console.log('Módulos selecionados:', selectedModules);
+    console.warn('Módulo não encontrado:', currentModule);
+    console.warn('Módulos disponíveis:', Object.keys(MODULE_SHORTCUTS));
+    console.warn('Módulos selecionados:', selectedModules);
     
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -354,11 +354,19 @@ export function EnhancedDataCreationStep({
 
                   {/* Quick Actions */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                    {moduleInfo.quickActions.map((action, index) => (
-                      <div 
-                        key={index}
-                        className="p-4 bg-background rounded-lg border border-border hover:border-primary/20 transition-colors cursor-pointer group"
-                        onClick={() => action.route && handleNavigateToModule(action.route)}
+                    {moduleInfo.quickActions.map((action) => (
+                      <button
+                        type="button"
+                        key={action.label}
+                        className={`w-full p-4 bg-background rounded-lg border border-border hover:border-primary/20 transition-colors group text-left ${
+                          action.route ? "cursor-pointer" : "cursor-default"
+                        }`}
+                        onClick={
+                          action.route
+                            ? () => handleNavigateToModule(action.route)
+                            : undefined
+                        }
+                        disabled={!action.route}
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 p-2 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
@@ -373,7 +381,7 @@ export function EnhancedDataCreationStep({
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>

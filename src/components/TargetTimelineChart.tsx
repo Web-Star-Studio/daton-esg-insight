@@ -1,8 +1,8 @@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { LineChart, Line, XAxis, YAxis, ReferenceLine, ResponsiveContainer, Dot } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Target, CheckCircle } from "lucide-react"
+import { useRechartsModule } from "@/hooks/useRechartsModule"
 
 interface Milestone {
   date: string
@@ -31,7 +31,22 @@ const chartConfig = {
   },
 }
 
+const renderMilestoneCustomDot = (DotComponent: any, props: any) => {
+  const { cx, cy, payload } = props
+  if (payload.isMilestone) {
+    return (
+      <g>
+        <DotComponent cx={cx} cy={cy} r={6} fill="hsl(var(--success))" stroke="hsl(var(--background))" strokeWidth={2} />
+        <Target x={cx - 6} y={cy - 6} width={12} height={12} className="text-background" />
+      </g>
+    )
+  }
+  return <DotComponent cx={cx} cy={cy} r={3} fill="hsl(var(--primary))" />
+}
+
 export function TargetTimelineChart({ data, milestones }: TargetTimelineChartProps) {
+  const charts = useRechartsModule()
+
   // Create timeline data with milestones
   const timelineData = []
   
@@ -69,18 +84,17 @@ export function TargetTimelineChart({ data, milestones }: TargetTimelineChartPro
     return `${value.toLocaleString()} tCO₂e`
   }
 
-  const MilestoneCustomDot = (props: any) => {
-    const { cx, cy, payload } = props
-    if (payload.isMilestone) {
-      return (
-        <g>
-          <Dot cx={cx} cy={cy} r={6} fill="hsl(var(--success))" stroke="hsl(var(--background))" strokeWidth={2} />
-          <Target x={cx - 6} y={cy - 6} width={12} height={12} className="text-background" />
-        </g>
-      )
-    }
-    return <Dot cx={cx} cy={cy} r={3} fill="hsl(var(--primary))" />
+  if (!charts) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center text-muted-foreground">
+          Carregando gráfico...
+        </CardContent>
+      </Card>
+    )
   }
+
+  const { LineChart, Line, XAxis, YAxis, Dot } = charts
 
   return (
     <Card>
@@ -114,7 +128,7 @@ export function TargetTimelineChart({ data, milestones }: TargetTimelineChartPro
               dataKey="value"
               stroke="hsl(var(--primary))"
               strokeWidth={2}
-              dot={<MilestoneCustomDot />}
+              dot={(props: any) => renderMilestoneCustomDot(Dot, props)}
               activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
             />
 
@@ -146,14 +160,17 @@ export function TargetTimelineChart({ data, milestones }: TargetTimelineChartPro
         <div className="mt-6 space-y-3">
           <h4 className="font-medium text-sm">Próximos Marcos</h4>
           <div className="space-y-2">
-            {milestones.slice(0, 3).map((milestone, index) => {
+            {milestones.slice(0, 3).map((milestone) => {
               const isUpcoming = new Date(milestone.date) > new Date()
               const monthsUntil = isUpcoming ? 
                 Math.ceil((new Date(milestone.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30)) : 
                 null
               
               return (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
+                <div
+                  key={`${milestone.date}-${milestone.description}`}
+                  className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
+                >
                   <div className="flex items-center gap-3">
                     <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
                       isUpcoming ? 'bg-primary/10 text-primary' : 'bg-success/10 text-success'

@@ -29,7 +29,7 @@ function OnboardingContent() {
   const { skipOnboarding } = useAuth();
   const [companyProfile, setCompanyProfile] = useState<any>(null);
   const [userActions, setUserActions] = useState<string[]>([]);
-  const [onboardingStartTime] = useState(Date.now());
+  const [onboardingStartTime] = useState(() => Date.now());
   
   const {
     state,
@@ -192,7 +192,7 @@ function OnboardingContent() {
                   helpSeekingBehavior: 'medium'
                 }}
                 onGuidanceAction={(actionId) => {
-                  console.log('Guidance action:', actionId);
+                  console.warn('Guidance action:', actionId);
                 }}
               />
 
@@ -200,7 +200,7 @@ function OnboardingContent() {
                 currentStep={state.currentStep}
                 data={state}
                 onValidationChange={(isValid, errors) => {
-                  console.log('Validation:', isValid, errors);
+                  console.warn('Validation:', isValid, errors);
                 }}
                 onAutoFix={(fixes) => {
                   if (fixes.selectedModules) {
@@ -216,7 +216,7 @@ function OnboardingContent() {
                 timeSpent={Date.now() - onboardingStartTime}
                 userActions={userActions}
                 onAchievementUnlocked={(achievement) => {
-                  console.log('Achievement unlocked:', achievement);
+                  console.warn('Achievement unlocked:', achievement);
                   setUserActions(prev => [...prev, `achievement_${achievement.id}`]);
                 }}
               />
@@ -231,7 +231,7 @@ function OnboardingContent() {
                   hesitationPoints: state.currentStep === 1 && state.selectedModules.length === 0 ? [1] : []
                 }}
                 onSuggestionApplied={(suggestion) => {
-                  console.log('Suggestion applied:', suggestion);
+                  console.warn('Suggestion applied:', suggestion);
                   setUserActions(prev => [...prev, `suggestion_${suggestion.id}`]);
                 }}
               />
@@ -252,7 +252,7 @@ function OnboardingContent() {
                   timeOfDay: new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'
                 }}
                 onPredictionAction={(actionId, prediction) => {
-                  console.log('Prediction action:', actionId, prediction);
+                  console.warn('Prediction action:', actionId, prediction);
                   setUserActions(prev => [...prev, `prediction_${actionId}`]);
                 }}
               />
@@ -263,11 +263,11 @@ function OnboardingContent() {
                 companyProfile={companyProfile}
                 userSkillLevel={companyProfile?.maturityLevel || 'intermediate'}
                 onTutorialComplete={(tutorialId, completionData) => {
-                  console.log('Tutorial completed:', tutorialId, completionData);
+                  console.warn('Tutorial completed:', tutorialId, completionData);
                   setUserActions(prev => [...prev, `tutorial_completed_${tutorialId}`]);
                 }}
                 onStepComplete={(stepId, stepData) => {
-                  console.log('Tutorial step completed:', stepId, stepData);
+                  console.warn('Tutorial step completed:', stepId, stepData);
                   setUserActions(prev => [...prev, `tutorial_step_${stepId}`]);
                 }}
               />
@@ -282,11 +282,11 @@ function OnboardingContent() {
                   experienceLevel: companyProfile?.maturityLevel || 'intermediate'
                 }}
                 onContentGenerated={(content) => {
-                  console.log('Content generated:', content);
+                  console.warn('Content generated:', content);
                   setUserActions(prev => [...prev, `content_generated_${content.type}`]);
                 }}
                 onContentApplied={(contentId) => {
-                  console.log('Content applied:', contentId);
+                  console.warn('Content applied:', contentId);
                   setUserActions(prev => [...prev, `content_applied_${contentId}`]);
                 }}
               />
@@ -321,7 +321,7 @@ function OnboardingContent() {
         stepTitle={getStepTitle(state.currentStep)}
         showCompact={state.currentStep > 0}
         onFeedbackSubmitted={(feedback) => {
-          console.log('Feedback submitted:', feedback);
+          console.warn('Feedback submitted:', feedback);
           setUserActions(prev => [...prev, 'feedback_submitted']);
         }}
       />

@@ -74,7 +74,7 @@ function parseCSV(csvContent: string): Contact[] {
   const firstLine = lines[0];
   const delimiter = firstLine.includes(";") ? ";" : ",";
   
-  console.log(`[parseCSV] Detected delimiter: "${delimiter}"`);
+  console.warn(`[parseCSV] Detected delimiter: "${delimiter}"`);
 
   const headers = firstLine.split(delimiter).map((h) => h.trim().toLowerCase());
   const emailIndex = headers.indexOf("email");
@@ -140,7 +140,7 @@ function generateEmailHtml(
 
   const headerColorLight = lightenColor(headerColor, 180);
 
-  console.log(`[generateEmailHtml] Header Logo URL: ${logoUrl || 'none'}, Footer Logo URL: ${options?.footerLogoUrl || 'none'}`);
+  console.warn(`[generateEmailHtml] Header Logo URL: ${logoUrl || 'none'}, Footer Logo URL: ${options?.footerLogoUrl || 'none'}`);
 
   const logoHtml = logoUrl 
     ? `<tr>
@@ -324,7 +324,7 @@ serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
-    console.log(`[email-mailing-management] Action: ${action}, User: ${user.id}, Company: ${companyId}`);
+    console.warn(`[email-mailing-management] Action: ${action}, User: ${user.id}, Company: ${companyId}`);
 
     switch (action) {
       case "GET_TEMPLATE": {
@@ -429,7 +429,7 @@ serve(async (req) => {
           if (linkError) console.error("Failed to link forms:", linkError.message);
         }
 
-        console.log(`[email-mailing-management] Created mailing list: ${list.id}`);
+        console.warn(`[email-mailing-management] Created mailing list: ${list.id}`);
 
         return new Response(JSON.stringify(list), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -527,7 +527,7 @@ serve(async (req) => {
 
         if (insertError) throw new Error(`Failed to import contacts: ${insertError.message}`);
 
-        console.log(`[email-mailing-management] Imported ${inserted?.length || 0} contacts to list ${listId}`);
+        console.warn(`[email-mailing-management] Imported ${inserted?.length || 0} contacts to list ${listId}`);
 
         return new Response(
           JSON.stringify({
@@ -585,7 +585,7 @@ serve(async (req) => {
 
         if (error) throw new Error(`Erro ao adicionar contato: ${error.message}`);
 
-        console.log(`[email-mailing-management] Added contact ${email} to list ${listId}`);
+        console.warn(`[email-mailing-management] Added contact ${email} to list ${listId}`);
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -641,7 +641,7 @@ serve(async (req) => {
 
         if (error) throw new Error(`Failed to create campaign: ${error.message}`);
 
-        console.log(`[email-mailing-management] Created campaign: ${campaign.id}`);
+        console.warn(`[email-mailing-management] Created campaign: ${campaign.id}`);
 
         return new Response(JSON.stringify(campaign), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -777,7 +777,7 @@ serve(async (req) => {
               .eq("contact_id", contact.id);
 
             sentCount++;
-            console.log(`[email-mailing-management] Email sent to ${cleanEmail}, ID: ${emailData?.id}, tracking: ${trackingId}`);
+            console.warn(`[email-mailing-management] Email sent to ${cleanEmail}, ID: ${emailData?.id}, tracking: ${trackingId}`);
           } catch (emailError: any) {
             console.error(`[email-mailing-management] Failed to send to ${cleanEmail}:`, emailError.message);
             await supabase
@@ -801,7 +801,7 @@ serve(async (req) => {
           })
           .eq("id", campaignId);
 
-        console.log(`[email-mailing-management] Campaign ${campaignId} completed: ${sentCount}/${contacts.length} emails sent`);
+        console.warn(`[email-mailing-management] Campaign ${campaignId} completed: ${sentCount}/${contacts.length} emails sent`);
 
         return new Response(
           JSON.stringify({

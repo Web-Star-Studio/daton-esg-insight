@@ -39,7 +39,7 @@ function convertBulkImportToOperations(
   const tableName = getTableNameFromTool(toolCall.function.name);
   const records = functionArgs.emissions || functionArgs.employees || functionArgs.goals || functionArgs.waste_logs || [];
   
-  console.log('🔄 Converting bulk import:', {
+  console.warn('🔄 Converting bulk import:', {
     toolName: toolCall.function.name,
     tableName,
     recordsCount: records.length
@@ -157,26 +157,26 @@ serve(async (req) => {
   try {
     const { messages, companyId, conversationId, currentPage, confirmed, action, attachments, userContext, stream } = await req.json();
     
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🚀 Daton AI Chat request received:');
-    console.log('   • Company:', companyId);
-    console.log('   • Conversation:', conversationId);
-    console.log('   • Current Page:', currentPage);
-    console.log('   • Messages:', messages?.length);
-    console.log('   • Confirmed Action:', confirmed);
-    console.log('   • Stream Mode:', stream);
-    console.log('   • 📎 Attachment Count (from request):', attachments?.length || 0);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.warn('🚀 Daton AI Chat request received:');
+    console.warn('   • Company:', companyId);
+    console.warn('   • Conversation:', conversationId);
+    console.warn('   • Current Page:', currentPage);
+    console.warn('   • Messages:', messages?.length);
+    console.warn('   • Confirmed Action:', confirmed);
+    console.warn('   • Stream Mode:', stream);
+    console.warn('   • 📎 Attachment Count (from request):', attachments?.length || 0);
+    console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     if (attachments && attachments.length > 0) {
-      console.log('   • 📎 Attachment details:', attachments.map((a: any) => ({
+      console.warn('   • 📎 Attachment details:', attachments.map((a: any) => ({
         name: a.name,
         type: a.type,
         size: `${(a.size / 1024).toFixed(1)} KB`,
         path: a.path
       })));
     }
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -195,7 +195,7 @@ serve(async (req) => {
 
     // If this is a confirmed action, execute it directly
     if (confirmed && action) {
-      console.log('Executing confirmed action:', action);
+      console.warn('Executing confirmed action:', action);
       const result = await executeWriteTool(
         action.toolName, 
         action.params, 
@@ -221,9 +221,9 @@ serve(async (req) => {
     // ✅ SIMPLIFIED: Use ONLY attachments from current request
     const attachmentsToUse = attachments || [];
     
-    console.log(`📎 Attachments in request: ${attachmentsToUse.length}`);
+    console.warn(`📎 Attachments in request: ${attachmentsToUse.length}`);
     if (attachmentsToUse.length > 0) {
-      console.log('   Attachment details:', attachmentsToUse.map((a: any) => ({
+      console.warn('   Attachment details:', attachmentsToUse.map((a: any) => ({
         name: a.name,
         type: a.type,
         size: `${(a.size / 1024).toFixed(1)} KB`
@@ -281,7 +281,7 @@ serve(async (req) => {
       
       if (historyMessages && historyMessages.length > 0) {
         conversationHistory = historyMessages;
-        console.log('Loaded conversation history:', conversationHistory.length, 'messages');
+        console.warn('Loaded conversation history:', conversationHistory.length, 'messages');
       }
     }
 
@@ -927,15 +927,15 @@ serve(async (req) => {
     // Process attachments with timeout and retry logic
     let attachmentContext = '';
     if (attachmentsToUse && attachmentsToUse.length > 0) {
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📎 Processing', attachmentsToUse.length, 'attachment(s) with timeouts...');
+      console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.warn('📎 Processing', attachmentsToUse.length, 'attachment(s) with timeouts...');
       
       const PARSE_TIMEOUT = 30000; // 30 seconds per file
       const contextParts: string[] = [];
       
       for (const attachment of attachmentsToUse) {
         try {
-          console.log(`📄 Analyzing: ${attachment.name} (${(attachment.size / 1024).toFixed(1)} KB)`);
+          console.warn(`📄 Analyzing: ${attachment.name} (${(attachment.size / 1024).toFixed(1)} KB)`);
           
           // Single parse attempt with timeout
           const parsePromise = supabaseClient.functions.invoke('parse-chat-document', {
@@ -961,7 +961,7 @@ serve(async (req) => {
             continue;
           }
 
-          console.log('✅ Successfully parsed:', attachment.name, `(${parseData.content.length} chars)`);
+          console.warn('✅ Successfully parsed:', attachment.name, `(${parseData.content.length} chars)`);
 
           // Step 2: Classify document type with AI
           const { data: classData } = await supabaseClient.functions.invoke('intelligent-document-classifier', {
@@ -974,7 +974,7 @@ serve(async (req) => {
           });
 
           const classification = classData?.classification;
-          console.log('🏷️ Document classified:', classification?.documentType, `(${Math.round((classification?.confidence || 0) * 100)}% confidence)`);
+          console.warn('🏷️ Document classified:', classification?.documentType, `(${Math.round((classification?.confidence || 0) * 100)}% confidence)`);
 
           // Step 3: Advanced extraction for structured documents
           let extractedData = parseData.structured;
@@ -991,7 +991,7 @@ serve(async (req) => {
               
               // ✅ Log comparison to detect inconsistencies
               if (extractData?.structuredData) {
-                console.log('📊 Data source comparison:', {
+                console.warn('📊 Data source comparison:', {
                   parseDataRecords: parseData.structured?.rows?.length || 0,
                   extractDataRecords: extractData.structuredData?.records?.length || 0,
                   parseDataHeaders: parseData.structured?.headers?.length || 0,
@@ -1007,12 +1007,12 @@ serve(async (req) => {
                   (extractData.structuredData?.records?.length || 0)
                 ) > 0) {
                   console.warn('⚠️ INCONSISTENCY DETECTED: Record count differs between parse and extract!');
-                  console.log('Parse data preview:', JSON.stringify(parseData.structured?.rows?.slice(0, 2), null, 2));
-                  console.log('Extract data preview:', JSON.stringify(extractData.structuredData?.records?.slice(0, 2), null, 2));
+                  console.warn('Parse data preview:', JSON.stringify(parseData.structured?.rows?.slice(0, 2), null, 2));
+                  console.warn('Extract data preview:', JSON.stringify(extractData.structuredData?.records?.slice(0, 2), null, 2));
                 }
                 
                 extractedData = extractData.structuredData;
-                console.log('📊 Advanced extraction completed');
+                console.warn('📊 Advanced extraction completed');
               }
             } catch (extractError) {
               console.warn('Advanced extraction failed, using basic data:', extractError);
@@ -1029,7 +1029,7 @@ serve(async (req) => {
                 { company_id: companyId, user_id: userId },
                 supabaseClient
               );
-              console.log('💡 Generated intelligent suggestions');
+              console.warn('💡 Generated intelligent suggestions');
             } catch (suggestionError) {
               console.warn('Suggestion generation failed:', suggestionError);
             }
@@ -1122,7 +1122,7 @@ serve(async (req) => {
             })
             .eq('file_path', attachment.path);
 
-          console.log('✅ Complete analysis for:', attachment.name);
+          console.warn('✅ Complete analysis for:', attachment.name);
 
         } catch (error) {
           console.error('❌ Critical error processing attachment:', error);
@@ -1135,7 +1135,7 @@ serve(async (req) => {
       if (attachmentContext) {
         attachmentContext = `\n\n${'='.repeat(60)}\n🔍 **ANÁLISE COMPLETA DOS ARQUIVOS ANEXADOS**\n${'='.repeat(60)}${attachmentContext}\n\n⚡ **INSTRUÇÕES CRÍTICAS PARA A IA:**\n• Você TEM ACESSO ao conteúdo extraído acima - use-o para responder perguntas\n• RESPONDA perguntas diretas sobre os dados (ex: quantas linhas, totais, médias)\n• NUNCA diga que não consegue ler arquivos - o conteúdo está AQUI\n• Se solicitado importar dados, use as ferramentas de escrita (sempre pedindo confirmação)\n• Sugira ações proativas baseadas nos insights identificados\n• Se houver alertas, priorize-os na resposta\n${'='.repeat(60)}\n`;
         
-        console.log('📎 Attachment context injected into system prompt:', attachmentContext.substring(0, 500) + '...');
+        console.warn('📎 Attachment context injected into system prompt:', attachmentContext.substring(0, 500) + '...');
       }
     }
 
@@ -1167,18 +1167,18 @@ serve(async (req) => {
 `;
       }
     } catch (e) {
-      console.log('⚠️ Could not fetch quick stats:', e);
+      console.warn('⚠️ Could not fetch quick stats:', e);
     }
 
     // Build dynamic page context
     const { buildPageContext } = await import('./context-builder.ts');
     let pageContextInfo = '';
     try {
-      console.log('🔍 Building page context for:', currentPage);
+      console.warn('🔍 Building page context for:', currentPage);
       pageContextInfo = await buildPageContext(currentPage, companyId, supabaseClient);
-      console.log('✅ Page context built successfully');
+      console.warn('✅ Page context built successfully');
     } catch (e) {
-      console.log('⚠️ Could not build page context:', e);
+      console.warn('⚠️ Could not build page context:', e);
     }
 
     const systemPrompt = `Você é o **Assistente IA Elite do Daton** - Um consultor ESG sênior de alto nível com capacidades avançadas de análise, raciocínio estratégico, inteligência preditiva e visão executiva.
@@ -1567,14 +1567,14 @@ ${attachmentContext}`;
 
     // Debug: Log attachment context inclusion
     if (attachmentContext) {
-      console.log('✅ Attachment context INCLUDED in system prompt');
-      console.log('📊 Context length:', attachmentContext.length, 'characters');
-      console.log('📎 Context preview (first 500 chars):', attachmentContext.substring(0, 500));
+      console.warn('✅ Attachment context INCLUDED in system prompt');
+      console.warn('📊 Context length:', attachmentContext.length, 'characters');
+      console.warn('📎 Context preview (first 500 chars):', attachmentContext.substring(0, 500));
     } else {
-      console.log('⚠️ No attachment context available');
+      console.warn('⚠️ No attachment context available');
     }
 
-    console.log('📤 Sending to AI:', {
+    console.warn('📤 Sending to AI:', {
       systemPromptLength: systemPrompt.length,
       hasAttachmentContext: systemPrompt.includes('ANÁLISE COMPLETA DOS ARQUIVOS'),
       messageCount: messages.length,
@@ -1646,7 +1646,7 @@ ${attachmentContext}`;
 
     // Handle streaming response
     if (stream && response.body) {
-      console.log('📡 Streaming mode enabled - forwarding SSE stream');
+      console.warn('📡 Streaming mode enabled - forwarding SSE stream');
       
       const encoder = new TextEncoder();
       const readable = new ReadableStream({
@@ -1713,7 +1713,7 @@ ${attachmentContext}`;
 
     // Non-streaming response (original logic)
     const data = await response.json();
-    console.log('AI response:', JSON.stringify(data, null, 2));
+    console.warn('AI response:', JSON.stringify(data, null, 2));
     
     // Debug: Check if AI acknowledged attachments in response
     if (attachmentContext) {
@@ -1723,7 +1723,7 @@ ${attachmentContext}`;
                                    assistantResponse.toLowerCase().includes('documento') ||
                                    assistantResponse.toLowerCase().includes('anexo') ||
                                    assistantResponse.toLowerCase().includes('analisando');
-      console.log('🔍 AI Acknowledged Attachments in Response:', mentionedAttachments);
+      console.warn('🔍 AI Acknowledged Attachments in Response:', mentionedAttachments);
       if (!mentionedAttachments) {
         console.warn('⚠️ AI did NOT explicitly acknowledge attachments in response - possible context issue');
       }
@@ -1734,7 +1734,7 @@ ${attachmentContext}`;
     
     if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls) {
       const toolNames = choice.message.tool_calls.map((tc: any) => tc.function.name);
-      console.log('🔧 AI requested tool calls:', toolNames);
+      console.warn('🔧 AI requested tool calls:', toolNames);
       
       // Check if any write tools were called
       const writeTools = [
@@ -1765,7 +1765,7 @@ ${attachmentContext}`;
         !writeTools.includes(tc.function.name)
       );
       
-      console.log('📊 Tool routing:', {
+      console.warn('📊 Tool routing:', {
         total: choice.message.tool_calls.length,
         writeCalls: writeCalls.length,
         readCalls: readCalls.length,
@@ -1777,7 +1777,7 @@ ${attachmentContext}`;
 
       // If write action detected, return pending action for confirmation
       if (hasWriteAction) {
-        console.log('✅ Write action detected - returning pendingAction for user confirmation');
+        console.warn('✅ Write action detected - returning pendingAction for user confirmation');
         const writeCall = writeCalls[0]; // Use first write call
         
         const functionArgs = JSON.parse(writeCall.function.arguments);
@@ -1786,7 +1786,7 @@ ${attachmentContext}`;
         const isBulkImport = writeCall.function.name.startsWith('bulk_import_');
         
         if (isBulkImport) {
-          console.log('📊 Bulk import detected - converting to operations format');
+          console.warn('📊 Bulk import detected - converting to operations format');
           
           // Convert to operations format for preview
           const operations = convertBulkImportToOperations(writeCall, functionArgs);
@@ -1796,7 +1796,7 @@ ${attachmentContext}`;
           
           const validMessage = `📊 Identifiquei ${operations.length} registro(s) para importar. Revise antes de executar.`;
           
-          console.log('📤 Returning operations for preview:', {
+          console.warn('📤 Returning operations for preview:', {
             toolName: writeCall.function.name,
             operationsCount: operations.length,
             validationsCount: validations.length
@@ -1823,7 +1823,7 @@ ${attachmentContext}`;
           }
         );
         
-        console.log('📤 Returning pendingAction:', {
+        console.warn('📤 Returning pendingAction:', {
           toolName: writeCall.function.name,
           displayName: getActionDisplayName(writeCall.function.name)
         });
@@ -1844,7 +1844,7 @@ ${attachmentContext}`;
         });
       }
       
-      console.log('🔍 No write actions - executing read-only tools');
+      console.warn('🔍 No write actions - executing read-only tools');
       
       // Execute ONLY read-only tools using the new executeReadTool function
       const toolResults = await Promise.all(
@@ -1852,7 +1852,7 @@ ${attachmentContext}`;
           const functionName = toolCall.function.name;
           const functionArgs = JSON.parse(toolCall.function.arguments);
           
-          console.log(`📖 Executing read tool: ${functionName}`, functionArgs);
+          console.warn(`📖 Executing read tool: ${functionName}`, functionArgs);
           
           try {
             const result = await executeReadTool(functionName, functionArgs, companyId, supabaseClient);
@@ -1957,7 +1957,7 @@ ${attachmentContext}`;
       let enrichedMessage = validMessage;
       if (attachmentsToUse && attachmentsToUse.length > 0) {
         try {
-          console.log('🔍 Checking for pending extracted data...');
+          console.warn('🔍 Checking for pending extracted data...');
           const { data: pendingPreviews, error: previewError } = await supabaseClient
             .from('extracted_data_preview')
             .select('id, total_records, avg_confidence, target_table')
@@ -1970,7 +1970,7 @@ ${attachmentContext}`;
             const totalRecords = pendingPreviews.reduce((sum, p) => sum + (p.total_records || 0), 0);
             const avgConfidence = pendingPreviews.reduce((sum, p) => sum + (p.avg_confidence || 0), 0) / pendingPreviews.length;
             
-            console.log(`✅ Found ${pendingPreviews.length} pending previews with ${totalRecords} total records`);
+            console.warn(`✅ Found ${pendingPreviews.length} pending previews with ${totalRecords} total records`);
             
             enrichedMessage += `\n\n---\n\n✅ **Processamento Concluído!**\n\n📊 **${totalRecords} registros** foram extraídos com confiança média de **${Math.round(avgConfidence * 100)}%**.\n\n🔍 **Próximo Passo:** [Revisar e Aprovar Dados](/reconciliacao-documentos)\n\nVocê pode revisar, editar e aprovar os dados extraídos na página de Reconciliação de Documentos.`;
           }
@@ -2015,7 +2015,7 @@ ${attachmentContext}`;
     let enrichedMessage = validMessage;
     if (attachmentsToUse && attachmentsToUse.length > 0) {
       try {
-        console.log('🔍 Checking for pending extracted data (no tool calls)...');
+        console.warn('🔍 Checking for pending extracted data (no tool calls)...');
         const { data: pendingPreviews, error: previewError } = await supabaseClient
           .from('extracted_data_preview')
           .select('id, total_records, avg_confidence, target_table')
@@ -2028,7 +2028,7 @@ ${attachmentContext}`;
           const totalRecords = pendingPreviews.reduce((sum, p) => sum + (p.total_records || 0), 0);
           const avgConfidence = pendingPreviews.reduce((sum, p) => sum + (p.avg_confidence || 0), 0) / pendingPreviews.length;
           
-          console.log(`✅ Found ${pendingPreviews.length} pending previews with ${totalRecords} total records`);
+          console.warn(`✅ Found ${pendingPreviews.length} pending previews with ${totalRecords} total records`);
           
           enrichedMessage += `\n\n---\n\n✅ **Processamento Concluído!**\n\n📊 **${totalRecords} registros** foram extraídos com confiança média de **${Math.round(avgConfidence * 100)}%**.\n\n🔍 **Próximo Passo:** [Revisar e Aprovar Dados](/reconciliacao-documentos)\n\nVocê pode revisar, editar e aprovar os dados extraídos na página de Reconciliação de Documentos.`;
         }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -138,11 +138,7 @@ export function GovernanceDataCollectionModule({ reportId, onComplete }: Governa
   const [whistleblowerData, setWhistleblowerData] = useState<WhistleblowerAnalysisResult | null>(null);
   const [calculatingWhistleblower, setCalculatingWhistleblower] = useState(false);
 
-  useEffect(() => {
-    loadExistingData();
-  }, [reportId]);
-
-  const loadExistingData = async () => {
+  const loadExistingData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -189,7 +185,11 @@ export function GovernanceDataCollectionModule({ reportId, onComplete }: Governa
     } finally {
       setLoading(false);
     }
-  };
+  }, [reportId]);
+
+  useEffect(() => {
+    loadExistingData();
+  }, [loadExistingData]);
 
   const handleFieldUpdate = async (field: string, value: any) => {
     const updatedData = { ...formData, [field]: value };
@@ -215,7 +215,7 @@ export function GovernanceDataCollectionModule({ reportId, onComplete }: Governa
   };
 
   const calculateCompletion = (data: any) => {
-    let total = GOVERNANCE_QUESTIONS.length * 2 + 10; // Questions + docs + quantitative fields
+    const total = GOVERNANCE_QUESTIONS.length * 2 + 10; // Questions + docs + quantitative fields
     let completed = 0;
 
     GOVERNANCE_QUESTIONS.forEach(q => {

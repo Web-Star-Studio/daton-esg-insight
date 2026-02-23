@@ -18,10 +18,10 @@ export function PredictiveInsightsWidget() {
       setLoading(true);
       setError(null);
       
-      console.log('🎯 [Widget] Fetching predictive analysis...');
+      console.warn('🎯 [Widget] Fetching predictive analysis...');
       const data = await getFullAnalysis(3);
       setAnalysis(data);
-      console.log('✅ [Widget] Analysis loaded successfully');
+      console.warn('✅ [Widget] Analysis loaded successfully');
     } catch (error: any) {
       console.error('❌ [Widget] Error:', error);
       logger.error('Error fetching predictive analysis', error);

@@ -271,8 +271,8 @@ const AppContent = () => {
             <Route path="/4" element={<LazyPageWrapper><LandingPulso /></LazyPageWrapper>} />
             <Route path="/5" element={<LazyPageWrapper><LandingSelva /></LazyPageWrapper>} />
 
-            {/* Demo dashboard - público (rota legada) */}
-            <Route path="/demo-old" element={<LazyPageWrapper><DemoDashboard /></LazyPageWrapper>} />
+            {/* Legacy demo path redirects to guarded demo namespace */}
+            <Route path="/demo-old" element={<Navigate to="/demo" replace />} />
 
             {/* Demo - apenas para usuários autenticados não aprovados */}
             <Route path="/demo" element={

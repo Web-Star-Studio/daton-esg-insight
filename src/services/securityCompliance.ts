@@ -219,7 +219,7 @@ class SecurityComplianceService {
       ...incident
     };
 
-    console.log('Security incident reported:', newIncident);
+    console.warn('Security incident reported:', newIncident);
 
     // Auto-notification for critical incidents
     if (newIncident.severity === 'critical') {
@@ -312,7 +312,7 @@ class SecurityComplianceService {
       ...breach
     };
 
-    console.log('Data breach reported:', dataBreachRecord);
+    console.warn('Data breach reported:', dataBreachRecord);
 
     // Auto-notification to supervisory authority if required
     if (breach.notification_required) {
@@ -336,7 +336,7 @@ class SecurityComplianceService {
   }
 
   async trackQualityObjective(objective: any): Promise<void> {
-    console.log('Quality objective tracked:', objective);
+    console.warn('Quality objective tracked:', objective);
   }
 
   // ISO 22301 Services
@@ -380,7 +380,7 @@ class SecurityComplianceService {
       improvements_identified: []
     };
 
-    console.log('Business continuity plan tested:', testResult);
+    console.warn('Business continuity plan tested:', testResult);
   }
 
   // Helper Methods
@@ -418,7 +418,7 @@ class SecurityComplianceService {
   }
 
   private async sendIncidentNotification(incident: SecurityIncident): Promise<void> {
-    console.log('Critical incident notification sent:', incident.id);
+    console.warn('Critical incident notification sent:', incident.id);
   }
 
   private async assessSecurityCriteria(): Promise<any> {
@@ -456,7 +456,7 @@ class SecurityComplianceService {
   }
 
   private async notifyDataBreach(breach: any): Promise<void> {
-    console.log('Data breach notification sent to supervisory authority');
+    console.warn('Data breach notification sent to supervisory authority');
   }
 
   private async getCriticalBusinessFunctions(): Promise<CriticalFunction[]> {

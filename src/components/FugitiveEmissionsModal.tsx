@@ -211,13 +211,14 @@ export function FugitiveEmissionsModal({ isOpen, onClose, source }: FugitiveEmis
       let sourceDocument = `Emissões Fugitivas - ${fugitiveCategory.toUpperCase()}`;
 
       switch (calculationMethod) {
-        case "balance_mass":
+        case "balance_mass": {
           // E = (EUN + EUE + EUD) × GWP
           const totalMass = parseFloat(eun) + parseFloat(eue) + parseFloat(eud);
           finalQuantity = totalMass.toString();
           finalUnit = "kg";
           sourceDocument += ` - Balanço de Massa - ${refrigerantType}`;
           break;
+        }
         case "screening":
           finalQuantity = refrigerationCapacity;
           finalUnit = capacityUnit;

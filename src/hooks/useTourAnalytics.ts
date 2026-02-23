@@ -41,7 +41,7 @@ export function useTourAnalytics() {
       localStorage.setItem('tour_analytics_events', JSON.stringify(events));
 
       // Log para desenvolvimento
-      console.log('[Tour Analytics]', analyticsEvent);
+      console.warn('[Tour Analytics]', analyticsEvent);
 
       // TODO: Implementar envio para backend quando tabela de analytics estiver pronta
       // await supabase.from('tour_analytics').insert(analyticsEvent);

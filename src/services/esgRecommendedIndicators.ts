@@ -759,7 +759,7 @@ async function calculateEconomicIndicators(companyId: string): Promise<ESGIndica
 export const getAllRecommendedIndicators = async (): Promise<CategoryIndicators[]> => {
   const companyId = await getCompanyId();
   
-  console.log('🔄 Calculating all ESG indicators...');
+  console.warn('🔄 Calculating all ESG indicators...');
   
   const [climateEnergy, water, waste, health, humanCapital, governance, economic] = await Promise.all([
     calculateClimateEnergyIndicators(),

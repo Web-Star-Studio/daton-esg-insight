@@ -25,7 +25,7 @@ serve(async (req) => {
       skip_parse = false 
     } = await req.json();
 
-    console.log('📍 [universal-document-processor] Starting:', {
+    console.warn('📍 [universal-document-processor] Starting:', {
       document_id,
       mode,
       has_parsed_content: !!parsed_content,
@@ -53,17 +53,17 @@ serve(async (req) => {
       throw new Error('Failed to download document');
     }
 
-    console.log(`File downloaded, size: ${fileData.size}`);
+    console.warn(`File downloaded, size: ${fileData.size}`);
 
     // Extract content based on file type
     let extractedContent = '';
     let hasImage = false;
 
     if (skip_parse && parsed_content) {
-      console.log('✅ Using pre-parsed content, skipping file download');
+      console.warn('✅ Using pre-parsed content, skipping file download');
       extractedContent = parsed_content;
     } else {
-      console.log('📄 Parsing document from storage...');
+      console.warn('📄 Parsing document from storage...');
       
       if (document.file_type === 'application/pdf') {
         // Call parse-pdf-document function
@@ -107,7 +107,7 @@ serve(async (req) => {
       }
     }
 
-    console.log('📍 [universal-document-processor] Content extracted:', {
+    console.warn('📍 [universal-document-processor] Content extracted:', {
       length: extractedContent.length,
       hasImage,
       source: skip_parse ? 'pre-parsed' : 'storage'
@@ -116,7 +116,7 @@ serve(async (req) => {
     // Build comprehensive company context
     const context = await buildCompanyContext(supabaseClient, document.company_id);
     
-    console.log('Company context built:', {
+    console.warn('Company context built:', {
       company: context.company.name,
       sources: context.current_data.emission_sources.length,
       total_emissions: context.current_data.total_emissions,
@@ -187,7 +187,7 @@ Responda SEMPRE usando a estrutura de tool calling fornecida.`,
       },
     ];
 
-    console.log('Calling Lovable AI for intelligent analysis...');
+    console.warn('Calling Lovable AI for intelligent analysis...');
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -295,7 +295,7 @@ Responda SEMPRE usando a estrutura de tool calling fornecida.`,
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI analysis complete');
+    console.warn('AI analysis complete');
 
     // Parse AI response
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
@@ -335,7 +335,7 @@ Responda SEMPRE usando a estrutura de tool calling fornecida.`,
       throw saveError;
     }
 
-    console.log('Analysis saved successfully');
+    console.warn('Analysis saved successfully');
 
     return new Response(
       JSON.stringify({

@@ -45,6 +45,7 @@ export async function analyzeTrends(
   switch (metric) {
     case 'emissions':
       // Analyze emission trends
+      // eslint-disable-next-line no-case-declarations
       const { data: emissions } = await supabase
         .from('calculated_emissions')
         .select(`
@@ -67,6 +68,7 @@ export async function analyzeTrends(
 
     case 'goals':
       // Analyze goal achievement trends
+      // eslint-disable-next-line no-case-declarations
       const { data: goals } = await supabase
         .from('goal_updates')
         .select('current_value, update_date, goal:goals!inner(company_id)')
@@ -82,6 +84,7 @@ export async function analyzeTrends(
 
     case 'tasks':
       // Analyze task completion trends
+      // eslint-disable-next-line no-case-declarations
       const { data: tasks } = await supabase
         .from('data_collection_tasks')
         .select('status, completed_at, company_id')
@@ -390,11 +393,13 @@ function getPeriodKey(date: string, groupBy: string): string {
     case 'day':
       return d.toISOString().split('T')[0];
     case 'week':
+      // eslint-disable-next-line no-case-declarations
       const week = Math.ceil((d.getDate() - d.getDay() + 1) / 7);
       return `${d.getFullYear()}-W${week}`;
     case 'month':
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     case 'quarter':
+      // eslint-disable-next-line no-case-declarations
       const q = Math.ceil((d.getMonth() + 1) / 3);
       return `${d.getFullYear()}-Q${q}`;
     default:

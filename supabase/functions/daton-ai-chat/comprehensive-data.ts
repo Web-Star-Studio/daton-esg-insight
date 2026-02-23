@@ -23,7 +23,7 @@ export async function getComprehensiveCompanyData(
   const cacheKey = `comprehensive_data_${companyId}`;
   const cached = getFromCache(cacheKey);
   if (cached) {
-    console.log('📦 Returning cached comprehensive data');
+    console.warn('📦 Returning cached comprehensive data');
     return cached;
   }
 
@@ -39,7 +39,7 @@ export async function getComprehensiveCompanyData(
     maxResults = 100
   } = options;
 
-  console.log('📊 Fetching comprehensive company data:', {
+  console.warn('📊 Fetching comprehensive company data:', {
     companyId,
     options
   });
@@ -348,7 +348,7 @@ export async function getComprehensiveCompanyData(
     // Wait for all data fetches
     await Promise.all(promises);
 
-    console.log('✅ Comprehensive data fetched:', {
+    console.warn('✅ Comprehensive data fetched:', {
       emissions: !!results.data.emissions,
       goals: !!results.data.goals,
       risks: !!results.data.risks,

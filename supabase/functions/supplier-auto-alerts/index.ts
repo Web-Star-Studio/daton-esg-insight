@@ -28,14 +28,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('[supplier-auto-alerts] Starting daily supplier alerts check...');
+    console.warn('[supplier-auto-alerts] Starting daily supplier alerts check...');
 
     const alertsToCreate: AlertToCreate[] = [];
     const suppliersToInactivate: { id: string; reason: string; company_id: string }[] = [];
     const today = new Date();
 
     // 1. VERIFICAR DOCUMENTOS VENCENDO/VENCIDOS
-    console.log('[supplier-auto-alerts] Checking document expirations...');
+    console.warn('[supplier-auto-alerts] Checking document expirations...');
     
     const { data: documents, error: docsError } = await supabase
       .from('supplier_documents')
@@ -112,7 +112,7 @@ serve(async (req) => {
     }
 
     // 2. VERIFICAR AVALIAÇÕES PENDENTES
-    console.log('[supplier-auto-alerts] Checking pending evaluations...');
+    console.warn('[supplier-auto-alerts] Checking pending evaluations...');
     
     const { data: suppliers, error: suppliersError } = await supabase
       .from('supplier_management')
@@ -154,7 +154,7 @@ serve(async (req) => {
     }
 
     // 3. VERIFICAR FORNECEDORES COM MUITAS FALHAS
-    console.log('[supplier-auto-alerts] Checking suppliers with failures...');
+    console.warn('[supplier-auto-alerts] Checking suppliers with failures...');
     
     const { data: failureCounts, error: failuresError } = await supabase
       .from('supplier_supply_failures')
@@ -193,7 +193,7 @@ serve(async (req) => {
     }
 
     // 4. PROCESSAR INATIVAÇÕES AUTOMÁTICAS
-    console.log(`[supplier-auto-alerts] Processing ${suppliersToInactivate.length} auto-inactivations...`);
+    console.warn(`[supplier-auto-alerts] Processing ${suppliersToInactivate.length} auto-inactivations...`);
     
     for (const supplier of suppliersToInactivate) {
       const { error: updateError } = await supabase
@@ -224,7 +224,7 @@ serve(async (req) => {
     }
 
     // 5. INSERIR ALERTAS
-    console.log(`[supplier-auto-alerts] Creating ${alertsToCreate.length} alerts...`);
+    console.warn(`[supplier-auto-alerts] Creating ${alertsToCreate.length} alerts...`);
     
     if (alertsToCreate.length > 0) {
       const { error: insertError } = await supabase
@@ -237,14 +237,14 @@ serve(async (req) => {
     }
 
     // 6. EXECUTAR VERIFICAÇÃO DE DOCUMENTOS OBRIGATÓRIOS
-    console.log('[supplier-auto-alerts] Running mandatory documents check...');
+    console.warn('[supplier-auto-alerts] Running mandatory documents check...');
     
     const { error: checkError } = await supabase.rpc('check_supplier_mandatory_documents');
     if (checkError) {
       console.error('[supplier-auto-alerts] Error checking mandatory documents:', checkError);
     }
 
-    console.log('[supplier-auto-alerts] Completed successfully');
+    console.warn('[supplier-auto-alerts] Completed successfully');
 
     return new Response(
       JSON.stringify({

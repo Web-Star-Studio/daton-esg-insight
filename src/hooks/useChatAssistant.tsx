@@ -178,7 +178,7 @@ Qual informação você precisa?`,
 
   // Handle action card execution
   const handleExecuteAction = async (action: ActionCardData) => {
-    console.log('🎯 Executing action:', action.title);
+    console.warn('🎯 Executing action:', action.title);
     
     try {
       // If action has direct execution function
@@ -279,12 +279,12 @@ Qual informação você precisa?`,
       hasInitializedRef.current = true;
 
       try {
-        console.log('🔍 Looking for existing conversation...');
+        console.warn('🔍 Looking for existing conversation...');
 
         // Try to restore active conversation from localStorage first
         const storedConvId = localStorage.getItem('active_conversation_id');
         if (storedConvId) {
-          console.log('♻️ Restoring conversation from localStorage:', storedConvId);
+          console.warn('♻️ Restoring conversation from localStorage:', storedConvId);
           setConversationId(storedConvId);
           return;
         }
@@ -308,11 +308,11 @@ Qual informação você precisa?`,
         }
 
         if (existingConv) {
-          console.log('♻️ Reusing existing conversation:', existingConv.id);
+          console.warn('♻️ Reusing existing conversation:', existingConv.id);
           setConversationId(existingConv.id);
           localStorage.setItem('active_conversation_id', existingConv.id);
         } else {
-          console.log('🆕 Creating new conversation');
+          console.warn('🆕 Creating new conversation');
           
           // Criar nova conversação
           const { data: newConv, error: createError } = await supabase
@@ -344,7 +344,7 @@ Qual informação você precisa?`,
               isWelcomeMessage: true
             }
           });
-          console.log('✅ Welcome message saved to database');
+          console.warn('✅ Welcome message saved to database');
         }
       } catch (error) {
         console.error('❌ Error initializing conversation:', error);
@@ -368,7 +368,7 @@ Qual informação você precisa?`,
           
           // Usar cache se tiver menos de 24 horas e corresponder à conversação atual
           if (cacheAge < 24 * 60 * 60 * 1000 && cachedConvId === conversationId) {
-            console.log('⚡ Using cached messages');
+            console.warn('⚡ Using cached messages');
             
             // Verificar se tem mensagem de boas-vindas
             const hasWelcome = cachedMessages.some((m: any) => 
@@ -412,7 +412,7 @@ Qual informação você precisa?`,
       setIsLoadingMessages(true);
       
       try {
-        console.log('📥 Loading messages for conversation:', conversationId);
+        console.warn('📥 Loading messages for conversation:', conversationId);
         
         const { data: savedMessages, error } = await supabase
           .from('ai_chat_messages')
@@ -468,10 +468,10 @@ Qual informação você precisa?`,
               timestamp: new Date(savedMessages[0].created_at),
             };
             setMessages([welcomeMessage, ...loadedMessages]);
-            console.log(`✅ Loaded ${loadedMessages.length} messages (+ welcome message)`);
+            console.warn(`✅ Loaded ${loadedMessages.length} messages (+ welcome message)`);
           } else {
             setMessages(loadedMessages);
-            console.log(`✅ Loaded ${loadedMessages.length} messages`);
+            console.warn(`✅ Loaded ${loadedMessages.length} messages`);
           }
         }
       } catch (error) {
@@ -494,13 +494,13 @@ Qual informação você precisa?`,
 
     // Lock sending state to prevent race conditions
     setIsSending(true);
-    console.log('🔒 Message sending started - attachments and state locked');
+    console.warn('🔒 Message sending started - attachments and state locked');
 
     try {
       // Get ready attachments from hook
       const readyAttachments = getReadyAttachments();
       
-      console.log('📎 Ready attachments:', readyAttachments.length);
+      console.warn('📎 Ready attachments:', readyAttachments.length);
       
       if (readyAttachments.length > 0) {
         // Mark as sending to lock state
@@ -514,7 +514,7 @@ Qual informação você precisa?`,
         path: att.path!
       }));
 
-      console.log('📎 Final processed attachments for message:', finalProcessedAttachments.length);
+      console.warn('📎 Final processed attachments for message:', finalProcessedAttachments.length);
 
       // Add user message with attachment info
       const userMessage: ChatMessage = {
@@ -564,7 +564,7 @@ Qual informação você precisa?`,
       // ============================================
       
       if (finalProcessedAttachments.length > 0) {
-        console.log('🤖 Processing attachments via Daton AI...');
+        console.warn('🤖 Processing attachments via Daton AI...');
         setIsProcessingAttachments(true);
         setProcessingProgress(10);
         
@@ -650,7 +650,7 @@ Qual informação você precisa?`,
         content
       });
 
-      console.log('📤 Sending chat request to Daton AI with streaming...', {
+      console.warn('📤 Sending chat request to Daton AI with streaming...', {
         hasAttachments: finalProcessedAttachments.length > 0,
         attachmentCount: finalProcessedAttachments.length,
         attachments: finalProcessedAttachments,
@@ -709,7 +709,7 @@ Qual informação você precisa?`,
       let textBuffer = '';
       let streamDone = false;
       let data: any = null;
-      let error: any = null;
+      const error: any = null;
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -763,7 +763,7 @@ Qual informação você precisa?`,
 
       // Flush remaining buffer
       if (textBuffer.trim()) {
-        for (let raw of textBuffer.split('\n')) {
+        for (const raw of textBuffer.split('\n')) {
           if (!raw || raw.startsWith(':')) continue;
           if (!raw.startsWith('data: ')) continue;
           const jsonStr = raw.slice(6).trim();
@@ -777,7 +777,7 @@ Qual informação você precisa?`,
         }
       }
 
-      console.log('📨 Edge function response received:', { 
+      console.warn('📨 Edge function response received:', { 
         hasData: !!data, 
         hasError: !!error,
         dataKeys: data ? Object.keys(data) : [] 
@@ -804,7 +804,7 @@ Qual informação você precisa?`,
         throw error;
       }
 
-      console.log('AI response received:', data);
+      console.warn('AI response received:', data);
 
       // Check if AI is requesting a write action
       if (data.pendingAction) {
@@ -838,7 +838,7 @@ Qual informação você precisa?`,
 
       // Combine analysis results from attachments - now handled by AI controller
       const combinedActionCards: ActionCardData[] = [];
-      let combinedDataQuality: any = undefined;
+      const combinedDataQuality: any = undefined;
 
       // Add regular assistant message - use accumulated content if data.message is empty
       const finalContent = data.message || fullContentFromComplete || accumulatedContent;
@@ -923,7 +923,7 @@ Qual informação você precisa?`,
       if (finalProcessedAttachments.length > 0) {
         const sentIds = readyAttachments.map(a => a.id);
         markAsSent(sentIds);
-        console.log('💾 Attachments marked as sent - ready for next message');
+        console.warn('💾 Attachments marked as sent - ready for next message');
       }
 
     } catch (error) {
@@ -945,7 +945,7 @@ Qual informação você precisa?`,
     } finally {
       setIsLoading(false);
       setIsSending(false);
-      console.log('🔓 Message sending completed - state unlocked');
+      console.warn('🔓 Message sending completed - state unlocked');
     }
   };
 
@@ -982,7 +982,7 @@ Qual informação você precisa?`,
       
       if (error) throw error;
       
-      console.log('✨ Created new conversation:', newConv.id);
+      console.warn('✨ Created new conversation:', newConv.id);
       
       // Clear old conversation cache
       if (conversationId) {
@@ -1052,7 +1052,7 @@ Qual informação você precisa?`,
   // Open existing conversation
   const openConversation = async (convId: string) => {
     try {
-      console.log('🔄 Opening conversation:', convId);
+      console.warn('🔄 Opening conversation:', convId);
       setConversationId(convId);
       localStorage.setItem('active_conversation_id', convId);
       
@@ -1102,7 +1102,7 @@ Qual informação você precisa?`,
       setConversationId(convId);
       setMessages(formattedMessages);
       
-      console.log(`✅ Opened conversation with ${formattedMessages.length} messages`);
+      console.warn(`✅ Opened conversation with ${formattedMessages.length} messages`);
       toast.success('Conversa carregada');
     } catch (error) {
       console.error('Failed to open conversation:', error);
@@ -1169,7 +1169,7 @@ Qual informação você precisa?`,
         throw new Error('Company ID not found');
       }
 
-      console.log('Confirming action:', action);
+      console.warn('Confirming action:', action);
 
       // Add message showing action is being executed
       const executingMessage: ChatMessage = {
@@ -1211,7 +1211,7 @@ Qual informação você precisa?`,
         throw error;
       }
 
-      console.log('Action executed successfully:', data);
+      console.warn('Action executed successfully:', data);
 
       // Add success message
       const successMessage: ChatMessage = {
@@ -1310,7 +1310,7 @@ Qual informação você precisa?`,
     showOperationsPreview,
     setShowOperationsPreview,
     executeOperations: async (operations: Operation[]) => {
-      console.log('🎯 Executing operations:', operations.length);
+      console.warn('🎯 Executing operations:', operations.length);
       
       try {
         const companyId = user?.company.id;
@@ -1323,14 +1323,14 @@ Qual informação você precisa?`,
           return acc;
         }, {} as Record<string, Operation[]>);
         
-        console.log('📦 Operations grouped by table:', Object.keys(operationsByTable));
+        console.warn('📦 Operations grouped by table:', Object.keys(operationsByTable));
         
         // Execute bulk imports
         for (const [table, ops] of Object.entries(operationsByTable)) {
           const bulkImportTool = getToolFromTable(table);
           
           if (bulkImportTool && ops.length > 1) {
-            console.log(`📦 Bulk importing ${ops.length} records to ${table} using ${bulkImportTool}`);
+            console.warn(`📦 Bulk importing ${ops.length} records to ${table} using ${bulkImportTool}`);
             
             // Prepare records for bulk import
             const records = ops.map(o => o.data);
@@ -1349,10 +1349,10 @@ Qual informação você precisa?`,
             
             if (error) throw error;
             
-            console.log('✅ Bulk import result:', data);
+            console.warn('✅ Bulk import result:', data);
           } else {
             // Fallback to direct insert for single operations or non-bulk tables
-            console.log(`💾 Direct insert for ${ops.length} operations on ${table}`);
+            console.warn(`💾 Direct insert for ${ops.length} operations on ${table}`);
             
             for (const op of ops) {
               try {

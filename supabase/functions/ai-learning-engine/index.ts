@@ -67,7 +67,7 @@ serve(async (req) => {
 });
 
 async function analyzeFeedback(supabaseClient: any, company_id: string): Promise<FeedbackAnalysis> {
-  console.log('Analyzing feedback for company:', company_id);
+  console.warn('Analyzing feedback for company:', company_id);
 
   // Get recent feedback logs
   const { data: feedbackLogs, error: feedbackError } = await supabaseClient
@@ -102,7 +102,7 @@ async function analyzeFeedback(supabaseClient: any, company_id: string): Promise
     .map(([field, count]) => ({ field, count }));
 
   if (frequentlyCorrrected.length > 0) {
-    console.log('Pattern identified - frequently corrected fields:', frequentlyCorrrected);
+    console.warn('Pattern identified - frequently corrected fields:', frequentlyCorrrected);
 
     // Mark feedback as applied
     const feedbackIds = corrections.map(log => log.id);
@@ -123,7 +123,7 @@ async function analyzeFeedback(supabaseClient: any, company_id: string): Promise
 }
 
 async function analyzePatterns(supabaseClient: any, company_id: string) {
-  console.log('Analyzing document patterns for company:', company_id);
+  console.warn('Analyzing document patterns for company:', company_id);
 
   // Get successful insertions
   const { data: successfulData, error: dataError } = await supabaseClient
@@ -204,7 +204,7 @@ async function analyzePatterns(supabaseClient: any, company_id: string) {
 }
 
 async function updateConfidenceThresholds(supabaseClient: any, company_id: string) {
-  console.log('Updating confidence thresholds for company:', company_id);
+  console.warn('Updating confidence thresholds for company:', company_id);
 
   // Get metrics from last 30 days
   const { data: metrics, error: metricsError } = await supabaseClient

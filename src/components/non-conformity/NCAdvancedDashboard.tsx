@@ -506,7 +506,7 @@ function SLAIndicator({ label, value, total, color }: SLAIndicatorProps) {
         className="h-2"
         // Using inline style for dynamic color
         style={{ 
-          // @ts-ignore
+          // @ts-expect-error -- CSS variable is intentionally injected for dynamic color
           '--progress-background': colorClasses[color].replace('bg-', '')
         }}
       />

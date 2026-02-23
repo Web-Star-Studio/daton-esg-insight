@@ -47,7 +47,7 @@ export const getEfficacyEvaluation = async (id: string) => {
 export const createEfficacyEvaluation = async (
   evaluation: Omit<TrainingEfficacyEvaluation, 'id' | 'created_at' | 'updated_at'>
 ) => {
-  console.log('Creating efficacy evaluation:', evaluation);
+  console.warn('Creating efficacy evaluation:', evaluation);
 
   const { data: companyId, error: companyError } = await supabase.rpc('get_user_company_id');
   if (companyError || !companyId) {
@@ -105,7 +105,7 @@ export const createEfficacyEvaluation = async (
           .update({ status: newStatus })
           .eq('id', evaluation.training_program_id);
         
-        console.log('Training program status updated to:', newStatus);
+        console.warn('Training program status updated to:', newStatus);
       }
     } catch (statusError) {
       console.error('Error updating training program status:', statusError);
@@ -113,7 +113,7 @@ export const createEfficacyEvaluation = async (
     }
   }
 
-  console.log('Efficacy evaluation created successfully:', data);
+  console.warn('Efficacy evaluation created successfully:', data);
   return data as TrainingEfficacyEvaluation;
 };
 

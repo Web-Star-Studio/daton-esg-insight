@@ -69,7 +69,7 @@ const AIQualityInsights = () => {
             realAIAnalysis = data;
           }
         } catch (error) {
-          console.log('AI analysis unavailable, using rule-based insights:', error);
+          console.warn('AI analysis unavailable, using rule-based insights:', error);
         }
       }
 

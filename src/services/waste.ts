@@ -156,11 +156,11 @@ export const getWasteLogById = async (id: string): Promise<WasteLogDetail> => {
 
 // POST /api/v1/waste-logs
 export const createWasteLog = async (wasteData: CreateWasteLogData): Promise<WasteLogDetail> => {
-  console.log("🔍 [API] Iniciando createWasteLog...");
-  console.log("📥 [API] Dados recebidos:", wasteData);
+  console.warn("🔍 [API] Iniciando createWasteLog...");
+  console.warn("📥 [API] Dados recebidos:", wasteData);
   
   // Get user first
-  console.log("👤 [API] Buscando usuário autenticado...");
+  console.warn("👤 [API] Buscando usuário autenticado...");
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
   if (userError) {
@@ -173,10 +173,10 @@ export const createWasteLog = async (wasteData: CreateWasteLogData): Promise<Was
     throw new Error('Você precisa estar autenticado para registrar resíduos.');
   }
   
-  console.log("✅ [API] Usuário autenticado:", user.id);
+  console.warn("✅ [API] Usuário autenticado:", user.id);
   
   // Get user's company ID
-  console.log("🏢 [API] Buscando company_id do usuário...");
+  console.warn("🏢 [API] Buscando company_id do usuário...");
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
@@ -193,7 +193,7 @@ export const createWasteLog = async (wasteData: CreateWasteLogData): Promise<Was
     throw new Error('Sua conta não está vinculada a uma empresa. Contate o administrador.');
   }
 
-  console.log("✅ [API] Company ID encontrado:", profile.company_id);
+  console.warn("✅ [API] Company ID encontrado:", profile.company_id);
 
   const insertData = {
     ...wasteData,
@@ -201,7 +201,7 @@ export const createWasteLog = async (wasteData: CreateWasteLogData): Promise<Was
     status: (wasteData.status || 'Coletado') as WasteStatusEnum
   };
 
-  console.log("📤 [API] Inserindo dados no banco:", insertData);
+  console.warn("📤 [API] Inserindo dados no banco:", insertData);
 
   const { data, error } = await supabase
     .from('waste_logs')
@@ -235,7 +235,7 @@ export const createWasteLog = async (wasteData: CreateWasteLogData): Promise<Was
     throw new Error('Erro ao criar registro de resíduo. Nenhum dado foi retornado.');
   }
 
-  console.log("✅ [API] Registro criado com sucesso:", data);
+  console.warn("✅ [API] Registro criado com sucesso:", data);
 
   return {
     ...data,

@@ -3,7 +3,7 @@ import { Database } from "@/integrations/supabase/types";
 
 type LicenseConditionRow = Database['public']['Tables']['license_conditions']['Row'];
 
-export interface LicenseCondition extends LicenseConditionRow {}
+export type LicenseCondition = LicenseConditionRow;
 
 export interface CreateConditionInput {
   license_id: string;

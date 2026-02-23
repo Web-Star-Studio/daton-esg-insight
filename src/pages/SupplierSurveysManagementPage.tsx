@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,12 +12,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Plus, Pencil, Trash2, ClipboardList, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useDemo } from '@/contexts/DemoContext';
 import { getSupplierSurveys, createSupplierSurvey, updateSupplierSurvey, deleteSupplierSurvey, getSurveyResponses, SupplierSurvey } from '@/services/supplierPortalService';
 import { formatDateDisplay } from '@/utils/dateUtils';
 import { useCompany } from '@/contexts/CompanyContext';
+import {
+  supplierPortalDemoCategories,
+  supplierPortalDemoForms,
+  supplierPortalDemoSurveys,
+  supplierPortalDemoSurveyResponses,
+} from '@/data/demo/supplierPortalMocks';
 
 export default function SupplierSurveysManagementPage() {
   const { selectedCompany } = useCompany();
+  const { isDemo } = useDemo();
   const { toast } = useToast();
   
   const [surveys, setSurveys] = useState<SupplierSurvey[]>([]);
@@ -42,26 +50,36 @@ export default function SupplierSurveysManagementPage() {
     end_date: ''
   });
 
-  useEffect(() => {
-    loadData();
-  }, [selectedCompany?.id]);
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
 
-  async function loadData() {
-    if (!selectedCompany?.id) return;
+    if (isDemo) {
+      setSurveys(supplierPortalDemoSurveys);
+      setCategories(supplierPortalDemoCategories);
+      setCustomForms(supplierPortalDemoForms);
+      return;
+    }
+
+    if (!selectedCompany?.id) {
+      setSurveys([]);
+      setCategories([]);
+      setCustomForms([]);
+      return;
+    }
     
     try {
-      const surveysData = await getSupplierSurveys(selectedCompany.id);
-      
-      const categoriesResult = await supabase
-        .from('supplier_categories')
-        .select('id, name')
-        .eq('company_id', selectedCompany.id)
-        .order('name');
-      
-      const formsResult = await supabase
-        .from('custom_forms')
-        .select('id, title')
-        .eq('company_id', selectedCompany.id);
+      const [surveysData, categoriesResult, formsResult] = await Promise.all([
+        getSupplierSurveys(selectedCompany.id),
+        supabase
+          .from('supplier_categories')
+          .select('id, name')
+          .eq('company_id', selectedCompany.id)
+          .order('name'),
+        supabase
+          .from('custom_forms')
+          .select('id, title, is_active')
+          .eq('company_id', selectedCompany.id),
+      ]);
       
       setSurveys(surveysData);
       setCategories(categoriesResult.data || []);
@@ -72,7 +90,11 @@ export default function SupplierSurveysManagementPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [isDemo, selectedCompany?.id, toast]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleEdit = (survey: SupplierSurvey) => {
     setSelectedSurvey(survey);
@@ -107,10 +129,52 @@ export default function SupplierSurveysManagementPage() {
   };
 
   const handleSave = async () => {
-    if (!selectedCompany?.id || !formData.title.trim()) return;
+    if (!formData.title.trim()) return;
     
     setIsSaving(true);
     try {
+      if (isDemo) {
+        const now = new Date().toISOString();
+        const category =
+          supplierPortalDemoCategories.find((item) => item.id === formData.category_id) || null;
+        const customForm =
+          supplierPortalDemoForms.find((item) => item.id === formData.custom_form_id) || null;
+
+        const payload: SupplierSurvey = {
+          id: selectedSurvey?.id || `demo-survey-${Date.now()}`,
+          company_id: selectedCompany?.id || 'demo-company-001',
+          title: formData.title,
+          description: formData.description || null,
+          custom_form_id: formData.custom_form_id === 'none' ? null : (formData.custom_form_id || null),
+          category_id: formData.category_id === 'all' ? null : (formData.category_id || null),
+          is_mandatory: formData.is_mandatory,
+          due_days: formData.due_days ? parseInt(formData.due_days, 10) : null,
+          is_active: formData.is_active,
+          start_date: formData.start_date || null,
+          end_date: formData.end_date || null,
+          created_at: selectedSurvey?.created_at || now,
+          updated_at: now,
+          category: category ? { id: category.id, name: category.name } : null,
+          custom_form: customForm ? { id: customForm.id, title: customForm.title } : null,
+        };
+
+        setSurveys((prev) =>
+          selectedSurvey
+            ? prev.map((item) => (item.id === selectedSurvey.id ? payload : item))
+            : [payload, ...prev],
+        );
+        setIsDialogOpen(false);
+        toast({
+          title: 'Sucesso',
+          description: selectedSurvey
+            ? 'Pesquisa atualizada com sucesso'
+            : 'Pesquisa criada com sucesso',
+        });
+        return;
+      }
+
+      if (!selectedCompany?.id) return;
+
       const data = {
         title: formData.title,
         description: formData.description || null,
@@ -147,6 +211,12 @@ export default function SupplierSurveysManagementPage() {
     if (!confirm('Tem certeza que deseja excluir esta pesquisa?')) return;
     
     try {
+      if (isDemo) {
+        setSurveys((prev) => prev.filter((item) => item.id !== id));
+        toast({ title: 'Sucesso', description: 'Pesquisa excluída com sucesso' });
+        return;
+      }
+
       await deleteSupplierSurvey(id);
       toast({ title: 'Sucesso', description: 'Pesquisa excluída com sucesso' });
       loadData();
@@ -158,6 +228,13 @@ export default function SupplierSurveysManagementPage() {
 
   const handleViewResponses = async (survey: SupplierSurvey) => {
     try {
+      if (isDemo) {
+        setResponses(supplierPortalDemoSurveyResponses[survey.id] || []);
+        setSelectedSurvey(survey);
+        setIsResponsesOpen(true);
+        return;
+      }
+
       const data = await getSurveyResponses(survey.id);
       setResponses(data);
       setSelectedSurvey(survey);

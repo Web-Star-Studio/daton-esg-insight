@@ -66,7 +66,7 @@ export const SuccessionPlanModal = ({ isOpen, onClose, onSuccess }: SuccessionPl
         expected_retirement_date: data.expected_retirement_date?.trim() || null,
       };
       
-      console.log("Enviando plano de sucessão:", normalizedData);
+      console.warn("Enviando plano de sucessão:", normalizedData);
       await createSuccessionPlan.mutateAsync(normalizedData);
       
       toast({

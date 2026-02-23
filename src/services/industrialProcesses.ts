@@ -254,8 +254,8 @@ export function calculateIndustrialProcessEmissions(
 
   let totalCO2e = 0;
   let rawCO2 = 0;
-  let rawCH4 = 0;
-  let rawN2O = 0;
+  const rawCH4 = 0;
+  const rawN2O = 0;
 
   // GWP values from AR4 (GHG Protocol Brasil standard)
   const GWP_CH4 = 25;
@@ -269,12 +269,14 @@ export function calculateIndustrialProcessEmissions(
         }
 
         // Convert production to tonnes if needed
+        // eslint-disable-next-line no-case-declarations
         let productionInTonnes = data.productionQuantity;
         if (data.productionUnit === 'kg') {
           productionInTonnes = data.productionQuantity / 1000;
         }
 
         // Convert emission factor to tCO2/t if needed
+        // eslint-disable-next-line no-case-declarations
         let factorInTonnes = data.emissionFactor;
         if (data.emissionFactorUnit?.includes('kg')) {
           factorInTonnes = data.emissionFactor / 1000;
@@ -301,7 +303,9 @@ export function calculateIndustrialProcessEmissions(
         // Simplified mass balance calculation
         // For carbonates: CaCO3 → CaO + CO2
         // Stoichiometric factor for calcite: 0.44 tCO2/t CaCO3
+        // eslint-disable-next-line no-case-declarations
         const massLoss = data.inputQuantity - data.outputQuantity;
+        // eslint-disable-next-line no-case-declarations
         const carbonContent = 0.44; // Default carbon content factor
         totalCO2e = massLoss * carbonContent;
         rawCO2 = totalCO2e;

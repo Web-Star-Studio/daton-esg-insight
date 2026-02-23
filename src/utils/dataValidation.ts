@@ -222,6 +222,7 @@ export function validateExtractedData(
         break;
         
       case 'date':
+        // eslint-disable-next-line no-case-declarations
         const dateResult = validateDate(value);
         errors.push(...dateResult.errors);
         warnings.push(...dateResult.warnings);

@@ -68,6 +68,38 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
     }
   }, [progress, saveProgress, analytics]);
 
+  const completeTour = useCallback(() => {
+    if (!activeTour) return;
+
+    // Analytics: Track tour completion
+    if (tourStartTime) {
+      const durationSeconds = Math.floor((Date.now() - tourStartTime) / 1000);
+      analytics.trackTourComplete(activeTour.id, durationSeconds);
+    }
+
+    // Marcar como completo
+    const updatedProgress = progress.map(p => 
+      p.tourId === activeTour.id
+        ? { ...p, isCompleted: true, completedAt: new Date().toISOString() }
+        : p
+    );
+    saveProgress(updatedProgress);
+
+    // Limpar tour ativo
+    setActiveTour(null);
+    setCurrentStepIndex(0);
+    setIsPlaying(false);
+    setIsPaused(false);
+    setTourStartTime(null);
+
+    // Iniciar próximo tour da fila
+    if (queue.length > 0) {
+      const [nextTour, ...remainingQueue] = queue;
+      setQueue(remainingQueue);
+      setTimeout(() => startTour(nextTour.id), 500);
+    }
+  }, [activeTour, progress, queue, saveProgress, startTour, tourStartTime, analytics]);
+
   const nextStep = useCallback(() => {
     if (!activeTour) return;
 
@@ -110,7 +142,7 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
         : p
     );
     saveProgress(updatedProgress);
-  }, [activeTour, currentStepIndex, progress, saveProgress, analytics]);
+  }, [activeTour, completeTour, currentStepIndex, progress, saveProgress, analytics]);
 
   const prevStep = useCallback(() => {
     if (!activeTour || currentStepIndex === 0) return;
@@ -147,38 +179,6 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
   const resumeTour = useCallback(() => {
     setIsPaused(false);
   }, []);
-
-  const completeTour = useCallback(() => {
-    if (!activeTour) return;
-
-    // Analytics: Track tour completion
-    if (tourStartTime) {
-      const durationSeconds = Math.floor((Date.now() - tourStartTime) / 1000);
-      analytics.trackTourComplete(activeTour.id, durationSeconds);
-    }
-
-    // Marcar como completo
-    const updatedProgress = progress.map(p => 
-      p.tourId === activeTour.id
-        ? { ...p, isCompleted: true, completedAt: new Date().toISOString() }
-        : p
-    );
-    saveProgress(updatedProgress);
-
-    // Limpar tour ativo
-    setActiveTour(null);
-    setCurrentStepIndex(0);
-    setIsPlaying(false);
-    setIsPaused(false);
-    setTourStartTime(null);
-
-    // Iniciar próximo tour da fila
-    if (queue.length > 0) {
-      const [nextTour, ...remainingQueue] = queue;
-      setQueue(remainingQueue);
-      setTimeout(() => startTour(nextTour.id), 500);
-    }
-  }, [activeTour, progress, queue, saveProgress, startTour, tourStartTime, analytics]);
 
   const dismissTour = useCallback(() => {
     if (!activeTour) return;

@@ -26,7 +26,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const payload: NotificationPayload = await req.json();
-    console.log('Received notification request:', payload);
+    console.warn('Received notification request:', payload);
 
     // Get supplier info
     const { data: supplier, error: supplierError } = await supabase
@@ -56,7 +56,7 @@ serve(async (req) => {
     // Check if notification should be sent based on config
     const shouldNotify = checkShouldNotify(payload.event, config);
     if (!shouldNotify) {
-      console.log('Notification skipped based on config');
+      console.warn('Notification skipped based on config');
       return new Response(
         JSON.stringify({ success: true, skipped: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -111,7 +111,7 @@ serve(async (req) => {
         status: 'pending',
       });
 
-    console.log('Notification processed successfully');
+    console.warn('Notification processed successfully');
 
     return new Response(
       JSON.stringify({ success: true }),
@@ -261,7 +261,7 @@ async function sendEmailNotifications(
       const error = await response.text();
       console.error('Email send error:', error);
     } else {
-      console.log('Emails sent successfully to:', emails);
+      console.warn('Emails sent successfully to:', emails);
     }
   } catch (error) {
     console.error('Error sending emails:', error);

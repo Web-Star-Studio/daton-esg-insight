@@ -5,11 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 export const useNotificationTriggers = () => {
   // Setup real-time monitoring on component mount
   useEffect(() => {
-    console.log('Setting up notification triggers...');
+    console.warn('Setting up notification triggers...');
     notificationTriggers.setupRealtimeMonitoring();
     
     return () => {
-      console.log('Notification triggers cleanup');
+      console.warn('Notification triggers cleanup');
       // Cleanup would be handled by Supabase client
     };
   }, []);

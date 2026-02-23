@@ -33,10 +33,10 @@ export async function uploadEmployeeDocument(
   file: File,
   category?: string
 ): Promise<EmployeeDocument> {
-  console.log('=== EMPLOYEE DOCUMENT UPLOAD ===');
-  console.log('Employee ID:', employeeId);
-  console.log('File:', file.name, file.type, file.size);
-  console.log('Category:', category);
+  console.warn('=== EMPLOYEE DOCUMENT UPLOAD ===');
+  console.warn('Employee ID:', employeeId);
+  console.warn('File:', file.name, file.type, file.size);
+  console.warn('Category:', category);
 
   // Validar tipo de arquivo
   if (!ALLOWED_FILE_TYPES.includes(file.type)) {
@@ -96,7 +96,7 @@ export async function uploadEmployeeDocument(
         throw dbError;
       }
 
-      console.log('Document uploaded successfully:', document);
+      console.warn('Document uploaded successfully:', document);
       return document;
     },
     {

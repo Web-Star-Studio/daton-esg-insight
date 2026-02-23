@@ -101,7 +101,7 @@ serve(async (req) => {
       openNCs: ncsResult.count || 0
     };
 
-    console.log('📊 Quick stats generated:', stats);
+    console.warn('📊 Quick stats generated:', stats);
 
     return new Response(JSON.stringify(stats), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

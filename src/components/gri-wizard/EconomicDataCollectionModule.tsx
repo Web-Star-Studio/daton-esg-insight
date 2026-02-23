@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,11 +126,75 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
   const [valueDistributionData, setValueDistributionData] = useState<EconomicValueDistributionResult | null>(null);
   const [calculatingValueDistribution, setCalculatingValueDistribution] = useState(false);
 
-  useEffect(() => {
-    loadData();
+  const calculateEconomicMetrics = useCallback(async (targetCompanyId: string) => {
+    try {
+      // Get company financial data
+      const { data: company } = await supabase
+        .from('companies')
+        .select('annual_revenue, employee_count')
+        .eq('id', targetCompanyId)
+        .single();
+
+      // Get suppliers data
+      const { data: suppliers, count: totalSuppliers } = await supabase
+        .from('suppliers')
+        .select('*', { count: 'exact' })
+        .eq('company_id', targetCompanyId);
+
+      const localSuppliers = suppliers?.filter(s => 
+        s.category?.toLowerCase().includes('local') || 
+        s.name?.toLowerCase().includes('local')
+      ).length || 0;
+
+      // Get ESG risks
+      const { data: esgRisks, count: risksCount } = await supabase
+        .from('esg_risks')
+        .select('*', { count: 'exact' })
+        .eq('company_id', targetCompanyId);
+
+      const climateRisks = esgRisks?.filter(r => 
+        r.esg_category?.toLowerCase().includes('ambiental') ||
+        r.esg_category?.toLowerCase().includes('environmental')
+      ).length || 0;
+
+      // Calculate revenue per employee
+      const revenuePerEmployee = company?.annual_revenue && company?.employee_count
+        ? (company.annual_revenue / company.employee_count)
+        : 0;
+
+      // Get social investments
+      const { data: socialData } = await supabase
+        .from('gri_social_data_collection')
+        .select('social_investment_annual')
+        .eq('report_id', reportId)
+        .maybeSingle();
+
+      return {
+        revenue_total: company?.annual_revenue || 0,
+        revenue_per_employee: parseFloat(revenuePerEmployee.toFixed(2)),
+        local_suppliers_count: localSuppliers,
+        total_suppliers_count: totalSuppliers || 0,
+        local_procurement_percentage: totalSuppliers ? ((localSuppliers / totalSuppliers) * 100).toFixed(2) : 0,
+        climate_related_risks_identified: climateRisks,
+        esg_risks_identified: risksCount || 0,
+        community_investments: socialData?.social_investment_annual || 0,
+      };
+    } catch (error) {
+      console.error('Error calculating economic metrics:', error);
+      return {};
+    }
   }, [reportId]);
 
-  const loadData = async () => {
+  const recalculateMetrics = useCallback(async (targetCompanyId: string) => {
+    const metrics = await calculateEconomicMetrics(targetCompanyId);
+    setQuantitativeData(prev => ({ ...prev, ...metrics }));
+    toast({
+      title: "Métricas calculadas",
+      description: "Dados atualizados com sucesso"
+    });
+  }, [calculateEconomicMetrics, toast]);
+
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -184,7 +248,7 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
       }
 
       // Calculate metrics automatically
-      await handleRecalculate();
+      await recalculateMetrics(profile.company_id);
     } catch (error) {
       console.error('Error loading economic data:', error);
       toast({
@@ -195,74 +259,15 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
     } finally {
       setLoading(false);
     }
-  };
+  }, [recalculateMetrics, reportId, toast]);
 
-  const calculateEconomicMetrics = async () => {
-    try {
-      // Get company financial data
-      const { data: company } = await supabase
-        .from('companies')
-        .select('annual_revenue, employee_count')
-        .eq('id', companyId)
-        .single();
-
-      // Get suppliers data
-      const { data: suppliers, count: totalSuppliers } = await supabase
-        .from('suppliers')
-        .select('*', { count: 'exact' })
-        .eq('company_id', companyId);
-
-      const localSuppliers = suppliers?.filter(s => 
-        s.category?.toLowerCase().includes('local') || 
-        s.name?.toLowerCase().includes('local')
-      ).length || 0;
-
-      // Get ESG risks
-      const { data: esgRisks, count: risksCount } = await supabase
-        .from('esg_risks')
-        .select('*', { count: 'exact' })
-        .eq('company_id', companyId);
-
-      const climateRisks = esgRisks?.filter(r => 
-        r.esg_category?.toLowerCase().includes('ambiental') ||
-        r.esg_category?.toLowerCase().includes('environmental')
-      ).length || 0;
-
-      // Calculate revenue per employee
-      const revenuePerEmployee = company?.annual_revenue && company?.employee_count
-        ? (company.annual_revenue / company.employee_count)
-        : 0;
-
-      // Get social investments
-      const { data: socialData } = await supabase
-        .from('gri_social_data_collection')
-        .select('social_investment_annual')
-        .eq('report_id', reportId)
-        .maybeSingle();
-
-      return {
-        revenue_total: company?.annual_revenue || 0,
-        revenue_per_employee: parseFloat(revenuePerEmployee.toFixed(2)),
-        local_suppliers_count: localSuppliers,
-        total_suppliers_count: totalSuppliers || 0,
-        local_procurement_percentage: totalSuppliers ? ((localSuppliers / totalSuppliers) * 100).toFixed(2) : 0,
-        climate_related_risks_identified: climateRisks,
-        esg_risks_identified: risksCount || 0,
-        community_investments: socialData?.social_investment_annual || 0,
-      };
-    } catch (error) {
-      console.error('Error calculating economic metrics:', error);
-      return {};
-    }
-  };
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleRecalculate = async () => {
-    const metrics = await calculateEconomicMetrics();
-    setQuantitativeData(prev => ({ ...prev, ...metrics }));
-    toast({
-      title: "Métricas calculadas",
-      description: "Dados atualizados com sucesso"
-    });
+    if (!companyId) return;
+    await recalculateMetrics(companyId);
   };
 
   const calculateSustainableInvestmentMetrics = async () => {

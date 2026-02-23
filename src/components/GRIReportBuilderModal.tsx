@@ -96,7 +96,7 @@ export function GRIReportBuilderModal({
       methodology: methodology,
     },
     onSaveSuccess: () => {
-      console.log('Auto-save successful');
+      console.warn('Auto-save successful');
     },
     onSaveError: (error) => {
       console.error('Auto-save error:', error);

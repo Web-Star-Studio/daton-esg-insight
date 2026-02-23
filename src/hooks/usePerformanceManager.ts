@@ -258,7 +258,7 @@ export const useRealTimeManager = (configs: RealTimeConfig[]) => {
     configs.forEach((config, index) => {
       const channelName = `realtime-${config.table}-${index}`;
       
-      let subscriptionConfig: any = {
+      const subscriptionConfig: any = {
         event: '*',
         schema: 'public',
         table: config.table,

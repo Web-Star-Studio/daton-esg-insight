@@ -94,13 +94,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Processing file: ${fileName || 'unknown'}, type: ${fileType || 'unknown'}, isImage: ${isImage}`);
+    console.warn(`Processing file: ${fileName || 'unknown'}, type: ${fileType || 'unknown'}, isImage: ${isImage}`);
 
     const mimeType = getMimeType(fileType, isImage);
     
     // Use Lovable AI Gateway with Google Gemini Vision for ALL file types
     // Gemini 3 Flash Preview has native multimodal support for both images and PDFs
-    console.log('Sending to Lovable AI Gateway (google/gemini-3-flash-preview)');
+    console.warn('Sending to Lovable AI Gateway (google/gemini-3-flash-preview)');
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    console.log('Lovable AI response received');
+    console.warn('Lovable AI response received');
 
     const content = aiData.choices?.[0]?.message?.content;
     if (!content) {
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
     if (!extractedData.cnpj) {
       const fromModelText = extractCNPJFromText(content);
       extractedData.cnpj = fromModelText || undefined;
-      console.log('CNPJ recovery from text:', !!fromModelText);
+      console.warn('CNPJ recovery from text:', !!fromModelText);
     }
 
     // Validate that we got at least the CNPJ
@@ -226,7 +226,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Successfully extracted CNPJ:', extractedData.cnpj);
+    console.warn('Successfully extracted CNPJ:', extractedData.cnpj);
 
     // Transform to frontend format
     const transformedData = {

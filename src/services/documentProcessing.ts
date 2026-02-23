@@ -29,13 +29,13 @@ export async function processDocument(
     timeout = 60000 // 60 segundos
   } = options;
 
-  console.log('Processing document:', { filePath, fileType, options });
+  console.warn('Processing document:', { filePath, fileType, options });
 
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`Processing attempt ${attempt}/${maxRetries}`);
+      console.warn(`Processing attempt ${attempt}/${maxRetries}`);
 
       // Criar promise com timeout
       const processingPromise = supabase.functions.invoke('parse-chat-document', {
@@ -60,7 +60,7 @@ export async function processDocument(
         throw new Error(data.error || 'Falha no processamento do documento');
       }
 
-      console.log('Document processed successfully:', {
+      console.warn('Document processed successfully:', {
         type: data.type,
         contentLength: data.content?.length || 0,
         hasStructured: !!data.structured

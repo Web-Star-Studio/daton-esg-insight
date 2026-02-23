@@ -22,7 +22,7 @@ serve(async (req) => {
   try {
     const { indicatorCode, companyId, reportId } = await req.json();
     
-    console.log(`Auto-filling indicator: ${indicatorCode} for company: ${companyId}`);
+    console.warn(`Auto-filling indicator: ${indicatorCode} for company: ${companyId}`);
 
     // First, try database function for data-based suggestions
     const { data: dbSuggestion } = await supabaseClient.rpc('get_indicator_suggested_value', {
@@ -32,14 +32,14 @@ serve(async (req) => {
 
     // If database has a suggestion with actual value, use it
     if (dbSuggestion && dbSuggestion.suggested_value !== null && dbSuggestion.suggested_value !== undefined) {
-      console.log(`Using database suggestion for ${indicatorCode}`);
+      console.warn(`Using database suggestion for ${indicatorCode}`);
       return new Response(JSON.stringify(dbSuggestion), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     // If no database suggestion, use AI to generate intelligent default
-    console.log(`No database data, generating AI suggestion for ${indicatorCode}`);
+    console.warn(`No database data, generating AI suggestion for ${indicatorCode}`);
     
     // Fetch company and indicator details
     const { data: company } = await supabaseClient
@@ -98,7 +98,7 @@ async function generateAISuggestion(
   supabaseClient: any
 ) {
   if (!apiKey) {
-    console.log('No LOVABLE_API_KEY, returning template');
+    console.warn('No LOVABLE_API_KEY, returning template');
     return generateTemplateSuggestion(indicator, company);
   }
 
@@ -108,7 +108,7 @@ async function generateAISuggestion(
     
     const prompt = buildAIPrompt(indicator, company, context);
     
-    console.log('Calling Lovable AI for suggestion...');
+    console.warn('Calling Lovable AI for suggestion...');
     
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

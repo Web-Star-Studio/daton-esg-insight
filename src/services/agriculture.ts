@@ -400,6 +400,7 @@ export function calculateAgricultureEmissions(
     case 'queima de resíduos':
       if (!activityData.residueAmount) throw new Error('Quantidade de resíduo é obrigatória');
       activityQuantity = activityData.residueAmount;
+      // eslint-disable-next-line no-case-declarations
       const efficiency = (activityData.burningEfficiency || 90) / 100;
       rawCO2 = activityData.residueAmount * (emissionFactor.co2_factor || 0) * efficiency / 1000;
       rawCH4 = activityData.residueAmount * (emissionFactor.ch4_factor || 0) * efficiency / 1000;

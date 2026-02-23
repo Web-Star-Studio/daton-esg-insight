@@ -233,7 +233,35 @@ export const environmentalMockEntries = [
   // Activity data
   {
     queryKey: ['activity-data'],
-    data: [],
+    data: [
+      {
+        id: 'ad-1',
+        source_name: 'Frota Diesel - Unidade SP',
+        period_start_date: '2026-01-01',
+        period_end_date: '2026-01-31',
+        quantity: 14200,
+        unit: 'L',
+        status: 'Aprovado',
+      },
+      {
+        id: 'ad-2',
+        source_name: 'Energia Elétrica - Unidade RJ',
+        period_start_date: '2026-01-01',
+        period_end_date: '2026-01-31',
+        quantity: 365000,
+        unit: 'kWh',
+        status: 'Aprovado',
+      },
+      {
+        id: 'ad-3',
+        source_name: 'Gás Natural - Caldeira',
+        period_start_date: '2026-01-01',
+        period_end_date: '2026-01-31',
+        quantity: 11800,
+        unit: 'm³',
+        status: 'Pendente',
+      },
+    ],
   },
   // Water monitoring
   {

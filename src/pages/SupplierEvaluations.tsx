@@ -38,6 +38,24 @@ import {
   getLatestEvaluationForSuppliers,
 } from "@/services/supplierManagementService";
 
+function TableTooltipHeader({ title, tooltip }: { title: string; tooltip: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-1 cursor-help">
+            {title}
+            <HelpCircle className="h-3 w-3 text-muted-foreground" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 export default function SupplierEvaluations() {
   const navigate = useNavigate();
   
@@ -132,22 +150,6 @@ export default function SupplierEvaluations() {
     });
   }, [supplierCompliance, searchTerm, statusFilter, complianceFilter]);
 
-  const TooltipHeader = ({ title, tooltip }: { title: string; tooltip: string }) => (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center gap-1 cursor-help">
-            {title}
-            <HelpCircle className="h-3 w-3 text-muted-foreground" />
-          </div>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-xs">
-          <p>{tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-
   return (
     <div className="space-y-6">
         {/* Header */}
@@ -229,33 +231,33 @@ export default function SupplierEvaluations() {
                     <TableHead>Fornecedor</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-center">
-                      <TooltipHeader 
-                        title="Aprovados" 
-                        tooltip="Quantidade de documentos aprovados na última avaliação documental" 
+                      <TableTooltipHeader
+                        title="Aprovados"
+                        tooltip="Quantidade de documentos aprovados na última avaliação documental"
                       />
                     </TableHead>
                     <TableHead className="text-center">
-                      <TooltipHeader 
-                        title="Pendentes" 
-                        tooltip="Documentos aguardando análise ou ainda não submetidos" 
+                      <TableTooltipHeader
+                        title="Pendentes"
+                        tooltip="Documentos aguardando análise ou ainda não submetidos"
                       />
                     </TableHead>
                     <TableHead className="text-center">
-                      <TooltipHeader 
-                        title="Rejeitados" 
-                        tooltip="Documentos que foram rejeitados e precisam de reenvio" 
+                      <TableTooltipHeader
+                        title="Rejeitados"
+                        tooltip="Documentos que foram rejeitados e precisam de reenvio"
                       />
                     </TableHead>
                     <TableHead className="text-center">
-                      <TooltipHeader 
-                        title="Taxa de Conformidade" 
-                        tooltip="Percentual de documentos aprovados em relação ao total exigido" 
+                      <TableTooltipHeader
+                        title="Taxa de Conformidade"
+                        tooltip="Percentual de documentos aprovados em relação ao total exigido"
                       />
                     </TableHead>
                     <TableHead className="text-center">
-                      <TooltipHeader 
-                        title="Próx. Avaliação" 
-                        tooltip="Data programada para a próxima avaliação documental do fornecedor" 
+                      <TableTooltipHeader
+                        title="Próx. Avaliação"
+                        tooltip="Data programada para a próxima avaliação documental do fornecedor"
                       />
                     </TableHead>
                     <TableHead className="text-right">Ações</TableHead>

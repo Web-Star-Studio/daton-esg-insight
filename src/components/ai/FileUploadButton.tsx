@@ -65,8 +65,9 @@ export function FileUploadButton({ onFileSelect, isUploading, disabled }: FileUp
     }
 
     // Validar caracteres especiais problemáticos
-    const problematicChars = /[<>:"|?*\x00-\x1F]/;
-    if (problematicChars.test(file.name)) {
+    const problematicChars = /[<>:"|?*]/;
+    const hasControlChars = [...file.name].some((char) => char.charCodeAt(0) <= 31);
+    if (problematicChars.test(file.name) || hasControlChars) {
       return {
         valid: false,
         error: 'Nome do arquivo contém caracteres inválidos.'
@@ -81,7 +82,7 @@ export function FileUploadButton({ onFileSelect, isUploading, disabled }: FileUp
     
     if (files.length === 0) return;
 
-    console.log(`Processing ${files.length} file(s) for upload`);
+    console.warn(`Processing ${files.length} file(s) for upload`);
 
     // Validar e separar arquivos
     const validFiles: File[] = [];
@@ -111,7 +112,7 @@ export function FileUploadButton({ onFileSelect, isUploading, disabled }: FileUp
       setPreviewFile(validFiles[0]);
     } else if (validFiles.length > 0) {
       // Múltiplos arquivos, processar diretamente
-      console.log(`Uploading ${validFiles.length} valid file(s):`, validFiles.map(f => f.name));
+      console.warn(`Uploading ${validFiles.length} valid file(s):`, validFiles.map(f => f.name));
       
       toast({
         title: `Enviando ${validFiles.length} arquivo(s)`,

@@ -10,7 +10,7 @@ export function useLegislationNotificationTriggers() {
   const { data: reviewCheckResult } = useQuery({
     queryKey: ['legislation-review-check'],
     queryFn: async () => {
-      console.log('Triggering legislation review check...');
+      console.warn('Triggering legislation review check...');
       
       const { data, error } = await supabase.functions.invoke('smart-notifications', {
         body: { action: 'check_legislation_reviews' }
@@ -22,7 +22,7 @@ export function useLegislationNotificationTriggers() {
       }
 
       if (data?.result?.created > 0) {
-        console.log(`Created ${data.result.created} legislation notifications`);
+        console.warn(`Created ${data.result.created} legislation notifications`);
         // Invalidate notifications queries to refresh the UI
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
         queryClient.invalidateQueries({ queryKey: ['smart-notifications'] });
@@ -64,7 +64,7 @@ export function useLegislationNotificationTriggers() {
 
   // Trigger notification when legislation is created
   const onLegislationCreated = useCallback(async (legislationId: string, title: string) => {
-    console.log(`Legislation created: ${title} (${legislationId})`);
+    console.warn(`Legislation created: ${title} (${legislationId})`);
     // The database trigger will handle the notification
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
   }, [queryClient]);
@@ -75,7 +75,7 @@ export function useLegislationNotificationTriggers() {
     title: string, 
     newStatus: string
   ) => {
-    console.log(`Legislation status changed: ${title} -> ${newStatus}`);
+    console.warn(`Legislation status changed: ${title} -> ${newStatus}`);
     // The database trigger will handle the notification
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
   }, [queryClient]);
@@ -85,7 +85,7 @@ export function useLegislationNotificationTriggers() {
     legislationId: string, 
     title: string
   ) => {
-    console.log(`Legislation revoked: ${title}`);
+    console.warn(`Legislation revoked: ${title}`);
     // The database trigger will handle the notification
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
   }, [queryClient]);
@@ -96,7 +96,7 @@ export function useLegislationNotificationTriggers() {
     title: string, 
     userId: string
   ) => {
-    console.log(`Responsible assigned to legislation: ${title} -> ${userId}`);
+    console.warn(`Responsible assigned to legislation: ${title} -> ${userId}`);
     // The database trigger will handle the notification
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
   }, [queryClient]);

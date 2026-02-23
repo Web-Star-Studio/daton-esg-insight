@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,20 +29,13 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
   const [selectedMetric, setSelectedMetric] = useState('total');
   const [isExporting, setIsExporting] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadAnalyticsData();
-      loadBenchmarkData();
-    }
-  }, [isOpen, selectedPeriod]);
-
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const data = await getAdvancedEmissionAnalytics(selectedPeriod);
       setAnalyticsData(data);
-      console.log('Analytics data loaded:', data);
+      console.warn('Analytics data loaded:', data);
     } catch (error: any) {
       console.error('Erro ao carregar analytics:', error);
       setError(error.message || 'Erro ao carregar dados analíticos');
@@ -50,16 +43,23 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedPeriod]);
 
-  const loadBenchmarkData = async () => {
+  const loadBenchmarkData = useCallback(async () => {
     try {
       const data = await getBenchmarkData();
       setBenchmarkData(data);
     } catch (error) {
       console.error('Erro ao carregar benchmarks:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      void loadAnalyticsData();
+      void loadBenchmarkData();
+    }
+  }, [isOpen, loadAnalyticsData, loadBenchmarkData]);
 
   const handleExport = async (format: 'pdf' | 'excel' | 'csv') => {
     setIsExporting(true);

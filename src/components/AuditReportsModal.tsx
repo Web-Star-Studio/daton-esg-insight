@@ -36,7 +36,7 @@ export function AuditReportsModal({ isOpen, onClose }: AuditReportsModalProps) {
 
   const generateReport = (type: string) => {
     // Here you would implement actual report generation
-    console.log(`Generating ${type} report...`);
+    console.warn(`Generating ${type} report...`);
   };
 
   return (

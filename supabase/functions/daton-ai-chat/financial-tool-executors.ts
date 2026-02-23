@@ -205,7 +205,7 @@ export async function analyzeFinancialTrends(args: any, companyId: string, supab
   const { metric, period, groupBy } = args;
   
   // Simplified trend analysis
-  let table = metric === 'revenue' ? 'accounts_receivable' : 'accounts_payable';
+  const table = metric === 'revenue' ? 'accounts_receivable' : 'accounts_payable';
   
   const { data, error } = await supabase
     .from(table)

@@ -40,7 +40,7 @@ export interface CreateRiskOccurrenceData {
 class RiskOccurrencesService {
     async getOccurrences(): Promise<RiskOccurrence[]> {
         const { data, error } = await supabase
-            .from('risk_occurrences' as 'risk_occurrences')
+            .from('risk_occurrences' as const)
             .select(`
                 *,
                 esg_risks!inner(risk_title)
@@ -57,7 +57,7 @@ class RiskOccurrencesService {
 
     async getOccurrencesByRisk(riskId: string): Promise<RiskOccurrence[]> {
         const { data, error } = await supabase
-            .from('risk_occurrences' as 'risk_occurrences')
+            .from('risk_occurrences' as const)
             .select('*')
             .eq('risk_id', riskId)
             .order('occurrence_date', { ascending: false });
@@ -81,7 +81,7 @@ class RiskOccurrencesService {
             .single();
 
         const { data, error } = await supabase
-            .from('risk_occurrences' as 'risk_occurrences')
+            .from('risk_occurrences' as const)
             .insert({
                 ...occurrence,
                 company_id: profile?.company_id,
@@ -100,7 +100,7 @@ class RiskOccurrencesService {
 
     async updateOccurrence(id: string, updates: Partial<CreateRiskOccurrenceData>): Promise<RiskOccurrence> {
         const { data, error } = await supabase
-            .from('risk_occurrences' as 'risk_occurrences')
+            .from('risk_occurrences' as const)
             .update(updates)
             .eq('id', id)
             .select()
@@ -116,7 +116,7 @@ class RiskOccurrencesService {
 
     async deleteOccurrence(id: string): Promise<void> {
         const { error } = await supabase
-            .from('risk_occurrences' as 'risk_occurrences')
+            .from('risk_occurrences' as const)
             .delete()
             .eq('id', id);
 

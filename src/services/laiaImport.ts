@@ -281,7 +281,7 @@ function parseBoolean(value: unknown): boolean {
 function parseControlTypes(value: unknown): string[] {
   if (!value) return [];
   const str = cleanText(value);
-  const types = str.split(/[,\/;]/).map(t => t.trim().toUpperCase()).filter(Boolean);
+  const types = str.split(/[,/;]/).map(t => t.trim().toUpperCase()).filter(Boolean);
   const validTypes = ['ST', 'CO', 'MO', 'PRE', 'NC'];
   return types.filter(t => validTypes.includes(t));
 }
@@ -289,7 +289,7 @@ function parseControlTypes(value: unknown): string[] {
 function parseLifecycleStages(value: unknown): string[] {
   if (!value) return [];
   const str = cleanText(value);
-  return str.split(/[,\/;]/).map(s => s.trim()).filter(Boolean);
+  return str.split(/[,/;]/).map(s => s.trim()).filter(Boolean);
 }
 
 function parseLifecycleControl(value: unknown): boolean {

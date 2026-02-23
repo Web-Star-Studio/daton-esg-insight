@@ -117,7 +117,7 @@ Saída esperada:
 
 // Utility function to extract JSON from AI response
 function extractJsonFromText(text: string): any {
-  console.log('Attempting to extract JSON from AI response...');
+  console.warn('Attempting to extract JSON from AI response...');
   
   // Remove markdown code blocks and extra whitespace
   let cleanText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
@@ -130,10 +130,10 @@ function extractJsonFromText(text: string): any {
   
   try {
     const parsed = JSON.parse(cleanText);
-    console.log('JSON extraction successful');
+    console.warn('JSON extraction successful');
     return parsed;
   } catch (error) {
-    console.log('Primary JSON parsing failed, attempting cleanup...');
+    console.warn('Primary JSON parsing failed, attempting cleanup...');
     
     // Try to extract just the JSON object more aggressively
     const startBrace = cleanText.indexOf('{');
@@ -144,7 +144,7 @@ function extractJsonFromText(text: string): any {
       
       try {
         const parsed = JSON.parse(jsonPart);
-        console.log('JSON extraction successful after cleanup');
+        console.warn('JSON extraction successful after cleanup');
         return parsed;
       } catch (secondError) {
         console.error('Failed to parse JSON after cleanup:', secondError);
@@ -185,7 +185,7 @@ serve(async (req) => {
   let tempFileName: string | undefined;
   
   try {
-    console.log('Starting comprehensive document analysis...');
+    console.warn('Starting comprehensive document analysis...');
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -207,7 +207,7 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
-    console.log(`Starting document analysis for user: ${user.id}`);
+    console.warn(`Starting document analysis for user: ${user.id}`);
 
     // Get request data
     const { filePath } = await req.json() as DocumentAnalysisRequest;
@@ -215,7 +215,7 @@ serve(async (req) => {
     // Generate unique temp filename
     tempFileName = `temp-analysis-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.pdf`;
     
-    console.log(`Downloading document: ${filePath}`);
+    console.warn(`Downloading document: ${filePath}`);
 
     // Download PDF from Supabase Storage
     const { data: fileData, error: downloadError } = await supabaseClient
@@ -227,14 +227,14 @@ serve(async (req) => {
       throw new Error(`Failed to download file: ${downloadError.message}`);
     }
 
-    console.log('=== PHASE 1: OPENAI FILES UPLOAD ===');
+    console.warn('=== PHASE 1: OPENAI FILES UPLOAD ===');
     
     // Convert blob to form data for OpenAI Files API
     const formData = new FormData();
     formData.append('file', fileData, tempFileName);
     formData.append('purpose', 'assistants');
 
-    console.log('Uploading PDF to OpenAI Files API...');
+    console.warn('Uploading PDF to OpenAI Files API...');
     
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
@@ -256,9 +256,9 @@ serve(async (req) => {
     }
 
     const uploadResult = await uploadResponse.json();
-    console.log(`File uploaded to OpenAI with ID: ${uploadResult.id}`);
+    console.warn(`File uploaded to OpenAI with ID: ${uploadResult.id}`);
 
-    console.log('=== PHASE 2: AI ANALYSIS WITH FILE_SEARCH ===');
+    console.warn('=== PHASE 2: AI ANALYSIS WITH FILE_SEARCH ===');
 
     // Create assistant with file_search capability
     const assistantResponse = await fetch('https://api.openai.com/v1/assistants', {
@@ -282,7 +282,7 @@ serve(async (req) => {
     }
 
     const assistant = await assistantResponse.json();
-    console.log(`Assistant created with ID: ${assistant.id}`);
+    console.warn(`Assistant created with ID: ${assistant.id}`);
 
     // Create thread
     const threadResponse = await fetch('https://api.openai.com/v1/threads', {
@@ -301,7 +301,7 @@ serve(async (req) => {
     }
 
     const thread = await threadResponse.json();
-    console.log(`Thread created with ID: ${thread.id}`);
+    console.warn(`Thread created with ID: ${thread.id}`);
 
     // Add message to thread with file attachment
     const messageResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
@@ -326,7 +326,7 @@ serve(async (req) => {
       throw new Error(`Failed to add message: ${messageResponse.status} - ${errorText}`);
     }
 
-    console.log('Message added to thread with PDF attachment');
+    console.warn('Message added to thread with PDF attachment');
 
     // Run the assistant
     const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
@@ -348,7 +348,7 @@ serve(async (req) => {
     }
 
     const run = await runResponse.json();
-    console.log(`Run started with ID: ${run.id}`);
+    console.warn(`Run started with ID: ${run.id}`);
 
     // Poll for completion
     let runStatus = run.status;
@@ -375,7 +375,7 @@ serve(async (req) => {
 
       const statusResult = await statusResponse.json();
       runStatus = statusResult.status;
-      console.log(`Run status: ${runStatus}`);
+      console.warn(`Run status: ${runStatus}`);
       attempts++;
     }
 
@@ -383,7 +383,7 @@ serve(async (req) => {
       throw new Error(`Run failed with status: ${runStatus}`);
     }
 
-    console.log('=== PHASE 3: RESULT PROCESSING ===');
+    console.warn('=== PHASE 3: RESULT PROCESSING ===');
 
     // Get messages from thread
     const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
@@ -406,7 +406,7 @@ serve(async (req) => {
     }
 
     const aiResponse = assistantMessage.content[0].text.value;
-    console.log(`AI response length: ${aiResponse.length}`);
+    console.warn(`AI response length: ${aiResponse.length}`);
 
     // Extract and validate JSON
     const extractedData = extractJsonFromText(aiResponse);
@@ -426,7 +426,7 @@ serve(async (req) => {
     const processingTime = Date.now() - startTime;
     const confidence = Math.round((extractedData.confidence || 0) * 100);
     
-    console.log(`Analysis completed: confidence=${confidence}%, processing_time=${processingTime}ms`);
+    console.warn(`Analysis completed: confidence=${confidence}%, processing_time=${processingTime}ms`);
 
     // Cleanup: Delete assistant, thread, and file from OpenAI
     try {
@@ -445,7 +445,7 @@ serve(async (req) => {
         }
       });
 
-      console.log('OpenAI resources cleaned up');
+      console.warn('OpenAI resources cleaned up');
     } catch (cleanupError) {
       console.error('Failed to cleanup OpenAI resources:', cleanupError);
     }

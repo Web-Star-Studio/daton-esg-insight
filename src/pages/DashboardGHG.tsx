@@ -14,20 +14,8 @@ import { cn } from "@/lib/utils"
 import { useSmartCache } from "@/hooks/useSmartCache"
 import { useAutoRefresh } from "@/hooks/useAutoRefresh"
 import { useRealTimeData } from "@/hooks/useRealTimeData"
+import { useRechartsModule } from "@/hooks/useRechartsModule"
 import { supabase } from "@/integrations/supabase/client"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
-} from "recharts"
 
 // Fetch real emissions data from Supabase
 const getEmissionsData = async (dateRange?: DateRange) => {
@@ -66,7 +54,7 @@ const getEmissionsData = async (dateRange?: DateRange) => {
   return data || []
 }
 
-const DashboardGHG = () => {
+const useDashboardGHGComponent = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2025, 0, 1), // 01/01/2025
     to: new Date(2025, 11, 31), // 31/12/2025
@@ -106,6 +94,8 @@ const DashboardGHG = () => {
       debounceMs: 1000,
     }
   ]);
+
+  const charts = useRechartsModule();
 
   // Process data for charts
   const { monthlyData, escopoData, fontesEscopo1Data, totals } = useMemo(() => {
@@ -216,15 +206,19 @@ const DashboardGHG = () => {
     }
   }, [emissionsData])
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const renderCustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const total = payload.reduce((sum: number, entry: any) => sum + entry.value, 0)
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{`${label}`}</p>
           <p className="text-sm text-muted-foreground">{`Total: ${total.toFixed(0)} tCO₂e`}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
+          {payload.map((entry: any) => (
+            <p
+              key={entry.dataKey || entry.name || `${entry.value}-${entry.color}`}
+              className="text-sm"
+              style={{ color: entry.color }}
+            >
               {`${entry.dataKey === 'escopo1' ? 'Escopo 1' : 
                  entry.dataKey === 'escopo2' ? 'Escopo 2' : 'Escopo 3'}: ${entry.value} tCO₂e`}
             </p>
@@ -241,6 +235,24 @@ const DashboardGHG = () => {
     }
     return null
   }
+
+  if (!charts) {
+    return <SmartSkeleton variant="chart" className="h-[700px]" />
+  }
+
+  const {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Legend,
+  } = charts
 
   return (
     <div className="space-y-6">
@@ -271,10 +283,13 @@ const DashboardGHG = () => {
           
           {/* Filtro de Período */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-foreground">Período de Análise</label>
+            <label htmlFor="dashboard-ghg-period-filter" className="text-sm font-medium text-foreground">
+              Período de Análise
+            </label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
+                  id="dashboard-ghg-period-filter"
                   variant="outline"
                   className={cn(
                     "w-[280px] justify-start text-left font-normal",
@@ -378,7 +393,7 @@ const DashboardGHG = () => {
                     <YAxis 
                       tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
                     />
-                    <Tooltip content={<CustomTooltip />} />
+                        <Tooltip content={renderCustomTooltip} />
                     <Bar dataKey="escopo1" stackId="a" fill="#1e40af" name="Escopo 1" />
                     <Bar dataKey="escopo2" stackId="a" fill="#3b82f6" name="Escopo 2" />
                     <Bar dataKey="escopo3" stackId="a" fill="#93c5fd" name="Escopo 3" />
@@ -414,8 +429,8 @@ const DashboardGHG = () => {
                         fill="#8884d8"
                         dataKey="value"
                       >
-                        {escopoData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        {escopoData.map((entry) => (
+                          <Cell key={`scope-cell-${entry.name}`} fill={entry.color} />
                         ))}
                       </Pie>
                       <Tooltip 
@@ -462,8 +477,8 @@ const DashboardGHG = () => {
                         fill="#8884d8"
                         dataKey="value"
                       >
-                        {fontesEscopo1Data.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        {fontesEscopo1Data.map((entry) => (
+                          <Cell key={`source-cell-${entry.name}`} fill={entry.color} />
                         ))}
                       </Pie>
                       <Tooltip 
@@ -496,5 +511,7 @@ const DashboardGHG = () => {
       </div>
   )
 }
+
+const DashboardGHG = () => useDashboardGHGComponent();
 
 export default DashboardGHG

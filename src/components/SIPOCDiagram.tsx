@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,13 +37,15 @@ interface SIPOCDiagramProps {
   readOnly?: boolean;
 }
 
-export const SIPOCDiagram = ({ 
+const EMPTY_SIPOC_ELEMENTS: SIPOCElement[] = [];
+
+const useSIPOCDiagramComponent = ({ 
   processMapId, 
-  elements = [], 
+  elements = EMPTY_SIPOC_ELEMENTS, 
   onSave, 
   readOnly = false 
 }: SIPOCDiagramProps) => {
-  const [sipocElements, setSipocElements] = useState<SIPOCElement[]>(elements);
+  const sipocElements = elements;
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingElement, setEditingElement] = useState<SIPOCElement | null>(null);
   const [newElement, setNewElement] = useState<Partial<SIPOCElement>>({
@@ -53,10 +55,6 @@ export const SIPOCDiagram = ({
     requirements: '',
     specifications: '',
   });
-
-  useEffect(() => {
-    setSipocElements(elements);
-  }, [elements]);
 
   const handleAddElement = () => {
     if (!newElement.name?.trim()) {
@@ -75,7 +73,6 @@ export const SIPOCDiagram = ({
     };
 
     const updatedElements = [...sipocElements, element];
-    setSipocElements(updatedElements);
     onSave?.(updatedElements);
     
     setNewElement({
@@ -103,7 +100,6 @@ export const SIPOCDiagram = ({
       el.id === editingElement.id ? { ...el, ...newElement } : el
     );
     
-    setSipocElements(updatedElements);
     onSave?.(updatedElements);
     
     setEditingElement(null);
@@ -121,7 +117,6 @@ export const SIPOCDiagram = ({
 
   const handleDeleteElement = (id: string) => {
     const updatedElements = sipocElements.filter(el => el.id !== id);
-    setSipocElements(updatedElements);
     onSave?.(updatedElements);
     toast.success('Elemento SIPOC removido');
   };
@@ -185,8 +180,9 @@ export const SIPOCDiagram = ({
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">Tipo</label>
+                  <label htmlFor="sipoc-element-type" className="text-sm font-medium">Tipo</label>
                   <select
+                    id="sipoc-element-type"
                     value={newElement.element_type}
                     onChange={(e) => setNewElement({
                       ...newElement,
@@ -201,32 +197,36 @@ export const SIPOCDiagram = ({
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Nome</label>
+                  <label htmlFor="sipoc-element-name" className="text-sm font-medium">Nome</label>
                   <Input
+                    id="sipoc-element-name"
                     value={newElement.name}
                     onChange={(e) => setNewElement({ ...newElement, name: e.target.value })}
                     placeholder="Nome do elemento"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Descrição</label>
+                  <label htmlFor="sipoc-element-description" className="text-sm font-medium">Descrição</label>
                   <Textarea
+                    id="sipoc-element-description"
                     value={newElement.description}
                     onChange={(e) => setNewElement({ ...newElement, description: e.target.value })}
                     placeholder="Descrição detalhada"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Requisitos</label>
+                  <label htmlFor="sipoc-element-requirements" className="text-sm font-medium">Requisitos</label>
                   <Textarea
+                    id="sipoc-element-requirements"
                     value={newElement.requirements}
                     onChange={(e) => setNewElement({ ...newElement, requirements: e.target.value })}
                     placeholder="Requisitos específicos"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Especificações</label>
+                  <label htmlFor="sipoc-element-specifications" className="text-sm font-medium">Especificações</label>
                   <Textarea
+                    id="sipoc-element-specifications"
                     value={newElement.specifications}
                     onChange={(e) => setNewElement({ ...newElement, specifications: e.target.value })}
                     placeholder="Especificações técnicas"
@@ -369,6 +369,10 @@ export const SIPOCDiagram = ({
       </Card>
     </div>
   );
+};
+
+export const SIPOCDiagram = (props: SIPOCDiagramProps) => {
+  return useSIPOCDiagramComponent(props);
 };
 
 export default SIPOCDiagram;

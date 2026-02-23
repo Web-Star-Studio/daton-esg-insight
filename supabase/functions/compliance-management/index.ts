@@ -65,9 +65,9 @@ serve(async (req) => {
     if (requestBody._method && requestBody._path) {
       method = requestBody._method;
       path = `/compliance-management${requestBody._path}`;
-      console.log(`Service request: ${method} ${path}`);
+      console.warn(`Service request: ${method} ${path}`);
     } else {
-      console.log(`Direct request: ${method} ${path}`);
+      console.warn(`Direct request: ${method} ${path}`);
     }
 
     // Routes
@@ -293,7 +293,7 @@ serve(async (req) => {
     }
 
     if (path === '/compliance-management/stats' && method === 'GET') {
-      console.log(`Service request: GET /compliance-management/stats for company ${profile.company_id}`);
+      console.warn(`Service request: GET /compliance-management/stats for company ${profile.company_id}`);
       
       const today = new Date().toISOString().split('T')[0];
       const thirtyDaysFromNow = new Date();

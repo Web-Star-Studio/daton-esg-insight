@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🧠 Smart Content Analyzer: Starting analysis...');
+    console.warn('🧠 Smart Content Analyzer: Starting analysis...');
 
     const { content, fileType, fileName, companyId } = await req.json();
 
@@ -38,14 +38,14 @@ serve(async (req) => {
       if (claimsError || !claimsData?.claims) {
         console.warn('JWT validation failed, but proceeding (public analyzer)');
       } else {
-        console.log('Authenticated analysis request from:', claimsData.claims.sub);
+        console.warn('Authenticated analysis request from:', claimsData.claims.sub);
       }
     }
 
     // Build company context
     const context = await buildCompanyContext(supabaseClient, companyId);
 
-    console.log('🏢 Company context built:', {
+    console.warn('🏢 Company context built:', {
       company: context.company.name,
       sources: context.current_data.emission_sources.length,
       goals: context.current_data.esg_goals.length,
@@ -209,7 +209,7 @@ ${content.substring(0, 20000)}`,
       },
     };
 
-    console.log('🤖 Calling Gemini 2.5 Pro for classification...');
+    console.warn('🤖 Calling Gemini 2.5 Pro for classification...');
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -240,7 +240,7 @@ ${content.substring(0, 20000)}`,
 
     const classification = JSON.parse(toolCall.function.arguments);
 
-    console.log('✅ Classification complete:', {
+    console.warn('✅ Classification complete:', {
       type: classification.document_type,
       relevance: classification.esg_relevance_score,
       entities: classification.extracted_entities?.length,
@@ -249,11 +249,11 @@ ${content.substring(0, 20000)}`,
 
     // ✅ FASE 1.1: FALLBACK para field_mappings vazios
     if (classification.target_mappings && classification.target_mappings.length > 0) {
-      console.log('🔍 Validating field_mappings...');
+      console.warn('🔍 Validating field_mappings...');
       
       for (const mapping of classification.target_mappings) {
         const fieldCount = Object.keys(mapping.field_mappings || {}).length;
-        console.log(`📊 Mapping for ${mapping.table_name}: ${fieldCount} fields`);
+        console.warn(`📊 Mapping for ${mapping.table_name}: ${fieldCount} fields`);
         
         // Se field_mappings está vazio, tentar extrair das entidades
         if (!mapping.field_mappings || fieldCount === 0) {
@@ -270,13 +270,13 @@ ${content.substring(0, 20000)}`,
             mapping.field_mappings[fieldName] = entity.entity_value;
           }
           
-          console.log(`✅ Fallback applied: ${Object.keys(mapping.field_mappings).length} fields extracted`);
+          console.warn(`✅ Fallback applied: ${Object.keys(mapping.field_mappings).length} fields extracted`);
         }
       }
     }
 
     // Logging detalhado final
-    console.log('📋 Final Classification Result:', {
+    console.warn('📋 Final Classification Result:', {
       document_type: classification.document_type,
       entities_count: classification.extracted_entities?.length || 0,
       target_mappings_count: classification.target_mappings?.length || 0,

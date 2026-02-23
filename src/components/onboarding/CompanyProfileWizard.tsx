@@ -60,7 +60,7 @@ function analyzeCustomSector(text: string): string[] {
     .replace(/[\u0300-\u036f]/g, '');
   
   const recommendations: string[] = [];
-  let matchedKeywords: string[] = [];
+  const matchedKeywords: string[] = [];
   
   Object.entries(KEYWORD_MODULE_MAP).forEach(([pattern, modules]) => {
     const regex = new RegExp(pattern, 'i');
@@ -294,7 +294,7 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      setCurrentStep((prev) => prev + 1);
     } else {
       const profileData = {
         ...profile,
@@ -333,7 +333,7 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
 
@@ -388,7 +388,6 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
                   value={customSector}
                   onChange={(e) => setCustomSector(e.target.value)}
                   className="w-full"
-                  autoFocus
                 />
               </div>
             )}

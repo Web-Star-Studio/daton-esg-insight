@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -104,7 +104,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [documents, setDocuments] = useState<any[]>([]);
   const [progress, setProgress] = useState(0);
   const [companyId, setCompanyId] = useState<string>('');
-  const [reportYear, setReportYear] = useState<number>(new Date().getFullYear());
+  const [reportYear, setReportYear] = useState<number>(() => new Date().getFullYear());
   const [intensityData, setIntensityData] = useState<EnergyIntensityResult | null>(null);
   const [energyBreakdown, setEnergyBreakdown] = useState<any>(null);
   const [energyData, setEnergyData] = useState<EnergyConsumptionResult | null>(null);
@@ -121,17 +121,24 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [wasteReuseData, setWasteReuseData] = useState<WasteReuseResult | null>(null);
   const [wasteDisposalData, setWasteDisposalData] = useState<WasteDisposalResult | null>(null);
 
-  useEffect(() => {
-    loadExistingData();
-    loadQuantitativeData();
-    loadCompanyInfo();
-    loadEnergyData();
-    loadGHGEmissions();
-    loadWaterData();
-    loadWasteData();
-  }, [reportId]);
+  const calculateProgress = useCallback((data: any) => {
+    const totalFields = 15;
+    let filledFields = 0;
 
-  const loadCompanyInfo = async () => {
+    if (data.has_ghg_inventory) filledFields++;
+    if (data.has_energy_controls) filledFields++;
+    if (data.has_water_monitoring) filledFields++;
+    if (data.has_waste_controls) filledFields++;
+    if (data.has_environmental_licenses) filledFields++;
+    if (data.emissions_total_tco2e) filledFields += 3;
+    if (data.energy_total_consumption_kwh) filledFields += 2;
+    if (data.water_total_withdrawal_m3) filledFields += 2;
+    if (data.waste_total_generated_tonnes) filledFields += 2;
+
+    setProgress((filledFields / totalFields) * 100);
+  }, []);
+
+  const loadCompanyInfo = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -148,9 +155,9 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
     } catch (error) {
       console.error('Error loading company info:', error);
     }
-  };
+  }, []);
 
-  const loadExistingData = async () => {
+  const loadExistingData = useCallback(async () => {
     const { data } = await supabase
       .from('gri_environmental_data_collection')
       .select('*')
@@ -161,7 +168,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       setFormData(data);
       calculateProgress(data);
     }
-  };
+  }, [calculateProgress, reportId]);
 
   const loadIntensityData = async () => {
     try {
@@ -172,7 +179,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
     }
   };
 
-  const loadGHGEmissions = async () => {
+  const loadGHGEmissions = useCallback(async () => {
     try {
       const currentYearData = await calculateTotalGHGEmissions(reportYear);
       setGhgEmissions(currentYearData);
@@ -181,23 +188,23 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         const previousData = await calculateTotalGHGEmissions(reportYear - 1);
         setPreviousYearEmissions(previousData);
       } catch (error) {
-        console.log('Dados do ano anterior não disponíveis');
+        console.warn('Dados do ano anterior não disponíveis');
       }
     } catch (error) {
       console.error('Erro ao carregar emissões GEE:', error);
     }
-  };
+  }, [reportYear]);
 
-  const loadEnergyData = async () => {
+  const loadEnergyData = useCallback(async () => {
     try {
       const currentYearData = await calculateTotalEnergyConsumption(reportYear);
       setEnergyData(currentYearData);
     } catch (error) {
       console.error('Erro ao carregar dados de energia:', error);
     }
-  };
+  }, [reportYear]);
 
-  const loadWaterData = async () => {
+  const loadWaterData = useCallback(async () => {
     try {
       const currentYearData = await calculateTotalWaterConsumption(reportYear);
       setWaterData(currentYearData);
@@ -206,12 +213,12 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         const previousData = await calculateTotalWaterConsumption(reportYear - 1);
         setPreviousYearWaterData(previousData);
       } catch (error) {
-        console.log('Dados de água do ano anterior não disponíveis');
+        console.warn('Dados de água do ano anterior não disponíveis');
       }
     } catch (error) {
       console.error('Erro ao carregar dados de água:', error);
     }
-  };
+  }, [reportYear]);
 
   const loadWaterIntensity = async () => {
     try {
@@ -243,7 +250,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
     }
   };
 
-  const loadWasteData = async () => {
+  const loadWasteData = useCallback(async () => {
     try {
       const wasteGeneration = await calculateTotalWasteGeneration(reportYear);
       setWasteData(wasteGeneration);
@@ -281,9 +288,9 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
     } catch (error) {
       console.error('Erro ao calcular resíduos:', error);
     }
-  };
+  }, [reportYear]);
 
-  const loadQuantitativeData = async () => {
+  const loadQuantitativeData = useCallback(async () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -344,24 +351,25 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const calculateProgress = (data: any) => {
-    const totalFields = 15;
-    let filledFields = 0;
-
-    if (data.has_ghg_inventory) filledFields++;
-    if (data.has_energy_controls) filledFields++;
-    if (data.has_water_monitoring) filledFields++;
-    if (data.has_waste_controls) filledFields++;
-    if (data.has_environmental_licenses) filledFields++;
-    if (data.emissions_total_tco2e) filledFields += 3;
-    if (data.energy_total_consumption_kwh) filledFields += 2;
-    if (data.water_total_withdrawal_m3) filledFields += 2;
-    if (data.waste_total_generated_tonnes) filledFields += 2;
-
-    setProgress((filledFields / totalFields) * 100);
-  };
+  useEffect(() => {
+    loadExistingData();
+    loadQuantitativeData();
+    loadCompanyInfo();
+    loadEnergyData();
+    loadGHGEmissions();
+    loadWaterData();
+    loadWasteData();
+  }, [
+    loadExistingData,
+    loadQuantitativeData,
+    loadCompanyInfo,
+    loadEnergyData,
+    loadGHGEmissions,
+    loadWaterData,
+    loadWasteData,
+  ]);
 
   const handleSave = async () => {
     setLoading(true);

@@ -41,6 +41,20 @@ interface TrainingCalendarProps {
   onNewEventClick?: (slotInfo: any) => void;
 }
 
+function TrainingCalendarEventComponent({ event }: { event: TrainingEvent }) {
+  return (
+    <div className="text-xs">
+      <strong>{event.title}</strong>
+      {event.resource.participants > 0 && (
+        <div className="opacity-75">
+          {event.resource.participants} participante
+          {event.resource.participants !== 1 ? 's' : ''}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TrainingCalendar({ events, onEventClick, onNewEventClick }: TrainingCalendarProps) {
   const [view, setView] = useState('month');
   const [date, setDate] = useState(new Date());
@@ -72,17 +86,6 @@ const eventStyleGetter = (event: TrainingEvent) => {
       }
     };
   };
-
-  const EventComponent = ({ event }: { event: TrainingEvent }) => (
-    <div className="text-xs">
-      <strong>{event.title}</strong>
-      {event.resource.participants > 0 && (
-        <div className="opacity-75">
-          {event.resource.participants} participante{event.resource.participants !== 1 ? 's' : ''}
-        </div>
-      )}
-    </div>
-  );
 
   const messages = {
     allDay: 'Todo o dia',
@@ -195,7 +198,7 @@ const eventStyleGetter = (event: TrainingEvent) => {
               onNavigate={setDate}
               eventPropGetter={eventStyleGetter}
               components={{
-                event: EventComponent,
+                event: TrainingCalendarEventComponent,
               }}
               messages={messages}
               culture="pt-BR"
@@ -229,8 +232,12 @@ const eventStyleGetter = (event: TrainingEvent) => {
               .filter(event => event.start >= new Date() && event.start <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
               .slice(0, 5)
               .map((event) => (
-                <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
-                     onClick={() => onEventClick?.(event)}>
+                <button
+                  key={event.id}
+                  type="button"
+                  className="flex w-full items-center justify-between p-3 border rounded-lg hover:bg-accent text-left"
+                  onClick={() => onEventClick?.(event)}
+                >
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                       <GraduationCap className="w-5 h-5 text-primary" />
@@ -253,7 +260,7 @@ const eventStyleGetter = (event: TrainingEvent) => {
                       {event.resource.participants} inscritos
                     </p>
                   </div>
-                </div>
+                </button>
               ))}
             
             {events.filter(event => event.start >= new Date() && event.start <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)).length === 0 && (

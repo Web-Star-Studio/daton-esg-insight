@@ -5,11 +5,108 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, BarChart3, AlertTriangle, CheckCircle2, Download } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
+import { useRechartsModule, type RechartsModule } from '@/hooks/useRechartsModule';
 import { useQualityIndicators } from '@/services/qualityIndicators';
 
 interface StatisticalProcessControlProps {
   className?: string;
+}
+
+function ControlChart({ data, charts }: { data: any[]; charts: RechartsModule }) {
+  const { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ComposedChart } = charts;
+
+  return (
+    <div className="h-96">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="point" />
+          <YAxis />
+          <Tooltip 
+            formatter={(value: any, name: string) => [
+              typeof value === 'number' ? value.toFixed(2) : value,
+              name === 'value' ? 'Valor' : name
+            ]}
+            labelFormatter={(label) => `Ponto: ${label}`}
+          />
+          
+          {/* Limites de especificação */}
+          <ReferenceLine y={data[0]?.usl} stroke="#dc2626" strokeDasharray="5 5" label="LSE" />
+          <ReferenceLine y={data[0]?.lsl} stroke="#dc2626" strokeDasharray="5 5" label="LIE" />
+          
+          {/* Limites de controle */}
+          <ReferenceLine y={data[0]?.ucl} stroke="#f59e0b" strokeDasharray="3 3" label="LSC" />
+          <ReferenceLine y={data[0]?.lcl} stroke="#f59e0b" strokeDasharray="3 3" label="LIC" />
+          
+          {/* Linha central */}
+          <ReferenceLine y={data[0]?.centerLine} stroke="#10b981" label="LC" />
+          
+          {/* Dados do processo */}
+          <Line 
+            type="monotone" 
+            dataKey="value" 
+            stroke="#2563eb" 
+            strokeWidth={2}
+            dot={(props: any) => {
+              const { cx, cy, payload } = props;
+              return (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={4}
+                  fill={payload.isOutOfControl ? '#dc2626' : payload.isOutOfSpec ? '#f59e0b' : '#2563eb'}
+                  stroke={payload.isOutOfControl ? '#dc2626' : payload.isOutOfSpec ? '#f59e0b' : '#2563eb'}
+                  strokeWidth={2}
+                />
+              );
+            }}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function CapabilityHistogram({ data, charts }: { data: any[]; charts: RechartsModule }) {
+  const { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } = charts;
+  const values = data.map(d => d.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const binCount = 10;
+  const binWidth = (max - min) / binCount;
+  
+  const histogram = Array.from({ length: binCount }, (_, i) => {
+    const binStart = min + i * binWidth;
+    const binEnd = binStart + binWidth;
+    const count = values.filter(v => v >= binStart && v < binEnd).length;
+    
+    return {
+      bin: `${binStart.toFixed(1)}-${binEnd.toFixed(1)}`,
+      count,
+      midpoint: binStart + binWidth / 2,
+    };
+  });
+
+  return (
+    <div className="h-64">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={histogram}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="bin" angle={-45} textAnchor="end" height={60} />
+          <YAxis />
+          <Tooltip />
+          <Area
+            dataKey="count"
+            fill="#3b82f6"
+            fillOpacity={0.6}
+            stroke="#3b82f6"
+          />
+          <ReferenceLine x="80-88" stroke="#dc2626" strokeDasharray="5 5" label="LIE" />
+          <ReferenceLine x="112-120" stroke="#dc2626" strokeDasharray="5 5" label="LSE" />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
 }
 
 // Dados simulados para demonstração
@@ -76,9 +173,10 @@ const calculateProcessCapability = (data: any[]) => {
   };
 };
 
-export const StatisticalProcessControl: React.FC<StatisticalProcessControlProps> = ({ className }) => {
+const useStatisticalProcessControlComponent = ({ className }: StatisticalProcessControlProps) => {
   const [selectedIndicator, setSelectedIndicator] = useState<string>('');
   const [chartType, setChartType] = useState<string>('xbar-r');
+  const charts = useRechartsModule();
   
   const { data: indicators } = useQualityIndicators();
   
@@ -88,101 +186,19 @@ export const StatisticalProcessControl: React.FC<StatisticalProcessControlProps>
   // Identificar padrões especiais
   const outOfControlPoints = spcData.filter(d => d.isOutOfControl).length;
   const outOfSpecPoints = spcData.filter(d => d.isOutOfSpec).length;
-  
-  // Gráfico de controle customizado
-  const ControlChart = ({ data, title }: { data: any[], title: string }) => (
-    <div className="h-96">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="point" />
-          <YAxis />
-          <Tooltip 
-            formatter={(value: any, name: string) => [
-              typeof value === 'number' ? value.toFixed(2) : value,
-              name === 'value' ? 'Valor' : name
-            ]}
-            labelFormatter={(label) => `Ponto: ${label}`}
-          />
-          
-          {/* Limites de especificação */}
-          <ReferenceLine y={data[0]?.usl} stroke="#dc2626" strokeDasharray="5 5" label="LSE" />
-          <ReferenceLine y={data[0]?.lsl} stroke="#dc2626" strokeDasharray="5 5" label="LIE" />
-          
-          {/* Limites de controle */}
-          <ReferenceLine y={data[0]?.ucl} stroke="#f59e0b" strokeDasharray="3 3" label="LSC" />
-          <ReferenceLine y={data[0]?.lcl} stroke="#f59e0b" strokeDasharray="3 3" label="LIC" />
-          
-          {/* Linha central */}
-          <ReferenceLine y={data[0]?.centerLine} stroke="#10b981" label="LC" />
-          
-          {/* Dados do processo */}
-          <Line 
-            type="monotone" 
-            dataKey="value" 
-            stroke="#2563eb" 
-            strokeWidth={2}
-            dot={(props: any) => {
-              const { cx, cy, payload } = props;
-              return (
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={4}
-                  fill={payload.isOutOfControl ? '#dc2626' : payload.isOutOfSpec ? '#f59e0b' : '#2563eb'}
-                  stroke={payload.isOutOfControl ? '#dc2626' : payload.isOutOfSpec ? '#f59e0b' : '#2563eb'}
-                  strokeWidth={2}
-                />
-              );
-            }}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
 
-  // Histograma de capacidade
-  const CapabilityHistogram = ({ data }: { data: any[] }) => {
-    const values = data.map(d => d.value);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const binCount = 10;
-    const binWidth = (max - min) / binCount;
-    
-    const histogram = Array.from({ length: binCount }, (_, i) => {
-      const binStart = min + i * binWidth;
-      const binEnd = binStart + binWidth;
-      const count = values.filter(v => v >= binStart && v < binEnd).length;
-      
-      return {
-        bin: `${binStart.toFixed(1)}-${binEnd.toFixed(1)}`,
-        count,
-        midpoint: binStart + binWidth / 2,
-      };
-    });
-
+  if (!charts) {
     return (
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={histogram}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="bin" angle={-45} textAnchor="end" height={60} />
-            <YAxis />
-            <Tooltip />
-            <Area
-              dataKey="count"
-              fill="#3b82f6"
-              fillOpacity={0.6}
-              stroke="#3b82f6"
-            />
-            <ReferenceLine x="80-88" stroke="#dc2626" strokeDasharray="5 5" label="LIE" />
-            <ReferenceLine x="112-120" stroke="#dc2626" strokeDasharray="5 5" label="LSE" />
-          </ComposedChart>
-        </ResponsiveContainer>
+      <div className={`space-y-6 ${className}`}>
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            Carregando visualizações...
+          </CardContent>
+        </Card>
       </div>
     );
-  };
-
+  }
+  
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Controles */}
@@ -304,7 +320,7 @@ export const StatisticalProcessControl: React.FC<StatisticalProcessControlProps>
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ControlChart data={spcData} title="Gráfico de Controle X̄-R" />
+              <ControlChart data={spcData} charts={charts} />
               
               {/* Interpretação */}
               <div className="mt-4 p-4 bg-muted/50 rounded-lg">
@@ -449,7 +465,7 @@ export const StatisticalProcessControl: React.FC<StatisticalProcessControlProps>
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <CapabilityHistogram data={spcData} />
+              <CapabilityHistogram data={spcData} charts={charts} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -542,4 +558,8 @@ export const StatisticalProcessControl: React.FC<StatisticalProcessControlProps>
       </Tabs>
     </div>
   );
+};
+
+export const StatisticalProcessControl: React.FC<StatisticalProcessControlProps> = (props) => {
+  return useStatisticalProcessControlComponent(props);
 };

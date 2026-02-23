@@ -47,7 +47,7 @@ serve(async (req) => {
       .eq('status', 'in_progress')
       .lte('created_at', twoDaysAgo.toISOString())
 
-    console.log('Scheduler results:', {
+    console.warn('Scheduler results:', {
       upcomingAudits: upcomingAudits?.length || 0,
       dueSoonFindings: dueSoonFindings?.length || 0,
       incompleteChecklists: incompleteChecklists?.length || 0

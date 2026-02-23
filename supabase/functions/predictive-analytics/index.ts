@@ -278,7 +278,7 @@ async function calculateComplianceRisk(supabase: any, companyId: string): Promis
       emissionTrendScore = Math.min(30, Math.abs(prediction.trend_percentage));
     }
   } catch (e) {
-    console.log('Could not calculate emission trend for risk score');
+    console.warn('Could not calculate emission trend for risk score');
   }
 
   // Calculate individual factor scores (0-100)
@@ -375,7 +375,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('✅ User authenticated:', user.id);
+    console.warn('✅ User authenticated:', user.id);
 
     // Get user's company
     const { data: profile, error: profileError } = await supabaseClient
@@ -395,10 +395,10 @@ serve(async (req) => {
       );
     }
 
-    console.log('✅ Company found:', profile.company_id);
+    console.warn('✅ Company found:', profile.company_id);
 
     const { analysis_type, months } = await req.json();
-    console.log('📊 Analysis requested:', { analysis_type, months, company_id: profile.company_id });
+    console.warn('📊 Analysis requested:', { analysis_type, months, company_id: profile.company_id });
 
     let result;
 
@@ -413,11 +413,12 @@ serve(async (req) => {
       
       case 'full_analysis':
         // Try to get predictions, but don't fail if there's no emission data
+        // eslint-disable-next-line no-case-declarations
         let predictions = null;
         try {
           predictions = await predictEmissions(supabaseClient, profile.company_id, months || 3);
         } catch (error) {
-          console.log('⚠️ Could not generate emission predictions:', error.message);
+          console.warn('⚠️ Could not generate emission predictions:', error.message);
           // Return empty prediction structure if no data
           if (error.message?.includes('Dados insuficientes')) {
             predictions = {
@@ -433,6 +434,7 @@ serve(async (req) => {
           }
         }
         
+        // eslint-disable-next-line no-case-declarations
         const risk = await calculateComplianceRisk(supabaseClient, profile.company_id);
         result = { predictions, risk };
         break;

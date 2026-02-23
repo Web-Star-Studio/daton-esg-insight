@@ -33,30 +33,18 @@ interface DuplicateFactorConfirmModalProps {
   onConfirm: (action: 'replace' | 'keep_both' | 'cancel') => void;
 }
 
-export function DuplicateFactorConfirmModal({
-  open,
-  onOpenChange,
-  existingFactor,
-  newFactor,
-  onConfirm
-}: DuplicateFactorConfirmModalProps) {
-  const [selectedAction, setSelectedAction] = useState<'replace' | 'keep_both'>('replace');
+type FactorLike = EmissionFactor | DuplicateFactorData;
 
-  const handleConfirm = () => {
-    onConfirm(selectedAction);
-    onOpenChange(false);
-  };
-
-  const handleCancel = () => {
-    onConfirm('cancel');
-    onOpenChange(false);
-  };
-
-  const FactorCard = ({ factor, title, isNew = false }: { 
-    factor: any; 
-    title: string; 
-    isNew?: boolean; 
-  }) => (
+function FactorCard({
+  factor,
+  title,
+  isNew = false,
+}: {
+  factor: FactorLike;
+  title: string;
+  isNew?: boolean;
+}) {
+  return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -109,6 +97,26 @@ export function DuplicateFactorConfirmModal({
       </CardContent>
     </Card>
   );
+}
+
+export function DuplicateFactorConfirmModal({
+  open,
+  onOpenChange,
+  existingFactor,
+  newFactor,
+  onConfirm
+}: DuplicateFactorConfirmModalProps) {
+  const [selectedAction, setSelectedAction] = useState<'replace' | 'keep_both'>('replace');
+
+  const handleConfirm = () => {
+    onConfirm(selectedAction);
+    onOpenChange(false);
+  };
+
+  const handleCancel = () => {
+    onConfirm('cancel');
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

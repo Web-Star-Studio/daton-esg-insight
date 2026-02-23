@@ -80,7 +80,7 @@ serve(async (req) => {
 
     const { card_type, card_data, context } = await req.json() as AIInsightRequest
 
-    console.log(`Generating AI insights for ${card_type}...`)
+    console.warn(`Generating AI insights for ${card_type}...`)
     const insights = await generateInsights(card_type, card_data, profile, supabaseClient)
 
     return new Response(
@@ -101,7 +101,7 @@ serve(async (req) => {
 })
 
 async function generateInsights(cardType: string, cardData: any, profile: any, supabaseClient: any): Promise<AIInsight[]> {
-  console.log(`Fetching company data for insights...`)
+  console.warn(`Fetching company data for insights...`)
   
   // Fetch comprehensive company data
   const companyData = await fetchCompanyData(profile.company_id, supabaseClient)
@@ -120,14 +120,14 @@ async function generateInsights(cardType: string, cardData: any, profile: any, s
     ...companyData
   }
 
-  console.log(`Calling OpenAI for ${cardType} analysis...`)
+  console.warn(`Calling OpenAI for ${cardType} analysis...`)
   const insights = await callOpenAIForInsights(cardType, cardData, context)
   
   return insights
 }
 
 async function fetchCompanyData(companyId: string, supabaseClient: any) {
-  console.log('Fetching comprehensive company data...')
+  console.warn('Fetching comprehensive company data...')
   
   const [
     { data: emissions },
@@ -164,7 +164,7 @@ async function callOpenAIForInsights(cardType: string, cardData: any, context: a
   const prompt = buildPromptForCardType(cardType, cardData, context)
   
   try {
-    console.log('Calling OpenAI API...')
+    console.warn('Calling OpenAI API...')
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -229,7 +229,7 @@ Retorne SEMPRE um JSON válido seguindo exatamente esta estrutura:
     const data = await response.json()
     const content = data.choices[0].message.content
     
-    console.log('OpenAI Raw Response:', content.substring(0, 200) + '...')
+    console.warn('OpenAI Raw Response:', content.substring(0, 200) + '...')
     
     // Clean markdown code blocks from response
     let cleanedContent = content.trim()
@@ -343,7 +343,7 @@ Analise os dados fornecidos e gere insights relevantes sobre performance ambient
 }
 
 function generateFallbackInsights(cardType: string, cardData: any, context: any): AIInsight[] {
-  console.log('Generating fallback insights due to OpenAI error')
+  console.warn('Generating fallback insights due to OpenAI error')
   
   const baseInsight: AIInsight = {
     id: crypto.randomUUID(),

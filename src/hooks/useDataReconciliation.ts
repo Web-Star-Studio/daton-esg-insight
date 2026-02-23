@@ -83,7 +83,7 @@ export function useDataReconciliation() {
         throw new Error(processResult?.error || 'Falha ao aprovar dados');
       }
 
-      console.log('✅ Approval successful:', processResult);
+      console.warn('✅ Approval successful:', processResult);
 
       // Show success message with details
       const recordsCount = processResult?.records_inserted || 0;

@@ -237,6 +237,10 @@ export const socialMockEntries = [
   // Course enrollments
   {
     queryKey: ['course-enrollments'],
-    data: [],
+    data: [
+      { id: 'ce-1', course_id: 'c-1', employee_id: 'emp-1', employee_name: 'Ana Martins', progress: 100, status: 'Concluído', enrolled_at: '2026-01-05' },
+      { id: 'ce-2', course_id: 'c-2', employee_id: 'emp-3', employee_name: 'Carlos Lima', progress: 78, status: 'Em Andamento', enrolled_at: '2026-01-18' },
+      { id: 'ce-3', course_id: 'c-3', employee_id: 'emp-5', employee_name: 'Juliana Pereira', progress: 42, status: 'Em Andamento', enrolled_at: '2026-02-02' },
+    ],
   },
 ];

@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 
 // Hook para memoização inteligente de props
 export function useStableCallback<T extends (...args: any[]) => any>(fn: T, deps: React.DependencyList): T {
@@ -43,16 +43,16 @@ export const defaultPropsComparator = <P extends Record<string, any>>(
 
 // Hook para detectar re-renders desnecessários (desenvolvimento)
 export function useRenderTracker(componentName: string, props?: Record<string, any>) {
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+
   if (process.env.NODE_ENV === 'development') {
-    const renderCount = useMemo(() => {
-      const count = (window as any).__renderCounts?.[componentName] || 0;
-      (window as any).__renderCounts = {
-        ...(window as any).__renderCounts,
-        [componentName]: count + 1
-      };
-      return count + 1;
-    }, [componentName]);
+    const count = (window as any).__renderCounts?.[componentName] || 0;
+    (window as any).__renderCounts = {
+      ...(window as any).__renderCounts,
+      [componentName]: count + 1,
+    };
     
-    console.log(`🔄 ${componentName} rendered (${renderCount}x)`, props);
+    console.warn(`🔄 ${componentName} rendered (${renderCountRef.current}x)`, props);
   }
 }

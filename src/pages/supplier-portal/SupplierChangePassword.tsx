@@ -8,6 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Lock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
+function ValidationItem({ valid, text }: { valid: boolean; text: string }) {
+  return (
+    <div className={`flex items-center gap-2 text-sm ${valid ? 'text-green-600' : 'text-muted-foreground'}`}>
+      {valid ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+      {text}
+    </div>
+  );
+}
+
 export default function SupplierChangePassword() {
   const navigate = useNavigate();
   const { changePassword, isAuthenticated, mustChangePassword, isLoading: authLoading } = useSupplierAuth();
@@ -52,13 +61,6 @@ export default function SupplierChangePassword() {
 
     setIsLoading(false);
   };
-
-  const ValidationItem = ({ valid, text }: { valid: boolean; text: string }) => (
-    <div className={`flex items-center gap-2 text-sm ${valid ? 'text-green-600' : 'text-muted-foreground'}`}>
-      {valid ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-      {text}
-    </div>
-  );
 
   if (authLoading) {
     return (

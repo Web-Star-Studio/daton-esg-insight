@@ -63,7 +63,7 @@ export function NonConformitiesAdvancedDashboard() {
       if (error) throw error;
 
       // Debug info
-      console.log('🔍 Debug NC Dashboard:', {
+      console.warn('🔍 Debug NC Dashboard:', {
         company_id: userAndCompany.company_id,
         company_name: userAndCompany.company?.name,
         ncs_found: nonConformities?.length || 0,

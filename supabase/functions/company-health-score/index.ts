@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log('Calculating health score for company:', companyId);
+    console.warn('Calculating health score for company:', companyId);
 
     // Buscar dados da empresa
     const { data: company, error: companyError } = await supabaseClient

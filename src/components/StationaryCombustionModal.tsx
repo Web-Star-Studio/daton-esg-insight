@@ -127,7 +127,7 @@ export const StationaryCombustionModal = ({
       
       if (factors && factors.length > 0) {
         setEmissionFactorId(factors[0].id);
-        console.info('Fator de emissão resolvido:', factors[0].id);
+        console.warn('Fator de emissão resolvido:', factors[0].id);
       } else {
         toast.info('Fator específico não encontrado, cálculo automático será aplicado por unidade');
       }
@@ -226,7 +226,7 @@ export const StationaryCombustionModal = ({
       };
       
       // Log detailed validation before submission
-      console.log('Dados sendo enviados:', {
+      console.warn('Dados sendo enviados:', {
         payload,
         emissionFactorId,
         formDataComplete: {

@@ -358,7 +358,7 @@ class AdvancedReportingService {
     if (config.schedule === 'manual') return;
 
     // Store scheduled report configuration (placeholder - would need database table)
-    console.log('Scheduling report:', config.name, 'for', config.schedule);
+    console.warn('Scheduling report:', config.name, 'for', config.schedule);
   }
 
   private calculateNextRun(schedule: string): Date {
@@ -370,10 +370,12 @@ class AdvancedReportingService {
       case 'weekly':
         return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       case 'monthly':
+        // eslint-disable-next-line no-case-declarations
         const nextMonth = new Date(now);
         nextMonth.setMonth(nextMonth.getMonth() + 1);
         return nextMonth;
       case 'quarterly':
+        // eslint-disable-next-line no-case-declarations
         const nextQuarter = new Date(now);
         nextQuarter.setMonth(nextQuarter.getMonth() + 3);
         return nextQuarter;

@@ -229,7 +229,7 @@ export function containsSqlInjection(input: string): boolean {
   const sqlPatterns = [
     /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE)\b)/i,
     /(union.*select)/i,
-    /(;|\-\-|\/\*)/
+    /(;|--|\/\*)/
   ];
   
   return sqlPatterns.some(pattern => pattern.test(input));

@@ -24,7 +24,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting license workflow processing...');
+    console.warn('Starting license workflow processing...');
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -40,7 +40,7 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
-    console.log(`Processing workflow for user: ${user.id}`);
+    console.warn(`Processing workflow for user: ${user.id}`);
 
     // Get user's company
     const { data: profile } = await supabaseClient
@@ -82,7 +82,7 @@ serve(async (req) => {
 });
 
 async function handleUpload(supabaseClient: any, userId: string, companyId: string, file: any) {
-  console.log('Handling file upload...');
+  console.warn('Handling file upload...');
   
   // Convert base64 to blob
   const fileData = Uint8Array.from(atob(file.data), c => c.charCodeAt(0));
@@ -145,7 +145,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
   }
 
   // Start AI analysis in background
-  console.log('Starting background AI analysis...');
+  console.warn('Starting background AI analysis...');
   
   // Call the existing license-document-analyzer function
   const analysisPromise = supabaseClient.functions.invoke('license-document-analyzer', {
@@ -154,7 +154,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 
   // Don't wait for analysis to complete - return immediately
   analysisPromise.then(async (result: any) => {
-    console.log('AI analysis completed:', result);
+    console.warn('AI analysis completed:', result);
     
     if (result.data?.success && result.data?.data) {
       // Update license with extracted data
@@ -217,7 +217,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 }
 
 async function handleAnalyze(supabaseClient: any, licenseId: string) {
-  console.log('Handling analysis request for license:', licenseId);
+  console.warn('Handling analysis request for license:', licenseId);
   
   // Get license and document data
   const { data: license } = await supabaseClient
@@ -275,7 +275,7 @@ async function handleAnalyze(supabaseClient: any, licenseId: string) {
 }
 
 async function handleReconcile(supabaseClient: any, licenseId: string, reconciliationData: any) {
-  console.log('Handling reconciliation for license:', licenseId);
+  console.warn('Handling reconciliation for license:', licenseId);
   
   // Update license with reconciled data
   const { error } = await supabaseClient

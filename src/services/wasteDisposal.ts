@@ -229,7 +229,7 @@ export async function calculateWasteDisposalPercentage(year: number): Promise<Wa
       ? ((baseline_disposal_percentage - disposal_percentage) / baseline_disposal_percentage) * 100 
       : 0;
   } catch (error) {
-    console.log('Dados do ano anterior não disponíveis para comparação de disposal');
+    console.warn('Dados do ano anterior não disponíveis para comparação de disposal');
   }
 
   return {

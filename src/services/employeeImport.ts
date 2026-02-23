@@ -211,14 +211,14 @@ function parseDate(dateStr: string): string {
   }
   
   // Handle DD/MM/YYYY format
-  const brMatch = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  const brMatch = dateStr.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (brMatch) {
     const [, day, month, year] = brMatch;
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
   
   // Handle MM/DD/YYYY format (less common in Brazil)
-  const usMatch = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
+  const usMatch = dateStr.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2})$/);
   if (usMatch) {
     const [, month, day, yearShort] = usMatch;
     const year = parseInt(yearShort) > 50 ? `19${yearShort}` : `20${yearShort}`;
@@ -339,9 +339,9 @@ export async function importEmployees(
     const companyId = profile.company_id;
     
     // Get existing entities
-    let departments = await getDepartments();
-    let positions = await getPositions();
-    let branches = await getBranches();
+    const departments = await getDepartments();
+    const positions = await getPositions();
+    const branches = await getBranches();
     
     // Maps for quick lookup
     const departmentMap = new Map(departments.map(d => [d.name.toLowerCase(), d]));
@@ -402,7 +402,7 @@ export async function importEmployees(
         }
         
         // Create or get department
-        let departmentName = emp.extractedDepartment;
+        const departmentName = emp.extractedDepartment;
         if (departmentName && options.createMissingEntities) {
           if (!departmentMap.has(departmentName.toLowerCase())) {
             const newDept = await createDepartment({

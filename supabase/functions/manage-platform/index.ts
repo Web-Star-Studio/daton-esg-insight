@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     const requestBody: ManagePlatformRequest = await req.json();
     const { action, data } = requestBody;
 
-    console.log(`Platform Admin Action: ${action}`, { adminId: user.id, data });
+    console.warn(`Platform Admin Action: ${action}`, { adminId: user.id, data });
 
     // Log da ação
     await supabaseClient.from('platform_admin_actions').insert({

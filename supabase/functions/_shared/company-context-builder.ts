@@ -35,7 +35,7 @@ export async function buildCompanyContext(
   supabaseClient: SupabaseClient,
   companyId: string
 ): Promise<CompanyContext> {
-  console.log(`Building context for company: ${companyId}`);
+  console.warn(`Building context for company: ${companyId}`);
 
   try {
     // 1. Get company info
@@ -187,7 +187,7 @@ export async function buildCompanyContext(
       },
     };
 
-    console.log('Company context built successfully');
+    console.warn('Company context built successfully');
     return context;
   } catch (error) {
     console.error('Error building company context:', error);

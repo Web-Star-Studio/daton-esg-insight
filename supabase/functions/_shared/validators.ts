@@ -19,7 +19,7 @@ export function validateCPF(value: string): ValidationResult {
   const corrections: string[] = [];
   
   // Remove caracteres não numéricos
-  let cleaned = value.replace(/[^\d]/g, '');
+  const cleaned = value.replace(/[^\d]/g, '');
   
   if (cleaned.length !== 11) {
     issues.push('CPF deve ter 11 dígitos');
@@ -75,7 +75,7 @@ export function validateCNPJ(value: string): ValidationResult {
   const corrections: string[] = [];
   
   // Remove caracteres não numéricos
-  let cleaned = value.replace(/[^\d]/g, '');
+  const cleaned = value.replace(/[^\d]/g, '');
   
   if (cleaned.length !== 14) {
     issues.push('CNPJ deve ter 14 dígitos');
@@ -136,9 +136,9 @@ export function validateDate(value: string): ValidationResult {
   // Padrões aceitos
   const patterns = [
     // DD/MM/YYYY
-    { regex: /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/, order: 'dmy' },
+    { regex: /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/, order: 'dmy' },
     // DD/MM/YY
-    { regex: /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/, order: 'dmy2' },
+    { regex: /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2})$/, order: 'dmy2' },
     // YYYY-MM-DD (ISO)
     { regex: /^(\d{4})-(\d{1,2})-(\d{1,2})$/, order: 'ymd' },
     // DD de MMMM de YYYY
@@ -234,7 +234,7 @@ export function validateNumber(value: string | number, unit?: string): Validatio
   }
   
   // Remove espaços e caracteres não numéricos exceto vírgula, ponto e sinal negativo
-  let cleaned = value.replace(/[^\d,.\-]/g, '');
+  let cleaned = value.replace(/[^\d,.-]/g, '');
   
   // Detecta formato brasileiro (vírgula como decimal)
   if (cleaned.includes(',') && cleaned.includes('.')) {

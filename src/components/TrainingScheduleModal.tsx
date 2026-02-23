@@ -100,7 +100,7 @@ export function TrainingScheduleModal({
   // Log para debug
   useEffect(() => {
     if (open) {
-      console.log('TrainingScheduleModal - Programs loaded:', programs.length, 'Error:', programsError);
+      console.warn('TrainingScheduleModal - Programs loaded:', programs.length, 'Error:', programsError);
     }
   }, [open, programs, programsError]);
 
@@ -175,7 +175,7 @@ export function TrainingScheduleModal({
   }, [selectedProgramId, programs, isEditing, form]);
 
   const onInvalid = (errors: any) => {
-    console.log('TrainingScheduleModal - Validation errors:', errors);
+    console.warn('TrainingScheduleModal - Validation errors:', errors);
     const firstError = Object.values(errors)[0] as any;
     toast({
       title: "Campos obrigatórios",
@@ -188,7 +188,7 @@ export function TrainingScheduleModal({
     if (isSubmitting) return; // Previne múltiplas submissões
     
     setIsSubmitting(true);
-    console.log('TrainingScheduleModal - Submitting values:', values);
+    console.warn('TrainingScheduleModal - Submitting values:', values);
     
     try {
       const submissionData = {
@@ -206,7 +206,7 @@ export function TrainingScheduleModal({
         participants: selectedParticipants,
       };
 
-      console.log('TrainingScheduleModal - Submission data:', submissionData);
+      console.warn('TrainingScheduleModal - Submission data:', submissionData);
 
       if (isEditing && schedule?.id) {
         await updateTrainingSchedule(schedule.id, submissionData);

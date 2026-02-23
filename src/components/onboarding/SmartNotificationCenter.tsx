@@ -97,7 +97,7 @@ export function SmartNotificationCenter({
         actionable: true,
         action: {
           text: 'Ver recomendações',
-          onClick: () => console.log('Show recommendations')
+          onClick: () => console.warn('Show recommendations')
         }
       });
     }
@@ -130,7 +130,7 @@ export function SmartNotificationCenter({
         actionable: true,
         action: {
           text: 'Ativar modo rápido',
-          onClick: () => console.log('Enable quick mode')
+          onClick: () => console.warn('Enable quick mode')
         }
       });
     }
@@ -163,7 +163,7 @@ export function SmartNotificationCenter({
         actionable: true,
         action: {
           text: 'Ir para dashboard',
-          onClick: () => console.log('Navigate to dashboard')
+          onClick: () => console.warn('Navigate to dashboard')
         }
       });
     }

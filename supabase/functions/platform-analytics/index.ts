@@ -43,11 +43,11 @@ Deno.serve(async (req) => {
 
     const { period = '30d' } = await req.json().catch(() => ({}));
 
-    console.log('Generating platform analytics...', { period });
+    console.warn('Generating platform analytics...', { period });
 
     // Calcular data de início baseada no período
     const now = new Date();
-    let startDate = new Date();
+    const startDate = new Date();
     switch (period) {
       case '7d':
         startDate.setDate(now.getDate() - 7);

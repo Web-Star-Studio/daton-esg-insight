@@ -55,6 +55,7 @@ export function TaskBulkActions() {
             updateData = { responsible_user_id: bulkResponsible };
             break;
           case 'extend-deadline':
+            // eslint-disable-next-line no-case-declarations
             const task = filteredTasks.find(t => t.id === taskId);
             if (task) {
               const newDate = new Date(task.due_date);

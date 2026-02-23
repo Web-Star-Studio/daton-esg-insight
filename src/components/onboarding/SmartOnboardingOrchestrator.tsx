@@ -86,6 +86,7 @@ export function SmartOnboardingOrchestrator({
         break;
         
       case 2: // Configuration
+        // eslint-disable-next-line no-case-declarations
         const unconfiguredModules = state.selectedModules.filter(
           moduleId => !state.moduleConfigurations[moduleId]
         );

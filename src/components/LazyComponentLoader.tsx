@@ -102,7 +102,7 @@ export function LazyComponentLoader({
 }
 
 // Factory para criar componentes lazy com configuração inteligente
-export function createLazyComponent<T = {}>(
+export function createLazyComponent<T = Record<string, unknown>>(
   importFunc: () => Promise<{ default: ComponentType<T> }>,
   config?: {
     retryAttempts?: number;
@@ -122,7 +122,7 @@ export function createLazyComponent<T = {}>(
   const importWithRetry = async (attempt = 1): Promise<{ default: ComponentType<T> }> => {
     try {
       const module = await importFunc();
-      console.log(`✅ Lazy component loaded: ${chunkName}`);
+      console.warn(`✅ Lazy component loaded: ${chunkName}`);
       return module;
     } catch (error) {
       console.warn(`❌ Failed to load ${chunkName} (attempt ${attempt}):`, error);
@@ -179,7 +179,7 @@ export function useLazyLoad<T extends HTMLElement = HTMLDivElement>(
 }
 
 // Componente de lazy loading inteligente baseado em viewport
-export function ViewportLazyLoader<T = {}>({
+export function ViewportLazyLoader<T = Record<string, unknown>>({
   component: Component,
   componentProps,
   placeholder,
@@ -251,7 +251,7 @@ export function preloadCriticalComponents() {
   criticalComponents.forEach(async (componentPath) => {
     try {
       await import(componentPath);
-      console.log(`🚀 Preloaded critical component: ${componentPath}`);
+      console.warn(`🚀 Preloaded critical component: ${componentPath}`);
     } catch (error) {
       console.warn(`Failed to preload ${componentPath}:`, error);
     }
@@ -271,9 +271,9 @@ export function prefetchRouteComponents(routes: string[]) {
 // Bundle analyzer para desenvolvimento
 export function analyzeBundleSize() {
   if (process.env.NODE_ENV === 'development') {
-    console.log('📊 Bundle Analysis:');
-    console.log('- Total chunks loaded:', performance.getEntriesByType('navigation').length);
-    console.log('- Memory usage:', (performance as any).memory?.usedJSHeapSize || 'N/A');
-    console.log('- Cached components:', componentCache.size);
+    console.warn('📊 Bundle Analysis:');
+    console.warn('- Total chunks loaded:', performance.getEntriesByType('navigation').length);
+    console.warn('- Memory usage:', (performance as any).memory?.usedJSHeapSize || 'N/A');
+    console.warn('- Cached components:', componentCache.size);
   }
 }

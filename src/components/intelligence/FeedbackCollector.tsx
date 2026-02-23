@@ -63,7 +63,7 @@ export function FeedbackCollector({
 
       // Note: ai_feedback_logs table needs to be created via migration
       // For now, we'll log to console until the table is available
-      console.log('Feedback would be saved:', {
+      console.warn('Feedback would be saved:', {
         company_id: selectedCompany.id,
         document_id: documentId,
         unclassified_data_id: unclassifiedDataId,

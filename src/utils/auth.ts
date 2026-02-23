@@ -42,7 +42,7 @@ export const getUserAndCompany = async (): Promise<UserWithCompany | null> => {
     if (roleError) throw roleError;
 
     // MIGRATION: If no role in user_roles, check profiles and migrate
-    let finalRole = userRole?.role || profile.role || 'viewer';
+    const finalRole = userRole?.role || profile.role || 'viewer';
     
     if (!userRole && profile.role && profile.company_id) {
       // Auto-migrate: insert role into user_roles
@@ -54,7 +54,7 @@ export const getUserAndCompany = async (): Promise<UserWithCompany | null> => {
           company_id: profile.company_id,
           assigned_by_user_id: user.id
         })
-        .then(() => console.log('✅ Role migrated for user:', user.id));
+        .then(() => console.warn('✅ Role migrated for user:', user.id));
     }
 
     return {

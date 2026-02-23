@@ -107,7 +107,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Processing ISO suggestions for:", description.substring(0, 100));
+    console.warn("Processing ISO suggestions for:", description.substring(0, 100));
 
     const systemPrompt = `Você é um especialista em normas ISO de sistemas de gestão (ISO 9001, ISO 14001, ISO 45001, ISO 39001).
 
@@ -212,7 +212,7 @@ Responda APENAS com o JSON, sem texto adicional.`;
     }
 
     const aiResponse = await response.json();
-    console.log("AI Response received");
+    console.warn("AI Response received");
 
     // Extract tool call result
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
@@ -221,7 +221,7 @@ Responda APENAS com o JSON, sem texto adicional.`;
     }
 
     const result = JSON.parse(toolCall.function.arguments);
-    console.log("Suggestions:", result.suggestions?.length || 0);
+    console.warn("Suggestions:", result.suggestions?.length || 0);
 
     return new Response(
       JSON.stringify({ suggestions: result.suggestions || [] }),

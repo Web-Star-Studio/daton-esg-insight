@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Check, ChevronsUpDown, Plus, Building2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +27,7 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
   const [open, setOpen] = useState(false);
   const [showNewBranch, setShowNewBranch] = useState(false);
   const [newBranchName, setNewBranchName] = useState('');
+  const comboboxContentId = useId();
 
   const { data: branches, isLoading } = useBranches();
   const createBranch = useCreateBranch();
@@ -67,6 +68,7 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-controls={comboboxContentId}
           className="w-full justify-between"
         >
           {selectedBranch ? (
@@ -83,7 +85,7 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      <PopoverContent id={comboboxContentId} className="w-full p-0">
         <Command>
           <CommandInput placeholder="Buscar filial..." />
           <CommandEmpty>

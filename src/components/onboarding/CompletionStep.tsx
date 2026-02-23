@@ -101,11 +101,11 @@ export function CompletionStep({
         break;
       case 'help':
         // Navigate to help center
-        console.log('Opening help center');
+        console.warn('Opening help center');
         break;
       case 'schedule':
         // Open scheduling interface or external link
-        console.log('Opening scheduling');
+        console.warn('Opening scheduling');
         break;
       default:
         break;

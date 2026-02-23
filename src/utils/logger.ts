@@ -107,7 +107,7 @@ class Logger {
     
     if (this.shouldLog('info')) {
       this.createLogEntry('info', category, message, context);
-      console.info(`ℹ️ [${category.toUpperCase()}] ${message}`, ...this.formatContext(context));
+      console.warn(`ℹ️ [${category.toUpperCase()}] ${message}`, ...this.formatContext(context));
     }
   }
 
@@ -159,7 +159,7 @@ class Logger {
     
     if (this.shouldLog('debug')) {
       this.createLogEntry('debug', category, message, context);
-      console.debug(`🔍 [${category.toUpperCase()}] ${message}`, ...this.formatContext(context));
+      console.warn(`🔍 [${category.toUpperCase()}] ${message}`, ...this.formatContext(context));
     }
   }
 
@@ -181,7 +181,7 @@ class Logger {
 
     if (this.shouldLog('debug')) {
       const categoryStr = category ? `[${category.toUpperCase()}] ` : '';
-      console.debug(`⏱️ ${categoryStr}${operation}: ${duration.toFixed(2)}ms`);
+      console.warn(`⏱️ ${categoryStr}${operation}: ${duration.toFixed(2)}ms`);
     }
   }
 
@@ -191,7 +191,7 @@ class Logger {
   trace(message: string, data: Record<string, unknown>, category: LogCategory = 'general') {
     if (this.shouldLog('debug')) {
       this.createLogEntry('debug', category, message, data);
-      console.debug(`🔎 [${category.toUpperCase()}] ${message}`, JSON.stringify(data, null, 2));
+      console.warn(`🔎 [${category.toUpperCase()}] ${message}`, JSON.stringify(data, null, 2));
     }
   }
 

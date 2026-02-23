@@ -31,7 +31,7 @@ serve(async (req) => {
       )
     }
 
-    console.log(`Processing action: ${action}`)
+    console.warn(`Processing action: ${action}`)
 
     let result
     switch (action) {
@@ -75,7 +75,7 @@ serve(async (req) => {
 
 async function checkGoalDeadlines(supabase: any) {
   try {
-    console.log('Checking goal deadlines...')
+    console.warn('Checking goal deadlines...')
     
     const { data: goals, error: goalsError } = await supabase
       .from('goals')
@@ -88,7 +88,7 @@ async function checkGoalDeadlines(supabase: any) {
       throw goalsError
     }
 
-    console.log(`Found ${goals?.length || 0} active goals`)
+    console.warn(`Found ${goals?.length || 0} active goals`)
     let notificationsCreated = 0
 
     for (const goal of goals || []) {
@@ -126,7 +126,7 @@ async function checkGoalDeadlines(supabase: any) {
               console.error('Error creating goal notification:', insertError)
             } else {
               notificationsCreated++
-              console.log(`Created notification for goal: ${goal.title}`)
+              console.warn(`Created notification for goal: ${goal.title}`)
             }
           }
         }
@@ -145,7 +145,7 @@ async function checkGoalDeadlines(supabase: any) {
 
 async function checkComplianceTasks(supabase: any) {
   try {
-    console.log('Checking compliance tasks...')
+    console.warn('Checking compliance tasks...')
     
     const { data: tasks, error: tasksError } = await supabase
       .from('compliance_tasks')
@@ -158,7 +158,7 @@ async function checkComplianceTasks(supabase: any) {
       throw tasksError
     }
 
-    console.log(`Found ${tasks?.length || 0} pending compliance tasks`)
+    console.warn(`Found ${tasks?.length || 0} pending compliance tasks`)
     let notificationsCreated = 0
 
     for (const task of tasks || []) {
@@ -195,7 +195,7 @@ async function checkComplianceTasks(supabase: any) {
               console.error('Error creating compliance notification:', insertError)
             } else {
               notificationsCreated++
-              console.log(`Created notification for task: ${task.title}`)
+              console.warn(`Created notification for task: ${task.title}`)
             }
           }
         }
@@ -214,7 +214,7 @@ async function checkComplianceTasks(supabase: any) {
 
 async function checkEmissionSpikes(supabase: any) {
   try {
-    console.log('Checking emission spikes...')
+    console.warn('Checking emission spikes...')
     
     const { data: emissions, error: emissionsError } = await supabase
       .from('calculated_emissions')
@@ -242,11 +242,11 @@ async function checkEmissionSpikes(supabase: any) {
     }
 
     if (!emissions || emissions.length === 0) {
-      console.log('No emissions data found')
+      console.warn('No emissions data found')
       return { processed: 0, created: 0 }
     }
 
-    console.log(`Found ${emissions.length} emission records`)
+    console.warn(`Found ${emissions.length} emission records`)
     
     const recentEmissions = emissions.slice(0, 10)
     const totalRecent = recentEmissions.reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0)
@@ -279,7 +279,7 @@ async function checkEmissionSpikes(supabase: any) {
         console.error('Error creating emission spike notification:', insertError)
       } else {
         notificationsCreated++
-        console.log('Created emission spike notification')
+        console.warn('Created emission spike notification')
       }
     }
 
@@ -292,7 +292,7 @@ async function checkEmissionSpikes(supabase: any) {
 
 async function checkEfficacyEvaluations(supabase: any) {
   try {
-    console.log('Checking efficacy evaluation deadlines...')
+    console.warn('Checking efficacy evaluation deadlines...')
     
     const { data: programs, error: programsError } = await supabase
       .from('training_programs')
@@ -305,7 +305,7 @@ async function checkEfficacyEvaluations(supabase: any) {
       throw programsError
     }
 
-    console.log(`Found ${programs?.length || 0} programs with efficacy deadlines`)
+    console.warn(`Found ${programs?.length || 0} programs with efficacy deadlines`)
     let notificationsCreated = 0
 
     const now = new Date()
@@ -350,7 +350,7 @@ async function checkEfficacyEvaluations(supabase: any) {
               console.error('Error creating efficacy notification:', insertError)
             } else {
               notificationsCreated++
-              console.log(`Created efficacy notification for program: ${program.name}`)
+              console.warn(`Created efficacy notification for program: ${program.name}`)
             }
           }
         }
@@ -369,7 +369,7 @@ async function checkEfficacyEvaluations(supabase: any) {
 
 async function checkLegislationReviews(supabase: any) {
   try {
-    console.log('Checking legislation review deadlines...')
+    console.warn('Checking legislation review deadlines...')
     
     // Get legislations with next_review_date approaching or overdue
     const { data: legislations, error: legislationsError } = await supabase
@@ -383,7 +383,7 @@ async function checkLegislationReviews(supabase: any) {
       throw legislationsError
     }
 
-    console.log(`Found ${legislations?.length || 0} legislations with review dates`)
+    console.warn(`Found ${legislations?.length || 0} legislations with review dates`)
     let notificationsCreated = 0
 
     const now = new Date()
@@ -432,7 +432,7 @@ async function checkLegislationReviews(supabase: any) {
               console.error('Error creating overdue review notification:', insertError)
             } else {
               notificationsCreated++
-              console.log(`Created overdue notification for legislation: ${legislation.title}`)
+              console.warn(`Created overdue notification for legislation: ${legislation.title}`)
             }
           }
         }
@@ -470,7 +470,7 @@ async function checkLegislationReviews(supabase: any) {
               console.error('Error creating upcoming review notification:', insertError)
             } else {
               notificationsCreated++
-              console.log(`Created 30-day notification for legislation: ${legislation.title}`)
+              console.warn(`Created 30-day notification for legislation: ${legislation.title}`)
             }
           }
         }
@@ -508,7 +508,7 @@ async function checkLegislationReviews(supabase: any) {
               console.error('Error creating urgent review notification:', insertError)
             } else {
               notificationsCreated++
-              console.log(`Created 7-day notification for legislation: ${legislation.title}`)
+              console.warn(`Created 7-day notification for legislation: ${legislation.title}`)
             }
           }
         }
@@ -539,7 +539,7 @@ async function checkLegislationReviews(supabase: any) {
       .neq('pending_requirements', '')
 
     if (!complianceError && pendingCompliances) {
-      console.log(`Found ${pendingCompliances.length} pending compliance items`)
+      console.warn(`Found ${pendingCompliances.length} pending compliance items`)
       
       for (const compliance of pendingCompliances) {
         try {

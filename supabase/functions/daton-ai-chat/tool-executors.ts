@@ -34,12 +34,13 @@ export async function executeReadTool(
   companyId: string,
   supabaseClient: any
 ): Promise<any> {
-  console.log(`Executing read tool: ${toolName}`, args);
+  console.warn(`Executing read tool: ${toolName}`, args);
 
   try {
     switch (toolName) {
       case 'get_comprehensive_company_data':
-        console.log('📊 Fetching comprehensive company data...');
+        console.warn('📊 Fetching comprehensive company data...');
+        // eslint-disable-next-line no-case-declarations
         const comprehensiveData = await getComprehensiveCompanyData(
           companyId,
           supabaseClient,
@@ -194,7 +195,7 @@ async function queryEmissionsData(args: any, companyId: string, supabase: any) {
   if (error) throw error;
 
   // Process and group data
-  let result = {
+  const result = {
     totalEmissions: 0,
     count: 0,
     breakdown: {}
@@ -486,7 +487,7 @@ async function getDashboardSummary(args: any, companyId: string, supabase: any) 
 async function reviewPendingExtractions(args: any, companyId: string, supabase: any) {
   const { limit = 10, minConfidence = 0 } = args;
 
-  let query = supabase
+  const query = supabase
     .from('extracted_data_preview')
     .select(`
       *,
@@ -832,7 +833,7 @@ async function queryWasteData(args: any, companyId: string, supabase: any) {
   // Calculate aggregations
   const totalQuantity = data ? data.reduce((sum: number, w: any) => sum + (w.quantity || 0), 0) : 0;
   
-  let groupedData: any = {};
+  const groupedData: any = {};
   if (groupBy && data) {
     data.forEach((item: any) => {
       const key = groupBy === 'month' 

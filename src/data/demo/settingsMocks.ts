@@ -63,6 +63,8 @@ export const settingsMockEntries = [
     queryKey: ['company-users', undefined],
     data: [
       { id: 'demo-user-001', full_name: 'Usuário Demonstração', role: 'viewer' },
+      { id: 'demo-user-002', full_name: 'Mariana Lopes', role: 'admin' },
+      { id: 'demo-user-003', full_name: 'Carlos Andrade', role: 'manager' },
     ],
   },
   // Company users (base)
@@ -70,6 +72,8 @@ export const settingsMockEntries = [
     queryKey: ['company-users'],
     data: [
       { id: 'demo-user-001', full_name: 'Usuário Demonstração', role: 'viewer' },
+      { id: 'demo-user-002', full_name: 'Mariana Lopes', role: 'admin' },
+      { id: 'demo-user-003', full_name: 'Carlos Andrade', role: 'manager' },
     ],
   },
   // Custom forms
@@ -107,7 +111,53 @@ export const settingsMockEntries = [
   // Module settings
   {
     queryKey: ['platform-module-settings'],
-    data: [],
+    data: [
+      {
+        id: 'ms-1',
+        module_key: 'financial',
+        module_name: 'Financeiro',
+        enabled_live: true,
+        enabled_demo: true,
+        updated_at: new Date().toISOString(),
+        updated_by_user_id: 'demo-user-001',
+      },
+      {
+        id: 'ms-2',
+        module_key: 'dataReports',
+        module_name: 'Dados e Relatórios',
+        enabled_live: true,
+        enabled_demo: true,
+        updated_at: new Date().toISOString(),
+        updated_by_user_id: 'demo-user-001',
+      },
+      {
+        id: 'ms-3',
+        module_key: 'quality',
+        module_name: 'SGQ',
+        enabled_live: true,
+        enabled_demo: true,
+        updated_at: new Date().toISOString(),
+        updated_by_user_id: 'demo-user-001',
+      },
+      {
+        id: 'ms-4',
+        module_key: 'suppliers',
+        module_name: 'Fornecedores',
+        enabled_live: true,
+        enabled_demo: true,
+        updated_at: new Date().toISOString(),
+        updated_by_user_id: 'demo-user-001',
+      },
+      {
+        id: 'ms-5',
+        module_key: 'esgManagement',
+        module_name: 'Gestão ESG',
+        enabled_live: true,
+        enabled_demo: true,
+        updated_at: new Date().toISOString(),
+        updated_by_user_id: 'demo-user-001',
+      },
+    ],
   },
   // Profiles
   {
@@ -147,7 +197,31 @@ export const settingsMockEntries = [
   // Approval workflows
   {
     queryKey: ['approval-workflows'],
-    data: [],
+    data: [
+      {
+        id: 'aw-1',
+        workflow_name: 'Aprovação de Não Conformidades',
+        name: 'Aprovação de Não Conformidades',
+        workflow_type: 'non_conformity',
+        is_active: true,
+        created_at: '2026-01-10T08:00:00Z',
+        steps: [
+          { approver_user_id: 'demo-user-001', step_number: 1, approver_name: 'Usuário Demonstração' },
+          { approver_user_id: 'demo-user-002', step_number: 2, approver_name: 'Mariana Lopes' },
+        ],
+      },
+      {
+        id: 'aw-2',
+        workflow_name: 'Aprovação de Documentos Externos',
+        name: 'Aprovação de Documentos Externos',
+        workflow_type: 'document',
+        is_active: true,
+        created_at: '2026-01-16T11:20:00Z',
+        steps: [
+          { approver_user_id: 'demo-user-003', step_number: 1, approver_name: 'Carlos Andrade' },
+        ],
+      },
+    ],
   },
   // Tags
   {

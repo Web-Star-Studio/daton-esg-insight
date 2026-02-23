@@ -55,9 +55,9 @@ export function EmployeeDocumentUploadModal({
     }
 
     setIsUploading(true);
-    console.log('=== BATCH UPLOAD START ===');
-    console.log('Files:', selectedFiles.length);
-    console.log('Category:', category);
+    console.warn('=== BATCH UPLOAD START ===');
+    console.warn('Files:', selectedFiles.length);
+    console.warn('Category:', category);
 
     let successCount = 0;
     let errorCount = 0;

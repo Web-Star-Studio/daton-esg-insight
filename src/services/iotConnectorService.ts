@@ -111,7 +111,7 @@ class IoTConnectorService {
       dataRetention: 365 // 1 year
     })
 
-    console.log(`Device ${device.name} (${device.id}) registered successfully`)
+    console.warn(`Device ${device.name} (${device.id}) registered successfully`)
   }
 
   async updateDeviceStatus(deviceId: string, status: IoTDevice['status']): Promise<void> {
@@ -178,7 +178,7 @@ class IoTConnectorService {
     await this.updateDeviceStatus(deviceId, 'online')
 
     // Track analytics (placeholder until track method is implemented)
-    console.log('IoT data received:', { device_id: deviceId, metrics_count: Object.keys(data.metrics).length })
+    console.warn('IoT data received:', { device_id: deviceId, metrics_count: Object.keys(data.metrics).length })
   }
 
   // Environmental Monitoring
@@ -317,10 +317,10 @@ class IoTConnectorService {
 
     // Send real-time notification (placeholder)
     if (alert.severity === 'critical' || alert.severity === 'high') {
-      console.log('Critical IoT alert:', { device_id: alert.deviceId, severity: alert.severity })
+      console.warn('Critical IoT alert:', { device_id: alert.deviceId, severity: alert.severity })
     }
 
-    console.log(`IoT Alert: ${alert.message} (${alert.severity})`)
+    console.warn(`IoT Alert: ${alert.message} (${alert.severity})`)
   }
 
   async acknowledgeAlert(alertId: string): Promise<void> {
@@ -381,7 +381,7 @@ class IoTConnectorService {
       this.websocket = new WebSocket(wsUrl)
 
       this.websocket.onopen = () => {
-        console.log('IoT WebSocket connected')
+        console.warn('IoT WebSocket connected')
         this.reconnectAttempts = 0
       }
 
@@ -390,7 +390,7 @@ class IoTConnectorService {
       }
 
       this.websocket.onclose = () => {
-        console.log('IoT WebSocket disconnected')
+        console.warn('IoT WebSocket disconnected')
         this.handleReconnection()
       }
 
@@ -414,7 +414,7 @@ class IoTConnectorService {
         this.generateAlert(message.alert)
         break
       default:
-        console.log('Unknown IoT message type:', message.type)
+        console.warn('Unknown IoT message type:', message.type)
     }
   }
 
@@ -422,7 +422,7 @@ class IoTConnectorService {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++
       setTimeout(() => {
-        console.log(`Attempting IoT reconnection (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
+        console.warn(`Attempting IoT reconnection (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
         this.initializeConnection()
       }, Math.pow(2, this.reconnectAttempts) * 1000)
     }

@@ -1,61 +1,53 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-This repository is a Bun workspace + Turborepo monorepo.
+This repository is a Vite + React + TypeScript application with Supabase integration.
 
-- `apps/web`: Next.js App Router frontend (`src/app`, `src/lib`).
-- `apps/native`: Expo Router mobile app (`app/`, `src/lib`).
-- `apps/e2e`: Playwright end-to-end suite (`tests/*.spec.ts`).
-- `packages/backend`: Convex backend (`convex/schema.ts`, `convex/*.ts`).
-- `packages/shared`: Shared TypeScript types/utilities consumed by web and native.
-- `packages/eslint-config`, `packages/typescript-config`: Shared lint and TS presets.
+- `src/`: application source code (pages, components, hooks, services, contexts, utils).
+- `public/`: static assets served directly.
+- `supabase/`: Supabase functions and platform-related backend assets.
+- `docs/`: project documentation and audits.
+- `dist/`: build output (generated).
+
+Keep business logic in `src/services` or domain hooks, UI in `src/components`, and shared app state in `src/contexts`.
 
 ## Build, Test, and Development Commands
-Run from repo root unless noted.
+Run commands from the repository root:
 
-- `bun install`: Install workspace dependencies.
-- `bun run dev`: Start web, native, and backend in parallel via Turbo.
-- `bun run dev:web` / `bun run dev:native` / `bun run dev:backend`: Start one target.
-- `bun run build`: Build all packages/apps.
-- `bun run lint`: Run ESLint across workspaces.
-- `bun run type-check`: Run TypeScript checks across workspaces.
-- `bun run test:e2e`: Run Playwright tests in `apps/e2e`.
-- `bun run test:e2e:ui`: Open Playwright interactive UI.
+- `bun install`: install dependencies.
+- `bun run dev`: start local Vite dev server.
+- `bun run build`: production build into `dist/`.
+- `bun run build:dev`: development-mode build.
+- `bun run preview`: preview built app locally.
+- `bun run lint`: run ESLint across the codebase.
 
 ## Coding Style & Naming Conventions
-- Language: TypeScript-first across apps/packages.
-- Formatting: Prettier (`.prettierrc`) with 2 spaces, semicolons, double quotes, trailing commas, 80-char line width.
-- Linting: ESLint 9 flat config from `@ws/eslint-config`.
-- File naming: React components in `PascalCase`; utility modules and routes in `kebab-case` or framework-default names (e.g., `page.tsx`, `route.ts`).
-- Keep shared contracts in `packages/shared` and backend-facing schema/API code in `packages/backend/convex`.
+- Language: TypeScript (`.ts` / `.tsx`).
+- Indentation: 2 spaces.
+- Prefer double quotes and semicolons for new edits (follow existing file style where needed).
+- Component files: `PascalCase` (e.g., `UserDashboard.tsx`).
+- Utilities/services: `camelCase` or domain-based names (e.g., `notificationService.ts`).
+- Route/page modules: keep naming consistent with existing `src/pages/*` patterns.
+
+Use ESLint as the quality gate; avoid introducing new warnings when possible.
 
 ## Testing Guidelines
-- Framework: Playwright (`@playwright/test`) in `apps/e2e`.
-- Test files: `*.spec.ts` under `apps/e2e/tests` (example: `auth.spec.ts`).
-- Local run: `bun run test:e2e`; for debugging use `bun run test:e2e:ui`.
-- Coverage focus: critical user flows (auth, landing/home, cross-browser smoke). Add or update E2E tests for behavior changes.
+- Test stack available: Vitest + Testing Library (`vitest`, `@testing-library/*`).
+- Place tests near the feature or under a dedicated test folder using `*.test.ts` / `*.test.tsx`.
+- Current repo does not include a configured Playwright E2E workspace.
+
+When adding behavior, include focused unit/integration tests for critical logic.
 
 ## Commit & Pull Request Guidelines
-- Commits follow Conventional Commit style seen in history (example: `feat: ...`).
-- Use format: `<type>: <short imperative summary>` (`feat`, `fix`, `chore`, `docs`, `refactor`, `test`).
+- Use Conventional Commits: `feat: ...`, `fix: ...`, `refactor: ...`, `docs: ...`, `chore: ...`.
+- Keep commits scoped and atomic.
 - PRs should include:
-  - Clear summary and affected workspace(s) (web/native/backend/shared/e2e).
-  - Linked issue (if applicable) and config/env changes (`.env.example`, Convex vars).
-  - Screenshots or recordings for UI changes (web or native).
-  - Confirmation that `bun run lint`, `bun run type-check`, and relevant tests pass.
-
-## Mandatory Code Review Workflow (Greptile)
-
-Every code change (not docs-only or config-only) **must** go through this workflow:
-
-1. **Stage and commit** changes using conventional commit format.
-2. **Create a PR** targeting `main` with **100 changed files or fewer** per PR (Greptile's execution limit). Split larger changes into multiple PRs.
-3. **Wait for Greptile's auto-review.** Greptile reviews every PR automatically on creation — no manual trigger needed.
-4. **If issues are raised**: fix them, push, and wait for re-review.
-5. **If no issues remain**: merge the PR and continue.
-
-Code that hasn't passed Greptile review must not be merged.
+  - concise summary and affected areas,
+  - linked issue/ticket (if available),
+  - screenshots/video for UI changes,
+  - confirmation that `bun run lint` and relevant tests pass.
 
 ## Security & Configuration Tips
-- Never commit secrets; use `.env.local` (copied from `.env.example`).
-- Keep Convex and auth secrets in environment variables, not source files.
+- Never commit secrets.
+- Keep environment values in `.env`/`.env.example` patterns.
+- Review Supabase changes carefully, especially auth, policies, and edge functions.

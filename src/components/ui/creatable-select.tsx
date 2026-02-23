@@ -47,6 +47,7 @@ export function CreatableSelect({
 }: CreatableSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
+  const comboboxContentId = React.useId();
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -82,6 +83,7 @@ export function CreatableSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-controls={comboboxContentId}
           disabled={disabled}
           className={cn(
             "w-full justify-between font-normal",
@@ -101,7 +103,11 @@ export function CreatableSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-popover" align="start">
+      <PopoverContent
+        id={comboboxContentId}
+        className="w-[--radix-popover-trigger-width] p-0 bg-popover"
+        align="start"
+      >
         <Command shouldFilter={false}>
           <CommandInput
             placeholder={searchPlaceholder}

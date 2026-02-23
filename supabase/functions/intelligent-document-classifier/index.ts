@@ -67,7 +67,7 @@ serve(async (req) => {
   try {
     const { content, fileType, fileName, structured } = await req.json();
     
-    console.log('📋 Classifying document:', { fileName, fileType, contentLength: content?.length });
+    console.warn('📋 Classifying document:', { fileName, fileType, contentLength: content?.length });
 
     // SECURITY: Validate JWT token for authenticated requests
     const authHeader = req.headers.get('Authorization');
@@ -83,7 +83,7 @@ serve(async (req) => {
       if (claimsError || !claimsData?.claims) {
         console.warn('JWT validation failed, but proceeding (public classifier)');
       } else {
-        console.log('Authenticated classification request from:', claimsData.claims.sub);
+        console.warn('Authenticated classification request from:', claimsData.claims.sub);
       }
     }
 
@@ -199,7 +199,7 @@ Confidence deve ser entre 0 e 1.`;
       };
     }
 
-    console.log('✅ Classification result:', classification);
+    console.warn('✅ Classification result:', classification);
 
     return new Response(JSON.stringify({ 
       classification 

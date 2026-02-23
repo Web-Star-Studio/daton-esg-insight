@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,56 +76,7 @@ export function AuditsAssessmentsDataModule({ reportId, onComplete }: AuditsAsse
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [dataId, setDataId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [reportId]);
-
-  const loadData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile) return;
-
-      // Load existing data
-      const { data: existingData, error: existingError } = await supabase
-        .from('gri_audits_assessments_data' as any)
-        .select('*')
-        .eq('report_id', reportId)
-        .maybeSingle();
-
-      if (existingData && !existingError) {
-        setFormData(existingData);
-        setDataId((existingData as any).id);
-      }
-
-      // Calculate quantitative metrics
-      await calculateMetrics(profile.company_id);
-
-      // Load documents
-      const { data: docs, error: docsError } = await supabase
-        .from('documents' as any)
-        .select('*')
-        .eq('report_id', reportId);
-
-      if (docs && !docsError) {
-        setDocuments(docs);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Erro ao carregar dados');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const calculateMetrics = async (companyId: string) => {
+  const calculateMetrics = useCallback(async (companyId: string) => {
     try {
       // Fetch audits from existing system
       const currentYear = new Date().getFullYear();
@@ -193,7 +144,56 @@ export function AuditsAssessmentsDataModule({ reportId, onComplete }: AuditsAsse
     } catch (error) {
       console.error('Error calculating metrics:', error);
     }
-  };
+  }, []);
+
+  const loadData = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile) return;
+
+      // Load existing data
+      const { data: existingData, error: existingError } = await supabase
+        .from('gri_audits_assessments_data' as any)
+        .select('*')
+        .eq('report_id', reportId)
+        .maybeSingle();
+
+      if (existingData && !existingError) {
+        setFormData(existingData);
+        setDataId((existingData as any).id);
+      }
+
+      // Calculate quantitative metrics
+      await calculateMetrics(profile.company_id);
+
+      // Load documents
+      const { data: docs, error: docsError } = await supabase
+        .from('documents' as any)
+        .select('*')
+        .eq('report_id', reportId);
+
+      if (docs && !docsError) {
+        setDocuments(docs);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [calculateMetrics, reportId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleFieldChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));

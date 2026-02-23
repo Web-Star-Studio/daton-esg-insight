@@ -229,7 +229,7 @@ function parseDate(dateStr: string): string {
   }
   
   // DD/MM/YYYY format (formato brasileiro)
-  const brMatch = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  const brMatch = dateStr.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (brMatch) {
     const [, day, month, year] = brMatch;
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;

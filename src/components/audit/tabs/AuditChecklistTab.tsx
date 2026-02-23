@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,123 @@ import { toast as sonnerToast } from "sonner";
 
 interface AuditChecklistTabProps {
   auditId: string;
+}
+
+interface ChecklistQuestionItemProps {
+  question: any;
+  index: number;
+  checklistId: string;
+  existingResponse: any;
+  getResponseIcon: (response: string) => React.ReactNode;
+  onSave: (payload: {
+    questionId: string;
+    checklistId: string;
+    response: string;
+    notes: string;
+    question: any;
+  }) => void;
+  isSaving: boolean;
+}
+
+function ChecklistQuestionItem({
+  question,
+  index,
+  checklistId,
+  existingResponse,
+  getResponseIcon,
+  onSave,
+  isSaving,
+}: ChecklistQuestionItemProps) {
+  const [localResponse, setLocalResponse] = useState(existingResponse?.response || "");
+  const [localNotes, setLocalNotes] = useState(existingResponse?.evidence_notes || "");
+
+  useEffect(() => {
+    setLocalResponse(existingResponse?.response || "");
+    setLocalNotes(existingResponse?.evidence_notes || "");
+  }, [existingResponse?.response, existingResponse?.evidence_notes, question.id]);
+
+  return (
+    <AccordionItem key={question.id || index} value={`question-${index}`}>
+      <AccordionTrigger>
+        <div className="flex items-center gap-3 text-left">
+          {existingResponse && getResponseIcon(existingResponse.response)}
+          <span className="font-medium">{question.question}</span>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="space-y-4 pt-4">
+          {question.reference && (
+            <p className="text-sm text-muted-foreground">
+              Referência: {question.reference}
+            </p>
+          )}
+
+          <RadioGroup value={localResponse} onValueChange={setLocalResponse}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="conforme" id={`${question.id}-c`} />
+              <Label htmlFor={`${question.id}-c`} className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                Conforme
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="nao_conforme" id={`${question.id}-nc`} />
+              <Label htmlFor={`${question.id}-nc`} className="flex items-center gap-2">
+                <XCircle className="h-4 w-4 text-red-500" />
+                Não Conforme
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="nao_aplicavel" id={`${question.id}-na`} />
+              <Label htmlFor={`${question.id}-na`} className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-gray-500" />
+                Não Aplicável
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="observacao" id={`${question.id}-obs`} />
+              <Label htmlFor={`${question.id}-obs`} className="flex items-center gap-2">
+                <FileQuestion className="h-4 w-4 text-blue-500" />
+                Observação
+              </Label>
+            </div>
+          </RadioGroup>
+
+          <div>
+            <Label>Evidências / Notas</Label>
+            <Textarea
+              value={localNotes}
+              onChange={(e) => setLocalNotes(e.target.value)}
+              placeholder="Descreva as evidências encontradas..."
+              rows={3}
+            />
+          </div>
+
+          {localResponse === 'nao_conforme' && !existingResponse && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Atenção: Um achado de auditoria será criado automaticamente para esta não conformidade.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            onClick={() => onSave({
+              questionId: question.id,
+              checklistId,
+              response: localResponse,
+              notes: localNotes,
+              question,
+            })}
+            disabled={!localResponse || isSaving}
+          >
+            Salvar Resposta
+          </Button>
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
 }
 
 export function AuditChecklistTab({ auditId }: AuditChecklistTabProps) {
@@ -177,93 +294,17 @@ export function AuditChecklistTab({ auditId }: AuditChecklistTabProps) {
               <Accordion type="single" collapsible className="w-full">
                 {questions.map((question: any, idx: number) => {
                   const existingResponse = checklistResponses.find(r => r.question_id === question.id);
-                  const [localResponse, setLocalResponse] = useState(existingResponse?.response || '');
-                  const [localNotes, setLocalNotes] = useState(existingResponse?.evidence_notes || '');
-
                   return (
-                    <AccordionItem key={question.id || idx} value={`question-${idx}`}>
-                      <AccordionTrigger>
-                        <div className="flex items-center gap-3 text-left">
-                          {existingResponse && getResponseIcon(existingResponse.response)}
-                          <span className="font-medium">{question.question}</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-4 pt-4">
-                          {question.reference && (
-                            <p className="text-sm text-muted-foreground">
-                              Referência: {question.reference}
-                            </p>
-                          )}
-
-                          <RadioGroup
-                            value={localResponse}
-                            onValueChange={setLocalResponse}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="conforme" id={`${question.id}-c`} />
-                              <Label htmlFor={`${question.id}-c`} className="flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                Conforme
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="nao_conforme" id={`${question.id}-nc`} />
-                              <Label htmlFor={`${question.id}-nc`} className="flex items-center gap-2">
-                                <XCircle className="h-4 w-4 text-red-500" />
-                                Não Conforme
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="nao_aplicavel" id={`${question.id}-na`} />
-                              <Label htmlFor={`${question.id}-na`} className="flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4 text-gray-500" />
-                                Não Aplicável
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="observacao" id={`${question.id}-obs`} />
-                              <Label htmlFor={`${question.id}-obs`} className="flex items-center gap-2">
-                                <FileQuestion className="h-4 w-4 text-blue-500" />
-                                Observação
-                              </Label>
-                            </div>
-                          </RadioGroup>
-
-                          <div>
-                            <Label>Evidências / Notas</Label>
-                            <Textarea
-                              value={localNotes}
-                              onChange={(e) => setLocalNotes(e.target.value)}
-                              placeholder="Descreva as evidências encontradas..."
-                              rows={3}
-                            />
-                          </div>
-
-                          {localResponse === 'nao_conforme' && !existingResponse && (
-                            <Alert variant="destructive">
-                              <AlertTriangle className="h-4 w-4" />
-                              <AlertDescription>
-                                Atenção: Um achado de auditoria será criado automaticamente para esta não conformidade.
-                              </AlertDescription>
-                            </Alert>
-                          )}
-
-                          <Button
-                            onClick={() => saveResponse.mutate({
-                              questionId: question.id,
-                              checklistId: checklist.id,
-                              response: localResponse,
-                              notes: localNotes,
-                              question: question,
-                            })}
-                            disabled={!localResponse}
-                          >
-                            Salvar Resposta
-                          </Button>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
+                    <ChecklistQuestionItem
+                      key={question.id || idx}
+                      question={question}
+                      index={idx}
+                      checklistId={checklist.id}
+                      existingResponse={existingResponse}
+                      getResponseIcon={getResponseIcon}
+                      onSave={(payload) => saveResponse.mutate(payload)}
+                      isSaving={saveResponse.isPending}
+                    />
                   );
                 })}
               </Accordion>

@@ -89,7 +89,7 @@ export const validateCNPJ = (cnpj: string): boolean => {
   }
   
   let remainder = sum % 11;
-  let firstDigit = remainder < 2 ? 0 : 11 - remainder;
+  const firstDigit = remainder < 2 ? 0 : 11 - remainder;
   
   if (parseInt(cleanCNPJ[12]) !== firstDigit) return false;
   
@@ -102,7 +102,7 @@ export const validateCNPJ = (cnpj: string): boolean => {
   }
   
   remainder = sum % 11;
-  let secondDigit = remainder < 2 ? 0 : 11 - remainder;
+  const secondDigit = remainder < 2 ? 0 : 11 - remainder;
   
   return parseInt(cleanCNPJ[13]) === secondDigit;
 };
@@ -120,7 +120,7 @@ export const validateCPF = (cpf: string): boolean => {
   }
   
   let remainder = sum % 11;
-  let firstDigit = remainder < 2 ? 0 : 11 - remainder;
+  const firstDigit = remainder < 2 ? 0 : 11 - remainder;
   
   if (parseInt(cleanCPF[9]) !== firstDigit) return false;
   
@@ -131,7 +131,7 @@ export const validateCPF = (cpf: string): boolean => {
   }
   
   remainder = sum % 11;
-  let secondDigit = remainder < 2 ? 0 : 11 - remainder;
+  const secondDigit = remainder < 2 ? 0 : 11 - remainder;
   
   return parseInt(cleanCPF[10]) === secondDigit;
 };

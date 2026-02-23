@@ -70,7 +70,9 @@ export function SmartValidationHelper({
         break;
 
       case 2: // Configuration
+        // eslint-disable-next-line no-case-declarations
         const selectedModules = stepData.selectedModules || [];
+        // eslint-disable-next-line no-case-declarations
         const configurations = stepData.moduleConfigurations || {};
 
         selectedModules.forEach((moduleId: string) => {

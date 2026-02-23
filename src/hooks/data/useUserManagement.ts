@@ -232,7 +232,7 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
       toast.success('Link de recuperação de senha enviado! O link expira em 24 horas.');
       // For development/testing, log the link
       if (data?.link) {
-        console.log('Password reset link:', data.link);
+        console.warn('Password reset link:', data.link);
       }
     },
     onError: (error: Error) => {

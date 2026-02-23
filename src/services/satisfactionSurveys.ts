@@ -256,6 +256,7 @@ const analyzeQuestionResponses = (question: SurveyQuestion, responses: any[]) =>
   switch (question.type) {
     case 'rating':
     case 'scale':
+      // eslint-disable-next-line no-case-declarations
       const numbers = responses.filter(r => typeof r === 'number');
       return {
         average: numbers.length > 0 ? numbers.reduce((sum, r) => sum + r, 0) / numbers.length : 0,

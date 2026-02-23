@@ -3,7 +3,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 export async function handleAnalyzeAuditsAssessmentsData(supabase: any, body: any) {
   const { report_id, form_data, documents, quantitative_data } = body;
 
-  console.log('[Analyze Audits Assessments Data] Starting...');
+  console.warn('[Analyze Audits Assessments Data] Starting...');
 
   try {
     // 1. Fetch current report
@@ -219,7 +219,7 @@ Gere um texto de 1400-1800 palavras integrando TODOS os dados numéricos de form
     const result = await aiResponse.json();
     const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
-    console.log('[Analyze Audits Assessments Data] Complete');
+    console.warn('[Analyze Audits Assessments Data] Complete');
 
     return new Response(
       JSON.stringify(analysis),

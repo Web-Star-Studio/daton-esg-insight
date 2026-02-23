@@ -19,7 +19,7 @@ async function invokeWithRetry<T>(
                            error.message?.includes('NetworkError');
         
         if (isRetryable && attempt < retries) {
-          console.log(`⏳ Tentativa ${attempt + 1} falhou, tentando novamente...`);
+          console.warn(`⏳ Tentativa ${attempt + 1} falhou, tentando novamente...`);
           await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // Exponential backoff
           continue;
         }
@@ -30,7 +30,7 @@ async function invokeWithRetry<T>(
     } catch (e) {
       lastError = e as Error;
       if (attempt < retries) {
-        console.log(`⏳ Tentativa ${attempt + 1} falhou, tentando novamente...`);
+        console.warn(`⏳ Tentativa ${attempt + 1} falhou, tentando novamente...`);
         await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
       }
     }

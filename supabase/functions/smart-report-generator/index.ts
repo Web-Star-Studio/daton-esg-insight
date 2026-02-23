@@ -57,7 +57,7 @@ serve(async (req) => {
     
     const requestData: ReportRequest = await req.json();
     
-    console.log('Generating smart report:', {
+    console.warn('Generating smart report:', {
       type: requestData.reportType,
       dateRange: requestData.dateRange,
       companyId: profile.company_id
@@ -125,7 +125,7 @@ async function fetchReportData(
   const data: any = {};
   
   switch (reportType) {
-    case 'emissions':
+    case 'emissions': {
       const { data: emissions } = await supabase
         .from('calculated_emissions')
         .select(`
@@ -149,8 +149,9 @@ async function fetchReportData(
           .reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0) || 0,
       };
       break;
+    }
       
-    case 'quality':
+    case 'quality': {
       const { data: ncs } = await supabase
         .from('non_conformities')
         .select('*')
@@ -165,8 +166,9 @@ async function fetchReportData(
         return acc;
       }, {});
       break;
+    }
       
-    case 'compliance':
+    case 'compliance': {
       const { data: licenses } = await supabase
         .from('licenses')
         .select('*')
@@ -180,8 +182,9 @@ async function fetchReportData(
         return daysUntilExpiry <= 90 && daysUntilExpiry > 0;
       }).length || 0;
       break;
+    }
       
-    case 'esg':
+    case 'esg': {
       const { data: risks } = await supabase
         .from('esg_risks')
         .select('*')
@@ -196,6 +199,7 @@ async function fetchReportData(
         return acc;
       }, {});
       break;
+    }
   }
   
   return data;

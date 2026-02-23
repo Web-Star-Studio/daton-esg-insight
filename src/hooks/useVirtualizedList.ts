@@ -35,40 +35,30 @@ export function useVirtualizedList<T>({
   const [scrollTop, setScrollTop] = useState(0);
   const scrollTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // If virtualization is disabled, return all items
-  if (!enabled) {
-    return {
-      virtualItems: items,
-      totalHeight: 0,
-      offsetY: 0,
-      containerProps: {
-        style: {},
-        onScroll: () => {},
-      },
-      itemProps: () => ({
-        style: {},
-      }),
-    };
-  }
-
   // Calculate visible range with overscan
-  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-  const endIndex = Math.min(
-    items.length - 1,
-    Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan
-  );
+  const startIndex = enabled
+    ? Math.max(0, Math.floor(scrollTop / itemHeight) - overscan)
+    : 0;
+  const endIndex = enabled
+    ? Math.min(
+        items.length - 1,
+        Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan
+      )
+    : items.length - 1;
 
   // Get visible items
   const virtualItems = useMemo(
-    () => items.slice(startIndex, endIndex + 1),
-    [items, startIndex, endIndex]
+    () => (enabled ? items.slice(startIndex, endIndex + 1) : items),
+    [enabled, items, startIndex, endIndex]
   );
 
-  const totalHeight = items.length * itemHeight;
-  const offsetY = startIndex * itemHeight;
+  const totalHeight = enabled ? items.length * itemHeight : 0;
+  const offsetY = enabled ? startIndex * itemHeight : 0;
 
   // Debounced scroll handler
   const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
+    if (!enabled) return;
+
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
     }
@@ -76,7 +66,7 @@ export function useVirtualizedList<T>({
     scrollTimeoutRef.current = setTimeout(() => {
       setScrollTop(e.currentTarget.scrollTop);
     }, 16); // ~60fps
-  }, []);
+  }, [enabled]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -92,11 +82,13 @@ export function useVirtualizedList<T>({
     totalHeight,
     offsetY,
     containerProps: {
-      style: {
-        height: `${containerHeight}px`,
-        overflow: 'auto',
-        position: 'relative',
-      },
+      style: enabled
+        ? {
+            height: `${containerHeight}px`,
+            overflow: 'auto',
+            position: 'relative',
+          }
+        : {},
       onScroll: handleScroll,
     },
     itemProps: (index: number) => ({

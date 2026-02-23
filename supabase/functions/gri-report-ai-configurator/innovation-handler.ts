@@ -6,7 +6,7 @@ const corsHeaders = {
 export async function handleAnalyzeInnovationData(supabase: any, body: any) {
   const { report_id, form_data, documents, quantitative_data } = body;
 
-  console.log('[Analyze Innovation Data] Starting...');
+  console.warn('[Analyze Innovation Data] Starting...');
 
   // 1. Buscar relatório
   const { data: report } = await supabase
@@ -136,7 +136,7 @@ ${documentContents.map(doc => `\n### ${doc?.category}\n${doc?.content}`).join('\
   const result = await aiResponse.json();
   const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
-  console.log('[Analyze Innovation Data] Complete');
+  console.warn('[Analyze Innovation Data] Complete');
 
   return new Response(
     JSON.stringify(analysis),

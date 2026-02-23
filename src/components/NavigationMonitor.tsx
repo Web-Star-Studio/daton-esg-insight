@@ -33,7 +33,7 @@ export function NavigationMonitor() {
     }
     
     // Log navigation for debugging (less verbose)
-    console.info(`NavigationMonitor: ${currentPath}`);
+    console.warn(`NavigationMonitor: ${currentPath}`);
     
     // Check for authentication issues - only for protected routes
     const protectedRoutes = ['/dashboard', '/inventario-gee', '/licenciamento', '/residuos', '/metas', '/relatorios'];

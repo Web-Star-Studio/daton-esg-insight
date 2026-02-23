@@ -27,7 +27,7 @@ export function getFromCache(key: string): any | null {
     return null;
   }
   
-  console.log(`✅ Cache HIT: ${key}`);
+  console.warn(`✅ Cache HIT: ${key}`);
   return entry.data;
 }
 
@@ -39,7 +39,7 @@ export function setInCache(key: string, data: any, ttl: number = DEFAULT_TTL): v
     data,
     expiresAt: Date.now() + ttl
   });
-  console.log(`💾 Cached: ${key} (TTL: ${ttl}ms)`);
+  console.warn(`💾 Cached: ${key} (TTL: ${ttl}ms)`);
 }
 
 /**
@@ -47,7 +47,7 @@ export function setInCache(key: string, data: any, ttl: number = DEFAULT_TTL): v
  */
 export function clearCache(key: string): void {
   cache.delete(key);
-  console.log(`🗑️ Cleared cache: ${key}`);
+  console.warn(`🗑️ Cleared cache: ${key}`);
 }
 
 /**
@@ -56,7 +56,7 @@ export function clearCache(key: string): void {
 export function clearAllCache(): void {
   const size = cache.size;
   cache.clear();
-  console.log(`🗑️ Cleared all cache (${size} entries)`);
+  console.warn(`🗑️ Cleared all cache (${size} entries)`);
 }
 
 /**
@@ -87,7 +87,7 @@ export function cleanupExpiredCache(): void {
   }
   
   if (cleaned > 0) {
-    console.log(`🧹 Cleaned ${cleaned} expired cache entries`);
+    console.warn(`🧹 Cleaned ${cleaned} expired cache entries`);
   }
 }
 

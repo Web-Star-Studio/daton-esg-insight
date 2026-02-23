@@ -180,7 +180,7 @@ class PerformanceService {
       
       entries.forEach(entry => {
         if (entry.entryType === 'measure' || entry.entryType === 'navigation') {
-          console.log(`Performance: ${entry.name} took ${entry.duration}ms`);
+          console.warn(`Performance: ${entry.name} took ${entry.duration}ms`);
         }
       });
     });

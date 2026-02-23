@@ -20,7 +20,7 @@ export function isArray<T>(value: unknown): value is T[] {
   return Array.isArray(value);
 }
 
-export function isFunction(value: unknown): value is Function {
+export function isFunction(value: unknown): value is (...args: unknown[]) => unknown {
   return typeof value === 'function';
 }
 

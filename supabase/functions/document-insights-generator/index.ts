@@ -23,7 +23,7 @@ serve(async (req) => {
     )
 
     const { document_id, generate_visualizations } = await req.json()
-    console.log('Generating insights for document:', document_id);
+    console.warn('Generating insights for document:', document_id);
 
     // Get document
     const { data: document, error: docError } = await supabaseClient
@@ -93,7 +93,7 @@ serve(async (req) => {
     // Build company context for contextual analysis
     const context = await buildCompanyContext(supabaseClient, document.company_id);
     
-    console.log('Company context built, calling AI for insights...');
+    console.warn('Company context built, calling AI for insights...');
 
     // Enhanced analysis prompt with company context
     const analysisPrompt = `
@@ -275,7 +275,7 @@ Seja ESPECÍFICO, CONTEXTUALIZADO e ACIONÁVEL. Use números reais da empresa pa
 
     const insights = JSON.parse(toolCall.function.arguments);
 
-    console.log('Insights generated successfully');
+    console.warn('Insights generated successfully');
 
     return new Response(JSON.stringify({
       insights: {

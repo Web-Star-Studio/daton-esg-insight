@@ -77,7 +77,7 @@ serve(async (req) => {
     }
 
     const config: AnalysisConfig = await req.json();
-    console.log('📊 Analysis config:', config);
+    console.warn('📊 Analysis config:', config);
 
     // Validate config
     if (!config.metric_key || !config.time_range || !config.granularity) {
@@ -430,7 +430,7 @@ serve(async (req) => {
       },
     };
 
-    console.log('✅ Analysis complete:', { datasets: datasets.length, dataPoints: labels.length });
+    console.warn('✅ Analysis complete:', { datasets: datasets.length, dataPoints: labels.length });
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

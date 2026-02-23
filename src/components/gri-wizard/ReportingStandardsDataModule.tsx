@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,13 +60,13 @@ export function ReportingStandardsDataModule({ reportId, onComplete }: Reporting
   const [isSaving, setIsSaving] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [completionPercentage, setCompletionPercentage] = useState(0);
+  const formDataRef = useRef<any>({});
 
   useEffect(() => {
-    loadData();
-    calculateQuantitativeMetrics();
-  }, [reportId]);
+    formDataRef.current = formData;
+  }, [formData]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('gri_reporting_standards_data' as any)
@@ -82,9 +82,61 @@ export function ReportingStandardsDataModule({ reportId, onComplete }: Reporting
     } catch (error) {
       console.error('Error loading data:', error);
     }
-  };
+  }, [reportId]);
 
-  const calculateQuantitativeMetrics = async () => {
+  const calculateCompletion = useCallback((data: any) => {
+    const fields = [
+      'has_previous_reports',
+      'has_framework_adherence',
+      'has_aligned_policies',
+      'has_benchmarking_studies',
+      'frameworks_adopted',
+      'assurance_provider',
+    ];
+    
+    const completed = fields.filter(f => data[f] && (Array.isArray(data[f]) ? data[f].length > 0 : true)).length;
+    return Math.round((completed / fields.length) * 100);
+  }, []);
+
+  const handleSave = useCallback(async (data: any, metrics: any) => {
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.company_id) return;
+
+      const completion = calculateCompletion(data);
+
+      const payload = {
+        report_id: reportId,
+        company_id: profile.company_id,
+        ...data,
+        ...metrics,
+        completion_percentage: completion,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('gri_reporting_standards_data' as any)
+        .upsert(payload, { onConflict: 'report_id' });
+
+      if (error) throw error;
+      setCompletionPercentage(completion);
+    } catch (error) {
+      console.error('Error saving:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [calculateCompletion, reportId]);
+
+  const calculateQuantitativeMetrics = useCallback(async (dataToSave = formDataRef.current) => {
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -167,71 +219,24 @@ export function ReportingStandardsDataModule({ reportId, onComplete }: Reporting
       setQuantitativeData(metrics);
 
       // Auto-save quantitative data
-      await handleSave(formData, metrics);
+      await handleSave(dataToSave, metrics);
     } catch (error) {
       console.error('Error calculating metrics:', error);
       toast.error('Erro ao calcular métricas');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [handleSave]);
+
+  useEffect(() => {
+    void loadData();
+    void calculateQuantitativeMetrics();
+  }, [loadData, calculateQuantitativeMetrics]);
 
   const handleFieldChange = (field: string, value: any) => {
     const updated = { ...formData, [field]: value };
     setFormData(updated);
     handleSave(updated, quantitativeData);
-  };
-
-  const handleSave = async (data: any, metrics: any) => {
-    setIsSaving(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile?.company_id) return;
-
-      const completion = calculateCompletion(data);
-
-      const payload = {
-        report_id: reportId,
-        company_id: profile.company_id,
-        ...data,
-        ...metrics,
-        completion_percentage: completion,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase
-        .from('gri_reporting_standards_data' as any)
-        .upsert(payload, { onConflict: 'report_id' });
-
-      if (error) throw error;
-      setCompletionPercentage(completion);
-    } catch (error) {
-      console.error('Error saving:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const calculateCompletion = (data: any) => {
-    const fields = [
-      'has_previous_reports',
-      'has_framework_adherence',
-      'has_aligned_policies',
-      'has_benchmarking_studies',
-      'frameworks_adopted',
-      'assurance_provider',
-    ];
-    
-    const completed = fields.filter(f => data[f] && (Array.isArray(data[f]) ? data[f].length > 0 : true)).length;
-    return Math.round((completed / fields.length) * 100);
   };
 
   const handleAnalyzeWithAI = async () => {
@@ -318,7 +323,7 @@ export function ReportingStandardsDataModule({ reportId, onComplete }: Reporting
                 Dados calculados automaticamente do histórico de relatórios
               </CardDescription>
             </div>
-            <Button onClick={calculateQuantitativeMetrics} variant="outline" size="sm" disabled={isLoading}>
+            <Button onClick={() => calculateQuantitativeMetrics(formData)} variant="outline" size="sm" disabled={isLoading}>
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Recalcular
             </Button>

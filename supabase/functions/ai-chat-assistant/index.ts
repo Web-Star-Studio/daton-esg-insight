@@ -418,16 +418,19 @@ const processUserIntent = async (message: string, companyId: string, currentPage
     else {
       switch (currentPage) {
         case 'licenciamento':
+          // eslint-disable-next-line no-case-declarations
           const { data: licData } = await queryBuilders.licenses(companyId);
           relevantData = { licenses: licData };
           context = `Contexto Licenciamento: ${licData?.length || 0} licenças`;
           break;
         case 'metas':
+          // eslint-disable-next-line no-case-declarations
           const { data: goalData } = await queryBuilders.goals(companyId);
           relevantData = { goals: goalData };
           context = `Contexto Metas: ${goalData?.length || 0} metas`;
           break;
         case 'inventario-gee':
+          // eslint-disable-next-line no-case-declarations
           const emData = await queryBuilders.emissions(companyId);
           relevantData = emData;
           context = `Contexto GEE: ${emData.calculated?.length || 0} cálculos de emissão`;
@@ -497,8 +500,8 @@ ${relevantData ? JSON.stringify(relevantData, null, 2) : 'Nenhum dado específic
 ${marketInfo}`;
     }
 
-    console.log('Sending enhanced request to OpenAI with context:', context);
-    console.log('Market info included:', !!marketInfo);
+    console.warn('Sending enhanced request to OpenAI with context:', context);
+    console.warn('Market info included:', !!marketInfo);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -525,7 +528,7 @@ ${marketInfo}`;
     const aiResponse = data.choices[0].message.content;
 
     // Enhanced navigation suggestions based on comprehensive analysis
-    let suggestedActions = [];
+    const suggestedActions = [];
     const msg = message.toLowerCase();
     
     // Smart navigation suggestions

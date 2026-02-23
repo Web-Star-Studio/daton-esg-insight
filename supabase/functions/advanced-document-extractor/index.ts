@@ -36,7 +36,7 @@ serve(async (req) => {
   try {
     const { filePath, fileType, classification } = await req.json();
     
-    console.log('🔬 Advanced extraction:', { filePath, fileType, classificationType: classification?.documentType });
+    console.warn('🔬 Advanced extraction:', { filePath, fileType, classificationType: classification?.documentType });
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -52,7 +52,7 @@ serve(async (req) => {
       if (claimsError || !claimsData?.claims) {
         console.warn('JWT validation failed, but proceeding (public extractor)');
       } else {
-        console.log('Authenticated extraction request from:', claimsData.claims.sub);
+        console.warn('Authenticated extraction request from:', claimsData.claims.sub);
       }
     }
 
@@ -77,7 +77,7 @@ serve(async (req) => {
     if (fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
         fileType === 'application/vnd.ms-excel') {
       // Excel processing
-      console.log('📊 Processing Excel file...');
+      console.warn('📊 Processing Excel file...');
       
       const buffer = await fileData.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
@@ -116,7 +116,7 @@ serve(async (req) => {
         
         const emptyRowsCount = totalDataRows - structuredData.records.length;
         
-        console.log(`✅ Excel Processing Details:`, {
+        console.warn(`✅ Excel Processing Details:`, {
           totalRows: totalDataRows,
           headers: structuredData.headers.length,
           recordsAfterFilter: structuredData.records.length,
@@ -130,7 +130,7 @@ serve(async (req) => {
       
     } else if (fileType === 'text/csv') {
       // CSV processing
-      console.log('📄 Processing CSV file...');
+      console.warn('📄 Processing CSV file...');
       
       const text = await fileData.text();
       const lines = text.split('\n').filter(line => line.trim());
@@ -145,7 +145,7 @@ serve(async (req) => {
           return count > bestCount ? delim : best;
         });
         
-        console.log('🔍 CSV delimiter detection:', { delimiter, firstLinePreview: firstLine.substring(0, 100) });
+        console.warn('🔍 CSV delimiter detection:', { delimiter, firstLinePreview: firstLine.substring(0, 100) });
         
         // Parse CSV with proper quote handling
         const parseLine = (line: string): string[] => {
@@ -192,7 +192,7 @@ serve(async (req) => {
         
         const emptyRowsCount = totalDataLines - structuredData.records.length;
         
-        console.log(`✅ CSV Processing Details:`, {
+        console.warn(`✅ CSV Processing Details:`, {
           totalLines: lines.length,
           headers: structuredData.headers.length,
           recordsBeforeFilter: totalDataLines,
@@ -217,7 +217,7 @@ serve(async (req) => {
       
     } else if (fileType === 'application/pdf') {
       // PDF: refine existing structured data if available
-      console.log('📃 PDF refinement (basic table detection)...');
+      console.warn('📃 PDF refinement (basic table detection)...');
       
       // For now, just pass through - could add table extraction here
       structuredData = {

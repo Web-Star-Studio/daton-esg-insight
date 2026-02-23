@@ -15,7 +15,7 @@ serve(async (req) => {
   try {
     // Get and validate Authorization header
     const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
+    console.warn('Auth header present:', !!authHeader);
     
     if (!authHeader) {
       console.error('No Authorization header found');
@@ -56,7 +56,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('User authenticated:', user.id);
+    console.warn('User authenticated:', user.id);
 
     // Get user's company
     const { data: profile } = await supabase
@@ -120,6 +120,7 @@ serve(async (req) => {
         return await getActionPlansProgress(supabase, profile.company_id);
       
       case path === '/risk-assessment/matrix' && method === 'GET':
+        // eslint-disable-next-line no-case-declarations
         const matrixId = url.searchParams.get('matrix_id');
         return await getRiskMatrix(supabase, profile.company_id, matrixId);
       
@@ -145,116 +146,112 @@ serve(async (req) => {
 });
 
 async function getQualityDashboard(supabase: any, company_id: string) {
-  try {
-    // Get general quality metrics
-    const [
-      { count: totalNCsCount },
-      { count: openNCsCount },
-      { count: totalRisksCount },
-      { count: highRisksCount },
-      { count: actionPlansCount },
-      { count: overdueActionsCount }
-    ] = await Promise.all([
-      supabase.from('non_conformities').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
-      supabase.from('non_conformities').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'Aberta'),
-      supabase.from('esg_risks').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
-      supabase.from('esg_risks').select('*', { count: 'exact', head: true }).eq('company_id', company_id).in('inherent_risk_level', ['Alto', 'Crítico']),
-      supabase.from('action_plans').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
-      supabase.from('action_plan_items').select('*', { count: 'exact', head: true }).lt('when_deadline', new Date().toISOString().split('T')[0]).eq('status', 'Pendente')
-    ]);
+  // Get general quality metrics
+  const [
+    { count: totalNCsCount },
+    { count: openNCsCount },
+    { count: totalRisksCount },
+    { count: highRisksCount },
+    { count: actionPlansCount },
+    { count: overdueActionsCount }
+  ] = await Promise.all([
+    supabase.from('non_conformities').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
+    supabase.from('non_conformities').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'Aberta'),
+    supabase.from('esg_risks').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
+    supabase.from('esg_risks').select('*', { count: 'exact', head: true }).eq('company_id', company_id).in('inherent_risk_level', ['Alto', 'Crítico']),
+    supabase.from('action_plans').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
+    supabase.from('action_plan_items').select('*', { count: 'exact', head: true }).lt('when_deadline', new Date().toISOString().split('T')[0]).eq('status', 'Pendente')
+  ]);
 
-    // Recent non-conformities
-    const { data: recentNCs } = await supabase
-      .from('non_conformities')
-      .select('id, nc_number, title, severity, status, created_at')
-      .eq('company_id', company_id)
-      .order('created_at', { ascending: false })
-      .limit(5);
+  // Recent non-conformities
+  const { data: recentNCs } = await supabase
+    .from('non_conformities')
+    .select('id, nc_number, title, severity, status, created_at')
+    .eq('company_id', company_id)
+    .order('created_at', { ascending: false })
+    .limit(5);
 
-    // Action plans progress - Query otimizada com busca separada
-    console.log('Fetching action plans for company:', company_id);
-    
-    // Buscar planos primeiro
-    const { data: plans, error: plansError } = await supabase
-      .from('action_plans')
-      .select('id, title, status')
-      .eq('company_id', company_id)
-      .limit(5);
+  // Action plans progress - Query otimizada com busca separada
+  console.warn('Fetching action plans for company:', company_id);
+  
+  // Buscar planos primeiro
+  const { data: plans, error: plansError } = await supabase
+    .from('action_plans')
+    .select('id, title, status')
+    .eq('company_id', company_id)
+    .limit(5);
 
-    console.log('Action plans query result:', {
-      count: plans?.length || 0,
-      error: plansError,
-      data: plans
-    });
+  console.warn('Action plans query result:', {
+    count: plans?.length || 0,
+    error: plansError,
+    data: plans
+  });
 
-    if (plansError) {
-      console.error('Error fetching action plans:', plansError);
-    }
-
-    // Buscar itens separadamente
-    let plansProgress = [];
-    if (plans && plans.length > 0) {
-      const planIds = plans.map(p => p.id);
-      const { data: items, error: itemsError } = await supabase
-        .from('action_plan_items')
-        .select('id, action_plan_id, status, progress_percentage, when_deadline')
-        .in('action_plan_id', planIds);
-
-      console.log('Action plan items query result:', {
-        count: items?.length || 0,
-        error: itemsError,
-        data: items
-      });
-
-      if (itemsError) {
-        console.error('Error fetching action plan items:', itemsError);
-      }
-
-      // Mapear itens para cada plano
-      plansProgress = plans.map(plan => {
-        const planItems = items?.filter(item => item.action_plan_id === plan.id) || [];
-        const totalItems = planItems.length;
-        const completedItems = planItems.filter(item => item.status === 'Concluída').length;
-        const overdueItems = planItems.filter(item => 
-          item.when_deadline && 
-          new Date(item.when_deadline) < new Date() && 
-          item.status !== 'Concluída'
-        ).length;
-        const avgProgress = totalItems > 0 
-          ? planItems.reduce((sum, item) => sum + (item.progress_percentage || 0), 0) / totalItems
-          : 0;
-
-        return {
-          id: plan.id,
-          title: plan.title,
-          status: plan.status,
-          totalItems,
-          completedItems,
-          avgProgress: Math.round(avgProgress),
-          overdueItems
-        };
-      });
-    }
-
-    const dashboard = {
-      metrics: {
-        totalNCs: totalNCsCount || 0,
-        openNCs: openNCsCount || 0,
-        totalRisks: totalRisksCount || 0,
-        highRisks: highRisksCount || 0,
-        actionPlans: actionPlansCount || 0,
-        overdueActions: overdueActionsCount || 0
-      },
-      recentNCs: recentNCs || [],
-      plansProgress: plansProgress || []
-    };
-
-    return new Response(JSON.stringify(dashboard), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    throw error;
+  if (plansError) {
+    console.error('Error fetching action plans:', plansError);
   }
+
+  // Buscar itens separadamente
+  let plansProgress = [];
+  if (plans && plans.length > 0) {
+    const planIds = plans.map(p => p.id);
+    const { data: items, error: itemsError } = await supabase
+      .from('action_plan_items')
+      .select('id, action_plan_id, status, progress_percentage, when_deadline')
+      .in('action_plan_id', planIds);
+
+    console.warn('Action plan items query result:', {
+      count: items?.length || 0,
+      error: itemsError,
+      data: items
+    });
+
+    if (itemsError) {
+      console.error('Error fetching action plan items:', itemsError);
+    }
+
+    // Mapear itens para cada plano
+    plansProgress = plans.map(plan => {
+      const planItems = items?.filter(item => item.action_plan_id === plan.id) || [];
+      const totalItems = planItems.length;
+      const completedItems = planItems.filter(item => item.status === 'Concluída').length;
+      const overdueItems = planItems.filter(item => 
+        item.when_deadline && 
+        new Date(item.when_deadline) < new Date() && 
+        item.status !== 'Concluída'
+      ).length;
+      const avgProgress = totalItems > 0 
+        ? planItems.reduce((sum, item) => sum + (item.progress_percentage || 0), 0) / totalItems
+        : 0;
+
+      return {
+        id: plan.id,
+        title: plan.title,
+        status: plan.status,
+        totalItems,
+        completedItems,
+        avgProgress: Math.round(avgProgress),
+        overdueItems
+      };
+    });
+  }
+
+  const dashboard = {
+    metrics: {
+      totalNCs: totalNCsCount || 0,
+      openNCs: openNCsCount || 0,
+      totalRisks: totalRisksCount || 0,
+      highRisks: highRisksCount || 0,
+      actionPlans: actionPlansCount || 0,
+      overdueActions: overdueActionsCount || 0
+    },
+    recentNCs: recentNCs || [],
+    plansProgress: plansProgress || []
+  };
+
+  return new Response(JSON.stringify(dashboard), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 }
 
 async function getNonConformityStats(supabase: any, company_id: string) {

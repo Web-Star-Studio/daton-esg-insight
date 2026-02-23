@@ -39,7 +39,7 @@ export default function RelatoriosPGRS() {
         .single();
       
       if (error) throw error;
-      console.log("🔍 Company ID do usuário:", data?.company_id);
+      console.warn("🔍 Company ID do usuário:", data?.company_id);
       return data;
     },
   });
@@ -57,7 +57,7 @@ export default function RelatoriosPGRS() {
     queryKey: ["pgrs-plans", companyId],
     enabled: !!companyId,
     queryFn: async () => {
-      console.log("🔍 Buscando planos PGRS para company_id:", companyId);
+      console.warn("🔍 Buscando planos PGRS para company_id:", companyId);
       
       const { data, error } = await supabase
         .from("pgrs_plans")
@@ -75,7 +75,7 @@ export default function RelatoriosPGRS() {
         throw error;
       }
       
-      console.log("✅ Planos encontrados:", data?.length, data);
+      console.warn("✅ Planos encontrados:", data?.length, data);
       return data;
     },
   });
@@ -196,8 +196,8 @@ export default function RelatoriosPGRS() {
     totalProcedures: plans?.reduce((acc, p) => acc + (p.pgrs_procedures?.length || 0), 0) || 0,
   };
 
-  console.log("📊 KPIs calculados:", metrics);
-  console.log("📦 Plans data:", plans);
+  console.warn("📊 KPIs calculados:", metrics);
+  console.warn("📦 Plans data:", plans);
 
   const isLoading = loadingStatus || loadingPlans;
 

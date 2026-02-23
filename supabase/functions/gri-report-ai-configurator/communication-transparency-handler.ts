@@ -1,7 +1,7 @@
 export async function handleAnalyzeCommunicationTransparencyData(supabase: any, body: any) {
   const { report_id, form_data, documents, quantitative_data } = body;
 
-  console.log('[Analyze Communication Transparency Data] Starting...');
+  console.warn('[Analyze Communication Transparency Data] Starting...');
 
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -226,7 +226,7 @@ Gere texto de 1200-1600 palavras integrando TODOS os dados numéricos.`
     const result = await aiResponse.json();
     const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
-    console.log('[Analyze Communication Transparency Data] Complete');
+    console.warn('[Analyze Communication Transparency Data] Complete');
 
     return new Response(
       JSON.stringify(analysis),

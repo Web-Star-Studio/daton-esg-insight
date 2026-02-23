@@ -193,6 +193,7 @@ export const calculateTotalGHGEmissions = async (
     switch (source.scope) {
       case 1:
         result.scope_1.total += co2e;
+        // eslint-disable-next-line no-case-declarations
         const scope1Key = scope1CategoryMap[source.category];
         if (scope1Key) {
           result.scope_1[scope1Key] += co2e;
@@ -214,6 +215,7 @@ export const calculateTotalGHGEmissions = async (
         
       case 3:
         result.scope_3.total += co2e;
+        // eslint-disable-next-line no-case-declarations
         const categoryNum = source.scope_3_category_number || 0;
         if (!result.scope_3.by_category[categoryNum]) {
           result.scope_3.by_category[categoryNum] = {

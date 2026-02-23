@@ -8,7 +8,7 @@ export async function handleGenerateSmartReport(
   try {
     const { reportType, dateRange, includeCharts = true, includeInsights = true, sections } = args;
     
-    console.log('Generating smart report:', { reportType, dateRange, companyId });
+    console.warn('Generating smart report:', { reportType, dateRange, companyId });
     
     // Call smart report generator function
     const { data, error } = await supabase.functions.invoke('smart-report-generator', {
@@ -141,7 +141,7 @@ export async function handleCreateChart(
   try {
     const { chartType, dataSource, title, xAxis, yAxis, filters = {}, groupBy } = args;
     
-    console.log('Creating chart:', { chartType, dataSource, title });
+    console.warn('Creating chart:', { chartType, dataSource, title });
     
     // Fetch data from specified source
     let query = supabase
@@ -227,7 +227,7 @@ export async function handleScheduleReport(
   try {
     const { reportType, frequency, recipients = [], format = 'pdf', startDate } = args;
     
-    console.log('Scheduling report:', { reportType, frequency });
+    console.warn('Scheduling report:', { reportType, frequency });
     
     // In a real implementation, this would create a scheduled job
     // For now, we'll just acknowledge the request
@@ -270,7 +270,7 @@ export async function handleAnalyzeTrends(
   try {
     const { dataType, period, customDateRange, metrics = [] } = args;
     
-    console.log('Analyzing trends:', { dataType, period });
+    console.warn('Analyzing trends:', { dataType, period });
     
     const dateRange = getDateRangeFromPeriod(period, customDateRange);
     

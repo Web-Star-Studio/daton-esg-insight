@@ -911,7 +911,7 @@ export async function importGHGProtocol2025(): Promise<{
     let sectionSuccess = 0;
     const sectionErrors: string[] = [];
 
-    console.log(`Importando seção: ${section.name} (${section.data.length} fatores)`);
+    console.warn(`Importando seção: ${section.name} (${section.data.length} fatores)`);
 
     for (const factor of section.data) {
       try {

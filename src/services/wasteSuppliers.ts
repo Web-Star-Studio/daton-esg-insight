@@ -61,7 +61,7 @@ export interface WasteSuppliersStats {
 
 // Helper function to get current user's company ID
 const getCurrentUserCompanyId = async (): Promise<string> => {
-  console.log('[getCurrentUserCompanyId] Buscando usuário autenticado...');
+  console.warn('[getCurrentUserCompanyId] Buscando usuário autenticado...');
   
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   
@@ -75,7 +75,7 @@ const getCurrentUserCompanyId = async (): Promise<string> => {
     throw new Error('Usuário não autenticado. Faça login novamente.');
   }
   
-  console.log('[getCurrentUserCompanyId] Usuário encontrado:', user.id);
+  console.warn('[getCurrentUserCompanyId] Usuário encontrado:', user.id);
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -93,7 +93,7 @@ const getCurrentUserCompanyId = async (): Promise<string> => {
     throw new Error('Empresa não encontrada no perfil do usuário');
   }
   
-  console.log('[getCurrentUserCompanyId] Company ID encontrado:', profile.company_id);
+  console.warn('[getCurrentUserCompanyId] Company ID encontrado:', profile.company_id);
   return profile.company_id;
 };
 
@@ -136,11 +136,11 @@ export const getWasteSupplierById = async (id: string): Promise<WasteSupplier | 
 
 // Create new waste supplier
 export const createWasteSupplier = async (supplierData: CreateWasteSupplierData): Promise<WasteSupplier> => {
-  console.log('[createWasteSupplier] Iniciando criação de fornecedor:', supplierData);
+  console.warn('[createWasteSupplier] Iniciando criação de fornecedor:', supplierData);
   
   try {
     const companyId = await getCurrentUserCompanyId();
-    console.log('[createWasteSupplier] Company ID obtido:', companyId);
+    console.warn('[createWasteSupplier] Company ID obtido:', companyId);
     
     const dataToInsert = { 
       ...supplierData, 
@@ -149,7 +149,7 @@ export const createWasteSupplier = async (supplierData: CreateWasteSupplierData)
       rating: 0
     };
     
-    console.log('[createWasteSupplier] Dados para inserção:', dataToInsert);
+    console.warn('[createWasteSupplier] Dados para inserção:', dataToInsert);
     
     const { data, error } = await supabase
       .from('waste_suppliers')
@@ -162,7 +162,7 @@ export const createWasteSupplier = async (supplierData: CreateWasteSupplierData)
       throw new Error(`Erro ao criar fornecedor: ${error.message}`);
     }
     
-    console.log('[createWasteSupplier] Fornecedor criado com sucesso:', data);
+    console.warn('[createWasteSupplier] Fornecedor criado com sucesso:', data);
     return data;
   } catch (err: any) {
     console.error('[createWasteSupplier] Exceção capturada:', err);

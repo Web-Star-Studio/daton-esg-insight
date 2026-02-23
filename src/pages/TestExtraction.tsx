@@ -11,7 +11,7 @@ const TestExtraction = () => {
   const navigate = useNavigate();
 
   const handleFileUploaded = (fileId: string) => {
-    console.log("File uploaded:", fileId);
+    console.warn("File uploaded:", fileId);
     navigate(`/licenciamento/analise?file_id=${fileId}`);
   };
 

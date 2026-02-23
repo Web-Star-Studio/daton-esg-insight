@@ -97,7 +97,7 @@ export default function IAInsights() {
   const fetchInsights = async () => {
     try {
       setLoading(true)
-      console.log('Fetching AI insights...')
+      console.warn('Fetching AI insights...')
 
       // Get insights for different card types
       const cardTypes = [
@@ -134,7 +134,7 @@ export default function IAInsights() {
         }
       }
 
-      console.log('Fetched insights:', allInsights)
+      console.warn('Fetched insights:', allInsights)
       setInsights(allInsights)
 
     } catch (error) {

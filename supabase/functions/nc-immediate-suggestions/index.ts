@@ -116,7 +116,7 @@ Responda APENAS com o JSON, sem texto adicional.`;
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       const args = JSON.parse(toolCall.function.arguments);
-      console.log("AI suggestions generated:", args.suggestions?.length || 0);
+      console.warn("AI suggestions generated:", args.suggestions?.length || 0);
       return new Response(
         JSON.stringify({ suggestions: args.suggestions }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }

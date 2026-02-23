@@ -226,6 +226,7 @@ export default function DemoDashboard() {
         from = new Date(now.getFullYear(), now.getMonth(), 1);
         to = new Date(now.getFullYear(), now.getMonth() + 1, 0); break;
       case 'quarter':
+        // eslint-disable-next-line no-case-declarations
         const qm = Math.floor(now.getMonth() / 3) * 3;
         from = new Date(now.getFullYear(), qm, 1);
         to = new Date(now.getFullYear(), qm + 3, 0); break;
@@ -448,6 +449,14 @@ export default function DemoDashboard() {
                           key={activity.id}
                           className="flex gap-2.5 p-2.5 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
                           onClick={showDemoToast}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              showDemoToast();
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
                         >
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
                             <Icon className="w-4 h-4" />

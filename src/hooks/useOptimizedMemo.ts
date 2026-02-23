@@ -112,7 +112,7 @@ export function useRenderOptimizer(componentName: string, props?: any) {
     renderCountRef.current += 1;
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🔄 ${componentName} rendered ${renderCountRef.current} times`);
+      console.warn(`🔄 ${componentName} rendered ${renderCountRef.current} times`);
       
       if (prevPropsRef.current && props) {
         const changedProps = Object.keys(props).filter(
@@ -120,7 +120,7 @@ export function useRenderOptimizer(componentName: string, props?: any) {
         );
         
         if (changedProps.length > 0) {
-          console.log(`📝 ${componentName} props changed:`, changedProps);
+          console.warn(`📝 ${componentName} props changed:`, changedProps);
         }
       }
     }

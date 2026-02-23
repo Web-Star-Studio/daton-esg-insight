@@ -48,7 +48,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const restartOnboarding = () => {
-    console.log('🔄 TutorialContext: Restarting onboarding from tutorial context...');
+    console.warn('🔄 TutorialContext: Restarting onboarding from tutorial context...');
     
     // Limpar todos os dados de onboarding e tutorial
     localStorage.removeItem('daton_tutorial_completed');
@@ -60,7 +60,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('unified_tour_progress');
     localStorage.removeItem('daton_primeiros_passos_dismissed');
     
-    console.log('✅ Local storage cleared - reloading page...');
+    console.warn('✅ Local storage cleared - reloading page...');
     
     // Reload page to ensure clean state
     window.location.reload();

@@ -39,11 +39,13 @@ interface EmployeesListProps {
   onViewEmployee: (employee: any) => void;
 }
 
-export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee }: EmployeesListProps) {
+function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmployee }: EmployeesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterDepartment, setFilterDepartment] = useState("all");
+  const [filters, setFilters] = useState({
+    status: "all",
+    department: "all",
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
 
@@ -51,22 +53,16 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setCurrentPage(1); // Reset to page 1 on search
     }, 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
-
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterStatus, filterDepartment]);
 
   const { data: paginatedData, isLoading } = useEmployeesPaginated({
     page: currentPage,
     pageSize,
     search: debouncedSearch,
-    status: filterStatus,
-    department: filterDepartment,
+    status: filters.status,
+    department: filters.department,
   });
 
   const { data: departments = [] } = useDepartments();
@@ -126,8 +122,8 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
   if (isLoading && employees.length === 0) {
     return (
       <div className="space-y-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Card key={i} className="animate-pulse">
+        {[1, 2, 3, 4, 5].map((row) => (
+          <Card key={`loading-card-${row}`} className="animate-pulse">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-muted rounded-full"></div>
@@ -223,13 +219,22 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
                 <Input
                   placeholder="Buscar por nome, CPF ou cargo..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="pl-10"
                 />
               </div>
             </div>
             
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <Select
+              value={filters.status}
+              onValueChange={(value) => {
+                setFilters((prev) => ({ ...prev, status: value }));
+                setCurrentPage(1);
+              }}
+            >
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -242,7 +247,13 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
               </SelectContent>
             </Select>
             
-            <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+            <Select
+              value={filters.department}
+              onValueChange={(value) => {
+                setFilters((prev) => ({ ...prev, department: value }));
+                setCurrentPage(1);
+              }}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Departamento" />
               </SelectTrigger>
@@ -395,12 +406,12 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">Nenhum funcionário encontrado</h3>
               <p className="text-muted-foreground mb-4">
-                {searchTerm || filterStatus !== "all" || filterDepartment !== "all"
+                {searchTerm || filters.status !== "all" || filters.department !== "all"
                   ? "Tente ajustar os filtros de busca"
                   : "Cadastre o primeiro funcionário"
                 }
               </p>
-              {!searchTerm && filterStatus === "all" && filterDepartment === "all" && (
+              {!searchTerm && filters.status === "all" && filters.department === "all" && (
                 <Button onClick={onCreateEmployee}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   Cadastrar Primeiro Funcionário
@@ -429,8 +440,14 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
                 </Button>
               </PaginationItem>
               
-              {getPageNumbers().map((page, idx) => (
-                <PaginationItem key={idx}>
+              {(() => {
+                let ellipsisCount = 0;
+                return getPageNumbers().map((page) => {
+                  const key = page === 'ellipsis'
+                    ? `ellipsis-${++ellipsisCount}`
+                    : `page-${page}`;
+                  return (
+                <PaginationItem key={key}>
                   {page === 'ellipsis' ? (
                     <PaginationEllipsis />
                   ) : (
@@ -443,7 +460,9 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
                     </PaginationLink>
                   )}
                 </PaginationItem>
-              ))}
+                  );
+                });
+              })()}
               
               <PaginationItem>
                 <Button
@@ -463,4 +482,8 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
       )}
     </div>
   );
+}
+
+export function EmployeesList(props: EmployeesListProps) {
+  return useEmployeesListComponent(props);
 }

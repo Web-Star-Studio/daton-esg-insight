@@ -227,7 +227,7 @@ export function ProjectionInsights({ data, currentStatus, goal }: ProjectionInsi
                     className="shrink-0"
                     onClick={() => {
                       // Navigate to relevant module
-                      console.log('Navigate to:', rec.module)
+                      console.warn('Navigate to:', rec.module)
                     }}
                   >
                     <ArrowRight className="h-4 w-4" />

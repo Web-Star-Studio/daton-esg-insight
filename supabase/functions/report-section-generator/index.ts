@@ -33,7 +33,7 @@ serve(async (req) => {
 
     const { reportId, templateKey, regenerate = false }: SectionGenerationRequest = await req.json();
 
-    console.log(`Generating section: ${templateKey} for report: ${reportId}`);
+    console.warn(`Generating section: ${templateKey} for report: ${reportId}`);
 
     // Buscar template
     const { data: template, error: templateError } = await supabase
@@ -161,6 +161,7 @@ async function collectDataFromSources(
     try {
       switch (source) {
         case 'emissions':
+          // eslint-disable-next-line no-case-declarations
           const { data: emissions } = await supabase
             .from('calculated_emissions')
             .select('*')
@@ -171,6 +172,7 @@ async function collectDataFromSources(
           break;
 
         case 'employees':
+          // eslint-disable-next-line no-case-declarations
           const { data: employees } = await supabase
             .from('employees')
             .select('*')
@@ -179,6 +181,7 @@ async function collectDataFromSources(
           break;
 
         case 'training_programs':
+          // eslint-disable-next-line no-case-declarations
           const { data: training } = await supabase
             .from('training_programs')
             .select('*')
@@ -187,6 +190,7 @@ async function collectDataFromSources(
           break;
 
         case 'safety_incidents':
+          // eslint-disable-next-line no-case-declarations
           const { data: incidents } = await supabase
             .from('safety_incidents')
             .select('*')
@@ -197,6 +201,7 @@ async function collectDataFromSources(
           break;
 
         case 'goals':
+          // eslint-disable-next-line no-case-declarations
           const { data: goals } = await supabase
             .from('goals')
             .select('*')
@@ -205,6 +210,7 @@ async function collectDataFromSources(
           break;
 
         case 'non_conformities':
+          // eslint-disable-next-line no-case-declarations
           const { data: nonConformities } = await supabase
             .from('non_conformities')
             .select('*')
@@ -213,6 +219,7 @@ async function collectDataFromSources(
           break;
 
         case 'gri_indicators':
+          // eslint-disable-next-line no-case-declarations
           const { data: indicators } = await supabase
             .from('gri_indicator_data')
             .select('*, gri_indicators_library(*)')

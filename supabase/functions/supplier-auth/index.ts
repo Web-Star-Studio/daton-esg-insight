@@ -44,7 +44,7 @@ serve(async (req) => {
     });
 
     const { action, ...params } = await req.json();
-    console.log(`📦 Supplier Auth - Action: ${action}`);
+    console.warn(`📦 Supplier Auth - Action: ${action}`);
 
     switch (action) {
       case "login": {
@@ -64,7 +64,7 @@ serve(async (req) => {
         // Check rate limit (5 attempts per 15 minutes)
         const rateCheck = checkRateLimit(rateLimitKey, 5, 15);
         if (!rateCheck.allowed) {
-          console.log(`⚠️ Rate limit exceeded for ${rateLimitKey}`);
+          console.warn(`⚠️ Rate limit exceeded for ${rateLimitKey}`);
           return new Response(
             JSON.stringify({ 
               error: `Muitas tentativas. Tente novamente em ${Math.ceil(rateCheck.resetInSeconds / 60)} minutos.` 
@@ -73,7 +73,7 @@ serve(async (req) => {
           );
         }
         
-        console.log(`🔐 Login attempt for document: ${normalizedDoc.substring(0, 4)}***`);
+        console.warn(`🔐 Login attempt for document: ${normalizedDoc.substring(0, 4)}***`);
 
         // Find supplier by CPF or CNPJ
         const { data: supplier, error: findError } = await supabase
@@ -84,7 +84,7 @@ serve(async (req) => {
 
         // Use generic error message to prevent user enumeration
         if (findError || !supplier) {
-          console.log(`❌ Supplier not found`);
+          console.warn(`❌ Supplier not found`);
           return new Response(
             JSON.stringify({ error: "Credenciais inválidas" }),
             { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -167,7 +167,7 @@ serve(async (req) => {
             expires_at: expiresAt.toISOString()
           });
 
-        console.log(`✅ Login successful for supplier: ${supplier.id}`);
+        console.warn(`✅ Login successful for supplier: ${supplier.id}`);
 
         return new Response(
           JSON.stringify({
@@ -232,7 +232,7 @@ serve(async (req) => {
           })
           .eq("id", session.supplier_id);
 
-        console.log(`✅ Password changed for supplier: ${session.supplier_id}`);
+        console.warn(`✅ Password changed for supplier: ${session.supplier_id}`);
 
         return new Response(
           JSON.stringify({ success: true, message: "Senha alterada com sucesso" }),

@@ -66,7 +66,7 @@ export const getTrainingPrograms = async () => {
     .map(p => p.id);
 
   // OTIMIZAÇÃO: Query 2 - Buscar TODAS as avaliações de eficácia em UMA única query
-  let efficacyMap: Record<string, boolean> = {};
+  const efficacyMap: Record<string, boolean> = {};
   
   if (programIds.length > 0) {
     const { data: evaluations, error: evalError } = await supabase
@@ -122,7 +122,7 @@ export const getTrainingProgram = async (id: string) => {
 };
 
 export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' | 'created_at' | 'updated_at'>) => {
-  console.log('Creating training program:', program);
+  console.warn('Creating training program:', program);
 
   // Ensure company and user context
   const { data: userData, error: authError } = await supabase.auth.getUser();
@@ -174,12 +174,12 @@ export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' 
     throw new Error(`Erro ao criar programa de treinamento: ${error.message}`);
   }
 
-  console.log('Training program created successfully:', data);
+  console.warn('Training program created successfully:', data);
   return data;
 };
 
 export const updateTrainingProgram = async (id: string, updates: Partial<TrainingProgram>) => {
-  console.log('Updating training program:', id, updates);
+  console.warn('Updating training program:', id, updates);
   
   // Get current program data to merge with updates for status calculation
   const { data: currentProgram, error: fetchError } = await supabase
@@ -236,7 +236,7 @@ export const updateTrainingProgram = async (id: string, updates: Partial<Trainin
     throw new Error(`Erro ao atualizar programa de treinamento: ${error.message}`);
   }
 
-  console.log('Training program updated successfully:', data);
+  console.warn('Training program updated successfully:', data);
   return data;
 };
 
@@ -306,7 +306,7 @@ export const getEmployeeTrainings = async () => {
 };
 
 export const createEmployeeTraining = async (training: Omit<EmployeeTraining, 'id' | 'created_at' | 'updated_at'>) => {
-  console.log('Creating employee training:', training);
+  console.warn('Creating employee training:', training);
 
   const { data: companyId, error: companyError } = await supabase.rpc('get_user_company_id');
   if (companyError || !companyId) {
@@ -339,7 +339,7 @@ export const createEmployeeTraining = async (training: Omit<EmployeeTraining, 'i
     throw new Error(`Erro ao criar treinamento do funcionário: ${error.message}`);
   }
 
-  console.log('Employee training created successfully:', data);
+  console.warn('Employee training created successfully:', data);
   return data;
 };
 

@@ -151,7 +151,7 @@ export const RootCauseAnalysisModal: React.FC<RootCauseAnalysisModalProps> = ({
 
   const onSubmit = async (data: RootCauseFormData) => {
     try {
-      console.log('Análise de Causa Raiz:', data);
+      console.warn('Análise de Causa Raiz:', data);
       // TODO: Integrar com API para salvar análise
       reset();
       onClose();

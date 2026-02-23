@@ -96,6 +96,7 @@ export default function StrategicAssociations() {
 
       switch (selectedType) {
         case 'okr':
+          // eslint-disable-next-line no-case-declarations
           const { data: okrs } = await supabase
             .from("okrs")
             .select("id, title, status, progress_percentage");
@@ -109,6 +110,7 @@ export default function StrategicAssociations() {
           break;
 
         case 'initiative':
+          // eslint-disable-next-line no-case-declarations
           const { data: initiatives } = await supabase
             .from("strategic_initiatives")
             .select("id, title, status, progress_percentage");
@@ -122,6 +124,7 @@ export default function StrategicAssociations() {
           break;
 
         case 'risk':
+          // eslint-disable-next-line no-case-declarations
           const { data: risks } = await supabase
             .from("esg_risks")
             .select("id, risk_title, status")
@@ -135,6 +138,7 @@ export default function StrategicAssociations() {
           break;
 
         case 'indicator':
+          // eslint-disable-next-line no-case-declarations
           const { data: indicators } = await supabase
             .from("gri_indicator_data")
             .select("id, indicator_id")

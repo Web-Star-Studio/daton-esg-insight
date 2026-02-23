@@ -71,38 +71,42 @@ function sanitizeFileName(originalName: string): string {
 }
 
 // Robust JSON parser with fallback
-function extractJsonFromResponse(content: string): any {
+function tryParseJson(content: string): any | null {
   try {
-    // Try direct parse first
     return JSON.parse(content);
   } catch {
-    // Try extracting from code blocks
-    const jsonBlock = content.match(/```json([\s\S]*?)```/i);
-    if (jsonBlock) {
-      try {
-        return JSON.parse(jsonBlock[1].trim());
-      } catch {}
-    }
-    
-    // Try any code block
-    const anyBlock = content.match(/```([\s\S]*?)```/);
-    if (anyBlock) {
-      try {
-        return JSON.parse(anyBlock[1].trim());
-      } catch {}
-    }
-    
-    // Try extracting JSON object
-    const braceMatch = content.match(/\{[\s\S]*\}/);
-    if (braceMatch) {
-      try {
-        return JSON.parse(braceMatch[0]);
-      } catch {}
-    }
-    
-    console.error('No valid JSON found in response:', content);
-    throw new Error('No valid JSON found in response');
+    return null;
   }
+}
+
+function extractJsonFromResponse(content: string): any {
+  // Try direct parse first
+  const direct = tryParseJson(content);
+  if (direct !== null) return direct;
+
+  // Try extracting from code blocks
+  const jsonBlock = content.match(/```json([\s\S]*?)```/i);
+  if (jsonBlock) {
+    const parsedJsonBlock = tryParseJson(jsonBlock[1].trim());
+    if (parsedJsonBlock !== null) return parsedJsonBlock;
+  }
+
+  // Try any code block
+  const anyBlock = content.match(/```([\s\S]*?)```/);
+  if (anyBlock) {
+    const parsedAnyBlock = tryParseJson(anyBlock[1].trim());
+    if (parsedAnyBlock !== null) return parsedAnyBlock;
+  }
+
+  // Try extracting JSON object
+  const braceMatch = content.match(/\{[\s\S]*\}/);
+  if (braceMatch) {
+    const parsedBraceMatch = tryParseJson(braceMatch[0]);
+    if (parsedBraceMatch !== null) return parsedBraceMatch;
+  }
+
+  console.error('No valid JSON found in response:', content);
+  throw new Error('No valid JSON found in response');
 }
 
 // Timeout wrapper for async functions
@@ -119,7 +123,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting unified license processing...');
+    console.warn('Starting unified license processing...');
 
     // Use service role key for all operations to avoid auth issues
     const supabaseClient = createClient(
@@ -138,7 +142,7 @@ serve(async (req) => {
         const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
         
         if (claimsError || !claimsData?.claims) {
-          console.log('JWT validation failed:', claimsError?.message || 'Invalid claims');
+          console.warn('JWT validation failed:', claimsError?.message || 'Invalid claims');
         } else {
           userId = claimsData.claims.sub as string;
           
@@ -149,10 +153,10 @@ serve(async (req) => {
             .eq('id', userId)
             .single();
           companyId = profile?.company_id;
-          console.log('User authenticated:', { userId, companyId });
+          console.warn('User authenticated:', { userId, companyId });
         }
       } catch (authError) {
-        console.log('Auth optional, continuing without user context:', authError);
+        console.warn('Auth optional, continuing without user context:', authError);
       }
     }
 
@@ -193,7 +197,7 @@ serve(async (req) => {
 
 // Handle file upload and create license record with robust processing
 async function handleUpload(supabaseClient: any, userId: string, companyId: string, file: any) {
-  console.log('Handling file upload...');
+  console.warn('Handling file upload...');
   const startTime = Date.now();
   
   // Convert base64 to blob
@@ -201,7 +205,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
   const sanitizedName = sanitizeFileName(file.name);
   const fileName = `license-${Date.now()}-${sanitizedName}`;
   const filePath = `licenses/${companyId}/${fileName}`;
-  console.log(`Sanitized filename: ${file.name} -> ${sanitizedName}`);
+  console.warn(`Sanitized filename: ${file.name} -> ${sanitizedName}`);
 
   // Upload to storage
   const { data: uploadData, error: uploadError } = await supabaseClient
@@ -261,11 +265,11 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
   }
 
   // Start AI analysis with phased extraction and robust error handling
-  console.log('Starting phased AI analysis...');
+  console.warn('Starting phased AI analysis...');
   let finalStatus: 'completed' | 'failed' | 'needs_review' = 'failed';
-  let extractedData: Partial<ExtractedLicenseData> = {};
+  const extractedData: Partial<ExtractedLicenseData> = {};
   let confidenceScore = 0;
-  let processingLog: string[] = [];
+  const processingLog: string[] = [];
 
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -293,11 +297,11 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     }
 
     const openAIFile = await fileResponse.json();
-    console.log('OpenAI file created:', openAIFile.id);
+    console.warn('OpenAI file created:', openAIFile.id);
     processingLog.push(`File uploaded: ${openAIFile.id}`);
 
     // Phase 1: Extract license info only (fast)
-    console.log('Phase 1: Extracting basic license info...');
+    console.warn('Phase 1: Extracting basic license info...');
     const basicInfo = await extractPhase(openAIApiKey, openAIFile.id, 'license_info', 45000);
     if (basicInfo) {
       extractedData.license_info = basicInfo;
@@ -307,7 +311,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     }
 
     // Phase 2: Extract condicionantes (medium complexity)
-    console.log('Phase 2: Extracting condicionantes...');
+    console.warn('Phase 2: Extracting condicionantes...');
     const condicionantes = await extractPhase(openAIApiKey, openAIFile.id, 'condicionantes', 60000);
     if (condicionantes && Array.isArray(condicionantes)) {
       extractedData.condicionantes = condicionantes;
@@ -318,7 +322,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     }
 
     // Phase 3: Extract alertas (fast)
-    console.log('Phase 3: Extracting alertas...');
+    console.warn('Phase 3: Extracting alertas...');
     const alertas = await extractPhase(openAIApiKey, openAIFile.id, 'alertas', 45000);
     if (alertas && Array.isArray(alertas)) {
       extractedData.alertas = alertas;
@@ -352,7 +356,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${openAIApiKey}` },
       });
-      console.log('OpenAI file cleaned up');
+      console.warn('OpenAI file cleaned up');
     } catch (cleanupError) {
       console.error('Cleanup error:', cleanupError);
     }
@@ -386,7 +390,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     if (licenseInfo.issuer) licenseUpdateData.issuing_body = licenseInfo.issuer;
     else licenseUpdateData.issuing_body = 'Órgão Ambiental';
 
-    console.log('Updating license with data:', JSON.stringify(licenseUpdateData, null, 2));
+    console.warn('Updating license with data:', JSON.stringify(licenseUpdateData, null, 2));
     
     const { error: licenseUpdateError } = await supabaseClient
       .from('licenses')
@@ -398,11 +402,11 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
       throw new Error(`Failed to update license: ${licenseUpdateError.message}`);
     }
     
-    console.log('License updated successfully with status:', finalStatus);
+    console.warn('License updated successfully with status:', finalStatus);
 
     // Save condicionantes if any were extracted
     if (extractedData.condicionantes && extractedData.condicionantes.length > 0) {
-      console.log(`Inserting ${extractedData.condicionantes.length} condicionantes`);
+      console.warn(`Inserting ${extractedData.condicionantes.length} condicionantes`);
       
       try {
         const conditionsToInsert = extractedData.condicionantes.map((condicionante: any) => ({
@@ -416,7 +420,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
           ai_confidence: confidenceScore
         }));
 
-        console.log('Conditions to insert:', JSON.stringify(conditionsToInsert, null, 2));
+        console.warn('Conditions to insert:', JSON.stringify(conditionsToInsert, null, 2));
 
         const { error: condInsertError } = await supabaseClient
           .from('license_conditions')
@@ -426,7 +430,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
           console.error('Error inserting license conditions:', condInsertError);
           processingLog.push(`Error saving conditions: ${condInsertError.message}`);
         } else {
-          console.log('License conditions inserted successfully');
+          console.warn('License conditions inserted successfully');
           processingLog.push(`Saved ${conditionsToInsert.length} conditions`);
         }
       } catch (condError) {
@@ -437,7 +441,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 
     // Save alertas if any were extracted
     if (extractedData.alertas && extractedData.alertas.length > 0) {
-      console.log(`Inserting ${extractedData.alertas.length} alertas`);
+      console.warn(`Inserting ${extractedData.alertas.length} alertas`);
       
       try {
         const alertsToInsert = extractedData.alertas.map((alerta: any) => ({
@@ -455,7 +459,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
           }
         }));
 
-        console.log('Alerts to insert:', JSON.stringify(alertsToInsert, null, 2));
+        console.warn('Alerts to insert:', JSON.stringify(alertsToInsert, null, 2));
 
         const { error: alertInsertError } = await supabaseClient
           .from('license_alerts')
@@ -465,7 +469,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
           console.error('Error inserting license alerts:', alertInsertError);
           processingLog.push(`Error saving alerts: ${alertInsertError.message}`);
         } else {
-          console.log('License alerts inserted successfully');
+          console.warn('License alerts inserted successfully');
           processingLog.push(`Saved ${alertsToInsert.length} alerts`);
         }
       } catch (alertError) {
@@ -509,8 +513,8 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
   }
 
   const processingTime = Date.now() - startTime;
-  console.log(`Processing completed in ${processingTime}ms with status: ${finalStatus}`);
-  console.log('Processing log:', processingLog);
+  console.warn(`Processing completed in ${processingTime}ms with status: ${finalStatus}`);
+  console.warn('Processing log:', processingLog);
 
   return new Response(JSON.stringify({
     success: true,
@@ -540,7 +544,7 @@ async function extractPhase(openAIApiKey: string, fileId: string, phase: 'licens
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`Phase ${phase}, attempt ${attempt}/${maxRetries}`);
+      console.warn(`Phase ${phase}, attempt ${attempt}/${maxRetries}`);
       
       const phasePrompts = {
         license_info: `Analise este documento de licença ambiental brasileira e extraia APENAS as informações básicas. Seja conciso e preciso:
@@ -605,13 +609,13 @@ Procure por: prazos, renovação, advertências, observações. RESPONDA APENAS 
         const extractedPhaseData = parsed[phase] || parsed;
         
         if (extractedPhaseData && (Array.isArray(extractedPhaseData) ? extractedPhaseData.length > 0 : Object.keys(extractedPhaseData).length > 0)) {
-          console.log(`Phase ${phase} succeeded on attempt ${attempt}`);
+          console.warn(`Phase ${phase} succeeded on attempt ${attempt}`);
           return extractedPhaseData;
         }
       }
       
       if (attempt === maxRetries) {
-        console.log(`Phase ${phase} failed after ${maxRetries} attempts`);
+        console.warn(`Phase ${phase} failed after ${maxRetries} attempts`);
         return null;
       }
       
@@ -721,7 +725,7 @@ async function runAssistantWithTimeout(openAIApiKey: string, assistantId: string
     }
 
     const run = await runResponse.json();
-    console.log(`Run started: ${run.id}`);
+    console.warn(`Run started: ${run.id}`);
     
     const startTime = Date.now();
     let attempts = 0;
@@ -746,7 +750,7 @@ async function runAssistantWithTimeout(openAIApiKey: string, assistantId: string
 
         if (statusResponse.ok) {
           const statusData = await statusResponse.json();
-          console.log(`Run status (${attempts}/${maxAttempts}): ${statusData.status}`);
+          console.warn(`Run status (${attempts}/${maxAttempts}): ${statusData.status}`);
           
           if (statusData.status === 'completed') {
             // Get messages
@@ -765,7 +769,7 @@ async function runAssistantWithTimeout(openAIApiKey: string, assistantId: string
               const messages = await messagesResponse.json();
               const assistantMessage = messages.data.find((msg: any) => msg.role === 'assistant');
               const content = assistantMessage?.content[0]?.text?.value;
-              console.log(`Retrieved content length: ${content?.length || 0}`);
+              console.warn(`Retrieved content length: ${content?.length || 0}`);
               return content || null;
             }
             break;
@@ -810,7 +814,7 @@ async function cleanupResources(openAIApiKey: string, assistantId: string) {
 
 // Handle AI analysis for existing license
 async function handleAnalyze(supabaseClient: any, licenseId: string, analysisType: string) {
-  console.log('Handling analysis request for license:', licenseId);
+  console.warn('Handling analysis request for license:', licenseId);
   
   // Get license and document data
   const { data: license } = await supabaseClient
@@ -852,7 +856,7 @@ async function handleAnalyze(supabaseClient: any, licenseId: string, analysisTyp
 
 // Handle reconciliation approval
 async function handleReconcile(supabaseClient: any, licenseId: string, reconciliationData: any) {
-  console.log('Handling reconciliation for license:', licenseId);
+  console.warn('Handling reconciliation for license:', licenseId);
   
   // Update license with reconciled data
   const { error } = await supabaseClient
@@ -883,7 +887,7 @@ async function handleReconcile(supabaseClient: any, licenseId: string, reconcili
 
 // Handle retry analysis for failed licenses
 async function handleRetry(supabaseClient: any, licenseId: string) {
-  console.log('Handling retry for license:', licenseId);
+  console.warn('Handling retry for license:', licenseId);
   
   // Get the license and its document
   const { data: license, error: licenseError } = await supabaseClient
@@ -952,7 +956,7 @@ async function handleRetry(supabaseClient: any, licenseId: string) {
   
   // Start AI analysis
   let finalStatus: 'completed' | 'failed' | 'needs_review' = 'failed';
-  let extractedData: any = {};
+  const extractedData: any = {};
   let confidenceScore = 0;
 
   try {
@@ -981,7 +985,7 @@ async function handleRetry(supabaseClient: any, licenseId: string) {
     }
 
     const openAIFile = await fileResponse.json();
-    console.log('OpenAI file created for retry:', openAIFile.id);
+    console.warn('OpenAI file created for retry:', openAIFile.id);
 
     // Phase 1: Extract license info
     const basicInfo = await extractPhase(openAIApiKey, openAIFile.id, 'license_info', 45000);
@@ -1026,7 +1030,9 @@ async function handleRetry(supabaseClient: any, licenseId: string) {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${openAIApiKey}` },
       });
-    } catch {}
+    } catch (cleanupError) {
+      console.warn('Failed to cleanup OpenAI file:', cleanupError);
+    }
 
   } catch (error) {
     console.error('Retry AI analysis error:', error);
@@ -1108,7 +1114,7 @@ async function handleRetry(supabaseClient: any, licenseId: string) {
 
 function calculateConfidenceScore(data: ExtractedLicenseData): number {
   let score = 0;
-  let totalFields = 8;
+  const totalFields = 8;
 
   const licenseInfo = data.license_info || {};
   

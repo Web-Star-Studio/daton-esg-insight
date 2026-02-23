@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
   try {
     const { entityType, records, options } = await req.json();
 
-    console.log('🔄 Bulk import started:', { entityType, recordCount: records?.length });
+    console.warn('🔄 Bulk import started:', { entityType, recordCount: records?.length });
 
     if (!records || !Array.isArray(records) || records.length === 0) {
       throw new Error('Records array is required and must not be empty');
@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
         throw new Error(`Unsupported entity type: ${entityType}`);
     }
 
-    console.log('✅ Bulk import completed:', result);
+    console.warn('✅ Bulk import completed:', result);
 
     return new Response(
       JSON.stringify({

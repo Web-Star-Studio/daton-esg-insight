@@ -42,7 +42,7 @@ export const UnifiedQualityDashboard: React.FC = () => {
     queryKey: ['unified-quality-dashboard'],
     queryFn: async () => {
       const data = await unifiedQualityService.getQualityDashboard();
-      console.log('Dashboard data received:', {
+      console.warn('Dashboard data received:', {
         hasPlansProgress: !!data?.plansProgress,
         plansCount: data?.plansProgress?.length || 0,
         plans: data?.plansProgress

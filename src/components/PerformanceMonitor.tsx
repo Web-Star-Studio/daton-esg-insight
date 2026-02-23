@@ -20,6 +20,7 @@ import {
   Wifi,
   Server
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useSystemOptimization } from '@/hooks/useSystemOptimization';
 import { AnimatedProgress, AnimatedKPICard, AnimatedGrid } from '@/components/AdvancedAnimations';
 
@@ -41,23 +42,50 @@ interface SystemAlert {
   resolved: boolean;
 }
 
-export function PerformanceMonitor() {
+const DEFAULT_SYSTEM_HEALTH = {
+  overall: 'good' as 'excellent' | 'good' | 'fair' | 'poor',
+  cpu: 85,
+  memory: 70,
+  network: 90,
+  database: 88,
+  cache: 92,
+};
+
+const DEFAULT_SUGGESTIONS: any[] = [];
+
+function usePerformanceMonitorComponent() {
   const { metrics, isOptimized } = useSystemOptimization();
-  const [systemHealth] = useState({
-    overall: 'good' as 'excellent' | 'good' | 'fair' | 'poor',
-    cpu: 85,
-    memory: 70,
-    network: 90,
-    database: 88,
-    cache: 92,
+  const systemHealth = DEFAULT_SYSTEM_HEALTH;
+  const suggestions = DEFAULT_SUGGESTIONS;
+  const runOptimizations = async () => console.warn('Optimizations running...');
+  const runStressTest = async () => console.warn('Stress test running...');
+  const [monitorState, setMonitorState] = useState<{
+    realTimeMetrics: PerformanceMetric[];
+    systemAlerts: SystemAlert[];
+  }>({
+    realTimeMetrics: [],
+    systemAlerts: [],
   });
-  const [suggestions] = useState<any[]>([]);
-  const runOptimizations = async () => console.log('Optimizations running...');
-  const runStressTest = async () => console.log('Stress test running...');
-  const [realTimeMetrics, setRealTimeMetrics] = useState<PerformanceMetric[]>([]);
-  const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
   const [isRunningOptimization, setIsRunningOptimization] = useState(false);
-  const [networkLatency, setNetworkLatency] = useState(0);
+  const { realTimeMetrics, systemAlerts } = monitorState;
+
+  const measureNetworkLatency = async () => {
+    const start = performance.now();
+    await fetch('/api/ping', { method: 'HEAD' });
+    return performance.now() - start;
+  };
+
+  const { data: networkLatency = 0 } = useQuery({
+    queryKey: ['performance-monitor-network-latency'],
+    queryFn: async () => {
+      try {
+        return await measureNetworkLatency();
+      } catch {
+        return 999;
+      }
+    },
+    refetchInterval: 10000,
+  });
 
   // Monitor tempo real de métricas
   useEffect(() => {
@@ -113,8 +141,6 @@ export function PerformanceMonitor() {
         }
       ];
 
-      setRealTimeMetrics(newMetrics);
-
       // Gerar alertas baseados nas métricas
       const alerts: SystemAlert[] = [];
       
@@ -133,9 +159,12 @@ export function PerformanceMonitor() {
         }
       });
 
-      if (alerts.length > 0) {
-        setSystemAlerts(prev => [...alerts, ...prev.slice(0, 9)]); // Keep last 10 alerts
-      }
+      setMonitorState((prev) => ({
+        realTimeMetrics: newMetrics,
+        systemAlerts: alerts.length > 0
+          ? [...alerts, ...prev.systemAlerts.slice(0, 9)]
+          : prev.systemAlerts,
+      }));
     };
 
     // Atualizar métricas a cada 5 segundos
@@ -145,38 +174,22 @@ export function PerformanceMonitor() {
     return () => clearInterval(interval);
   }, [systemHealth, networkLatency]);
 
-  // Medir latência de rede
-  useEffect(() => {
-    const measureLatency = async () => {
-      const start = performance.now();
-      try {
-        await fetch('/api/ping', { method: 'HEAD' });
-        const latency = performance.now() - start;
-        setNetworkLatency(latency);
-      } catch (error) {
-        setNetworkLatency(999); // Erro de rede
-      }
-    };
-
-    const latencyInterval = setInterval(measureLatency, 10000);
-    measureLatency();
-
-    return () => clearInterval(latencyInterval);
-  }, []);
-
   const handleOptimization = async () => {
     setIsRunningOptimization(true);
     try {
       await runOptimizations();
       // Adicionar alerta de sucesso
-      setSystemAlerts(prev => [{
-        id: `optimization-${Date.now()}`,
-        type: 'performance',
-        severity: 'low',
-        message: 'Otimizações do sistema executadas com sucesso',
-        timestamp: new Date(),
-        resolved: true
-      }, ...prev]);
+      setMonitorState((prev) => ({
+        ...prev,
+        systemAlerts: [{
+          id: `optimization-${Date.now()}`,
+          type: 'performance',
+          severity: 'low',
+          message: 'Otimizações do sistema executadas com sucesso',
+          timestamp: new Date(),
+          resolved: true,
+        }, ...prev.systemAlerts],
+      }));
     } catch (error) {
       console.error('Optimization failed:', error);
     } finally {
@@ -517,4 +530,8 @@ export function PerformanceMonitor() {
       </Tabs>
     </div>
   );
+}
+
+export function PerformanceMonitor() {
+  return usePerformanceMonitorComponent();
 }

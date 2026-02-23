@@ -16,7 +16,7 @@ export function CleanWelcomeStep({ onNext, onSkip }: CleanWelcomeStepProps) {
   };
 
   const handleProfileComplete = (profile: any, recommendedModules: string[]) => {
-    console.log('✨ Profile complete with recommendations:', { profile, recommendedModules });
+    console.warn('✨ Profile complete with recommendations:', { profile, recommendedModules });
     onNext(profile, recommendedModules);
   };
 

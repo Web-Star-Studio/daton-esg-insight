@@ -77,6 +77,10 @@ export const createSafetyInspection = async (
     .select('company_id')
     .eq('id', userData.user?.id)
     .single();
+  const companyId = profile?.company_id;
+  if (!companyId) {
+    throw new Error("Profile does not have a company_id");
+  }
 
   const { checklist_items, ...rest } = inspection;
 
@@ -85,7 +89,7 @@ export const createSafetyInspection = async (
     .insert({
       ...rest,
       checklist_items: checklist_items as unknown as Json,
-      company_id: profile?.company_id!,
+      company_id: companyId,
       created_by_user_id: userData.user?.id,
     })
     .select()

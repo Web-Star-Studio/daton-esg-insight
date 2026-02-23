@@ -246,6 +246,7 @@ export default function Dashboard() {
         break;
       case 'quarter':
         // Trimestre atual (3 meses)
+        // eslint-disable-next-line no-case-declarations
         const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
         from = new Date(now.getFullYear(), quarterMonth, 1);
         to = new Date(now.getFullYear(), quarterMonth + 3, 0);
@@ -409,7 +410,7 @@ export default function Dashboard() {
           if (action === 'details') {
             navigate(item.route);
           } else if (action === 'export') {
-            console.log('Export data for:', item.id);
+            console.warn('Export data for:', item.id);
           }
         }}
       />
@@ -440,7 +441,13 @@ export default function Dashboard() {
                   <div 
                     key={activity.id} 
                     className="flex gap-2.5 p-2.5 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
-                    onClick={() => console.log('Activity clicked:', activity)}
+                    onClick={() => console.warn('Activity clicked:', activity)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        console.warn("Activity clicked:", activity);
+                      }
+                    }}
                     role="button"
                     tabIndex={0}
                   >

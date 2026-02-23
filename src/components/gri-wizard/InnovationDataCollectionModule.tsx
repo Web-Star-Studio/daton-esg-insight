@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,48 +67,7 @@ export default function InnovationDataCollectionModule({ reportId, onComplete }:
   const [isSaving, setIsSaving] = useState(false);
   const [completionPercentage, setCompletionPercentage] = useState(0);
 
-  useEffect(() => {
-    loadExistingData();
-  }, [reportId]);
-
-  const loadExistingData = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('gri_innovation_data_collection' as any)
-        .select('*')
-        .eq('report_id', reportId)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setFormData(data);
-        setQuantitativeData({
-          total_innovation_investment: (data as any).total_innovation_investment || 0,
-          rd_investment_percentage_revenue: (data as any).rd_investment_percentage_revenue || 0,
-          total_innovations_implemented: (data as any).total_innovations_implemented || 0,
-          total_partnerships: (data as any).total_partnerships || 0,
-          innovation_awards_received: (data as any).innovation_awards_received || 0,
-          ghg_emissions_avoided_tco2e: (data as any).ghg_emissions_avoided_tco2e || 0,
-          waste_reduction_tons: (data as any).waste_reduction_tons || 0,
-          innovation_training_hours: (data as any).innovation_training_hours || 0,
-          employees_trained_improvement: (data as any).employees_trained_improvement || 0,
-          technologies_investment_total: (data as any).technologies_investment_total || 0,
-        });
-        setCompletionPercentage((data as any).completion_percentage || 0);
-      } else {
-        await calculateInnovationMetrics();
-      }
-    } catch (error: any) {
-      console.error('Error loading innovation data:', error);
-      toast.error('Erro ao carregar dados de inovação');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const calculateInnovationMetrics = async () => {
+  const calculateInnovationMetrics = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -163,7 +122,48 @@ export default function InnovationDataCollectionModule({ reportId, onComplete }:
     } catch (error) {
       console.error('Error calculating metrics:', error);
     }
-  };
+  }, [reportId]);
+
+  const loadExistingData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('gri_innovation_data_collection' as any)
+        .select('*')
+        .eq('report_id', reportId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setFormData(data);
+        setQuantitativeData({
+          total_innovation_investment: (data as any).total_innovation_investment || 0,
+          rd_investment_percentage_revenue: (data as any).rd_investment_percentage_revenue || 0,
+          total_innovations_implemented: (data as any).total_innovations_implemented || 0,
+          total_partnerships: (data as any).total_partnerships || 0,
+          innovation_awards_received: (data as any).innovation_awards_received || 0,
+          ghg_emissions_avoided_tco2e: (data as any).ghg_emissions_avoided_tco2e || 0,
+          waste_reduction_tons: (data as any).waste_reduction_tons || 0,
+          innovation_training_hours: (data as any).innovation_training_hours || 0,
+          employees_trained_improvement: (data as any).employees_trained_improvement || 0,
+          technologies_investment_total: (data as any).technologies_investment_total || 0,
+        });
+        setCompletionPercentage((data as any).completion_percentage || 0);
+      } else {
+        await calculateInnovationMetrics();
+      }
+    } catch (error: any) {
+      console.error('Error loading innovation data:', error);
+      toast.error('Erro ao carregar dados de inovação');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [calculateInnovationMetrics, reportId]);
+
+  useEffect(() => {
+    loadExistingData();
+  }, [loadExistingData]);
 
   const handleFieldChange = (field: string, value: any) => {
     setFormData((prev: any) => ({

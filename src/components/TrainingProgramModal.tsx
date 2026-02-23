@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -82,7 +82,50 @@ interface TrainingProgramModalProps {
   program?: TrainingProgram | null;
 }
 
-export function TrainingProgramModal({ open, onOpenChange, program }: TrainingProgramModalProps) {
+const getTrainingProgramFormValues = (program?: TrainingProgram | null) => {
+  if (!program) {
+    return {
+      name: "",
+      description: "",
+      category: "",
+      duration_hours: 0,
+      duration_minutes: 0,
+      start_date: null,
+      end_date: null,
+      is_mandatory: false,
+      status: "Ativo",
+      branch_id: "",
+      responsible_name: "",
+      requires_efficacy_evaluation: false,
+      efficacy_evaluation_deadline: null,
+      notify_responsible_email: false,
+      efficacy_evaluator_employee_id: null,
+    };
+  }
+
+  const hours = Math.floor(program.duration_hours || 0);
+  const minutes = Math.round(((program.duration_hours || 0) - hours) * 60);
+
+  return {
+    name: program.name,
+    description: program.description || "",
+    category: program.category || "",
+    duration_hours: hours,
+    duration_minutes: minutes,
+    start_date: parseDateSafe(program.start_date),
+    end_date: parseDateSafe(program.end_date),
+    is_mandatory: program.is_mandatory,
+    status: program.status,
+    branch_id: program.branch_id || "",
+    responsible_name: program.responsible_name || "",
+    requires_efficacy_evaluation: !!program.efficacy_evaluation_deadline,
+    efficacy_evaluation_deadline: parseDateSafe(program.efficacy_evaluation_deadline),
+    notify_responsible_email: program.notify_responsible_email || false,
+    efficacy_evaluator_employee_id: program.efficacy_evaluator_employee_id || null,
+  };
+};
+
+function useTrainingProgramModalComponent({ open, onOpenChange, program }: TrainingProgramModalProps) {
   const { selectedCompany } = useCompany();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -91,11 +134,16 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [statusInput, setStatusInput] = useState("");
   const [statusOpen, setStatusOpen] = useState(false);
+  const categoryComboboxId = useId();
+  const statusComboboxId = useId();
+  const evaluatorComboboxId = useId();
   
   // Estados para seleção de participantes (apenas na criação)
   const [pendingParticipants, setPendingParticipants] = useState<Set<string>>(new Set());
-  const [participantSearchTerm, setParticipantSearchTerm] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [participantFilters, setParticipantFilters] = useState({
+    searchTerm: "",
+    department: "all",
+  });
 
   // Query para buscar programas existentes (para funcionalidade de cópia)
   const { data: existingPrograms = [] } = useQuery({
@@ -145,13 +193,13 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
   // Funcionários filtrados
   const filteredEmployees = useMemo(() => {
     return employees.filter(emp => {
-      const matchesSearch = !participantSearchTerm || 
-        emp.full_name?.toLowerCase().includes(participantSearchTerm.toLowerCase()) ||
-        emp.employee_code?.toLowerCase().includes(participantSearchTerm.toLowerCase());
-      const matchesDepartment = departmentFilter === "all" || emp.department === departmentFilter;
+      const matchesSearch = !participantFilters.searchTerm || 
+        emp.full_name?.toLowerCase().includes(participantFilters.searchTerm.toLowerCase()) ||
+        emp.employee_code?.toLowerCase().includes(participantFilters.searchTerm.toLowerCase());
+      const matchesDepartment = participantFilters.department === "all" || emp.department === participantFilters.department;
       return matchesSearch && matchesDepartment;
     });
-  }, [employees, participantSearchTerm, departmentFilter]);
+  }, [employees, participantFilters.department, participantFilters.searchTerm]);
 
   // Toggle participante
   const toggleParticipant = (employeeId: string) => {
@@ -295,77 +343,22 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     },
   });
 
+  const formValues = useMemo(() => getTrainingProgramFormValues(program), [program]);
+
   const form = useForm<z.infer<typeof trainingProgramSchema>>({
     resolver: zodResolver(trainingProgramSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      category: "",
-      duration_hours: 0,
-      duration_minutes: 0,
-      start_date: null,
-      end_date: null,
-      is_mandatory: false,
-      status: "Ativo",
-      branch_id: "",
-      responsible_name: "",
-      requires_efficacy_evaluation: false,
-      efficacy_evaluation_deadline: null,
-      notify_responsible_email: false,
-      efficacy_evaluator_employee_id: null,
-    },
+    defaultValues: getTrainingProgramFormValues(null),
+    values: formValues,
   });
-
-  useEffect(() => {
-    if (program) {
-      const hours = Math.floor(program.duration_hours || 0);
-      const minutes = Math.round(((program.duration_hours || 0) - hours) * 60);
-      
-      form.reset({
-        name: program.name,
-        description: program.description || "",
-        category: program.category || "",
-        duration_hours: hours,
-        duration_minutes: minutes,
-        // Usar parseDateSafe para evitar problemas de timezone
-        start_date: parseDateSafe(program.start_date),
-        end_date: parseDateSafe(program.end_date),
-        is_mandatory: program.is_mandatory,
-        status: program.status,
-        branch_id: program.branch_id || "",
-        responsible_name: program.responsible_name || "",
-        requires_efficacy_evaluation: !!program.efficacy_evaluation_deadline,
-        efficacy_evaluation_deadline: parseDateSafe(program.efficacy_evaluation_deadline),
-        notify_responsible_email: program.notify_responsible_email || false,
-        efficacy_evaluator_employee_id: program.efficacy_evaluator_employee_id || null,
-      });
-    } else {
-      form.reset({
-        name: "",
-        description: "",
-        category: "",
-        duration_hours: 0,
-        duration_minutes: 0,
-        start_date: null,
-        end_date: null,
-        is_mandatory: false,
-        status: "Ativo",
-        branch_id: "",
-        responsible_name: "",
-        requires_efficacy_evaluation: false,
-        efficacy_evaluation_deadline: null,
-        notify_responsible_email: false,
-        efficacy_evaluator_employee_id: null,
-      });
-    }
-  }, [program, form]);
 
   // Limpar participantes pendentes quando o modal abrir para criação
   useEffect(() => {
     if (open && !program) {
       setPendingParticipants(new Set());
-      setParticipantSearchTerm("");
-      setDepartmentFilter("all");
+      setParticipantFilters({
+        searchTerm: "",
+        department: "all",
+      });
     }
   }, [open, program]);
 
@@ -627,6 +620,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                               variant="outline"
                               role="combobox"
                               aria-expanded={categoryOpen}
+                              aria-controls={categoryComboboxId}
                               className={cn(
                                 "w-full justify-between",
                                 !field.value && "text-muted-foreground"
@@ -638,7 +632,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[300px] p-0">
+                        <PopoverContent id={categoryComboboxId} className="w-[300px] p-0">
                           <Command>
                             <CommandInput 
                               placeholder="Buscar ou criar categoria..." 
@@ -900,6 +894,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                             <Button
                               variant="outline"
                               role="combobox"
+                              aria-expanded={statusOpen}
+                              aria-controls={statusComboboxId}
                               className={cn(
                                 "w-full justify-between",
                                 !field.value && "text-muted-foreground"
@@ -920,7 +916,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[200px] p-0" align="start">
+                        <PopoverContent id={statusComboboxId} className="w-[200px] p-0" align="start">
                           <Command>
                             <CommandInput 
                               placeholder="Buscar ou criar status..." 
@@ -1075,6 +1071,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                                   type="button"
                                   variant="outline"
                                   role="combobox"
+                                  aria-expanded={evaluatorSearchOpen}
+                                  aria-controls={evaluatorComboboxId}
                                   className={cn(
                                     "w-full justify-between",
                                     !field.value && "text-muted-foreground"
@@ -1094,7 +1092,11 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[400px] p-0" align="start">
+                            <PopoverContent
+                              id={evaluatorComboboxId}
+                              className="w-[400px] p-0"
+                              align="start"
+                            >
                               <Command shouldFilter={false}>
                                 <CommandInput 
                                   placeholder="Buscar por nome ou código..." 
@@ -1209,12 +1211,21 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                       <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Buscar funcionários..."
-                        value={participantSearchTerm}
-                        onChange={(e) => setParticipantSearchTerm(e.target.value)}
+                        value={participantFilters.searchTerm}
+                        onChange={(e) => setParticipantFilters((prev) => ({
+                          ...prev,
+                          searchTerm: e.target.value,
+                        }))}
                         className="pl-8"
                       />
                     </div>
-                    <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                    <Select
+                      value={participantFilters.department}
+                      onValueChange={(value) => setParticipantFilters((prev) => ({
+                        ...prev,
+                        department: value,
+                      }))}
+                    >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Departamento" />
                       </SelectTrigger>
@@ -1320,4 +1331,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       </DialogContent>
     </Dialog>
   );
+}
+
+export function TrainingProgramModal(props: TrainingProgramModalProps) {
+  return useTrainingProgramModalComponent(props);
 }

@@ -90,12 +90,7 @@ export function StrategyDataCollectionModule({ reportId, onComplete }: StrategyD
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [companyId, setCompanyId] = useState<string | null>(null);
 
-  // Carregar dados existentes
-  useEffect(() => {
-    loadExistingData();
-  }, [reportId]);
-
-  const loadExistingData = async () => {
+  const loadExistingData = useCallback(async () => {
     try {
       // Get user's company
       const { data: { user } } = await supabase.auth.getUser();
@@ -147,10 +142,15 @@ export function StrategyDataCollectionModule({ reportId, onComplete }: StrategyD
     } finally {
       setLoading(false);
     }
-  };
+  }, [reportId]);
+
+  // Carregar dados existentes
+  useEffect(() => {
+    loadExistingData();
+  }, [loadExistingData]);
 
   const calculateCompletion = useCallback((data: any, docs: any[]) => {
-    let total = GUIDING_QUESTIONS.length * 2;
+    const total = GUIDING_QUESTIONS.length * 2;
     let completed = 0;
 
     GUIDING_QUESTIONS.forEach(q => {

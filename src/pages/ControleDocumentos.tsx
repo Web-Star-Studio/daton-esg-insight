@@ -140,18 +140,18 @@ const ControleDocumentos = () => {
     setIsUploading(true);
 
     try {
-      console.log('Iniciando upload:', selectedFile.name);
+      console.warn('Iniciando upload:', selectedFile.name);
 
       const uploadedDoc = await uploadDocument(selectedFile, {
         tags: uploadData.tags,
         related_model: 'quality_document',
         related_id: crypto.randomUUID(),
         onProgress: (progress) => {
-          console.log(`Upload progress: ${progress}%`);
+          console.warn(`Upload progress: ${progress}%`);
         }
       });
 
-      console.log('Documento uploaded:', uploadedDoc);
+      console.warn('Documento uploaded:', uploadedDoc);
 
       const { error: updateError } = await supabase
         .from('documents')

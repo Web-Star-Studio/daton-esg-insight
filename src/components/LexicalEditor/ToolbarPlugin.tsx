@@ -39,24 +39,61 @@ import {
 import { cn } from '@/lib/utils';
 import { TOGGLE_LINK_COMMAND } from '@lexical/link';
 
+function ToolbarButton({
+  onClick,
+  isActive,
+  disabled,
+  children,
+  title,
+}: {
+  onClick: () => void;
+  isActive?: boolean;
+  disabled?: boolean;
+  children: React.ReactNode;
+  title: string;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={cn(
+        'h-8 w-8 p-0',
+        isActive && 'bg-accent text-accent-foreground'
+      )}
+    >
+      {children}
+    </Button>
+  );
+}
+
 export function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
-  const [isBold, setIsBold] = useState(false);
-  const [isItalic, setIsItalic] = useState(false);
-  const [isUnderline, setIsUnderline] = useState(false);
-  const [isStrikethrough, setIsStrikethrough] = useState(false);
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
-  const [blockType, setBlockType] = useState<string>('paragraph');
+  const [toolbarState, setToolbarState] = useState({
+    isBold: false,
+    isItalic: false,
+    isUnderline: false,
+    isStrikethrough: false,
+    canUndo: false,
+    canRedo: false,
+    blockType: 'paragraph',
+  });
+  const {
+    isBold,
+    isItalic,
+    isUnderline,
+    isStrikethrough,
+    canUndo,
+    canRedo,
+    blockType,
+  } = toolbarState;
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
     if ($isRangeSelection(selection)) {
-      setIsBold(selection.hasFormat('bold'));
-      setIsItalic(selection.hasFormat('italic'));
-      setIsUnderline(selection.hasFormat('underline'));
-      setIsStrikethrough(selection.hasFormat('strikethrough'));
-
       const anchorNode = selection.anchor.getNode();
       const element = anchorNode.getKey() === 'root'
         ? anchorNode
@@ -64,16 +101,27 @@ export function ToolbarPlugin() {
       const elementKey = element.getKey();
       const elementDOM = editor.getElementByKey(elementKey);
 
+      let nextBlockType: string | null = null;
+
       if (elementDOM !== null) {
         if ($isListNode(element)) {
           const parentList = $getNearestNodeOfType(anchorNode, ListNode);
           const type = parentList ? parentList.getListType() : element.getListType();
-          setBlockType(type);
+          nextBlockType = type;
         } else {
           const type = $isHeadingNode(element) ? element.getTag() : element.getType();
-          setBlockType(type);
+          nextBlockType = type;
         }
       }
+
+      setToolbarState((prev) => ({
+        ...prev,
+        isBold: selection.hasFormat('bold'),
+        isItalic: selection.hasFormat('italic'),
+        isUnderline: selection.hasFormat('underline'),
+        isStrikethrough: selection.hasFormat('strikethrough'),
+        blockType: nextBlockType ?? prev.blockType,
+      }));
     }
   }, [editor]);
 
@@ -87,7 +135,7 @@ export function ToolbarPlugin() {
       editor.registerCommand(
         CAN_UNDO_COMMAND,
         (payload) => {
-          setCanUndo(payload);
+          setToolbarState((prev) => ({ ...prev, canUndo: payload }));
           return false;
         },
         1
@@ -95,7 +143,7 @@ export function ToolbarPlugin() {
       editor.registerCommand(
         CAN_REDO_COMMAND,
         (payload) => {
-          setCanRedo(payload);
+          setToolbarState((prev) => ({ ...prev, canRedo: payload }));
           return false;
         },
         1
@@ -147,35 +195,6 @@ export function ToolbarPlugin() {
       }
     });
   };
-
-  const ToolbarButton = ({ 
-    onClick, 
-    isActive, 
-    disabled, 
-    children, 
-    title 
-  }: { 
-    onClick: () => void; 
-    isActive?: boolean; 
-    disabled?: boolean; 
-    children: React.ReactNode;
-    title: string;
-  }) => (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      className={cn(
-        'h-8 w-8 p-0',
-        isActive && 'bg-accent text-accent-foreground'
-      )}
-    >
-      {children}
-    </Button>
-  );
 
   return (
     <div className="flex flex-wrap items-center gap-0.5 p-2 border-b border-border bg-muted/30">

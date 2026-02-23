@@ -41,7 +41,7 @@ ${ncDescriptions.map((desc, i) => `${i + 1}. ${desc}`).join('\n')}
 
 Retorne uma análise concisa e estruturada.`;
 
-    console.log('Sending request to Lovable AI...');
+    console.warn('Sending request to Lovable AI...');
     
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -95,7 +95,7 @@ Retorne uma análise concisa e estruturada.`;
       85 + (ncDescriptions.length > 5 ? 10 : 0) // More data = higher confidence
     ));
 
-    console.log('Analysis completed successfully');
+    console.warn('Analysis completed successfully');
 
     return new Response(
       JSON.stringify({

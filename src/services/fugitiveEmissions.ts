@@ -281,6 +281,7 @@ export function calculateFugitiveEmissions(
       }
       
       // Convert capacity to standard unit (kW) if needed
+      // eslint-disable-next-line no-case-declarations
       let capacityKw = data.capacity;
       if (data.capacityUnit === 'TR') {
         capacityKw = data.capacity * 3.517; // 1 TR = 3.517 kW
@@ -289,6 +290,7 @@ export function calculateFugitiveEmissions(
       }
       
       // Typical emission factor: 0.02 kg/kW/year for screening method
+      // eslint-disable-next-line no-case-declarations
       const screeningFactor = 0.02;
       rawRefrigerantKg = capacityKw * screeningFactor;
       

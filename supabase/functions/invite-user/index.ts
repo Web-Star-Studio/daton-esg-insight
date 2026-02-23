@@ -18,7 +18,7 @@ interface InviteUserRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("invite-user: Request received");
+  console.warn("invite-user: Request received");
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("invite-user: Calling user:", callingUser.id);
+    console.warn("invite-user: Calling user:", callingUser.id);
 
     // Get calling user's profile and role
     const { data: callingProfile, error: profileError } = await supabaseAdmin
@@ -106,7 +106,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Parse request body
     const { email, full_name, role, department, phone, isResend, user_id }: InviteUserRequest = await req.json();
 
-    console.log("invite-user: Request", { email, full_name, role, department, isResend, user_id });
+    console.warn("invite-user: Request", { email, full_name, role, department, isResend, user_id });
 
     // Validate required fields
     if (!email || !full_name || !role) {
@@ -140,7 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Handle resend invite flow
     if (isResend && user_id) {
-      console.log("invite-user: Resending invite for user", user_id);
+      console.warn("invite-user: Resending invite for user", user_id);
 
       // Verify user exists and belongs to the same company
       const { data: existingProfile, error: existingProfileError } = await supabaseAdmin
@@ -182,7 +182,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      console.log("invite-user: Magic link generated for resend");
+      console.warn("invite-user: Magic link generated for resend");
 
       // Send resend invitation email
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -298,7 +298,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      console.log("invite-user: Resend invitation email sent successfully");
+      console.warn("invite-user: Resend invitation email sent successfully");
 
       return new Response(
         JSON.stringify({
@@ -334,7 +334,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Check if user already exists
       if (createError.message?.includes("already been registered") || 
           createError.message?.includes("email_exists")) {
-        console.log("invite-user: User already exists");
+        console.warn("invite-user: User already exists");
         return new Response(
           JSON.stringify({ error: "Este email já está registrado no sistema" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -355,7 +355,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("invite-user: User created in auth", newUser.user.id);
+    console.warn("invite-user: User created in auth", newUser.user.id);
 
     // STEP 2: Check if trigger created the profile, if not create it manually
     const { data: existingProfile } = await supabaseAdmin
@@ -386,9 +386,9 @@ const handler = async (req: Request): Promise<Response> => {
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      console.log("invite-user: Profile created manually");
+      console.warn("invite-user: Profile created manually");
     } else {
-      console.log("invite-user: Profile already exists (created by trigger)");
+      console.warn("invite-user: Profile already exists (created by trigger)");
     }
 
     // STEP 3: Check if trigger created the role, if not create it manually
@@ -411,10 +411,10 @@ const handler = async (req: Request): Promise<Response> => {
         console.error("invite-user: Failed to create user_role", roleCreateError);
         // Continue anyway - role can be added manually
       } else {
-        console.log("invite-user: User role created manually");
+        console.warn("invite-user: User role created manually");
       }
     } else {
-      console.log("invite-user: User role already exists (created by trigger)");
+      console.warn("invite-user: User role already exists (created by trigger)");
     }
 
     // STEP 4: Generate magic link for the EXISTING user
@@ -431,7 +431,7 @@ const handler = async (req: Request): Promise<Response> => {
       // User is created, but we couldn't generate link - don't fail completely
       // They can use "forgot password" flow
     } else {
-      console.log("invite-user: Magic link generated");
+      console.warn("invite-user: Magic link generated");
     }
 
     // Send invitation email using Resend
@@ -538,9 +538,9 @@ const handler = async (req: Request): Promise<Response> => {
     if (emailError) {
       console.error("invite-user: Failed to send email", emailError);
       // Don't fail the whole operation, user was created
-      console.log("invite-user: User created but email failed");
+      console.warn("invite-user: User created but email failed");
     } else {
-      console.log("invite-user: Invitation email sent successfully");
+      console.warn("invite-user: Invitation email sent successfully");
     }
 
     return new Response(

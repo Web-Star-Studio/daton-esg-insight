@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,23 +67,16 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess, editi
   const { toast } = useToast();
   const { validate, getFieldError } = useFormValidation(activityDataFormSchema);
 
-  useEffect(() => {
-    if (open && source) {
-      loadEmissionFactors();
-      // Pre-fill form when editing
-      if (editingData) {
-        setPeriodStartDate(new Date(editingData.period_start_date));
-        setPeriodEndDate(new Date(editingData.period_end_date));
-        setQuantity(editingData.quantity.toString());
-        setUnit(editingData.unit);
-        setSourceDocument(editingData.source_document || "");
-      } else {
-        resetForm();
-      }
-    }
-  }, [open, source, editingData]);
+  const resetForm = useCallback(() => {
+    setPeriodStartDate(undefined);
+    setPeriodEndDate(undefined);
+    setQuantity("");
+    setUnit("");
+    setSourceDocument("");
+    setSelectedEmissionFactorId("");
+  }, []);
 
-  const loadEmissionFactors = async () => {
+  const loadEmissionFactors = useCallback(async () => {
     await errorHandler.withErrorHandling(
       async () => {
         const factors = await getEmissionFactors(source.category);
@@ -102,7 +95,23 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess, editi
       },
       false // Don't show toast, it's not critical for user
     );
-  };
+  }, [source.category]);
+
+  useEffect(() => {
+    if (open && source) {
+      void loadEmissionFactors();
+      // Pre-fill form when editing
+      if (editingData) {
+        setPeriodStartDate(new Date(editingData.period_start_date));
+        setPeriodEndDate(new Date(editingData.period_end_date));
+        setQuantity(editingData.quantity.toString());
+        setUnit(editingData.unit);
+        setSourceDocument(editingData.source_document || "");
+      } else {
+        resetForm();
+      }
+    }
+  }, [open, source, editingData, loadEmissionFactors, resetForm]);
 
   // Handle factor selection and unit locking
   const handleFactorSelection = (factorId: string) => {
@@ -179,15 +188,6 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess, editi
     );
     
     setIsLoading(false);
-  };
-
-  const resetForm = () => {
-    setPeriodStartDate(undefined);
-    setPeriodEndDate(undefined);
-    setQuantity("");
-    setUnit("");
-    setSourceDocument("");
-    setSelectedEmissionFactorId("");
   };
 
   const getUnitSuggestions = () => {

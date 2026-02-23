@@ -19,7 +19,7 @@ export async function executeWriteTool(
   userId: string,
   supabase: any
 ): Promise<any> {
-  console.log(`[WRITE ACTION] ${toolName}`, { companyId, userId, args });
+  console.warn(`[WRITE ACTION] ${toolName}`, { companyId, userId, args });
 
   // Log to audit trail
   await supabase.from('audit_logs').insert({
@@ -107,7 +107,7 @@ export async function executeWriteTool(
 }
 
 async function createGoalAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Creating goal:', args);
+  console.warn('Creating goal:', args);
   
   // Validate required fields
   if (!args.name || !args.target_value) {
@@ -157,7 +157,7 @@ async function createGoalAction(args: any, companyId: string, userId: string, su
 }
 
 async function createTaskAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Creating task:', args);
+  console.warn('Creating task:', args);
   
   if (!args.name || !args.task_type || !args.due_date) {
     return { 
@@ -209,7 +209,7 @@ async function createTaskAction(args: any, companyId: string, userId: string, su
 }
 
 async function addLicenseAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Adding license:', args);
+  console.warn('Adding license:', args);
   
   if (!args.name || !args.license_type || !args.expiration_date) {
     return { 
@@ -255,7 +255,7 @@ async function addLicenseAction(args: any, companyId: string, userId: string, su
 }
 
 async function logWasteAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Logging waste:', args);
+  console.warn('Logging waste:', args);
   
   if (!args.waste_type || !args.class || !args.quantity) {
     return { 
@@ -299,7 +299,7 @@ async function logWasteAction(args: any, companyId: string, userId: string, supa
 }
 
 async function updateGoalAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Updating goal:', args);
+  console.warn('Updating goal:', args);
   
   if (!args.goal_id) {
     return { success: false, error: "ID da meta não fornecido" };
@@ -331,7 +331,7 @@ async function updateGoalAction(args: any, companyId: string, userId: string, su
 }
 
 async function updateGoalProgressAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Updating goal progress:', args);
+  console.warn('Updating goal progress:', args);
   
   if (!args.goal_id || args.current_value === undefined) {
     return { success: false, error: "Dados incompletos", missing: ["goal_id", "current_value"] };
@@ -361,7 +361,7 @@ async function updateGoalProgressAction(args: any, companyId: string, userId: st
 }
 
 async function updateTaskStatusAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Updating task status:', args);
+  console.warn('Updating task status:', args);
   
   if (!args.task_id || !args.status) {
     return { success: false, error: "Dados incompletos", missing: ["task_id", "status"] };
@@ -387,7 +387,7 @@ async function updateTaskStatusAction(args: any, companyId: string, userId: stri
 }
 
 async function updateLicenseAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Updating license:', args);
+  console.warn('Updating license:', args);
   
   if (!args.license_id) {
     return { success: false, error: "ID da licença não fornecido" };
@@ -418,7 +418,7 @@ async function updateLicenseAction(args: any, companyId: string, userId: string,
 }
 
 async function addEmissionSourceAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Adding emission source:', args);
+  console.warn('Adding emission source:', args);
   
   if (!args.source_name || !args.scope) {
     return { success: false, error: "Dados incompletos", missing: ["source_name", "scope"] };
@@ -449,7 +449,7 @@ async function addEmissionSourceAction(args: any, companyId: string, userId: str
 }
 
 async function logEmissionAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Logging emission:', args);
+  console.warn('Logging emission:', args);
   
   if (!args.emission_source_id || !args.quantity) {
     return { success: false, error: "Dados incompletos", missing: ["emission_source_id", "quantity"] };
@@ -483,7 +483,7 @@ async function logEmissionAction(args: any, companyId: string, userId: string, s
 }
 
 async function createNonConformityAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Creating non-conformity:', args);
+  console.warn('Creating non-conformity:', args);
   
   if (!args.title || !args.description) {
     return { success: false, error: "Dados incompletos", missing: ["title", "description"] };
@@ -517,7 +517,7 @@ async function createNonConformityAction(args: any, companyId: string, userId: s
 }
 
 async function createRiskAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Creating risk:', args);
+  console.warn('Creating risk:', args);
   
   if (!args.title || !args.category || !args.probability || !args.impact) {
     return { success: false, error: "Dados incompletos", missing: ["title", "category", "probability", "impact"] };
@@ -551,7 +551,7 @@ async function createRiskAction(args: any, companyId: string, userId: string, su
 }
 
 async function addEmployeeAction(args: any, companyId: string, userId: string, supabase: any) {
-  console.log('Adding employee:', args);
+  console.warn('Adding employee:', args);
   
   if (!args.name || !args.email) {
     return { success: false, error: "Dados incompletos", missing: ["name", "email"] };

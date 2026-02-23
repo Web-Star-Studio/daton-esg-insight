@@ -932,7 +932,7 @@ export async function calculateStationaryCombustionEmissions(
   calculation_details: any;
 }> {
   
-  console.log('Calculating stationary combustion for fuel:', fuelName);
+  console.warn('Calculating stationary combustion for fuel:', fuelName);
   
   const fuel = getFuelByName(fuelName);
   if (!fuel) {
@@ -940,7 +940,7 @@ export async function calculateStationaryCombustionEmissions(
     throw new Error(`Combustível não encontrado: ${fuelName}. Verifique se o combustível está na lista de combustão estacionária.`);
   }
 
-  console.log('Found fuel:', fuel.name);
+  console.warn('Found fuel:', fuel.name);
 
       // Validate economic sector compatibility
       if (!fuel.economic_sectors.includes(economicSector)) {

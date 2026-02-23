@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,68 +72,7 @@ export default function StakeholderEngagementDataModule({ reportId, onComplete }
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [companyId, setCompanyId] = useState<string>('');
 
-  useEffect(() => {
-    loadData();
-  }, [reportId]);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (profile?.company_id) {
-        setCompanyId(profile.company_id);
-        await calculateStakeholderMetrics(profile.company_id);
-      }
-
-      const { data: existingData } = await supabase
-        .from('gri_stakeholder_engagement_data')
-        .select('*')
-        .eq('report_id', reportId)
-        .maybeSingle();
-
-      if (existingData) {
-        setFormData(existingData);
-        setCompletionPercentage(existingData.completion_percentage || 0);
-        if (existingData.total_stakeholders_mapped) {
-          setQuantitativeData({
-            total_stakeholders_mapped: existingData.total_stakeholders_mapped,
-            stakeholders_by_category: existingData.stakeholders_by_category,
-            critical_stakeholders: existingData.critical_stakeholders,
-            average_engagement_score: existingData.average_engagement_score,
-            survey_response_rate_calculated: existingData.survey_response_rate_calculated,
-            stakeholders_high_influence: existingData.stakeholders_high_influence,
-            stakeholders_medium_influence: existingData.stakeholders_medium_influence,
-            stakeholders_low_influence: existingData.stakeholders_low_influence,
-            stakeholders_high_interest: existingData.stakeholders_high_interest,
-            stakeholders_medium_interest: existingData.stakeholders_medium_interest,
-            stakeholders_low_interest: existingData.stakeholders_low_interest,
-            stakeholders_monthly_engagement: existingData.stakeholders_monthly_engagement,
-            stakeholders_quarterly_engagement: existingData.stakeholders_quarterly_engagement,
-            stakeholders_biannual_engagement: existingData.stakeholders_biannual_engagement,
-            stakeholders_annual_engagement: existingData.stakeholders_annual_engagement,
-            preferred_communication_channels: existingData.preferred_communication_channels,
-            surveys_conducted_count: existingData.surveys_conducted_count,
-            total_survey_responses: existingData.total_survey_responses,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Erro ao carregar dados');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const calculateStakeholderMetrics = async (companyId: string) => {
+  const calculateStakeholderMetrics = useCallback(async (companyId: string) => {
     try {
       // Buscar stakeholders
       const { data: stakeholders, count: totalStakeholders } = await supabase
@@ -239,7 +178,68 @@ export default function StakeholderEngagementDataModule({ reportId, onComplete }
       toast.error('Erro ao calcular métricas');
       return {};
     }
-  };
+  }, []);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.company_id) {
+        setCompanyId(profile.company_id);
+        await calculateStakeholderMetrics(profile.company_id);
+      }
+
+      const { data: existingData } = await supabase
+        .from('gri_stakeholder_engagement_data')
+        .select('*')
+        .eq('report_id', reportId)
+        .maybeSingle();
+
+      if (existingData) {
+        setFormData(existingData);
+        setCompletionPercentage(existingData.completion_percentage || 0);
+        if (existingData.total_stakeholders_mapped) {
+          setQuantitativeData({
+            total_stakeholders_mapped: existingData.total_stakeholders_mapped,
+            stakeholders_by_category: existingData.stakeholders_by_category,
+            critical_stakeholders: existingData.critical_stakeholders,
+            average_engagement_score: existingData.average_engagement_score,
+            survey_response_rate_calculated: existingData.survey_response_rate_calculated,
+            stakeholders_high_influence: existingData.stakeholders_high_influence,
+            stakeholders_medium_influence: existingData.stakeholders_medium_influence,
+            stakeholders_low_influence: existingData.stakeholders_low_influence,
+            stakeholders_high_interest: existingData.stakeholders_high_interest,
+            stakeholders_medium_interest: existingData.stakeholders_medium_interest,
+            stakeholders_low_interest: existingData.stakeholders_low_interest,
+            stakeholders_monthly_engagement: existingData.stakeholders_monthly_engagement,
+            stakeholders_quarterly_engagement: existingData.stakeholders_quarterly_engagement,
+            stakeholders_biannual_engagement: existingData.stakeholders_biannual_engagement,
+            stakeholders_annual_engagement: existingData.stakeholders_annual_engagement,
+            preferred_communication_channels: existingData.preferred_communication_channels,
+            surveys_conducted_count: existingData.surveys_conducted_count,
+            total_survey_responses: existingData.total_survey_responses,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [calculateStakeholderMetrics, reportId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleSave = async () => {
     setIsSaving(true);

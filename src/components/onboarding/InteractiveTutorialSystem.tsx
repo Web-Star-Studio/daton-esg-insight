@@ -297,6 +297,7 @@ export function InteractiveTutorialSystem({
         highlightElement(targetElement as HTMLElement);
         showStepTooltip(step, targetElement as HTMLElement);
         // Simulate hover
+        // eslint-disable-next-line no-case-declarations
         const hoverEvent = new MouseEvent('mouseenter', { bubbles: true });
         targetElement.dispatchEvent(hoverEvent);
         break;
@@ -392,12 +393,16 @@ export function InteractiveTutorialSystem({
         return document.querySelector(condition) !== null;
         
       case 'text_contains':
+        // eslint-disable-next-line no-case-declarations
         const [selector, text] = condition.split('|');
+        // eslint-disable-next-line no-case-declarations
         const element = document.querySelector(selector);
         return element?.textContent?.includes(text) || false;
         
       case 'attribute_equals':
+        // eslint-disable-next-line no-case-declarations
         const [attrSelector, attr, value] = condition.split('|');
+        // eslint-disable-next-line no-case-declarations
         const attrElement = document.querySelector(attrSelector);
         return attrElement?.getAttribute(attr) === value;
         
@@ -491,7 +496,7 @@ export function InteractiveTutorialSystem({
 
   const showStepHelp = (step: TutorialStep) => {
     // Show additional help for stuck users
-    console.log('Showing help for step:', step.title);
+    console.warn('Showing help for step:', step.title);
   };
 
   if (!activeTutorial) {

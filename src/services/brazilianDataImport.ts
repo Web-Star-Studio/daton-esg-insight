@@ -135,19 +135,19 @@ export async function importBrazilianGHGData(): Promise<{
   }
 }> {
   try {
-    console.log('Iniciando importação de dados do GHG Protocol Brasil...');
+    console.warn('Iniciando importação de dados do GHG Protocol Brasil...');
 
     // Importar fatores variáveis
     const variableResult = await importVariableFactors(VARIABLE_FACTORS_DATA);
-    console.log('Fatores variáveis importados:', variableResult);
+    console.warn('Fatores variáveis importados:', variableResult);
 
     // Importar fatores de conversão
     const conversionResult = await importConversionFactors(CONVERSION_FACTORS_DATA);
-    console.log('Fatores de conversão importados:', conversionResult);
+    console.warn('Fatores de conversão importados:', conversionResult);
 
     // Importar fatores de refrigerantes
     const refrigerantResult = await importRefrigerantFactors(REFRIGERANT_FACTORS_DATA);
-    console.log('Fatores de refrigerantes importados:', refrigerantResult);
+    console.warn('Fatores de refrigerantes importados:', refrigerantResult);
 
     const totalSuccess = variableResult.success + conversionResult.success + refrigerantResult.success;
     const totalErrors = variableResult.errors + conversionResult.errors + refrigerantResult.errors;

@@ -380,7 +380,7 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub as string;
-    console.log('Authenticated user:', userId);
+    console.warn('Authenticated user:', userId);
 
     // Parse request body
     const { confirmText } = await req.json();
@@ -394,7 +394,7 @@ serve(async (req) => {
 
     // Handle orphaned user (exists in auth but not in profiles)
     if (!profile) {
-      console.log('Orphaned user detected (no profile), deleting auth user only...');
+      console.warn('Orphaned user detected (no profile), deleting auth user only...');
       
       // Clear any assigned_by references this user might have
       const { error: assignedByError } = await supabaseAdmin
@@ -430,7 +430,7 @@ serve(async (req) => {
         );
       }
       
-      console.log('Orphaned user deleted successfully');
+      console.warn('Orphaned user deleted successfully');
       return new Response(
         JSON.stringify({ 
           success: true,
@@ -453,7 +453,7 @@ serve(async (req) => {
       .maybeSingle();
 
     const role = userRole?.role || 'viewer';
-    console.log('User role:', role);
+    console.warn('User role:', role);
 
     // Check if user is company owner (super_admin)
     const isOwner = role === 'super_admin';
@@ -485,14 +485,14 @@ serve(async (req) => {
       }
     }
 
-    console.log('Starting deletion process...', { isOwner, companyId, userId });
+    console.warn('Starting deletion process...', { isOwner, companyId, userId });
 
     if (isOwner) {
       // Delete all company data
-      console.log(`Deleting all data for company ${companyId}...`);
+      console.warn(`Deleting all data for company ${companyId}...`);
       
       let deletedTables = 0;
-      let errorTables: string[] = [];
+      const errorTables: string[] = [];
 
       for (const table of TABLES_WITH_COMPANY_ID) {
         try {
@@ -514,11 +514,11 @@ serve(async (req) => {
         }
       }
 
-      console.log(`Deleted data from ${deletedTables} tables. Errors in ${errorTables.length} tables.`);
+      console.warn(`Deleted data from ${deletedTables} tables. Errors in ${errorTables.length} tables.`);
 
       // Get all users from this company before deleting profiles
       const userIds = companyUsers?.map(u => u.id) || [];
-      console.log(`Found ${userIds.length} users to delete`);
+      console.warn(`Found ${userIds.length} users to delete`);
 
       // Clear assigned_by_user_id references for all users being deleted
       // This prevents FK constraint violations when deleting auth users
@@ -579,7 +579,7 @@ serve(async (req) => {
         );
       }
 
-      console.log('Company and all data deleted successfully');
+      console.warn('Company and all data deleted successfully');
 
       return new Response(
         JSON.stringify({ 
@@ -593,7 +593,7 @@ serve(async (req) => {
 
     } else {
       // Delete only user data
-      console.log(`Deleting user ${userId} data...`);
+      console.warn(`Deleting user ${userId} data...`);
 
       // Clear assigned_by_user_id references before deleting user
       // This prevents FK constraint violations when deleting auth user
@@ -637,7 +637,7 @@ serve(async (req) => {
         );
       }
 
-      console.log('User deleted successfully');
+      console.warn('User deleted successfully');
 
       return new Response(
         JSON.stringify({ 

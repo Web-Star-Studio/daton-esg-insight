@@ -205,7 +205,7 @@ export function PDIFormModal({ isOpen, onClose, onSuccess, plan }: PDIFormModalP
         return;
       }
       
-      console.log('📝 Criando PDI validado:', {
+      console.warn('📝 Criando PDI validado:', {
         employee_id: employeeId,
         mentor_id: mentorId,
         company_id: companyId,
@@ -215,7 +215,7 @@ export function PDIFormModal({ isOpen, onClose, onSuccess, plan }: PDIFormModalP
         activitiesCount: activities.length
       });
       
-      console.log('🧾 PDI payload final:', pdiData);
+      console.warn('🧾 PDI payload final:', pdiData);
       
       if (isEditing && plan?.id) {
         await updateCareerPlan.mutateAsync({ id: plan.id, updates: pdiData });

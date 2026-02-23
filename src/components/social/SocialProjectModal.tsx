@@ -127,9 +127,9 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
   }, [open, project, reset]);
 
   const onSubmit = async (data: ProjectFormData) => {
-    console.log('=== SOCIAL PROJECT SUBMISSION ===');
-    console.log('Form data:', data);
-    console.log('Company ID:', companyId);
+    console.warn('=== SOCIAL PROJECT SUBMISSION ===');
+    console.warn('Form data:', data);
+    console.warn('Company ID:', companyId);
     
     if (!companyId) {
       toast.error('Erro ao identificar empresa. Tente novamente.');
@@ -151,7 +151,7 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
         }
       };
 
-      console.log('Final payload:', projectPayload);
+      console.warn('Final payload:', projectPayload);
 
       if (project) {
         await formErrorHandler.updateRecord(

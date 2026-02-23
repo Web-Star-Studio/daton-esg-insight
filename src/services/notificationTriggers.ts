@@ -67,6 +67,7 @@ class NotificationTriggersService {
         };
 
       case 'goal_updated':
+        // eslint-disable-next-line no-case-declarations
         const progressText = event.metadata?.progress ? `${event.metadata.progress}%` : '';
         return {
           title: 'Meta atualizada',
@@ -79,6 +80,7 @@ class NotificationTriggersService {
         };
 
       case 'license_expiring':
+        // eslint-disable-next-line no-case-declarations
         const daysToExpiry = event.metadata?.daysToExpiry || 0;
         return {
           title: 'Licença próxima do vencimento',
@@ -157,7 +159,9 @@ class NotificationTriggersService {
         };
 
       case 'training_efficacy_pending':
+        // eslint-disable-next-line no-case-declarations
         const daysRemaining = event.metadata?.daysRemaining || 0;
+        // eslint-disable-next-line no-case-declarations
         const isOverdue = daysRemaining < 0;
         return {
           title: isOverdue ? 'Avaliação de eficácia vencida' : 'Avaliação de eficácia pendente',

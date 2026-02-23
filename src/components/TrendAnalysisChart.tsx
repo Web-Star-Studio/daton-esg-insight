@@ -10,20 +10,8 @@ import {
   Target,
   AlertCircle
 } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  Area,
-  AreaChart,
-  Legend
-} from "recharts";
 import { format, addMonths, parseISO } from "date-fns";
+import { useRechartsModule } from "@/hooks/useRechartsModule";
 
 interface TrendData {
   month: string;
@@ -38,7 +26,9 @@ interface TrendAnalysisChartProps {
   isLoading?: boolean;
 }
 
-export function TrendAnalysisChart({ data, isLoading }: TrendAnalysisChartProps) {
+function useTrendAnalysisChartComponent({ data, isLoading }: TrendAnalysisChartProps) {
+  const charts = useRechartsModule();
+
   // Generate predictions for next 6 months
   const generatePredictions = (historicalData: TrendData[]) => {
     if (!historicalData || historicalData.length < 3) return [];
@@ -96,14 +86,14 @@ export function TrendAnalysisChart({ data, isLoading }: TrendAnalysisChartProps)
     variation: Math.max(...values) - Math.min(...values)
   }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const renderCustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const isPredicted = payload[0]?.payload?.isPrediction;
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{label} {isPredicted && "(Previsão)"}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
+          {payload.map((entry: any) => (
+            <p key={entry.name || entry.dataKey || `${entry.value}-${entry.color}`} className="text-sm" style={{ color: entry.color }}>
               {`${entry.name}: ${entry.value.toFixed(1)} tCO₂e`}
             </p>
           ))}
@@ -112,6 +102,24 @@ export function TrendAnalysisChart({ data, isLoading }: TrendAnalysisChartProps)
     }
     return null;
   };
+
+  if (!charts) {
+    return <SmartSkeleton variant="chart" className="h-[600px]" />;
+  }
+
+  const {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    ReferenceLine,
+    Area,
+    AreaChart,
+    Legend,
+  } = charts;
 
   return (
     <div className="space-y-6">
@@ -212,7 +220,7 @@ export function TrendAnalysisChart({ data, isLoading }: TrendAnalysisChartProps)
                   <YAxis 
                     tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
                   />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={renderCustomTooltip} />
                   <Legend />
                   
                   {/* Historical data */}
@@ -360,8 +368,8 @@ export function TrendAnalysisChart({ data, isLoading }: TrendAnalysisChartProps)
               {seasonalPattern
                 .sort((a, b) => b.average - a.average)
                 .slice(0, 2)
-                .map((pattern, index) => (
-                  <div key={index} className="flex justify-between mt-2">
+                .map((pattern) => (
+                  <div key={pattern.month} className="flex justify-between mt-2">
                     <span>{pattern.month}</span>
                     <span className="font-medium">{pattern.average.toFixed(1)} tCO₂e</span>
                   </div>
@@ -372,4 +380,8 @@ export function TrendAnalysisChart({ data, isLoading }: TrendAnalysisChartProps)
       </div>
     </div>
   );
+}
+
+export function TrendAnalysisChart(props: TrendAnalysisChartProps) {
+  return useTrendAnalysisChartComponent(props);
 }

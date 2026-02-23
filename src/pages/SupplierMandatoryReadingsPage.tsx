@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,12 +11,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Plus, Pencil, Trash2, FileText, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDemo } from '@/contexts/DemoContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getMandatoryReadings, createMandatoryReading, updateMandatoryReading, deleteMandatoryReading, getReadingConfirmations, MandatoryReading } from '@/services/supplierPortalService';
 import { useCompany } from '@/contexts/CompanyContext';
+import {
+  supplierPortalDemoCategories,
+  supplierPortalDemoReadings,
+  supplierPortalDemoReadingConfirmations,
+} from '@/data/demo/supplierPortalMocks';
 
 export default function SupplierMandatoryReadingsPage() {
   const { selectedCompany } = useCompany();
+  const { isDemo } = useDemo();
   const { toast } = useToast();
   
   const [readings, setReadings] = useState<MandatoryReading[]>([]);
@@ -38,17 +45,29 @@ export default function SupplierMandatoryReadingsPage() {
     requires_confirmation: true
   });
 
-  useEffect(() => {
-    loadData();
-  }, [selectedCompany?.id]);
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
 
-  async function loadData() {
-    if (!selectedCompany?.id) return;
+    if (isDemo) {
+      setReadings(supplierPortalDemoReadings);
+      setCategories(supplierPortalDemoCategories);
+      return;
+    }
+
+    if (!selectedCompany?.id) {
+      setReadings([]);
+      setCategories([]);
+      return;
+    }
     
     try {
       const [readingsData, categoriesData] = await Promise.all([
         getMandatoryReadings(selectedCompany.id),
-        supabase.from('supplier_categories').select('id, name').eq('company_id', selectedCompany.id).order('name')
+        supabase
+          .from('supplier_categories')
+          .select('id, name')
+          .eq('company_id', selectedCompany.id)
+          .order('name'),
       ]);
       
       setReadings(readingsData);
@@ -59,7 +78,11 @@ export default function SupplierMandatoryReadingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [isDemo, selectedCompany?.id, toast]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleEdit = (reading: MandatoryReading) => {
     setSelectedReading(reading);
@@ -90,10 +113,47 @@ export default function SupplierMandatoryReadingsPage() {
   };
 
   const handleSave = async () => {
-    if (!selectedCompany?.id || !formData.title.trim()) return;
+    if (!formData.title.trim()) return;
     
     setIsSaving(true);
     try {
+      if (isDemo) {
+        const now = new Date().toISOString();
+        const category = supplierPortalDemoCategories.find(
+          (item) => item.id === formData.category_id,
+        );
+        const payload: MandatoryReading = {
+          id: selectedReading?.id ?? `demo-reading-${Date.now()}`,
+          company_id: selectedCompany?.id ?? 'demo-company-001',
+          title: formData.title,
+          description: formData.description || null,
+          content: formData.content || null,
+          file_path: formData.file_path || null,
+          category_id: formData.category_id || null,
+          is_active: formData.is_active,
+          requires_confirmation: formData.requires_confirmation,
+          created_at: selectedReading?.created_at ?? now,
+          updated_at: now,
+          category: category ? { id: category.id, name: category.name } : null,
+        };
+
+        setReadings((prev) =>
+          selectedReading
+            ? prev.map((item) => (item.id === selectedReading.id ? payload : item))
+            : [payload, ...prev],
+        );
+        setIsDialogOpen(false);
+        toast({
+          title: 'Sucesso',
+          description: selectedReading
+            ? 'Leitura atualizada com sucesso'
+            : 'Leitura criada com sucesso',
+        });
+        return;
+      }
+
+      if (!selectedCompany?.id) return;
+
       const data = {
         ...formData,
         company_id: selectedCompany.id,
@@ -122,6 +182,12 @@ export default function SupplierMandatoryReadingsPage() {
     if (!confirm('Tem certeza que deseja excluir esta leitura?')) return;
     
     try {
+      if (isDemo) {
+        setReadings((prev) => prev.filter((item) => item.id !== id));
+        toast({ title: 'Sucesso', description: 'Leitura excluída com sucesso' });
+        return;
+      }
+
       await deleteMandatoryReading(id);
       toast({ title: 'Sucesso', description: 'Leitura excluída com sucesso' });
       loadData();
@@ -133,6 +199,13 @@ export default function SupplierMandatoryReadingsPage() {
 
   const handleViewConfirmations = async (reading: MandatoryReading) => {
     try {
+      if (isDemo) {
+        setConfirmations(supplierPortalDemoReadingConfirmations[reading.id] || []);
+        setSelectedReading(reading);
+        setIsConfirmationsOpen(true);
+        return;
+      }
+
       const data = await getReadingConfirmations(reading.id);
       setConfirmations(data);
       setSelectedReading(reading);

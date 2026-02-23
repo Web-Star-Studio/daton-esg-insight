@@ -277,7 +277,7 @@ export const calculateWaterIntensity = async (
       }
     }
   } catch (error) {
-    console.log('Dados do ano anterior não disponíveis');
+    console.warn('Dados do ano anterior não disponíveis');
   }
   
   result.baseline_intensity = previousYearIntensity;
@@ -341,7 +341,7 @@ export const calculateWaterReusePercentage = async (
       improvementPercent = reusePercentage - baselinePercentage;
     }
   } catch (error) {
-    console.log('Dados do ano anterior não disponíveis para comparação');
+    console.warn('Dados do ano anterior não disponíveis para comparação');
   }
   
   // 5. Buscar breakdown detalhado por tipo de reuso

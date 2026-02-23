@@ -32,7 +32,9 @@ export const DocumentStatusBadge: React.FC<DocumentStatusBadgeProps> = ({
       );
     
     case 'Processado':
+      // eslint-disable-next-line no-case-declarations
       const confidence = aiConfidenceScore || 0;
+      // eslint-disable-next-line no-case-declarations
       let confidenceColor = 'bg-success/10 text-success';
       
       if (confidence < 0.6) {

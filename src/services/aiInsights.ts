@@ -43,7 +43,7 @@ export interface AIInsightRequest {
 // Get AI insights for a specific dashboard card using real GPT-4o analysis
 export const getAIInsights = async (cardType: string, cardData: any): Promise<AIInsight[]> => {
   try {
-    console.log(`Requesting AI insights for ${cardType}:`, cardData)
+    console.warn(`Requesting AI insights for ${cardType}:`, cardData)
     
     const { data, error } = await supabase.functions.invoke('ai-insights-engine', {
       body: {
@@ -61,7 +61,7 @@ export const getAIInsights = async (cardType: string, cardData: any): Promise<AI
       throw error
     }
 
-    console.log(`Received ${data?.insights?.length || 0} insights for ${cardType}`)
+    console.warn(`Received ${data?.insights?.length || 0} insights for ${cardType}`)
     return data?.insights || []
   } catch (error) {
     console.error('Failed to get AI insights:', error)

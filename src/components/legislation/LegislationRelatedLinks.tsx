@@ -31,6 +31,56 @@ interface RelatedLegislation {
   overall_applicability: string;
 }
 
+function LegislationLinkItem({
+  leg,
+  type,
+  onNavigate,
+}: {
+  leg: RelatedLegislation;
+  type: 'revokes' | 'revoked_by' | 'related';
+  onNavigate: (id: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="flex w-full items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors text-left"
+      onClick={() => onNavigate(leg.id)}
+    >
+      <div className="flex items-center gap-3">
+        {type === 'revokes' && (
+          <div className="p-2 rounded-lg bg-red-100 text-red-600">
+            <XCircle className="h-4 w-4" />
+          </div>
+        )}
+        {type === 'revoked_by' && (
+          <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
+            <AlertTriangle className="h-4 w-4" />
+          </div>
+        )}
+        {type === 'related' && (
+          <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+            <Link2 className="h-4 w-4" />
+          </div>
+        )}
+        <div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="font-mono text-xs">
+              {leg.norm_type} {leg.norm_number && `nº ${leg.norm_number}`}
+            </Badge>
+            {leg.overall_applicability === 'revoked' && (
+              <Badge variant="secondary" className="text-xs">Revogada</Badge>
+            )}
+          </div>
+          <p className="text-sm font-medium mt-1 line-clamp-1">{leg.title}</p>
+        </div>
+      </div>
+      <Button variant="ghost" size="icon" type="button" tabIndex={-1}>
+        <ExternalLink className="h-4 w-4" />
+      </Button>
+    </button>
+  );
+}
+
 export const LegislationRelatedLinks: React.FC<LegislationRelatedLinksProps> = ({
   legislation,
 }) => {
@@ -96,51 +146,6 @@ export const LegislationRelatedLinks: React.FC<LegislationRelatedLinksProps> = (
 
   const isLoading = isLoadingRevokes || isLoadingRevokedBy || isLoadingRelated;
 
-  const LegislationLinkItem = ({ 
-    leg, 
-    type 
-  }: { 
-    leg: RelatedLegislation; 
-    type: 'revokes' | 'revoked_by' | 'related';
-  }) => (
-    <div 
-      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-      onClick={() => navigate(`/licenciamento/legislacoes/${leg.id}`)}
-    >
-      <div className="flex items-center gap-3">
-        {type === 'revokes' && (
-          <div className="p-2 rounded-lg bg-red-100 text-red-600">
-            <XCircle className="h-4 w-4" />
-          </div>
-        )}
-        {type === 'revoked_by' && (
-          <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
-            <AlertTriangle className="h-4 w-4" />
-          </div>
-        )}
-        {type === 'related' && (
-          <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-            <Link2 className="h-4 w-4" />
-          </div>
-        )}
-        <div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="font-mono text-xs">
-              {leg.norm_type} {leg.norm_number && `nº ${leg.norm_number}`}
-            </Badge>
-            {leg.overall_applicability === 'revoked' && (
-              <Badge variant="secondary" className="text-xs">Revogada</Badge>
-            )}
-          </div>
-          <p className="text-sm font-medium mt-1 line-clamp-1">{leg.title}</p>
-        </div>
-      </div>
-      <Button variant="ghost" size="icon">
-        <ExternalLink className="h-4 w-4" />
-      </Button>
-    </div>
-  );
-
   return (
     <Card>
       <CardHeader>
@@ -164,7 +169,11 @@ export const LegislationRelatedLinks: React.FC<LegislationRelatedLinksProps> = (
                   <ArrowRight className="h-4 w-4" />
                   Esta legislação revoga:
                 </p>
-                <LegislationLinkItem leg={revokesLegislation} type="revokes" />
+                <LegislationLinkItem
+                  leg={revokesLegislation}
+                  type="revokes"
+                  onNavigate={(id) => navigate(`/licenciamento/legislacoes/${id}`)}
+                />
               </div>
             )}
 
@@ -175,7 +184,11 @@ export const LegislationRelatedLinks: React.FC<LegislationRelatedLinksProps> = (
                   <AlertTriangle className="h-4 w-4" />
                   Esta legislação foi revogada por:
                 </p>
-                <LegislationLinkItem leg={revokedByLegislation} type="revoked_by" />
+                <LegislationLinkItem
+                  leg={revokedByLegislation}
+                  type="revoked_by"
+                  onNavigate={(id) => navigate(`/licenciamento/legislacoes/${id}`)}
+                />
               </div>
             )}
 
@@ -188,7 +201,12 @@ export const LegislationRelatedLinks: React.FC<LegislationRelatedLinksProps> = (
                 </p>
                 <div className="space-y-2">
                   {relatedLegislations.map((leg) => (
-                    <LegislationLinkItem key={leg.id} leg={leg} type="related" />
+                    <LegislationLinkItem
+                      key={leg.id}
+                      leg={leg}
+                      type="related"
+                      onNavigate={(id) => navigate(`/licenciamento/legislacoes/${id}`)}
+                    />
                   ))}
                 </div>
               </div>

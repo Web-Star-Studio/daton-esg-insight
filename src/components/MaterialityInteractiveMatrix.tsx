@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,29 +17,9 @@ interface MaterialityInteractiveMatrixProps {
   className?: string;
 }
 
-export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: MaterialityInteractiveMatrixProps) => {
-  // Validação de props
-  if (!themes || themes.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Nenhum tema disponível para exibir a matriz</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!matrix || Object.keys(matrix).length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Nenhum dado de matriz disponível</p>
-        </CardContent>
-      </Card>
-    );
-  }
+const useMaterialityInteractiveMatrixComponent = ({ themes, matrix, className }: MaterialityInteractiveMatrixProps) => {
+  const safeThemes = themes ?? [];
+  const safeMatrix = matrix ?? {};
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
@@ -47,10 +27,10 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
   const matrixRef = useRef<HTMLDivElement>(null);
   
   // Initialize with fallback dimensions to prevent loading state
-  const [matrixDimensions, setMatrixDimensions] = useState({ 
-    width: 500, 
-    height: 350 
-  });
+  const [matrixDimensions, setMatrixDimensions] = useReducer(
+    (_: { width: number; height: number }, next: { width: number; height: number }) => next,
+    { width: 500, height: 350 }
+  );
 
   // Calculate responsive matrix dimensions
   useEffect(() => {
@@ -89,7 +69,7 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
     };
 
     // Initial calculation with slight delay to ensure DOM is ready
-    const timer = setTimeout(updateDimensions, 100);
+    const timer = window.setTimeout(updateDimensions, 100);
     
     // Set up resize observer
     let resizeObserver: ResizeObserver | null = null;
@@ -102,14 +82,14 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
     };
     
     // Set up observer after a short delay
-    const observerTimer = setTimeout(setupObserver, 200);
+    const observerTimer = window.setTimeout(setupObserver, 200);
     
     // Also listen to window resize as backup
     window.addEventListener('resize', updateDimensions);
     
     return () => {
-      clearTimeout(timer);
-      clearTimeout(observerTimer);
+      window.clearTimeout(timer);
+      window.clearTimeout(observerTimer);
       window.removeEventListener('resize', updateDimensions);
       if (resizeObserver) {
         resizeObserver.disconnect();
@@ -118,12 +98,12 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
   }, []);
 
   const { themesMap, filteredMatrix, priorityStats } = useMemo(() => {
-    const themesMap = themes.reduce((acc, theme) => {
+    const themesMap = safeThemes.reduce((acc, theme) => {
       acc[theme.id] = theme;
       return acc;
     }, {} as Record<string, MaterialityTheme>);
 
-    const filteredMatrix = Object.entries(matrix).reduce((acc, [themeId, position]) => {
+    const filteredMatrix = Object.entries(safeMatrix).reduce((acc, [themeId, position]) => {
       const theme = themesMap[themeId];
       if (!theme) return acc;
 
@@ -143,7 +123,29 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
     };
 
     return { themesMap, filteredMatrix, priorityStats };
-  }, [themes, matrix, selectedCategory, selectedPriority]);
+  }, [safeThemes, safeMatrix, selectedCategory, selectedPriority]);
+
+  if (safeThemes.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Nenhum tema disponível para exibir a matriz</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (Object.keys(safeMatrix).length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Nenhum dado de matriz disponível</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
     switch (priority) {
@@ -168,11 +170,11 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
   };
 
   const handleExport = () => {
-    console.log('Exportar matriz', { filteredMatrix, themes: themesMap });
+    console.warn('Exportar matriz', { filteredMatrix, themes: themesMap });
   };
 
   // Matrix visualization component
-  const MatrixVisualization = ({ compact = false }: { compact?: boolean }) => {
+  const renderMatrixVisualization = (compact = false) => {
     const { width, height } = matrixDimensions;
     const isMobile = window.innerWidth < 640;
     
@@ -429,6 +431,9 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
     );
   };
 
+  const defaultMatrixVisualization = renderMatrixVisualization();
+  const compactMatrixVisualization = renderMatrixVisualization(true);
+
   return (
     <div className={className}>
       <Tabs defaultValue="matrix" className="space-y-4">
@@ -488,9 +493,9 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
                 </Select>
               </div>
               
-              {Object.keys(filteredMatrix).length !== Object.keys(matrix).length && (
+              {Object.keys(filteredMatrix).length !== Object.keys(safeMatrix).length && (
                 <Badge variant="secondary" className="ml-auto">
-                  {Object.keys(filteredMatrix).length}/{Object.keys(matrix).length} temas
+                  {Object.keys(filteredMatrix).length}/{Object.keys(safeMatrix).length} temas
                 </Badge>
               )}
             </div>
@@ -535,7 +540,7 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4">
-              <MatrixVisualization />
+              {defaultMatrixVisualization}
             </CardContent>
           </Card>
         </TabsContent>
@@ -669,10 +674,14 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
             </div>
           </DialogHeader>
           <div className="flex-1 overflow-auto">
-            <MatrixVisualization compact />
+            {compactMatrixVisualization}
           </div>
         </DialogContent>
       </Dialog>
     </div>
   );
+};
+
+export const MaterialityInteractiveMatrix = (props: MaterialityInteractiveMatrixProps) => {
+  return useMaterialityInteractiveMatrixComponent(props);
 };

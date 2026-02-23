@@ -52,7 +52,7 @@ serve(async (req) => {
       return new Response('Unauthorized: Invalid token', { status: 401, headers: corsHeaders })
     }
 
-    console.log(`User authenticated: ${user.id}`)
+    console.warn(`User authenticated: ${user.id}`)
 
     const { data: profile } = await supabaseClient
       .from('profiles')
@@ -65,7 +65,7 @@ serve(async (req) => {
       return new Response('User profile not found', { status: 404, headers: corsHeaders })
     }
 
-    console.log(`Profile found for user ${user.id}, company: ${profile.company_id}`)
+    console.warn(`Profile found for user ${user.id}, company: ${profile.company_id}`)
 
     // Verificar role da tabela user_roles (fonte de verdade)
     const { data: userRole } = await supabaseClient
@@ -79,12 +79,12 @@ serve(async (req) => {
       return new Response('Insufficient permissions', { status: 403, headers: corsHeaders })
     }
 
-    console.log(`User ${user.id} has role: ${userRole.role}`)
+    console.warn(`User ${user.id} has role: ${userRole.role}`)
 
     // Get request data
     const { period_start, period_end } = await req.json()
 
-    console.log(`Starting simplified GHG recalculation for company ${profile.company_id}`)
+    console.warn(`Starting simplified GHG recalculation for company ${profile.company_id}`)
 
     // Get activity data for the period (use admin client for data operations)
     const { data: activityData, error: activityError } = await supabaseAdmin
@@ -111,12 +111,12 @@ serve(async (req) => {
       throw new Error(`Failed to fetch activity data: ${activityError.message}`)
     }
 
-    console.log(`Found ${activityData?.length || 0} activity records to recalculate`)
+    console.warn(`Found ${activityData?.length || 0} activity records to recalculate`)
 
     if (activityData && activityData.length > 0) {
-      console.log('Sample activity record:', JSON.stringify(activityData[0], null, 2))
+      console.warn('Sample activity record:', JSON.stringify(activityData[0], null, 2))
     } else {
-      console.log('No activity data found for the specified period')
+      console.warn('No activity data found for the specified period')
     }
 
     let processedRecords = 0
@@ -126,7 +126,7 @@ serve(async (req) => {
     for (const activity of activityData || []) {
       try {
         processedRecords++
-        console.log(`Processing activity ${activity.id} - ${activity.emission_sources.name}`)
+        console.warn(`Processing activity ${activity.id} - ${activity.emission_sources.name}`)
 
         // Get compatible emission factors
         const { data: factors } = await supabaseClient
@@ -137,17 +137,17 @@ serve(async (req) => {
           .limit(5)
 
         if (!factors || factors.length === 0) {
-          console.log(`No emission factors found for category: ${activity.emission_sources.category}, activity: ${activity.id}`)
+          console.warn(`No emission factors found for category: ${activity.emission_sources.category}, activity: ${activity.id}`)
           continue
         }
 
         // Find compatible factor by unit or use the first one
         const factor = factors.find(f => f.activity_unit === activity.unit) || factors[0]
 
-        console.log(`Using emission factor: ${factor.name} (${factor.activity_unit}) for activity ${activity.id}`)
+        console.warn(`Using emission factor: ${factor.name} (${factor.activity_unit}) for activity ${activity.id}`)
 
         if (!factor.co2_factor && !factor.ch4_factor && !factor.n2o_factor) {
-          console.log(`Warning: Emission factor ${factor.id} has no CO2, CH4, or N2O factors`)
+          console.warn(`Warning: Emission factor ${factor.id} has no CO2, CH4, or N2O factors`)
         }
 
         // Use database function for calculation (use admin client)
@@ -203,7 +203,7 @@ serve(async (req) => {
           console.error(`Error saving calculation for activity ${activity.id}:`, calculationError)
         } else {
           successfulCalculations++
-          console.log(`Successfully calculated emissions for activity ${activity.id}: ${calculationResult.total_co2e_tonnes} tCO2e`)
+          console.warn(`Successfully calculated emissions for activity ${activity.id}: ${calculationResult.total_co2e_tonnes} tCO2e`)
         }
 
       } catch (activityError) {
@@ -224,7 +224,7 @@ serve(async (req) => {
       }
     }
 
-    console.log('Recalculation completed:', response)
+    console.warn('Recalculation completed:', response)
 
     return new Response(
       JSON.stringify(response),

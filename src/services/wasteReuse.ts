@@ -167,7 +167,7 @@ export async function calculateWasteReusePercentage(
     isImproving = reusePercentage > baselinePercentage;
     improvementPercent = reusePercentage - baselinePercentage;
   } catch (error) {
-    console.log('Dados do ano anterior não disponíveis para comparação');
+    console.warn('Dados do ano anterior não disponíveis para comparação');
   }
   
   // 5. Classificação de desempenho
