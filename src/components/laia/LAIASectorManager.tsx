@@ -42,9 +42,13 @@ import {
 import { Plus, Pencil, Trash2, Building2 } from "lucide-react";
 import type { LAIASector } from "@/types/laia";
 
-export function LAIASectorManager() {
-  const { data: sectors, isLoading } = useLAIASectors();
-  const createMutation = useCreateLAIASector();
+interface LAIASectorManagerProps {
+  branchId?: string;
+}
+
+export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
+  const { data: sectors, isLoading } = useLAIASectors(branchId);
+  const createMutation = useCreateLAIASector(branchId);
   const updateMutation = useUpdateLAIASector();
   const deleteMutation = useDeleteLAIASector();
 

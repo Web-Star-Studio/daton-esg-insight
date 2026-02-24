@@ -13931,6 +13931,7 @@ export type Database = {
       }
       laia_sectors: {
         Row: {
+          branch_id: string | null
           code: string
           company_id: string
           created_at: string | null
@@ -13941,6 +13942,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          branch_id?: string | null
           code: string
           company_id: string
           created_at?: string | null
@@ -13951,6 +13953,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          branch_id?: string | null
           code?: string
           company_id?: string
           created_at?: string | null
@@ -13961,6 +13964,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "laia_sectors_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "laia_sectors_company_id_fkey"
             columns: ["company_id"]

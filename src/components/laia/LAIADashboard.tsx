@@ -1,29 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLAIADashboardStats } from "@/hooks/useLAIA";
 import { 
   AlertTriangle, 
   CheckCircle2, 
   AlertCircle, 
-  Leaf,
-  BarChart3,
-  TrendingUp 
+  Leaf
 } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
-
-const SECTOR_COLORS = [
-  "#3b82f6", // blue
-  "#22c55e", // green
-  "#eab308", // yellow
-  "#ef4444", // red
-  "#8b5cf6", // purple
-  "#f97316", // orange
-  "#14b8a6", // teal
-  "#ec4899", // pink
-  "#6366f1", // indigo
-  "#84cc16", // lime
-];
 
 interface LAIADashboardProps {
   branchId?: string;
@@ -55,12 +38,6 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
       </Card>
     );
   }
-
-  const sectorChartData = stats.by_sector.map((s, i) => ({
-    name: s.sector_name,
-    value: s.count,
-    color: SECTOR_COLORS[i % SECTOR_COLORS.length],
-  }));
 
   return (
     <div className="space-y-6">
@@ -115,83 +92,6 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
             <p className="text-xs text-muted-foreground">
               Sob controle adequado
             </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Sector Distribution - Bar Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Distribuição por Atividade/Operação
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {sectorChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={sectorChartData} layout="vertical">
-                  <XAxis type="number" />
-                  <YAxis 
-                    dataKey="name" 
-                    type="category" 
-                    width={120}
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => value.length > 15 ? `${value.slice(0, 15)}...` : value}
-                  />
-                  <Tooltip />
-                  <Bar dataKey="value" name="Aspectos" radius={[0, 4, 4, 0]}>
-                    {sectorChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-[250px] items-center justify-center text-muted-foreground">
-                Nenhum dado disponível
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Sector Proportion - Pie Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Proporção por Atividade
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {sectorChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={sectorChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {sectorChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-[250px] items-center justify-center text-muted-foreground">
-                Nenhum dado disponível
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
