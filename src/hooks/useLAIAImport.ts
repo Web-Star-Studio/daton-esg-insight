@@ -50,9 +50,9 @@ export function useLAIAImport() {
   });
   
   const validateMutation = useMutation({
-    mutationFn: async (rows: ParsedLAIARow[]) => {
+    mutationFn: async ({ rows, branchId }: { rows: ParsedLAIARow[]; branchId?: string | null }) => {
       if (!companyId) throw new Error('Empresa não encontrada');
-      const result = await validateLAIAImport(rows, companyId);
+      const result = await validateLAIAImport(rows, companyId, branchId);
       return result;
     },
     onSuccess: (data) => {
@@ -146,7 +146,8 @@ export function useLAIAImport() {
     
     // Actions
     parseFile: parseMutation.mutate,
-    validate: validateMutation.mutate,
+    validate: (rows: ParsedLAIARow[], branchId?: string | null, options?: Parameters<typeof validateMutation.mutate>[1]) => 
+      validateMutation.mutate({ rows, branchId }, options),
     importAssessments: (rows: ParsedLAIARow[], branchId?: string | null) => 
       importMutation.mutate({ rows, branchId }),
     reset,
