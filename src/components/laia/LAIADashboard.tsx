@@ -7,6 +7,7 @@ import {
   AlertCircle, 
   Leaf
 } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 export interface LAIADashboardFilters {
   category?: string;
@@ -16,6 +17,108 @@ export interface LAIADashboardFilters {
 interface LAIADashboardProps {
   branchId?: string;
   onCardClick?: (filter?: LAIADashboardFilters) => void;
+}
+
+const CHART_COLORS = {
+  temporality: ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'],
+  operational_situation: ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-4))'],
+  incidence: ['hsl(var(--chart-1))', 'hsl(var(--chart-2))'],
+  impact_class: ['hsl(142, 71%, 45%)', 'hsl(0, 72%, 51%)'], // green / red
+};
+
+function CharacterizationChart({ 
+  title, 
+  data, 
+  colors 
+}: { 
+  title: string; 
+  data: { name: string; value: number }[]; 
+  colors: string[];
+}) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground text-center py-8">
+            Sem dados disponíveis
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+    if (percent < 0.05) return null;
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    return (
+      <text x={x} y={y} fill="hsl(var(--primary-foreground))" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={600}>
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="h-[200px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={renderLabel}
+                outerRadius={70}
+                innerRadius={30}
+                paddingAngle={2}
+                dataKey="value"
+              >
+                {data.map((_, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={colors[index % colors.length]}
+                    stroke="hsl(var(--background))"
+                    strokeWidth={2}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--popover))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  color: 'hsl(var(--popover-foreground))',
+                }}
+                formatter={(value: number) => [
+                  `${value} (${((value / total) * 100).toFixed(1)}%)`,
+                  'Avaliações'
+                ]}
+              />
+              <Legend 
+                verticalAlign="bottom" 
+                height={36}
+                formatter={(value) => (
+                  <span className="text-xs text-muted-foreground">{value}</span>
+                )}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function LAIADashboard({ branchId, onCardClick }: LAIADashboardProps) {
@@ -112,6 +215,30 @@ export function LAIADashboard({ branchId, onCardClick }: LAIADashboardProps) {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Characterization Charts */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <CharacterizationChart 
+          title="Temporalidade" 
+          data={stats.by_temporality} 
+          colors={CHART_COLORS.temporality} 
+        />
+        <CharacterizationChart 
+          title="Situação Operacional" 
+          data={stats.by_operational_situation} 
+          colors={CHART_COLORS.operational_situation} 
+        />
+        <CharacterizationChart 
+          title="Incidência" 
+          data={stats.by_incidence} 
+          colors={CHART_COLORS.incidence} 
+        />
+        <CharacterizationChart 
+          title="Classe de Impacto" 
+          data={stats.by_impact_class} 
+          colors={CHART_COLORS.impact_class} 
+        />
       </div>
     </div>
   );

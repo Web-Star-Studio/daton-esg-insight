@@ -342,7 +342,11 @@ export async function getLAIADashboardStats(branchId?: string): Promise<LAIADash
       id,
       category,
       significance,
-      activity_operation
+      activity_operation,
+      temporality,
+      operational_situation,
+      incidence,
+      impact_class
     `)
     .eq("company_id", profile.company_id)
     .eq("status", "ativo");
@@ -363,9 +367,22 @@ export async function getLAIADashboardStats(branchId?: string): Promise<LAIADash
     moderados: 0,
     despreziveis: 0,
     by_sector: [],
+    by_temporality: [],
+    by_operational_situation: [],
+    by_incidence: [],
+    by_impact_class: [],
   };
 
   const activityCounts: Record<string, number> = {};
+  const tempCounts: Record<string, number> = {};
+  const sitCounts: Record<string, number> = {};
+  const incCounts: Record<string, number> = {};
+  const classCounts: Record<string, number> = {};
+
+  const TEMP_LABELS: Record<string, string> = { passada: "Passada", atual: "Atual", futura: "Futura" };
+  const SIT_LABELS: Record<string, string> = { normal: "Normal", anormal: "Anormal", emergencia: "Emergência" };
+  const INC_LABELS: Record<string, string> = { direto: "Direto", indireto: "Indireto" };
+  const CLASS_LABELS: Record<string, string> = { benefico: "Benéfico", adverso: "Adverso" };
 
   assessments?.forEach((a) => {
     if (a.significance === "significativo") stats.significativos++;
@@ -377,11 +394,36 @@ export async function getLAIADashboardStats(branchId?: string): Promise<LAIADash
 
     const activityName = a.activity_operation || "Não especificada";
     activityCounts[activityName] = (activityCounts[activityName] ?? 0) + 1;
+
+    if (a.temporality) {
+      const label = TEMP_LABELS[a.temporality] || a.temporality;
+      tempCounts[label] = (tempCounts[label] ?? 0) + 1;
+    }
+    if (a.operational_situation) {
+      const label = SIT_LABELS[a.operational_situation] || a.operational_situation;
+      sitCounts[label] = (sitCounts[label] ?? 0) + 1;
+    }
+    if (a.incidence) {
+      const label = INC_LABELS[a.incidence] || a.incidence;
+      incCounts[label] = (incCounts[label] ?? 0) + 1;
+    }
+    if (a.impact_class) {
+      const label = CLASS_LABELS[a.impact_class] || a.impact_class;
+      classCounts[label] = (classCounts[label] ?? 0) + 1;
+    }
   });
 
   stats.by_sector = Object.entries(activityCounts)
     .map(([sector_name, count]) => ({ sector_name, count }))
     .sort((a, b) => b.count - a.count);
+
+  const toArray = (counts: Record<string, number>) =>
+    Object.entries(counts).map(([name, value]) => ({ name, value }));
+
+  stats.by_temporality = toArray(tempCounts);
+  stats.by_operational_situation = toArray(sitCounts);
+  stats.by_incidence = toArray(incCounts);
+  stats.by_impact_class = toArray(classCounts);
 
   return stats;
 }
