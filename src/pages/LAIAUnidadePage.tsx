@@ -85,10 +85,10 @@ export default function LAIAUnidadePage() {
   return (
     <>
       <Helmet>
-        <title>LAIA - {branch.name} | Plataforma Daton</title>
+        <title>LAIA - {branch.code || branch.name} | Plataforma Daton</title>
         <meta 
           name="description" 
-          content={`Aspectos e Impactos Ambientais - ${branch.name}`} 
+          content={`Aspectos e Impactos Ambientais - ${branch.code || branch.name}`} 
         />
       </Helmet>
 
@@ -105,7 +105,7 @@ export default function LAIAUnidadePage() {
                 LAIA
               </Link>
               <ChevronRight className="h-4 w-4" />
-              <span className="text-foreground font-medium">{branch.name}</span>
+              <span className="text-foreground font-medium">{branch.code || branch.name}</span>
             </nav>
             
             {/* Title */}
@@ -121,7 +121,7 @@ export default function LAIAUnidadePage() {
               <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">
                   <Leaf className="h-6 w-6 text-green-600" />
-                  {branch.name}
+                  {branch.code ? `${branch.code} - ${branch.name}` : branch.name}
                   {branch.is_headquarters && (
                     <Badge variant="secondary" className="ml-2">Matriz</Badge>
                   )}
