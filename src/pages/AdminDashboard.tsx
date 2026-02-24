@@ -4,7 +4,8 @@ import { AuditTrailModule } from '@/components/admin/AuditTrailModule';
 import { SystemStatsModule } from '@/components/admin/SystemStatsModule';
 import { SystemConfigModule } from '@/components/admin/SystemConfigModule';
 import { HealthCheckModule } from '@/components/admin/HealthCheckModule';
-import { Shield, BarChart3, Settings, Activity } from 'lucide-react';
+import { UserInviteModule } from '@/components/admin/UserInviteModule';
+import { Shield, BarChart3, Settings, Activity, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ShieldAlert } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -44,8 +45,12 @@ const AdminDashboard = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="audit" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+      <Tabs defaultValue="users" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Usuários</span>
+          </TabsTrigger>
           <TabsTrigger value="audit" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">Auditoria</span>
@@ -63,6 +68,10 @@ const AdminDashboard = () => {
             <span className="hidden sm:inline">Health Check</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="users">
+          <UserInviteModule />
+        </TabsContent>
 
         <TabsContent value="audit">
           <AuditTrailModule />
