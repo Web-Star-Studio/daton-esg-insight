@@ -83,7 +83,7 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
   }, [initialFilters]);
   const [deleteAssessment, setDeleteAssessment] = useState<LAIAAssessment | null>(null);
 
-  const { data: sectors } = useLAIASectors();
+  const { data: sectors } = useLAIASectors(branchId);
   const { data: assessments, isLoading } = useLAIAAssessments(filters);
   const deleteMutation = useDeleteLAIAAssessment();
 
