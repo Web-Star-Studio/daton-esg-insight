@@ -132,7 +132,7 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-24">Código</TableHead>
-                  <TableHead>Nome</TableHead>
+                  <TableHead>Atividade</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead className="w-24">Status</TableHead>
                   <TableHead className="w-24 text-right">Ações</TableHead>
@@ -230,12 +230,12 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Nome *</Label>
+              <Label htmlFor="name">Atividade *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ex: Produção, Administrativo, Logística"
+                placeholder="Ex: Fabricação de produtos químicos, Manutenção de equipamentos"
               />
             </div>
 
