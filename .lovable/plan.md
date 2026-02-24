@@ -1,52 +1,48 @@
 
 
-# Duas alteracoes no modulo LAIA
+# Make Dashboard Cards Navigate to Filtered Assessments
 
-## 1. Remover infograficos da Visao Geral
+## Overview
 
-No componente `LAIADashboard.tsx`, remover os dois graficos (BarChart de "Distribuicao por Atividade/Operacao" e PieChart de "Proporcao por Atividade"), mantendo apenas os 4 cards de resumo (Total, Significativos, Criticos, Nao Significativos).
+The four summary cards in the LAIA unit dashboard (Total, Significativos, Criticos, Nao Significativos) will become clickable, switching to the "Avaliacoes" tab with the relevant filter pre-applied.
 
-### Alteracoes:
-- **`src/components/laia/LAIADashboard.tsx`**: Remover linhas 122-197 (bloco `{/* Charts */}` inteiro), e remover imports nao utilizados (`PieChart`, `Pie`, `Cell`, `ResponsiveContainer`, `BarChart`, `Bar`, `XAxis`, `YAxis`, `Tooltip`, `Legend`, `BarChart3`, `TrendingUp`, e a constante `SECTOR_COLORS`).
+## Filter Mapping
 
----
+| Card                | Filter Applied                        |
+|---------------------|---------------------------------------|
+| Total de Aspectos   | Switch to Avaliacoes tab (no filter)  |
+| Significativos      | `significance = "significativo"`      |
+| Criticos            | `category = "critico"`                |
+| Nao Significativos  | `significance = "nao_significativo"`  |
 
-## 2. Tornar setores unicos por unidade (branch)
+## Changes
 
-Atualmente a tabela `laia_sectors` tem escopo apenas por `company_id`, ou seja, setores sao compartilhados entre todas as unidades. O usuario precisa que cada unidade tenha seus proprios setores independentes.
+### 1. `src/components/laia/LAIADashboard.tsx`
 
-### Alteracoes no banco de dados:
-- Adicionar coluna `branch_id UUID REFERENCES branches(id)` na tabela `laia_sectors`
-- Criar indice unico `(company_id, branch_id, code)` para garantir que o codigo do setor seja unico dentro de cada unidade
-- Atualizar RLS policies para considerar `branch_id`
+- Add an `onCardClick` callback prop: `(filter?: { category?: string; significance?: string }) => void`
+- Wrap each card with a clickable handler that calls `onCardClick` with the appropriate filter
+- Add `cursor-pointer hover:shadow-md transition-shadow` styling to cards
 
-### Alteracoes no codigo:
+### 2. `src/components/laia/LAIAAssessmentTable.tsx`
 
-**`src/services/laiaService.ts`**:
-- `getLAIASectors()` passa a receber `branchId` como parametro e filtrar `.eq("branch_id", branchId)`
-- `createLAIASector()` passa a receber e salvar `branch_id`
+- Add an optional `initialFilters` prop to allow parent to set filters from outside
+- Use a `useEffect` to sync `initialFilters` into the internal filter state when it changes
 
-**`src/hooks/useLAIA.ts`**:
-- `useLAIASectors()` passa a receber `branchId` como parametro e repassar ao service
-- `useCreateLAIASector()` passa a receber `branchId`
-- Query keys incluem `branchId` para cache correto
+### 3. `src/pages/LAIAUnidadePage.tsx`
 
-**`src/components/laia/LAIASectorManager.tsx`**:
-- Receber `branchId` como prop
-- Repassar `branchId` para os hooks de sectors
+- Add state for `assessmentInitialFilters`
+- Pass `onCardClick` to `LAIADashboard` that:
+  1. Sets the initial filters state
+  2. Switches `activeTab` to `"assessments"`
+- Pass `initialFilters` to `LAIAAssessmentTable`
 
-**`src/pages/LAIAUnidadePage.tsx`**:
-- Passar `branchId` para `LAIASectorManager`
+## Technical Details
 
-**`src/components/laia/LAIAAssessmentForm.tsx`**:
-- Garantir que o dropdown de setores filtre por `branchId`
+The flow is:
+1. User clicks a card in the dashboard
+2. `LAIADashboard` calls `onCardClick({ significance: "significativo" })` (for example)
+3. `LAIAUnidadePage` stores the filter and switches to the assessments tab
+4. `LAIAAssessmentTable` receives the filter via `initialFilters` prop and applies it
+5. User sees the filtered list of assessments
 
-### Detalhes tecnicos da migracao SQL
-
-```sql
-ALTER TABLE laia_sectors ADD COLUMN branch_id UUID REFERENCES branches(id);
-CREATE UNIQUE INDEX laia_sectors_company_branch_code ON laia_sectors(company_id, branch_id, code);
-```
-
-Os setores existentes (sem `branch_id`) continuarao funcionando como setores "globais" da empresa ate serem reassociados a unidades especificas. Novos setores criados dentro de uma unidade serao automaticamente vinculados ao `branch_id` correspondente.
-
+No database or service changes required -- this is purely a UI wiring change across 3 files.
