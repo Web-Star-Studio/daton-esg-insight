@@ -151,24 +151,27 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
                       {sector.description || "-"}
                     </TableCell>
                     <TableCell>
-                      <Switch
-                        checked={sector.is_active}
-                        onCheckedChange={() => handleToggleActive(sector)}
-                      />
+                      <div onClick={e => e.stopPropagation()}>
+                        <Switch
+                          checked={sector.is_active}
+                          onCheckedChange={() => handleToggleActive(sector)}
+                        />
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => handleOpenEdit(sector)}
+                          onClick={(e) => { e.stopPropagation(); handleOpenEdit(sector); }}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setDeletingSector(sector);
                             setIsDeleteDialogOpen(true);
                           }}
