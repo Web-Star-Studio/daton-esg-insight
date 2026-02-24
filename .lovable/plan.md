@@ -1,50 +1,52 @@
 
 
-# Fix: Titulo da unidade LAIA mostrando nome generico em vez do codigo
+# Duas alteracoes no modulo LAIA
 
-## Problema
+## 1. Remover infograficos da Visao Geral
 
-Todas as 18 filiais da empresa possuem o mesmo `name` ("TRANSPORTES GABARDO LTDA") e se diferenciam pelo campo `code` (SJP, DUQUE, CAMACARI, EUSEBIO, etc.). A pagina `/laia/unidade/:branchId` exibe `branch.name` no titulo e no breadcrumb, tornando impossivel distinguir as unidades.
+No componente `LAIADashboard.tsx`, remover os dois graficos (BarChart de "Distribuicao por Atividade/Operacao" e PieChart de "Proporcao por Atividade"), mantendo apenas os 4 cards de resumo (Total, Significativos, Criticos, Nao Significativos).
 
-## Solucao
+### Alteracoes:
+- **`src/components/laia/LAIADashboard.tsx`**: Remover linhas 122-197 (bloco `{/* Charts */}` inteiro), e remover imports nao utilizados (`PieChart`, `Pie`, `Cell`, `ResponsiveContainer`, `BarChart`, `Bar`, `XAxis`, `YAxis`, `Tooltip`, `Legend`, `BarChart3`, `TrendingUp`, e a constante `SECTOR_COLORS`).
 
-### Arquivo: `src/pages/LAIAUnidadePage.tsx`
+---
 
-Criar uma funcao helper para exibir o nome legivel da unidade, priorizando o `code` quando disponivel:
+## 2. Tornar setores unicos por unidade (branch)
 
-```text
-Logica de exibicao:
-- Se tem code: mostrar code (ex: "SJP", "DUQUE", "CAMACARI")  
-- Se nao tem code: mostrar name (fallback)
-- Subtitulo: mostrar name completo quando code esta presente
+Atualmente a tabela `laia_sectors` tem escopo apenas por `company_id`, ou seja, setores sao compartilhados entre todas as unidades. O usuario precisa que cada unidade tenha seus proprios setores independentes.
+
+### Alteracoes no banco de dados:
+- Adicionar coluna `branch_id UUID REFERENCES branches(id)` na tabela `laia_sectors`
+- Criar indice unico `(company_id, branch_id, code)` para garantir que o codigo do setor seja unico dentro de cada unidade
+- Atualizar RLS policies para considerar `branch_id`
+
+### Alteracoes no codigo:
+
+**`src/services/laiaService.ts`**:
+- `getLAIASectors()` passa a receber `branchId` como parametro e filtrar `.eq("branch_id", branchId)`
+- `createLAIASector()` passa a receber e salvar `branch_id`
+
+**`src/hooks/useLAIA.ts`**:
+- `useLAIASectors()` passa a receber `branchId` como parametro e repassar ao service
+- `useCreateLAIASector()` passa a receber `branchId`
+- Query keys incluem `branchId` para cache correto
+
+**`src/components/laia/LAIASectorManager.tsx`**:
+- Receber `branchId` como prop
+- Repassar `branchId` para os hooks de sectors
+
+**`src/pages/LAIAUnidadePage.tsx`**:
+- Passar `branchId` para `LAIASectorManager`
+
+**`src/components/laia/LAIAAssessmentForm.tsx`**:
+- Garantir que o dropdown de setores filtre por `branchId`
+
+### Detalhes tecnicos da migracao SQL
+
+```sql
+ALTER TABLE laia_sectors ADD COLUMN branch_id UUID REFERENCES branches(id);
+CREATE UNIQUE INDEX laia_sectors_company_branch_code ON laia_sectors(company_id, branch_id, code);
 ```
 
-Pontos de alteracao:
-
-1. **Breadcrumb** (linha ~101): trocar `branch.name` pelo codigo/nome legivel
-2. **Titulo h1** (linha ~113): trocar `branch.name` pelo codigo/nome legivel
-3. **Helmet title** (linha ~91): usar o codigo no titulo da aba do navegador
-
-Exemplo visual apos a correcao:
-
-```text
-ANTES:
-  LAIA > TRANSPORTES GABARDO LTDA
-  TRANSPORTES GABARDO LTDA [Matriz]
-
-DEPOIS (para filial com code "SJP"):
-  LAIA > SJP
-  SJP - TRANSPORTES GABARDO LTDA
-
-DEPOIS (para matriz com code "MATRIZ"):
-  LAIA > MATRIZ
-  MATRIZ - TRANSPORTES GABARDO LTDA [Matriz]
-```
-
-### Detalhes tecnicos
-
-- Usar `branch.code || branch.name` para o texto principal
-- No breadcrumb e titulo, exibir `branch.code ? \`${branch.code} - ${branch.name}\` : branch.name` para contexto completo no titulo, e apenas `branch.code || branch.name` no breadcrumb
-- Sem alteracoes em servicos ou banco de dados
-- Alteracao limitada a 1 arquivo
+Os setores existentes (sem `branch_id`) continuarao funcionando como setores "globais" da empresa ate serem reassociados a unidades especificas. Novos setores criados dentro de uma unidade serao automaticamente vinculados ao `branch_id` correspondente.
 
