@@ -100,6 +100,10 @@ export interface LAIADashboardStats {
   moderados: number;
   despreziveis: number;
   by_sector: { sector_name: string; count: number }[];
+  by_temporality: { name: string; value: number }[];
+  by_operational_situation: { name: string; value: number }[];
+  by_incidence: { name: string; value: number }[];
+  by_impact_class: { name: string; value: number }[];
 }
 
 // Constants
