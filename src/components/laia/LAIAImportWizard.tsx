@@ -68,7 +68,8 @@ export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardPr
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(branchId || null);
-  const [skipBranch, setSkipBranch] = useState(!!branchId);
+  const [skipBranch, setSkipBranch] = useState(false);
+  const hasPropBranch = !!branchId;
   const { user } = useAuth();
   
   const {
@@ -126,16 +127,16 @@ export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardPr
   };
   
   const handleValidate = () => {
-    const branchToUse = skipBranch ? null : selectedBranchId;
-    validate(parsedRows, branchToUse, {
+    const effectiveBranchId = branchId || (skipBranch ? null : selectedBranchId);
+    validate(parsedRows, effectiveBranchId, {
       onSuccess: () => setStep('validate'),
     });
   };
   
   const handleImport = () => {
     const rowsToImport = validationResult?.validRows || parsedRows;
-    const branchToUse = skipBranch ? null : selectedBranchId;
-    importAssessments(rowsToImport, branchToUse);
+    const effectiveBranchId = branchId || (skipBranch ? null : selectedBranchId);
+    importAssessments(rowsToImport, effectiveBranchId);
     setStep('result');
   };
   
@@ -261,14 +262,14 @@ export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardPr
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+              <div className="space-y-4">
                   <Select 
                     value={selectedBranchId || ''} 
                     onValueChange={(value) => {
                       setSelectedBranchId(value);
                       setSkipBranch(false);
                     }}
-                    disabled={skipBranch}
+                    disabled={skipBranch || hasPropBranch}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecione uma filial..." />
@@ -290,19 +291,21 @@ export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardPr
                     </SelectContent>
                   </Select>
 
-                  <div className="flex items-center gap-2 p-4 rounded-lg border bg-muted/50">
-                    <Checkbox 
-                      id="skip-branch"
-                      checked={skipBranch}
-                      onCheckedChange={(checked) => {
-                        setSkipBranch(checked === true);
-                        if (checked) setSelectedBranchId(null);
-                      }}
-                    />
-                    <label htmlFor="skip-branch" className="text-sm cursor-pointer">
-                      Importar sem vincular a uma filial específica
-                    </label>
-                  </div>
+                  {!hasPropBranch && (
+                    <div className="flex items-center gap-2 p-4 rounded-lg border bg-muted/50">
+                      <Checkbox 
+                        id="skip-branch"
+                        checked={skipBranch}
+                        onCheckedChange={(checked) => {
+                          setSkipBranch(checked === true);
+                          if (checked) setSelectedBranchId(null);
+                        }}
+                      />
+                      <label htmlFor="skip-branch" className="text-sm cursor-pointer">
+                        Importar sem vincular a uma filial específica
+                      </label>
+                    </div>
+                  )}
 
                   {selectedBranch && (
                     <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
