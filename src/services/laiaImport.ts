@@ -598,6 +598,21 @@ export async function importLAIAAssessments(
         sectorsCreated.push(sectorCode);
       } catch (err) {
         console.error(`Erro ao criar setor ${sectorCode}:`, err);
+        // Retry: maybe sector was created concurrently or constraint blocked it
+        // Re-query by (company_id, branch_id, code) to recover
+        let retryQuery = supabase
+          .from('laia_sectors')
+          .select('id, code')
+          .eq('company_id', companyId)
+          .eq('code', sectorCode);
+        if (branchId) retryQuery = retryQuery.eq('branch_id', branchId);
+        const { data: retrySector } = await retryQuery.maybeSingle();
+        if (retrySector) {
+          sectorMap.set(sectorCode, retrySector.id);
+          console.log(`Setor ${sectorCode} recuperado após falha de criação`);
+        } else {
+          errors.push({ row: 0, message: `Falha ao criar setor "${sectorCode}": ${err instanceof Error ? err.message : String(err)}` });
+        }
       }
     }
   }
