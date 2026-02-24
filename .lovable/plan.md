@@ -1,48 +1,28 @@
 
 
-# Make Dashboard Cards Navigate to Filtered Assessments
+# Fix: Filtro de setor na tabela de avaliacoes LAIA nao esta filtrado por unidade
 
-## Overview
+## Problema
 
-The four summary cards in the LAIA unit dashboard (Total, Significativos, Criticos, Nao Significativos) will become clickable, switching to the "Avaliacoes" tab with the relevant filter pre-applied.
+Na tabela de avaliacoes (`LAIAAssessmentTable.tsx`), o dropdown de setores chama `useLAIASectors()` sem passar o `branchId`, fazendo com que nenhum setor apareca (ja que os setores agora sao vinculados por unidade).
 
-## Filter Mapping
+## Solucao
 
-| Card                | Filter Applied                        |
-|---------------------|---------------------------------------|
-| Total de Aspectos   | Switch to Avaliacoes tab (no filter)  |
-| Significativos      | `significance = "significativo"`      |
-| Criticos            | `category = "critico"`                |
-| Nao Significativos  | `significance = "nao_significativo"`  |
+### Arquivo: `src/components/laia/LAIAAssessmentTable.tsx`
 
-## Changes
+Uma unica alteracao na linha 86:
 
-### 1. `src/components/laia/LAIADashboard.tsx`
+**Antes:**
+```ts
+const { data: sectors } = useLAIASectors();
+```
 
-- Add an `onCardClick` callback prop: `(filter?: { category?: string; significance?: string }) => void`
-- Wrap each card with a clickable handler that calls `onCardClick` with the appropriate filter
-- Add `cursor-pointer hover:shadow-md transition-shadow` styling to cards
+**Depois:**
+```ts
+const { data: sectors } = useLAIASectors(branchId);
+```
 
-### 2. `src/components/laia/LAIAAssessmentTable.tsx`
+Isso garante que o dropdown de setores exiba apenas os setores pertencentes a unidade atual, permitindo a filtragem correta.
 
-- Add an optional `initialFilters` prop to allow parent to set filters from outside
-- Use a `useEffect` to sync `initialFilters` into the internal filter state when it changes
+Nenhuma outra alteracao necessaria -- o filtro de setor ja esta implementado na UI e no backend, apenas faltava passar o `branchId` para o hook.
 
-### 3. `src/pages/LAIAUnidadePage.tsx`
-
-- Add state for `assessmentInitialFilters`
-- Pass `onCardClick` to `LAIADashboard` that:
-  1. Sets the initial filters state
-  2. Switches `activeTab` to `"assessments"`
-- Pass `initialFilters` to `LAIAAssessmentTable`
-
-## Technical Details
-
-The flow is:
-1. User clicks a card in the dashboard
-2. `LAIADashboard` calls `onCardClick({ significance: "significativo" })` (for example)
-3. `LAIAUnidadePage` stores the filter and switches to the assessments tab
-4. `LAIAAssessmentTable` receives the filter via `initialFilters` prop and applies it
-5. User sees the filtered list of assessments
-
-No database or service changes required -- this is purely a UI wiring change across 3 files.
