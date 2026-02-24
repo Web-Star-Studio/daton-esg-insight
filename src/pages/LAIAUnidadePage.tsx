@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LAIADashboard } from "@/components/laia/LAIADashboard";
+import type { LAIADashboardFilters } from "@/components/laia/LAIADashboard";
+import type { LAIAAssessmentTableInitialFilters } from "@/components/laia/LAIAAssessmentTable";
 import { LAIASectorManager } from "@/components/laia/LAIASectorManager";
 import { LAIAAssessmentTable } from "@/components/laia/LAIAAssessmentTable";
 import { LAIAAssessmentForm } from "@/components/laia/LAIAAssessmentForm";
@@ -38,6 +40,12 @@ export default function LAIAUnidadePage() {
   const [selectedAssessment, setSelectedAssessment] = useState<LAIAAssessment | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [assessmentFilters, setAssessmentFilters] = useState<LAIAAssessmentTableInitialFilters | undefined>();
+
+  const handleCardClick = (filter?: LAIADashboardFilters) => {
+    setAssessmentFilters(filter ? { category: filter.category, significance: filter.significance } : undefined);
+    setActiveTab("assessments");
+  };
 
   const handleView = (assessment: LAIAAssessment) => {
     setSelectedAssessment(assessment);
@@ -179,7 +187,7 @@ export default function LAIAUnidadePage() {
             </TabsList>
 
             <TabsContent value="dashboard" className="mt-6">
-              <LAIADashboard branchId={branchId} />
+              <LAIADashboard branchId={branchId} onCardClick={handleCardClick} />
             </TabsContent>
 
             <TabsContent value="assessments" className="mt-6">
@@ -187,6 +195,7 @@ export default function LAIAUnidadePage() {
                 branchId={branchId}
                 onView={handleView}
                 onEdit={handleEdit}
+                initialFilters={assessmentFilters}
               />
             </TabsContent>
 

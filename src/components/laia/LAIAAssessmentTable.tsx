@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,13 +50,19 @@ import {
 import { getCategoryColor, getSignificanceColor } from "@/types/laia";
 import type { LAIAAssessment } from "@/types/laia";
 
+export interface LAIAAssessmentTableInitialFilters {
+  category?: string;
+  significance?: string;
+}
+
 interface LAIAAssessmentTableProps {
   branchId?: string;
   onView?: (assessment: LAIAAssessment) => void;
   onEdit?: (assessment: LAIAAssessment) => void;
+  initialFilters?: LAIAAssessmentTableInitialFilters;
 }
 
-export function LAIAAssessmentTable({ branchId, onView, onEdit }: LAIAAssessmentTableProps) {
+export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }: LAIAAssessmentTableProps) {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<{
     branch_id?: string;
@@ -65,6 +71,16 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit }: LAIAAssessment
     significance?: string;
     status?: string;
   }>({ branch_id: branchId });
+
+  useEffect(() => {
+    if (initialFilters) {
+      setFilters(prev => ({
+        ...prev,
+        category: initialFilters.category,
+        significance: initialFilters.significance,
+      }));
+    }
+  }, [initialFilters]);
   const [deleteAssessment, setDeleteAssessment] = useState<LAIAAssessment | null>(null);
 
   const { data: sectors } = useLAIASectors();
