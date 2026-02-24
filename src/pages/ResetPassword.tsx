@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, Building2, CheckCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { Lock, Building2, CheckCircle, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { validatePassword, getPasswordRequirementChecks } from '@/utils/passwordValidation';
@@ -15,6 +15,7 @@ export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
+  const [isExpiredLink, setIsExpiredLink] = useState(false);
   const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,17 +23,25 @@ export default function ResetPassword() {
   useEffect(() => {
     // Check if there's a valid recovery session
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // Check URL for recovery token
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      
+      // Check for error in hash (expired/invalid OTP)
+      const error = hashParams.get('error');
+      const errorCode = hashParams.get('error_code');
+      if (error || errorCode === 'otp_expired') {
+        setIsExpiredLink(true);
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        setChecking(false);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
       const accessToken = hashParams.get('access_token');
       const type = hashParams.get('type');
       
       if (type === 'recovery' && accessToken) {
         setIsValidSession(true);
       } else if (session) {
-        // Allow password change for logged in users
         setIsValidSession(true);
       } else {
         toast({
@@ -145,6 +154,21 @@ export default function ResetPassword() {
                 <p className="text-sm text-muted-foreground text-center">
                   Sua senha foi alterada com sucesso. Redirecionando para o dashboard...
                 </p>
+              </div>
+            ) : isExpiredLink ? (
+              <div className="flex flex-col items-center py-6 gap-4">
+                <div className="rounded-full bg-destructive/10 p-4">
+                  <AlertTriangle className="h-10 w-10 text-destructive" />
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  O link de recuperação expirou ou já foi utilizado. Solicite um novo link para redefinir sua senha.
+                </p>
+                <Button 
+                  className="w-full" 
+                  onClick={() => navigate('/auth')}
+                >
+                  Solicitar novo link
+                </Button>
               </div>
             ) : isValidSession ? (
               <form onSubmit={handleSubmit} className="space-y-4">

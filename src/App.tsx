@@ -24,6 +24,7 @@ import RouteValidator from "@/components/RouteValidator";
 import { GlobalKeyboardShortcuts } from "@/components/GlobalKeyboardShortcuts";
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications";
 import SmoothScroll from "@/components/layout/SmoothScroll";
+import AuthErrorHandler from "@/components/AuthErrorHandler";
 
 
 // Páginas críticas carregadas sincronamente
@@ -257,6 +258,7 @@ const AppContent = () => {
 
   return (
     <>
+      <AuthErrorHandler />
       <RouteValidator>
         <GlobalKeyboardShortcuts />
         <PageTransition>
