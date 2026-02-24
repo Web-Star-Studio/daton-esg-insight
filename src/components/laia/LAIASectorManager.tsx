@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,8 @@ import {
   useLAIASectors, 
   useCreateLAIASector, 
   useUpdateLAIASector, 
-  useDeleteLAIASector 
+  useDeleteLAIASector,
+  useLAIAAssessments,
 } from "@/hooks/useLAIA";
 import { Plus, Pencil, Trash2, Building2, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -50,9 +51,24 @@ interface LAIASectorManagerProps {
 export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
   const navigate = useNavigate();
   const { data: sectors, isLoading } = useLAIASectors(branchId);
+  const { data: assessments } = useLAIAAssessments({ branch_id: branchId });
   const createMutation = useCreateLAIASector(branchId);
   const updateMutation = useUpdateLAIASector();
   const deleteMutation = useDeleteLAIASector();
+
+  const activitiesBySector = useMemo(() => {
+    const map = new Map<string, string[]>();
+    assessments?.forEach((a) => {
+      if (a.sector_id && a.activity_operation) {
+        const existing = map.get(a.sector_id) || [];
+        if (!existing.includes(a.activity_operation)) {
+          existing.push(a.activity_operation);
+        }
+        map.set(a.sector_id, existing);
+      }
+    });
+    return map;
+  }, [assessments]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -146,7 +162,22 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
                     onClick={() => branchId && navigate(`/laia/unidade/${branchId}/setor/${sector.id}`)}
                   >
                     <TableCell className="font-mono font-medium">{sector.code}</TableCell>
-                    <TableCell className="text-primary hover:underline">{sector.name}</TableCell>
+                    <TableCell className="text-primary hover:underline">
+                      {(() => {
+                        const activities = activitiesBySector.get(sector.id);
+                        if (!activities || activities.length === 0) return "-";
+                        const shown = activities.slice(0, 3);
+                        const remaining = activities.length - 3;
+                        return (
+                          <span>
+                            {shown.join(", ")}
+                            {remaining > 0 && (
+                              <span className="text-muted-foreground ml-1">+{remaining} mais</span>
+                            )}
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {sector.description || "-"}
                     </TableCell>
