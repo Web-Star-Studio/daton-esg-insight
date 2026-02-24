@@ -39,7 +39,8 @@ import {
   useUpdateLAIASector, 
   useDeleteLAIASector 
 } from "@/hooks/useLAIA";
-import { Plus, Pencil, Trash2, Building2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Building2, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { LAIASector } from "@/types/laia";
 
 interface LAIASectorManagerProps {
@@ -47,6 +48,7 @@ interface LAIASectorManagerProps {
 }
 
 export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
+  const navigate = useNavigate();
   const { data: sectors, isLoading } = useLAIASectors(branchId);
   const createMutation = useCreateLAIASector(branchId);
   const updateMutation = useUpdateLAIASector();
@@ -138,9 +140,13 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
               </TableHeader>
               <TableBody>
                 {sectors.map((sector) => (
-                  <TableRow key={sector.id}>
+                  <TableRow 
+                    key={sector.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => branchId && navigate(`/laia/unidade/${branchId}/setor/${sector.id}`)}
+                  >
                     <TableCell className="font-mono font-medium">{sector.code}</TableCell>
-                    <TableCell>{sector.name}</TableCell>
+                    <TableCell className="text-primary hover:underline">{sector.name}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {sector.description || "-"}
                     </TableCell>
