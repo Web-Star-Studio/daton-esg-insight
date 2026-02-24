@@ -1,67 +1,97 @@
 
 
-# Corrigir setores sem branch_id que nao aparecem mais
+# Pagina de Detalhes do Setor na LAIA
 
-## Problema
+## Objetivo
+Criar uma pagina de detalhes para cada setor dentro de uma unidade, exibindo as avaliacoes daquele setor com filtros especificos (temporalidade, situacao operacional, incidencia e classe de impacto).
 
-Todos os setores existentes no banco de dados possuem `branch_id = NULL` pois foram criados antes da refatoracao para arquitetura por unidade. Com a alteracao recente que adicionou `.eq("branch_id", branchId)` na query, esses setores deixaram de aparecer.
+## Arquitetura
 
-## Solucao
+### Nova rota
+`/laia/unidade/:branchId/setor/:sectorId`
 
-Duas acoes complementares:
+### Arquivos a criar
 
-### 1. Corrigir dados existentes (SQL)
+**1. `src/pages/LAIASectorDetailPage.tsx`**
+- Pagina principal com breadcrumb: LAIA > Unidade X > Setor Y
+- Header com nome/codigo do setor e estatisticas resumidas (total de avaliacoes, criticos, significativos)
+- Filtros: temporalidade, situacao operacional, incidencia, classe de impacto
+- Tabela de avaliacoes filtrada pelo setor
+- Reutiliza os componentes existentes (`LAIAAssessmentDetail` para visualizar detalhes)
 
-Executar um UPDATE para associar os setores orfaos a uma unidade. Como os setores existentes podem estar vinculados a avaliacoes de qualquer unidade, a abordagem mais segura e associar cada setor a unidade onde ele e mais usado.
+### Arquivos a modificar
 
-Primeiro, verificar quais unidades existem e associar os setores que nao tem `branch_id` a unidade correta com base nas avaliacoes existentes:
+**2. `src/App.tsx`**
+- Adicionar rota: `/laia/unidade/:branchId/setor/:sectorId` apontando para `LAIASectorDetailPage`
 
-```sql
--- Atualizar setores baseado na unidade mais usada nas avaliacoes
-UPDATE laia_sectors s
-SET branch_id = sub.branch_id
-FROM (
-  SELECT a.sector_id, a.branch_id, COUNT(*) as cnt
-  FROM laia_assessments a
-  WHERE a.sector_id IS NOT NULL AND a.branch_id IS NOT NULL
-  GROUP BY a.sector_id, a.branch_id
-  ORDER BY a.sector_id, cnt DESC
-) sub
-WHERE s.id = sub.sector_id AND s.branch_id IS NULL;
+**3. `src/components/laia/LAIASectorManager.tsx`**
+- Tornar cada linha da tabela de setores clicavel, navegando para a pagina de detalhes do setor
+- Adicionar botao "Ver Detalhes" ou link no nome do setor
+
+**4. `src/services/laiaService.ts`**
+- Adicionar suporte aos novos filtros (`temporality`, `operational_situation`, `incidence`, `impact_class`) na funcao `getLAIAAssessments`
+
+**5. `src/hooks/useLAIA.ts`**
+- Atualizar tipagem dos filtros para incluir os novos campos
+
+## Detalhes da Pagina de Detalhes do Setor
+
+### Layout
+
+```text
++-------------------------------------------------------+
+| LAIA > Unidade ABC > Setor PROD                       |
+| [<- Voltar]                                           |
+|                                                       |
+| PROD - Producao                                       |
+| Descricao do setor                                    |
+|                                                       |
+| [Total: 12] [Criticos: 3] [Significativos: 5]        |
+|                                                       |
+| Filtros:                                              |
+| [Temporalidade v] [Sit. Operacional v]                |
+| [Incidencia v]    [Classe v]                          |
+|                                                       |
+| Tabela de avaliacoes do setor                         |
+| Codigo | Atividade | Aspecto | Impacto | Pont. | ... |
++-------------------------------------------------------+
 ```
 
-Para setores que nao tem nenhuma avaliacao associada, sera necessario definir manualmente ou perguntar ao usuario qual unidade usar.
+### Filtros disponíveis
+- **Temporalidade**: Passada, Atual, Futura
+- **Situacao Operacional**: Normal, Anormal, Emergencia
+- **Incidencia**: Direto, Indireto
+- **Classe de Impacto**: Benefico, Adverso
 
-### 2. Tornar a query mais robusta (codigo)
+### Navegacao
+- Na aba "Setores" da pagina da unidade, clicar no nome do setor leva a pagina de detalhes
+- Breadcrumb permite voltar para a unidade ou para a lista de unidades
 
-No `laiaService.ts`, alterar a logica para que, quando `branchId` for fornecido, busque setores COM aquele `branch_id` OU setores sem `branch_id` (para compatibilidade). Isso garante que setores antigos continuem visiveis enquanto sao migrados.
+## Secao Tecnica
 
-**Arquivo:** `src/services/laiaService.ts` (linhas 30-32)
-
-Substituir:
-```ts
-if (branchId) {
-  query = query.eq("branch_id", branchId);
+### Filtros no service (`getLAIAAssessments`)
+Adicionar as seguintes clausulas opcionais:
+```typescript
+if (filters?.temporality) {
+  query = query.eq("temporality", filters.temporality);
+}
+if (filters?.operational_situation) {
+  query = query.eq("operational_situation", filters.operational_situation);
+}
+if (filters?.incidence) {
+  query = query.eq("incidence", filters.incidence);
+}
+if (filters?.impact_class) {
+  query = query.eq("impact_class", filters.impact_class);
 }
 ```
 
-Por:
-```ts
-if (branchId) {
-  query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-}
+### Rota no App.tsx
+```typescript
+<Route path="/laia/unidade/:branchId/setor/:sectorId" 
+  element={<ProtectedLazyPageWrapper><LAIASectorDetailPage /></ProtectedLazyPageWrapper>} />
 ```
 
-Isso mostra tanto os setores ja vinculados a unidade quanto os setores legados sem unidade definida, evitando perda de dados.
-
-### 3. Garantir que novos setores sejam criados com branch_id
-
-Verificar que o `LAIASectorManager` e `createLAIASector` ja passam o `branchId` ao criar setores -- isso ja esta funcionando conforme o codigo atual em `useLAIA.ts`.
-
-## Resumo
-
-| Acao | Arquivo/Local | Descricao |
-|------|---------------|-----------|
-| Alterar query | `laiaService.ts` linha 30-32 | Usar `.or()` para incluir setores sem branch_id |
-| Migrar dados | SQL no banco | Associar setores orfaos as unidades corretas |
+### Cards de estatisticas
+Calculados client-side a partir das avaliacoes retornadas para o setor, usando os mesmos padroes visuais do `LAIADashboard`.
 
