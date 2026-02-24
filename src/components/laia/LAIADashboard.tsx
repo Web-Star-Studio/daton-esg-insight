@@ -8,11 +8,17 @@ import {
   Leaf
 } from "lucide-react";
 
-interface LAIADashboardProps {
-  branchId?: string;
+export interface LAIADashboardFilters {
+  category?: string;
+  significance?: string;
 }
 
-export function LAIADashboard({ branchId }: LAIADashboardProps) {
+interface LAIADashboardProps {
+  branchId?: string;
+  onCardClick?: (filter?: LAIADashboardFilters) => void;
+}
+
+export function LAIADashboard({ branchId, onCardClick }: LAIADashboardProps) {
   const { data: stats, isLoading, error } = useLAIADashboardStats(branchId);
 
   if (isLoading) {
@@ -43,7 +49,10 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card 
+          className="cursor-pointer transition-shadow hover:shadow-md"
+          onClick={() => onCardClick?.()}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Aspectos</CardTitle>
             <Leaf className="h-4 w-4 text-muted-foreground" />
@@ -56,7 +65,10 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer transition-shadow hover:shadow-md"
+          onClick={() => onCardClick?.({ significance: "significativo" })}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Significativos</CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -69,7 +81,10 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer transition-shadow hover:shadow-md"
+          onClick={() => onCardClick?.({ category: "critico" })}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Críticos</CardTitle>
             <AlertCircle className="h-4 w-4 text-red-600" />
@@ -82,7 +97,10 @@ export function LAIADashboard({ branchId }: LAIADashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer transition-shadow hover:shadow-md"
+          onClick={() => onCardClick?.({ significance: "nao_significativo" })}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Não Significativos</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-500" />
