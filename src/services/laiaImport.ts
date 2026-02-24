@@ -453,28 +453,33 @@ export async function parseLAIAExcel(file: File): Promise<{ rows: ParsedLAIARow[
 
 export async function validateLAIAImport(
   rows: ParsedLAIARow[],
-  companyId: string
+  companyId: string,
+  branchId?: string | null
 ): Promise<ValidationResult> {
   const errors: ValidationError[] = [];
   const warnings: ValidationWarning[] = [];
   const validRows: ParsedLAIARow[] = [];
   const invalidRows: { row: ParsedLAIARow; errors: string[] }[] = [];
   
-  // Get existing sectors
-  const { data: existingSectors } = await supabase
+  // Get existing sectors (scoped by branch)
+  let sectorsQuery = supabase
     .from('laia_sectors')
     .select('code, id')
     .eq('company_id', companyId);
+  if (branchId) sectorsQuery = sectorsQuery.eq('branch_id', branchId);
+  const { data: existingSectors } = await sectorsQuery;
   
   const existingSectorCodes = new Set((existingSectors || []).map(s => s.code.toUpperCase()));
   const sectorsFound = new Set<string>();
   const newSectors = new Set<string>();
   
-  // Get existing aspect codes to check duplicates
-  const { data: existingAssessments } = await supabase
+  // Get existing aspect codes to check duplicates (scoped by branch)
+  let assessmentsQuery = supabase
     .from('laia_assessments')
     .select('aspect_code')
     .eq('company_id', companyId);
+  if (branchId) assessmentsQuery = assessmentsQuery.eq('branch_id', branchId);
+  const { data: existingAssessments } = await assessmentsQuery;
   
   const existingAspectCodes = new Set((existingAssessments || []).map(a => a.aspect_code));
   
@@ -559,11 +564,13 @@ export async function importLAIAAssessments(
   const errors: { row: number; message: string }[] = [];
   let imported = 0;
   
-  // Get or create sectors
-  const { data: existingSectors } = await supabase
+  // Get or create sectors (scoped by branch)
+  let sectorsQuery = supabase
     .from('laia_sectors')
     .select('code, id')
     .eq('company_id', companyId);
+  if (branchId) sectorsQuery = sectorsQuery.eq('branch_id', branchId);
+  const { data: existingSectors } = await sectorsQuery;
   
   const sectorMap = new Map((existingSectors || []).map(s => [s.code.toUpperCase(), s.id]));
   
@@ -585,6 +592,7 @@ export async function importLAIAAssessments(
           code: sectorCode,
           name: `Setor ${sectorCode}`,
           description: 'Criado automaticamente pela importação',
+          branch_id: branchId || undefined,
         });
         sectorMap.set(sectorCode, newSector.id);
         sectorsCreated.push(sectorCode);

@@ -126,7 +126,8 @@ export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardPr
   };
   
   const handleValidate = () => {
-    validate(parsedRows, {
+    const branchToUse = skipBranch ? null : selectedBranchId;
+    validate(parsedRows, branchToUse, {
       onSuccess: () => setStep('validate'),
     });
   };
