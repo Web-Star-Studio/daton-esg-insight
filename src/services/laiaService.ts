@@ -9,7 +9,7 @@ import {
 
 // ============ Sectors ============
 
-export async function getLAIASectors(): Promise<LAIASector[]> {
+export async function getLAIASectors(branchId?: string): Promise<LAIASector[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário não autenticado");
 
@@ -21,17 +21,23 @@ export async function getLAIASectors(): Promise<LAIASector[]> {
 
   if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("laia_sectors")
     .select("*")
     .eq("company_id", profile.company_id)
     .order("code");
 
+  if (branchId) {
+    query = query.eq("branch_id", branchId);
+  }
+
+  const { data, error } = await query;
+
   if (error) throw error;
   return (data ?? []) as LAIASector[];
 }
 
-export async function createLAIASector(sector: { code: string; name: string; description?: string }): Promise<LAIASector> {
+export async function createLAIASector(sector: { code: string; name: string; description?: string; branch_id?: string }): Promise<LAIASector> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário não autenticado");
 
@@ -50,6 +56,7 @@ export async function createLAIASector(sector: { code: string; name: string; des
       code: sector.code,
       name: sector.name,
       description: sector.description,
+      branch_id: sector.branch_id || null,
     })
     .select()
     .single();

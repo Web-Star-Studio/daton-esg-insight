@@ -85,7 +85,7 @@ const defaultFormData: LAIAAssessmentFormData = {
 
 export function LAIAAssessmentForm({ branchId, onSuccess, onCancel }: LAIAAssessmentFormProps) {
   const { toast } = useToast();
-  const { data: sectors } = useLAIASectors();
+  const { data: sectors } = useLAIASectors(branchId);
   const createMutation = useCreateLAIAAssessment();
   
   const [currentStep, setCurrentStep] = useState(1);

@@ -191,7 +191,7 @@ export default function LAIAUnidadePage() {
             </TabsContent>
 
             <TabsContent value="sectors" className="mt-6">
-              <LAIASectorManager />
+              <LAIASectorManager branchId={branchId} />
             </TabsContent>
           </Tabs>
         )}

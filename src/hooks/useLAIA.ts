@@ -5,19 +5,20 @@ import type { LAIAAssessmentFormData } from "@/types/laia";
 
 // ============ Sectors ============
 
-export function useLAIASectors() {
+export function useLAIASectors(branchId?: string) {
   return useQuery({
-    queryKey: ["laia-sectors"],
-    queryFn: laiaService.getLAIASectors,
+    queryKey: ["laia-sectors", branchId],
+    queryFn: () => laiaService.getLAIASectors(branchId),
   });
 }
 
-export function useCreateLAIASector() {
+export function useCreateLAIASector(branchId?: string) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: laiaService.createLAIASector,
+    mutationFn: (sector: { code: string; name: string; description?: string }) =>
+      laiaService.createLAIASector({ ...sector, branch_id: branchId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["laia-sectors"] });
       toast({
