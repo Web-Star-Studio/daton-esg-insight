@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLAIAAssessments, useLAIASectors, useDeleteLAIAAssessment } from "@/hooks/useLAIA";
+import { useLAIAAssessments, useDeleteLAIAAssessment } from "@/hooks/useLAIA";
 import { 
   Search, 
   MoreVertical, 
@@ -64,9 +64,9 @@ interface LAIAAssessmentTableProps {
 
 export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }: LAIAAssessmentTableProps) {
   const [search, setSearch] = useState("");
+  const [activityFilter, setActivityFilter] = useState<string>("all");
   const [filters, setFilters] = useState<{
     branch_id?: string;
-    sector_id?: string;
     category?: string;
     significance?: string;
     status?: string;
@@ -83,11 +83,17 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
   }, [initialFilters]);
   const [deleteAssessment, setDeleteAssessment] = useState<LAIAAssessment | null>(null);
 
-  const { data: sectors } = useLAIASectors(branchId);
   const { data: assessments, isLoading } = useLAIAAssessments(filters);
+
+  const uniqueActivities = useMemo(() => {
+    if (!assessments) return [];
+    const activities = [...new Set(assessments.map(a => a.activity_operation).filter(Boolean))];
+    return activities.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [assessments]);
   const deleteMutation = useDeleteLAIAAssessment();
 
   const filteredAssessments = assessments?.filter((a) => {
+    if (activityFilter !== "all" && a.activity_operation !== activityFilter) return false;
     if (!search) return true;
     const searchLower = search.toLowerCase();
     return (
@@ -106,7 +112,8 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
   };
 
   const clearFilters = () => {
-    setFilters({});
+    setFilters({ branch_id: branchId });
+    setActivityFilter("all");
     setSearch("");
   };
 
@@ -163,17 +170,17 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
             </div>
 
             <Select
-              value={filters.sector_id || "all"}
-              onValueChange={(v) => setFilters({ ...filters, sector_id: v === "all" ? undefined : v })}
+              value={activityFilter}
+              onValueChange={setActivityFilter}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Setor" />
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Atividade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Setores</SelectItem>
-                {sectors?.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.code} - {s.name}
+                <SelectItem value="all">Todas as Atividades</SelectItem>
+                {uniqueActivities.map((activity) => (
+                  <SelectItem key={activity} value={activity}>
+                    {activity}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -208,7 +215,7 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
               </SelectContent>
             </Select>
 
-            {(filters.sector_id || filters.category || filters.significance || search) && (
+            {(activityFilter !== "all" || filters.category || filters.significance || search) && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <Filter className="mr-2 h-4 w-4" />
                 Limpar Filtros
