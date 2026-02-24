@@ -1,90 +1,185 @@
 
-# Tratar erros de OTP expirado no fluxo de recuperacao de senha
+# Controle Granular de Acesso a Modulos por Usuario
 
-## Problema
+## Objetivo
+Permitir que admins da organizacao definam exatamente quais modulos cada usuario pode acessar, diretamente no formulario de gestao de usuarios do `/admin-dashboard`.
 
-Quando o token de recuperacao expira ou ja foi usado, o Supabase redireciona para a raiz (`/`) com `#error=access_denied&error_code=otp_expired`. A aplicacao nao detecta esse erro, e o usuario ve a tela normal sem nenhum feedback.
+## Arquitetura
 
-## Solucao
+### Camada de dados
 
-Interceptar o hash de erro na URL e redirecionar o usuario para uma tela informativa com opcao de solicitar novo link.
+Nova tabela `user_module_access` que registra quais modulos cada usuario pode acessar:
 
-### 1. Criar componente `src/components/AuthErrorHandler.tsx`
-
-Um componente que roda no nivel do App e monitora o hash da URL:
-
-- Detecta `#error=access_denied` no hash
-- Extrai `error_code` e `error_description`
-- Mostra um toast com mensagem amigavel ("Link expirado ou invalido")
-- Redireciona automaticamente para `/auth` apos 3 segundos
-- Limpa o hash da URL para evitar reprocessamento
-
-Logica principal:
 ```text
-useEffect:
-  1. Ler window.location.hash
-  2. Se contem "error=access_denied":
-     - Extrair error_code (otp_expired, etc)
-     - Mostrar toast descritivo
-     - Limpar hash (history.replaceState)
-     - navigate('/auth')
+user_module_access
++----------------+------+-------------------+
+| user_id (uuid) | FK   | references auth.users(id) ON DELETE CASCADE |
+| module_key     | text | ex: "financial", "quality"                  |
+| granted        | bool | default true                                |
+| granted_by     | uuid | quem concedeu                               |
+| created_at     | ts   | default now()                               |
++----------------+------+-------------------+
+PK: (user_id, module_key)
 ```
 
-### 2. Modificar `src/App.tsx`
+RLS:
+- SELECT: usuarios podem ler seus proprios registros; admins podem ler todos da empresa (via `get_user_company_id()`)
+- INSERT/UPDATE/DELETE: apenas admins da mesma empresa
 
-- Importar e renderizar `AuthErrorHandler` dentro do Router (precisa de acesso ao `useNavigate`)
-- Posicionar antes das rotas, sem impacto visual
+Quando nenhum registro existe para um usuario, o comportamento padrao sera "acesso a todos os modulos" (permissivo por padrao), evitando quebrar usuarios existentes.
 
-### 3. Melhorar `src/pages/ResetPassword.tsx`
+### Camada de servico
 
-- Adicionar tratamento do caso onde o hash contem `error=` em vez de `access_token`
-- Se detectar erro no hash, mostrar mensagem amigavel com botao para solicitar novo link em vez de apenas redirecionar silenciosamente
+**Novo hook `useUserModuleAccess`**:
+- `getUserModules(userId)`: retorna lista de module_keys permitidos
+- `updateUserModules(userId, moduleKeys[])`: substitui os modulos permitidos (delete all + insert)
+- `hasModuleAccess(moduleKey)`: verifica se o usuario logado tem acesso ao modulo
 
-## Resultado esperado
+**Modificar `useModuleSettings`**:
+- Adicionar uma camada de verificacao: alem de checar se o modulo esta habilitado globalmente (`platform_module_settings`), tambem verificar se o usuario tem acesso individual (`user_module_access`)
+- A logica sera: modulo visivel = habilitado globalmente AND (sem restricoes por usuario OR usuario tem acesso)
 
-- Token expirado: usuario ve toast "Link expirado, solicite um novo" e e redirecionado para /auth
-- Token ja usado (segunda tentativa): mesmo tratamento
-- Fluxo normal (token valido): sem mudanca, continua funcionando como antes
+### Camada de UI
 
-## Secao tecnica
+**Modificar `UserFormModal.tsx`**:
+- Adicionar uma secao "Acesso a Modulos" abaixo do campo de role
+- Lista de checkboxes com todos os modulos disponiveis (vindos de `platform_module_settings`)
+- Checkbox "Acesso Total" que marca/desmarca todos
+- Ao salvar, persiste as selecoes em `user_module_access`
 
-### AuthErrorHandler.tsx
+**Modificar `UserInviteModule.tsx`**:
+- Ao criar/editar usuario, passar os modulos selecionados para o fluxo de save
+- No dialog de detalhes do usuario, mostrar os modulos permitidos
+
+## Secao Tecnica
+
+### Migration SQL
+
+```sql
+CREATE TABLE public.user_module_access (
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  module_key text NOT NULL,
+  granted boolean DEFAULT true NOT NULL,
+  granted_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  PRIMARY KEY (user_id, module_key)
+);
+
+ALTER TABLE public.user_module_access ENABLE ROW LEVEL SECURITY;
+
+-- Users can read their own access
+CREATE POLICY "Users can read own module access"
+ON public.user_module_access FOR SELECT TO authenticated
+USING (user_id = auth.uid());
+
+-- Admins can read all in their company
+CREATE POLICY "Admins can read company module access"
+ON public.user_module_access FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = auth.uid()
+    AND role IN ('admin', 'super_admin', 'platform_admin')
+  )
+);
+
+-- Admins can manage module access
+CREATE POLICY "Admins can manage module access"
+ON public.user_module_access FOR ALL TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = auth.uid()
+    AND role IN ('admin', 'super_admin', 'platform_admin')
+  )
+);
+```
+
+### Hook `useUserModuleAccess`
 
 ```typescript
-// Componente sem UI, apenas logica
-const AuthErrorHandler = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  useEffect(() => {
-    const hash = window.location.hash;
-    if (hash.includes('error=')) {
-      const params = new URLSearchParams(hash.substring(1));
-      const errorCode = params.get('error_code');
-      
-      // Mensagens por tipo de erro
-      const messages = {
-        otp_expired: 'O link expirou. Solicite um novo.',
-        access_denied: 'Acesso negado. Tente novamente.',
-      };
-      
-      toast({
-        variant: "destructive",
-        title: "Link invalido ou expirado",
-        description: messages[errorCode] || params.get('error_description'),
-      });
-      
-      // Limpar hash e redirecionar
-      window.history.replaceState(null, '', window.location.pathname);
-      navigate('/auth');
+// Buscar modulos de um usuario especifico
+const { data } = useQuery({
+  queryKey: ['user-module-access', userId],
+  queryFn: () => supabase
+    .from('user_module_access')
+    .select('module_key')
+    .eq('user_id', userId)
+    .eq('granted', true)
+});
+
+// Salvar modulos (upsert pattern)
+const saveModules = useMutation({
+  mutationFn: async ({ userId, modules }) => {
+    // Delete existing
+    await supabase.from('user_module_access')
+      .delete().eq('user_id', userId);
+    // Insert selected
+    if (modules.length > 0) {
+      await supabase.from('user_module_access')
+        .insert(modules.map(m => ({
+          user_id: userId,
+          module_key: m,
+          granted: true,
+          granted_by: currentUserId
+        })));
     }
-  }, []);
-  
-  return null;
+  }
+});
+```
+
+### Modificacao no `useModuleSettings`
+
+Na funcao `isModuleVisible`, adicionar verificacao do acesso do usuario:
+
+```typescript
+const isModuleVisible = (moduleKey: string): boolean => {
+  // 1. Checar se modulo esta habilitado globalmente
+  const globallyEnabled = /* logica existente */;
+  if (!globallyEnabled) return false;
+
+  // 2. Checar acesso individual do usuario
+  if (userModuleAccess && userModuleAccess.length > 0) {
+    return userModuleAccess.some(m => m.module_key === moduleKey);
+  }
+
+  // 3. Sem restricoes = acesso total (backward compatible)
+  return true;
 };
 ```
 
-### Arquivos modificados
-- `src/components/AuthErrorHandler.tsx` (novo)
-- `src/App.tsx` (adicionar AuthErrorHandler)
-- `src/pages/ResetPassword.tsx` (tratar hash de erro)
+### Modificacao no `UserFormModal`
+
+Adicionar secao com checkboxes dos modulos:
+
+```text
++-------------------------------------------+
+| Acesso a Modulos                          |
+| [x] Acesso Total                          |
+| ----------------------------------------- |
+| [x] ESG Ambiental    [x] ESG Social      |
+| [x] ESG Governanca   [x] Gestao ESG      |
+| [x] Qualidade (SGQ)  [x] Fornecedores    |
+| [ ] Financeiro        [ ] Dados e Relat.  |
+| [x] Configuracoes    [x] Ajuda           |
++-------------------------------------------+
+```
+
+### Fluxo completo
+
+```text
+Admin abre formulario de usuario
+  -> Carrega modulos disponiveis (platform_module_settings)
+  -> Carrega modulos do usuario (user_module_access)
+  -> Renderiza checkboxes
+  -> Admin seleciona modulos
+  -> Salva usuario + modulos
+  -> Sidebar do usuario alvo filtra modulos automaticamente
+```
+
+### Arquivos modificados/criados
+1. **Migration SQL** - Criar tabela `user_module_access`
+2. **`src/hooks/useUserModuleAccess.ts`** (novo) - Hook para CRUD de acesso a modulos
+3. **`src/hooks/useModuleSettings.ts`** - Integrar verificacao de acesso do usuario
+4. **`src/components/users/UserFormModal.tsx`** - Adicionar secao de modulos
+5. **`src/components/admin/UserInviteModule.tsx`** - Passar modulos no fluxo de save e exibir nos detalhes
