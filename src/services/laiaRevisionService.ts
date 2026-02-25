@@ -33,6 +33,16 @@ export interface LAIARevisionChange {
   changed_at: string;
   // Joined
   changer?: { full_name: string } | null;
+  // Enriched context
+  assessment_info?: {
+    aspect_code: string;
+    activity_operation: string;
+    environmental_aspect: string;
+    environmental_impact: string;
+    sector_name?: string;
+  };
+  branch_name?: string;
+  sector_info?: { code: string; name: string };
 }
 
 export interface ChangeInput {
@@ -153,9 +163,59 @@ export async function getRevisionById(id: string): Promise<LAIARevision & { chan
 
   if (changesError) throw changesError;
 
+  const changesArr = (changes || []) as any[] as LAIARevisionChange[];
+
+  // Enrich with contextual data
+  const assessmentIds = [...new Set(changesArr.filter(c => c.entity_type === 'assessment').map(c => c.entity_id))];
+  const sectorIds = [...new Set(changesArr.filter(c => c.entity_type === 'sector').map(c => c.entity_id))];
+  const branchIds = [...new Set(changesArr.filter(c => c.branch_id).map(c => c.branch_id!))];
+
+  const [assessmentsRes, branchesRes, sectorsRes] = await Promise.all([
+    assessmentIds.length > 0
+      ? supabase.from("laia_assessments").select("id, aspect_code, activity_operation, environmental_aspect, environmental_impact, sector:laia_sectors(name)").in("id", assessmentIds)
+      : Promise.resolve({ data: [] }),
+    branchIds.length > 0
+      ? supabase.from("branches").select("id, name, code").in("id", branchIds)
+      : Promise.resolve({ data: [] }),
+    sectorIds.length > 0
+      ? supabase.from("laia_sectors").select("id, code, name").in("id", sectorIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const assessmentMap = new Map((assessmentsRes.data || []).map((a: any) => [a.id, a]));
+  const branchMap = new Map((branchesRes.data || []).map((b: any) => [b.id, b]));
+  const sectorMap = new Map((sectorsRes.data || []).map((s: any) => [s.id, s]));
+
+  changesArr.forEach(change => {
+    if (change.entity_type === 'assessment') {
+      const assessment = assessmentMap.get(change.entity_id);
+      if (assessment) {
+        change.assessment_info = {
+          aspect_code: assessment.aspect_code,
+          activity_operation: assessment.activity_operation,
+          environmental_aspect: assessment.environmental_aspect,
+          environmental_impact: assessment.environmental_impact,
+          sector_name: assessment.sector?.name,
+        };
+      }
+    }
+    if (change.entity_type === 'sector') {
+      const sector = sectorMap.get(change.entity_id);
+      if (sector) {
+        change.sector_info = { code: sector.code, name: sector.name };
+      }
+    }
+    if (change.branch_id) {
+      const branch = branchMap.get(change.branch_id);
+      if (branch) {
+        change.branch_name = branch.code ? `${branch.code} - ${branch.name}` : branch.name;
+      }
+    }
+  });
+
   return {
     ...(data as any),
-    changes: (changes || []) as unknown as LAIARevisionChange[],
+    changes: changesArr,
   };
 }
 
