@@ -1,49 +1,58 @@
 
 
-# Corrigir importação de funcionários para incluir Data de Admissão
+# Bulk Status Update para Funcionários
 
-## Problema
+## Objetivo
 
-O serviço de importação de funcionários (`src/services/employeeImport.ts`) ignora qualquer coluna de data de admissão presente no arquivo importado. Em vez disso, define `hire_date` como a data do dia da importação (`new Date()`), causando todos os funcionários terem a mesma data.
+Adicionar seleção em lote (checkboxes) na lista de funcionários para permitir alterar o status (Ativo/Inativo) de múltiplos funcionários simultaneamente.
 
-**1.847 registros** foram afetados com `hire_date = 2025-12-19`.
+## Arquivos a criar/modificar
 
-## Causa raiz
+### 1. `src/services/employees.ts` (modificar)
 
-- A interface `ParsedEmployee` não possui campo para data de admissão
-- A função `parseEmployeeExcel()` não busca colunas como "Admissão", "Data Admissão", "Data de Contratação"
-- A inserção no banco usa `new Date().toISOString().split('T')[0]` como fallback fixo
-
-## Alterações necessárias
-
-### 1. `src/services/employeeImport.ts`
-
-**a) Adicionar campo `admissao` à interface `ParsedEmployee`:**
+Adicionar função `bulkUpdateEmployeeStatus`:
 ```typescript
-export interface ParsedEmployee {
-  // ... campos existentes
-  admissao: string; // YYYY-MM-DD ou ''
-}
+export const bulkUpdateEmployeeStatus = async (
+  employeeIds: string[], 
+  status: string
+) => { ... }
 ```
+Executa um `UPDATE employees SET status = $status WHERE id IN (...)`.
 
-**b) No `parseEmployeeExcel()`, mapear colunas de data de admissão:**
-Buscar variações: "Admissão", "ADMISSÃO", "Data de Admissão", "Data Admissão", "Contratação", "Hire Date", "Data Contratacao"
+### 2. `src/components/EmployeesList.tsx` (modificar)
 
-Usar a mesma função `parseDate()` já existente para nascimento.
+Alterações principais:
 
-**c) Na inserção, usar a data parseada com fallback:**
-```typescript
-hire_date: emp.admissao || new Date().toISOString().split('T')[0],
-```
+**a) Estado de seleção:**
+- Adicionar `selectedIds: Set<string>` para rastrear funcionários selecionados
+- Checkbox "selecionar todos" no topo da lista (seleciona apenas os da página atual)
+- Checkbox individual em cada card de funcionário
 
-### 2. Template de importação (se existir)
+**b) Barra de ações em lote (inline, não componente separado):**
+- Aparece quando `selectedIds.size > 0`
+- Barra fixa no rodapé (padrão similar ao `BulkActionsBar` já existente no projeto)
+- Exibe contagem de selecionados
+- Botões: "Ativar" e "Inativar"
+- Botão "Limpar seleção"
 
-Adicionar coluna "Admissão" ao modelo XLSX de funcionários para que o usuário saiba que pode informar essa data.
+**c) Fluxo:**
+1. Usuário marca checkboxes nos cards dos funcionários
+2. Barra de ações aparece no rodapé
+3. Usuário clica "Ativar" ou "Inativar"
+4. Confirmação via `confirm()` dialog
+5. Chamada `bulkUpdateEmployeeStatus`
+6. Invalidação das queries e limpeza da seleção
+7. Toast de sucesso/erro
 
-### Sobre os dados existentes
+### 3. Layout dos checkboxes
 
-Os 1.847 registros com `hire_date = 2025-12-19` precisariam ser corrigidos manualmente ou via reimportação. Isso é uma decisão do usuário — o sistema não tem como adivinhar as datas corretas retroativamente.
+Cada card de funcionário receberá um `Checkbox` (componente já existente em `ui/checkbox.tsx`) à esquerda do Avatar, com visual discreto. O checkbox "selecionar todos" ficará na barra de filtros, ao lado do campo de busca.
 
-### Arquivos a modificar
-- **`src/services/employeeImport.ts`** — adicionar parsing e mapeamento do campo de admissão
+## Detalhes técnicos
+
+- Usa `Checkbox` de `@radix-ui/react-checkbox` já instalado
+- Seleção persiste apenas na página atual (ao mudar de página, limpa)
+- Status utiliza strings em português: "Ativo", "Inativo" (conforme padrão documentado)
+- Invalidação de queries: `employees-paginated`, `employees-stats`, `employees`
+- Sem necessidade de migration — campo `status` já existe na tabela `employees`
 
