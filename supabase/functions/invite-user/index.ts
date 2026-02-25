@@ -23,7 +23,7 @@ function generateRandomPassword(length = 16): string {
   const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const lower = "abcdefghijklmnopqrstuvwxyz";
   const digits = "0123456789";
-  const symbols = "!@#$%&*?";
+  const symbols = "!@#$%*?";
   const all = upper + lower + digits + symbols;
 
   // Ensure at least one of each type
@@ -47,6 +47,15 @@ function generateRandomPassword(length = 16): string {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr.join("");
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -482,7 +491,7 @@ function buildEmailHtml(params: {
                 </table>
                 <p style="margin: 8px 0 4px; color: #374151; font-size: 14px;"><strong>Senha temporária:</strong></p>
                 <p style="margin: 4px 0 0; background-color: #ffffff; border: 1px solid #d1d5db; padding: 10px 14px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 16px; letter-spacing: 1px; color: #1f2937; word-break: break-all;">
-                  ${password}
+                  ${escapeHtml(password)}
                 </p>
                 <p style="margin: 12px 0 0; color: #dc2626; font-size: 13px;">
                   ⚠️ <strong>Importante:</strong> Altere sua senha após o primeiro acesso em Configurações &gt; Segurança.
