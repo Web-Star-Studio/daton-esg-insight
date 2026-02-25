@@ -1,80 +1,74 @@
 
 
-# Bulk Delete para Avaliações e Setores no Módulo LAIA
+# Redesign do Email de Convite — Profissional e Minimalista
 
-## Contexto
+## Problema
 
-As tabs de **Avaliações** (`LAIAAssessmentTable`) e **Setores** (`LAIASectorManager`) na página de detalhes da unidade LAIA permitem apenas exclusão individual. O usuário precisa de seleção múltipla com exclusão em lote, seguindo o padrão já utilizado no módulo de Funcionários (bulk select com barra de ações flutuante).
+O template atual do email de convite (`supabase/functions/invite-user/index.ts`, função `buildEmailHtml`) tem visual excessivamente decorativo: gradientes coloridos, emojis (🔑, ⚠️), caixas coloridas com bordas laterais, sombras. O usuário quer algo mais profissional e minimalista, incluindo a logo do sistema.
 
-## Arquivos a modificar
+## Design proposto
 
-### 1. `src/services/laiaService.ts`
-
-Adicionar duas funções de bulk delete:
-
-```typescript
-export async function bulkDeleteLAIAAssessments(ids: string[]): Promise<void> {
-  const { error } = await supabase
-    .from("laia_assessments")
-    .delete()
-    .in("id", ids);
-  if (error) throw error;
-}
-
-export async function bulkDeleteLAIASectors(ids: string[]): Promise<void> {
-  const { error } = await supabase
-    .from("laia_sectors")
-    .delete()
-    .in("id", ids);
-  if (error) throw error;
-}
-```
-
-### 2. `src/hooks/useLAIA.ts`
-
-Adicionar dois hooks de mutation:
-
-- `useBulkDeleteLAIAAssessments` — chama `bulkDeleteLAIAAssessments`, invalida queries `laia-assessments` e `laia-dashboard-stats`
-- `useBulkDeleteLAIASectors` — chama `bulkDeleteLAIASectors`, invalida query `laia-sectors`
-
-### 3. `src/components/laia/LAIAAssessmentTable.tsx`
-
-Alterações na tabela de avaliações:
-
-- **Estado**: adicionar `selectedIds: Set<string>`
-- **Checkbox "selecionar todos"** no `TableHeader`, primeira coluna
-- **Checkbox individual** em cada `TableRow`, primeira coluna
-- **Barra de ações flutuante** no rodapé (padrão do projeto): aparece quando `selectedIds.size > 0`, exibindo contagem + botão "Excluir Selecionados"
-- **AlertDialog de confirmação** para bulk delete com mensagem informando a quantidade
-- Limpar seleção ao mudar filtros
-- Importar `Checkbox` de `@/components/ui/checkbox`
-
-### 4. `src/components/laia/LAIASectorManager.tsx`
-
-Mesma lógica aplicada à tabela de setores:
-
-- **Estado**: adicionar `selectedIds: Set<string>`
-- **Checkbox "selecionar todos"** no `TableHeader`
-- **Checkbox individual** em cada `TableRow` (com `e.stopPropagation()` para não disparar navegação)
-- **Barra de ações flutuante** com botão "Excluir Selecionados"
-- **AlertDialog de confirmação** para bulk delete
-- Aviso na confirmação: "Esta ação pode afetar avaliações vinculadas aos setores selecionados"
-
-## Layout da barra de ações
-
-Seguindo o padrão existente (`BulkActionsBar.tsx` e implementação de Funcionários):
+Layout limpo, fundo branco, tipografia sóbria, sem emojis, sem gradientes, sem caixas coloridas:
 
 ```text
-┌──────────────────────────────────────────────────────┐
-│  [3 selecionado(s)]  │  [🗑 Excluir Selecionados]  [✕] │
-└──────────────────────────────────────────────────────┘
-         (fixa no rodapé, centralizada, z-50)
+┌─────────────────────────────────────┐
+│                                     │
+│           [Logo Daton]              │
+│                                     │
+├─────────────────────────────────────┤
+│                                     │
+│  Olá, Douglas Araújo.               │
+│                                     │
+│  Você foi convidado(a) por [nome]   │
+│  para a equipe da [empresa] na      │
+│  plataforma Daton.                  │
+│                                     │
+│  Papel: Visualizador                │
+│                                     │
+│  ─────────────────────────────────  │
+│                                     │
+│  Email: douglas@email.com           │
+│  Senha temporária: Aeep9t$y7IMs     │
+│                                     │
+│  Altere sua senha após o primeiro   │
+│  acesso em Configurações >          │
+│  Segurança.                         │
+│                                     │
+│         [ Acessar Plataforma ]      │
+│                                     │
+├─────────────────────────────────────┤
+│  © 2026 Daton                       │
+└─────────────────────────────────────┘
 ```
 
-## Detalhes técnicos
+Características:
+- Fundo externo `#f9fafb`, card branco sem sombra pesada
+- Logo do sistema no topo (usando URL pública do asset publicado)
+- Sem emojis, sem gradientes, sem bordas laterais coloridas
+- Botão CTA com cor sólida `#059669` (verde Daton), sem gradiente
+- Tipografia limpa, cores neutras (`#111827`, `#6b7280`)
+- Senha em bloco monospace com fundo cinza claro sutil
+- Aviso de troca de senha em texto simples, sem ícone
 
-- Checkboxes usam `@radix-ui/react-checkbox` (já instalado)
-- Seleção limpa ao trocar filtros (categoria, significância, busca, atividade)
-- `stopPropagation` nos checkboxes dos setores para evitar navegação acidental
-- Sem necessidade de migrations — operações DELETE já permitidas pelas RLS existentes
+## Logo no email
+
+A logo está em `src/assets/daton-logo-header.png`. Para emails HTML, precisa de URL absoluta. Usaremos a URL do app publicado: `https://daton-esg-insight.lovable.app/assets/...` — porém como assets do Vite têm hash, a abordagem mais confiável é copiar a logo para a pasta `public/` (ex: `public/logo-email.png`) para ter URL estável, ou fazer upload para o storage do Supabase.
+
+A solução mais simples: copiar `daton-logo-header.png` para `public/logo-email.png` e referenciar como `${siteUrl}/logo-email.png`.
+
+## Arquivo a modificar
+
+### 1. `supabase/functions/invite-user/index.ts`
+
+Reescrever a função `buildEmailHtml` (linhas ~424-535) com template minimalista:
+- Remover gradientes do header
+- Remover emojis
+- Remover caixas coloridas (azul, verde, amarela)
+- Adicionar `<img>` da logo no topo
+- Botão CTA com background sólido
+- Cores neutras e tipografia limpa
+
+### 2. Copiar logo para `public/`
+
+Copiar `src/assets/daton-logo-header.png` → `public/logo-email.png` para URL estável no email.
 
