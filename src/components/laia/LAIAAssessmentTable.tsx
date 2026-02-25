@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -36,7 +37,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLAIAAssessments, useDeleteLAIAAssessment } from "@/hooks/useLAIA";
+import { useLAIAAssessments, useDeleteLAIAAssessment, useBulkDeleteLAIAAssessments } from "@/hooks/useLAIA";
 import { 
   Search, 
   MoreVertical, 
@@ -45,7 +46,8 @@ import {
   Trash2, 
   Copy,
   Filter,
-  FileSpreadsheet 
+  FileSpreadsheet,
+  X
 } from "lucide-react";
 import { getCategoryColor, getSignificanceColor } from "@/types/laia";
 import type { LAIAAssessment } from "@/types/laia";
@@ -82,6 +84,8 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
     }
   }, [initialFilters]);
   const [deleteAssessment, setDeleteAssessment] = useState<LAIAAssessment | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const { data: assessments, isLoading } = useLAIAAssessments(filters);
 
@@ -91,6 +95,7 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
     return activities.sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }, [assessments]);
   const deleteMutation = useDeleteLAIAAssessment();
+  const bulkDeleteMutation = useBulkDeleteLAIAAssessments();
 
   const filteredAssessments = assessments?.filter((a) => {
     if (activityFilter !== "all" && a.activity_operation !== activityFilter) return false;
@@ -104,10 +109,39 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
     );
   });
 
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [search, activityFilter, filters]);
+
   const handleDelete = async () => {
     if (deleteAssessment) {
       await deleteMutation.mutateAsync(deleteAssessment.id);
       setDeleteAssessment(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    await bulkDeleteMutation.mutateAsync(Array.from(selectedIds));
+    setSelectedIds(new Set());
+    setBulkDeleteOpen(false);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!filteredAssessments) return;
+    if (selectedIds.size === filteredAssessments.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredAssessments.map(a => a.id)));
     }
   };
 
@@ -229,6 +263,12 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={filteredAssessments.length > 0 && selectedIds.size === filteredAssessments.length}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead className="w-24">Código</TableHead>
                     <TableHead>Setor</TableHead>
                     <TableHead>Atividade</TableHead>
@@ -243,6 +283,12 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
                 <TableBody>
                   {filteredAssessments.map((assessment) => (
                     <TableRow key={assessment.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(assessment.id)}
+                          onCheckedChange={() => toggleSelect(assessment.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono font-medium">
                         {assessment.aspect_code}
                       </TableCell>
@@ -327,6 +373,34 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
         </CardContent>
       </Card>
 
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-background border rounded-lg shadow-lg p-4 flex items-center gap-4">
+            <Badge variant="secondary" className="text-sm">
+              {selectedIds.size} selecionado(s)
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkDeleteOpen(true)}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir Selecionados
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteAssessment} onOpenChange={(open) => !open && setDeleteAssessment(null)}>
         <AlertDialogContent>
@@ -344,6 +418,29 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Avaliações em Lote</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir {selectedIds.size} avaliação(ões)? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleteMutation.isPending ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

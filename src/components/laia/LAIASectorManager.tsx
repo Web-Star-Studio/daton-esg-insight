@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Table, 
   TableBody, 
@@ -39,8 +40,9 @@ import {
   useUpdateLAIASector, 
   useDeleteLAIASector,
   useLAIAAssessments,
+  useBulkDeleteLAIASectors,
 } from "@/hooks/useLAIA";
-import { Plus, Pencil, Trash2, Building2, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, Building2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { LAIASector } from "@/types/laia";
 
@@ -55,6 +57,7 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
   const createMutation = useCreateLAIASector(branchId);
   const updateMutation = useUpdateLAIASector();
   const deleteMutation = useDeleteLAIASector();
+  const bulkDeleteMutation = useBulkDeleteLAIASectors();
 
   const activitiesBySector = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -75,6 +78,8 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
   const [editingSector, setEditingSector] = useState<LAIASector | null>(null);
   const [deletingSector, setDeletingSector] = useState<LAIASector | null>(null);
   const [formData, setFormData] = useState({ code: "", name: "", description: "" });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const handleOpenCreate = () => {
     setEditingSector(null);
@@ -116,6 +121,30 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
     });
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!sectors) return;
+    if (selectedIds.size === sectors.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sectors.map(s => s.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    await bulkDeleteMutation.mutateAsync(Array.from(selectedIds));
+    setSelectedIds(new Set());
+    setBulkDeleteOpen(false);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -147,6 +176,12 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={sectors.length > 0 && selectedIds.size === sectors.length}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead className="w-24">Código</TableHead>
                   <TableHead>Atividade</TableHead>
                   <TableHead>Descrição</TableHead>
@@ -161,6 +196,12 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => branchId && navigate(`/laia/unidade/${branchId}/setor/${sector.id}`)}
                   >
+                    <TableCell onClick={e => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(sector.id)}
+                        onCheckedChange={() => toggleSelect(sector.id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-mono font-medium">{sector.code}</TableCell>
                     <TableCell className="text-primary hover:underline">
                       {(() => {
@@ -230,6 +271,34 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-background border rounded-lg shadow-lg p-4 flex items-center gap-4">
+            <Badge variant="secondary" className="text-sm">
+              {selectedIds.size} selecionado(s)
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkDeleteOpen(true)}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir Selecionados
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -313,6 +382,29 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Setores em Lote</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir {selectedIds.size} setor(es)? 
+              Esta ação não pode ser desfeita e pode afetar avaliações vinculadas aos setores selecionados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleteMutation.isPending ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

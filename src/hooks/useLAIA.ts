@@ -191,6 +191,58 @@ export function useDeleteLAIAAssessment() {
   });
 }
 
+// ============ Bulk Deletes ============
+
+export function useBulkDeleteLAIAAssessments() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: laiaService.bulkDeleteLAIAAssessments,
+    onSuccess: (_data, ids) => {
+      queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-branch-stats"] });
+      toast({
+        title: "Avaliações excluídas",
+        description: `${ids.length} avaliação(ões) excluída(s) com sucesso.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao excluir avaliações",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useBulkDeleteLAIASectors() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: laiaService.bulkDeleteLAIASectors,
+    onSuccess: (_data, ids) => {
+      queryClient.invalidateQueries({ queryKey: ["laia-sectors"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-dashboard-stats"] });
+      toast({
+        title: "Setores excluídos",
+        description: `${ids.length} setor(es) excluído(s) com sucesso.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao excluir setores",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 // ============ Dashboard Stats ============
 
 export function useLAIADashboardStats(branchId?: string) {
