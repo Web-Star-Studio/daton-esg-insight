@@ -19,7 +19,8 @@ import {
   ArrowRight,
   MapPin,
   BookOpen,
-  RotateCcw
+  RotateCcw,
+  Settings
 } from "lucide-react";
 
 export default function LAIAUnidades() {
@@ -155,7 +156,7 @@ export default function LAIAUnidades() {
         </div>
 
         <Tabs defaultValue="unidades" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-4 max-w-lg">
             <TabsTrigger value="metodologia" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               Metodologia
@@ -167,6 +168,10 @@ export default function LAIAUnidades() {
             <TabsTrigger value="revisoes" className="flex items-center gap-2">
               <RotateCcw className="h-4 w-4" />
               Revisões
+            </TabsTrigger>
+            <TabsTrigger value="configuracoes" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Configurações
             </TabsTrigger>
           </TabsList>
 
@@ -327,6 +332,17 @@ export default function LAIAUnidades() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">Conteúdo de revisões em desenvolvimento.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="configuracoes">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Conteúdo de configurações em desenvolvimento.</p>
               </CardContent>
             </Card>
           </TabsContent>
