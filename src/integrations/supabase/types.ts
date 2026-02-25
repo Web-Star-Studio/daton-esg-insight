@@ -24774,6 +24774,20 @@ export type Database = {
             Args: { p_company_id: string; p_indicator_id: string }
             Returns: Json
           }
+      get_laia_branch_stats: {
+        Args: { p_company_id: string }
+        Returns: {
+          branch_id: string
+          criticos: number
+          nao_significativos: number
+          significativos: number
+          total: number
+        }[]
+      }
+      get_laia_dashboard_stats: {
+        Args: { p_branch_id?: string; p_company_id: string }
+        Returns: Json
+      }
       get_nc_dashboard_stats: { Args: { p_company_id: string }; Returns: Json }
       get_user_company_id: { Args: never; Returns: string }
       get_user_role: {

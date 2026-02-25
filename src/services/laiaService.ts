@@ -352,96 +352,28 @@ export async function getLAIADashboardStats(branchId?: string): Promise<LAIADash
 
   if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
 
-  let query = supabase
-    .from("laia_assessments")
-    .select(`
-      id,
-      category,
-      significance,
-      activity_operation,
-      temporality,
-      operational_situation,
-      incidence,
-      impact_class
-    `)
-    .eq("company_id", profile.company_id)
-    .eq("status", "ativo");
-
-  if (branchId) {
-    query = query.eq("branch_id", branchId);
-  }
-
-  const { data: assessments, error } = await query.range(0, 49999);
+  const { data, error } = await supabase.rpc('get_laia_dashboard_stats' as any, {
+    p_company_id: profile.company_id,
+    p_branch_id: branchId || null,
+  });
 
   if (error) throw error;
 
-  const stats: LAIADashboardStats = {
-    total: assessments?.length ?? 0,
-    significativos: 0,
-    nao_significativos: 0,
-    criticos: 0,
-    moderados: 0,
-    despreziveis: 0,
-    by_sector: [],
-    by_temporality: [],
-    by_operational_situation: [],
-    by_incidence: [],
-    by_impact_class: [],
+  const result = data as any;
+
+  return {
+    total: Number(result?.total ?? 0),
+    significativos: Number(result?.significativos ?? 0),
+    nao_significativos: Number(result?.nao_significativos ?? 0),
+    criticos: Number(result?.criticos ?? 0),
+    moderados: Number(result?.moderados ?? 0),
+    despreziveis: Number(result?.despreziveis ?? 0),
+    by_sector: result?.by_sector ?? [],
+    by_temporality: result?.by_temporality ?? [],
+    by_operational_situation: result?.by_operational_situation ?? [],
+    by_incidence: result?.by_incidence ?? [],
+    by_impact_class: result?.by_impact_class ?? [],
   };
-
-  const activityCounts: Record<string, number> = {};
-  const tempCounts: Record<string, number> = {};
-  const sitCounts: Record<string, number> = {};
-  const incCounts: Record<string, number> = {};
-  const classCounts: Record<string, number> = {};
-
-  const TEMP_LABELS: Record<string, string> = { passada: "Passada", atual: "Atual", futura: "Futura" };
-  const SIT_LABELS: Record<string, string> = { normal: "Normal", anormal: "Anormal", emergencia: "Emergência" };
-  const INC_LABELS: Record<string, string> = { direto: "Direto", indireto: "Indireto" };
-  const CLASS_LABELS: Record<string, string> = { benefico: "Benéfico", adverso: "Adverso" };
-
-  assessments?.forEach((a) => {
-    if (a.significance === "significativo") stats.significativos++;
-    else stats.nao_significativos++;
-
-    if (a.category === "critico") stats.criticos++;
-    else if (a.category === "moderado") stats.moderados++;
-    else stats.despreziveis++;
-
-    const activityName = a.activity_operation || "Não especificada";
-    activityCounts[activityName] = (activityCounts[activityName] ?? 0) + 1;
-
-    if (a.temporality) {
-      const label = TEMP_LABELS[a.temporality] || a.temporality;
-      tempCounts[label] = (tempCounts[label] ?? 0) + 1;
-    }
-    if (a.operational_situation) {
-      const label = SIT_LABELS[a.operational_situation] || a.operational_situation;
-      sitCounts[label] = (sitCounts[label] ?? 0) + 1;
-    }
-    if (a.incidence) {
-      const label = INC_LABELS[a.incidence] || a.incidence;
-      incCounts[label] = (incCounts[label] ?? 0) + 1;
-    }
-    if (a.impact_class) {
-      const label = CLASS_LABELS[a.impact_class] || a.impact_class;
-      classCounts[label] = (classCounts[label] ?? 0) + 1;
-    }
-  });
-
-  stats.by_sector = Object.entries(activityCounts)
-    .map(([sector_name, count]) => ({ sector_name, count }))
-    .sort((a, b) => b.count - a.count);
-
-  const toArray = (counts: Record<string, number>) =>
-    Object.entries(counts).map(([name, value]) => ({ name, value }));
-
-  stats.by_temporality = toArray(tempCounts);
-  stats.by_operational_situation = toArray(sitCounts);
-  stats.by_incidence = toArray(incCounts);
-  stats.by_impact_class = toArray(classCounts);
-
-  return stats;
 }
 
 // ============ Branch Stats (for unit selection page) ============
@@ -466,37 +398,17 @@ export async function getLAIABranchStats(): Promise<LAIABranchStat[]> {
 
   if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
 
-  const { data: assessments, error } = await supabase
-    .from("laia_assessments")
-    .select("id, branch_id, category, significance")
-    .eq("company_id", profile.company_id)
-    .eq("status", "ativo")
-    .range(0, 49999);
+  const { data, error } = await supabase.rpc('get_laia_branch_stats' as any, {
+    p_company_id: profile.company_id,
+  });
 
   if (error) throw error;
 
-  // Group by branch_id
-  const branchMap: Record<string, LAIABranchStat> = {};
-
-  assessments?.forEach((a) => {
-    const branchId = a.branch_id || "unassigned";
-    
-    if (!branchMap[branchId]) {
-      branchMap[branchId] = {
-        branch_id: branchId,
-        total: 0,
-        criticos: 0,
-        significativos: 0,
-        nao_significativos: 0,
-      };
-    }
-
-    branchMap[branchId].total++;
-
-    if (a.category === "critico") branchMap[branchId].criticos++;
-    if (a.significance === "significativo") branchMap[branchId].significativos++;
-    else branchMap[branchId].nao_significativos++;
-  });
-
-  return Object.values(branchMap);
+  return ((data as any[]) || []).map((row: any) => ({
+    branch_id: row.branch_id,
+    total: Number(row.total ?? 0),
+    criticos: Number(row.criticos ?? 0),
+    significativos: Number(row.significativos ?? 0),
+    nao_significativos: Number(row.nao_significativos ?? 0),
+  }));
 }
