@@ -441,10 +441,10 @@ const LegislationDetail: React.FC = () => {
                       {/* Branch info - clickable */}
                       <div 
                         className="flex-1 flex items-center justify-between cursor-pointer"
-                        onClick={() => handleOpenComplianceModal(branch.id, branch.name)}
+                        onClick={() => handleOpenComplianceModal(branch.id, branch.code ? `${branch.code} - ${branch.name}` : branch.name)}
                       >
                         <div>
-                          <p className="font-medium">{branch.name}</p>
+                          <p className="font-medium">{branch.code ? `${branch.code} - ${branch.name}` : branch.name}</p>
                           {branch.compliance?.pending_description && (
                             <p className="text-sm text-muted-foreground mt-1">
                               {branch.compliance.pending_description}

@@ -279,7 +279,7 @@ export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardPr
                         <SelectItem key={branch.id} value={branch.id}>
                           <div className="flex items-center gap-2">
                             <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <span>{branch.name}</span>
+                            <span>{branch.code ? `${branch.code} - ${branch.name}` : branch.name}</span>
                             {branch.city && (
                               <span className="text-muted-foreground">
                                 ({branch.city}{branch.state ? `, ${branch.state}` : ''})
@@ -311,7 +311,7 @@ export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardPr
                     <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-5 w-5 text-primary" />
-                        <span className="font-medium">Filial selecionada: {selectedBranch.name}</span>
+                        <span className="font-medium">Filial selecionada: {selectedBranch.code ? `${selectedBranch.code} - ${selectedBranch.name}` : selectedBranch.name}</span>
                       </div>
                       {selectedBranch.city && (
                         <p className="text-sm text-muted-foreground mt-1 ml-7">
@@ -336,7 +336,7 @@ export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardPr
                 {selectedBranch && (
                   <Badge variant="outline" className="gap-1">
                     <Building2 className="h-3 w-3" />
-                    {selectedBranch.name}
+                    {selectedBranch.code ? `${selectedBranch.code} - ${selectedBranch.name}` : selectedBranch.name}
                   </Badge>
                 )}
               </div>
@@ -397,7 +397,7 @@ export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardPr
                 <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-primary" />
                   <span className="text-sm">
-                    Importando para a filial: <strong>{selectedBranch.name}</strong>
+                    Importando para a filial: <strong>{selectedBranch.code ? `${selectedBranch.code} - ${selectedBranch.name}` : selectedBranch.name}</strong>
                   </span>
                 </div>
               )}
@@ -500,7 +500,7 @@ export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardPr
                 <p className="text-muted-foreground">
                   {importResult.imported} avaliações importadas com sucesso
                   {selectedBranch && (
-                    <span> para a filial <strong>{selectedBranch.name}</strong></span>
+                    <span> para a filial <strong>{selectedBranch.code ? `${selectedBranch.code} - ${selectedBranch.name}` : selectedBranch.name}</strong></span>
                   )}
                 </p>
               </div>

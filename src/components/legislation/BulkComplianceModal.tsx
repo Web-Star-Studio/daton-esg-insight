@@ -24,7 +24,7 @@ import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
 interface BulkComplianceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedBranches: Array<{ id: string; name: string }>;
+  selectedBranches: Array<{ id: string; name: string; code?: string | null }>;
   onConfirm: (data: BulkComplianceData) => void;
   isLoading?: boolean;
 }
@@ -167,7 +167,7 @@ export const BulkComplianceModal: React.FC<BulkComplianceModalProps> = ({
             <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 border rounded-lg bg-muted/30">
               {selectedBranches.map((branch) => (
                 <Badge key={branch.id} variant="secondary" className="text-xs">
-                  {branch.name}
+                  {branch.code || branch.name}
                 </Badge>
               ))}
             </div>

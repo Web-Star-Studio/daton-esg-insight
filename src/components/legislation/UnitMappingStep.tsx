@@ -79,7 +79,7 @@ export function UnitMappingStep({
         ? { 
             ...m, 
             branchId, 
-            branchName: branch?.name,
+            branchName: branch ? (branch.code ? `${branch.code} - ${branch.name}` : branch.name) : undefined,
             autoMatched: false 
           }
         : m
@@ -168,7 +168,7 @@ export function UnitMappingStep({
                       <SelectItem key={branch.id} value={branch.id}>
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <span>{branch.name}</span>
+                          <span>{branch.code ? `${branch.code} - ${branch.name}` : branch.name}</span>
                           {branch.code && (
                             <Badge variant="outline" className="text-xs ml-1">
                               {branch.code}

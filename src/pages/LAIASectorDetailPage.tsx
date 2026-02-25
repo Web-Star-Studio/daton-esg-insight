@@ -123,7 +123,7 @@ export default function LAIASectorDetailPage() {
         </button>
         <span>/</span>
         <button onClick={() => navigate(`/laia/unidade/${branchId}`)} className="hover:text-foreground transition-colors">
-          {branch?.name || "Unidade"}
+          {branch?.code || branch?.name || "Unidade"}
         </button>
         <span>/</span>
         <span className="text-foreground font-medium">{sector.code}</span>

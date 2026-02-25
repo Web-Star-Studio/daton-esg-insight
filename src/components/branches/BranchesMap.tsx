@@ -129,7 +129,7 @@ export function BranchesMap({ branches }: BranchesMapProps) {
               <div className="min-w-[200px] p-1">
                 <div className="flex items-center gap-2 mb-2">
                   <Building2 className="h-4 w-4 text-primary" />
-                  <span className="font-semibold">{branch.name}</span>
+                  <span className="font-semibold">{branch.code ? `${branch.code} - ${branch.name}` : branch.name}</span>
                   {branch.is_headquarters && (
                     <Badge variant="secondary" className="text-xs">
                       Matriz
