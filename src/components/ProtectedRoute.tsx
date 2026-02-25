@@ -1,9 +1,11 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MainLayout } from '@/components/MainLayout';
 import { logger } from '@/utils/logger';
+import { useModuleSettings } from '@/hooks/useModuleSettings';
+import { getModuleKeyForRoute } from '@/config/routeModuleMap';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -20,6 +22,8 @@ const mapRoleToUIRole = (serviceRole: string): 'Admin' | 'Editor' | 'Leitor' => 
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { user, isLoading, isApproved, shouldShowOnboarding } = useAuth();
+  const location = useLocation();
+  const { isModuleVisible, isLoading: isModuleLoading } = useModuleSettings();
 
   logger.debug('ProtectedRoute check', 'auth', { 
     hasUser: !!user, 
@@ -29,7 +33,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   });
 
   // Mostrar loading enquanto verifica autenticação
-  if (isLoading) {
+  if (isLoading || isModuleLoading) {
     return (
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-7xl mx-auto">
@@ -96,6 +100,17 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
         </div>
       );
     }
+  }
+
+  // Verificar acesso ao módulo da rota atual
+  const moduleKey = getModuleKeyForRoute(location.pathname);
+  if (moduleKey && !isModuleVisible(moduleKey)) {
+    logger.warn('Module access denied', 'auth', {
+      module: moduleKey,
+      path: location.pathname,
+      userId: user.id
+    });
+    return <Navigate to="/dashboard" replace />;
   }
 
   logger.debug('ProtectedRoute: Access granted', 'auth');
