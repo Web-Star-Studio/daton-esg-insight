@@ -167,7 +167,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
   const getBranchName = (branchId: string | undefined | null) => {
     if (!branchId) return 'Não informado';
     const branch = branches.find(b => b.id === branchId);
-    return branch?.name || 'Não informado';
+    return branch ? (branch.code ? `${branch.code} - ${branch.name}` : branch.name) : 'Não informado';
   };
 
   if (!employee) return null;

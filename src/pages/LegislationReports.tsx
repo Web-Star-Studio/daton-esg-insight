@@ -171,7 +171,7 @@ const LegislationReports: React.FC = () => {
                     <SelectContent>
                       {branches?.map(branch => (
                         <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name} {branch.is_headquarters ? '(Matriz)' : ''}
+                          {branch.code ? `${branch.code} - ${branch.name}` : branch.name} {branch.is_headquarters ? '(Matriz)' : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -14,6 +14,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { getBranchDisplayLabel } from '@/utils/branchDisplay';
 import { useBranches, useCreateBranch } from '@/services/branches';
 import { Badge } from '@/components/ui/badge';
 import { useQueryClient } from '@tanstack/react-query';
@@ -74,7 +75,7 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
           {selectedBranch ? (
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              {selectedBranch.name}
+              {getBranchDisplayLabel(selectedBranch)}
               {selectedBranch.is_headquarters && (
                 <Badge variant="secondary" className="ml-2">Matriz</Badge>
               )}
@@ -153,7 +154,7 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
                 />
                 <div className="flex items-center gap-2 flex-1">
                   <Building2 className="h-4 w-4" />
-                  {branch.name}
+                  {getBranchDisplayLabel(branch)}
                   {branch.is_headquarters && (
                     <Badge variant="secondary" className="ml-2">Matriz</Badge>
                   )}

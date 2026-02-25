@@ -30,7 +30,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
 }) => {
   const { data: branches, isLoading: branchesLoading } = useBranches();
   const { data: profiles, isLoading: profilesLoading } = useAllComplianceProfiles();
-  const [selectedBranch, setSelectedBranch] = useState<{ id: string; name: string } | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<{ id: string; name: string; code?: string | null } | null>(null);
 
   const isLoading = branchesLoading || profilesLoading;
 
@@ -133,7 +133,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{branch.name}</span>
+                        <span className="font-medium">{branch.code ? `${branch.code} - ${branch.name}` : branch.name}</span>
                       </div>
                       {isCompleted ? (
                         <Badge variant="outline" className="text-green-600 border-green-600">
@@ -219,7 +219,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
           open={!!selectedBranch}
           onOpenChange={(open) => !open && setSelectedBranch(null)}
           branchId={selectedBranch.id}
-          branchName={selectedBranch.name}
+          branchName={selectedBranch.code ? `${selectedBranch.code} - ${selectedBranch.name}` : selectedBranch.name}
         />
       )}
     </>

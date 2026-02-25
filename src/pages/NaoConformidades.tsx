@@ -86,7 +86,7 @@ export default function NaoConformidades() {
       if (!userAndCompany?.company_id) return [];
       const { data, error } = await supabase
         .from("branches")
-        .select("id, name, is_headquarters")
+        .select("id, name, is_headquarters, code")
         .eq("company_id", userAndCompany.company_id)
         .in("status", ["Ativo", "Ativa"])
         .order("name");
@@ -433,7 +433,7 @@ export default function NaoConformidades() {
                       {branches?.map((branch) => (
                         <SelectItem key={branch.id} value={branch.id}>
                           {branch.is_headquarters ? "🏢 " : "🏭 "}
-                          {branch.name}
+                          {branch.code ? `${branch.code} - ${branch.name}` : branch.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
