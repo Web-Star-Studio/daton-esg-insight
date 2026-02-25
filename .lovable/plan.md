@@ -1,69 +1,42 @@
 
 
-# Corrigir scroll de modais e aprimorar fluxo de convite de usuários
+# Remover Lenis e corrigir scroll de modais
 
-## Problema 1: Modais nao scrollam internamente
+## Diagnóstico
 
-**Causa raiz identificada:** O Lenis (smooth scroll library) em `src/components/layout/SmoothScroll.tsx` intercepta TODOS os eventos de scroll globalmente, inclusive dentro de modais. As correções anteriores (`overscroll-contain`, checagem de dialog no MainLayout) não resolvem porque o Lenis captura o evento de wheel antes que ele chegue ao modal.
+O Lenis (`src/components/layout/SmoothScroll.tsx`) está interceptando todos os eventos de scroll da página. Apesar do `MutationObserver` que pausa o Lenis quando um dialog está aberto, isso não está funcionando de forma confiável --- o replay mostra a classe `lenis-stopped` sendo aplicada, mas o scroll interno dos modais continua bloqueado. O Lenis adiciona classes como `lenis` e `lenis-stopped` ao `<html>`, e seu próprio CSS pode estar interferindo com `overflow`.
 
-### Solução: `src/components/layout/SmoothScroll.tsx`
-- Parar/pausar o Lenis quando um dialog Radix estiver aberto (`[data-state="open"][role="dialog"]`).
-- Usar um `MutationObserver` para detectar quando dialogs abrem/fecham e chamar `lenis.stop()` / `lenis.start()`.
+Além disso, o `MainLayout.tsx` tem um `setInterval` de 2s que reseta `body.style.overflow` quando não detecta chat ou dialog aberto, o que pode causar race conditions com o lock do Radix Dialog.
 
-## Problema 2: Convite deve incluir seleção de módulos
+## Alterações
 
-### Alteração: `src/components/users/UserFormModal.tsx`
-- Mover a seção "Acesso a Módulos" para ser visível tanto na edição quanto no convite (novo usuário).
-- No modo convite, usar estado local (array de módulos desativados) já que o usuário ainda não existe no banco.
-- Passar os módulos selecionados junto com os dados do convite ao submeter.
+### 1. Remover SmoothScroll completamente
 
-### Alteração: `src/hooks/data/useUserManagement.ts`
-- Incluir `module_access` no body enviado à edge function `invite-user`.
+**`src/components/layout/SmoothScroll.tsx`** --- Deletar o arquivo.
 
-## Problema 3: Usuário convidado deve receber senha aleatória e não passar por onboarding/demo
+**`src/App.tsx`** (linhas 26, 972-974):
+- Remover `import SmoothScroll from "@/components/layout/SmoothScroll";`
+- Substituir `<SmoothScroll><AppContent /></SmoothScroll>` por apenas `<AppContent />`
 
-### Alteração: `supabase/functions/invite-user/index.ts`
-- Gerar senha aleatória segura (16 chars, alfanumérica + especiais).
-- Criar usuário com `email_confirm: true` (já confirmado) e a senha gerada.
-- Marcar `is_approved: true` e `has_completed_onboarding: true` no profile.
-- Inserir registros em `user_module_access` para os módulos desativados pelo admin.
-- Incluir a senha temporária no email de convite com orientação para alterá-la.
+**`package.json`** (linha 89):
+- Remover `"lenis": "^1.3.17"` das dependências.
 
-### Alteração no email HTML
-- Adicionar seção mostrando a senha temporária gerada.
-- Manter o link de acesso direto à plataforma (sem magic link, já que o usuário tem senha).
-- Orientar o usuário a trocar a senha após o primeiro acesso.
+### 2. Manter CSS `scroll-behavior: smooth` nativo
 
-## Problema 4: Usuário convidado vinculado à organização do admin
+O `src/index.css` já tem `html { scroll-behavior: smooth; }` (linha 691). Será mantido.
 
-Isso já funciona: a edge function usa `callingProfile.company_id` para o profile e user_roles. Nenhuma alteração necessária.
+### 3. Remover failsafe de overflow do MainLayout
 
-## Sequência de execução
+**`src/components/MainLayout.tsx`** (linhas 48-65):
+- Remover o `useEffect` com `setInterval` que reseta `body.style.overflow`. Esse script causa race conditions com o Radix Dialog que usa `data-scroll-locked` no `<html>` para gerenciar scroll lock. O Radix Dialog já cuida do bloqueio de scroll do body nativamente.
 
-1. Corrigir Lenis para pausar quando dialog está aberto.
-2. Atualizar `UserFormModal` para mostrar módulos no convite.
-3. Atualizar `useUserManagement` para enviar `module_access`.
-4. Atualizar edge function `invite-user` para gerar senha, marcar aprovado, e salvar módulos.
-5. Atualizar template de email com senha temporária.
+### 4. Garantir isolamento de scroll no `DialogContent`
 
-## Detalhes técnicos
+**`src/components/ui/dialog.tsx`** --- Já tem `overscroll-contain`, `max-h-[85vh]`, e `overflow-y-auto`. Está correto. O problema era o Lenis, não o componente em si.
 
-### Geração de senha (edge function)
-```text
-Formato: 16 caracteres com letras maiúsculas, minúsculas, números e símbolos
-Exemplo: Xk9#mP2$vL7@nQ4!
-```
+## Resultado esperado
 
-### Fluxo do usuário convidado
-```text
-Admin envia convite → Edge function cria conta com senha → Email chega com senha
-→ Usuário faz login com email + senha temporária → Acessa o dashboard diretamente
-→ Pode trocar senha em Configurações
-```
-
-### Estado dos módulos no convite (client-side)
-- Estado local `moduleAccess: Record<string, boolean>` inicializado com todos `true`.
-- Admin alterna switches antes de enviar.
-- Ao submeter, envia lista de módulos com `has_access: false` para a edge function.
-- Edge function insere em `user_module_access` apenas os módulos desativados.
+- Todos os modais (edição de usuário, convite, detalhes, etc.) scrollam internamente sem mover o fundo.
+- A página principal usa scroll nativo do navegador com `scroll-behavior: smooth` para âncoras.
+- Nenhuma biblioteca externa de scroll interferindo com componentes Radix.
 
