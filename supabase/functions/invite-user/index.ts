@@ -436,6 +436,8 @@ function buildEmailHtml(params: {
     ? `Este é um lembrete do seu convite para fazer parte da equipe da <strong>${companyName}</strong> na plataforma Daton.`
     : `Você foi convidado(a) por <strong>${inviterName}</strong> para fazer parte da equipe da <strong>${companyName}</strong> na plataforma Daton.`;
 
+  const emailAddress = siteUrl.includes('localhost') ? 'usuário' : userName;
+  
   return `
 <!DOCTYPE html>
 <html>
@@ -444,84 +446,70 @@ function buildEmailHtml(params: {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f7fa; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 48px 20px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-          <!-- Header -->
+        <table width="560" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+          <!-- Logo -->
           <tr>
-            <td style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Daton</h1>
-              <p style="color: #d1fae5; margin: 10px 0 0 0; font-size: 14px;">Plataforma de Gestão ESG</p>
+            <td style="padding: 32px 40px 24px 40px; text-align: center; border-bottom: 1px solid #f3f4f6;">
+              <img src="${siteUrl}/logo-email.png" alt="Daton" height="36" style="display: inline-block;" />
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
-              <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 24px;">Olá, ${userName}!</h2>
+            <td style="padding: 32px 40px 40px 40px;">
+              <p style="color: #111827; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">
+                Olá, <strong>${userName}</strong>.
+              </p>
               
-              <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+              <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">
                 ${greeting}
               </p>
 
-              ${isResend ? `
-              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
-                <p style="margin: 0; color: #92400e; font-size: 14px;">
-                  <strong>Reenviado por:</strong> ${inviterName}
-                </p>
-              </div>
-              ` : ''}
-              
-              <div style="background-color: #f0fdf4; border-left: 4px solid #059669; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
-                <p style="margin: 0; color: #065f46; font-size: 14px;">
-                  <strong>Seu papel:</strong> ${roleName}
-                </p>
-              </div>
+              <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
+                Papel atribuído: <strong>${roleName}</strong>
+              </p>
 
               <!-- Credentials -->
-              <div style="background-color: #eff6ff; border: 2px solid #3b82f6; padding: 20px; margin: 24px 0; border-radius: 8px;">
-                <h3 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">🔑 Seus dados de acesso:</h3>
-                <table cellpadding="0" cellspacing="0" style="width: 100%;">
-                  <tr>
-                    <td style="padding: 4px 0; color: #374151; font-size: 14px;"><strong>Email:</strong></td>
-                    <td style="padding: 4px 0; color: #374151; font-size: 14px;">${params.userName === userName ? '' : ''}${siteUrl.includes('localhost') ? '' : ''}</td>
-                  </tr>
-                </table>
-                <p style="margin: 8px 0 4px; color: #374151; font-size: 14px;"><strong>Senha temporária:</strong></p>
-                <p style="margin: 4px 0 0; background-color: #ffffff; border: 1px solid #d1d5db; padding: 10px 14px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 16px; letter-spacing: 1px; color: #1f2937; word-break: break-all;">
-                  ${escapeHtml(password)}
-                </p>
-                <p style="margin: 12px 0 0; color: #dc2626; font-size: 13px;">
-                  ⚠️ <strong>Importante:</strong> Altere sua senha após o primeiro acesso em Configurações &gt; Segurança.
-                </p>
-              </div>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 6px; margin: 0 0 24px 0;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Dados de acesso</p>
+                    <p style="margin: 0 0 12px 0; color: #111827; font-size: 14px;">
+                      <strong>Senha temporária:</strong>
+                    </p>
+                    <p style="margin: 0; background-color: #ffffff; border: 1px solid #e5e7eb; padding: 10px 14px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 15px; letter-spacing: 0.5px; color: #111827; word-break: break-all;">
+                      ${escapeHtml(password)}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="color: #6b7280; font-size: 13px; line-height: 1.5; margin: 0 0 28px 0;">
+                Altere sua senha após o primeiro acesso em <strong>Configurações &gt; Segurança</strong>.
+              </p>
               
               <!-- CTA Button -->
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="padding-top: 10px;">
-                    <a href="${siteUrl}/auth" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 6px rgba(5, 150, 105, 0.3);">
+                  <td align="center">
+                    <a href="${siteUrl}/auth" style="display: inline-block; background-color: #059669; color: #ffffff; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-size: 15px; font-weight: 600;">
                       Acessar Plataforma
                     </a>
                   </td>
                 </tr>
               </table>
-              
-              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-              
-              <p style="color: #9ca3af; font-size: 12px; margin: 0; text-align: center;">
-                Se você não solicitou este convite, por favor ignore este email.
-              </p>
             </td>
           </tr>
           
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f9fafb; padding: 20px; border-radius: 0 0 12px 12px; text-align: center;">
-              <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                © ${new Date().getFullYear()} Daton - Plataforma de Gestão ESG
+            <td style="padding: 20px 40px; border-top: 1px solid #f3f4f6; text-align: center;">
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                &copy; ${new Date().getFullYear()} Daton
               </p>
             </td>
           </tr>
