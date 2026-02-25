@@ -1,0 +1,1 @@
+UPDATE platform_module_settings SET enabled_demo = false, updated_at = now() WHERE module_key IN ('financial', 'dataReports');

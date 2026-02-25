@@ -70,8 +70,21 @@ export function useModuleSettings() {
   const isLoading = isSettingsLoading || isUserAccessLoading;
 
   const isModuleVisible = useCallback((moduleKey: string): boolean => {
-    // Admins bypass all restrictions
-    if (isAdmin) return true;
+    // Admins bypass user-level restrictions, but NOT globally disabled modules
+    if (isAdmin) {
+      if (settings) {
+        const setting = settings.find(s => s.module_key === moduleKey);
+        if (setting && !setting.enabled_live && !setting.enabled_demo) {
+          return false; // Globally disabled — hidden even for admins
+        }
+      } else {
+        // Fallback to static config
+        if (moduleKey in ENABLED_MODULES && !ENABLED_MODULES[moduleKey as ModuleKey]) {
+          return false;
+        }
+      }
+      return true;
+    }
 
     // 1. Check global platform settings
     if (settings) {
