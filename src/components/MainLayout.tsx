@@ -45,24 +45,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
   }, [user?.id, isLoading, shouldShowOnboarding]);
 
-  // Failsafe: Prevents permanently blocked body scroll
-  useEffect(() => {
-    const checkScroll = () => {
-      const bodyOverflow = document.body.style.overflow;
-      const isChatExpanded = document.querySelector('[data-chat-expanded="true"]');
-      const isDialogOpen = document.querySelector('[data-state="open"][role="dialog"]');
-      
-      // If body is blocked but neither chat nor dialog is open, fix it
-      if (bodyOverflow === 'hidden' && !isChatExpanded && !isDialogOpen) {
-        logger.warn('Body scroll was blocked unexpectedly, fixing', 'ui');
-        document.body.style.overflow = '';
-      }
-    };
-    
-    const interval = setInterval(checkScroll, 2000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <TutorialProvider>
