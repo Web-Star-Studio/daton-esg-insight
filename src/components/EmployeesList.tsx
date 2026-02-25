@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { formatDateDisplay } from '@/utils/dateUtils';
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { 
   Pagination, 
   PaginationContent, 
@@ -29,9 +31,14 @@ import {
   TrendingUp,
   Eye,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserCheck,
+  UserX,
+  X
 } from "lucide-react";
-import { useEmployeesPaginated, useDepartments, getEmployeesStats } from "@/services/employees";
+import { useEmployeesPaginated, useDepartments, getEmployeesStats, bulkUpdateEmployeeStatus } from "@/services/employees";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface EmployeesListProps {
   onEditEmployee: (employee: any) => void;
@@ -47,7 +54,10 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
     department: "all",
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isProcessing, setIsProcessing] = useState(false);
   const pageSize = 50;
+  const queryClient = useQueryClient();
 
   // Debounce search
   useEffect(() => {
@@ -56,6 +66,11 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
     }, 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Clear selection on page/filter change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [currentPage, debouncedSearch, filters.status, filters.department]);
 
   const { data: paginatedData, isLoading } = useEmployeesPaginated({
     page: currentPage,
@@ -75,6 +90,45 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
   const employees = paginatedData?.data || [];
   const totalCount = paginatedData?.totalCount || 0;
   const totalPages = paginatedData?.totalPages || 1;
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === employees.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(employees.map(e => e.id)));
+    }
+  }, [employees, selectedIds.size]);
+
+  const handleBulkStatusUpdate = useCallback(async (status: 'Ativo' | 'Inativo') => {
+    const count = selectedIds.size;
+    const label = status === 'Ativo' ? 'ativar' : 'inativar';
+    if (!confirm(`Tem certeza que deseja ${label} ${count} funcionário(s)?`)) return;
+
+    try {
+      setIsProcessing(true);
+      await bulkUpdateEmployeeStatus(Array.from(selectedIds), status);
+      toast.success(`${count} funcionário(s) ${status === 'Ativo' ? 'ativado(s)' : 'inativado(s)'} com sucesso`);
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ['employees-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-stats'] });
+    } catch (error) {
+      console.error('Bulk status update error:', error);
+      toast.error('Erro ao atualizar status dos funcionários');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedIds, queryClient]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -103,21 +157,19 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       pages.push(1);
-      
       if (currentPage > 3) pages.push('ellipsis');
-      
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
-      
       for (let i = start; i <= end; i++) pages.push(i);
-      
       if (currentPage < totalPages - 2) pages.push('ellipsis');
-      
       pages.push(totalPages);
     }
     
     return pages;
   };
+
+  const allSelected = employees.length > 0 && selectedIds.size === employees.length;
+  const someSelected = selectedIds.size > 0 && selectedIds.size < employees.length;
 
   if (isLoading && employees.length === 0) {
     return (
@@ -212,7 +264,19 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            {/* Select All Checkbox */}
+            {employees.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Selecionar todos"
+                />
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Selecionar todos</span>
+              </div>
+            )}
+
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -281,10 +345,21 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
       {/* Employees List */}
       <div className="grid gap-4">
         {employees.map((employee) => (
-          <Card key={employee.id} className="hover:shadow-md transition-shadow">
+          <Card 
+            key={employee.id} 
+            className={`hover:shadow-md transition-shadow ${selectedIds.has(employee.id) ? 'ring-2 ring-primary/50' : ''}`}
+          >
             <CardContent className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                  {/* Checkbox */}
+                  <Checkbox
+                    checked={selectedIds.has(employee.id)}
+                    onCheckedChange={() => toggleSelect(employee.id)}
+                    className="mt-1 shrink-0"
+                    aria-label={`Selecionar ${employee.full_name}`}
+                  />
+                  
                   <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
                     <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm">
                       {getInitials(employee.full_name)}
@@ -478,6 +553,54 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
               </PaginationItem>
             </PaginationContent>
           </Pagination>
+        </div>
+      )}
+
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-background border rounded-lg shadow-lg p-4 min-w-[400px]">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Badge variant="secondary" className="text-sm">
+                  {selectedIds.size} selecionado(s)
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <Separator orientation="vertical" className="h-6" />
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkStatusUpdate('Ativo')}
+                  disabled={isProcessing}
+                  className="h-8"
+                >
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Ativar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkStatusUpdate('Inativo')}
+                  disabled={isProcessing}
+                  className="h-8 text-destructive hover:text-destructive"
+                >
+                  <UserX className="h-4 w-4 mr-2" />
+                  Inativar
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
