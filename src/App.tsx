@@ -23,7 +23,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
 import { GlobalKeyboardShortcuts } from "@/components/GlobalKeyboardShortcuts";
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications";
-import SmoothScroll from "@/components/layout/SmoothScroll";
+
 import AuthErrorHandler from "@/components/AuthErrorHandler";
 
 
@@ -969,9 +969,7 @@ const App = () => (
                     }}
                   >
                     <ScrollToTop />
-                    <SmoothScroll>
-                      <AppContent />
-                    </SmoothScroll>
+                    <AppContent />
                   </BrowserRouter>
                 </SmartToastProvider>
               </TooltipProvider>
