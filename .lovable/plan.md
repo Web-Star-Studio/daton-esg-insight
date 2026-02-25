@@ -1,67 +1,49 @@
 
 
-# Importação de Cargos via CSV/XLSX
+# Corrigir importação de funcionários para incluir Data de Admissão
 
-## Objetivo
+## Problema
 
-Adicionar funcionalidade de importação em massa de cargos na página `/descricao-cargos`, com:
-- Upload de arquivo CSV ou XLSX
-- Modelo de importação disponível para download
-- Preview dos dados antes de importar
-- Validação e feedback de erros/sucessos
-- Criação automática de departamentos inexistentes
+O serviço de importação de funcionários (`src/services/employeeImport.ts`) ignora qualquer coluna de data de admissão presente no arquivo importado. Em vez disso, define `hire_date` como a data do dia da importação (`new Date()`), causando todos os funcionários terem a mesma data.
 
-## Colunas do modelo de importação
+**1.847 registros** foram afetados com `hire_date = 2025-12-19`.
 
-Baseado na tabela `positions`:
+## Causa raiz
 
-```text
-Título (obrigatório) | Descrição | Departamento | Nível | Salário Mínimo | Salário Máximo | Escolaridade Exigida | Experiência (anos) | Requisitos (separados por ;) | Responsabilidades (separadas por ;)
+- A interface `ParsedEmployee` não possui campo para data de admissão
+- A função `parseEmployeeExcel()` não busca colunas como "Admissão", "Data Admissão", "Data de Contratação"
+- A inserção no banco usa `new Date().toISOString().split('T')[0]` como fallback fixo
+
+## Alterações necessárias
+
+### 1. `src/services/employeeImport.ts`
+
+**a) Adicionar campo `admissao` à interface `ParsedEmployee`:**
+```typescript
+export interface ParsedEmployee {
+  // ... campos existentes
+  admissao: string; // YYYY-MM-DD ou ''
+}
 ```
 
-## Arquivos a criar/modificar
+**b) No `parseEmployeeExcel()`, mapear colunas de data de admissão:**
+Buscar variações: "Admissão", "ADMISSÃO", "Data de Admissão", "Data Admissão", "Contratação", "Hire Date", "Data Contratacao"
 
-### 1. `src/services/positionImport.ts` (novo)
+Usar a mesma função `parseDate()` já existente para nascimento.
 
-Serviço de importação com:
-- **`generatePositionTemplate()`**: Gera um arquivo XLSX com cabeçalhos e 2 linhas de exemplo para download
-- **`parsePositionFile(file)`**: Lê CSV/XLSX, detecta cabeçalhos, retorna array de `ParsedPosition`
-- **`validateParsedPositions(rows, existingPositions)`**: Valida cada linha (título obrigatório, nível válido, valores numéricos, duplicatas)
-- **`importPositions(rows)`**: Insere no banco, criando departamentos inexistentes automaticamente. Retorna resultado com contagem de sucesso/erros
+**c) Na inserção, usar a data parseada com fallback:**
+```typescript
+hire_date: emp.admissao || new Date().toISOString().split('T')[0],
+```
 
-Lógica:
-- Detecção automática de cabeçalhos (busca por "título" ou "title" nas primeiras linhas)
-- Requisitos e responsabilidades separados por `;` em uma única célula
-- Departamento buscado por nome — se não existir, cria automaticamente
-- Nível validado contra lista: Trainee, Junior, Pleno, Senior, Gerente, Diretor
-- Escolaridade validada contra lista existente
+### 2. Template de importação (se existir)
 
-### 2. `src/components/positions/PositionImportModal.tsx` (novo)
+Adicionar coluna "Admissão" ao modelo XLSX de funcionários para que o usuário saiba que pode informar essa data.
 
-Modal com wizard de 3 etapas:
+### Sobre os dados existentes
 
-**Etapa 1 — Upload**: Área de drag-and-drop ou seleção de arquivo + botão "Baixar Modelo"
+Os 1.847 registros com `hire_date = 2025-12-19` precisariam ser corrigidos manualmente ou via reimportação. Isso é uma decisão do usuário — o sistema não tem como adivinhar as datas corretas retroativamente.
 
-**Etapa 2 — Preview/Validação**: Tabela com os dados parseados, indicando erros por linha (ex: título vazio, nível inválido). Contagem de válidos/inválidos.
-
-**Etapa 3 — Resultado**: Resumo da importação (X importados, Y erros, departamentos criados automaticamente)
-
-### 3. `src/pages/DescricaoCargos.tsx` (modificar)
-
-Adicionar botão "Importar" ao lado do "Novo Cargo" no header, que abre o `PositionImportModal`. Após importação bem-sucedida, recarrega a lista de cargos.
-
-## Detalhes técnicos
-
-- Usa `XLSX` (já instalado) para ler CSV e XLSX e gerar template
-- Usa `createPosition` do `organizationalStructure.ts` para inserir (respeita RLS e `company_id`)
-- Usa `getDepartments`/`createDepartment` para reconciliar departamentos por nome
-- Validação client-side antes do envio — sem necessidade de edge function
-- Template gerado como XLSX com `XLSX.writeFile`
-
-## Modelo de template (exemplo)
-
-| Título | Descrição | Departamento | Nível | Salário Mínimo | Salário Máximo | Escolaridade Exigida | Experiência (anos) | Requisitos | Responsabilidades |
-|--------|-----------|--------------|-------|----------------|----------------|---------------------|---------------------|------------|-------------------|
-| Analista de RH | Responsável por processos seletivos | Recursos Humanos | Pleno | 4000 | 6000 | Ensino Superior Completo | 3 | Conhecimento em R&S; Excel avançado | Conduzir entrevistas; Elaborar relatórios |
-| Engenheiro Ambiental | Gestão de licenças ambientais | Meio Ambiente | Senior | 8000 | 12000 | Pós-Graduação | 5 | CREA ativo; Gestão de resíduos | Elaborar PGRS; Acompanhar licenciamentos |
+### Arquivos a modificar
+- **`src/services/employeeImport.ts`** — adicionar parsing e mapeamento do campo de admissão
 
