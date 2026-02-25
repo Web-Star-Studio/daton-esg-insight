@@ -14,8 +14,10 @@ import {
   Building2, 
   DollarSign,
   Users,
-  ChevronRight
+  ChevronRight,
+  Upload
 } from 'lucide-react';
+import { PositionImportModal } from '@/components/positions/PositionImportModal';
 import { toast } from 'sonner';
 import { 
   getPositions, 
@@ -51,6 +53,7 @@ export default function DescricaoCargos() {
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isNewPositionModalOpen, setIsNewPositionModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const loadData = async () => {
     try {
@@ -152,20 +155,26 @@ export default function DescricaoCargos() {
               Gerencie os cargos e funções da organização
             </p>
           </div>
-          <Dialog open={isNewPositionModalOpen} onOpenChange={setIsNewPositionModalOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Cargo
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Criar Novo Cargo</DialogTitle>
-              </DialogHeader>
-              <PositionManager onRefresh={() => { loadData(); setIsNewPositionModalOpen(false); }} />
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              Importar
+            </Button>
+            <Dialog open={isNewPositionModalOpen} onOpenChange={setIsNewPositionModalOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Cargo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Criar Novo Cargo</DialogTitle>
+                </DialogHeader>
+                <PositionManager onRefresh={() => { loadData(); setIsNewPositionModalOpen(false); }} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -409,6 +418,11 @@ export default function DescricaoCargos() {
           setSelectedPosition(null);
         }}
         onRefresh={loadData}
+      />
+      <PositionImportModal
+        open={isImportModalOpen}
+        onOpenChange={setIsImportModalOpen}
+        onImportComplete={loadData}
       />
     </div>
   );
