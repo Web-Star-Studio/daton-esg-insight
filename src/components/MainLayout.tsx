@@ -50,9 +50,10 @@ export function MainLayout({ children }: MainLayoutProps) {
     const checkScroll = () => {
       const bodyOverflow = document.body.style.overflow;
       const isChatExpanded = document.querySelector('[data-chat-expanded="true"]');
+      const isDialogOpen = document.querySelector('[data-state="open"][role="dialog"]');
       
-      // If body is blocked but chat is not expanded, fix it
-      if (bodyOverflow === 'hidden' && !isChatExpanded) {
+      // If body is blocked but neither chat nor dialog is open, fix it
+      if (bodyOverflow === 'hidden' && !isChatExpanded && !isDialogOpen) {
         logger.warn('Body scroll was blocked unexpectedly, fixing', 'ui');
         document.body.style.overflow = '';
       }
