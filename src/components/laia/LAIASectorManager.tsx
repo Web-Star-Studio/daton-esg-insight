@@ -59,6 +59,13 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
   const deleteMutation = useDeleteLAIASector();
   const bulkDeleteMutation = useBulkDeleteLAIASectors();
 
+  const sortedSectors = useMemo(() => {
+    if (!sectors) return [];
+    return [...sectors].sort((a, b) =>
+      a.code.localeCompare(b.code, undefined, { numeric: true })
+    );
+  }, [sectors]);
+
   const activitiesBySector = useMemo(() => {
     const map = new Map<string, string[]>();
     assessments?.forEach((a) => {
@@ -131,11 +138,10 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
   };
 
   const toggleSelectAll = () => {
-    if (!sectors) return;
-    if (selectedIds.size === sectors.length) {
+    if (selectedIds.size === sortedSectors.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(sectors.map(s => s.id)));
+      setSelectedIds(new Set(sortedSectors.map(s => s.id)));
     }
   };
 
@@ -172,13 +178,13 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
           </Button>
         </CardHeader>
         <CardContent>
-          {sectors && sectors.length > 0 ? (
+          {sortedSectors.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">
                     <Checkbox
-                      checked={sectors.length > 0 && selectedIds.size === sectors.length}
+                      checked={sortedSectors.length > 0 && selectedIds.size === sortedSectors.length}
                       onCheckedChange={toggleSelectAll}
                     />
                   </TableHead>
@@ -190,7 +196,7 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sectors.map((sector) => (
+                {sortedSectors.map((sector) => (
                   <TableRow 
                     key={sector.id} 
                     className="cursor-pointer hover:bg-muted/50"

@@ -371,7 +371,7 @@ export async function getLAIADashboardStats(branchId?: string): Promise<LAIADash
     query = query.eq("branch_id", branchId);
   }
 
-  const { data: assessments, error } = await query;
+  const { data: assessments, error } = await query.range(0, 49999);
 
   if (error) throw error;
 
@@ -470,7 +470,8 @@ export async function getLAIABranchStats(): Promise<LAIABranchStat[]> {
     .from("laia_assessments")
     .select("id, branch_id, category, significance")
     .eq("company_id", profile.company_id)
-    .eq("status", "ativo");
+    .eq("status", "ativo")
+    .range(0, 49999);
 
   if (error) throw error;
 
