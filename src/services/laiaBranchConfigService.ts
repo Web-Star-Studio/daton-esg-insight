@@ -39,3 +39,23 @@ export async function upsertLAIABranchConfig(
   if (error) throw new Error(error.message);
   return data as any;
 }
+
+export async function bulkUpsertLAIABranchConfig(
+  branchIds: string[],
+  surveyStatus: LAIABranchConfig["survey_status"],
+  companyId: string
+): Promise<LAIABranchConfig[]> {
+  const rows = branchIds.map(branch_id => ({
+    branch_id,
+    survey_status: surveyStatus,
+    company_id: companyId,
+  }));
+
+  const { data, error } = await supabase
+    .from("laia_branch_config" as any)
+    .upsert(rows as any, { onConflict: "branch_id" })
+    .select();
+
+  if (error) throw new Error(error.message);
+  return (data as any) || [];
+}
