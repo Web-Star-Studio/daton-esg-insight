@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBranches } from "@/services/branches";
-import { useLAIABranchStats } from "@/hooks/useLAIA";
+import { useLAIABranchStats, useLAIABranchConfigs } from "@/hooks/useLAIA";
 import { LAIAUnidadesFilters } from "@/components/laia/LAIAUnidadesFilters";
+import { LAIAConfiguracoes } from "@/components/laia/LAIAConfiguracoes";
 import { formatCNPJ } from "@/utils/formValidation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -27,6 +28,7 @@ export default function LAIAUnidades() {
   const navigate = useNavigate();
   const { data: branches, isLoading: branchesLoading } = useBranches();
   const { data: branchStats, isLoading: statsLoading } = useLAIABranchStats();
+  const { data: branchConfigs, isLoading: configsLoading } = useLAIABranchConfigs();
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,7 +49,7 @@ export default function LAIAUnidades() {
     });
   };
 
-  const isLoading = branchesLoading || statsLoading;
+  const isLoading = branchesLoading || statsLoading || configsLoading;
 
   const getStatsForBranch = (branchId: string) => {
     return branchStats?.find(s => s.branch_id === branchId) || {
@@ -67,7 +69,12 @@ export default function LAIAUnidades() {
 
   // Filter and sort logic
   const filteredBranches = useMemo(() => {
-    let result = activeBranches;
+    // Filter out branches with 'nao_levantado' or no config
+    const configList = (branchConfigs as any[]) || [];
+    let result = activeBranches.filter(b => {
+      const config = configList.find((c: any) => c.branch_id === b.id);
+      return config && config.survey_status !== "nao_levantado";
+    });
 
     // Search filter (code, CNPJ, name, city)
     if (searchTerm) {
@@ -122,7 +129,7 @@ export default function LAIAUnidades() {
     });
 
     return result;
-  }, [activeBranches, searchTerm, cityFilter, typeFilter, sortBy, quickFilters, branchStats]);
+  }, [activeBranches, searchTerm, cityFilter, typeFilter, sortBy, quickFilters, branchStats, branchConfigs]);
 
   const hasActiveFilters = searchTerm !== "" || 
     cityFilter !== "all" || 
@@ -337,14 +344,7 @@ export default function LAIAUnidades() {
           </TabsContent>
 
           <TabsContent value="configuracoes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configurações</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Conteúdo de configurações em desenvolvimento.</p>
-              </CardContent>
-            </Card>
+            <LAIAConfiguracoes />
           </TabsContent>
         </Tabs>
       </div>
