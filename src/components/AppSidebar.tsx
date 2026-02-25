@@ -692,7 +692,8 @@ export function AppSidebar() {
         }
         return section
       })
-  }, [isSectionVisible, isEsgCategoryVisible])
+      .filter(section => section.items.length > 0)
+  }, [isSectionVisible, isEsgCategoryVisible, menuSections])
 
   const filteredSections = searchQuery.trim() 
     ? modulesFilteredSections
