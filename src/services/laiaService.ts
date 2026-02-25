@@ -322,6 +322,22 @@ export async function deleteLAIAAssessment(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function bulkDeleteLAIAAssessments(ids: string[]): Promise<void> {
+  const { error } = await supabase
+    .from("laia_assessments")
+    .delete()
+    .in("id", ids);
+  if (error) throw error;
+}
+
+export async function bulkDeleteLAIASectors(ids: string[]): Promise<void> {
+  const { error } = await supabase
+    .from("laia_sectors")
+    .delete()
+    .in("id", ids);
+  if (error) throw error;
+}
+
 // ============ Dashboard Stats ============
 
 export async function getLAIADashboardStats(branchId?: string): Promise<LAIADashboardStats> {
