@@ -367,14 +367,6 @@ const menuSections: MenuSection[] = [
     ]
   },
   {
-    id: "platform-admin",
-    title: "ADMINISTRAÇÃO DA PLATAFORMA",
-    hasDivider: true,
-    items: [
-      { id: "platform-admin-dashboard", title: "Dashboard Platform Admin", icon: Crown, path: "/platform-admin", description: "Gestão de empresas e analytics da plataforma" }
-    ]
-  },
-  {
     id: "help",
     title: "AJUDA",
     icon: HelpCircle,
