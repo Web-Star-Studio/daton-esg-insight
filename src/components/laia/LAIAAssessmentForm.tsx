@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,7 @@ import {
   Info
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { computeChanges, getOrCreateDraftRevision, addChangesToRevision } from "@/services/laiaRevisionService";
 
 interface LAIAAssessmentFormProps {
   branchId: string;
@@ -204,10 +205,40 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
     }
   };
 
+  const TRACKED_FIELDS = [
+    "activity_operation", "environmental_aspect", "environmental_impact",
+    "temporality", "operational_situation", "incidence", "impact_class",
+    "scope", "severity", "frequency_probability",
+    "has_legal_requirements", "has_stakeholder_demand", "has_strategic_options",
+    "control_types", "existing_controls", "legislation_reference",
+    "has_lifecycle_control", "lifecycle_stages", "output_actions", "notes", "sector_id",
+  ];
+
   const handleSubmit = async () => {
     try {
       if (isEditing && initialData) {
+        // Compute diff before saving
+        const initialFormData = mapAssessmentToFormData(initialData, branchId);
+        const changes = computeChanges(
+          'assessment',
+          initialData.id,
+          branchId,
+          initialFormData as Record<string, any>,
+          formData as Record<string, any>,
+          TRACKED_FIELDS
+        );
+
         await updateMutation.mutateAsync({ id: initialData.id, data: formData });
+
+        // Register changes in revision if any
+        if (changes.length > 0) {
+          try {
+            const draft = await getOrCreateDraftRevision();
+            await addChangesToRevision(draft.id, changes);
+          } catch (revError) {
+            console.error("Erro ao registrar revisão:", revError);
+          }
+        }
       } else {
         await createMutation.mutateAsync(formData);
       }

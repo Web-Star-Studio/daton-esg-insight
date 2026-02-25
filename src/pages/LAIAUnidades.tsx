@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBranches } from "@/services/branches";
 import { useLAIABranchStats, useLAIABranchConfigs } from "@/hooks/useLAIA";
+import { useLAIAPendingChangesCount } from "@/hooks/useLAIARevisions";
 import { LAIAUnidadesFilters } from "@/components/laia/LAIAUnidadesFilters";
 import { LAIAConfiguracoes } from "@/components/laia/LAIAConfiguracoes";
+import { LAIARevisoes } from "@/components/laia/LAIARevisoes";
 import { formatCNPJ } from "@/utils/formValidation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -29,6 +31,7 @@ export default function LAIAUnidades() {
   const { data: branches, isLoading: branchesLoading } = useBranches();
   const { data: branchStats, isLoading: statsLoading } = useLAIABranchStats();
   const { data: branchConfigs, isLoading: configsLoading } = useLAIABranchConfigs();
+  const { data: pendingChangesCount } = useLAIAPendingChangesCount();
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -172,9 +175,12 @@ export default function LAIAUnidades() {
               <Building2 className="h-4 w-4" />
               Unidades
             </TabsTrigger>
-            <TabsTrigger value="revisoes" className="flex items-center gap-2">
+            <TabsTrigger value="revisoes" className="flex items-center gap-2 relative">
               <RotateCcw className="h-4 w-4" />
               Revisões
+              {!!pendingChangesCount && pendingChangesCount > 0 && (
+                <Badge className="ml-1 h-5 min-w-5 px-1 text-xs bg-amber-500 text-white">{pendingChangesCount}</Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="configuracoes" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -333,14 +339,7 @@ export default function LAIAUnidades() {
           </TabsContent>
 
           <TabsContent value="revisoes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Revisões</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Conteúdo de revisões em desenvolvimento.</p>
-              </CardContent>
-            </Card>
+            <LAIARevisoes />
           </TabsContent>
 
           <TabsContent value="configuracoes">
