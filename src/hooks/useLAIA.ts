@@ -277,6 +277,30 @@ export function useUpsertLAIABranchConfig() {
   });
 }
 
+export function useBulkUpsertLAIABranchConfig() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ branchIds, surveyStatus, companyId }: { branchIds: string[]; surveyStatus: string; companyId: string }) =>
+      laiaBranchConfigService.bulkUpsertLAIABranchConfig(branchIds, surveyStatus as any, companyId),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["laia-branch-configs"] });
+      toast({
+        title: "Status atualizados",
+        description: `${vars.branchIds.length} unidade(s) atualizada(s) com sucesso.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 // ============ Dashboard Stats ============
 
 export function useLAIADashboardStats(branchId?: string) {
