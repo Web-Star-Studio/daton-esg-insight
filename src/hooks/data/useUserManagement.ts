@@ -141,7 +141,7 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
 
   // Invite user mutation (sends email invitation)
   const createUserMutation = useMutation({
-    mutationFn: async (userData: Partial<UserProfile>) => {
+    mutationFn: async (userData: Partial<UserProfile> & { module_access?: Record<string, boolean> }) => {
       const { data, error } = await supabase.functions.invoke('invite-user', {
         body: {
           email: userData.email,
@@ -150,6 +150,7 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
           department: userData.department,
           phone: userData.phone,
           username: userData.username,
+          module_access: userData.module_access,
         },
       });
 
@@ -160,7 +161,7 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Convite enviado com sucesso! O usuário receberá um email para definir sua senha.');
+      toast.success('Convite enviado com sucesso! O usuário receberá um email com senha temporária.');
     },
     onError: (error: Error) => {
       toast.error(`Erro ao enviar convite: ${error.message}`);

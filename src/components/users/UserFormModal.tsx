@@ -61,7 +61,7 @@ interface UserFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user?: UserProfile | null;
-  onSave: (data: Partial<UserProfile>) => void;
+  onSave: (data: Partial<UserProfile> & { module_access?: Record<string, boolean> }) => void;
   isLoading?: boolean;
   onResendInvite?: (user: UserProfile) => void;
   isResending?: boolean;
@@ -85,6 +85,9 @@ export function UserFormModal({
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+
+  // Local module access state for new user invites
+  const [inviteModuleAccess, setInviteModuleAccess] = useState<Record<string, boolean>>({});
 
   // Module access for the user being edited
   const { permissions, isLoading: isLoadingAccess, hasAccess, toggleAccess } = useUserModuleAccess(
@@ -141,6 +144,12 @@ export function UserFormModal({
           phone: '',
           is_active: true,
         });
+        // Initialize all modules as enabled for new invites
+        const initialAccess: Record<string, boolean> = {};
+        Object.keys(MODULE_LABELS).forEach(key => {
+          initialAccess[key] = true;
+        });
+        setInviteModuleAccess(initialAccess);
       }
     }
   }, [user, open, reset]);
@@ -201,7 +210,18 @@ export function UserFormModal({
         return acc;
       }, {} as Record<string, string>);
       logFormValidation('UserFormModal', Object.keys(errors).length === 0, errorMessages);
-      onSave({ ...data, id: user?.id });
+      
+      // For new users (invites), include module_access
+      const saveData: Partial<UserProfile> & { module_access?: Record<string, boolean> } = {
+        ...data,
+        id: user?.id,
+      };
+      
+      if (!isEditing) {
+        saveData.module_access = inviteModuleAccess;
+      }
+      
+      onSave(saveData);
       logFormSubmission('UserFormModal', data, true, undefined, { userId: user?.id });
       perfLogger.end(true);
       reset();
@@ -234,7 +254,11 @@ export function UserFormModal({
   const availableModules = Object.entries(MODULE_LABELS);
 
   const handleModuleToggle = (moduleKey: string, currentAccess: boolean) => {
-    toggleAccess.mutate({ moduleKey, hasAccess: !currentAccess });
+    if (isEditing) {
+      toggleAccess.mutate({ moduleKey, hasAccess: !currentAccess });
+    } else {
+      setInviteModuleAccess(prev => ({ ...prev, [moduleKey]: !currentAccess }));
+    }
   };
 
   return (
@@ -257,7 +281,7 @@ export function UserFormModal({
           <DialogDescription>
             {isEditing 
               ? 'Atualize as informações do usuário abaixo.' 
-              : 'Preencha os dados para enviar um convite por email. O usuário receberá um link para definir sua senha.'}
+              : 'Preencha os dados para enviar um convite. O usuário receberá um email com senha temporária.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -408,50 +432,50 @@ export function UserFormModal({
             />
           </div>
 
-          {/* Acesso a Módulos (apenas em edição) */}
-          {isEditing && (
-            <div className="space-y-3 rounded-lg border p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Shield className="h-4 w-4 text-primary" />
-                <Label className="text-base font-semibold">Acesso a Módulos</Label>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Controle quais módulos este usuário pode acessar. Por padrão, todos os módulos estão habilitados.
-              </p>
-              {isLoadingAccess ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">Carregando...</span>
-                </div>
-              ) : (
-                <div className="grid gap-2">
-                  {availableModules.map(([key, label]) => {
-                    const moduleAccess = hasAccess(key);
-                    return (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between rounded-md border px-3 py-2"
-                      >
-                        <span className="text-sm">{label}</span>
-                        <Switch
-                          checked={moduleAccess}
-                          onCheckedChange={() => handleModuleToggle(key, moduleAccess)}
-                          disabled={toggleAccess.isPending}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+          {/* Acesso a Módulos - visible for both editing and inviting */}
+          <div className="space-y-3 rounded-lg border p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="h-4 w-4 text-primary" />
+              <Label className="text-base font-semibold">Acesso a Módulos</Label>
             </div>
-          )}
+            <p className="text-xs text-muted-foreground mb-3">
+              {isEditing 
+                ? 'Controle quais módulos este usuário pode acessar. Por padrão, todos os módulos estão habilitados.'
+                : 'Selecione quais módulos o usuário convidado terá acesso.'}
+            </p>
+            {isEditing && isLoadingAccess ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Carregando...</span>
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                {availableModules.map(([key, label]) => {
+                  const moduleAccess = isEditing ? hasAccess(key) : (inviteModuleAccess[key] !== false);
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between rounded-md border px-3 py-2"
+                    >
+                      <span className="text-sm">{label}</span>
+                      <Switch
+                        checked={moduleAccess}
+                        onCheckedChange={() => handleModuleToggle(key, moduleAccess)}
+                        disabled={isEditing ? toggleAccess.isPending : isLoading}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Info box for new users */}
           {!isEditing && (
             <div className="bg-muted/50 border rounded-lg p-3 text-sm text-muted-foreground">
               <p className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                Um email de convite será enviado para o usuário definir sua senha.
+                O usuário receberá um email com uma senha temporária para acessar o sistema.
               </p>
             </div>
           )}
