@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDemo } from '@/contexts/DemoContext';
 import { ENABLED_MODULES, type ModuleKey } from '@/config/enabledModules';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface ModuleSetting {
   id: string;
@@ -13,9 +14,15 @@ export interface ModuleSetting {
   updated_by_user_id: string | null;
 }
 
+interface UserModuleAccessRecord {
+  module_key: string;
+  has_access: boolean;
+}
+
 export function useModuleSettings() {
   const { isDemo } = useDemo();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['platform-module-settings'],
@@ -31,21 +38,50 @@ export function useModuleSettings() {
       }
       return data as unknown as ModuleSetting[];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch current user's module access restrictions
+  const { data: userAccess } = useQuery({
+    queryKey: ['user-module-access', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('user_module_access' as any)
+        .select('module_key, has_access')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.warn('Failed to fetch user module access:', error.message);
+        return [];
+      }
+      return data as unknown as UserModuleAccessRecord[];
+    },
+    enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000,
   });
 
   const isModuleVisible = (moduleKey: string): boolean => {
-    // If DB settings loaded, use them
+    // 1. Check global platform settings
     if (settings) {
       const setting = settings.find(s => s.module_key === moduleKey);
       if (setting) {
-        return isDemo ? setting.enabled_demo : setting.enabled_live;
+        const globalEnabled = isDemo ? setting.enabled_demo : setting.enabled_live;
+        if (!globalEnabled) return false;
+      }
+    } else {
+      // Fallback to static config
+      if (moduleKey in ENABLED_MODULES) {
+        if (!ENABLED_MODULES[moduleKey as ModuleKey]) return false;
       }
     }
-    // Fallback to static config
-    if (moduleKey in ENABLED_MODULES) {
-      return ENABLED_MODULES[moduleKey as ModuleKey];
+
+    // 2. Check user-level access (if restricted)
+    if (userAccess && userAccess.length > 0) {
+      const userPerm = userAccess.find(p => p.module_key === moduleKey);
+      if (userPerm && !userPerm.has_access) return false;
     }
+
     return true;
   };
 
@@ -69,7 +105,7 @@ export function useModuleSettings() {
 
   const isSectionVisible = (sectionId: string): boolean => {
     const moduleKey = sectionToModuleKey[sectionId];
-    if (!moduleKey) return true; // No mapping = always visible
+    if (!moduleKey) return true;
     return isModuleVisible(moduleKey);
   };
 

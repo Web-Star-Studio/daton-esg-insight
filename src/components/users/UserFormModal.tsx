@@ -9,8 +9,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserProfile } from "@/hooks/data/useUserManagement";
-import { Loader2, Mail, UserPlus, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { Loader2, Mail, UserPlus, RefreshCw, AlertCircle, CheckCircle, Shield } from "lucide-react";
 import { logFormSubmission, logFormValidation, createPerformanceLogger } from '@/utils/formLogging';
+import { useUserModuleAccess } from "@/hooks/useUserModuleAccess";
+import { useModuleSettings } from "@/hooks/useModuleSettings";
 
 // System roles with correct values
 const SYSTEM_ROLES = [
@@ -21,6 +23,19 @@ const SYSTEM_ROLES = [
   { value: 'viewer', label: 'Visualizador', description: 'Apenas visualização (leitura)' },
   { value: 'auditor', label: 'Auditor', description: 'Acesso de auditoria e logs' },
 ] as const;
+
+const MODULE_LABELS: Record<string, string> = {
+  esgEnvironmental: 'ESG Ambiental',
+  esgSocial: 'ESG Social',
+  esgGovernance: 'ESG Governança',
+  esgManagement: 'Gestão ESG',
+  quality: 'Qualidade (SGQ)',
+  suppliers: 'Fornecedores',
+  financial: 'Financeiro',
+  dataReports: 'Dados e Relatórios',
+  settings: 'Configurações',
+  help: 'Ajuda e Suporte',
+};
 
 const userFormSchema = z.object({
   full_name: z.string()
@@ -70,6 +85,12 @@ export function UserFormModal({
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+
+  // Module access for the user being edited
+  const { permissions, isLoading: isLoadingAccess, hasAccess, toggleAccess } = useUserModuleAccess(
+    isEditing && open ? user?.id : undefined
+  );
+  const { settings: moduleSettings } = useModuleSettings();
   
   const {
     register,
@@ -130,13 +151,10 @@ export function UserFormModal({
   // Check email uniqueness on blur
   const handleEmailBlur = async () => {
     if (!checkEmailUnique) return;
-    
     const email = getValues('email');
     if (!email || errors.email) return;
-    
     setEmailStatus('checking');
     setEmailError(null);
-    
     try {
       const isUnique = await checkEmailUnique(email, user?.id);
       if (isUnique) {
@@ -153,18 +171,14 @@ export function UserFormModal({
   // Check username uniqueness on blur
   const handleUsernameBlur = async () => {
     if (!checkUsernameUnique) return;
-    
     const username = getValues('username');
     if (!username) {
       setUsernameStatus('idle');
       return;
     }
-    
     if (errors.username) return;
-    
     setUsernameStatus('checking');
     setUsernameError(null);
-    
     try {
       const isUnique = await checkUsernameUnique(username, user?.id);
       if (isUnique) {
@@ -179,26 +193,15 @@ export function UserFormModal({
   };
 
   const onSubmit = (data: UserFormData) => {
-    // Prevent submission if email/username validation failed
-    if (emailStatus === 'invalid' || usernameStatus === 'invalid') {
-      return;
-    }
-    
+    if (emailStatus === 'invalid' || usernameStatus === 'invalid') return;
     const perfLogger = createPerformanceLogger('UserFormSubmission');
-    
     try {
       const errorMessages = Object.entries(errors).reduce((acc, [key, error]) => {
         if (error) acc[key] = error.message || 'Erro de validação';
         return acc;
       }, {} as Record<string, string>);
-      
       logFormValidation('UserFormModal', Object.keys(errors).length === 0, errorMessages);
-      
-      onSave({
-        ...data,
-        id: user?.id,
-      });
-      
+      onSave({ ...data, id: user?.id });
       logFormSubmission('UserFormModal', data, true, undefined, { userId: user?.id });
       perfLogger.end(true);
       reset();
@@ -225,6 +228,13 @@ export function UserFormModal({
       default:
         return null;
     }
+  };
+
+  // Get available modules (all known module keys)
+  const availableModules = Object.entries(MODULE_LABELS);
+
+  const handleModuleToggle = (moduleKey: string, currentAccess: boolean) => {
+    toggleAccess.mutate({ moduleKey, hasAccess: !currentAccess });
   };
 
   return (
@@ -397,6 +407,44 @@ export function UserFormModal({
               disabled={isLoading}
             />
           </div>
+
+          {/* Acesso a Módulos (apenas em edição) */}
+          {isEditing && (
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="h-4 w-4 text-primary" />
+                <Label className="text-base font-semibold">Acesso a Módulos</Label>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Controle quais módulos este usuário pode acessar. Por padrão, todos os módulos estão habilitados.
+              </p>
+              {isLoadingAccess ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Carregando...</span>
+                </div>
+              ) : (
+                <div className="grid gap-2">
+                  {availableModules.map(([key, label]) => {
+                    const moduleAccess = hasAccess(key);
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between rounded-md border px-3 py-2"
+                      >
+                        <span className="text-sm">{label}</span>
+                        <Switch
+                          checked={moduleAccess}
+                          onCheckedChange={() => handleModuleToggle(key, moduleAccess)}
+                          disabled={toggleAccess.isPending}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Info box for new users */}
           {!isEditing && (
