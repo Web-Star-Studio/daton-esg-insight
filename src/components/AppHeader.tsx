@@ -1,4 +1,4 @@
-import { User, Settings, LogOut } from "lucide-react"
+import { User, Settings, LogOut, Crown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { EnhancedGlobalSearch } from "@/components/navigation/EnhancedGlobalSearch"
@@ -8,6 +8,7 @@ import { ContextualHelp } from "@/components/ContextualHelp"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/usePermissions"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,7 @@ export function AppHeader() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { isPlatformAdmin } = usePermissions()
 
   const handleLogout = async () => {
     try {
@@ -120,6 +122,18 @@ export function AppHeader() {
               <Settings className="mr-2 h-4 w-4" />
               Configurações
             </DropdownMenuItem>
+            {isPlatformAdmin && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => navigate("/platform-admin")}
+                  className="cursor-pointer hover:bg-muted"
+                >
+                  <Crown className="mr-2 h-4 w-4" />
+                  Platform Admin
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <AlertDialog>
               <AlertDialogTrigger asChild>
