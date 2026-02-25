@@ -1,74 +1,60 @@
 
 
-# Redesign do Email de Convite — Profissional e Minimalista
+# Correções no Módulo LAIA
 
-## Problema
+## Problema 1: Setores fora de ordem numérica
 
-O template atual do email de convite (`supabase/functions/invite-user/index.ts`, função `buildEmailHtml`) tem visual excessivamente decorativo: gradientes coloridos, emojis (🔑, ⚠️), caixas coloridas com bordas laterais, sombras. O usuário quer algo mais profissional e minimalista, incluindo a logo do sistema.
+A query em `getLAIASectors` usa `.order("code")` que faz ordenação **alfabética** (string). Resultado: 1, 10, 11, 12, 2, 3... em vez de 1, 2, 3, 10, 11, 12.
 
-## Design proposto
+**Solução:** Ordenar no client-side com comparação numérica no `LAIASectorManager.tsx`, usando `localeCompare` com `{ numeric: true }` ao renderizar os setores.
 
-Layout limpo, fundo branco, tipografia sóbria, sem emojis, sem gradientes, sem caixas coloridas:
+## Problema 2: Cards de unidades com quantidades erradas
 
-```text
-┌─────────────────────────────────────┐
-│                                     │
-│           [Logo Daton]              │
-│                                     │
-├─────────────────────────────────────┤
-│                                     │
-│  Olá, Douglas Araújo.               │
-│                                     │
-│  Você foi convidado(a) por [nome]   │
-│  para a equipe da [empresa] na      │
-│  plataforma Daton.                  │
-│                                     │
-│  Papel: Visualizador                │
-│                                     │
-│  ─────────────────────────────────  │
-│                                     │
-│  Email: douglas@email.com           │
-│  Senha temporária: Aeep9t$y7IMs     │
-│                                     │
-│  Altere sua senha após o primeiro   │
-│  acesso em Configurações >          │
-│  Segurança.                         │
-│                                     │
-│         [ Acessar Plataforma ]      │
-│                                     │
-├─────────────────────────────────────┤
-│  © 2026 Daton                       │
-└─────────────────────────────────────┘
+A função `getLAIABranchStats` busca **todos** os assessments da empresa para contar no client-side, mas o Supabase tem limite padrão de **1000 linhas** por query. A empresa tem **2107 avaliações ativas**, então apenas ~1000 são retornadas, gerando contagens incorretas (PIR mostra 11 ao invés de 352, DUQUE mostra 1 ao invés de 125, etc).
+
+**Solução:** Usar uma abordagem com paginação ou, mais eficientemente, fazer a contagem diretamente no banco com um RPC (function PostgreSQL) que retorna as contagens agrupadas por `branch_id`. Como alternativa mais simples e sem migration, podemos adicionar `.range(0, 9999)` para remover o limite de 1000, embora a abordagem ideal seja via RPC.
+
+A mesma vulnerabilidade existe na função `getLAIADashboardStats` (também busca todos os assessments client-side).
+
+## Arquivos a modificar
+
+### 1. `src/services/laiaService.ts`
+
+**a) `getLAIABranchStats`** — Substituir a query genérica por uma query com contagem usando `select("id, branch_id, category, significance", { count: "exact" })` não resolve pois precisamos agrupar. A solução prática: fazer fetch paginado ou usar `.range(0, 50000)` para superar o limite de 1000.
+
+Aplicar `.range(0, 50000)` na query de `getLAIABranchStats` (linha 469-473):
+```typescript
+const { data: assessments, error } = await supabase
+  .from("laia_assessments")
+  .select("id, branch_id, category, significance")
+  .eq("company_id", profile.company_id)
+  .eq("status", "ativo")
+  .range(0, 49999);
 ```
 
-Características:
-- Fundo externo `#f9fafb`, card branco sem sombra pesada
-- Logo do sistema no topo (usando URL pública do asset publicado)
-- Sem emojis, sem gradientes, sem bordas laterais coloridas
-- Botão CTA com cor sólida `#059669` (verde Daton), sem gradiente
-- Tipografia limpa, cores neutras (`#111827`, `#6b7280`)
-- Senha em bloco monospace com fundo cinza claro sutil
-- Aviso de troca de senha em texto simples, sem ícone
+**b) `getLAIADashboardStats`** — Mesmo fix, adicionar `.range(0, 49999)` na query (linhas 355-373).
 
-## Logo no email
+**c) `getLAIASectors`** — Sem alteração necessária no service (a ordenação será no componente).
 
-A logo está em `src/assets/daton-logo-header.png`. Para emails HTML, precisa de URL absoluta. Usaremos a URL do app publicado: `https://daton-esg-insight.lovable.app/assets/...` — porém como assets do Vite têm hash, a abordagem mais confiável é copiar a logo para a pasta `public/` (ex: `public/logo-email.png`) para ter URL estável, ou fazer upload para o storage do Supabase.
+### 2. `src/components/laia/LAIASectorManager.tsx`
 
-A solução mais simples: copiar `daton-logo-header.png` para `public/logo-email.png` e referenciar como `${siteUrl}/logo-email.png`.
+Ordenar os setores numericamente antes de renderizar:
 
-## Arquivo a modificar
+```typescript
+const sortedSectors = useMemo(() => {
+  if (!sectors) return [];
+  return [...sectors].sort((a, b) => 
+    a.code.localeCompare(b.code, undefined, { numeric: true })
+  );
+}, [sectors]);
+```
 
-### 1. `supabase/functions/invite-user/index.ts`
+Usar `sortedSectors` no lugar de `sectors` no `map` da tabela e no `toggleSelectAll`.
 
-Reescrever a função `buildEmailHtml` (linhas ~424-535) com template minimalista:
-- Remover gradientes do header
-- Remover emojis
-- Remover caixas coloridas (azul, verde, amarela)
-- Adicionar `<img>` da logo no topo
-- Botão CTA com background sólido
-- Cores neutras e tipografia limpa
+## Resumo técnico
 
-### 2. Copiar logo para `public/`
-
-Copiar `src/assets/daton-logo-header.png` → `public/logo-email.png` para URL estável no email.
+| Problema | Causa raiz | Correção |
+|----------|-----------|----------|
+| Setores fora de ordem | `.order("code")` = ordenação de string | `localeCompare` com `{ numeric: true }` no componente |
+| Stats incorretas nos cards | Limite de 1000 linhas do Supabase | `.range(0, 49999)` nas queries de stats |
 
