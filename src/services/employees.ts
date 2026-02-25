@@ -546,3 +546,15 @@ export const useEmployeesAsOptions = () => {
     queryFn: getEmployeesAsOptions,
   });
 };
+
+export const bulkUpdateEmployeeStatus = async (
+  employeeIds: string[],
+  status: 'Ativo' | 'Inativo'
+) => {
+  const { error } = await supabase
+    .from('employees')
+    .update({ status })
+    .in('id', employeeIds);
+
+  if (error) throw error;
+};
