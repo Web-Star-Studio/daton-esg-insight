@@ -1,8 +1,8 @@
 import { useLAIARevision } from "@/hooks/useLAIARevisions";
-import { FIELD_LABELS } from "@/services/laiaRevisionService";
+import { FIELD_LABELS, type LAIARevisionChange } from "@/services/laiaRevisionService";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Plus, Pencil, Trash2, ArrowRight } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, ArrowRight, MapPin, FileText, Layers } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -42,14 +42,26 @@ function formatValue(fieldName: string | null, value: string | null): string {
 function getChangeTypeBadge(changeType: string) {
   switch (changeType) {
     case 'created':
-      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"><Plus className="h-3 w-3 mr-1" /> Criado</Badge>;
+      return <Badge variant="success-subtle"><Plus className="h-3 w-3 mr-1" /> Criado</Badge>;
     case 'updated':
-      return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"><Pencil className="h-3 w-3 mr-1" /> Editado</Badge>;
+      return <Badge variant="info-subtle"><Pencil className="h-3 w-3 mr-1" /> Editado</Badge>;
     case 'deleted':
-      return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"><Trash2 className="h-3 w-3 mr-1" /> Removido</Badge>;
+      return <Badge variant="destructive-subtle"><Trash2 className="h-3 w-3 mr-1" /> Removido</Badge>;
     default:
       return <Badge variant="outline">{changeType}</Badge>;
   }
+}
+
+interface GroupedByBranch {
+  branchName: string;
+  entities: {
+    key: string;
+    entityType: string;
+    changeType: string;
+    assessmentInfo?: LAIARevisionChange['assessment_info'];
+    sectorInfo?: LAIARevisionChange['sector_info'];
+    changes: LAIARevisionChange[];
+  }[];
 }
 
 export function LAIARevisionDetail({ revisionId }: Props) {
@@ -67,12 +79,32 @@ export function LAIARevisionDetail({ revisionId }: Props) {
     return <p className="text-muted-foreground text-center py-8">Revisão não encontrada.</p>;
   }
 
-  // Group changes by entity
-  const grouped: Record<string, typeof revision.changes> = {};
+  // Group changes: branch → entity → fields
+  const branchGroups = new Map<string, GroupedByBranch>();
+
   revision.changes.forEach(change => {
-    const key = `${change.entity_type}:${change.entity_id}`;
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(change);
+    const branchKey = change.branch_id || '_no_branch';
+    const branchName = change.branch_name || 'Sem unidade';
+    const entityKey = `${change.entity_type}:${change.entity_id}`;
+
+    if (!branchGroups.has(branchKey)) {
+      branchGroups.set(branchKey, { branchName, entities: [] });
+    }
+
+    const group = branchGroups.get(branchKey)!;
+    let entity = group.entities.find(e => e.key === entityKey);
+    if (!entity) {
+      entity = {
+        key: entityKey,
+        entityType: change.entity_type,
+        changeType: change.change_type,
+        assessmentInfo: change.assessment_info,
+        sectorInfo: change.sector_info,
+        changes: [],
+      };
+      group.entities.push(entity);
+    }
+    entity.changes.push(change);
   });
 
   return (
@@ -90,43 +122,85 @@ export function LAIARevisionDetail({ revisionId }: Props) {
 
       <Separator />
 
-      {/* Changes grouped by entity */}
-      {Object.entries(grouped).map(([key, changes]) => {
-        const [entityType] = key.split(":");
-        const firstChange = changes[0];
-
-        return (
-          <div key={key} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">
-                {entityType === 'assessment' ? 'Avaliação' : 'Setor'}
-              </Badge>
-              {getChangeTypeBadge(firstChange.change_type)}
-            </div>
-
-            <div className="rounded-lg border bg-muted/30 divide-y">
-              {changes.map(change => (
-                <div key={change.id} className="px-4 py-3 text-sm">
-                  <div className="flex items-start gap-2">
-                    <span className="font-medium text-foreground min-w-[180px]">
-                      {FIELD_LABELS[change.field_name || ''] || change.field_name || '—'}
-                    </span>
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="text-red-600 dark:text-red-400 line-through truncate">
-                        {formatValue(change.field_name, change.old_value)}
-                      </span>
-                      <ArrowRight className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
-                      <span className="text-green-600 dark:text-green-400 font-medium truncate">
-                        {formatValue(change.field_name, change.new_value)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* Changes grouped by branch then entity */}
+      {[...branchGroups.entries()].map(([branchKey, group]) => (
+        <div key={branchKey} className="space-y-3">
+          {/* Branch header */}
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <MapPin className="h-4 w-4 text-primary" />
+            <span>{group.branchName}</span>
           </div>
-        );
-      })}
+
+          <div className="ml-2 border-l-2 border-primary/20 pl-4 space-y-3">
+            {group.entities.map(entity => (
+              <div key={entity.key} className="rounded-lg border bg-card shadow-sm overflow-hidden">
+                {/* Entity header */}
+                <div className="px-4 py-3 bg-muted/50 border-b space-y-1">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    {entity.entityType === 'assessment' && entity.assessmentInfo ? (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="font-semibold text-sm text-foreground">
+                          {entity.assessmentInfo.aspect_code} — {entity.assessmentInfo.activity_operation}
+                        </span>
+                      </div>
+                    ) : entity.entityType === 'sector' && entity.sectorInfo ? (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Layers className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="font-semibold text-sm text-foreground">
+                          Setor {entity.sectorInfo.code} — {entity.sectorInfo.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">
+                          {entity.entityType === 'assessment' ? 'Avaliação' : 'Setor'}
+                        </Badge>
+                      </div>
+                    )}
+                    {getChangeTypeBadge(entity.changeType)}
+                  </div>
+
+                  {/* Assessment details */}
+                  {entity.entityType === 'assessment' && entity.assessmentInfo && (
+                    <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                      <p><strong>Aspecto:</strong> {entity.assessmentInfo.environmental_aspect}</p>
+                      <p><strong>Impacto:</strong> {entity.assessmentInfo.environmental_impact}</p>
+                      {entity.assessmentInfo.sector_name && (
+                        <p><strong>Setor:</strong> {entity.assessmentInfo.sector_name}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Field changes */}
+                {entity.changes.length > 0 && entity.changeType === 'updated' && (
+                  <div className="divide-y">
+                    {entity.changes.map(change => (
+                      <div key={change.id} className="px-4 py-2.5 text-sm">
+                        <div className="flex items-start gap-2">
+                          <span className="font-medium text-foreground min-w-[160px] text-xs">
+                            {FIELD_LABELS[change.field_name || ''] || change.field_name || '—'}
+                          </span>
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="text-destructive line-through truncate text-xs">
+                              {formatValue(change.field_name, change.old_value)}
+                            </span>
+                            <ArrowRight className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                            <span className="text-green-600 dark:text-green-400 font-medium truncate text-xs">
+                              {formatValue(change.field_name, change.new_value)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
 
       {revision.changes.length === 0 && (
         <p className="text-muted-foreground text-center py-4">Nenhuma alteração registrada nesta revisão.</p>
