@@ -15,6 +15,7 @@ export interface ParsedEmployee {
   lotacao: string;
   cargo: string;
   grupo?: string;
+  admissao: string; // YYYY-MM-DD ou ''
   // Extracted from Lotação
   extractedDepartment: string;
   extractedBranch: string;
@@ -131,6 +132,16 @@ export async function parseEmployeeExcel(file: File): Promise<ParsedEmployee[]> 
             nascimento = parseDate(nascimentoRaw);
           }
           
+          let admissao = '';
+          const admissaoRaw = row['Admissão'] || row['ADMISSÃO'] || row['Admissao'] || row['ADMISSAO'] || 
+            row['Data de Admissão'] || row['Data Admissão'] || row['Data de Admissao'] || row['Data Admissao'] ||
+            row['Contratação'] || row['CONTRATAÇÃO'] || row['Contratacao'] || row['CONTRATACAO'] ||
+            row['Data de Contratação'] || row['Data Contratação'] || row['Data de Contratacao'] || row['Data Contratacao'] ||
+            row['Hire Date'] || row['hire_date'] || '';
+          if (admissaoRaw) {
+            admissao = parseDate(admissaoRaw);
+          }
+          
           return {
             rowNumber: headerRow + index + 2, // +2: header row + 1-indexed + data starts after header
             cpf: cpfClean,
@@ -141,6 +152,7 @@ export async function parseEmployeeExcel(file: File): Promise<ParsedEmployee[]> 
             lotacao,
             cargo: row['Cargo'] || row['CARGO'] || row['cargo'] || '',
             grupo: row['Grupo'] || row['GRUPO'] || row['grupo'] || '',
+            admissao,
             extractedDepartment: department,
             extractedBranch: branch,
             extractedCity: city,
@@ -459,7 +471,7 @@ export async function importEmployees(
           position: emp.cargo || null,
           position_id: positionId || null,
           branch_id: branchId || null,
-          hire_date: new Date().toISOString().split('T')[0], // Default to today
+          hire_date: emp.admissao || new Date().toISOString().split('T')[0],
           employment_type: 'CLT', // Default
           status: 'Ativo', // Default
         };
@@ -514,10 +526,10 @@ export async function importEmployees(
 // Download template CSV
 export function downloadEmployeeTemplate() {
   // Dados do template em CSV
-  const headers = ['CPF', 'Nome', 'Nascimento', 'E-mail', 'Lotação', 'Cargo', 'Grupo'];
+  const headers = ['CPF', 'Nome', 'Nascimento', 'E-mail', 'Lotação', 'Cargo', 'Grupo', 'Admissão'];
   const exampleRows = [
-    ['123.456.789-00', 'João da Silva', '15/06/1985', 'joao.silva@empresa.com', 'TI - São Paulo', 'Analista de Sistemas', 'Tecnologia'],
-    ['987.654.321-00', 'Maria Santos', '22/03/1990', 'maria.santos@empresa.com', 'RH - Rio de Janeiro', 'Coordenadora de RH', 'Administrativo'],
+    ['123.456.789-00', 'João da Silva', '15/06/1985', 'joao.silva@empresa.com', 'TI - São Paulo', 'Analista de Sistemas', 'Tecnologia', '01/03/2020'],
+    ['987.654.321-00', 'Maria Santos', '22/03/1990', 'maria.santos@empresa.com', 'RH - Rio de Janeiro', 'Coordenadora de RH', 'Administrativo', '15/08/2019'],
   ];
   
   // Gerar CSV com separador ponto-e-vírgula (padrão BR para Excel)
