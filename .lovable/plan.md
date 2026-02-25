@@ -1,88 +1,64 @@
 
 
-# Status de Levantamento por Unidade no LAIA
+# Habilitar edição de avaliações LAIA na aba Avaliações
 
-## Visão geral
+## Situação atual
 
-Cada unidade terá um "Status de Levantamento" configurável na aba Configurações, com 3 valores possíveis. Unidades com status "Não Levantados" ficam ocultas na aba Unidades.
+- O `LAIAAssessmentForm` só suporta criação (usa `useCreateLAIAAssessment`, título fixo "Nova Avaliação LAIA")
+- Na `LAIAUnidadePage`, o `viewMode === "edit"` mostra um placeholder "Edição em desenvolvimento..."
+- O service `updateLAIAAssessment` e o hook `useUpdateLAIAAssessment` já existem e funcionam
 
-## Banco de dados
+## Alterações
 
-### Nova tabela: `laia_branch_config`
+### `src/components/laia/LAIAAssessmentForm.tsx`
 
-Armazena configurações LAIA por unidade, separada da tabela `branches` para manter o desacoplamento.
+Adaptar o componente para funcionar tanto em modo criação quanto edição:
 
-```sql
-CREATE TABLE public.laia_branch_config (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID NOT NULL REFERENCES public.companies(id),
-  branch_id UUID NOT NULL REFERENCES public.branches(id) ON DELETE CASCADE,
-  survey_status TEXT NOT NULL DEFAULT 'nao_levantado',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(branch_id)
-);
-```
+- Adicionar prop opcional `initialData?: LAIAAssessment` na interface `LAIAAssessmentFormProps`
+- Derivar modo (`isEditing = !!initialData`) a partir da presença de `initialData`
+- Inicializar `formData` com os dados de `initialData` quando presente (mapeando os campos do `LAIAAssessment` para `LAIAAssessmentFormData`)
+- Importar e usar `useUpdateLAIAAssessment` quando em modo edição
+- No `handleSubmit`, chamar `updateMutation.mutateAsync({ id: initialData.id, data: formData })` se editando, ou `createMutation.mutateAsync(formData)` se criando
+- Alterar título do card: "Editar Avaliação LAIA" vs "Nova Avaliação LAIA"
+- Alterar texto do botão final: "Salvar Alterações" vs "Criar Avaliação"
 
-- `survey_status`: `'nao_levantado'` | `'em_levantamento'` | `'levantado'`
-- Constraint `UNIQUE(branch_id)` — uma config por unidade
-- Default `'nao_levantado'` para unidades sem configuração explícita
-- RLS policies para company_id match
+### `src/pages/LAIAUnidadePage.tsx`
 
-Trigger para atualizar `updated_at` automaticamente.
+Substituir o placeholder de edição pelo formulário real:
 
-## Service layer
+- Na condição `viewMode === "edit" && selectedAssessment` (linhas 165-171), renderizar `<LAIAAssessmentForm>` passando `initialData={selectedAssessment}`
+- Reutilizar os mesmos callbacks `onSuccess` e `onCancel` já usados no modo criação
 
-### Novo arquivo: `src/services/laiaBranchConfigService.ts`
+## Detalhes técnicos
 
-- `getLAIABranchConfigs()`: busca todas as configs da empresa
-- `upsertLAIABranchConfig(branchId, surveyStatus)`: insere ou atualiza o status de uma unidade (upsert no `branch_id`)
-
-### Novos hooks em `src/hooks/useLAIA.ts`
-
-- `useLAIABranchConfigs()`: query para buscar configs
-- `useUpsertLAIABranchConfig()`: mutation para salvar
-
-## Componente: Configurações
-
-### Novo componente: `src/components/laia/LAIAConfiguracoes.tsx`
-
-Tabela com todas as unidades ativas da empresa, mostrando:
-
-| Unidade | Código | Status de Levantamento |
-|---------|--------|----------------------|
-| Nome    | COD    | [Select: dropdown]   |
-
-- Um `Select` por linha com as 3 opções
-- Ao alterar, faz upsert imediato (ou botão "Salvar" global)
-- Badges coloridos para cada status:
-  - Não Levantados → cinza
-  - Em Levantamento → amarelo
-  - Levantados → verde
-
-## Filtro na aba Unidades
-
-No `LAIAUnidades.tsx`, o `filteredBranches` passa a excluir unidades cujo status seja `'nao_levantado'`:
+Mapeamento de `LAIAAssessment` → `LAIAAssessmentFormData` na inicialização:
 
 ```typescript
-// Após carregar branchConfigs
-const visibleBranches = activeBranches.filter(b => {
-  const config = branchConfigs?.find(c => c.branch_id === b.id);
-  // Se não tem config, default é nao_levantado → oculta
-  return config?.survey_status !== 'nao_levantado' 
-    && config !== undefined;
+const mapAssessmentToFormData = (a: LAIAAssessment): LAIAAssessmentFormData => ({
+  branch_id: a.branch_id || branchId,
+  sector_id: a.sector_id || "",
+  activity_operation: a.activity_operation,
+  environmental_aspect: a.environmental_aspect,
+  environmental_impact: a.environmental_impact,
+  temporality: a.temporality,
+  operational_situation: a.operational_situation,
+  incidence: a.incidence,
+  impact_class: a.impact_class,
+  scope: a.scope,
+  severity: a.severity,
+  frequency_probability: a.frequency_probability,
+  has_legal_requirements: a.has_legal_requirements,
+  has_stakeholder_demand: a.has_stakeholder_demand,
+  has_strategic_options: a.has_strategic_options,
+  control_types: a.control_types || [],
+  existing_controls: a.existing_controls || "",
+  legislation_reference: a.legislation_reference || "",
+  has_lifecycle_control: a.has_lifecycle_control,
+  lifecycle_stages: a.lifecycle_stages || [],
+  output_actions: a.output_actions || "",
+  notes: a.notes || "",
 });
 ```
 
-Unidades sem registro em `laia_branch_config` ficam ocultas (default = não levantado).
-
-## Arquivos a criar/modificar
-
-| Arquivo | Ação |
-|---------|------|
-| Migration SQL | Criar tabela `laia_branch_config` + RLS + trigger |
-| `src/services/laiaBranchConfigService.ts` | Novo — CRUD da config |
-| `src/hooks/useLAIA.ts` | Adicionar hooks para branch config |
-| `src/components/laia/LAIAConfiguracoes.tsx` | Novo — UI da aba Configurações |
-| `src/pages/LAIAUnidades.tsx` | Usar configs para filtrar unidades + renderizar componente de Configurações |
+Nenhuma alteração de banco de dados necessária — o service e hook de update já existem.
 
