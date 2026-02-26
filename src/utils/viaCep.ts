@@ -23,19 +23,32 @@ export interface AddressData {
 /**
  * Fetches address data from ViaCEP API based on CEP
  * @param cep - Brazilian postal code (CEP) - accepts with or without formatting
+ * @param isDemoMode - Whether the app is currently in demo mode (used to intercept fetch)
  * @returns Address data or null if not found
  */
-export const fetchAddressByCep = async (cep: string): Promise<AddressData | null> => {
+export const fetchAddressByCep = async (cep: string, isDemoMode: boolean = false): Promise<AddressData | null> => {
   // Remove non-numeric characters
   const cleanCep = cep.replace(/\D/g, '');
-  
+
   if (cleanCep.length !== 8) {
     return null;
   }
 
+  // Intercept data in demo mode
+  if (isDemoMode) {
+    await new Promise(resolve => setTimeout(resolve, 500)); // fake delay
+    return {
+      street: "Avenida Paulista",
+      neighborhood: "Bela Vista",
+      city: "São Paulo",
+      state: "SP",
+      cep: formatCep(cleanCep)
+    };
+  }
+
   try {
     const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch address');
     }
@@ -66,11 +79,11 @@ export const fetchAddressByCep = async (cep: string): Promise<AddressData | null
  */
 export const formatCep = (cep: string): string => {
   const cleanCep = cep.replace(/\D/g, '');
-  
+
   if (cleanCep.length <= 5) {
     return cleanCep;
   }
-  
+
   return `${cleanCep.slice(0, 5)}-${cleanCep.slice(5, 8)}`;
 };
 

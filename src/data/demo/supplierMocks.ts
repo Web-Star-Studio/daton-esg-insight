@@ -96,6 +96,7 @@ const managedSuppliers = [
     type_count: 2,
     supply_failure_count: 1,
     last_failure_date: "2026-01-12",
+    registration_date: "2025-11-10T08:30:00Z",
   },
   {
     id: "s-2",
@@ -114,6 +115,7 @@ const managedSuppliers = [
     type_count: 1,
     supply_failure_count: 0,
     last_failure_date: null,
+    registration_date: "2025-11-15T14:20:00Z",
   },
   {
     id: "s-3",
@@ -132,6 +134,7 @@ const managedSuppliers = [
     type_count: 2,
     supply_failure_count: 2,
     last_failure_date: "2026-02-02",
+    registration_date: "2025-12-05T09:15:00Z",
   },
   {
     id: "s-4",
@@ -150,6 +153,7 @@ const managedSuppliers = [
     type_count: 1,
     supply_failure_count: 1,
     last_failure_date: "2026-01-20",
+    registration_date: "2025-12-10T11:45:00Z",
   },
   {
     id: "s-5",
@@ -168,6 +172,7 @@ const managedSuppliers = [
     type_count: 1,
     supply_failure_count: 2,
     last_failure_date: "2026-01-28",
+    registration_date: "2025-12-20T16:30:00Z",
   },
   {
     id: "s-6",
@@ -189,6 +194,7 @@ const managedSuppliers = [
     auto_inactivated_at: "2026-01-08T09:15:00Z",
     reactivation_blocked_until: "2026-03-08T09:15:00Z",
     last_failure_date: "2026-01-06",
+    registration_date: "2025-10-01T10:00:00Z",
   },
 ];
 

@@ -11,7 +11,9 @@ import { toast } from 'sonner';
 // Infinitely chainable PromiseLike that resolves to a no-op Supabase response.
 // Absorbs all PostgREST filter calls (.eq, .neq, .in, .order, etc.) via Proxy.
 const DEMO_OK_RESPONSE = {
-  data: null,
+  // Retorna um objeto para previnir crashes de TypeError: Cannot read properties of null (reading 'X')
+  // em chamadas de Edge Functions ou RPCs que usam `if (data.success)` etc.
+  data: { success: true, data: {} },
   error: null,
   count: null,
   status: 200,

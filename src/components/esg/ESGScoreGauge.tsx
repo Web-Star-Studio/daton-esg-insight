@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
-import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
 interface ESGScoreGaugeProps {
   score: number; // 0-100
@@ -11,7 +10,7 @@ interface ESGScoreGaugeProps {
 export function ESGScoreGauge({ score, label = "Score ESG Geral", showDetails = true }: ESGScoreGaugeProps) {
   // Garantir que o score está entre 0-100
   const normalizedScore = Math.min(Math.max(score, 0), 100);
-  
+
   // Determinar cor baseada no score
   const getScoreColor = (value: number) => {
     if (value >= 80) return "hsl(var(--success))";
@@ -28,11 +27,11 @@ export function ESGScoreGauge({ score, label = "Score ESG Geral", showDetails = 
     return "Necessita Melhoria";
   };
 
-  // Dados para o gauge (semi-círculo)
-  const gaugeData = [
-    { name: "Score", value: normalizedScore, fill: getScoreColor(normalizedScore) },
-    { name: "Restante", value: 100 - normalizedScore, fill: "hsl(var(--muted))" }
-  ];
+  // Dados do arc
+  const radius = 55;
+  const stroke = 12;
+  const circumference = Math.PI * radius;
+  const strokeDashoffset = circumference - (normalizedScore / 100) * circumference;
 
   return (
     <Card className="shadow-card">
@@ -47,37 +46,55 @@ export function ESGScoreGauge({ score, label = "Score ESG Geral", showDetails = 
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center">
-          {/* Gauge Chart */}
-          <div className="relative w-full h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={gaugeData}
-                  cx="50%"
-                  cy="80%"
-                  startAngle={180}
-                  endAngle={0}
-                  innerRadius="70%"
-                  outerRadius="100%"
-                  paddingAngle={0}
-                  dataKey="value"
-                >
-                  {gaugeData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            
-            {/* Score Display */}
-            <div className="absolute inset-0 flex items-end justify-center pb-4">
-              <div className="text-center">
-                <div className="text-5xl font-bold" style={{ color: getScoreColor(normalizedScore) }}>
-                  {normalizedScore}
-                </div>
-                <div className="text-sm text-muted-foreground">de 100</div>
-              </div>
-            </div>
+          {/* Gauge Chart Layout — SVG with embedded text to avoid overlap */}
+          <div className="flex flex-col items-center justify-center">
+            <svg className="w-[180px] h-[135px]" viewBox="0 0 160 120">
+              {/* Background arc */}
+              <path
+                d="M 25 80 A 55 55 0 0 1 135 80"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={stroke}
+                strokeLinecap="round"
+                strokeOpacity={0.18}
+                className="text-foreground"
+              />
+              {/* Foreground arc - Score */}
+              <path
+                d="M 25 80 A 55 55 0 0 1 135 80"
+                fill="none"
+                stroke={getScoreColor(normalizedScore)}
+                strokeWidth={stroke}
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-1000 ease-out"
+              />
+              {/* Score number — below arc baseline (y=80 + half-stroke=6 → clear from y≥86) */}
+              <text
+                x="80"
+                y="104"
+                textAnchor="middle"
+                dominantBaseline="auto"
+                fontSize="44"
+                fontWeight="bold"
+                fill={getScoreColor(normalizedScore)}
+              >
+                {normalizedScore}
+              </text>
+              {/* "de 100" label */}
+              <text
+                x="80"
+                y="117"
+                textAnchor="middle"
+                dominantBaseline="auto"
+                fontSize="12"
+                fill="currentColor"
+                className="text-muted-foreground"
+              >
+                de 100
+              </text>
+            </svg>
           </div>
 
           {/* Score Level Indicator */}
@@ -85,9 +102,9 @@ export function ESGScoreGauge({ score, label = "Score ESG Geral", showDetails = 
             <div className="mt-6 w-full space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">Nível:</span>
-                <span 
+                <span
                   className="text-sm font-bold px-3 py-1 rounded-full"
-                  style={{ 
+                  style={{
                     backgroundColor: `${getScoreColor(normalizedScore)}20`,
                     color: getScoreColor(normalizedScore)
                   }}
@@ -100,9 +117,9 @@ export function ESGScoreGauge({ score, label = "Score ESG Geral", showDetails = 
               <div className="space-y-2">
                 <div className="text-xs text-muted-foreground">Faixa de Pontuação:</div>
                 <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="absolute h-full rounded-full transition-all duration-500"
-                    style={{ 
+                    style={{
                       width: `${normalizedScore}%`,
                       backgroundColor: getScoreColor(normalizedScore)
                     }}
