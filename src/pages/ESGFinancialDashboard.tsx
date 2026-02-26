@@ -95,7 +95,7 @@ export default function ESGFinancialDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(stats?.total_esg_costs || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              {stats?.esg_percentage.toFixed(1)}% do total de despesas
+              {(stats?.esg_percentage || 0).toFixed(1)}% do total de despesas
             </p>
           </CardContent>
         </Card>
@@ -245,7 +245,7 @@ export default function ESGFinancialDashboard() {
                   <div>
                     <p className="font-medium text-sm">Investimento ESG Ativo</p>
                     <p className="text-sm text-muted-foreground">
-                      {stats.esg_percentage.toFixed(1)}% das suas despesas estão vinculadas a iniciativas ESG.
+                      {(stats.esg_percentage || 0).toFixed(1)}% das suas despesas estão vinculadas a iniciativas ESG.
                       {stats.esg_percentage < 10 && ' Considere aumentar este percentual para melhorar seu score ESG.'}
                     </p>
                   </div>

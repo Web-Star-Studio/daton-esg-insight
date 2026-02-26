@@ -7,11 +7,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { IndicatorCategoryCard } from "@/components/esg/IndicatorCategoryCard";
 import { IndicatorTrendChart } from "@/components/esg/IndicatorTrendChart";
 import { IndicatorComparisonChart } from "@/components/esg/IndicatorComparisonChart";
-import { 
-  getAllRecommendedIndicators, 
-  getCachedIndicators, 
+import {
+  getAllRecommendedIndicators,
+  getCachedIndicators,
   saveIndicatorsToCache,
-  CategoryIndicators 
+  CategoryIndicators
 } from "@/services/esgRecommendedIndicators";
 import { RefreshCw, Download, TrendingUp, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -51,7 +51,9 @@ export default function IndicadoresRecomendados() {
       // Save to cache
       await saveIndicatorsToCache(indicators);
 
-      toast.success('Indicadores calculados com sucesso!');
+      if (forceRecalculate) {
+        toast.success('Indicadores calculados com sucesso!');
+      }
     } catch (error) {
       console.error('Error loading indicators:', error);
       toast.error('Erro ao carregar indicadores');
@@ -94,15 +96,15 @@ export default function IndicadoresRecomendados() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleExport}
             disabled={calculating}
           >
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <Button 
+          <Button
             onClick={handleRecalculate}
             disabled={calculating}
           >
@@ -168,7 +170,7 @@ export default function IndicadoresRecomendados() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Dados Incompletos</AlertTitle>
           <AlertDescription>
-            Alguns indicadores não puderam ser calculados devido à falta de dados. 
+            Alguns indicadores não puderam ser calculados devido à falta de dados.
             Complete os cadastros nas respectivas seções para melhorar a qualidade dos indicadores.
           </AlertDescription>
         </Alert>
@@ -212,7 +214,7 @@ export default function IndicadoresRecomendados() {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Análise de Tendências</h2>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <IndicatorTrendChart
             title="Emissões de GEE (tCO₂e)"
@@ -220,21 +222,21 @@ export default function IndicadoresRecomendados() {
             unit="tCO₂e"
             color="#ef4444"
           />
-          
+
           <IndicatorTrendChart
             title="Consumo de Energia (kWh)"
             data={generateMockTrendData('energy_consumption')}
             unit="kWh"
             color="#f59e0b"
           />
-          
+
           <IndicatorTrendChart
             title="Geração de Resíduos (t)"
             data={generateMockTrendData('waste_generation')}
             unit="toneladas"
             color="#10b981"
           />
-          
+
           <IndicatorTrendChart
             title="Taxa de Acidentes (LTIFR)"
             data={generateMockTrendData('ltifr')}
@@ -242,7 +244,7 @@ export default function IndicadoresRecomendados() {
             color="#8b5cf6"
           />
         </div>
-        
+
         <IndicatorComparisonChart
           title="Completude por Categoria"
           data={categories.map(cat => ({
@@ -278,21 +280,21 @@ export default function IndicadoresRecomendados() {
 // Mock data generator for trend charts
 function generateMockTrendData(type: string) {
   const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-  
+
   const baseValues: Record<string, number> = {
     ghg_emissions: 1500,
     energy_consumption: 50000,
     waste_generation: 120,
     ltifr: 2.5
   };
-  
+
   const base = baseValues[type] || 100;
-  
+
   return months.map((month, index) => {
     const variance = (Math.random() - 0.5) * 0.2;
     const trend = -0.02;
     const value = base * (1 + trend * index + variance);
-    
+
     return {
       period: month,
       value: parseFloat(value.toFixed(2)),

@@ -28,13 +28,13 @@ interface UserProfileWithRole extends UserProfile {
 export default function GestaoUsuarios() {
   const queryClient = useQueryClient();
   const { isSuperAdmin, isAdmin, currentUserId } = usePermissions();
-  const { 
-    users, 
-    stats, 
+  const {
+    users,
+    stats,
     pagination,
     filters,
-    usersLoading, 
-    createUser, 
+    usersLoading,
+    createUser,
     updateUser,
     softDeleteUser,
     reactivateUser,
@@ -51,7 +51,7 @@ export default function GestaoUsuarios() {
     checkEmailUnique,
     checkUsernameUnique,
   } = useUserManagement();
-  
+
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -62,6 +62,12 @@ export default function GestaoUsuarios() {
   const { data: usersWithRoles, isLoading: rolesLoading } = useQuery({
     queryKey: ['company-users-roles'],
     queryFn: async () => {
+      if (typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true) {
+        return [
+          { id: 'usr-1', full_name: 'Usuário Demo', company_id: 'demo-company', role: 'admin' }
+        ] as UserProfileWithRole[];
+      }
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('company_id')
@@ -99,7 +105,7 @@ export default function GestaoUsuarios() {
       // SECURE: Update role in user_roles table
       const { error } = await supabase
         .from('user_roles')
-        .update({ 
+        .update({
           role: newRole,
           updated_at: new Date().toISOString()
         })
@@ -245,7 +251,7 @@ export default function GestaoUsuarios() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Filters */}
-                <UserSearchFilters 
+                <UserSearchFilters
                   filters={filters}
                   onFilterChange={updateFilters}
                 />
@@ -281,8 +287,8 @@ export default function GestaoUsuarios() {
           </TabsContent>
 
           <TabsContent value="permissoes" className="space-y-4">
-            <PermissionGate 
-              permission="users.view" 
+            <PermissionGate
+              permission="users.view"
               showAlert
               fallback={
                 <Card>
@@ -309,8 +315,8 @@ export default function GestaoUsuarios() {
                   ) : (
                     <div className="space-y-4">
                       {usersWithRoles?.map((user) => (
-                        <div 
-                          key={user.id} 
+                        <div
+                          key={user.id}
                           className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
                         >
                           <div className="space-y-1">
@@ -322,7 +328,7 @@ export default function GestaoUsuarios() {
                             </div>
                             <p className="text-sm text-muted-foreground">ID: {user.id}</p>
                           </div>
-                          
+
                           <PermissionGate permission="users.manage_permissions">
                             <div className="flex items-center gap-2">
                               <Select
@@ -332,9 +338,9 @@ export default function GestaoUsuarios() {
                                     toast.error('Apenas Super Admins podem criar outros Super Admins');
                                     return;
                                   }
-                                  updateRoleMutation.mutate({ 
-                                    userId: user.id, 
-                                    newRole: newRole as UserRole 
+                                  updateRoleMutation.mutate({
+                                    userId: user.id,
+                                    newRole: newRole as UserRole
                                   });
                                 }}
                                 disabled={!isAdmin || user.role === 'super_admin'}

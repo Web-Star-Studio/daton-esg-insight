@@ -199,6 +199,86 @@ const DEMO_STAKEHOLDER_ANALYTICS = {
 };
 
 export const governanceMockEntries = [
+  // Governance metrics
+  {
+    queryKey: ['governance-metrics'],
+    data: {
+      board_independence: 60,
+      board_diversity: 40,
+      executive_compensation_link: true,
+      anti_corruption_training: 95,
+      whistleblower_cases_resolved: 100,
+    }
+  },
+  {
+    queryKey: ['governance-metrics', DEMO_COMPANY_ID],
+    data: {
+      board_independence: 60,
+      board_diversity: 40,
+      executive_compensation_link: true,
+      anti_corruption_training: 95,
+      whistleblower_cases_resolved: 100,
+    }
+  },
+  // Employees
+  {
+    queryKey: ['employees'],
+    data: [
+      { id: 'emp-1', name: 'Ana Silva', role: 'Diretora ESG', department: 'Sustentabilidade' },
+      { id: 'emp-2', name: 'Carlos Santos', role: 'Gerente Ambiental', department: 'Sustentabilidade' },
+      { id: 'emp-3', name: 'Maria Santos', role: 'Gerente de Compliance', department: 'Governança' },
+    ]
+  },
+  // Employee stats
+  {
+    queryKey: ['employee-stats'],
+    data: {
+      total: 350,
+      women_percentage: 45,
+      leadership_women_percentage: 35,
+      turnover_rate: 5.2,
+      training_hours_per_employee: 24,
+    }
+  },
+  // Risk metrics
+  {
+    queryKey: ['risk-metrics'],
+    data: {
+      total_risks: 24,
+      critical_risks: 3,
+      mitigated_risks: 15,
+      risks_trend: -2,
+    }
+  },
+  // Board members
+  {
+    queryKey: ['board-members'],
+    data: [
+      { id: 'bm-1', name: 'João Batista', role: 'Presidente do Conselho', independence: 'Independente', gender: 'Masculino' },
+      { id: 'bm-2', name: 'Carla Dias', role: 'Conselheira', independence: 'Independente', gender: 'Feminino' },
+      { id: 'bm-3', name: 'Roberto Almeida', role: 'Conselheiro', independence: 'Não Independente', gender: 'Masculino' },
+    ]
+  },
+  // Whistleblower reports
+  {
+    queryKey: ['whistleblower-reports'],
+    data: [
+      { id: 'wr-1', category: 'Assédio Moral', status: 'Resolvido', date: '2026-01-15', count: 1 },
+      { id: 'wr-2', category: 'Conflito de Interesses', status: 'Em Investigação', date: '2026-02-10', count: 1 },
+    ]
+  },
+  // Risk matrices
+  {
+    queryKey: ['risk-matrices'],
+    data: [
+      {
+        id: 'rm-1',
+        name: 'Matriz de Riscos ESG 2026',
+        description: 'Avaliação anual de riscos ESG',
+        status: 'Active',
+      }
+    ]
+  },
   // Governance dashboard
   {
     queryKey: ['governance-dashboard', DEMO_COMPANY_ID],
@@ -261,6 +341,52 @@ export const governanceMockEntries = [
       { id: '1', name: 'LGPD', status: 'Conforme', compliance_percentage: 92 },
       { id: '2', name: 'ISO 14001:2015', status: 'Conforme', compliance_percentage: 88 },
     ],
+  },
+  // Compliance tasks
+  {
+    queryKey: ['compliance-tasks', DEMO_COMPANY_ID],
+    data: [
+      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em progresso', priority: 'high', assigned_to_user_id: 'emp-2', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-1' },
+      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Atrasado', priority: 'medium', assigned_to_user_id: 'emp-7', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-2' },
+      { id: 'ct-3', title: 'Relatório Trimestral CIPA', requirement: 'NR-05', category: 'Health & Safety', due_date: '2026-03-30', status: 'Pendente', priority: 'medium', assigned_to_user_id: 'emp-4', is_template: false, is_recurring: true, recurrence_pattern: 'quarterly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-3' }
+    ]
+  },
+  {
+    queryKey: ['compliance-tasks'],
+    data: [
+      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em progresso', priority: 'high', is_template: false },
+      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Atrasado', priority: 'medium', is_template: false },
+    ]
+  },
+  // Licenses
+  {
+    queryKey: ['licenses', DEMO_COMPANY_ID],
+    data: [
+      { id: 'lic-1', name: 'Licença de Operação (LO)', issuing_body: 'CETESB', issue_date: '2021-03-15', expiration_date: '2026-03-15', status: 'Válida', company_id: DEMO_COMPANY_ID },
+      { id: 'lic-2', name: 'Alvará do Corpo de Bombeiros (AVCB)', issuing_body: 'Corpo de Bombeiros SP', issue_date: '2023-05-10', expiration_date: '2026-05-10', status: 'Válida', company_id: DEMO_COMPANY_ID },
+      { id: 'lic-3', name: 'Outorga de Uso de Água', issuing_body: 'DAEE', issue_date: '2019-11-20', expiration_date: '2024-11-20', status: 'Vencida', company_id: DEMO_COMPANY_ID },
+    ]
+  },
+  {
+    queryKey: ['licenses'],
+    data: [
+      { id: 'lic-1', name: 'Licença de Operação (LO)', issuing_body: 'CETESB', expiration_date: '2026-03-15', status: 'Válida' },
+      { id: 'lic-3', name: 'Outorga de Uso de Água', issuing_body: 'DAEE', expiration_date: '2024-11-20', status: 'Vencida' },
+    ]
+  },
+  // Compliance audit trail
+  {
+    queryKey: ['compliance-audit-trail', DEMO_COMPANY_ID],
+    data: [
+      { id: 'cat-1', action_type: 'UPDATE', entity_type: 'compliance_tasks', entity_id: 'ct-1', previous_state: { status: 'Pendente' }, new_state: { status: 'Em progresso' }, created_by_user_id: 'emp-2', created_at: '2026-02-15T14:30:00Z', company_id: DEMO_COMPANY_ID },
+      { id: 'cat-2', action_type: 'CREATE', entity_type: 'compliance_tasks', entity_id: 'ct-3', previous_state: null, new_state: { title: 'Relatório Trimestral CIPA' }, created_by_user_id: 'emp-1', created_at: '2026-02-10T09:15:00Z', company_id: DEMO_COMPANY_ID },
+    ]
+  },
+  {
+    queryKey: ['compliance-audit-trail'],
+    data: [
+      { id: 'cat-1', action_type: 'UPDATE', entity_type: 'compliance_tasks', entity_id: 'ct-1', created_at: '2026-02-15T14:30:00Z' }
+    ]
   },
   // Corporate policies
   {

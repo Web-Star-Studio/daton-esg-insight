@@ -65,7 +65,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
         .from("strategic_maps")
         .select("*")
         .order("created_at", { ascending: false });
-      
+
       if (error) throw error;
       return data;
     },
@@ -80,7 +80,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
     queryKey: ["bsc-perspectives", activeStrategicMapId],
     queryFn: async () => {
       if (!activeStrategicMapId) return [];
-      
+
       const { data, error } = await supabase
         .from("bsc_perspectives")
         .select("*")
@@ -101,7 +101,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
         .from("bsc_objectives")
         .select("*")
         .order("name");
-      
+
       if (error) throw error;
       return data as BSCObjective[];
     },
@@ -129,7 +129,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
 
         if (error) throw error;
         return data;
-      }, { 
+      }, {
         formType: 'Perspectiva BSC',
         successMessage: 'Perspectiva criada com sucesso!'
       });
@@ -164,7 +164,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
 
         if (error) throw error;
         return data;
-      }, { 
+      }, {
         formType: 'Objetivo BSC',
         successMessage: 'Objetivo criado com sucesso!'
       });
@@ -204,13 +204,13 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
       const objective = objectives?.find(obj => obj.id === id);
       if (!objective) throw new Error("Objetivo não encontrado");
 
-      const progressPercentage = objective.target_value && objective.target_value > 0 
-        ? Math.min((currentValue / objective.target_value) * 100, 100) 
+      const progressPercentage = objective.target_value && objective.target_value > 0
+        ? Math.min((currentValue / objective.target_value) * 100, 100)
         : 0;
 
       const { error } = await supabase
         .from("bsc_objectives")
-        .update({ 
+        .update({
           current_value: currentValue,
           progress_percentage: progressPercentage,
           status: progressPercentage >= 100 ? 'completed' : 'active'
@@ -257,7 +257,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
     }
   };
 
-  const groupedObjectives = objectives?.reduce((acc, obj) => {
+  const groupedObjectives = (Array.isArray(objectives) ? objectives : []).reduce((acc, obj) => {
     if (!acc[obj.perspective_id]) acc[obj.perspective_id] = [];
     acc[obj.perspective_id].push(obj);
     return acc;
@@ -279,7 +279,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
           </CardContent>
         </Card>
       )}
-      
+
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">Balanced Scorecard</h3>
@@ -292,7 +292,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
             )}
           </p>
         </div>
-        
+
         <div className="flex gap-2">
           <Dialog open={isCreatePerspectiveOpen} onOpenChange={setIsCreatePerspectiveOpen}>
             <DialogTrigger asChild>
@@ -311,7 +311,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                   <Input
                     id="name"
                     value={newPerspective.name}
-                    onChange={(e) => setNewPerspective({...newPerspective, name: e.target.value})}
+                    onChange={(e) => setNewPerspective({ ...newPerspective, name: e.target.value })}
                     placeholder="Ex: Perspectiva Financeira"
                   />
                 </div>
@@ -320,12 +320,12 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                   <Textarea
                     id="description"
                     value={newPerspective.description}
-                    onChange={(e) => setNewPerspective({...newPerspective, description: e.target.value})}
+                    onChange={(e) => setNewPerspective({ ...newPerspective, description: e.target.value })}
                     placeholder="Descrição da perspectiva"
                   />
                 </div>
-                <Button 
-                  onClick={() => createPerspectiveMutation.mutate(newPerspective)} 
+                <Button
+                  onClick={() => createPerspectiveMutation.mutate(newPerspective)}
                   className="w-full"
                   disabled={createPerspectiveMutation.isPending}
                 >
@@ -367,7 +367,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                   <Input
                     id="obj_name"
                     value={newObjective.name}
-                    onChange={(e) => setNewObjective({...newObjective, name: e.target.value})}
+                    onChange={(e) => setNewObjective({ ...newObjective, name: e.target.value })}
                     placeholder="Ex: Aumentar receita em 15%"
                   />
                 </div>
@@ -376,7 +376,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                   <Textarea
                     id="obj_description"
                     value={newObjective.description}
-                    onChange={(e) => setNewObjective({...newObjective, description: e.target.value})}
+                    onChange={(e) => setNewObjective({ ...newObjective, description: e.target.value })}
                     placeholder="Como este objetivo será alcançado"
                   />
                 </div>
@@ -387,7 +387,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                       id="target_value"
                       type="number"
                       value={newObjective.target_value}
-                      onChange={(e) => setNewObjective({...newObjective, target_value: parseFloat(e.target.value)})}
+                      onChange={(e) => setNewObjective({ ...newObjective, target_value: parseFloat(e.target.value) })}
                     />
                   </div>
                   <div>
@@ -395,7 +395,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                     <Input
                       id="unit"
                       value={newObjective.unit}
-                      onChange={(e) => setNewObjective({...newObjective, unit: e.target.value})}
+                      onChange={(e) => setNewObjective({ ...newObjective, unit: e.target.value })}
                       placeholder="%, R$, unidades"
                     />
                   </div>
@@ -409,11 +409,11 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                     max="1"
                     step="0.1"
                     value={newObjective.weight}
-                    onChange={(e) => setNewObjective({...newObjective, weight: parseFloat(e.target.value)})}
+                    onChange={(e) => setNewObjective({ ...newObjective, weight: parseFloat(e.target.value) })}
                   />
                 </div>
-                <Button 
-                  onClick={() => createObjectiveMutation.mutate(newObjective)} 
+                <Button
+                  onClick={() => createObjectiveMutation.mutate(newObjective)}
                   className="w-full"
                   disabled={createObjectiveMutation.isPending || !selectedPerspective}
                 >
@@ -466,8 +466,8 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                       </div>
                       <div className="flex items-center gap-1">
                         <Badge variant={getStatusColor(objective.status) as any} className="text-xs">
-                          {objective.status === 'completed' ? 'Completo' : 
-                           objective.status === 'active' ? 'Ativo' : 'Inativo'}
+                          {objective.status === 'completed' ? 'Completo' :
+                            objective.status === 'active' ? 'Ativo' : 'Inativo'}
                         </Badge>
                         <Button
                           variant="ghost"
@@ -479,7 +479,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                         </Button>
                       </div>
                     </div>
-                    
+
                     {objective.target_value && (
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-xs">
@@ -489,7 +489,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                           <span>{Math.round(objective.progress_percentage)}%</span>
                         </div>
                         <Progress value={objective.progress_percentage} className="h-1" />
-                        
+
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
@@ -498,9 +498,9 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                             onBlur={(e) => {
                               const value = parseFloat(e.target.value);
                               if (!isNaN(value)) {
-                                updateObjectiveProgressMutation.mutate({ 
-                                  id: objective.id, 
-                                  currentValue: value 
+                                updateObjectiveProgressMutation.mutate({
+                                  id: objective.id,
+                                  currentValue: value
                                 });
                               }
                             }}
@@ -513,7 +513,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
                     )}
                   </div>
                 ))}
-                
+
                 {perspectiveObjectives.length === 0 && (
                   <p className="text-center text-muted-foreground text-sm py-4">
                     Nenhum objetivo definido

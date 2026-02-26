@@ -4,6 +4,8 @@ import { getConversionFactor } from "./conversionFactors";
 import { logger } from "@/utils/logger";
 import type { Json } from "@/integrations/supabase/types";
 
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
 export interface EmissionFactor {
   id: string;
   name: string;
@@ -35,6 +37,14 @@ export interface CreateEmissionFactorData {
 
 // Obter todos os fatores de emissão (sistema + customizados da empresa)
 export async function getEmissionFactors(): Promise<EmissionFactor[]> {
+  if (isDemoMode()) {
+    return [
+      { id: 'ef-1', name: 'Combustão de Diesel', category: 'Fontes Móveis', activity_unit: 'L', co2_factor: 2.68, ch4_factor: 0.0001, n2o_factor: 0.0001, source: 'GHG Protocol Brasil 2025', year_of_validity: 2025, type: 'system', company_id: null, created_at: new Date().toISOString() },
+      { id: 'ef-2', name: 'Eletricidade SIN', category: 'Eletricidade Adquirida', activity_unit: 'kWh', co2_factor: 0.045, ch4_factor: 0, n2o_factor: 0, source: 'MCTI 2025', year_of_validity: 2025, type: 'system', company_id: null, created_at: new Date().toISOString() },
+      { id: 'ef-3', name: 'Gasolina Comum', category: 'Fontes Móveis', activity_unit: 'L', co2_factor: 2.25, ch4_factor: 0.0002, n2o_factor: 0.0003, source: 'GHG Protocol Brasil 2024', year_of_validity: 2024, type: 'system', company_id: null, created_at: new Date().toISOString() },
+    ];
+  }
+
   const { data, error } = await supabase
     .from('emission_factors')
     .select('*')
@@ -51,6 +61,11 @@ export async function getEmissionFactors(): Promise<EmissionFactor[]> {
 
 // Obter fatores por categoria
 export async function getEmissionFactorsByCategory(category: string): Promise<EmissionFactor[]> {
+  if (isDemoMode()) {
+    const factors = await getEmissionFactors();
+    return factors.filter(f => f.category === category);
+  }
+
   const { data, error } = await supabase
     .from('emission_factors')
     .select('*')
@@ -139,6 +154,10 @@ export async function deleteCustomEmissionFactor(id: string): Promise<void> {
 
 // Obter categorias disponíveis
 export async function getEmissionCategories(): Promise<string[]> {
+  if (isDemoMode()) {
+    return ['Fontes Móveis', 'Combustão Estacionária', 'Eletricidade Adquirida', 'Tratamento de Efluentes', 'Resíduos Sólidos'];
+  }
+
   const { data, error } = await supabase
     .from('emission_factors')
     .select('category')
@@ -158,7 +177,7 @@ export async function getEmissionCategories(): Promise<string[]> {
 export async function recalculateExistingEmissions(): Promise<void> {
   try {
     logger.info('Iniciando recálculo de emissões existentes...', 'emission');
-    
+
     // Get all activity data that doesn't have calculated emissions
     const { data: activityData, error: activityError } = await supabase
       .from('activity_data')
@@ -226,16 +245,16 @@ export async function recalculateExistingEmissions(): Promise<void> {
         const { calculateEmissions } = await import('./emissions');
         await calculateEmissions(activity.id, factors[0].id);
         calculatedCount++;
-        
+
         logger.debug(`Emissões calculadas para activity ${activity.id}`, 'emission');
-        
+
       } catch (error) {
         logger.error(`Erro ao calcular emissões para activity ${activity.id}`, error, 'emission');
       }
     }
 
     logger.info(`Recálculo concluído. ${calculatedCount} emissões calculadas.`, 'emission');
-    
+
   } catch (error) {
     logger.error('Erro no recálculo de emissões', error, 'emission');
   }

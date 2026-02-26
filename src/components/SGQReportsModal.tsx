@@ -10,11 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { 
-  FileText, 
-  Download, 
-  BarChart3, 
-  PieChart, 
+import {
+  FileText,
+  Download,
+  BarChart3,
+  PieChart,
   TrendingUp,
   Calendar,
   Filter,
@@ -83,23 +83,23 @@ const SGQReportsModal: React.FC<SGQReportsModalProps> = ({ children }) => {
 
   const handleGenerateReport = async () => {
     setIsGenerating(true);
-    
+
     try {
       // Simulate report generation
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Create a mock PDF download
       const reportName = reportTypes.find(r => r.id === reportType)?.name || 'Relatório SGQ';
       const fileName = `${reportName.replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
-      
+
       toast.success(`Relatório "${reportName}" gerado com sucesso!`);
-      
+
       // Mock download
       const link = document.createElement('a');
       link.href = '#';
       link.download = fileName;
       link.click();
-      
+
     } catch (error) {
       toast.error('Erro ao gerar relatório. Tente novamente.');
     } finally {
@@ -114,20 +114,20 @@ const SGQReportsModal: React.FC<SGQReportsModalProps> = ({ children }) => {
           <div className="space-y-4">
             <h4 className="font-medium">Indicadores Principais</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>Total de NCs: <strong>{dashboard?.metrics.totalNCs || 0}</strong></div>
-              <div>NCs Abertas: <strong>{dashboard?.metrics.openNCs || 0}</strong></div>
-              <div>Riscos Críticos: <strong>{dashboard?.metrics.criticalRisks || 0}</strong></div>
-              <div>Ações em Atraso: <strong>{dashboard?.metrics.overdueActions || 0}</strong></div>
+              <div>Total de NCs: <strong>{dashboard?.metrics?.totalNCs || 0}</strong></div>
+              <div>NCs Abertas: <strong>{dashboard?.metrics?.openNCs || 0}</strong></div>
+              <div>Riscos Críticos: <strong>{dashboard?.metrics?.criticalRisks || 0}</strong></div>
+              <div>Ações em Atraso: <strong>{dashboard?.metrics?.overdueActions || 0}</strong></div>
             </div>
           </div>
         );
-      
+
       case 'nc_analysis':
         return (
           <div className="space-y-4">
             <h4 className="font-medium">Distribuição por Severidade</h4>
             <div className="space-y-2 text-sm">
-              {ncStats && Object.entries(ncStats.bySeverity).map(([severity, count]) => (
+              {ncStats?.bySeverity && Object.entries(ncStats.bySeverity).map(([severity, count]) => (
                 <div key={severity} className="flex justify-between">
                   <span>{severity}:</span>
                   <strong>{count as number}</strong>
@@ -136,13 +136,13 @@ const SGQReportsModal: React.FC<SGQReportsModalProps> = ({ children }) => {
             </div>
           </div>
         );
-      
+
       case 'action_plans':
         return (
           <div className="space-y-4">
             <h4 className="font-medium">Planos em Andamento</h4>
             <div className="space-y-2 text-sm">
-              {actionPlansProgress?.slice(0, 3).map((plan) => (
+              {(Array.isArray(actionPlansProgress) ? actionPlansProgress : []).slice(0, 3).map((plan) => (
                 <div key={plan.id} className="flex justify-between items-center">
                   <span className="truncate flex-1">{plan.title}</span>
                   <Badge variant="outline">{plan.avgProgress}%</Badge>
@@ -151,7 +151,7 @@ const SGQReportsModal: React.FC<SGQReportsModalProps> = ({ children }) => {
             </div>
           </div>
         );
-      
+
       default:
         return (
           <div className="text-center text-muted-foreground py-4">
@@ -189,8 +189,8 @@ const SGQReportsModal: React.FC<SGQReportsModalProps> = ({ children }) => {
               <Label className="text-base font-medium">Tipo de Relatório</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {reportTypes.map((type) => (
-                  <Card 
-                    key={type.id} 
+                  <Card
+                    key={type.id}
                     className={`cursor-pointer transition-colors ${reportType === type.id ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}
                     onClick={() => setReportType(type.id)}
                   >
@@ -288,7 +288,7 @@ const SGQReportsModal: React.FC<SGQReportsModalProps> = ({ children }) => {
         </Tabs>
 
         <div className="flex justify-end space-x-2 pt-4">
-          <Button 
+          <Button
             onClick={handleGenerateReport}
             disabled={isGenerating}
             className="flex items-center space-x-2"

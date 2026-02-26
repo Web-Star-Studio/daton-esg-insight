@@ -73,7 +73,7 @@ export default function FluxoCaixa() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
+
     const transactionData = {
       transaction_date: formData.get('transaction_date') as string,
       due_date: formData.get('due_date') as string || undefined,
@@ -253,7 +253,7 @@ export default function FluxoCaixa() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              {summary?.monthlyInflows.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {(summary?.monthlyInflows || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
           </CardContent>
         </Card>
@@ -263,7 +263,7 @@ export default function FluxoCaixa() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
-              {summary?.monthlyOutflows.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {(summary?.monthlyOutflows || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
           </CardContent>
         </Card>
@@ -273,7 +273,7 @@ export default function FluxoCaixa() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary?.netCashFlow.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {(summary?.netCashFlow || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
           </CardContent>
         </Card>
@@ -283,7 +283,7 @@ export default function FluxoCaixa() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary?.projectedBalance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {(summary?.projectedBalance || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
           </CardContent>
         </Card>
@@ -311,7 +311,7 @@ export default function FluxoCaixa() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions?.map((transaction) => (
+                {(Array.isArray(transactions) ? transactions : []).map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>{formatDateDisplay(transaction.transaction_date)}</TableCell>
                     <TableCell>
@@ -322,7 +322,7 @@ export default function FluxoCaixa() {
                     <TableCell>{transaction.category}</TableCell>
                     <TableCell>{transaction.description || '-'}</TableCell>
                     <TableCell className={transaction.type === 'entrada' ? 'text-success' : 'text-destructive'}>
-                      {Number(transaction.amount).toLocaleString('pt-BR', {
+                      {Number(transaction.amount || 0).toLocaleString('pt-BR', {
                         style: 'currency',
                         currency: 'BRL',
                       })}
@@ -334,9 +334,9 @@ export default function FluxoCaixa() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => realizeMutation.mutate({ 
-                              id: transaction.id, 
-                              date: new Date().toISOString().split('T')[0] 
+                            onClick={() => realizeMutation.mutate({
+                              id: transaction.id,
+                              date: new Date().toISOString().split('T')[0]
                             })}
                           >
                             <Check className="h-4 w-4" />

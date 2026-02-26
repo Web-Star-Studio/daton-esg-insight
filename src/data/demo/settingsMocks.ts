@@ -67,17 +67,17 @@ export const settingsMockEntries = [
   {
     queryKey: ['branches', DEMO_COMPANY_ID],
     data: [
-      { id: 'branch-1', name: 'Unidade Industrial SP', type: 'Fábrica', city: 'São Paulo', state: 'SP', address: 'Av. Industrial, 1500', is_headquarters: true, employee_count: 250, company_id: DEMO_COMPANY_ID },
-      { id: 'branch-2', name: 'Centro de Distribuição RJ', type: 'Distribuição', city: 'Rio de Janeiro', state: 'RJ', address: 'Rod. Presidente Dutra, Km 210', is_headquarters: false, employee_count: 52, company_id: DEMO_COMPANY_ID },
-      { id: 'branch-3', name: 'Escritório Administrativo', type: 'Escritório', city: 'São Paulo', state: 'SP', address: 'Av. Paulista, 2000', is_headquarters: false, employee_count: 40, company_id: DEMO_COMPANY_ID },
+      { id: 'branch-1', name: 'Unidade Industrial SP', type: 'Fábrica', city: 'São Paulo', state: 'SP', address: 'Av. Industrial, 1500', is_headquarters: true, employee_count: 250, company_id: DEMO_COMPANY_ID, status: 'Ativo' },
+      { id: 'branch-2', name: 'Centro de Distribuição RJ', type: 'Distribuição', city: 'Rio de Janeiro', state: 'RJ', address: 'Rod. Presidente Dutra, Km 210', is_headquarters: false, employee_count: 52, company_id: DEMO_COMPANY_ID, status: 'Ativo' },
+      { id: 'branch-3', name: 'Escritório Administrativo', type: 'Escritório', city: 'São Paulo', state: 'SP', address: 'Av. Paulista, 2000', is_headquarters: false, employee_count: 40, company_id: DEMO_COMPANY_ID, status: 'Ativo' },
     ],
   },
   // Branches (base)
   {
     queryKey: ['branches'],
     data: [
-      { id: 'branch-1', name: 'Unidade Industrial SP', type: 'Fábrica', employee_count: 250 },
-      { id: 'branch-2', name: 'Centro de Distribuição RJ', type: 'Distribuição', employee_count: 52 },
+      { id: 'branch-1', name: 'Unidade Industrial SP', type: 'Fábrica', employee_count: 250, status: 'Ativo' },
+      { id: 'branch-2', name: 'Centro de Distribuição RJ', type: 'Distribuição', employee_count: 52, status: 'Ativo' },
     ],
   },
   // Settings/config

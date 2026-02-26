@@ -27,7 +27,7 @@ export default function SupplierSurveysManagementPage() {
   const { selectedCompany } = useCompany();
   const { isDemo } = useDemo();
   const { toast } = useToast();
-  
+
   const [surveys, setSurveys] = useState<SupplierSurvey[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [customForms, setCustomForms] = useState<any[]>([]);
@@ -37,7 +37,7 @@ export default function SupplierSurveysManagementPage() {
   const [responses, setResponses] = useState<any[]>([]);
   const [selectedSurvey, setSelectedSurvey] = useState<SupplierSurvey | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -57,6 +57,7 @@ export default function SupplierSurveysManagementPage() {
       setSurveys(supplierPortalDemoSurveys);
       setCategories(supplierPortalDemoCategories);
       setCustomForms(supplierPortalDemoForms);
+      setIsLoading(false);
       return;
     }
 
@@ -64,9 +65,10 @@ export default function SupplierSurveysManagementPage() {
       setSurveys([]);
       setCategories([]);
       setCustomForms([]);
+      setIsLoading(false);
       return;
     }
-    
+
     try {
       const [surveysData, categoriesResult, formsResult] = await Promise.all([
         getSupplierSurveys(selectedCompany.id),
@@ -80,7 +82,7 @@ export default function SupplierSurveysManagementPage() {
           .select('id, title, is_active')
           .eq('company_id', selectedCompany.id),
       ]);
-      
+
       setSurveys(surveysData);
       setCategories(categoriesResult.data || []);
       setCustomForms((formsResult.data || []).filter((f: any) => f.is_active !== false));
@@ -130,7 +132,7 @@ export default function SupplierSurveysManagementPage() {
 
   const handleSave = async () => {
     if (!formData.title.trim()) return;
-    
+
     setIsSaving(true);
     try {
       if (isDemo) {
@@ -195,7 +197,7 @@ export default function SupplierSurveysManagementPage() {
         await createSupplierSurvey(data as any);
         toast({ title: 'Sucesso', description: 'Pesquisa criada com sucesso' });
       }
-      
+
       setIsDialogOpen(false);
       loadData();
     } catch (error) {
@@ -209,7 +211,7 @@ export default function SupplierSurveysManagementPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta pesquisa?')) return;
-    
+
     try {
       if (isDemo) {
         setSurveys((prev) => prev.filter((item) => item.id !== id));
@@ -341,7 +343,7 @@ export default function SupplierSurveysManagementPage() {
               {selectedSurvey ? 'Atualize os dados da pesquisa' : 'Crie uma nova pesquisa para fornecedores'}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Título *</Label>
@@ -351,7 +353,7 @@ export default function SupplierSurveysManagementPage() {
                 placeholder="Ex: Avaliação de Satisfação 2024"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Descrição</Label>
               <Textarea
@@ -361,7 +363,7 @@ export default function SupplierSurveysManagementPage() {
                 rows={2}
               />
             </div>
-            
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Formulário Customizado</Label>
@@ -377,7 +379,7 @@ export default function SupplierSurveysManagementPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Categoria</Label>
                 <Select value={formData.category_id} onValueChange={(v) => setFormData({ ...formData, category_id: v })}>
@@ -393,7 +395,7 @@ export default function SupplierSurveysManagementPage() {
                 </Select>
               </div>
             </div>
-            
+
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label>Prazo (dias)</Label>
@@ -404,7 +406,7 @@ export default function SupplierSurveysManagementPage() {
                   placeholder="Ex: 30"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Data Início</Label>
                 <Input
@@ -413,7 +415,7 @@ export default function SupplierSurveysManagementPage() {
                   onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Data Fim</Label>
                 <Input
@@ -423,7 +425,7 @@ export default function SupplierSurveysManagementPage() {
                 />
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Switch
@@ -432,7 +434,7 @@ export default function SupplierSurveysManagementPage() {
                 />
                 <Label>Obrigatória</Label>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Switch
                   checked={formData.is_active}
@@ -460,7 +462,7 @@ export default function SupplierSurveysManagementPage() {
             <DialogTitle>Respostas da Pesquisa</DialogTitle>
             <DialogDescription>{selectedSurvey?.title}</DialogDescription>
           </DialogHeader>
-          
+
           {responses.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">Nenhuma resposta registrada</p>
           ) : (

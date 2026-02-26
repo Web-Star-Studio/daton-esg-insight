@@ -144,4 +144,49 @@ export const organizationMockEntries = [
       total_employees: 342,
     },
   },
+  // Organizational profile
+  {
+    queryKey: ['organizational-profile'],
+    data: {
+      id: DEMO_COMPANY_ID,
+      name: 'Daton Demo',
+      cnpj: '12.345.678/0001-90',
+      sector: 'technology',
+      legal_structure: 'corporation',
+      headquarters_address: 'Av. Paulista, 1000 - São Paulo, SP',
+      reporting_scope: 'GRI Standards e SASB',
+      fiscal_year_start: '2025-01-01',
+      fiscal_year_end: '2025-12-31',
+      employee_count: 342,
+      annual_revenue: 50000000,
+      stock_exchange: 'B3',
+      stock_symbol: 'DTON3',
+      business_units: [
+        { id: '1', name: 'Matriz - SP', location: 'São Paulo', employees: 150, revenue_percentage: 60 },
+        { id: '2', name: 'Filial - RJ', location: 'Rio de Janeiro', employees: 80, revenue_percentage: 25 },
+        { id: '3', name: 'Fábrica - MG', location: 'Minas Gerais', employees: 112, revenue_percentage: 15 }
+      ],
+      subsidiaries_included: [
+        { id: '1', name: 'Daton Logística', country: 'Brasil', ownership_percentage: 100, included_in_scope: true }
+      ],
+      subsidiaries_excluded: []
+    }
+  },
+  // Branches
+  {
+    queryKey: ['branches'],
+    data: [
+      { id: 'branch-1', company_id: DEMO_COMPANY_ID, name: 'Sede Global (Matriz)', is_headquarters: true, status: 'Ativo', city: 'São Paulo', state: 'SP', code: 'HQ-SP', cnpj: '12.345.678/0001-90', created_at: '2020-01-01', updated_at: '2026-01-01' },
+      { id: 'branch-2', company_id: DEMO_COMPANY_ID, name: 'Fábrica Guarulhos', is_headquarters: false, status: 'Ativo', city: 'Guarulhos', state: 'SP', code: 'FAC-GRU', cnpj: '12.345.678/0002-71', parent_branch_id: 'branch-1', created_at: '2020-01-01', updated_at: '2026-01-01' },
+      { id: 'branch-3', company_id: DEMO_COMPANY_ID, name: 'Centro de Distribuição RJ', is_headquarters: false, status: 'Ativo', city: 'Rio de Janeiro', state: 'RJ', code: 'CD-RJ', cnpj: '12.345.678/0003-52', parent_branch_id: 'branch-1', created_at: '2020-01-01', updated_at: '2026-01-01' }
+    ]
+  },
+  {
+    queryKey: ['branches', 'with-manager'],
+    data: [
+      { id: 'branch-1', company_id: DEMO_COMPANY_ID, name: 'Sede Global (Matriz)', is_headquarters: true, status: 'Ativo', city: 'São Paulo', state: 'SP', code: 'HQ-SP', cnpj: '12.345.678/0001-90', created_at: '2020-01-01', updated_at: '2026-01-01', manager: { id: 'emp-5', full_name: 'Juliana Lima' } },
+      { id: 'branch-2', company_id: DEMO_COMPANY_ID, name: 'Fábrica Guarulhos', is_headquarters: false, status: 'Ativo', city: 'Guarulhos', state: 'SP', code: 'FAC-GRU', cnpj: '12.345.678/0002-71', parent_branch_id: 'branch-1', parent_branch: { id: 'branch-1', name: 'Sede Global (Matriz)' }, created_at: '2020-01-01', updated_at: '2026-01-01', manager: { id: 'emp-1', full_name: 'Ana Silva' } },
+      { id: 'branch-3', company_id: DEMO_COMPANY_ID, name: 'Centro de Distribuição RJ', is_headquarters: false, status: 'Ativo', city: 'Rio de Janeiro', state: 'RJ', code: 'CD-RJ', cnpj: '12.345.678/0003-52', parent_branch_id: 'branch-1', parent_branch: { id: 'branch-1', name: 'Sede Global (Matriz)' }, created_at: '2020-01-01', updated_at: '2026-01-01', manager: { id: 'emp-2', full_name: 'Carlos Santos' } }
+    ]
+  }
 ];

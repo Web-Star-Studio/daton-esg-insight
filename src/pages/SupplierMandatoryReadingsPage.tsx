@@ -25,7 +25,7 @@ export default function SupplierMandatoryReadingsPage() {
   const { selectedCompany } = useCompany();
   const { isDemo } = useDemo();
   const { toast } = useToast();
-  
+
   const [readings, setReadings] = useState<MandatoryReading[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +34,7 @@ export default function SupplierMandatoryReadingsPage() {
   const [confirmations, setConfirmations] = useState<any[]>([]);
   const [selectedReading, setSelectedReading] = useState<MandatoryReading | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -51,15 +51,17 @@ export default function SupplierMandatoryReadingsPage() {
     if (isDemo) {
       setReadings(supplierPortalDemoReadings);
       setCategories(supplierPortalDemoCategories);
+      setIsLoading(false);
       return;
     }
 
     if (!selectedCompany?.id) {
       setReadings([]);
       setCategories([]);
+      setIsLoading(false);
       return;
     }
-    
+
     try {
       const [readingsData, categoriesData] = await Promise.all([
         getMandatoryReadings(selectedCompany.id),
@@ -69,7 +71,7 @@ export default function SupplierMandatoryReadingsPage() {
           .eq('company_id', selectedCompany.id)
           .order('name'),
       ]);
-      
+
       setReadings(readingsData);
       setCategories(categoriesData.data || []);
     } catch (error) {
@@ -114,7 +116,7 @@ export default function SupplierMandatoryReadingsPage() {
 
   const handleSave = async () => {
     if (!formData.title.trim()) return;
-    
+
     setIsSaving(true);
     try {
       if (isDemo) {
@@ -167,7 +169,7 @@ export default function SupplierMandatoryReadingsPage() {
         await createMandatoryReading(data as any);
         toast({ title: 'Sucesso', description: 'Leitura criada com sucesso' });
       }
-      
+
       setIsDialogOpen(false);
       loadData();
     } catch (error) {
@@ -180,7 +182,7 @@ export default function SupplierMandatoryReadingsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta leitura?')) return;
-    
+
     try {
       if (isDemo) {
         setReadings((prev) => prev.filter((item) => item.id !== id));
@@ -309,7 +311,7 @@ export default function SupplierMandatoryReadingsPage() {
               {selectedReading ? 'Atualize os dados da leitura' : 'Crie uma nova leitura obrigatória para fornecedores'}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Título *</Label>
@@ -319,7 +321,7 @@ export default function SupplierMandatoryReadingsPage() {
                 placeholder="Ex: Política de Segurança 2024"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Descrição</Label>
               <Textarea
@@ -329,7 +331,7 @@ export default function SupplierMandatoryReadingsPage() {
                 rows={2}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Conteúdo (HTML)</Label>
               <Textarea
@@ -339,7 +341,7 @@ export default function SupplierMandatoryReadingsPage() {
                 rows={6}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>URL do Arquivo (alternativo)</Label>
               <Input
@@ -348,7 +350,7 @@ export default function SupplierMandatoryReadingsPage() {
                 placeholder="https://..."
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Categoria</Label>
               <Select value={formData.category_id} onValueChange={(v) => setFormData({ ...formData, category_id: v })}>
@@ -363,7 +365,7 @@ export default function SupplierMandatoryReadingsPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Switch
@@ -372,7 +374,7 @@ export default function SupplierMandatoryReadingsPage() {
                 />
                 <Label>Requer confirmação de leitura</Label>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Switch
                   checked={formData.is_active}
@@ -400,7 +402,7 @@ export default function SupplierMandatoryReadingsPage() {
             <DialogTitle>Confirmações de Leitura</DialogTitle>
             <DialogDescription>{selectedReading?.title}</DialogDescription>
           </DialogHeader>
-          
+
           {confirmations.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">Nenhuma confirmação registrada</p>
           ) : (

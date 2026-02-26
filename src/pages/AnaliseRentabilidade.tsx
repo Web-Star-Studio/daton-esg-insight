@@ -77,9 +77,9 @@ export default function AnaliseRentabilidade() {
       const categoryMap = new Map();
 
       budgets?.forEach(budget => {
-        const existing = categoryMap.get(budget.category) || { 
-          planned: 0, 
-          spent: 0 
+        const existing = categoryMap.get(budget.category) || {
+          planned: 0,
+          spent: 0
         };
         categoryMap.set(budget.category, {
           planned: existing.planned + Number(budget.planned_amount),
@@ -159,7 +159,7 @@ export default function AnaliseRentabilidade() {
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis dataKey={analysisType === 'project' ? 'name' : 'category'} className="text-xs" />
               <YAxis className="text-xs" />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                 contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
               />
@@ -188,7 +188,7 @@ export default function AnaliseRentabilidade() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {chartData?.map((item: any, index: number) => (
+              {(Array.isArray(chartData) ? chartData : []).map((item: any, index: number) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">
                     {analysisType === 'project' ? item.name : item.category}
@@ -204,7 +204,7 @@ export default function AnaliseRentabilidade() {
                     {item.economia < 0 && ' (excedido)'}
                   </TableCell>
                   <TableCell className="text-right">
-                    {analysisType === 'project' ? item.roi?.toFixed(1) : item.eficiencia.toFixed(1)}%
+                    {analysisType === 'project' ? (item.roi || 0).toFixed(1) : (item.eficiencia || 0).toFixed(1)}%
                   </TableCell>
                 </TableRow>
               ))}

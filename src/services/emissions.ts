@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from '@/utils/logger';
 
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
 export interface EmissionSource {
   id: string;
   name: string;
@@ -41,6 +43,33 @@ export interface ActivityData {
 
 // Obter todas as fontes de emissão da empresa
 export async function getEmissionSources(): Promise<EmissionSource[]> {
+  if (isDemoMode()) {
+    return [
+      {
+        id: 'demo-source-1',
+        company_id: 'demo-company',
+        name: 'Frota de Veículos',
+        scope: 1,
+        category: 'Fontes Móveis',
+        subcategory: 'Veículos Leves',
+        description: 'Veículos de passeio da diretoria',
+        status: 'Ativo',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: 'demo-source-3',
+        company_id: 'demo-company',
+        name: 'Energia Elétrica',
+        scope: 2,
+        category: 'Eletricidade Adquirida',
+        status: 'Ativo',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    ] as EmissionSource[];
+  }
+
   const { data, error } = await supabase
     .from('emission_sources')
     .select('*')
@@ -136,8 +165,8 @@ export const updateActivityData = async (id: string, activityData: {
   if (!user) throw new Error('Usuário não encontrado');
 
   // Sanitize emission_factor_id: only use if it's a valid UUID
-  const cleanedId = activityData.emission_factor_id && activityData.emission_factor_id.trim() !== '' 
-    ? activityData.emission_factor_id 
+  const cleanedId = activityData.emission_factor_id && activityData.emission_factor_id.trim() !== ''
+    ? activityData.emission_factor_id
     : undefined;
 
   // Prepare final activity data
@@ -154,7 +183,7 @@ export const updateActivityData = async (id: string, activityData: {
         .select('activity_unit')
         .eq('id', cleanedId)
         .maybeSingle();
-      
+
       if (factor) {
         finalActivityData.unit = factor.activity_unit; // Override with factor's unit
         logger.info('Unidade sobrescrita pelo fator:', 'emission', factor.activity_unit);
@@ -182,7 +211,7 @@ export const updateActivityData = async (id: string, activityData: {
 
   // Recalculate emissions automatically
   await calculateEmissionsForActivityData(data.id);
-  
+
   return data;
 };
 
@@ -200,8 +229,8 @@ export const addActivityData = async (activityData: {
   if (!user) throw new Error('Usuário não encontrado');
 
   // Sanitize emission_factor_id: only use if it's a valid UUID
-  const cleanedId = activityData.emission_factor_id && activityData.emission_factor_id.trim() !== '' 
-    ? activityData.emission_factor_id 
+  const cleanedId = activityData.emission_factor_id && activityData.emission_factor_id.trim() !== ''
+    ? activityData.emission_factor_id
     : undefined;
 
   // Prepare final activity data
@@ -219,7 +248,7 @@ export const addActivityData = async (activityData: {
         .select('activity_unit')
         .eq('id', cleanedId)
         .maybeSingle();
-      
+
       if (factor) {
         finalActivityData.unit = factor.activity_unit; // Override with factor's unit
         logger.info('Unidade sobrescrita pelo fator:', 'emission', factor.activity_unit);
@@ -246,7 +275,7 @@ export const addActivityData = async (activityData: {
 
   // Calculate emissions automatically
   await calculateEmissionsForActivityData(data.id);
-  
+
   return data;
 };
 
@@ -274,7 +303,7 @@ async function calculateEmissionsForActivityData(activityDataId: string) {
 async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceId: string) {
   try {
     logger.debug(`Tentando calcular emissões para activity: ${activityDataId}`, 'emission');
-    
+
     // Buscar fonte de emissão para obter categoria
     const { data: source, error: sourceError } = await supabase
       .from('emission_sources')
@@ -332,10 +361,10 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
     const compatibleFactor = factors?.find(factor => {
       const factorUnit = factor.activity_unit.toLowerCase();
       const activityUnit = activityData.unit.toLowerCase();
-      
+
       // Direct match
       if (factorUnit === activityUnit) return true;
-      
+
       // Common unit conversions
       const unitEquivalents = {
         'litros': ['l', 'litro', 'liters'],
@@ -346,9 +375,9 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
         'kg': ['quilograma', 'quilogramas', 'kilograma'],
         't': ['tonelada', 'toneladas', 'ton']
       };
-      
-      return unitEquivalents[factorUnit]?.includes(activityUnit) || 
-             unitEquivalents[activityUnit]?.includes(factorUnit);
+
+      return unitEquivalents[factorUnit]?.includes(activityUnit) ||
+        unitEquivalents[activityUnit]?.includes(factorUnit);
     });
 
     if (!compatibleFactor) {
@@ -369,6 +398,17 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
 
 // Obter estatísticas de emissões
 export async function getEmissionStats() {
+  if (isDemoMode()) {
+    return {
+      total: 1250.5,
+      escopo1: 450.2,
+      escopo2: 300.8,
+      escopo3: 499.5,
+      ativas: 5,
+      fontes_total: 6,
+    };
+  }
+
   // Get total emissions by scope from calculated_emissions
   const { data: emissionsData, error: emissionsError } = await supabase
     .from('calculated_emissions')
@@ -396,7 +436,7 @@ export async function getEmissionStats() {
   emissionsData?.forEach(emission => {
     const scope = emission.activity_data?.emission_sources?.scope;
     const co2e = emission.total_co2e || 0;
-    
+
     totalEmissions += co2e;
     if (scope === 1) escopo1Emissions += co2e;
     else if (scope === 2) escopo2Emissions += co2e;
@@ -422,6 +462,49 @@ export async function getEmissionStats() {
 
 // Obter fontes de emissão com últimas emissões calculadas
 export async function getEmissionSourcesWithEmissions() {
+  if (isDemoMode()) {
+    return [
+      {
+        id: 'demo-source-1',
+        company_id: 'demo-company',
+        name: 'Frota de Veículos',
+        scope: 1,
+        category: 'Fontes Móveis',
+        subcategory: 'Veículos Leves',
+        description: 'Veículos de passeio da diretoria',
+        status: 'Ativo',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ultima_emissao: 450.2,
+        ultima_atualizacao: new Date().toISOString()
+      },
+      {
+        id: 'demo-source-3',
+        company_id: 'demo-company',
+        name: 'Energia Elétrica - Matriz',
+        scope: 2,
+        category: 'Eletricidade Adquirida',
+        status: 'Ativo',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ultima_emissao: 300.8,
+        ultima_atualizacao: new Date().toISOString()
+      },
+      {
+        id: 'demo-source-4',
+        company_id: 'demo-company',
+        name: 'Viagens a Negócios',
+        scope: 3,
+        category: 'Viagens a Negócios',
+        status: 'Ativo',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ultima_emissao: 499.5,
+        ultima_atualizacao: new Date().toISOString()
+      },
+    ];
+  }
+
   // First get emission sources
   const { data: sources, error: sourcesError } = await supabase
     .from('emission_sources')
@@ -442,7 +525,7 @@ export async function getEmissionSourcesWithEmissions() {
       const { data: emissions } = await supabase
         .from('calculated_emissions')
         .select('total_co2e, calculation_date')
-        .eq('activity_data_id', 
+        .eq('activity_data_id',
           await supabase
             .from('activity_data')
             .select('id')
@@ -471,7 +554,7 @@ export async function getEmissionSourcesWithEmissions() {
 export async function calculateEmissions(activityDataId: string, emissionFactorId: string) {
   try {
     logger.debug(`Calculating emissions for activity ${activityDataId} with factor ${emissionFactorId}`, 'emission');
-    
+
     // Fetch activity data and emission factor
     const [activityResponse, factorResponse] = await Promise.all([
       supabase
@@ -535,7 +618,7 @@ export async function calculateEmissions(activityDataId: string, emissionFactorI
           activity_unit: activity.unit,
           factor_unit: factor.activity_unit
         }
-      }, { 
+      }, {
         onConflict: 'activity_data_id'
       });
 

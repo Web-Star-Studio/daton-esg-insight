@@ -10,14 +10,17 @@ import { toast } from 'sonner';
 // ─── Supabase write stub ──────────────────────────────────────────────────────
 // Infinitely chainable PromiseLike that resolves to a no-op Supabase response.
 // Absorbs all PostgREST filter calls (.eq, .neq, .in, .order, etc.) via Proxy.
-const DEMO_OK_RESPONSE = {
-  // Retorna um objeto para previnir crashes de TypeError: Cannot read properties of null (reading 'X')
-  // em chamadas de Edge Functions ou RPCs que usam `if (data.success)` etc.
-  data: { success: true, data: {} },
-  error: null,
+const DEMO_ERROR_RESPONSE = {
+  data: null,
+  error: {
+    message: 'Funcionalidade restrita no modo de demonstração. Os dados não foram salvos.',
+    details: 'Esta ação foi bloqueada no modo demo.',
+    hint: 'Solicite acesso completo.',
+    code: 'DEMO_BLOCKED'
+  },
   count: null,
-  status: 200,
-  statusText: 'OK',
+  status: 403,
+  statusText: 'Forbidden',
 };
 
 function createDemoWriteStub(): unknown {
@@ -27,7 +30,7 @@ function createDemoWriteStub(): unknown {
         return (
           onfulfilled?: (v: unknown) => unknown,
           _onrejected?: (e: unknown) => unknown
-        ) => Promise.resolve(DEMO_OK_RESPONSE).then(onfulfilled);
+        ) => Promise.resolve(DEMO_ERROR_RESPONSE).then(onfulfilled);
       }
       // Absorb all chained calls (.eq, .neq, .in, .order, .limit, .select, etc.)
       return () => stub;
@@ -167,21 +170,7 @@ export function DemoDataSeeder({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // ── 2a. Toast success suppressor ─────────────────────────────────────────
-    // The write stub resolves with { data: null, error: null }, which causes
-    // onSuccess callbacks to fire and show spurious success toasts (e.g. "Cargo
-    // criado com sucesso"). Suppress toast.success for a short window after each
-    // intercepted write — long enough for the async onSuccess to fire (~50ms),
-    // short enough not to affect unrelated success toasts.
-    let suppressUntil = 0;
-    const originalToastSuccess = toast.success;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (toast as any).success = (...args: Parameters<typeof toast.success>) => {
-      if (Date.now() < suppressUntil) return;
-      return originalToastSuccess(...args);
-    };
-
-    // ── 2b. Supabase write proxy ──────────────────────────────────────────────
+    // ── 2. Supabase write proxy ──────────────────────────────────────────────
     // Intercept .insert/.update/.upsert/.delete on any table.
     // Read operations (.select, .eq used in selects, etc.) pass through normally.
     const originalFrom = supabase.from.bind(supabase);
@@ -291,8 +280,6 @@ export function DemoDataSeeder({ children }: { children: React.ReactNode }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.storage as any).from = originalStorageFrom;
       window.history.pushState = originalPushState;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (toast as any).success = originalToastSuccess;
 
       queryClient.setDefaultOptions({
         queries: {

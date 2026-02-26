@@ -29,10 +29,25 @@ import { auditService, type Audit, type ActivityLog } from "@/services/audit";
 import { AuditModal } from "@/components/AuditModal";
 import { AuditDetailsModal } from "@/components/AuditDetailsModal";
 import { AuditReportsModal } from "@/components/AuditReportsModal";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
+
+// Helper for safe date formatting
+const safeFormatDate = (dateString?: string | null, formatStr: string = 'dd/MM/yyyy') => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  if (!isValid(date)) return '-';
+  return format(date, formatStr, { locale: ptBR });
+};
+
+const safeLocaleDate = (dateString?: string | null) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  if (!isValid(date)) return '-';
+  return date.toLocaleDateString('pt-BR');
+};
 
 // Interface for SGQ Audits (migrated from AuditoriaInternas.tsx)
 interface SGQAudit {
@@ -168,7 +183,7 @@ export default function Auditoria() {
         start_date: '',
         end_date: ''
       });
-      
+
       loadSgqAudits();
     } catch (error) {
       console.error('Erro ao criar auditoria SGQ:', error);
@@ -360,7 +375,7 @@ export default function Auditoria() {
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
-          <AuditCalendar 
+          <AuditCalendar
             audits={[...audits, ...sgqAudits].map(a => ({
               id: a.id,
               title: a.title,
@@ -405,8 +420,8 @@ export default function Auditoria() {
             <div className="flex gap-2">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Buscar auditorias..." 
+                <Input
+                  placeholder="Buscar auditorias..."
                   className="pl-8 w-64"
                   value={filters.search}
                   onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
@@ -424,7 +439,7 @@ export default function Auditoria() {
                   <SelectItem value="Compliance">Compliance</SelectItem>
                 </SelectContent>
               </Select>
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
               >
@@ -457,9 +472,9 @@ export default function Auditoria() {
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setFilters({
                       type: 'all',
@@ -501,8 +516,8 @@ export default function Auditoria() {
                   <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
                   <h3 className="mt-4 text-lg font-semibold">Nenhuma auditoria encontrada</h3>
                   <p className="text-muted-foreground">
-                    {filters.search || filters.type !== 'all' || filters.status !== 'all' 
-                      ? 'Tente ajustar os filtros.' 
+                    {filters.search || filters.type !== 'all' || filters.status !== 'all'
+                      ? 'Tente ajustar os filtros.'
                       : 'Comece criando sua primeira auditoria.'}
                   </p>
                 </div>
@@ -519,8 +534,8 @@ export default function Auditoria() {
                   </TableHeader>
                   <TableBody>
                     {filteredAudits.map((audit) => (
-                      <TableRow 
-                        key={audit.id} 
+                      <TableRow
+                        key={audit.id}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleAuditSelected(audit)}
                       >
@@ -532,11 +547,11 @@ export default function Auditoria() {
                           <Badge variant="secondary">{audit.status}</Badge>
                         </TableCell>
                         <TableCell>
-                          {format(new Date(audit.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                          {safeFormatDate(audit.created_at)}
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -592,7 +607,7 @@ export default function Auditoria() {
                       placeholder="Ex: Auditoria ISO 9001 - Processo de Vendas"
                     />
                   </div>
-                  
+
                   <div className="grid gap-2">
                     <Label htmlFor="auditor">Auditor Responsável</Label>
                     <Input
@@ -624,7 +639,7 @@ export default function Auditoria() {
                         onChange={(e) => setNewSgqAudit({ ...newSgqAudit, start_date: e.target.value })}
                       />
                     </div>
-                    
+
                     <div className="grid gap-2">
                       <Label htmlFor="end_date">Data de Término</Label>
                       <Input
@@ -723,18 +738,18 @@ export default function Auditoria() {
                             <div className="text-sm">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                {new Date(audit.start_date).toLocaleDateString('pt-BR')}
+                                {safeLocaleDate(audit.start_date)}
                               </div>
                               <div className="text-muted-foreground">
-                                até {new Date(audit.end_date).toLocaleDateString('pt-BR')}
+                                até {safeLocaleDate(audit.end_date)}
                               </div>
                             </div>
                           ) : '-'}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => setSelectedAuditIdForDetail(audit.id)}
                             >
@@ -787,7 +802,7 @@ export default function Auditoria() {
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium">{log.action_type}</h4>
                         <span className="text-sm text-muted-foreground">
-                          {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                          {safeFormatDate(log.created_at, 'dd/MM/yyyy HH:mm')}
                         </span>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">{log.description}</p>

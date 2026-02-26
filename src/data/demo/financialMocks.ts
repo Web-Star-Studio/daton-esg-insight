@@ -9,7 +9,7 @@ const CURRENT_MONTH = 2; // February
 // ─── DashboardFinanceiro query shapes ────────────────────────────────────────
 
 const MOCK_BUDGET_SUMMARY = {
-  totalBudget: 12000000,
+  totalPlanned: 12000000,
   totalSpent: 8200000,
   executionRate: 68.3,
   criticalCategories: [
@@ -42,10 +42,10 @@ const MOCK_DRE = {
 const MOCK_MONTHLY_COMPARISON = [
   { month: 'Set/25', receitas: 1050000, despesas: 820000, lucro: 230000 },
   { month: 'Out/25', receitas: 1100000, despesas: 890000, lucro: 210000 },
-  { month: 'Nov/25', receitas: 980000,  despesas: 850000, lucro: 130000 },
+  { month: 'Nov/25', receitas: 980000, despesas: 850000, lucro: 130000 },
   { month: 'Dez/25', receitas: 1300000, despesas: 1050000, lucro: 250000 },
-  { month: 'Jan/26', receitas: 1200000, despesas: 950000,  lucro: 250000 },
-  { month: 'Fev/26', receitas: 1150000, despesas: 900000,  lucro: 250000 },
+  { month: 'Jan/26', receitas: 1200000, despesas: 950000, lucro: 250000 },
+  { month: 'Fev/26', receitas: 1150000, despesas: 900000, lucro: 250000 },
 ];
 
 const MOCK_FINANCIAL_ALERTS = [
@@ -174,21 +174,21 @@ const DEMO_APPROVAL_REQUESTS = [
 
 export const financialMockEntries = [
   // ── DashboardFinanceiro queries ──────────────────────────────────────────
-  { queryKey: ['budget-summary'] as const,                             data: MOCK_BUDGET_SUMMARY },
-  { queryKey: ['budget-summary', CURRENT_YEAR] as const,               data: MOCK_BUDGET_SUMMARY },
+  { queryKey: ['budget-summary'] as const, data: MOCK_BUDGET_SUMMARY },
+  { queryKey: ['budget-summary', CURRENT_YEAR] as const, data: MOCK_BUDGET_SUMMARY },
 
-  { queryKey: ['cashflow-summary'] as const,                           data: MOCK_CASHFLOW_SUMMARY },
-  { queryKey: ['cashflow-summary', CURRENT_YEAR] as const,             data: MOCK_CASHFLOW_SUMMARY },
+  { queryKey: ['cashflow-summary'] as const, data: MOCK_CASHFLOW_SUMMARY },
+  { queryKey: ['cashflow-summary', CURRENT_YEAR] as const, data: MOCK_CASHFLOW_SUMMARY },
   { queryKey: ['cashflow-summary', CURRENT_MONTH, CURRENT_YEAR] as const, data: MOCK_CASHFLOW_SUMMARY },
 
-  { queryKey: ['dre'] as const,                                        data: MOCK_DRE },
-  { queryKey: ['dre', CURRENT_YEAR] as const,                          data: MOCK_DRE },
-  { queryKey: ['dre', CURRENT_YEAR, CURRENT_MONTH] as const,           data: MOCK_DRE },
+  { queryKey: ['dre'] as const, data: MOCK_DRE },
+  { queryKey: ['dre', CURRENT_YEAR] as const, data: MOCK_DRE },
+  { queryKey: ['dre', CURRENT_YEAR, CURRENT_MONTH] as const, data: MOCK_DRE },
 
-  { queryKey: ['monthly-comparison'] as const,                         data: MOCK_MONTHLY_COMPARISON },
-  { queryKey: ['monthly-comparison', CURRENT_YEAR] as const,           data: MOCK_MONTHLY_COMPARISON },
+  { queryKey: ['monthly-comparison'] as const, data: MOCK_MONTHLY_COMPARISON },
+  { queryKey: ['monthly-comparison', CURRENT_YEAR] as const, data: MOCK_MONTHLY_COMPARISON },
 
-  { queryKey: ['financial-alerts'] as const,                           data: MOCK_FINANCIAL_ALERTS },
+  { queryKey: ['financial-alerts'] as const, data: MOCK_FINANCIAL_ALERTS },
 
   // Financial dashboard
   {
