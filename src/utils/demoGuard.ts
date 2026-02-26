@@ -1,14 +1,18 @@
-import { toast } from "sonner";
+/**
+ * Dispara o evento que abre o modal de funcionalidade bloqueada no modo demo.
+ * Pode ser chamado de qualquer lugar (proxies, interceptors, componentes).
+ */
+export function triggerDemoBlocked(): void {
+  window.dispatchEvent(new CustomEvent('demo-blocked'));
+}
 
 /**
- * Intercepta ações de CRUD no modo demo, exibindo toast informativo.
+ * Intercepta ações de CRUD no modo demo, exibindo modal informativo.
  * Em modo normal, executa a ação real.
  */
-export function demoAction(isDemo: boolean, realAction: () => void) {
+export function demoAction(isDemo: boolean, realAction: () => void): void {
   if (isDemo) {
-    toast.info("Funcionalidade disponível após aprovação da conta", {
-      description: "Sua conta está aguardando aprovação do administrador.",
-    });
+    triggerDemoBlocked();
     return;
   }
   realAction();

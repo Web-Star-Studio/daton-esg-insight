@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useDemo } from "@/contexts/DemoContext";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -34,8 +35,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Plus, Building2, User, ArrowLeft, Pencil, Trash2, 
+import {
+  Plus, Building2, User, ArrowLeft, Pencil, Trash2,
   Eye, Copy, Search, Filter, Link2, Loader2, CheckCircle, AlertCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -72,7 +73,7 @@ interface ViaCepResponse {
 async function fetchAddressByCep(cep: string): Promise<ViaCepResponse | null> {
   const cleanCep = cep.replace(/\D/g, '');
   if (cleanCep.length !== 8) return null;
-  
+
   try {
     const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
     const data: ViaCepResponse = await response.json();
@@ -84,6 +85,7 @@ async function fetchAddressByCep(cep: string): Promise<ViaCepResponse | null> {
 }
 
 export default function SupplierRegistration() {
+  const { isDemo } = useDemo();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -139,7 +141,7 @@ export default function SupplierRegistration() {
   // Agrupar tipos por categoria
   const getTypesGroupedByCategory = useCallback(() => {
     if (!supplierTypes || !supplierCategories) return [];
-    
+
     return supplierCategories.map(category => ({
       category,
       types: supplierTypes.filter(type => type.category_id === category.id)
@@ -191,13 +193,29 @@ export default function SupplierRegistration() {
   // Handler para buscar CEP
   const handleCepChange = async (cep: string) => {
     setFormData(prev => ({ ...prev, cep }));
-    
+
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length === 8) {
+      if (isDemo) {
+        setIsLoadingCep(true);
+        setTimeout(() => {
+          setIsLoadingCep(false);
+          setFormData(prev => ({
+            ...prev,
+            street: "Avenida Faria Lima",
+            neighborhood: "Itaim Bibi",
+            city: "São Paulo",
+            state: "SP",
+          }));
+          toast.success("Endereço encontrado (Demonstração)!");
+        }, 500);
+        return;
+      }
+
       setIsLoadingCep(true);
       const address = await fetchAddressByCep(cleanCep);
       setIsLoadingCep(false);
-      
+
       if (address) {
         setFormData(prev => ({
           ...prev,
@@ -236,7 +254,7 @@ export default function SupplierRegistration() {
         status: supplier.status || "Ativo",
         inactivation_reason: supplier.inactivation_reason || "",
       });
-      
+
       // Carregar tipos associados ao fornecedor
       try {
         const { supabase } = await import("@/integrations/supabase/client");
@@ -244,7 +262,7 @@ export default function SupplierRegistration() {
           .from('supplier_type_assignments')
           .select('supplier_type_id')
           .eq('supplier_id', supplier.id);
-        
+
         if (assignments) {
           setSelectedTypes(assignments.map(a => a.supplier_type_id));
         }
@@ -257,7 +275,7 @@ export default function SupplierRegistration() {
       setPersonType('PJ');
       setFormData({
         full_name: "", cpf: "", company_name: "", cnpj: "",
-        responsible_name: "", nickname: "", 
+        responsible_name: "", nickname: "",
         cep: "", street: "", street_number: "", neighborhood: "", city: "", state: "",
         phone_1: "", phone_2: "", email: "",
         status: "Ativo",
@@ -308,8 +326,8 @@ export default function SupplierRegistration() {
     }
 
     // Validar endereço obrigatório
-    if (!formData.cep || !formData.street || !formData.street_number || 
-        !formData.neighborhood || !formData.city || !formData.state) {
+    if (!formData.cep || !formData.street || !formData.street_number ||
+      !formData.neighborhood || !formData.city || !formData.state) {
       toast.error("Preencha todos os campos de endereço", {
         description: "CEP, rua, número, bairro, cidade e estado são obrigatórios"
       });
@@ -325,13 +343,17 @@ export default function SupplierRegistration() {
     // O fornecedor ficará como "Pendente" na coluna Vinculação e pode ser vinculado depois
 
     // Verificar duplicidade de CNPJ/CPF (usando valor limpo)
-    setIsValidating(true);
-    const checkResult = await checkCnpjCpfExists(
-      personType === 'PJ' ? cleanDocument(formData.cnpj) : undefined,
-      personType === 'PF' ? cleanDocument(formData.cpf) : undefined,
-      editingSupplier?.id
-    );
-    setIsValidating(false);
+    let checkResult = { exists: false, field: null as 'cnpj' | 'cpf' | null };
+
+    if (!isDemo) {
+      setIsValidating(true);
+      checkResult = await checkCnpjCpfExists(
+        personType === 'PJ' ? cleanDocument(formData.cnpj) : undefined,
+        personType === 'PF' ? cleanDocument(formData.cpf) : undefined,
+        editingSupplier?.id
+      );
+      setIsValidating(false);
+    }
 
     if (checkResult.exists) {
       toast.error(`Este ${checkResult.field?.toUpperCase()} já está cadastrado`, {
@@ -368,11 +390,11 @@ export default function SupplierRegistration() {
       // Campos de status (apenas para edição)
       ...(editingSupplier && {
         status: formData.status,
-        inactivation_reason: (formData.status === 'Inativo' || formData.status === 'Suspenso') 
-          ? formData.inactivation_reason || null 
+        inactivation_reason: (formData.status === 'Inativo' || formData.status === 'Suspenso')
+          ? formData.inactivation_reason || null
           : null,
-        status_changed_at: editingSupplier.status !== formData.status 
-          ? new Date().toISOString() 
+        status_changed_at: editingSupplier.status !== formData.status
+          ? new Date().toISOString()
           : undefined,
       }),
     };
@@ -385,15 +407,15 @@ export default function SupplierRegistration() {
   };
 
   const filteredSuppliers = suppliers?.filter((s) => {
-    const matchesSearch = 
+    const matchesSearch =
       (s.company_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (s.full_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (s.nickname?.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (s.cnpj?.includes(searchTerm)) ||
       (s.cpf?.includes(searchTerm));
-    
+
     const matchesStatus = statusFilter === "all" || s.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -415,616 +437,616 @@ export default function SupplierRegistration() {
 
   return (
     <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/fornecedores/dashboard')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Cadastro de Fornecedores</h1>
-              <p className="text-muted-foreground mt-1">
-                Gerencie fornecedores Pessoa Física e Pessoa Jurídica
-              </p>
-            </div>
-          </div>
-          <Button onClick={() => openModal()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Fornecedor
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/fornecedores/dashboard')}>
+            <ArrowLeft className="h-5 w-5" />
           </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Cadastro de Fornecedores</h1>
+            <p className="text-muted-foreground mt-1">
+              Gerencie fornecedores Pessoa Física e Pessoa Jurídica
+            </p>
+          </div>
         </div>
+        <Button onClick={() => openModal()}>
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Fornecedor
+        </Button>
+      </div>
 
-        {/* Filters */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome, apelido, CNPJ ou CPF..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="Ativo">Ativos</SelectItem>
-                  <SelectItem value="Inativo">Inativos</SelectItem>
-                  <SelectItem value="Suspenso">Suspensos</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome, apelido, CNPJ ou CPF..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          </CardContent>
-        </Card>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="Ativo">Ativos</SelectItem>
+                <SelectItem value="Inativo">Inativos</SelectItem>
+                <SelectItem value="Suspenso">Suspensos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Suppliers Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Fornecedores Cadastrados ({filteredSuppliers?.length || 0})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LoadingState
-              loading={isLoading}
-              error={error?.message}
-              retry={refetch}
-              empty={!filteredSuppliers?.length}
-              emptyMessage="Nenhum fornecedor encontrado"
-            >
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Nome/Razão Social</TableHead>
-                    <TableHead>CPF/CNPJ</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead>Vinculação</TableHead>
-                    <TableHead>Data Cadastro</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+      {/* Suppliers Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Fornecedores Cadastrados ({filteredSuppliers?.length || 0})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LoadingState
+            loading={isLoading}
+            error={error?.message}
+            retry={refetch}
+            empty={!filteredSuppliers?.length}
+            emptyMessage="Nenhum fornecedor encontrado"
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Nome/Razão Social</TableHead>
+                  <TableHead>CPF/CNPJ</TableHead>
+                  <TableHead>Contato</TableHead>
+                  <TableHead>Vinculação</TableHead>
+                  <TableHead>Data Cadastro</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredSuppliers?.map((supplier) => (
+                  <TableRow key={supplier.id}>
+                    <TableCell>
+                      {supplier.person_type === 'PJ' ? (
+                        <Building2 className="h-4 w-4 text-blue-500" />
+                      ) : (
+                        <User className="h-4 w-4 text-green-500" />
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <div>
+                        {supplier.person_type === 'PJ' ? supplier.company_name : supplier.full_name}
+                        {supplier.nickname && (
+                          <span className="text-muted-foreground text-sm ml-2">
+                            ({supplier.nickname})
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {supplier.person_type === 'PJ'
+                        ? formatCNPJ(supplier.cnpj || '')
+                        : formatCPF(supplier.cpf || '')}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {supplier.phone_1}
+                        {supplier.email && <div className="text-muted-foreground">{supplier.email}</div>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {(supplier as ManagedSupplierWithTypeCount).type_count && (supplier as ManagedSupplierWithTypeCount).type_count! > 0 ? (
+                        <Badge className="bg-green-100 text-green-800 flex items-center gap-1 w-fit">
+                          <CheckCircle className="h-3 w-3" />
+                          Vinculado ({(supplier as ManagedSupplierWithTypeCount).type_count})
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-yellow-100 text-yellow-800 flex items-center gap-1 w-fit">
+                          <AlertCircle className="h-3 w-3" />
+                          Pendente
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {supplier.registration_date ? format(new Date(supplier.registration_date), "dd/MM/yyyy", { locale: ptBR }) : '-'}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(supplier.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setViewingSupplier(supplier)}
+                          title="Visualizar"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/fornecedores/vinculacao/${supplier.id}`)}
+                          title="Vincular"
+                        >
+                          <Link2 className="h-4 w-4 text-primary" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openModal(supplier)}
+                          title="Editar"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (confirm("Deseja excluir este fornecedor?")) {
+                              deleteMutation.mutate(supplier.id);
+                            }
+                          }}
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSuppliers?.map((supplier) => (
-                    <TableRow key={supplier.id}>
-                      <TableCell>
-                        {supplier.person_type === 'PJ' ? (
-                          <Building2 className="h-4 w-4 text-blue-500" />
-                        ) : (
-                          <User className="h-4 w-4 text-green-500" />
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <div>
-                          {supplier.person_type === 'PJ' ? supplier.company_name : supplier.full_name}
-                          {supplier.nickname && (
-                            <span className="text-muted-foreground text-sm ml-2">
-                              ({supplier.nickname})
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {supplier.person_type === 'PJ' 
-                          ? formatCNPJ(supplier.cnpj || '') 
-                          : formatCPF(supplier.cpf || '')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {supplier.phone_1}
-                          {supplier.email && <div className="text-muted-foreground">{supplier.email}</div>}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {(supplier as ManagedSupplierWithTypeCount).type_count && (supplier as ManagedSupplierWithTypeCount).type_count! > 0 ? (
-                          <Badge className="bg-green-100 text-green-800 flex items-center gap-1 w-fit">
-                            <CheckCircle className="h-3 w-3" />
-                            Vinculado ({(supplier as ManagedSupplierWithTypeCount).type_count})
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-yellow-100 text-yellow-800 flex items-center gap-1 w-fit">
-                            <AlertCircle className="h-3 w-3" />
-                            Pendente
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(supplier.registration_date), "dd/MM/yyyy", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(supplier.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setViewingSupplier(supplier)}
-                            title="Visualizar"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => navigate(`/fornecedores/vinculacao/${supplier.id}`)}
-                            title="Vincular"
-                          >
-                            <Link2 className="h-4 w-4 text-primary" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openModal(supplier)}
-                            title="Editar"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              if (confirm("Deseja excluir este fornecedor?")) {
-                                deleteMutation.mutate(supplier.id);
-                              }
-                            }}
-                            title="Excluir"
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </LoadingState>
-          </CardContent>
-        </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </LoadingState>
+        </CardContent>
+      </Card>
 
-        {/* Create/Edit Modal */}
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingSupplier ? "Editar Fornecedor" : "Novo Fornecedor"}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <Tabs value={personType} onValueChange={(v) => setPersonType(v as 'PF' | 'PJ')}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="PJ" className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Pessoa Jurídica
-                </TabsTrigger>
-                <TabsTrigger value="PF" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Pessoa Física
-                </TabsTrigger>
-              </TabsList>
+      {/* Create/Edit Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingSupplier ? "Editar Fornecedor" : "Novo Fornecedor"}
+            </DialogTitle>
+          </DialogHeader>
 
-              <TabsContent value="PJ" className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Razão Social *</Label>
-                    <Input
-                      value={formData.company_name}
-                      onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>CNPJ *</Label>
-                    <Input
-                      value={formData.cnpj}
-                      onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
-                      placeholder="00.000.000/0000-00"
-                      maxLength={18}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Responsável *</Label>
-                    <Input
-                      value={formData.responsible_name}
-                      onChange={(e) => setFormData({ ...formData, responsible_name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>E-mail *</Label>
-                    <Input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </TabsContent>
+          <Tabs value={personType} onValueChange={(v) => setPersonType(v as 'PF' | 'PJ')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="PJ" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Pessoa Jurídica
+              </TabsTrigger>
+              <TabsTrigger value="PF" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Pessoa Física
+              </TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="PF" className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Nome Completo *</Label>
-                    <Input
-                      value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>CPF *</Label>
-                    <Input
-                      value={formData.cpf}
-                      onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
-                      placeholder="000.000.000-00"
-                      maxLength={14}
-                    />
-                  </div>
+            <TabsContent value="PJ" className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Razão Social *</Label>
+                  <Input
+                    value={formData.company_name}
+                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>E-mail</Label>
+                  <Label>CNPJ *</Label>
+                  <Input
+                    value={formData.cnpj}
+                    onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
+                    placeholder="00.000.000/0000-00"
+                    maxLength={18}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Responsável *</Label>
+                  <Input
+                    value={formData.responsible_name}
+                    onChange={(e) => setFormData({ ...formData, responsible_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>E-mail *</Label>
                   <Input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
-              </TabsContent>
-            </Tabs>
+              </div>
+            </TabsContent>
 
-            {/* Types Selection - Agrupados por Categoria - MOVIDO PARA POSIÇÃO MAIS VISÍVEL */}
-            <div className="space-y-2 pt-4 border-t">
-              <Label className="text-base font-medium">Tipos de Fornecedor</Label>
-              
-              {typesGrouped.length === 0 ? (
-                <Alert className="bg-amber-50 border-amber-200">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <AlertTitle className="text-amber-800">Nenhum tipo cadastrado</AlertTitle>
-                  <AlertDescription className="text-sm text-amber-700">
-                    Para vincular fornecedores a tipos, primeiro cadastre{' '}
-                    <Link to="/fornecedores/categorias" className="underline font-medium text-primary hover:text-primary/80">
-                      categorias
-                    </Link>{' '}e{' '}
-                    <Link to="/fornecedores/tipos" className="underline font-medium text-primary hover:text-primary/80">
-                      tipos de fornecedor
-                    </Link>.
-                    <br />
-                    <span className="text-muted-foreground">
-                      Você pode criar o fornecedor agora e vincular depois.
-                    </span>
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  <p className="text-xs text-muted-foreground">
-                    Selecione os tipos desejados. A categoria é inferida automaticamente do tipo selecionado.
-                  </p>
-                  <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-4 bg-muted/20">
-                    {typesGrouped.map(({ category, types }) => (
-                      <div key={category.id}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className="text-xs">
-                            {category.name}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 pl-2">
-                          {types.map((type) => (
-                            <div key={type.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={type.id}
-                                checked={selectedTypes.includes(type.id)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedTypes([...selectedTypes, type.id]);
-                                  } else {
-                                    setSelectedTypes(selectedTypes.filter((id) => id !== type.id));
-                                  }
-                                }}
-                              />
-                              <label htmlFor={type.id} className="text-sm cursor-pointer">
-                                {type.name}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
+            <TabsContent value="PF" className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nome Completo *</Label>
+                  <Input
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>CPF *</Label>
+                  <Input
+                    value={formData.cpf}
+                    onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                    placeholder="000.000.000-00"
+                    maxLength={14}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>E-mail</Label>
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Types Selection - Agrupados por Categoria - MOVIDO PARA POSIÇÃO MAIS VISÍVEL */}
+          <div className="space-y-2 pt-4 border-t">
+            <Label className="text-base font-medium">Tipos de Fornecedor</Label>
+
+            {typesGrouped.length === 0 ? (
+              <Alert className="bg-amber-50 border-amber-200">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-800">Nenhum tipo cadastrado</AlertTitle>
+                <AlertDescription className="text-sm text-amber-700">
+                  Para vincular fornecedores a tipos, primeiro cadastre{' '}
+                  <Link to="/fornecedores/categorias" className="underline font-medium text-primary hover:text-primary/80">
+                    categorias
+                  </Link>{' '}e{' '}
+                  <Link to="/fornecedores/tipos" className="underline font-medium text-primary hover:text-primary/80">
+                    tipos de fornecedor
+                  </Link>.
+                  <br />
+                  <span className="text-muted-foreground">
+                    Você pode criar o fornecedor agora e vincular depois.
+                  </span>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Selecione os tipos desejados. A categoria é inferida automaticamente do tipo selecionado.
+                </p>
+                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-4 bg-muted/20">
+                  {typesGrouped.map(({ category, types }) => (
+                    <div key={category.id}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="text-xs">
+                          {category.name}
+                        </Badge>
                       </div>
-                    ))}
-                  </div>
-                </>
-              )}
+                      <div className="grid grid-cols-2 gap-2 pl-2">
+                        {types.map((type) => (
+                          <div key={type.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={type.id}
+                              checked={selectedTypes.includes(type.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedTypes([...selectedTypes, type.id]);
+                                } else {
+                                  setSelectedTypes(selectedTypes.filter((id) => id !== type.id));
+                                }
+                              }}
+                            />
+                            <label htmlFor={type.id} className="text-sm cursor-pointer">
+                              {type.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Campos de Endereço - Separados */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="font-medium text-sm">Endereço *</h3>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>CEP *</Label>
+                <div className="relative">
+                  <Input
+                    value={formData.cep}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    placeholder="00000-000"
+                    maxLength={9}
+                  />
+                  {isLoadingCep && (
+                    <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Rua/Logradouro *</Label>
+                <Input
+                  value={formData.street}
+                  onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                  placeholder="Preenchido automaticamente"
+                />
+              </div>
             </div>
 
-            {/* Campos de Endereço - Separados */}
-            <div className="space-y-4 pt-4 border-t">
-              <h3 className="font-medium text-sm">Endereço *</h3>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>CEP *</Label>
-                  <div className="relative">
-                    <Input
-                      value={formData.cep}
-                      onChange={(e) => handleCepChange(e.target.value)}
-                      placeholder="00000-000"
-                      maxLength={9}
-                    />
-                    {isLoadingCep && (
-                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2 col-span-2">
-                  <Label>Rua/Logradouro *</Label>
-                  <Input
-                    value={formData.street}
-                    onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                    placeholder="Preenchido automaticamente"
-                  />
-                </div>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label>Número *</Label>
+                <Input
+                  value={formData.street_number}
+                  onChange={(e) => setFormData({ ...formData, street_number: e.target.value })}
+                  placeholder="123"
+                />
               </div>
+              <div className="space-y-2">
+                <Label>Bairro *</Label>
+                <Input
+                  value={formData.neighborhood}
+                  onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
+                  placeholder="Preenchido automaticamente"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Cidade *</Label>
+                <Input
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  placeholder="Preenchido automaticamente"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Estado *</Label>
+                <Input
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  placeholder="UF"
+                  maxLength={2}
+                />
+              </div>
+            </div>
 
-              <div className="grid grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label>Número *</Label>
-                  <Input
-                    value={formData.street_number}
-                    onChange={(e) => setFormData({ ...formData, street_number: e.target.value })}
-                    placeholder="123"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Bairro *</Label>
-                  <Input
-                    value={formData.neighborhood}
-                    onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
-                    placeholder="Preenchido automaticamente"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Cidade *</Label>
-                  <Input
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Preenchido automaticamente"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Estado *</Label>
-                  <Input
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    placeholder="UF"
-                    maxLength={2}
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Telefone 1 *</Label>
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  value={formData.phone_1}
+                  onChange={(e) => setFormData({ ...formData, phone_1: e.target.value })}
+                  placeholder="(00) 00000-0000"
+                />
               </div>
+              <div className="space-y-2">
+                <Label>Telefone 2</Label>
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  value={formData.phone_2}
+                  onChange={(e) => setFormData({ ...formData, phone_2: e.target.value })}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Apelido (opcional)</Label>
+              <Input
+                value={formData.nickname}
+                onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                placeholder="Para facilitar localização"
+              />
+            </div>
+
+            {/* Aviso para endereços antigos */}
+            {editingSupplier && !formData.cep && editingSupplier.full_address && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                <strong className="text-yellow-800">Endereço atual:</strong>
+                <span className="text-yellow-700 ml-1">{editingSupplier.full_address}</span>
+                <p className="text-xs text-yellow-700 mt-1">
+                  Este fornecedor foi cadastrado antes da separação dos campos de endereço.
+                  Por favor, preencha os campos acima para atualizar.
+                </p>
+              </div>
+            )}
+          </div>
+
+
+          {/* Seção de Status - Apenas para Edição */}
+          {editingSupplier && (
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="font-medium text-sm">Status do Fornecedor</h3>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Telefone 1 *</Label>
-                  <Input
-                    type="tel"
-                    inputMode="tel"
-                    value={formData.phone_1}
-                    onChange={(e) => setFormData({ ...formData, phone_1: e.target.value })}
-                    placeholder="(00) 00000-0000"
-                  />
+                  <Label>Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(v: 'Ativo' | 'Inativo' | 'Suspenso') =>
+                      setFormData({ ...formData, status: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Ativo">
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                          Ativo
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Inativo">
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-gray-400"></span>
+                          Inativo
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Suspenso">
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                          Suspenso
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+
+              {(formData.status === 'Inativo' || formData.status === 'Suspenso') && (
                 <div className="space-y-2">
-                  <Label>Telefone 2</Label>
-                  <Input
-                    type="tel"
-                    inputMode="tel"
-                    value={formData.phone_2}
-                    onChange={(e) => setFormData({ ...formData, phone_2: e.target.value })}
-                    placeholder="(00) 00000-0000"
+                  <Label>Motivo da {formData.status === 'Inativo' ? 'Inativação' : 'Suspensão'}</Label>
+                  <Textarea
+                    value={formData.inactivation_reason}
+                    onChange={(e) => setFormData({ ...formData, inactivation_reason: e.target.value })}
+                    placeholder={`Descreva o motivo da ${formData.status === 'Inativo' ? 'inativação' : 'suspensão'} do fornecedor...`}
+                    rows={3}
                   />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Apelido (opcional)</Label>
-                <Input
-                  value={formData.nickname}
-                  onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
-                  placeholder="Para facilitar localização"
-                />
-              </div>
-
-              {/* Aviso para endereços antigos */}
-              {editingSupplier && !formData.cep && editingSupplier.full_address && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                  <strong className="text-yellow-800">Endereço atual:</strong> 
-                  <span className="text-yellow-700 ml-1">{editingSupplier.full_address}</span>
-                  <p className="text-xs text-yellow-700 mt-1">
-                    Este fornecedor foi cadastrado antes da separação dos campos de endereço. 
-                    Por favor, preencha os campos acima para atualizar.
+                  <p className="text-xs text-muted-foreground">
+                    Ex: Problemas documentais, questões de fornecimento, valores, encerramento de atividades, etc.
                   </p>
                 </div>
               )}
             </div>
+          )}
 
+          <DialogFooter>
+            <Button variant="outline" onClick={closeModal}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={createMutation.isPending || updateMutation.isPending || isValidating}
+            >
+              {(createMutation.isPending || updateMutation.isPending || isValidating) && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              {editingSupplier
+                ? "Salvar"
+                : (selectedTypes.length === 0 ? "Cadastrar sem Vinculação" : "Cadastrar")
+              }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            {/* Seção de Status - Apenas para Edição */}
-            {editingSupplier && (
-              <div className="space-y-4 pt-4 border-t">
-                <h3 className="font-medium text-sm">Status do Fornecedor</h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select 
-                      value={formData.status} 
-                      onValueChange={(v: 'Ativo' | 'Inativo' | 'Suspenso') => 
-                        setFormData({ ...formData, status: v })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Ativo">
-                          <span className="flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                            Ativo
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="Inativo">
-                          <span className="flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full bg-gray-400"></span>
-                            Inativo
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="Suspenso">
-                          <span className="flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                            Suspenso
-                          </span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {(formData.status === 'Inativo' || formData.status === 'Suspenso') && (
-                  <div className="space-y-2">
-                    <Label>Motivo da {formData.status === 'Inativo' ? 'Inativação' : 'Suspensão'}</Label>
-                    <Textarea
-                      value={formData.inactivation_reason}
-                      onChange={(e) => setFormData({ ...formData, inactivation_reason: e.target.value })}
-                      placeholder={`Descreva o motivo da ${formData.status === 'Inativo' ? 'inativação' : 'suspensão'} do fornecedor...`}
-                      rows={3}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Ex: Problemas documentais, questões de fornecimento, valores, encerramento de atividades, etc.
-                    </p>
-                  </div>
+      {/* View Details Modal */}
+      <Dialog open={!!viewingSupplier} onOpenChange={() => setViewingSupplier(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Fornecedor</DialogTitle>
+          </DialogHeader>
+          {viewingSupplier && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                {viewingSupplier.person_type === 'PJ' ? (
+                  <Building2 className="h-5 w-5 text-blue-500" />
+                ) : (
+                  <User className="h-5 w-5 text-green-500" />
                 )}
+                <span className="font-medium">
+                  {viewingSupplier.person_type === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
+                </span>
+                {getStatusBadge(viewingSupplier.status)}
               </div>
-            )}
 
-            <DialogFooter>
-              <Button variant="outline" onClick={closeModal}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={createMutation.isPending || updateMutation.isPending || isValidating}
-              >
-                {(createMutation.isPending || updateMutation.isPending || isValidating) && (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                )}
-                {editingSupplier 
-                  ? "Salvar" 
-                  : (selectedTypes.length === 0 ? "Cadastrar sem Vinculação" : "Cadastrar")
-                }
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* View Details Modal */}
-        <Dialog open={!!viewingSupplier} onOpenChange={() => setViewingSupplier(null)}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Detalhes do Fornecedor</DialogTitle>
-            </DialogHeader>
-            {viewingSupplier && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  {viewingSupplier.person_type === 'PJ' ? (
-                    <Building2 className="h-5 w-5 text-blue-500" />
-                  ) : (
-                    <User className="h-5 w-5 text-green-500" />
-                  )}
-                  <span className="font-medium">
-                    {viewingSupplier.person_type === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
+              <div className="grid gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Nome/Razão Social:</span>
+                  <p className="font-medium">
+                    {viewingSupplier.person_type === 'PJ'
+                      ? viewingSupplier.company_name
+                      : viewingSupplier.full_name}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">
+                    {viewingSupplier.person_type === 'PJ' ? 'CNPJ:' : 'CPF:'}
                   </span>
-                  {getStatusBadge(viewingSupplier.status)}
+                  <p className="font-medium">
+                    {viewingSupplier.person_type === 'PJ'
+                      ? viewingSupplier.cnpj
+                      : viewingSupplier.cpf}
+                  </p>
                 </div>
-
-                <div className="grid gap-3 text-sm">
+                {viewingSupplier.responsible_name && (
                   <div>
-                    <span className="text-muted-foreground">Nome/Razão Social:</span>
-                    <p className="font-medium">
-                      {viewingSupplier.person_type === 'PJ' 
-                        ? viewingSupplier.company_name 
-                        : viewingSupplier.full_name}
-                    </p>
+                    <span className="text-muted-foreground">Responsável:</span>
+                    <p className="font-medium">{viewingSupplier.responsible_name}</p>
                   </div>
+                )}
+                <div>
+                  <span className="text-muted-foreground">Endereço:</span>
+                  <p className="font-medium">
+                    {viewingSupplier.street && viewingSupplier.street_number ? (
+                      <>
+                        {viewingSupplier.street}, {viewingSupplier.street_number}
+                        {viewingSupplier.neighborhood && ` - ${viewingSupplier.neighborhood}`}
+                        <br />
+                        {viewingSupplier.city} - {viewingSupplier.state}, CEP: {viewingSupplier.cep}
+                      </>
+                    ) : (
+                      viewingSupplier.full_address
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Contato:</span>
+                  <p className="font-medium">{viewingSupplier.phone_1}</p>
+                  {viewingSupplier.phone_2 && <p>{viewingSupplier.phone_2}</p>}
+                </div>
+                {viewingSupplier.email && (
                   <div>
-                    <span className="text-muted-foreground">
-                      {viewingSupplier.person_type === 'PJ' ? 'CNPJ:' : 'CPF:'}
+                    <span className="text-muted-foreground">E-mail:</span>
+                    <p className="font-medium">{viewingSupplier.email}</p>
+                  </div>
+                )}
+                {viewingSupplier.inactivation_reason && (viewingSupplier.status === 'Inativo' || viewingSupplier.status === 'Suspenso') && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <span className="text-yellow-700 text-xs font-medium">
+                      Motivo da {viewingSupplier.status === 'Inativo' ? 'Inativação' : 'Suspensão'}:
                     </span>
-                    <p className="font-medium">
-                      {viewingSupplier.person_type === 'PJ' 
-                        ? viewingSupplier.cnpj 
-                        : viewingSupplier.cpf}
-                    </p>
+                    <p className="text-yellow-800 mt-1">{viewingSupplier.inactivation_reason}</p>
                   </div>
-                  {viewingSupplier.responsible_name && (
-                    <div>
-                      <span className="text-muted-foreground">Responsável:</span>
-                      <p className="font-medium">{viewingSupplier.responsible_name}</p>
+                )}
+                {viewingSupplier.access_code && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <span className="text-muted-foreground">Código de Acesso:</span>
+                    <div className="flex items-center gap-2">
+                      <p className="font-mono font-medium">{viewingSupplier.access_code}</p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => copyToClipboard(viewingSupplier.access_code!, "Código")}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
                     </div>
-                  )}
-                  <div>
-                    <span className="text-muted-foreground">Endereço:</span>
-                    <p className="font-medium">
-                      {viewingSupplier.street && viewingSupplier.street_number ? (
-                        <>
-                          {viewingSupplier.street}, {viewingSupplier.street_number}
-                          {viewingSupplier.neighborhood && ` - ${viewingSupplier.neighborhood}`}
-                          <br />
-                          {viewingSupplier.city} - {viewingSupplier.state}, CEP: {viewingSupplier.cep}
-                        </>
-                      ) : (
-                        viewingSupplier.full_address
-                      )}
-                    </p>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Contato:</span>
-                    <p className="font-medium">{viewingSupplier.phone_1}</p>
-                    {viewingSupplier.phone_2 && <p>{viewingSupplier.phone_2}</p>}
-                  </div>
-                  {viewingSupplier.email && (
-                    <div>
-                      <span className="text-muted-foreground">E-mail:</span>
-                      <p className="font-medium">{viewingSupplier.email}</p>
-                    </div>
-                  )}
-                  {viewingSupplier.inactivation_reason && (viewingSupplier.status === 'Inativo' || viewingSupplier.status === 'Suspenso') && (
-                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <span className="text-yellow-700 text-xs font-medium">
-                        Motivo da {viewingSupplier.status === 'Inativo' ? 'Inativação' : 'Suspensão'}:
-                      </span>
-                      <p className="text-yellow-800 mt-1">{viewingSupplier.inactivation_reason}</p>
-                    </div>
-                  )}
-                  {viewingSupplier.access_code && (
-                    <div className="p-3 bg-muted rounded-lg">
-                      <span className="text-muted-foreground">Código de Acesso:</span>
-                      <div className="flex items-center gap-2">
-                        <p className="font-mono font-medium">{viewingSupplier.access_code}</p>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => copyToClipboard(viewingSupplier.access_code!, "Código")}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

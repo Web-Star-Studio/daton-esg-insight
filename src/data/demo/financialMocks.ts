@@ -3,6 +3,71 @@
  */
 
 const DEMO_COMPANY_ID = 'demo-company-001';
+const CURRENT_YEAR = 2026;
+const CURRENT_MONTH = 2; // February
+
+// ─── DashboardFinanceiro query shapes ────────────────────────────────────────
+
+const MOCK_BUDGET_SUMMARY = {
+  totalBudget: 12000000,
+  totalSpent: 8200000,
+  executionRate: 68.3,
+  criticalCategories: [
+    { category: 'Matéria-Prima', percentage: 87.4 },
+    { category: 'Logística', percentage: 82.1 },
+  ],
+};
+
+const MOCK_CASHFLOW_SUMMARY = {
+  monthlyInflows: 1150000,
+  monthlyOutflows: 900000,
+  netCashFlow: 250000,
+  projectedBalance: 3450000,
+  overduePayables: 60320,
+  overdueReceivables: 106700,
+};
+
+const MOCK_DRE = {
+  receitas: 1150000,
+  custosMercadorias: 460000,
+  lucroBruto: 690000,
+  margemBruta: 60.0,
+  despesasOperacionais: 385000,
+  ebitda: 305000,
+  margemEbitda: 26.5,
+  lucroLiquido: 241500,
+  margemLiquida: 21.0,
+};
+
+const MOCK_MONTHLY_COMPARISON = [
+  { month: 'Set/25', receitas: 1050000, despesas: 820000, lucro: 230000 },
+  { month: 'Out/25', receitas: 1100000, despesas: 890000, lucro: 210000 },
+  { month: 'Nov/25', receitas: 980000,  despesas: 850000, lucro: 130000 },
+  { month: 'Dez/25', receitas: 1300000, despesas: 1050000, lucro: 250000 },
+  { month: 'Jan/26', receitas: 1200000, despesas: 950000,  lucro: 250000 },
+  { month: 'Fev/26', receitas: 1150000, despesas: 900000,  lucro: 250000 },
+];
+
+const MOCK_FINANCIAL_ALERTS = [
+  {
+    id: 'overdue-NF-44501',
+    type: 'overdue' as const,
+    severity: 'high' as const,
+    title: 'Conta em atraso - Logística Verde Ltda',
+    description: 'Vencimento: 12/01/2026',
+    amount: 18250,
+    actionUrl: '/demo/financeiro/contas-pagar',
+  },
+  {
+    id: 'due-soon-NF-45679',
+    type: 'due_soon' as const,
+    severity: 'medium' as const,
+    title: 'Vence em breve - EcoTransp Ltda',
+    description: 'Vencimento: 20/02/2026',
+    amount: 8500,
+    actionUrl: '/demo/financeiro/contas-pagar',
+  },
+];
 
 const DEMO_OVERDUE_PAYABLES = [
   {
@@ -108,6 +173,23 @@ const DEMO_APPROVAL_REQUESTS = [
 ];
 
 export const financialMockEntries = [
+  // ── DashboardFinanceiro queries ──────────────────────────────────────────
+  { queryKey: ['budget-summary'] as const,                             data: MOCK_BUDGET_SUMMARY },
+  { queryKey: ['budget-summary', CURRENT_YEAR] as const,               data: MOCK_BUDGET_SUMMARY },
+
+  { queryKey: ['cashflow-summary'] as const,                           data: MOCK_CASHFLOW_SUMMARY },
+  { queryKey: ['cashflow-summary', CURRENT_YEAR] as const,             data: MOCK_CASHFLOW_SUMMARY },
+  { queryKey: ['cashflow-summary', CURRENT_MONTH, CURRENT_YEAR] as const, data: MOCK_CASHFLOW_SUMMARY },
+
+  { queryKey: ['dre'] as const,                                        data: MOCK_DRE },
+  { queryKey: ['dre', CURRENT_YEAR] as const,                          data: MOCK_DRE },
+  { queryKey: ['dre', CURRENT_YEAR, CURRENT_MONTH] as const,           data: MOCK_DRE },
+
+  { queryKey: ['monthly-comparison'] as const,                         data: MOCK_MONTHLY_COMPARISON },
+  { queryKey: ['monthly-comparison', CURRENT_YEAR] as const,           data: MOCK_MONTHLY_COMPARISON },
+
+  { queryKey: ['financial-alerts'] as const,                           data: MOCK_FINANCIAL_ALERTS },
+
   // Financial dashboard
   {
     queryKey: ['financial-dashboard', DEMO_COMPANY_ID],

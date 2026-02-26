@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
 import { Info } from "lucide-react";
 import { DemoDataSeeder } from "@/components/DemoDataSeeder";
+import { DemoBlockedModal } from "@/components/DemoBlockedModal";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { UnifiedTourProvider } from "@/contexts/UnifiedTourContext";
 import { UnifiedTourSystem } from "@/components/tutorial/unified/UnifiedTourSystem";
@@ -38,6 +39,7 @@ export function DemoLayout() {
         </div>
       </div>
       <UnifiedTourSystem />
+      <DemoBlockedModal />
     </SidebarProvider>
     </UnifiedTourProvider>
     </TutorialProvider>

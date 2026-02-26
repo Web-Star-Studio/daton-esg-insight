@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useCreateBranch, useUpdateBranch, BranchWithManager, getHeadquarters, Branch } from "@/services/branches";
 import { useCompanyEmployees } from "@/hooks/data/useCompanyEmployees";
+import { useDemo } from "@/contexts/DemoContext";
 import { Loader2, MapPin, Search, Building2, FileSearch, FileUp, GitBranch } from "lucide-react";
 import { geocodeAddress } from "@/utils/geocoding";
 import { fetchAddressByCep, formatCep, isValidCep } from "@/utils/viaCep";
@@ -121,6 +122,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [cnpjDuplicate, setCnpjDuplicate] = useState<string | null>(null);
   const [isCheckingCnpj, setIsCheckingCnpj] = useState(false);
+  const { isDemo } = useDemo();
   const createMutation = useCreateBranch();
   const updateMutation = useUpdateBranch();
   const { data: employees, isLoading: isLoadingEmployees } = useCompanyEmployees();
@@ -176,7 +178,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
 
       // Call Edge Function with appropriate data
       const { data, error } = await supabase.functions.invoke('cnpj-pdf-extractor', {
-        body: isImage 
+        body: isImage
           ? { imageBase64: base64, fileName: file.name, fileType: file.type }
           : { pdfBase64: base64, fileName: file.name, fileType: file.type }
       });
@@ -258,7 +260,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
   // Function to fetch CNPJ data from API
   const handleFetchCnpj = async () => {
     const cnpjValue = form.getValues("cnpj");
-    
+
     if (!cnpjValue || cnpjValue.replace(/\D/g, '').length !== 14) {
       unifiedToast.error("CNPJ inválido", {
         description: "Digite um CNPJ completo com 14 dígitos"
@@ -295,7 +297,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
       }
 
       const cnpjData = data.data;
-      
+
       // Fill form with retrieved data
       form.setValue("name", cnpjData.tradeName || cnpjData.name);
       form.setValue("address", cnpjData.address);
@@ -349,7 +351,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
   });
 
   const isHeadquarters = form.watch("is_headquarters");
-  
+
   // Clear parent_branch_id when switching to headquarters
   useEffect(() => {
     if (isHeadquarters) {
@@ -484,7 +486,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
   const handleCnpjChange = (value: string) => {
     const formatted = formatCNPJ(value);
     form.setValue("cnpj", formatted, { shouldValidate: true });
-    
+
     // Verificar duplicata quando CNPJ estiver completo
     if (formatted.replace(/\D/g, '').length === 14) {
       checkCnpjDuplicate(formatted);
@@ -508,16 +510,16 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
 
     setIsLoadingCep(true);
     try {
-      const addressData = await fetchAddressByCep(cep);
-      
+      const addressData = await fetchAddressByCep(cep, isDemo);
+
       if (addressData) {
         form.setValue("address", addressData.street);
         form.setValue("neighborhood", addressData.neighborhood);
         form.setValue("city", addressData.city);
         form.setValue("state", addressData.state);
         form.setValue("cep", addressData.cep);
-        
-        unifiedToast.success("Endereço encontrado!", {
+
+        unifiedToast.success(isDemo ? "Endereço encontrado (Demonstração)!" : "Endereço encontrado!", {
           description: `${addressData.street}, ${addressData.neighborhood} - ${addressData.city}/${addressData.state}`
         });
 
@@ -536,6 +538,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
   };
 
   const handleGeocodeAfterCep = async (city: string, state: string, street?: string) => {
+    if (isDemo) return;
     try {
       const result = await geocodeAddress(city, state, "Brasil", street);
       if (result) {
@@ -556,6 +559,11 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
 
     if (!city && !state) {
       unifiedToast.error("Informe cidade ou estado para buscar coordenadas");
+      return;
+    }
+
+    if (isDemo) {
+      unifiedToast.success("Coordenadas simuladas com sucesso (Demonstração)");
       return;
     }
 
@@ -899,21 +907,21 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gerente Responsável</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       value={field.value}
                       disabled={!employees?.length && !isLoadingEmployees}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue 
+                          <SelectValue
                             placeholder={
-                              isLoadingEmployees 
-                                ? "Carregando..." 
-                                : employees?.length 
-                                  ? "Selecione um funcionário" 
+                              isLoadingEmployees
+                                ? "Carregando..."
+                                : employees?.length
+                                  ? "Selecione um funcionário"
                                   : "Nenhum funcionário disponível"
-                            } 
+                            }
                           />
                         </SelectTrigger>
                       </FormControl>
