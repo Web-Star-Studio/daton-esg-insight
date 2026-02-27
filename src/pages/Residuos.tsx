@@ -12,7 +12,6 @@ import {
   Eye,
   Pencil,
   FileText,
-  MessageCircle,
   Users,
   Plus,
   BarChart3
@@ -311,20 +310,6 @@ const Residuos = () => {
                           }}
                         >
                           <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
-                          title="Consultar IA"
-                          onClick={() => {
-                            const context = `Resíduo: ${item.waste_description} | MTR: ${item.mtr_number} | Quantidade: ${item.quantity} ${item.unit} | Status: ${item.status}`;
-                            localStorage.setItem('ai_chat_open', 'true');
-                            localStorage.setItem('ai_chat_context', context);
-                            window.dispatchEvent(new CustomEvent('open-ai-chat', { detail: { context } }));
-                          }}
-                        >
-                          <MessageCircle className="h-4 w-4" />
                         </Button>
                         <Button
                           size="icon"
