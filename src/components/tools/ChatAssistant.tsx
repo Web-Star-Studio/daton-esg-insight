@@ -201,7 +201,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           >
             <Button
               onClick={() => setIsOpen(true)}
-              className="fixed bottom-20 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-[100] bg-gradient-to-br from-primary to-primary/90"
+              className="fixed bottom-4 md:bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-[100] bg-gradient-to-br from-primary to-primary/90"
               size="icon"
               aria-label="Abrir chat"
             >
