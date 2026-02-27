@@ -1,28 +1,29 @@
 
-# Ajustar posição do botão flutuante da IA para ficar abaixo da tabela de resíduos
 
-## Implementação
+# Corrigir redirecionamento do link de redefinição de senha para domínio de produção
 
-1. **`src/components/tools/ChatAssistant.tsx`**
-   - Ajustar a classe do botão flutuante para descer no viewport (remover `bottom-20` e usar `bottom-4 md:bottom-6`).
-   - Manter `right-6`, tamanho e comportamento atuais (apenas reposicionamento vertical).
+## Problema
 
-2. **`src/pages/Residuos.tsx`**
-   - Adicionar área de respiro no fim da página para o botão não cobrir a última linha da tabela:
-     - trocar o wrapper principal de `className="space-y-6"` para `className="space-y-6 pb-24 md:pb-28"`.
-   - Não alterar ações da tabela (Editar/Ver/Documentos) nem lógica dos modais.
+O `window.location.origin` retorna a URL do preview do Lovable quando o email é disparado a partir do ambiente de desenvolvimento. Além disso, a edge function `manage-user` tem um fallback para `daton-esg-insight.lovable.app`.
 
-3. **Validação visual (desktop e mobile)**
-   - Ir para `/residuos`, rolar até o último item e confirmar que o botão de IA não sobrepõe o ícone de editar.
-   - Confirmar que o botão da IA continua clicável e abre o chat normalmente.
-   - Confirmar que não houve regressão no layout da página (somente espaço inferior adicional).
+## Alterações
 
-## Detalhes técnicos
+### 1. `src/components/ForgotPasswordModal.tsx`
+- Detectar se está rodando em domínio customizado ou no Lovable preview
+- Se estiver no preview, forçar o `redirectTo` para `https://daton.com.br/reset-password`
+- Lógica: se `window.location.hostname` contém `lovable.app` ou `lovableproject.com`, usar a URL de produção hardcoded; caso contrário, usar `window.location.origin`
 
-- Arquivos afetados:
-  - `src/components/tools/ChatAssistant.tsx`
-  - `src/pages/Residuos.tsx`
-- Estratégia final:
-  - **Descer o FAB** + **reservar safe-area inferior na página de resíduos**.
-- Resultado esperado:
-  - O botão “Assistente ESG IA” permanece flutuante, porém visualmente **abaixo do container da tabela**, sem cobrir o último item.
+### 2. `supabase/functions/manage-user/index.ts`
+- Alterar o fallback de `https://daton-esg-insight.lovable.app` para `https://daton.com.br`
+- Linha ~541: trocar `Deno.env.get('SITE_URL') || 'https://daton-esg-insight.lovable.app'` por `Deno.env.get('SITE_URL') || 'https://daton.com.br'`
+
+### 3. Configuração Supabase (manual pelo usuário)
+- No dashboard Supabase → Authentication → URL Configuration:
+  - **Site URL**: definir como `https://daton.com.br`
+  - **Redirect URLs**: adicionar `https://daton.com.br/**`
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/ForgotPasswordModal.tsx` | Forçar redirect para domínio de produção |
+| `supabase/functions/manage-user/index.ts` | Atualizar fallback URL |
+
