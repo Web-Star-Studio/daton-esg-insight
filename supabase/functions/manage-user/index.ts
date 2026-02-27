@@ -538,7 +538,7 @@ serve(async (req) => {
           type: 'recovery',
           email: userData.email,
           options: {
-            redirectTo: `${Deno.env.get('SITE_URL') || 'https://daton-esg-insight.lovable.app'}/reset-password`,
+            redirectTo: `${Deno.env.get('SITE_URL') || 'https://daton.com.br'}/reset-password`,
           }
         });
 

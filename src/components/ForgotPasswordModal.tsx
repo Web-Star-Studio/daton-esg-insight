@@ -32,7 +32,10 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
 
     setIsLoading(true);
     try {
-      const redirectUrl = `${window.location.origin}/reset-password`;
+      const hostname = window.location.hostname;
+      const isLovablePreview = hostname.includes('lovable.app') || hostname.includes('lovableproject.com');
+      const baseUrl = isLovablePreview ? 'https://daton.com.br' : window.location.origin;
+      const redirectUrl = `${baseUrl}/reset-password`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
