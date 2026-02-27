@@ -54,8 +54,7 @@ export const ROUTE_MODULE_MAP: Record<string, string> = {
   '/relatorios': 'dataReports',
   '/formularios-customizados': 'dataReports',
 
-  // === Configurações ===
-  '/configuracao': 'settings',
+  // === Configurações (apenas organizacional — /configuracao é acessível a todos) ===
   '/configuracao-organizacional': 'settings',
 };
 
