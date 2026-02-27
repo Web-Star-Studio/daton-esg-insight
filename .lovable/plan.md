@@ -1,100 +1,43 @@
 
 
-# Revisões Compreensivas — Mostrar Avaliação e Unidade nos Detalhes
+# Conteúdo da Metodologia LAIA — Seção Completa
 
-## Problema
+## O que será feito
 
-Atualmente, os detalhes de uma revisão mostram apenas badges genéricos "Avaliação" ou "Setor" sem identificar **qual** avaliação foi alterada nem em **qual unidade**. O usuário precisa saber exatamente:
-- Código do aspecto (ex: `12.07`)
-- Atividade/Operação (ex: "BRIGADA DE EMERGÊNCIA")  
-- Aspecto ambiental (ex: "POSSIBILIDADE DE INCÊNDIO")
-- Nome da unidade (ex: "TRANSPORTES GABARDO LTDA")
+Criar o componente `src/components/laia/LAIAMetodologia.tsx` com todo o conteúdo do documento FPLAN-002 (exceto seção 7 - Histórico das Revisões), apresentado de forma moderna e minimalista usando Collapsible/Accordion para organizar as seções.
 
-Os dados já existem no banco (`branch_id`, `entity_id` com FK para `laia_assessments` e `branches`), mas o service não faz o JOIN necessário.
+## Estrutura do conteúdo
 
-## Alterações
+Seções do documento a exibir:
 
-### 1. `src/services/laiaRevisionService.ts`
+1. **Objetivo** — Texto simples
+2. **Aplicação** — Texto simples
+3. **Generalidades** — "Não se aplica"
+4. **Responsabilidades** — Texto simples
+5. **Procedimento** — Seção principal com sub-seções:
+   - 5.1) Modelo de Planilha (tabela visual)
+   - 5.2) Explicativo de preenchimento — múltiplos itens expandíveis:
+     - Identificação (Cod Set, Cod Asp, Atividade, Aspectos, Impactos)
+     - Caracterização (Temporalidade, Situação Operacional, Incidência, Classe)
+     - Verificação de Importância (Abrangência/Consequência com tabela de pontos, Frequência/Probabilidade com tabelas, Soma, Categoria/Enquadramento)
+     - Avaliação de Significância (Requisitos Legais, DPI, OE, Enquadramento final com tabela)
+     - Observações Adicionais (Tipos de Controle, Controles Existentes, Link Legislação)
+     - Perspectiva do Ciclo de Vida (Controle/Influência, Estágios, Saídas)
+   - 5.3) Situações pertinentes a alteração/revisão
+6. **Tratativas aos Registros** — "Não aplicável"
 
-Enriquecer `getRevisionById` para, após buscar os changes, fazer JOINs adicionais:
-- Buscar dados das **avaliações** referenciadas (`aspect_code`, `activity_operation`, `environmental_aspect`, `environmental_impact`, `sector` com nome)
-- Buscar dados das **unidades** referenciadas (`branches.name`)
-- Buscar dados dos **setores** referenciados (quando `entity_type === 'sector'`: `code`, `name`)
+## Layout e Design
 
-Adicionar ao tipo `LAIARevisionChange` campos opcionais de contexto:
-```typescript
-// Contexto enriquecido (adicionado após query)
-assessment_info?: {
-  aspect_code: string;
-  activity_operation: string;
-  environmental_aspect: string;
-  environmental_impact: string;
-  sector_name?: string;
-};
-branch_name?: string;
-sector_info?: { code: string; name: string };
-```
+- Header com badge do código do documento (FPLAN-002) e metadados (elaboração, aprovação, data, revisão)
+- Accordion principal com cada seção numerada como item
+- Tabelas estilizadas com Tailwind para critérios de pontuação
+- Cards coloridos para escalas (Desprezível/Moderado/Crítico)
+- Tudo responsivo e colapsável para não sobrecarregar a tela
 
-Implementação: após buscar os changes, coletar os `entity_id` únicos por tipo, fazer queries em batch para `laia_assessments` (com join em `laia_sectors`) e `branches`, e mapear os resultados de volta nos changes.
+## Arquivos
 
-### 2. `src/components/laia/LAIARevisionDetail.tsx`
-
-Reestruturar a visualização para ser compreensiva:
-
-- **Agrupar primeiro por unidade (branch)**, depois por entidade dentro da unidade
-- Para cada grupo de unidade, mostrar o nome da unidade como cabeçalho
-- Para cada avaliação alterada, mostrar:
-  - Código do aspecto + Atividade/Operação como título identificador
-  - Aspecto ambiental e impacto como subtítulo
-  - Setor associado
-  - Badge de tipo de alteração (Criado/Editado/Removido)
-  - Lista dos campos alterados com diff (old → new)
-- Para setores alterados, mostrar código + nome do setor
-
-Layout proposto:
-```text
-┌─ 📍 TRANSPORTES GABARDO LTDA ─────────────────────┐
-│                                                      │
-│  ┌─ Avaliação 12.07 — BRIGADA DE EMERGÊNCIA ──────┐│
-│  │  Aspecto: POSSIBILIDADE DE INCÊNDIO             ││
-│  │  Impacto: ...                                   ││
-│  │  Setor: Manutenção                              ││
-│  │  [Editado]                                      ││
-│  │                                                  ││
-│  │  Severidade:  Baixa → Média                     ││
-│  │  Abrangência: Local → Regional                  ││
-│  └──────────────────────────────────────────────────┘│
-└──────────────────────────────────────────────────────┘
-```
-
-## Detalhes Técnicos
-
-### Enriquecimento de dados no service
-
-```typescript
-// Após buscar changes, coletar IDs
-const assessmentIds = changes.filter(c => c.entity_type === 'assessment').map(c => c.entity_id);
-const sectorIds = changes.filter(c => c.entity_type === 'sector').map(c => c.entity_id);
-const branchIds = changes.filter(c => c.branch_id).map(c => c.branch_id);
-
-// Batch queries
-const assessments = await supabase.from('laia_assessments')
-  .select('id, aspect_code, activity_operation, environmental_aspect, environmental_impact, sector:laia_sectors(name)')
-  .in('id', assessmentIds);
-
-const branches = await supabase.from('branches')
-  .select('id, name').in('id', branchIds);
-
-const sectors = await supabase.from('laia_sectors')
-  .select('id, code, name').in('id', sectorIds);
-
-// Map back onto changes
-```
-
-### Arquivos modificados
-
-| Arquivo | Mudança |
-|---------|---------|
-| `src/services/laiaRevisionService.ts` | Expandir `LAIARevisionChange` com campos contextuais; enriquecer `getRevisionById` com JOINs |
-| `src/components/laia/LAIARevisionDetail.tsx` | Reestruturar layout: agrupar por unidade, exibir identificação completa da avaliação/setor |
+| Arquivo | Ação |
+|---------|------|
+| `src/components/laia/LAIAMetodologia.tsx` | Novo — componente completo |
+| `src/pages/LAIAUnidades.tsx` | Substituir placeholder na tab "metodologia" |
 
