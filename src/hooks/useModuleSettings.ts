@@ -20,8 +20,10 @@ interface UserModuleAccessRecord {
   has_access: boolean;
 }
 
-// Admin roles that bypass module restrictions
+// Admin roles that bypass environment-specific toggles
 const ADMIN_ROLES = ['platform_admin', 'super_admin', 'admin'];
+// Roles that bypass individual user-level module restrictions
+const BYPASS_ROLES = ['platform_admin', 'super_admin'];
 
 export function useModuleSettings() {
   const { isDemo } = useDemo();
@@ -29,6 +31,7 @@ export function useModuleSettings() {
   const { user } = useAuth();
 
   const isAdmin = !!user?.role && ADMIN_ROLES.includes(user.role);
+  const isBypassRole = !!user?.role && BYPASS_ROLES.includes(user.role);
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ['platform-module-settings'],
@@ -89,14 +92,14 @@ export function useModuleSettings() {
       }
     }
 
-    // 2. Check user-level access (applies to ALL users, including admins)
-    if (userAccess && userAccess.length > 0) {
+    // 2. Check user-level access (bypass for platform_admin/super_admin)
+    if (!isBypassRole && userAccess && userAccess.length > 0) {
       const userPerm = userAccess.find(p => p.module_key === moduleKey);
       if (userPerm && !userPerm.has_access) return false;
     }
 
     return true;
-  }, [settings, userAccess, isDemo, isAdmin]);
+  }, [settings, userAccess, isDemo, isAdmin, isBypassRole]);
 
   // Map section IDs to module keys
   const sectionToModuleKey: Record<string, string> = useMemo(() => ({
