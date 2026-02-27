@@ -152,7 +152,7 @@ const Residuos = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24 md:pb-28">
         {/* Cabeçalho da página */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex flex-col gap-2">
