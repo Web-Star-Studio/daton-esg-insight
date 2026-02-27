@@ -457,14 +457,14 @@ const AIQualityInsights = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Próximo mês</span>
                     <span className="text-sm font-medium">
-                      ~{aiInsights?.predictions.nextMonthNCs || 3} NCs esperadas
+                      ~{aiInsights?.predictions?.nextMonthNCs || 3} NCs esperadas
                     </span>
                   </div>
-                  <Progress value={aiInsights?.predictions.riskLevel === 'high' ? 85 : 65} />
+                  <Progress value={aiInsights?.predictions?.riskLevel === 'high' ? 85 : 65} />
                   <p className="text-xs text-muted-foreground">
                     Baseado em tendências e dados históricos do SGQ
                   </p>
-                  {aiInsights?.predictions.riskLevel === 'high' && (
+                  {aiInsights?.predictions?.riskLevel === 'high' && (
                     <Badge variant="destructive" className="text-xs">
                       Risco Alto Detectado
                     </Badge>

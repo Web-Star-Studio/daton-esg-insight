@@ -1097,4 +1097,26 @@ export const supplierMockEntries = [
     queryKey: ["supplier-participation-by-supplier"],
     data: participationBySupplier,
   },
+  // Evaluation criteria (SupplierEvaluationCriteriaPage)
+  {
+    queryKey: ["evaluation-criteria"],
+    data: [
+      { id: 'ec-1', company_id: DEMO_COMPANY_ID, name: 'Qualidade do produto/serviço', description: 'Conformidade com especificações técnicas e qualidade entregue', weight: 1, is_active: true, display_order: 1, created_at: '2025-01-10T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+      { id: 'ec-2', company_id: DEMO_COMPANY_ID, name: 'Prazo de entrega', description: 'Pontualidade e cumprimento dos prazos acordados', weight: 2, is_active: true, display_order: 2, created_at: '2025-01-10T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+      { id: 'ec-3', company_id: DEMO_COMPANY_ID, name: 'Conformidade com requisitos', description: 'Atendimento a requisitos legais, ambientais e contratuais', weight: 4, is_active: true, display_order: 3, created_at: '2025-01-10T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+      { id: 'ec-4', company_id: DEMO_COMPANY_ID, name: 'Comunicação/Atendimento', description: 'Qualidade no atendimento e comunicação proativa', weight: 4, is_active: true, display_order: 4, created_at: '2025-01-10T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+      { id: 'ec-5', company_id: DEMO_COMPANY_ID, name: 'Documentação em dia', description: 'Manutenção de documentos obrigatórios atualizados', weight: 5, is_active: true, display_order: 5, created_at: '2025-01-10T10:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
+    ],
+  },
+  // Evaluation config (SupplierEvaluationCriteriaPage)
+  {
+    queryKey: ["evaluation-config"],
+    data: {
+      id: 'ecfg-1',
+      company_id: DEMO_COMPANY_ID,
+      minimum_approval_points: 12,
+      created_at: '2025-01-10T10:00:00Z',
+      updated_at: '2026-01-10T10:00:00Z',
+    },
+  },
 ];

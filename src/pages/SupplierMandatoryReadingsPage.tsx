@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Plus, Pencil, Trash2, FileText, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDemo } from '@/contexts/DemoContext';
+import { triggerDemoBlocked } from '@/utils/demoGuard';
 import { supabase } from '@/integrations/supabase/client';
 import { getMandatoryReadings, createMandatoryReading, updateMandatoryReading, deleteMandatoryReading, getReadingConfirmations, MandatoryReading } from '@/services/supplierPortalService';
 import { useCompany } from '@/contexts/CompanyContext';
@@ -120,37 +121,8 @@ export default function SupplierMandatoryReadingsPage() {
     setIsSaving(true);
     try {
       if (isDemo) {
-        const now = new Date().toISOString();
-        const category = supplierPortalDemoCategories.find(
-          (item) => item.id === formData.category_id,
-        );
-        const payload: MandatoryReading = {
-          id: selectedReading?.id ?? `demo-reading-${Date.now()}`,
-          company_id: selectedCompany?.id ?? 'demo-company-001',
-          title: formData.title,
-          description: formData.description || null,
-          content: formData.content || null,
-          file_path: formData.file_path || null,
-          category_id: formData.category_id || null,
-          is_active: formData.is_active,
-          requires_confirmation: formData.requires_confirmation,
-          created_at: selectedReading?.created_at ?? now,
-          updated_at: now,
-          category: category ? { id: category.id, name: category.name } : null,
-        };
-
-        setReadings((prev) =>
-          selectedReading
-            ? prev.map((item) => (item.id === selectedReading.id ? payload : item))
-            : [payload, ...prev],
-        );
-        setIsDialogOpen(false);
-        toast({
-          title: 'Sucesso',
-          description: selectedReading
-            ? 'Leitura atualizada com sucesso'
-            : 'Leitura criada com sucesso',
-        });
+        triggerDemoBlocked();
+        setIsSaving(false);
         return;
       }
 
@@ -185,8 +157,7 @@ export default function SupplierMandatoryReadingsPage() {
 
     try {
       if (isDemo) {
-        setReadings((prev) => prev.filter((item) => item.id !== id));
-        toast({ title: 'Sucesso', description: 'Leitura excluída com sucesso' });
+        triggerDemoBlocked();
         return;
       }
 

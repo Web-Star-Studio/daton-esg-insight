@@ -401,4 +401,132 @@ export const qualityMockEntries = [
       { id: 'ka-3', title: 'Manual do Colaborador', category: 'RH', status: 'Publicado', views: 532 },
     ],
   },
+  // Quality dashboard (flat key) — AIQualityInsights.tsx (queryKey: ['quality-dashboard'])
+  // Note: this is distinct from ['quality', 'dashboard', DEMO_COMPANY_ID]
+  {
+    queryKey: ['quality-dashboard'],
+    data: {
+      metrics: { openNCs: 3 },
+      recentNCs: [
+        { description: 'Temperatura acima do limite operacional por 2 horas durante turno noturno.' },
+        { description: 'PO-005 estava sem revisão há mais de 18 meses.' },
+        { description: 'Balança analítica fora da faixa de tolerância de calibração.' },
+      ],
+    },
+  },
+  // Quality indicators metrics — AIQualityInsights.tsx (queryKey: ['quality-indicators-metrics'])
+  {
+    queryKey: ['quality-indicators-metrics'],
+    data: {
+      ncTrend: { change: -15.2 },
+      resolutionRate: { percentage: 75.0 },
+      overdueActions: 1,
+      qualityScore: 87.3,
+    },
+  },
+  // AI insights catch-all — CardWithAI.tsx uses ['ai-insights', cardType, cardData] and expects AIInsight[]
+  // Must be [] (array) so CardWithAI doesn't crash calling .filter() on an object.
+  // AIQualityInsights uses ['ai-insights', []] which matches the more-specific entry below.
+  {
+    queryKey: ['ai-insights'],
+    data: [],
+  },
+  {
+    queryKey: ['ai-insights', []],
+    data: {
+      patterns: [],
+      predictions: { nextMonthNCs: 0, riskLevel: 'low', efficiency: 90 },
+    },
+  },
+  // NC advanced dashboard — NonConformitiesAdvancedDashboard.tsx (queryKey: ['nc-advanced-dashboard'])
+  {
+    queryKey: ['nc-advanced-dashboard'],
+    data: {
+      metrics: {
+        total: 8,
+        currentMonth: 3,
+        lastMonth: 5,
+        trend: -40,
+        resolutionRate: 62.5,
+        overdue: 1,
+        avgResolutionTime: 12,
+        critical: 1,
+      },
+      charts: {
+        severity: [
+          { name: 'Crítica', value: 1 },
+          { name: 'Maior', value: 3 },
+          { name: 'Menor', value: 4 },
+        ],
+        status: [
+          { name: 'Aberta', value: 2 },
+          { name: 'Em Tratamento', value: 1 },
+          { name: 'Em Análise', value: 1 },
+          { name: 'Concluída', value: 4 },
+        ],
+        source: [
+          { name: 'Auditoria Interna', value: 3 },
+          { name: 'Inspeção', value: 2 },
+          { name: 'Reclamação Cliente', value: 1 },
+          { name: 'Verificação', value: 1 },
+          { name: 'Auditoria', value: 1 },
+        ],
+        monthly: [
+          { month: 'Set/25', total: 2, criticas: 0, encerradas: 2 },
+          { month: 'Out/25', total: 3, criticas: 1, encerradas: 2 },
+          { month: 'Nov/25', total: 1, criticas: 0, encerradas: 1 },
+          { month: 'Dez/25', total: 4, criticas: 1, encerradas: 3 },
+          { month: 'Jan/26', total: 5, criticas: 1, encerradas: 2 },
+          { month: 'Fev/26', total: 3, criticas: 1, encerradas: 1 },
+        ],
+      },
+      recentNCs: [
+        { id: '1', status: 'Em Tratamento', severity: 'Maior', source: 'Auditoria Interna', created_at: '2026-01-05T08:30:00Z', due_date: '2026-03-01', completion_date: null },
+        { id: '2', status: 'Aberta', severity: 'Menor', source: 'Inspeção', created_at: '2026-01-12T11:00:00Z', due_date: '2026-03-20', completion_date: null },
+        { id: '3', status: 'Em Análise', severity: 'Crítica', source: 'Verificação', created_at: '2026-01-20T14:10:00Z', due_date: '2026-02-20', completion_date: null },
+      ],
+      isEmpty: false,
+      companyInfo: { name: 'Daton Demo' },
+    },
+  },
+  // Risk matrix with QualityMatrix shape — QualityMatrix.tsx (queryKey: ['risk-matrix', selectedMatrixId])
+  // When selectedMatrixId is '' (initial state, enabled: false), data is still undefined → crash.
+  // Add empty-string key so even the disabled state has a safe shape.
+  {
+    queryKey: ['risk-matrix', ''],
+    data: {
+      riskCounts: { total: 0, critical: 0, high: 0, medium: 0, low: 0 },
+      matrix: [],
+    },
+  },
+  // The 'rm-1' id comes from ['risk-matrices'] in governanceMocks.ts
+  {
+    queryKey: ['risk-matrix', 'rm-1'],
+    data: {
+      riskCounts: { total: 8, critical: 2, high: 2, medium: 3, low: 1 },
+      matrix: [
+        { probability: 'Alta', impact: 'Alto', risks: [
+          { id: '4', description: 'Multas Ambientais', category: 'Ambiental' },
+          { id: '7', description: 'Acidente de Trabalho Fatal', category: 'Social' },
+        ] },
+        { probability: 'Alta', impact: 'Médio', risks: [] },
+        { probability: 'Alta', impact: 'Baixo', risks: [] },
+        { probability: 'Média', impact: 'Alto', risks: [
+          { id: '1', description: 'Vazamento de Efluentes', category: 'Ambiental' },
+        ] },
+        { probability: 'Média', impact: 'Médio', risks: [
+          { id: '5', description: 'Interrupção de Fornecimento', category: 'Governança' },
+          { id: '8', description: 'Escassez Hídrica', category: 'Ambiental' },
+        ] },
+        { probability: 'Média', impact: 'Baixo', risks: [] },
+        { probability: 'Baixa', impact: 'Alto', risks: [
+          { id: '2', description: 'Descumprimento NR-12', category: 'Social' },
+          { id: '3', description: 'Fraude Contábil', category: 'Governança' },
+          { id: '6', description: 'Violação LGPD', category: 'Governança' },
+        ] },
+        { probability: 'Baixa', impact: 'Médio', risks: [] },
+        { probability: 'Baixa', impact: 'Baixo', risks: [] },
+      ],
+    },
+  },
 ];

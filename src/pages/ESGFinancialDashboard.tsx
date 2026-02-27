@@ -26,6 +26,20 @@ export default function ESGFinancialDashboard() {
   const loadStats = async () => {
     try {
       setLoading(true);
+      if ((window as any).__DATON_DEMO_MODE__ === true) {
+        setStats({
+          year: selectedYear,
+          environmental_costs: 350000,
+          social_costs: 280000,
+          governance_costs: 220000,
+          total_esg_costs: 850000,
+          total_expenses: 9800000,
+          esg_percentage: 8.7,
+          total_carbon_impact: 1247.5,
+          breakdown: { Environmental: 350000, Social: 280000, Governance: 220000 },
+        } as ESGFinancialStats);
+        return;
+      }
       const data = await esgFinancialService.getESGFinancialStats(selectedYear);
       setStats(data);
     } catch (error: any) {

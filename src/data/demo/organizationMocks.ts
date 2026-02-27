@@ -188,5 +188,55 @@ export const organizationMockEntries = [
       { id: 'branch-2', company_id: DEMO_COMPANY_ID, name: 'Fábrica Guarulhos', is_headquarters: false, status: 'Ativo', city: 'Guarulhos', state: 'SP', code: 'FAC-GRU', cnpj: '12.345.678/0002-71', parent_branch_id: 'branch-1', parent_branch: { id: 'branch-1', name: 'Sede Global (Matriz)' }, created_at: '2020-01-01', updated_at: '2026-01-01', manager: { id: 'emp-1', full_name: 'Ana Silva' } },
       { id: 'branch-3', company_id: DEMO_COMPANY_ID, name: 'Centro de Distribuição RJ', is_headquarters: false, status: 'Ativo', city: 'Rio de Janeiro', state: 'RJ', code: 'CD-RJ', cnpj: '12.345.678/0003-52', parent_branch_id: 'branch-1', parent_branch: { id: 'branch-1', name: 'Sede Global (Matriz)' }, created_at: '2020-01-01', updated_at: '2026-01-01', manager: { id: 'emp-2', full_name: 'Carlos Santos' } }
     ]
-  }
+  },
+  // LAIA branch configs (useLAIABranchConfigs hook)
+  {
+    queryKey: ['laia-branch-configs'],
+    data: [
+      { id: 'lbc-1', branch_id: 'branch-1', company_id: DEMO_COMPANY_ID, survey_status: 'levantado', methodology: 'ISO 14001', updated_at: '2025-11-10T10:00:00Z' },
+      { id: 'lbc-2', branch_id: 'branch-2', company_id: DEMO_COMPANY_ID, survey_status: 'levantado', methodology: 'ISO 14001', updated_at: '2025-10-20T09:00:00Z' },
+      { id: 'lbc-3', branch_id: 'branch-3', company_id: DEMO_COMPANY_ID, survey_status: 'em_andamento', methodology: 'ISO 14001', updated_at: '2026-01-05T11:00:00Z' },
+    ],
+  },
+  // LAIA branch stats (useLAIABranchStats hook)
+  {
+    queryKey: ['laia-branch-stats'],
+    data: [
+      { branch_id: 'branch-1', total: 42, criticos: 3, significativos: 15, nao_significativos: 24 },
+      { branch_id: 'branch-2', total: 35, criticos: 5, significativos: 12, nao_significativos: 18 },
+      { branch_id: 'branch-3', total: 18, criticos: 1, significativos: 8, nao_significativos: 9 },
+    ],
+  },
+  // LAIA revisions (useLAIARevisions hook) — used by LAIARevisoes.tsx
+  {
+    queryKey: ['laia-revisions'],
+    data: [
+      {
+        id: 'rev-demo-1',
+        company_id: DEMO_COMPANY_ID,
+        status: 'finalizada',
+        revision_number: 1,
+        changes_count: 12,
+        title: 'Levantamento Inicial de Aspectos Ambientais',
+        description: 'Primeira revisão completa do levantamento de aspectos e impactos ambientais.',
+        finalized_at: '2025-12-15T10:00:00Z',
+        created_at: '2025-10-01T09:00:00Z',
+        updated_at: '2025-12-15T10:00:00Z',
+        creator: { full_name: 'Ana Silva' },
+      },
+      {
+        id: 'rev-demo-2',
+        company_id: DEMO_COMPANY_ID,
+        status: 'rascunho',
+        revision_number: 2,
+        changes_count: 3,
+        title: 'Atualização Pós-Expansão Fábrica',
+        description: 'Revisão para incluir novos aspectos decorrentes da expansão da linha de produção.',
+        finalized_at: null,
+        created_at: '2026-01-20T09:00:00Z',
+        updated_at: '2026-02-10T14:00:00Z',
+        creator: { full_name: 'Carlos Santos' },
+      },
+    ],
+  },
 ];
