@@ -1,23 +1,28 @@
 
+# Ajustar posição do botão flutuante da IA para ficar abaixo da tabela de resíduos
 
-# Adicionar botão de IA nas ações do registro de resíduo
+## Implementação
 
-## Alteração
+1. **`src/components/tools/ChatAssistant.tsx`**
+   - Ajustar a classe do botão flutuante para descer no viewport (remover `bottom-20` e usar `bottom-4 md:bottom-6`).
+   - Manter `right-6`, tamanho e comportamento atuais (apenas reposicionamento vertical).
 
-### `src/pages/Residuos.tsx`
+2. **`src/pages/Residuos.tsx`**
+   - Adicionar área de respiro no fim da página para o botão não cobrir a última linha da tabela:
+     - trocar o wrapper principal de `className="space-y-6"` para `className="space-y-6 pb-24 md:pb-28"`.
+   - Não alterar ações da tabela (Editar/Ver/Documentos) nem lógica dos modais.
 
-Adicionar um botão com ícone `MessageCircle` entre o botão `Eye` (Ver Detalhes) e o botão `Pencil` (Editar) na coluna de Ações da tabela de resíduos.
+3. **Validação visual (desktop e mobile)**
+   - Ir para `/residuos`, rolar até o último item e confirmar que o botão de IA não sobrepõe o ícone de editar.
+   - Confirmar que o botão da IA continua clicável e abre o chat normalmente.
+   - Confirmar que não houve regressão no layout da página (somente espaço inferior adicional).
 
-Ao clicar, o botão abrirá o chat da IA (ChatAssistant) enviando contexto do registro selecionado — abrindo o chat flutuante global com uma mensagem pré-preenchida sobre aquele resíduo específico.
+## Detalhes técnicos
 
-**Ordem final dos botões:**
-```text
-[ FileText ] [ Eye ] [ MessageCircle ] [ Pencil ]
-```
-
-**Comportamento do clique:** Abrir o chat flutuante global (`localStorage.setItem('ai_chat_open', 'true')` + disparar evento customizado) com contexto do resíduo (MTR, descrição, quantidade).
-
-| Arquivo | Ação |
-|---------|------|
-| `src/pages/Residuos.tsx` | Adicionar botão `MessageCircle` antes do `Pencil`, com handler para abrir o chat com contexto |
-
+- Arquivos afetados:
+  - `src/components/tools/ChatAssistant.tsx`
+  - `src/pages/Residuos.tsx`
+- Estratégia final:
+  - **Descer o FAB** + **reservar safe-area inferior na página de resíduos**.
+- Resultado esperado:
+  - O botão “Assistente ESG IA” permanece flutuante, porém visualmente **abaixo do container da tabela**, sem cobrir o último item.
