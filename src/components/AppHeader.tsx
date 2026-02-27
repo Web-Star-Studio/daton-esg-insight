@@ -1,10 +1,12 @@
-import { User, Settings, LogOut, Crown } from "lucide-react"
+import { useState } from "react"
+import { User, Settings, LogOut, Crown, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { EnhancedGlobalSearch } from "@/components/navigation/EnhancedGlobalSearch"
 import { NotificationCenter } from "@/components/notifications/NotificationCenter"
 import { TourTriggerButton } from "@/components/tutorial/unified/TourTriggerButton"
 import { ContextualHelp } from "@/components/ContextualHelp"
+import { ChatAssistant } from "@/components/tools/ChatAssistant"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
 import { useToast } from "@/hooks/use-toast"
@@ -35,6 +37,7 @@ export function AppHeader() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { isPlatformAdmin } = usePermissions()
+  const [isChatOpen, setIsChatOpen] = useState(false)
 
   const handleLogout = async () => {
     try {
@@ -86,6 +89,19 @@ export function AppHeader() {
         <NotificationCenter />
         
         <TourTriggerButton />
+
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsChatOpen(prev => !prev)}
+            aria-label="Assistente IA"
+            className="hover:bg-muted/50"
+          >
+            <Sparkles className="h-5 w-5" />
+          </Button>
+          <ChatAssistant isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+        </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
