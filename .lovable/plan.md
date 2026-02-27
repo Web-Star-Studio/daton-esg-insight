@@ -1,27 +1,33 @@
 
 
-# Mover ChatAssistant do canto inferior para o Header
+# Adicionar Revisões Legadas na aba Revisões
 
-## Alterações
+## Abordagem
+Adicionar um array estático de revisões legadas no componente `LAIARevisoes.tsx`, renderizado em uma seção separada "Histórico Legado" abaixo das revisões do sistema. São 13 registros (Rev 00 a Rev 12) que servem apenas como registro histórico — sem ações, sem detalhes clicáveis.
 
-### 1. `src/components/MainLayout.tsx`
-- Remover o `<ChatAssistant />` de dentro do `SidebarProvider` (linha 95)
+## Dados a inserir
 
-### 2. `src/components/AppHeader.tsx`
-- Importar `ChatAssistant` e os ícones necessários (`Sparkles`)
-- Adicionar um botão minimalista (ghost/icon) no header, ao lado dos outros ícones (antes do dropdown de perfil)
-- O botão abre/fecha o chat panel como um popover ou painel lateral
-- Usar estado local `isOpen` para controlar visibilidade do chat
+| # | Título | Data |
+|---|--------|------|
+| 00 | Emissão inicial do documento | 25/08/2020 |
+| 01 | Alteração item 5 e 5.3 | 04/12/2020 |
+| 02 | Detalhamento controles operacionais | 17/12/2020 |
+| 03 | Alteração FPLAN-003 para LIRA | 18/10/2021 |
+| 04 | Inclusão Carregamento e Heliponto (PIR) e alteração Construção Civil (atual) (POA e PIR) | 30/05/2022 |
+| 05 | Inclusão Museu (PIR) e Posto Abastecimento (POA) | 30/08/2022 |
+| 06 | Inclusão Espaço Saúde (PIR); Central do Motorista (POA) e Elaboração LAIA SBC e Porto Real | 05/09/2023 |
+| 07 | Revisão geral - análise crítica do documento | 03/10/2023 |
+| 08 | Inclusão aspectos: ruído, odor, tonner e possibilidade de incêndio - POA, PIR | 23/10/2022 |
+| 09 | Revisão Geral e análise crítica de POA e PIR; Elaboração LAIA de Duque de Caxias, Anápolis e São José dos Pinhais | 15/04/2024 |
+| 10 | Revisão Geral (Queimadas Excessivas) | 24/09/2024 |
+| 11 | Troca de Classificação dos Resíduos de acordo com NBR 10.004-2024, inclusão de Sala de Descanso em GO-CARREGAMENTO, Inclusão das Unidades ES, IRA e CHUÍ | 30/06/2025 |
+| 12 | Perspectiva de estágio (ajustes) | — |
 
-### 3. `src/components/tools/ChatAssistant.tsx`
-- Remover o botão flutuante fixo (`fixed bottom-4 right-6`) — linhas 193-212
-- Quando não embedded, renderizar apenas o chat window (sem botão flutuante próprio)
-- Aceitar nova prop `onClose` para o header controlar o fechamento
-- Aceitar prop `isOpen` externamente (ao invés de gerenciar internamente quando não embedded)
+## Alteração
 
-### Resultado
-- Botão minimalista com ícone `Sparkles` no header, estilo ghost/icon igual aos demais
-- Ao clicar, abre o painel de chat (posicionado como dropdown/popover à direita)
-- Remove completamente o botão flutuante do canto inferior direito
-- Pode-se remover o `pb-24` de padding de segurança das páginas
+**Arquivo:** `src/components/laia/LAIARevisoes.tsx`
+- Adicionar constante `LEGACY_REVISIONS` com os 13 registros
+- Após a seção "Histórico de Revisões", renderizar um Card "Histórico Legado (FPLAN-002)" com os registros em lista estática
+- Cada item mostra número, título e data — sem botões de ação
+- Badge "Legado" em cada item para distinguir dos registros do sistema
 
