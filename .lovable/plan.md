@@ -1,25 +1,23 @@
 
 
-# Visualizar Arquivos Anexados no Registro de Resíduo
+# Adicionar botão de IA nas ações do registro de resíduo
 
-## Alterações
+## Alteração
 
-### 1. `src/components/WasteLogDocumentsModal.tsx`
+### `src/pages/Residuos.tsx`
 
-- Adicionar botão de **"Visualizar"** (ícone `Eye`) ao lado de cada documento na lista
-- Ao clicar, gerar uma signed URL via `supabase.storage.from('documents').createSignedUrl(filePath, 3600)` e abrir um estado de preview inline
-- Usar o componente `DocumentViewer` já existente para renderizar PDFs e imagens dentro do modal
-- Adicionar estado `previewDoc: { url: string; name: string } | null` para controlar qual documento está sendo visualizado
-- Quando um documento está em preview, mostrar o viewer com botão "Voltar à lista" no topo
-- O modal aumenta para `max-w-4xl` quando em modo de preview
+Adicionar um botão com ícone `MessageCircle` entre o botão `Eye` (Ver Detalhes) e o botão `Pencil` (Editar) na coluna de Ações da tabela de resíduos.
 
-### 2. Fluxo de UX
+Ao clicar, o botão abrirá o chat da IA (ChatAssistant) enviando contexto do registro selecionado — abrindo o chat flutuante global com uma mensagem pré-preenchida sobre aquele resíduo específico.
 
-- Lista normal → clica em 👁 → carrega signed URL → exibe `DocumentViewer` no lugar da lista
-- Botão "← Voltar" retorna à lista de documentos
-- Para formatos não suportados pelo viewer (DOC/DOCX), abrir em nova aba ou manter apenas o download
+**Ordem final dos botões:**
+```text
+[ FileText ] [ Eye ] [ MessageCircle ] [ Pencil ]
+```
+
+**Comportamento do clique:** Abrir o chat flutuante global (`localStorage.setItem('ai_chat_open', 'true')` + disparar evento customizado) com contexto do resíduo (MTR, descrição, quantidade).
 
 | Arquivo | Ação |
 |---------|------|
-| `src/components/WasteLogDocumentsModal.tsx` | Adicionar preview inline com `DocumentViewer` |
+| `src/pages/Residuos.tsx` | Adicionar botão `MessageCircle` antes do `Pencil`, com handler para abrir o chat com contexto |
 
