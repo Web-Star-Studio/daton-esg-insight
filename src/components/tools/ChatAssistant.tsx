@@ -20,16 +20,30 @@ import { cn } from '@/lib/utils';
 // Chat assistant component with AI action confirmation support
 interface ChatAssistantProps {
   embedded?: boolean; // When true, always shows chat without floating button
+  isOpen?: boolean; // External control of open state
+  onClose?: () => void; // Callback when chat is closed
 }
 
-export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
-  // Persist open state in localStorage (only for non-embedded)
-  const [isOpen, setIsOpen] = useState(() => {
+export function ChatAssistant({ embedded = false, isOpen: externalIsOpen, onClose }: ChatAssistantProps) {
+  const isControlled = externalIsOpen !== undefined;
+  
+  // Persist open state in localStorage (only for non-embedded, non-controlled)
+  const [internalIsOpen, setInternalIsOpen] = useState(() => {
     if (embedded) return true;
+    if (isControlled) return false;
     const stored = localStorage.getItem('ai_chat_open');
-    // Default to CLOSED on first use
     return stored === 'true';
   });
+  
+  const isOpen = isControlled ? externalIsOpen : internalIsOpen;
+  const setIsOpen = (value: boolean | ((prev: boolean) => boolean)) => {
+    const newValue = typeof value === 'function' ? value(isOpen) : value;
+    if (isControlled) {
+      if (!newValue && onClose) onClose();
+    } else {
+      setInternalIsOpen(newValue);
+    }
+  };
   
   // Persist fullscreen state
   const [isExpanded, setIsExpanded] = useState(() => {
@@ -190,27 +204,6 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
 
   return (
     <>
-      {/* Floating Chat Button - Only show when not embedded */}
-      <AnimatePresence>
-        {!embedded && !isOpen && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20 }}
-          >
-            <Button
-              onClick={() => setIsOpen(true)}
-              className="fixed bottom-4 md:bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-[100] bg-gradient-to-br from-primary to-primary/90"
-              size="icon"
-              aria-label="Abrir chat"
-            >
-              <MessageCircle className="h-6 w-6" />
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (

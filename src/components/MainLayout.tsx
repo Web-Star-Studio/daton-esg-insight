@@ -8,7 +8,6 @@ import { UnifiedTourProvider } from "@/contexts/UnifiedTourContext"
 import { CleanOnboardingMain } from "@/components/onboarding/CleanOnboardingMain"
 import { UnifiedTourSystem } from "@/components/tutorial/unified/UnifiedTourSystem"
 import { ProfessionalModalProvider } from "@/components/ui/professional-modal-manager"
-import { ChatAssistant } from "@/components/tools/ChatAssistant"
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs"
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications"
 import { useAutoRetryProcessor } from "@/hooks/useAutoRetryProcessor"
@@ -91,8 +90,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               {/* Unified Tour System - Sistema consolidado de tours */}
               <UnifiedTourSystem />
               
-              {/* AI Chat Assistant - Global floating chat */}
-              <ChatAssistant />
+              {/* AI Chat Assistant - controlled from AppHeader */}
             </SidebarProvider>
           </ProfessionalModalProvider>
         )}
