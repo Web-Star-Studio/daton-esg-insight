@@ -108,8 +108,45 @@ export const OPERATIONAL_STATUS_OPTIONS = ['Ativo', 'Inativo', 'Manutenção'] a
 export const POLLUTION_POTENTIAL_OPTIONS = ['Alto', 'Médio', 'Baixo'] as const;
 export const MONITORING_FREQUENCY_OPTIONS = ['Diária', 'Semanal', 'Mensal', 'Trimestral', 'Anual'] as const;
 
+// Demo Mode Helper
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__;
+
 export async function getAssetsHierarchy(): Promise<Asset[]> {
   try {
+    if (isDemoMode()) {
+      return [
+        {
+          id: 'demo-asset-1',
+          company_id: 'demo',
+          name: 'Fábrica Matriz',
+          asset_type: 'Unidade Industrial',
+          location: 'São Paulo, SP',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          children: [
+            {
+              id: 'demo-asset-1-1',
+              company_id: 'demo',
+              name: 'Caldeira Principal',
+              asset_type: 'Fonte Fixa de Combustão',
+              location: 'Setor A',
+              parent_asset_id: 'demo-asset-1',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          ]
+        },
+        {
+          id: 'demo-asset-2',
+          company_id: 'demo',
+          name: 'Frota Logística',
+          asset_type: 'Fonte Móvel',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ];
+    }
+
     const { data, error } = await supabase.functions.invoke('assets-management');
 
     if (error) {
@@ -130,6 +167,32 @@ export async function getAssetsHierarchy(): Promise<Asset[]> {
 }
 
 export async function getAssetById(id: string): Promise<AssetWithLinkedData> {
+  if (isDemoMode()) {
+    return {
+      id,
+      company_id: 'demo',
+      name: 'Ativo de Demonstração',
+      asset_type: 'Unidade Industrial',
+      location: 'Unidade Demo',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      linked_emission_sources: [
+        { id: '1', name: 'Fonte 1', category: 'Combustão Estacionária', scope: 1, status: 'Ativo' }
+      ],
+      linked_licenses: [
+        { id: '1', name: 'Licença de Operação', type: 'LO', status: 'Ativa', expiration_date: new Date(Date.now() + 8640000000).toISOString(), issuing_body: 'Órgão Ambiental' }
+      ],
+      linked_waste_logs: [
+        { id: '1', mtr_number: 'MTR-123', waste_description: 'Resíduo Orgânico', quantity: 150, unit: 'kg', collection_date: new Date().toISOString(), status: 'Tratado' }
+      ],
+      kpis: {
+        total_emissions: 1,
+        active_licenses: 1,
+        waste_records: 1
+      }
+    };
+  }
+
   const { data, error } = await supabase.functions.invoke('assets-management', {
     method: 'GET',
     body: null,
@@ -183,6 +246,16 @@ export async function getAssetById(id: string): Promise<AssetWithLinkedData> {
 }
 
 export async function createAsset(assetData: CreateAssetData): Promise<Asset> {
+  if (isDemoMode()) {
+    return {
+      id: `demo-new-${Date.now()}`,
+      company_id: 'demo',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...assetData
+    } as Asset;
+  }
+
   // Get company_id from user profile
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -213,6 +286,18 @@ export async function createAsset(assetData: CreateAssetData): Promise<Asset> {
 }
 
 export async function updateAsset(id: string, updates: UpdateAssetData): Promise<Asset> {
+  if (isDemoMode()) {
+    return {
+      id,
+      company_id: 'demo',
+      name: updates.name || 'Ativo Atualizado',
+      asset_type: updates.asset_type || 'Unidade Industrial',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...updates
+    } as Asset;
+  }
+
   const { data, error } = await supabase
     .from('assets')
     .update(updates)
@@ -233,6 +318,8 @@ export async function updateAsset(id: string, updates: UpdateAssetData): Promise
 }
 
 export async function deleteAsset(id: string): Promise<void> {
+  if (isDemoMode()) return;
+
   // Verificar se tem filhos primeiro
   const { data: children } = await supabase
     .from('assets')
@@ -255,7 +342,14 @@ export async function deleteAsset(id: string): Promise<void> {
 }
 
 // Função auxiliar para obter ativos como opções de seleção
-export async function getAssetsAsOptions(): Promise<Array<{value: string; label: string}>> {
+export async function getAssetsAsOptions(): Promise<Array<{ value: string; label: string }>> {
+  if (isDemoMode()) {
+    return [
+      { value: 'demo-asset-1', label: 'Fábrica Matriz (Unidade Industrial)' },
+      { value: 'demo-asset-1-1', label: 'Caldeira Principal (Fonte Fixa de Combustão)' }
+    ];
+  }
+
   const { data, error } = await supabase
     .from('assets')
     .select('id, name, asset_type, parent_asset_id')

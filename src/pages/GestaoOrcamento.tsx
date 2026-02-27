@@ -60,7 +60,7 @@ export default function GestaoOrcamento() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
+
     const budgetData = {
       year: selectedYear,
       category: formData.get('category') as string,
@@ -179,7 +179,7 @@ export default function GestaoOrcamento() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary?.totalPlanned.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {(summary?.totalPlanned || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
           </CardContent>
         </Card>
@@ -189,7 +189,7 @@ export default function GestaoOrcamento() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary?.totalSpent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {(summary?.totalSpent || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
           </CardContent>
         </Card>
@@ -199,7 +199,7 @@ export default function GestaoOrcamento() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary?.executionRate.toFixed(1)}%
+              {(summary?.executionRate || 0).toFixed(1)}%
             </div>
             <Progress value={summary?.executionRate || 0} className="mt-2" />
           </CardContent>
@@ -228,11 +228,11 @@ export default function GestaoOrcamento() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {budgets?.map((budget) => {
-                  const execution = budget.planned_amount > 0 
-                    ? (Number(budget.spent_amount) / Number(budget.planned_amount)) * 100 
+                {(Array.isArray(budgets) ? budgets : [])?.map((budget) => {
+                  const execution = budget.planned_amount > 0
+                    ? (Number(budget.spent_amount) / Number(budget.planned_amount)) * 100
                     : 0;
-                  
+
                   return (
                     <TableRow key={budget.id}>
                       <TableCell className="font-medium">{budget.category}</TableCell>

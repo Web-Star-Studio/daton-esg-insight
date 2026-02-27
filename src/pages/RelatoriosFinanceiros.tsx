@@ -15,7 +15,7 @@ export default function RelatoriosFinanceiros() {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const currentMonth = new Date().getMonth() + 1;
-  
+
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<number | undefined>(currentMonth);
 
@@ -114,8 +114,8 @@ export default function RelatoriosFinanceiros() {
           </SelectContent>
         </Select>
 
-        <Select 
-          value={selectedMonth?.toString() || 'all'} 
+        <Select
+          value={selectedMonth?.toString() || 'all'}
           onValueChange={(value) => setSelectedMonth(value === 'all' ? undefined : Number(value))}
         >
           <SelectTrigger className="w-48">
@@ -139,7 +139,7 @@ export default function RelatoriosFinanceiros() {
               <CardTitle className="text-sm font-medium">Margem Bruta</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{indicators.margemBruta.toFixed(1)}%</div>
+              <div className="text-2xl font-bold">{(indicators?.margemBruta || 0).toFixed(1)}%</div>
             </CardContent>
           </Card>
 
@@ -148,7 +148,7 @@ export default function RelatoriosFinanceiros() {
               <CardTitle className="text-sm font-medium">Margem EBITDA</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{indicators.margemEbitda.toFixed(1)}%</div>
+              <div className="text-2xl font-bold">{(indicators?.margemEbitda || 0).toFixed(1)}%</div>
             </CardContent>
           </Card>
 
@@ -157,7 +157,7 @@ export default function RelatoriosFinanceiros() {
               <CardTitle className="text-sm font-medium">Margem Líquida</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{indicators.margemLiquida.toFixed(1)}%</div>
+              <div className="text-2xl font-bold">{(indicators?.margemLiquida || 0).toFixed(1)}%</div>
             </CardContent>
           </Card>
 
@@ -166,7 +166,7 @@ export default function RelatoriosFinanceiros() {
               <CardTitle className="text-sm font-medium">Liquidez Corrente</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{indicators.liquidezCorrente.toFixed(2)}</div>
+              <div className="text-2xl font-bold">{(indicators?.liquidezCorrente || 0).toFixed(2)}</div>
             </CardContent>
           </Card>
         </div>
@@ -191,7 +191,7 @@ export default function RelatoriosFinanceiros() {
                   </div>
                   <p className="text-2xl font-bold">{formatCurrency(esgStats.environmental_costs)}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {esgStats.total_carbon_impact?.toFixed(2) || 0} tCO2e impacto
+                    {(esgStats?.total_carbon_impact || 0).toFixed(2)} tCO2e impacto
                   </p>
                 </div>
 
@@ -223,7 +223,7 @@ export default function RelatoriosFinanceiros() {
                   <div>
                     <p className="text-sm font-medium">Total de Investimentos ESG</p>
                     <p className="text-xs text-muted-foreground">
-                      Representa {esgStats.esg_percentage.toFixed(1)}% do total de despesas em {selectedYear}
+                      Representa {(esgStats?.esg_percentage || 0).toFixed(1)}% do total de despesas em {selectedYear}
                     </p>
                   </div>
                   <p className="text-2xl font-bold">{formatCurrency(esgStats.total_esg_costs)}</p>

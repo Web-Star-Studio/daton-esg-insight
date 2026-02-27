@@ -4,6 +4,8 @@ import { toast } from 'sonner';
 import { getUserAndCompany } from '@/utils/auth';
 import { useState, useCallback } from 'react';
 
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
 export interface UserProfile {
   id: string;
   full_name: string;
@@ -46,6 +48,21 @@ export interface PaginatedResponse {
 
 // Helper function to call edge function
 async function callManageUserFunction(action: string, userData: any) {
+  if (isDemoMode()) {
+    if (action === 'list') {
+      return {
+        users: [
+          { id: 'usr-1', full_name: 'Usuário Demo', email: 'demo@daton.com.br', role: 'admin', company_id: 'demo-company', created_at: new Date().toISOString(), is_active: true }
+        ],
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1
+      };
+    }
+    return { success: true };
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('No session');
 
@@ -69,8 +86,8 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
   });
 
   // Fetch paginated users
-  const { 
-    data: paginatedData, 
+  const {
+    data: paginatedData,
     isLoading: usersLoading,
     refetch: refetchUsers
   } = useQuery({
@@ -79,7 +96,7 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
       const userAndCompany = await getUserAndCompany();
       if (!userAndCompany?.company_id) throw new Error('Company not found');
 
-      const result = await callManageUserFunction('list', { 
+      const result = await callManageUserFunction('list', {
         company_id: userAndCompany.company_id,
         ...filters,
         role_filter: filters.role,
@@ -116,7 +133,7 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
   const totalPages = Array.isArray(normalizedData)
     ? Math.max(1, Math.ceil(totalUsers / Math.max(1, currentLimit)))
     : (normalizedData as PaginatedResponse | undefined)?.totalPages || 1;
-  
+
   // Calculate stats
   const stats: UserStats = {
     total: totalUsers,
@@ -156,7 +173,7 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      
+
       return data;
     },
     onSuccess: () => {
@@ -188,8 +205,8 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
   // Soft delete user mutation
   const softDeleteUserMutation = useMutation({
     mutationFn: async ({ userId, reason, fullName }: { userId: string; reason?: string; fullName?: string }) => {
-      return await callManageUserFunction('soft_delete', { 
-        id: userId, 
+      return await callManageUserFunction('soft_delete', {
+        id: userId,
         reason,
         full_name: fullName,
       });
@@ -206,7 +223,7 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
   // Reactivate user mutation
   const reactivateUserMutation = useMutation({
     mutationFn: async ({ userId, fullName }: { userId: string; fullName?: string }) => {
-      return await callManageUserFunction('reactivate', { 
+      return await callManageUserFunction('reactivate', {
         id: userId,
         full_name: fullName,
       });
@@ -223,8 +240,8 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
   // Hard delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async ({ userId, reason, fullName }: { userId: string; reason?: string; fullName?: string }) => {
-      return await callManageUserFunction('delete', { 
-        id: userId, 
+      return await callManageUserFunction('delete', {
+        id: userId,
         reason,
         full_name: fullName,
       });
@@ -241,8 +258,8 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
   // Reset password mutation
   const resetPasswordMutation = useMutation({
     mutationFn: async ({ userId, email }: { userId: string; email: string }) => {
-      return await callManageUserFunction('reset_password', { 
-        id: userId, 
+      return await callManageUserFunction('reset_password', {
+        id: userId,
         email,
       });
     },
@@ -261,10 +278,10 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
 
   // Resend invite mutation
   const resendInviteMutation = useMutation({
-    mutationFn: async ({ userId, email, full_name, role }: { 
-      userId: string; 
-      email: string; 
-      full_name: string; 
+    mutationFn: async ({ userId, email, full_name, role }: {
+      userId: string;
+      email: string;
+      full_name: string;
       role: string;
     }) => {
       const { data, error } = await supabase.functions.invoke('invite-user', {
@@ -292,9 +309,9 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
   // Check email uniqueness
   const checkEmailUnique = async (email: string, excludeId?: string): Promise<boolean> => {
     try {
-      const result = await callManageUserFunction('check_email_unique', { 
-        email, 
-        excludeId 
+      const result = await callManageUserFunction('check_email_unique', {
+        email,
+        excludeId
       });
       return result.valid;
     } catch {
@@ -305,9 +322,9 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
   // Check username uniqueness
   const checkUsernameUnique = async (username: string, excludeId?: string): Promise<boolean> => {
     try {
-      const result = await callManageUserFunction('check_username_unique', { 
-        username, 
-        excludeId 
+      const result = await callManageUserFunction('check_username_unique', {
+        username,
+        excludeId
       });
       return result.valid;
     } catch {
@@ -326,7 +343,7 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
       totalPages,
     },
     filters,
-    
+
     // Loading states
     usersLoading,
     isCreating: createUserMutation.isPending,
@@ -336,7 +353,7 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
     isReactivating: reactivateUserMutation.isPending,
     isResetting: resetPasswordMutation.isPending,
     isResending: resendInviteMutation.isPending,
-    
+
     // Actions
     createUser: createUserMutation.mutate,
     updateUser: updateUserMutation.mutate,
@@ -345,11 +362,11 @@ export const useUserManagement = (initialFilters?: UserFilters) => {
     reactivateUser: reactivateUserMutation.mutate,
     resetPassword: resetPasswordMutation.mutate,
     resendInvite: resendInviteMutation.mutate,
-    
+
     // Filter actions
     updateFilters,
     refetchUsers,
-    
+
     // Validation helpers
     checkEmailUnique,
     checkUsernameUnique,

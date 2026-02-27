@@ -928,6 +928,43 @@ const DEMO_WASTE_DISPOSAL_DATA = {
 };
 
 export const environmentalMockEntries = [
+  // LAIA Branch Stats
+  {
+    queryKey: ['laia-branch-stats'],
+    data: [
+      { branch_id: 'branch-1', total: 15, criticos: 2, significativos: 5, nao_significativos: 8 },
+      { branch_id: 'branch-2', total: 8, criticos: 0, significativos: 3, nao_significativos: 5 },
+      { branch_id: 'branch-3', total: 0, criticos: 0, significativos: 0, nao_significativos: 0 },
+    ],
+  },
+  // Unified Quality Dashboard
+  {
+    queryKey: ['unified-quality-dashboard'],
+    data: {
+      metrics: {
+        totalNCs: 24,
+        openNCs: 5,
+        actionPlans: 12,
+        overdueActions: 2,
+      },
+      recentNCs: [
+        { id: 'nc-1', title: 'Vazamento de óleo', nc_number: 'NC-2026-001', severity: 'Alta', status: 'Aberta' },
+        { id: 'nc-2', title: 'Falta de EPI', nc_number: 'NC-2026-002', severity: 'Média', status: 'Em Tratamento' },
+      ],
+      plansProgress: [
+        { id: 'plan-1', title: 'Adequação NR-12', status: 'Em andamento', avgProgress: 65, completedItems: 13, totalItems: 20, overdueItems: 1 },
+        { id: 'plan-2', title: 'Plano de Redução de Resíduos', status: 'Atrasado', avgProgress: 40, completedItems: 4, totalItems: 10, overdueItems: 2 },
+      ]
+    },
+  },
+  // Quality Indicators Metrics
+  {
+    queryKey: ['quality-indicators-metrics'],
+    data: {
+      resolutionRate: { percentage: 85.4 },
+      qualityScore: 92,
+    },
+  },
   // Emission sources
   {
     queryKey: ['emission-sources', DEMO_COMPANY_ID],

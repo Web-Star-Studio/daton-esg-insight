@@ -26,6 +26,20 @@ export default function ESGFinancialDashboard() {
   const loadStats = async () => {
     try {
       setLoading(true);
+      if ((window as any).__DATON_DEMO_MODE__ === true) {
+        setStats({
+          year: selectedYear,
+          environmental_costs: 350000,
+          social_costs: 280000,
+          governance_costs: 220000,
+          total_esg_costs: 850000,
+          total_expenses: 9800000,
+          esg_percentage: 8.7,
+          total_carbon_impact: 1247.5,
+          breakdown: { Environmental: 350000, Social: 280000, Governance: 220000 },
+        } as ESGFinancialStats);
+        return;
+      }
       const data = await esgFinancialService.getESGFinancialStats(selectedYear);
       setStats(data);
     } catch (error: any) {
@@ -95,7 +109,7 @@ export default function ESGFinancialDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(stats?.total_esg_costs || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              {stats?.esg_percentage.toFixed(1)}% do total de despesas
+              {(stats?.esg_percentage || 0).toFixed(1)}% do total de despesas
             </p>
           </CardContent>
         </Card>
@@ -245,7 +259,7 @@ export default function ESGFinancialDashboard() {
                   <div>
                     <p className="font-medium text-sm">Investimento ESG Ativo</p>
                     <p className="text-sm text-muted-foreground">
-                      {stats.esg_percentage.toFixed(1)}% das suas despesas estão vinculadas a iniciativas ESG.
+                      {(stats.esg_percentage || 0).toFixed(1)}% das suas despesas estão vinculadas a iniciativas ESG.
                       {stats.esg_percentage < 10 && ' Considere aumentar este percentual para melhorar seu score ESG.'}
                     </p>
                   </div>

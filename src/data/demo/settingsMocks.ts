@@ -67,17 +67,17 @@ export const settingsMockEntries = [
   {
     queryKey: ['branches', DEMO_COMPANY_ID],
     data: [
-      { id: 'branch-1', name: 'Unidade Industrial SP', type: 'Fábrica', city: 'São Paulo', state: 'SP', address: 'Av. Industrial, 1500', is_headquarters: true, employee_count: 250, company_id: DEMO_COMPANY_ID },
-      { id: 'branch-2', name: 'Centro de Distribuição RJ', type: 'Distribuição', city: 'Rio de Janeiro', state: 'RJ', address: 'Rod. Presidente Dutra, Km 210', is_headquarters: false, employee_count: 52, company_id: DEMO_COMPANY_ID },
-      { id: 'branch-3', name: 'Escritório Administrativo', type: 'Escritório', city: 'São Paulo', state: 'SP', address: 'Av. Paulista, 2000', is_headquarters: false, employee_count: 40, company_id: DEMO_COMPANY_ID },
+      { id: 'branch-1', name: 'Unidade Industrial SP', type: 'Fábrica', city: 'São Paulo', state: 'SP', address: 'Av. Industrial, 1500', is_headquarters: true, employee_count: 250, company_id: DEMO_COMPANY_ID, status: 'Ativo' },
+      { id: 'branch-2', name: 'Centro de Distribuição RJ', type: 'Distribuição', city: 'Rio de Janeiro', state: 'RJ', address: 'Rod. Presidente Dutra, Km 210', is_headquarters: false, employee_count: 52, company_id: DEMO_COMPANY_ID, status: 'Ativo' },
+      { id: 'branch-3', name: 'Escritório Administrativo', type: 'Escritório', city: 'São Paulo', state: 'SP', address: 'Av. Paulista, 2000', is_headquarters: false, employee_count: 40, company_id: DEMO_COMPANY_ID, status: 'Ativo' },
     ],
   },
   // Branches (base)
   {
     queryKey: ['branches'],
     data: [
-      { id: 'branch-1', name: 'Unidade Industrial SP', type: 'Fábrica', employee_count: 250 },
-      { id: 'branch-2', name: 'Centro de Distribuição RJ', type: 'Distribuição', employee_count: 52 },
+      { id: 'branch-1', name: 'Unidade Industrial SP', type: 'Fábrica', employee_count: 250, status: 'Ativo' },
+      { id: 'branch-2', name: 'Centro de Distribuição RJ', type: 'Distribuição', employee_count: 52, status: 'Ativo' },
     ],
   },
   // Settings/config
@@ -305,5 +305,31 @@ export const settingsMockEntries = [
       { id: 'tag-2', name: 'Urgente', color: '#ef4444' },
       { id: 'tag-3', name: 'Qualidade', color: '#3b82f6' },
     ],
+  },
+  // Custom permissions — PermissionGate.tsx (queryKey: ['custom-permissions', userId])
+  // Prefix entry: catches ['custom-permissions', anyUserId]. Returns empty array → no custom overrides in demo.
+  {
+    queryKey: ['custom-permissions'],
+    data: [],
+  },
+  // Current user — usePermissions hook (queryKey: ['current-user'])
+  // Consistent with DEMO_USER_DIRECTORY entry for demo-user-001
+  {
+    queryKey: ['current-user'],
+    data: { id: 'demo-user-001', email: 'demo@ecotech.com.br' },
+  },
+  // User role — usePermissions hook (queryKey: ['user-role', userId])
+  // Prefix entry catches any ['user-role', anyId]. 'platform_admin' triggers the
+  // hasPermission() short-circuit → all PermissionGate content visible in demo.
+  {
+    queryKey: ['user-role'],
+    data: 'platform_admin',
+  },
+  // Role permissions — usePermissions hook (queryKey: ['role-permissions', role])
+  // Prefix entry catches any ['role-permissions', anyRole]. Empty array is safe;
+  // with platform_admin the .some() call is never reached anyway.
+  {
+    queryKey: ['role-permissions'],
+    data: [],
   },
 ];

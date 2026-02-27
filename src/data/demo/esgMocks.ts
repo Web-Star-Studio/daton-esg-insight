@@ -379,4 +379,31 @@ export const esgMockEntries = [
     queryKey: ['materiality-assessments'],
     data: MATERIALITY_ASSESSMENTS,
   },
+  {
+    queryKey: ['laia-branch-stats'],
+    data: [
+      {
+        branch_id: 'asset-root-1',
+        name: 'Unidade Industrial SP',
+        total: 120,
+        criticos: 15,
+        significativos: 45,
+        nao_significativos: 60,
+        pending: 8,
+        completed: 112,
+        status: 'Ativo',
+      },
+      {
+        branch_id: 'asset-root-2',
+        name: 'Centro de Distribuição RJ',
+        total: 45,
+        criticos: 2,
+        significativos: 18,
+        nao_significativos: 25,
+        pending: 3,
+        completed: 42,
+        status: 'Ativo',
+      },
+    ],
+  },
 ];

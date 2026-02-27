@@ -119,20 +119,24 @@ export interface DocumentTypeRequirement {
 }
 
 // Helper
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__;
+
 async function getCurrentUserCompanyId(): Promise<string> {
+  if (isDemoMode()) return 'demo';
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário não autenticado");
-  
+
   const { data: profile, error } = await supabase
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
     .single();
-    
+
   if (error || !profile?.company_id) {
     throw new Error("Empresa não encontrada para o usuário");
   }
-  
+
   return profile.company_id;
 }
 
@@ -140,26 +144,26 @@ async function getCurrentUserCompanyId(): Promise<string> {
 
 export async function getRequiredDocuments(): Promise<RequiredDocument[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_required_documents')
     .select('*')
     .eq('company_id', companyId)
     .order('document_name');
-    
+
   if (error) throw error;
   return data || [];
 }
 
 export async function createRequiredDocument(doc: { document_name: string; weight: number; description?: string }): Promise<RequiredDocument> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_required_documents')
     .insert({ ...doc, company_id: companyId })
     .select()
     .single();
-    
+
   if (error) throw error;
   return data;
 }
@@ -171,7 +175,7 @@ export async function updateRequiredDocument(id: string, updates: Partial<Requir
     .eq('id', id)
     .select()
     .single();
-    
+
   if (error) throw error;
   return data;
 }
@@ -181,7 +185,7 @@ export async function deleteRequiredDocument(id: string): Promise<void> {
     .from('supplier_required_documents')
     .delete()
     .eq('id', id);
-    
+
   if (error) throw error;
 }
 
@@ -189,26 +193,26 @@ export async function deleteRequiredDocument(id: string): Promise<void> {
 
 export async function getSupplierCategories(): Promise<SupplierCategory[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_categories')
     .select('*')
     .eq('company_id', companyId)
     .order('name');
-    
+
   if (error) throw error;
   return (data || []) as SupplierCategory[];
 }
 
 export async function createSupplierCategory(category: { name: string }): Promise<SupplierCategory> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_categories')
     .insert({ name: category.name, company_id: companyId })
     .select()
     .single();
-    
+
   if (error) throw error;
   return data as SupplierCategory;
 }
@@ -220,7 +224,7 @@ export async function updateSupplierCategory(id: string, updates: Partial<Suppli
     .eq('id', id)
     .select()
     .single();
-    
+
   if (error) throw error;
   return data as SupplierCategory;
 }
@@ -230,7 +234,7 @@ export async function deleteSupplierCategory(id: string): Promise<void> {
     .from('supplier_categories')
     .delete()
     .eq('id', id);
-    
+
   if (error) throw error;
 }
 
@@ -238,13 +242,13 @@ export async function deleteSupplierCategory(id: string): Promise<void> {
 
 export async function getSupplierTypes(): Promise<SupplierType[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_types')
     .select('*')
     .eq('company_id', companyId)
     .order('name');
-    
+
   if (error) throw error;
   return data || [];
 }
@@ -252,11 +256,11 @@ export async function getSupplierTypes(): Promise<SupplierType[]> {
 export function buildTypeTree(types: SupplierType[]): SupplierType[] {
   const typeMap = new Map<string, SupplierType>();
   const roots: SupplierType[] = [];
-  
+
   types.forEach(type => {
     typeMap.set(type.id, { ...type, children: [] });
   });
-  
+
   types.forEach(type => {
     const node = typeMap.get(type.id)!;
     if (type.parent_type_id && typeMap.has(type.parent_type_id)) {
@@ -265,19 +269,19 @@ export function buildTypeTree(types: SupplierType[]): SupplierType[] {
       roots.push(node);
     }
   });
-  
+
   return roots;
 }
 
 export async function createSupplierType(type: { name: string; parent_type_id?: string; category_id?: string; description?: string }): Promise<SupplierType> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_types')
     .insert({ ...type, company_id: companyId })
     .select()
     .single();
-    
+
   if (error) throw error;
   return data;
 }
@@ -289,7 +293,7 @@ export async function updateSupplierType(id: string, updates: Partial<SupplierTy
     .eq('id', id)
     .select()
     .single();
-    
+
   if (error) throw error;
   return data;
 }
@@ -299,7 +303,7 @@ export async function deleteSupplierType(id: string): Promise<void> {
     .from('supplier_types')
     .delete()
     .eq('id', id);
-    
+
   if (error) throw error;
 }
 
@@ -310,32 +314,69 @@ export interface ManagedSupplierWithTypeCount extends ManagedSupplier {
 }
 
 export async function getManagedSuppliers(): Promise<ManagedSupplierWithTypeCount[]> {
+  if (isDemoMode()) {
+    return [
+      {
+        id: 'demo-sup-1',
+        company_id: 'demo',
+        person_type: 'PJ',
+        company_name: 'Fornecedor Exemplo SA',
+        cnpj: '12.345.678/0001-90',
+        responsible_name: 'João Silva',
+        full_address: 'Av Paulista, 1000 - São Paulo, SP',
+        phone_1: '(11) 99999-9999',
+        email: 'contato@exemplo.com.br',
+        registration_date: new Date().toISOString(),
+        status: 'Ativo',
+        type_count: 2,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'demo-sup-2',
+        company_id: 'demo',
+        person_type: 'PJ',
+        company_name: 'Transportes Rápidos Ltda',
+        cnpj: '98.765.432/0001-10',
+        responsible_name: 'Maria Oliveira',
+        full_address: 'Rua das Flores, 123 - Campinas, SP',
+        phone_1: '(19) 88888-8888',
+        email: 'contato@transportes.com.br',
+        registration_date: new Date().toISOString(),
+        status: 'Ativo',
+        type_count: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+  }
+
   const companyId = await getCurrentUserCompanyId();
-  
+
   // Buscar fornecedores
   const { data: suppliers, error } = await supabase
     .from('supplier_management')
     .select('*')
     .eq('company_id', companyId)
     .order('created_at', { ascending: false });
-    
+
   if (error) throw error;
-  
+
   if (!suppliers || suppliers.length === 0) return [];
-  
+
   // Buscar contagem de tipos para cada fornecedor
   const supplierIds = suppliers.map(s => s.id);
   const { data: assignments } = await supabase
     .from('supplier_type_assignments')
     .select('supplier_id')
     .in('supplier_id', supplierIds);
-  
+
   // Contar associações por fornecedor
   const typeCounts: Record<string, number> = {};
   (assignments || []).forEach(a => {
     typeCounts[a.supplier_id] = (typeCounts[a.supplier_id] || 0) + 1;
   });
-  
+
   // Adicionar contagem aos fornecedores
   return suppliers.map(s => ({
     ...s,
@@ -349,7 +390,7 @@ export async function getManagedSupplierById(id: string): Promise<ManagedSupplie
     .select('*')
     .eq('id', id)
     .maybeSingle();
-    
+
   if (error) throw error;
   return data as ManagedSupplier | null;
 }
@@ -391,53 +432,53 @@ interface CreateSupplierData {
 
 // Função para verificar se CNPJ/CPF já existe
 export async function checkCnpjCpfExists(
-  cnpj?: string, 
-  cpf?: string, 
+  cnpj?: string,
+  cpf?: string,
   excludeId?: string
 ): Promise<{ exists: boolean; field: 'cnpj' | 'cpf' | null }> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   if (cnpj) {
     let query = supabase
       .from('supplier_management')
       .select('id')
       .eq('company_id', companyId)
       .eq('cnpj', cnpj);
-    
+
     if (excludeId) {
       query = query.neq('id', excludeId);
     }
-    
+
     const { data } = await query.limit(1);
     if (data && data.length > 0) {
       return { exists: true, field: 'cnpj' };
     }
   }
-  
+
   if (cpf) {
     let query = supabase
       .from('supplier_management')
       .select('id')
       .eq('company_id', companyId)
       .eq('cpf', cpf);
-    
+
     if (excludeId) {
       query = query.neq('id', excludeId);
     }
-    
+
     const { data } = await query.limit(1);
     if (data && data.length > 0) {
       return { exists: true, field: 'cpf' };
     }
   }
-  
+
   return { exists: false, field: null };
 }
 
 export async function createManagedSupplier(supplierData: CreateSupplierData): Promise<ManagedSupplier> {
   const companyId = await getCurrentUserCompanyId();
   const { type_ids, ...supplier } = supplierData;
-  
+
   const { data, error } = await supabase
     .from('supplier_management')
     .insert({
@@ -448,28 +489,28 @@ export async function createManagedSupplier(supplierData: CreateSupplierData): P
     })
     .select()
     .single();
-    
+
   if (error) throw error;
-  
+
   // Assign types if provided
   if (type_ids && type_ids.length > 0) {
     const assignments = type_ids.map(typeId => ({
       supplier_id: data.id,
       supplier_type_id: typeId
     }));
-    
+
     await supabase
       .from('supplier_type_assignments')
       .insert(assignments);
   }
-  
+
   return data as ManagedSupplier;
 }
 
 export async function updateManagedSupplier(id: string, updates: Partial<ManagedSupplier> & { type_ids?: string[] }): Promise<ManagedSupplier> {
   // Extrair type_ids do objeto de atualização (não é coluna da tabela)
   const { type_ids, ...supplierUpdates } = updates as any;
-  
+
   // Atualizar dados do fornecedor
   const { data, error } = await supabase
     .from('supplier_management')
@@ -477,9 +518,9 @@ export async function updateManagedSupplier(id: string, updates: Partial<Managed
     .eq('id', id)
     .select()
     .single();
-    
+
   if (error) throw error;
-  
+
   // Se type_ids foi fornecido, atualizar as atribuições de tipos
   if (type_ids !== undefined) {
     // Primeiro, remover todas as atribuições existentes
@@ -487,20 +528,20 @@ export async function updateManagedSupplier(id: string, updates: Partial<Managed
       .from('supplier_type_assignments')
       .delete()
       .eq('supplier_id', id);
-    
+
     // Depois, inserir as novas atribuições
     if (type_ids.length > 0) {
       const assignments = type_ids.map((typeId: string) => ({
         supplier_id: id,
         supplier_type_id: typeId
       }));
-      
+
       await supabase
         .from('supplier_type_assignments')
         .insert(assignments);
     }
   }
-  
+
   return data as ManagedSupplier;
 }
 
@@ -509,15 +550,55 @@ export async function deleteManagedSupplier(id: string): Promise<void> {
     .from('supplier_management')
     .delete()
     .eq('id', id);
-    
+
   if (error) throw error;
 }
 
 // ==================== CONEXÕES ====================
 
 export async function getSupplierConnections(): Promise<SupplierConnection[]> {
+  if (isDemoMode()) {
+    return [
+      {
+        id: 'demo-conn-1',
+        company_id: 'demo',
+        primary_supplier_id: 'demo-sup-1',
+        connected_supplier_id: 'demo-sup-2',
+        connection_type: 'logistica_reversa',
+        description: 'Coleta de baterias usadas mensalmente',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        primary_supplier: {
+          id: 'demo-sup-1',
+          company_id: 'demo',
+          person_type: 'PJ',
+          company_name: 'Fornecedor Exemplo SA',
+          full_address: 'Av Paulista, 1000',
+          phone_1: '1199999999',
+          registration_date: new Date().toISOString(),
+          status: 'Ativo',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        connected_supplier: {
+          id: 'demo-sup-2',
+          company_id: 'demo',
+          person_type: 'PJ',
+          company_name: 'Transportes Rápidos Ltda',
+          full_address: 'Rua das Flores, 123',
+          phone_1: '1988888888',
+          registration_date: new Date().toISOString(),
+          status: 'Ativo',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      }
+    ];
+  }
+
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_connections')
     .select(`
@@ -527,7 +608,7 @@ export async function getSupplierConnections(): Promise<SupplierConnection[]> {
     `)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false });
-    
+
   if (error) throw error;
   return (data || []) as SupplierConnection[];
 }
@@ -538,24 +619,37 @@ export async function createSupplierConnection(connection: {
   connection_type: 'logistica_reversa' | 'material_perigoso' | 'outro';
   description?: string;
 }): Promise<SupplierConnection> {
+  if (isDemoMode()) {
+    return {
+      id: `demo-conn-new-${Date.now()}`,
+      company_id: 'demo',
+      ...connection,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    } as SupplierConnection;
+  }
+
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_connections')
     .insert({ ...connection, company_id: companyId })
     .select()
     .single();
-    
+
   if (error) throw error;
   return data as SupplierConnection;
 }
 
 export async function deleteSupplierConnection(id: string): Promise<void> {
+  if (isDemoMode()) return;
+
   const { error } = await supabase
     .from('supplier_connections')
     .delete()
     .eq('id', id);
-    
+
   if (error) throw error;
 }
 
@@ -563,7 +657,7 @@ export async function deleteSupplierConnection(id: string): Promise<void> {
 
 export async function getDocumentSubmissions(supplierId?: string): Promise<DocumentSubmission[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   let query = supabase
     .from('supplier_document_submissions')
     .select(`
@@ -571,23 +665,23 @@ export async function getDocumentSubmissions(supplierId?: string): Promise<Docum
       required_document:supplier_required_documents(*)
     `)
     .eq('company_id', companyId);
-    
+
   if (supplierId) {
     query = query.eq('supplier_id', supplierId);
   }
-  
+
   const { data, error } = await query.order('submitted_at', { ascending: false });
-    
+
   if (error) throw error;
   return (data || []) as DocumentSubmission[];
 }
 
 export async function evaluateDocumentSubmission(
-  id: string, 
+  id: string,
   evaluation: { status: 'Aprovado' | 'Rejeitado'; score?: number; notes?: string }
 ): Promise<DocumentSubmission> {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   const { data, error } = await supabase
     .from('supplier_document_submissions')
     .update({
@@ -598,7 +692,7 @@ export async function evaluateDocumentSubmission(
     .eq('id', id)
     .select()
     .single();
-    
+
   if (error) throw error;
   return data as DocumentSubmission;
 }
@@ -607,16 +701,16 @@ export async function evaluateDocumentSubmission(
 
 export async function getSupplierStats() {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const [suppliers, types, documents, connections] = await Promise.all([
     supabase.from('supplier_management').select('id, status, person_type').eq('company_id', companyId),
     supabase.from('supplier_types').select('id').eq('company_id', companyId).eq('is_active', true),
     supabase.from('supplier_required_documents').select('id').eq('company_id', companyId).eq('is_active', true),
     supabase.from('supplier_connections').select('id').eq('company_id', companyId).eq('is_active', true)
   ]);
-  
+
   const supplierList = suppliers.data || [];
-  
+
   return {
     totalSuppliers: supplierList.length,
     activeSuppliers: supplierList.filter(s => s.status === 'Ativo').length,
@@ -675,7 +769,7 @@ export interface SupplierTrainingCategoryLink {
 
 export async function getTrainingMaterials(): Promise<SupplierTrainingMaterial[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_training_materials')
     .select(`
@@ -684,19 +778,19 @@ export async function getTrainingMaterials(): Promise<SupplierTrainingMaterial[]
     `)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false });
-    
+
   if (error) throw error;
-  
+
   // Buscar categorias vinculadas
   const materials = data || [];
   const materialIds = materials.map(m => m.id);
-  
+
   if (materialIds.length > 0) {
     const { data: links } = await supabase
       .from('supplier_training_category_links')
       .select('training_material_id, category_id, supplier_categories(id, name)')
       .in('training_material_id', materialIds);
-    
+
     const linksByMaterial = new Map<string, SupplierCategory[]>();
     (links || []).forEach((link: any) => {
       if (!linksByMaterial.has(link.training_material_id)) {
@@ -706,13 +800,13 @@ export async function getTrainingMaterials(): Promise<SupplierTrainingMaterial[]
         linksByMaterial.get(link.training_material_id)!.push(link.supplier_categories);
       }
     });
-    
+
     materials.forEach(m => {
       (m as SupplierTrainingMaterial).categories = linksByMaterial.get(m.id) || [];
       (m as SupplierTrainingMaterial).custom_form = m.custom_forms;
     });
   }
-  
+
   return materials as SupplierTrainingMaterial[];
 }
 
@@ -731,9 +825,9 @@ export async function createTrainingMaterial(material: {
 }): Promise<SupplierTrainingMaterial> {
   const companyId = await getCurrentUserCompanyId();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   const { category_ids, ...materialData } = material;
-  
+
   const { data, error } = await supabase
     .from('supplier_training_materials')
     .insert({
@@ -743,9 +837,9 @@ export async function createTrainingMaterial(material: {
     })
     .select()
     .single();
-    
+
   if (error) throw error;
-  
+
   // Vincular categorias
   if (category_ids && category_ids.length > 0) {
     await supabase
@@ -755,32 +849,32 @@ export async function createTrainingMaterial(material: {
         category_id: catId
       })));
   }
-  
+
   return data as SupplierTrainingMaterial;
 }
 
 export async function updateTrainingMaterial(
-  id: string, 
+  id: string,
   updates: Partial<SupplierTrainingMaterial> & { category_ids?: string[] }
 ): Promise<SupplierTrainingMaterial> {
   const { category_ids, categories, custom_form, ...materialUpdates } = updates;
-  
+
   const { data, error } = await supabase
     .from('supplier_training_materials')
     .update(materialUpdates)
     .eq('id', id)
     .select()
     .single();
-    
+
   if (error) throw error;
-  
+
   // Atualizar categorias se fornecidas
   if (category_ids !== undefined) {
     await supabase
       .from('supplier_training_category_links')
       .delete()
       .eq('training_material_id', id);
-    
+
     if (category_ids.length > 0) {
       await supabase
         .from('supplier_training_category_links')
@@ -790,7 +884,7 @@ export async function updateTrainingMaterial(
         })));
     }
   }
-  
+
   return data as SupplierTrainingMaterial;
 }
 
@@ -799,7 +893,7 @@ export async function deleteTrainingMaterial(id: string): Promise<void> {
     .from('supplier_training_materials')
     .delete()
     .eq('id', id);
-    
+
   if (error) throw error;
 }
 
@@ -813,7 +907,7 @@ export const materialTypeLabels: Record<string, string> = {
 
 export async function getDocumentsForType(typeId: string): Promise<DocumentTypeRequirement[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_document_type_requirements')
     .select(`
@@ -822,14 +916,14 @@ export async function getDocumentsForType(typeId: string): Promise<DocumentTypeR
     `)
     .eq('company_id', companyId)
     .eq('supplier_type_id', typeId);
-    
+
   if (error) throw error;
   return (data || []) as DocumentTypeRequirement[];
 }
 
 export async function getDocumentTypeRequirements(): Promise<DocumentTypeRequirement[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_document_type_requirements')
     .select(`
@@ -838,23 +932,23 @@ export async function getDocumentTypeRequirements(): Promise<DocumentTypeRequire
       supplier_type:supplier_types(*)
     `)
     .eq('company_id', companyId);
-    
+
   if (error) throw error;
   return (data || []) as DocumentTypeRequirement[];
 }
 
 export async function updateTypeDocuments(typeId: string, documentIds: string[]): Promise<void> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   // Remover associações existentes para este tipo
   const { error: deleteError } = await supabase
     .from('supplier_document_type_requirements')
     .delete()
     .eq('supplier_type_id', typeId)
     .eq('company_id', companyId);
-    
+
   if (deleteError) throw deleteError;
-  
+
   // Criar novas associações
   if (documentIds.length > 0) {
     const insertData = documentIds.map(docId => ({
@@ -863,11 +957,11 @@ export async function updateTypeDocuments(typeId: string, documentIds: string[])
       required_document_id: docId,
       is_mandatory: true
     }));
-    
+
     const { error: insertError } = await supabase
       .from('supplier_document_type_requirements')
       .insert(insertData);
-      
+
     if (insertError) throw insertError;
   }
 }
@@ -913,15 +1007,15 @@ interface BusinessUnit {
 
 export async function getBusinessUnits(): Promise<BusinessUnit[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('companies')
     .select('business_units')
     .eq('id', companyId)
     .single();
-    
+
   if (error) throw error;
-  
+
   // business_units é JSONB - retornar como array
   const units = data?.business_units;
   if (Array.isArray(units)) {
@@ -930,13 +1024,13 @@ export async function getBusinessUnits(): Promise<BusinessUnit[]> {
       name: u.name || u
     }));
   }
-  
+
   return [];
 }
 
 export async function getSupplierAssignments(supplierId: string): Promise<SupplierAssignments> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const [unitsResult, typesResult, categoriesResult] = await Promise.all([
     supabase
       .from('supplier_unit_assignments')
@@ -953,11 +1047,11 @@ export async function getSupplierAssignments(supplierId: string): Promise<Suppli
       .eq('supplier_id', supplierId)
       .eq('company_id', companyId)
   ]);
-  
+
   if (unitsResult.error) throw unitsResult.error;
   if (typesResult.error) throw typesResult.error;
   if (categoriesResult.error) throw categoriesResult.error;
-  
+
   return {
     units: (unitsResult.data || []) as SupplierUnitAssignment[],
     types: (typesResult.data || []) as SupplierTypeAssignment[],
@@ -975,14 +1069,14 @@ export async function updateSupplierAssignments(
   }
 ): Promise<void> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   // Atualizar unidades
   await supabase
     .from('supplier_unit_assignments')
     .delete()
     .eq('supplier_id', supplierId)
     .eq('company_id', companyId);
-  
+
   if (data.units.length > 0) {
     await supabase
       .from('supplier_unit_assignments')
@@ -993,13 +1087,13 @@ export async function updateSupplierAssignments(
         is_corporate: data.isCorporate
       })));
   }
-  
+
   // Atualizar tipos
   await supabase
     .from('supplier_type_assignments')
     .delete()
     .eq('supplier_id', supplierId);
-  
+
   if (data.types.length > 0) {
     await supabase
       .from('supplier_type_assignments')
@@ -1009,14 +1103,14 @@ export async function updateSupplierAssignments(
         company_id: companyId
       })));
   }
-  
+
   // Atualizar categorias
   await supabase
     .from('supplier_category_assignments')
     .delete()
     .eq('supplier_id', supplierId)
     .eq('company_id', companyId);
-  
+
   if (data.categories.length > 0) {
     await supabase
       .from('supplier_category_assignments')
@@ -1046,14 +1140,14 @@ export interface SupplierProductService {
 
 export async function getSupplierProductsServices(supplierId: string): Promise<SupplierProductService[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_products_services')
     .select('*')
     .eq('company_id', companyId)
     .eq('supplier_id', supplierId)
     .order('name');
-    
+
   if (error) throw error;
   return (data || []) as SupplierProductService[];
 }
@@ -1067,13 +1161,13 @@ export async function createSupplierProductService(item: {
   unit_of_measure?: string;
 }): Promise<SupplierProductService> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_products_services')
     .insert({ ...item, company_id: companyId })
     .select()
     .single();
-    
+
   if (error) throw error;
   return data as SupplierProductService;
 }
@@ -1085,7 +1179,7 @@ export async function updateSupplierProductService(id: string, updates: Partial<
     .eq('id', id)
     .select()
     .single();
-    
+
   if (error) throw error;
   return data as SupplierProductService;
 }
@@ -1095,7 +1189,7 @@ export async function deleteSupplierProductService(id: string): Promise<void> {
     .from('supplier_products_services')
     .delete()
     .eq('id', id);
-    
+
   if (error) throw error;
 }
 
@@ -1118,14 +1212,14 @@ export interface SupplierDocumentEvaluation {
 
 export async function getSupplierDocumentEvaluations(supplierId: string): Promise<SupplierDocumentEvaluation[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_document_evaluations')
     .select('*')
     .eq('company_id', companyId)
     .eq('supplier_id', supplierId)
     .order('evaluation_date', { ascending: false });
-    
+
   if (error) throw error;
   return (data || []) as SupplierDocumentEvaluation[];
 }
@@ -1141,13 +1235,13 @@ export async function createSupplierDocumentEvaluation(evaluation: {
 }): Promise<SupplierDocumentEvaluation> {
   const companyId = await getCurrentUserCompanyId();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   const { data, error } = await supabase
     .from('supplier_document_evaluations')
     .insert({ ...evaluation, company_id: companyId, evaluated_by: user?.id })
     .select()
     .single();
-    
+
   if (error) throw error;
   return data as SupplierDocumentEvaluation;
 }
@@ -1161,25 +1255,25 @@ export async function updateDocumentSubmission(id: string, updates: {
     .from('supplier_document_submissions')
     .update(updates)
     .eq('id', id);
-    
+
   if (error) throw error;
 }
 
 // Get latest evaluation for multiple suppliers (for fetching next_evaluation_date)
 export async function getLatestEvaluationForSuppliers(supplierIds: string[]): Promise<SupplierDocumentEvaluation[]> {
   if (!supplierIds.length) return [];
-  
+
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_document_evaluations')
     .select('*')
     .eq('company_id', companyId)
     .in('supplier_id', supplierIds)
     .order('evaluation_date', { ascending: false });
-    
+
   if (error) throw error;
-  
+
   // Get only the latest evaluation per supplier
   const latestBySupplier = new Map<string, SupplierDocumentEvaluation>();
   (data || []).forEach((eval_: any) => {
@@ -1187,7 +1281,7 @@ export async function getLatestEvaluationForSuppliers(supplierIds: string[]): Pr
       latestBySupplier.set(eval_.supplier_id, eval_ as SupplierDocumentEvaluation);
     }
   });
-  
+
   return Array.from(latestBySupplier.values());
 }
 
@@ -1212,14 +1306,14 @@ export interface SupplierPerformanceEvaluation {
 
 export async function getSupplierPerformanceEvaluations(supplierId: string): Promise<SupplierPerformanceEvaluation[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_performance_evaluations')
     .select('*')
     .eq('company_id', companyId)
     .eq('supplier_id', supplierId)
     .order('evaluation_date', { ascending: false });
-    
+
   if (error) throw error;
   return (data || []) as SupplierPerformanceEvaluation[];
 }
@@ -1237,13 +1331,13 @@ export async function createSupplierPerformanceEvaluation(evaluation: {
 }): Promise<SupplierPerformanceEvaluation> {
   const companyId = await getCurrentUserCompanyId();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   const { data, error } = await supabase
     .from('supplier_performance_evaluations')
     .insert({ ...evaluation, company_id: companyId, evaluated_by: user?.id })
     .select()
     .single();
-    
+
   if (error) throw error;
   return data as SupplierPerformanceEvaluation;
 }
@@ -1266,13 +1360,13 @@ export interface SupplierExpirationAlert {
 
 export async function getSupplierExpirationAlerts(): Promise<SupplierExpirationAlert[]> {
   const companyId = await getCurrentUserCompanyId();
-  
+
   const { data, error } = await supabase
     .from('supplier_expiration_alerts')
     .select('*, supplier:supplier_management(company_name, full_name)')
     .eq('company_id', companyId)
     .order('expiry_date');
-    
+
   if (error) throw error;
   return (data || []) as SupplierExpirationAlert[];
 }
@@ -1282,6 +1376,6 @@ export async function updateExpirationAlertStatus(id: string, status: string): P
     .from('supplier_expiration_alerts')
     .update({ alert_status: status })
     .eq('id', id);
-    
+
   if (error) throw error;
 }

@@ -1,23 +1,25 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
 // Retry helper for edge function calls with exponential backoff
 async function invokeWithRetry<T>(
   body: Record<string, unknown>,
   retries = 2
 ): Promise<T> {
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const { data, error } = await supabase.functions.invoke('custom-forms-management', { body });
-      
+
       if (error) {
         // Check if it's a timeout/connection error worth retrying
-        const isRetryable = error.message?.includes('Failed to fetch') || 
-                           error.message?.includes('502') ||
-                           error.message?.includes('timeout') ||
-                           error.message?.includes('NetworkError');
-        
+        const isRetryable = error.message?.includes('Failed to fetch') ||
+          error.message?.includes('502') ||
+          error.message?.includes('timeout') ||
+          error.message?.includes('NetworkError');
+
         if (isRetryable && attempt < retries) {
           console.warn(`⏳ Tentativa ${attempt + 1} falhou, tentando novamente...`);
           await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // Exponential backoff
@@ -25,7 +27,7 @@ async function invokeWithRetry<T>(
         }
         throw error;
       }
-      
+
       return data as T;
     } catch (e) {
       lastError = e as Error;
@@ -35,7 +37,7 @@ async function invokeWithRetry<T>(
       }
     }
   }
-  
+
   throw lastError || new Error('Falha após múltiplas tentativas');
 }
 
@@ -116,6 +118,33 @@ export interface FormSubmissionWithEmployee extends FormSubmission {
 
 class CustomFormsService {
   async getForms(): Promise<CustomForm[]> {
+    if (isDemoMode()) {
+      return [
+        {
+          id: 'form-1',
+          title: 'Pesquisa de Clima Organizacional',
+          description: 'Avaliação anual',
+          structure_json: { fields: [] },
+          is_published: true,
+          is_public: false,
+          created_at: new Date(Date.now() - 864000000).toISOString(),
+          updated_at: new Date().toISOString(),
+          submission_count: 142
+        },
+        {
+          id: 'form-2',
+          title: 'Avaliação de Fornecedores ESG',
+          description: 'Questionário para novos fornecedores',
+          structure_json: { fields: [] },
+          is_published: true,
+          is_public: true,
+          created_at: new Date(Date.now() - 1500000000).toISOString(),
+          updated_at: new Date().toISOString(),
+          submission_count: 38
+        }
+      ];
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
@@ -123,6 +152,20 @@ class CustomFormsService {
   }
 
   async getForm(formId: string): Promise<CustomForm | null> {
+    if (isDemoMode()) {
+      return {
+        id: formId,
+        title: 'Formulário Demonstração',
+        description: 'Módulo de demonstração',
+        structure_json: { fields: [] },
+        is_published: true,
+        is_public: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        submission_count: 0
+      };
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
@@ -206,6 +249,10 @@ class CustomFormsService {
   }
 
   async getFormSubmissions(formId: string): Promise<FormSubmission[]> {
+    if (isDemoMode()) {
+      return [];
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 

@@ -135,6 +135,16 @@ function dispatch(action: Action) {
 type Toast = Omit<ToasterToast, "id">;
 
 function toast({ ...props }: Toast) {
+  // In demo mode, suppress non-destructive (success/info) toasts during the
+  // write-block window set by DemoDataSeeder after intercepting a Supabase write.
+  if (
+    typeof window !== 'undefined' &&
+    (window as any).__DATON_DEMO_SUPPRESS_TOAST__ &&
+    props.variant !== 'destructive'
+  ) {
+    return { id: '', dismiss: () => {}, update: () => {} };
+  }
+
   const id = genId();
 
   const update = (props: ToasterToast) =>

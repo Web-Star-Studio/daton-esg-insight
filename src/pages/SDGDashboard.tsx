@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  RadarChart, 
-  Radar, 
-  PolarGrid, 
-  PolarAngleAxis, 
+import {
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
   PolarRadiusAxis,
   ResponsiveContainer,
   BarChart,
@@ -23,6 +23,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { SDG_DATA } from '@/constants/sdgData';
 import { toast } from 'sonner';
 
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
 export default function SDGDashboard() {
   const [sdgData, setSdgData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +37,28 @@ export default function SDGDashboard() {
   const loadSDGData = async () => {
     setIsLoading(true);
     try {
+      if (isDemoMode()) {
+        const demoData = [
+          { id: '1', sdg_number: 7, impact_level: 'Alto', selected_targets: ['7.2'] },
+          { id: '2', sdg_number: 12, impact_level: 'Alto', selected_targets: ['12.5'] },
+          { id: '3', sdg_number: 13, impact_level: 'Médio', selected_targets: ['13.2'] },
+          { id: '4', sdg_number: 5, impact_level: 'Alto', selected_targets: ['5.5'] },
+          { id: '5', sdg_number: 8, impact_level: 'Alto', selected_targets: ['8.5', '8.8'] },
+          { id: '6', sdg_number: 9, impact_level: 'Médio', selected_targets: ['9.4'] },
+          { id: '7', sdg_number: 16, impact_level: 'Baixo', selected_targets: ['16.5'] },
+        ];
+
+        setSdgData(demoData);
+        const avgScore = demoData.reduce((sum, item) => {
+          const impactValue = item.impact_level === 'Alto' ? 100 :
+            item.impact_level === 'Médio' ? 66 : 33;
+          return sum + impactValue;
+        }, 0) / demoData.length;
+        setOverallScore(Math.round(avgScore));
+        setIsLoading(false);
+        return;
+      }
+
       const { data: reports } = await supabase
         .from('gri_reports')
         .select('id')
@@ -56,11 +80,11 @@ export default function SDGDashboard() {
       if (error) throw error;
 
       setSdgData(data || []);
-      
+
       if (data && data.length > 0) {
         const avgScore = data.reduce((sum, item) => {
-          const impactValue = item.impact_level === 'Alto' ? 100 : 
-                             item.impact_level === 'Médio' ? 66 : 33;
+          const impactValue = item.impact_level === 'Alto' ? 100 :
+            item.impact_level === 'Médio' ? 66 : 33;
           return sum + impactValue;
         }, 0) / data.length;
         setOverallScore(Math.round(avgScore));
@@ -75,10 +99,10 @@ export default function SDGDashboard() {
 
   const radarData = SDG_DATA.map(sdg => {
     const alignment = sdgData.find(d => d.sdg_number === sdg.number);
-    const value = alignment ? 
-      (alignment.impact_level === 'Alto' ? 100 : 
-       alignment.impact_level === 'Médio' ? 66 : 33) : 0;
-    
+    const value = alignment ?
+      (alignment.impact_level === 'Alto' ? 100 :
+        alignment.impact_level === 'Médio' ? 66 : 33) : 0;
+
     return {
       subject: `ODS ${sdg.number}`,
       value,
@@ -87,33 +111,33 @@ export default function SDGDashboard() {
   });
 
   const categoryData = [
-    { 
-      name: 'Social', 
-      value: calculateCategoryScore([1, 2, 3, 4, 5, 10, 16]), 
-      color: '#3b82f6' 
+    {
+      name: 'Social',
+      value: calculateCategoryScore([1, 2, 3, 4, 5, 10, 16]),
+      color: '#3b82f6'
     },
-    { 
-      name: 'Econômico', 
-      value: calculateCategoryScore([8, 9, 12, 17]), 
-      color: '#f59e0b' 
+    {
+      name: 'Econômico',
+      value: calculateCategoryScore([8, 9, 12, 17]),
+      color: '#f59e0b'
     },
-    { 
-      name: 'Ambiental', 
-      value: calculateCategoryScore([6, 7, 11, 13, 14, 15]), 
-      color: '#10b981' 
+    {
+      name: 'Ambiental',
+      value: calculateCategoryScore([6, 7, 11, 13, 14, 15]),
+      color: '#10b981'
     }
   ];
 
   function calculateCategoryScore(sdgNumbers: number[]): number {
     const categorySDGs = sdgData.filter(d => sdgNumbers.includes(d.sdg_number));
     if (categorySDGs.length === 0) return 0;
-    
+
     const total = categorySDGs.reduce((sum, item) => {
-      const value = item.impact_level === 'Alto' ? 100 : 
-                   item.impact_level === 'Médio' ? 66 : 33;
+      const value = item.impact_level === 'Alto' ? 100 :
+        item.impact_level === 'Médio' ? 66 : 33;
       return sum + value;
     }, 0);
-    
+
     return Math.round(total / categorySDGs.length);
   }
 
@@ -206,12 +230,12 @@ export default function SDGDashboard() {
                 <PolarGrid />
                 <PolarAngleAxis dataKey="subject" />
                 <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                <Radar 
-                  name="Contribuição" 
-                  dataKey="value" 
-                  stroke="#3b82f6" 
-                  fill="#3b82f6" 
-                  fillOpacity={0.6} 
+                <Radar
+                  name="Contribuição"
+                  dataKey="value"
+                  stroke="#3b82f6"
+                  fill="#3b82f6"
+                  fillOpacity={0.6}
                 />
                 <Tooltip />
               </RadarChart>
@@ -275,8 +299,8 @@ export default function SDGDashboard() {
                           </h3>
                           <Badge variant="outline" className={
                             item.impact_level === 'Alto' ? 'bg-green-100 text-green-700' :
-                            item.impact_level === 'Médio' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-orange-100 text-orange-700'
+                              item.impact_level === 'Médio' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-orange-100 text-orange-700'
                           }>
                             {item.impact_level}
                           </Badge>

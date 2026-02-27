@@ -125,7 +125,58 @@ export default function Documentos() {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
+      // Demo mode: return anonymized mock data; never call live storage service
+      if ((window as any).__DATON_DEMO_MODE__ === true) {
+        const demoFolders: DocumentFolder[] = [
+          { id: 'df-1', company_id: 'demo', name: 'Documentos ESG', created_at: '2025-01-10T09:00:00Z', updated_at: '2026-01-10T09:00:00Z', children: [
+            { id: 'df-1-1', company_id: 'demo', name: 'Relatórios Anuais', parent_folder_id: 'df-1', created_at: '2025-01-10T09:00:00Z', updated_at: '2026-01-10T09:00:00Z' },
+            { id: 'df-1-2', company_id: 'demo', name: 'Inventários GEE', parent_folder_id: 'df-1', created_at: '2025-03-01T09:00:00Z', updated_at: '2026-01-10T09:00:00Z' },
+          ] },
+          { id: 'df-2', company_id: 'demo', name: 'Licenças e Autorizações', created_at: '2025-02-01T09:00:00Z', updated_at: '2026-02-01T09:00:00Z' },
+          { id: 'df-3', company_id: 'demo', name: 'Políticas Corporativas', created_at: '2025-01-15T09:00:00Z', updated_at: '2026-01-20T09:00:00Z' },
+          { id: 'df-4', company_id: 'demo', name: 'Auditorias', created_at: '2025-04-01T09:00:00Z', updated_at: '2025-12-10T09:00:00Z' },
+        ];
+
+        const allDemoDocs: Document[] = [
+          { id: 'dd-1', company_id: 'demo', file_name: 'relatorio-esg-anual-2025.pdf', file_path: 'demo/relatorio-esg-anual-2025.pdf', file_type: 'application/pdf', file_size: 2457600, folder_id: 'df-1-1', tags: ['ESG', 'Anual'], related_model: 'document', related_id: 'dd-1', uploader_user_id: 'emp-1', upload_date: '2026-01-15T10:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 94 },
+          { id: 'dd-2', company_id: 'demo', file_name: 'inventario-ghg-2025.pdf', file_path: 'demo/inventario-ghg-2025.pdf', file_type: 'application/pdf', file_size: 1843200, folder_id: 'df-1-2', tags: ['GEE', 'Emissões'], related_model: 'document', related_id: 'dd-2', uploader_user_id: 'emp-2', upload_date: '2026-01-20T14:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 91 },
+          { id: 'dd-3', company_id: 'demo', file_name: 'licenca-operacao-2026.pdf', file_path: 'demo/licenca-operacao-2026.pdf', file_type: 'application/pdf', file_size: 512000, folder_id: 'df-2', tags: ['Licença', 'Ambiental'], related_model: 'document', related_id: 'dd-3', uploader_user_id: 'emp-1', upload_date: '2026-02-05T09:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 98 },
+          { id: 'dd-4', company_id: 'demo', file_name: 'politica-meio-ambiente.pdf', file_path: 'demo/politica-meio-ambiente.pdf', file_type: 'application/pdf', file_size: 768000, folder_id: 'df-3', tags: ['Política', 'Ambiental'], related_model: 'document', related_id: 'dd-4', uploader_user_id: 'emp-1', upload_date: '2025-11-10T10:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 89 },
+          { id: 'dd-5', company_id: 'demo', file_name: 'politica-diversidade-inclusao.pdf', file_path: 'demo/politica-diversidade-inclusao.pdf', file_type: 'application/pdf', file_size: 614400, folder_id: 'df-3', tags: ['Política', 'Social', 'RH'], related_model: 'document', related_id: 'dd-5', uploader_user_id: 'emp-1', upload_date: '2025-10-05T09:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 92 },
+          { id: 'dd-6', company_id: 'demo', file_name: 'relatorio-auditoria-iso14001-2025.pdf', file_path: 'demo/relatorio-auditoria-iso14001-2025.pdf', file_type: 'application/pdf', file_size: 1228800, folder_id: 'df-4', tags: ['Auditoria', 'ISO 14001'], related_model: 'document', related_id: 'dd-6', uploader_user_id: 'emp-3', upload_date: '2025-12-15T11:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 96 },
+          { id: 'dd-7', company_id: 'demo', file_name: 'plano-gestao-residuos-2026.pdf', file_path: 'demo/plano-gestao-residuos-2026.pdf', file_type: 'application/pdf', file_size: 921600, folder_id: 'df-1', tags: ['Resíduos', 'Ambiental'], related_model: 'document', related_id: 'dd-7', uploader_user_id: 'emp-2', upload_date: '2026-02-10T14:00:00Z', ai_processing_status: 'pending', ai_confidence_score: undefined },
+          { id: 'dd-8', company_id: 'demo', file_name: 'relatorio-social-2025.pdf', file_path: 'demo/relatorio-social-2025.pdf', file_type: 'application/pdf', file_size: 1638400, folder_id: 'df-1-1', tags: ['Social', 'Anual'], related_model: 'document', related_id: 'dd-8', uploader_user_id: 'emp-1', upload_date: '2026-01-25T10:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 88 },
+          { id: 'dd-9', company_id: 'demo', file_name: 'matriz-materialidade-2025.xlsx', file_path: 'demo/matriz-materialidade-2025.xlsx', file_type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', file_size: 409600, folder_id: 'df-1', tags: ['Materialidade', 'ESG'], related_model: 'document', related_id: 'dd-9', uploader_user_id: 'emp-1', upload_date: '2025-09-20T09:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 85 },
+        ];
+
+        // Filter by folder
+        let filtered = selectedFolderId
+          ? allDemoDocs.filter(d => d.folder_id === selectedFolderId)
+          : allDemoDocs;
+
+        // Filter by search term
+        if (searchTerm) {
+          const term = searchTerm.toLowerCase();
+          filtered = filtered.filter(d => d.file_name.toLowerCase().includes(term));
+        }
+
+        // Filter by tag
+        if (selectedTag && selectedTag !== 'all') {
+          filtered = filtered.filter(d => d.tags?.includes(selectedTag));
+        }
+
+        const total = filtered.length;
+        const start = (currentPage - 1) * itemsPerPage;
+        const paginated = filtered.slice(start, start + itemsPerPage);
+
+        setFolders(demoFolders);
+        setDocuments(paginated);
+        setTotalPages(Math.max(1, Math.ceil(total / itemsPerPage)));
+        setTotalDocuments(total);
+        return;
+      }
+
       const filters = {
         search: searchTerm || undefined,
         folder_id: selectedFolderId || undefined,
@@ -191,6 +242,10 @@ export default function Documentos() {
 
   // Handle document actions
   const handleDownload = async (document: Document) => {
+    if ((window as any).__DATON_DEMO_MODE__ === true) {
+      toast.info('Download não disponível em modo demonstração.');
+      return;
+    }
     try {
       const { url, fileName } = await downloadDocument(document.id);
       const link = window.document.createElement('a');
@@ -207,6 +262,10 @@ export default function Documentos() {
   };
 
   const handleDelete = async (document: Document) => {
+    if ((window as any).__DATON_DEMO_MODE__ === true) {
+      toast.info('Exclusão não disponível em modo demonstração.');
+      return;
+    }
     if (confirm(`Tem certeza que deseja excluir "${document.file_name}"?`)) {
       try {
         await deleteDocument(document.id);

@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
 export interface ConservationActivity {
   id: string;
   company_id: string;
@@ -85,6 +87,41 @@ export interface CompensationDashboardStats {
 class CarbonCompensationService {
   // Conservation Activities CRUD
   async getActivities(): Promise<ConservationActivity[]> {
+    if (isDemoMode()) {
+      return [
+        {
+          id: 'demo-activity-1',
+          company_id: 'demo-company',
+          activity_type: 'Reflorestamento',
+          title: 'Projeto Raízes do Futuro',
+          description: 'Reflorestamento de área degradada na bacia do Rio Doce',
+          location: 'Minas Gerais, Brasil',
+          area_size: 150.5,
+          start_date: '2023-01-15T00:00:00.000Z',
+          status: 'Em Andamento',
+          investment_amount: 450000,
+          carbon_impact_estimate: 2500,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        {
+          id: 'demo-activity-2',
+          company_id: 'demo-company',
+          activity_type: 'Conservação Florestal',
+          title: 'Preservação da Mata Viva',
+          description: 'Manutenção de reserva legal',
+          location: 'Espírito Santo, Brasil',
+          area_size: 50.0,
+          start_date: '2022-05-10T00:00:00.000Z',
+          status: 'Concluída',
+          investment_amount: 150000,
+          carbon_impact_estimate: 800,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ] as ConservationActivity[];
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
@@ -227,6 +264,17 @@ class CarbonCompensationService {
 
   // Dashboard Statistics
   async getDashboardStats(): Promise<CompensationDashboardStats> {
+    if (isDemoMode()) {
+      return {
+        total_area: 200.5,
+        total_investment: 600000,
+        total_carbon_estimate: 3300,
+        total_carbon_sequestered: 1200,
+        activities_count: 2,
+        active_activities_count: 1,
+      };
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
@@ -244,7 +292,7 @@ class CarbonCompensationService {
       .rpc('calculate_conservation_stats', { p_company_id: profile.company_id });
 
     if (error) throw error;
-    
+
     return {
       total_area: (data as any)?.total_area || 0,
       total_investment: (data as any)?.total_investment || 0,
@@ -259,9 +307,9 @@ class CarbonCompensationService {
   async calculateCarbonImpact(activityType: string, area: number, years: number = 10): Promise<number> {
     const activityTypes = await this.getActivityTypes();
     const type = activityTypes.find(t => t.name === activityType);
-    
+
     if (!type) return 0;
-    
+
     // Basic calculation: carbon_factor * area * years
     return type.carbon_factor * area * years;
   }

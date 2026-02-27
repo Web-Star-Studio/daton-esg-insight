@@ -56,10 +56,21 @@ export interface UpdateDocumentData {
   tags?: string[];
 }
 
+// Demo Mode Helper
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__;
+
 // Folder management
 export const getFolders = async (): Promise<DocumentFolder[]> => {
   logger.debug('Fetching folder hierarchy', 'document');
-  
+
+  if (isDemoMode()) {
+    return [
+      { id: 'demo-f1', company_id: 'demo', name: 'Ambiental', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      { id: 'demo-f2', company_id: 'demo', name: 'Governança', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      { id: 'demo-f3', company_id: 'demo', name: 'Relatórios Sociais', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+    ];
+  }
+
   const { data, error } = await supabase
     .from('document_folders')
     .select('*')
@@ -87,7 +98,7 @@ const buildFolderHierarchy = (folders: DocumentFolder[]): DocumentFolder[] => {
   // Then, build the hierarchy
   folders.forEach(folder => {
     const folderWithChildren = folderMap.get(folder.id)!;
-    
+
     if (folder.parent_folder_id) {
       const parent = folderMap.get(folder.parent_folder_id);
       if (parent) {
@@ -105,6 +116,17 @@ const buildFolderHierarchy = (folders: DocumentFolder[]): DocumentFolder[] => {
 export const createFolder = async (folderData: CreateFolderData): Promise<DocumentFolder> => {
   logger.debug(`Creating folder: ${folderData.name}`, 'document');
 
+  if (isDemoMode()) {
+    return {
+      id: `demo-new-${Date.now()}`,
+      company_id: 'demo',
+      name: folderData.name,
+      parent_folder_id: folderData.parent_folder_id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+
   // Get user company
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -120,7 +142,7 @@ export const createFolder = async (folderData: CreateFolderData): Promise<Docume
   if (profileError) {
     throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
   }
-  
+
   if (!profile) {
     throw new Error('User profile not found');
   }
@@ -138,7 +160,7 @@ export const createFolder = async (folderData: CreateFolderData): Promise<Docume
     logger.error('Error creating folder', error, 'document');
     throw new Error(`Failed to create folder: ${error.message}`);
   }
-  
+
   if (!data) {
     throw new Error('Não foi possível criar a pasta');
   }
@@ -148,11 +170,11 @@ export const createFolder = async (folderData: CreateFolderData): Promise<Docume
 
 // Document management with pagination
 export const getDocuments = async (
-  filters?: DocumentFilters & { 
-    page?: number; 
-    limit?: number; 
-    sortBy?: string; 
-    sortOrder?: 'asc' | 'desc' 
+  filters?: DocumentFilters & {
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc'
   }
 ): Promise<{
   documents: Document[];
@@ -165,6 +187,35 @@ export const getDocuments = async (
   const page = filters?.page || 1;
   const limit = filters?.limit || 20;
   const offset = (page - 1) * limit;
+
+  if (isDemoMode()) {
+    // Generate some fake documents
+    const mockDocs: Document[] = Array.from({ length: Math.max(0, limit) }).map((_, i) => ({
+      id: `demo-doc-${offset + i}`,
+      company_id: 'demo',
+      file_name: `Demo_Document_${offset + i}.pdf`,
+      file_path: `demo/Demo_Document_${offset + i}.pdf`,
+      file_type: 'application/pdf',
+      file_size: 1024 * 1024 * (Math.random() * 5 + 1), // 1-6MB
+      tags: ['demo', 'esg'],
+      related_model: 'document',
+      related_id: 'demo',
+      uploader_user_id: 'demo-user',
+      upload_date: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
+    }));
+
+    let filteredDocs = mockDocs;
+    if (filters?.search) {
+      filteredDocs = filteredDocs.filter(d => d.file_name.toLowerCase().includes(filters.search!.toLowerCase()));
+    }
+
+    return {
+      documents: filteredDocs,
+      total: 50,
+      page,
+      totalPages: Math.ceil(50 / limit)
+    };
+  }
 
   let query = supabase
     .from('documents')
@@ -254,6 +305,26 @@ export const uploadDocument = async (
     throw new Error(`Tipo de arquivo não permitido: ${file.type}. Tipos aceitos: PDF, Excel, CSV, Imagens, Word`);
   }
 
+  if (isDemoMode()) {
+    if (options?.onProgress) {
+      options.onProgress(100);
+    }
+    return {
+      id: `demo-doc-${Date.now()}`,
+      company_id: 'demo',
+      file_name: file.name,
+      file_path: `demo/${file.name}`,
+      file_type: file.type,
+      file_size: file.size,
+      folder_id: options?.folder_id,
+      tags: options?.tags,
+      related_model: options?.related_model || 'document',
+      related_id: options?.related_id || 'demo',
+      uploader_user_id: 'demo-user',
+      upload_date: new Date().toISOString(),
+    };
+  }
+
   // Get user info
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -270,7 +341,7 @@ export const uploadDocument = async (
     logger.error('Profile error', profileError, 'document');
     throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
   }
-  
+
   if (!profile?.company_id) {
     throw new Error('User profile or company not found');
   }
@@ -345,7 +416,7 @@ export const uploadDocument = async (
     await supabase.storage.from('documents').remove([uploadData.path]);
     throw new Error(`Falha ao criar registro: ${error.message}`);
   }
-  
+
   if (!data) {
     logger.error('No data returned from insert', new Error('Insert returned no data'), 'document');
     await supabase.storage.from('documents').remove([uploadData.path]);
@@ -375,6 +446,21 @@ export const updateDocument = async (
 ): Promise<Document> => {
   logger.debug(`Updating document: ${documentId}`, 'document', updates);
 
+  if (isDemoMode()) {
+    return {
+      id: documentId,
+      company_id: 'demo',
+      file_name: 'Mock Document',
+      file_path: 'mock/path',
+      file_type: 'application/pdf',
+      related_model: 'document',
+      related_id: 'demo',
+      uploader_user_id: 'demo-user',
+      upload_date: new Date().toISOString(),
+      ...updates
+    };
+  }
+
   const { data, error } = await supabase
     .from('documents')
     .update(updates)
@@ -386,7 +472,7 @@ export const updateDocument = async (
     logger.error('Error updating document', error, 'document');
     throw new Error(`Failed to update document: ${error.message}`);
   }
-  
+
   if (!data) {
     throw new Error('Documento não encontrado');
   }
@@ -396,6 +482,10 @@ export const updateDocument = async (
 
 export const deleteDocument = async (documentId: string): Promise<void> => {
   logger.debug(`Deleting document: ${documentId}`, 'document');
+
+  if (isDemoMode()) {
+    return; // Just mock success
+  }
 
   // Get document info to delete from storage
   const { data: document, error: fetchError } = await supabase
@@ -408,7 +498,7 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
     logger.error('Error fetching document', fetchError, 'document');
     throw new Error(`Failed to fetch document: ${fetchError.message}`);
   }
-  
+
   if (!document) {
     throw new Error('Documento não encontrado');
   }
@@ -437,6 +527,10 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
 export const downloadDocument = async (documentId: string): Promise<{ url: string; fileName: string }> => {
   logger.debug(`Getting download URL for document: ${documentId}`, 'document');
 
+  if (isDemoMode()) {
+    return { url: '#', fileName: 'demo_document.pdf' };
+  }
+
   // Get document info
   const { data: document, error: fetchError } = await supabase
     .from('documents')
@@ -448,7 +542,7 @@ export const downloadDocument = async (documentId: string): Promise<{ url: strin
     logger.error('Error fetching document', fetchError, 'document');
     throw new Error(`Failed to fetch document: ${fetchError.message}`);
   }
-  
+
   if (!document) {
     throw new Error('Documento não encontrado');
   }
@@ -491,6 +585,10 @@ export const downloadDocument = async (documentId: string): Promise<{ url: strin
 export const getDocumentPreview = async (documentId: string): Promise<{ url: string; type: string }> => {
   logger.debug(`Getting preview URL for document: ${documentId}`, 'document');
 
+  if (isDemoMode()) {
+    return { url: '', type: 'application/pdf' }; // Fails gracefully or shows empty UI
+  }
+
   const { data: document, error: fetchError } = await supabase
     .from('documents')
     .select('file_path, file_type')
@@ -512,7 +610,7 @@ export const getDocumentPreview = async (documentId: string): Promise<{ url: str
         const { data, error } = await supabase.storage
           .from('documents')
           .createSignedUrl(normalizedPath, 300);
-        
+
         if (error || !data?.signedUrl) {
           throw new Error(error?.message || 'Failed to create signed URL');
         }
@@ -528,7 +626,7 @@ export const getDocumentPreview = async (documentId: string): Promise<{ url: str
     };
   } catch (signedError) {
     logger.warn('Signed URL failed, trying direct download...', 'document', signedError);
-    
+
     // Method 2: Download and create blob URL with retry
     try {
       const blob = await retryOperation(
@@ -536,7 +634,7 @@ export const getDocumentPreview = async (documentId: string): Promise<{ url: str
           const { data, error } = await supabase.storage
             .from('documents')
             .download(normalizedPath);
-          
+
           if (error || !data) {
             throw new Error(error?.message || 'Failed to download file');
           }
@@ -589,7 +687,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
         const { data, error } = await supabase.storage
           .from('documents')
           .createSignedUrl(normalizedPath, 300);
-        
+
         if (error || !data?.signedUrl) {
           throw new Error(error?.message || 'Failed to create signed URL');
         }
@@ -607,7 +705,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
     }
   } catch (signedError) {
     logger.warn('Signed URL method failed, trying direct download...', 'document', signedError);
-    
+
     // Method 2: Direct download with retry (fallback)
     try {
       const blob = await retryOperation(
@@ -615,7 +713,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
           const { data, error } = await supabase.storage
             .from('documents')
             .download(normalizedPath);
-          
+
           if (error || !data) {
             throw new Error(error?.message || 'Failed to download file');
           }
@@ -638,7 +736,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
   // For CSV, parse with PapaParse (robust parsing)
   if (document.file_type.includes('csv')) {
     logger.debug('Parsing CSV with PapaParse...', 'document');
-    
+
     const parseResult = Papa.parse(text, {
       header: true,
       dynamicTyping: false,
@@ -670,6 +768,8 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
 // Bulk operations
 export const bulkDeleteDocuments = async (documentIds: string[]): Promise<void> => {
   logger.debug(`Bulk deleting documents: ${documentIds.length} items`, 'document');
+
+  if (isDemoMode()) return;
 
   // Get all documents to delete files from storage
   const { data: documents, error: fetchError } = await supabase
@@ -707,6 +807,8 @@ export const bulkDeleteDocuments = async (documentIds: string[]): Promise<void> 
 export const bulkMoveDocuments = async (documentIds: string[], targetFolderId: string | null): Promise<void> => {
   logger.debug(`Bulk moving documents to folder: ${targetFolderId}`, 'document');
 
+  if (isDemoMode()) return;
+
   const { error } = await supabase
     .from('documents')
     .update({ folder_id: targetFolderId })
@@ -720,6 +822,8 @@ export const bulkMoveDocuments = async (documentIds: string[], targetFolderId: s
 
 export const bulkUpdateTags = async (documentIds: string[], tags: string[]): Promise<void> => {
   logger.debug(`Bulk updating tags for ${documentIds.length} documents`, 'document');
+
+  if (isDemoMode()) return;
 
   const { error } = await supabase
     .from('documents')
@@ -747,7 +851,7 @@ export const getFileIcon = (fileType: string): string => {
 
 export const formatFileSize = (bytes?: number): string => {
   if (!bytes) return 'Unknown';
-  
+
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];

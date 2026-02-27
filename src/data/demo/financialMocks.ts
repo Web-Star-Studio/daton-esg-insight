@@ -27,16 +27,31 @@ const MOCK_CASHFLOW_SUMMARY = {
   overdueReceivables: 106700,
 };
 
+// Shape must match DREData interface in src/components/financial/DRETable.tsx
+// Also includes margemBruta and margemLiquida used directly by DashboardFinanceiro.tsx
 const MOCK_DRE = {
-  receitas: 1150000,
-  custosMercadorias: 460000,
+  receitaBruta: 1150000,
+  deducoes: 57500,
+  receitaLiquida: 1092500,
+  custos: 402500,
   lucroBruto: 690000,
-  margemBruta: 60.0,
   despesasOperacionais: 385000,
   ebitda: 305000,
-  margemEbitda: 26.5,
+  depreciacaoAmortizacao: 48000,
+  ebit: 257000,
+  resultadoFinanceiro: 15500,
+  lair: 272500,
+  impostos: 31000,
   lucroLiquido: 241500,
-  margemLiquida: 21.0,
+  margemBruta: 63.2,
+  margemLiquida: 22.1,
+};
+
+const MOCK_FINANCIAL_INDICATORS = {
+  margemBruta: 63.2,
+  margemEbitda: 27.9,
+  margemLiquida: 22.1,
+  liquidezCorrente: 1.85,
 };
 
 const MOCK_MONTHLY_COMPARISON = [
@@ -184,6 +199,12 @@ export const financialMockEntries = [
   { queryKey: ['dre'] as const,                                        data: MOCK_DRE },
   { queryKey: ['dre', CURRENT_YEAR] as const,                          data: MOCK_DRE },
   { queryKey: ['dre', CURRENT_YEAR, CURRENT_MONTH] as const,           data: MOCK_DRE },
+  { queryKey: ['dre', CURRENT_YEAR - 1] as const,                      data: MOCK_DRE },
+  { queryKey: ['dre', CURRENT_YEAR - 2] as const,                      data: MOCK_DRE },
+
+  { queryKey: ['financial-indicators'] as const,                       data: MOCK_FINANCIAL_INDICATORS },
+  { queryKey: ['financial-indicators', CURRENT_YEAR] as const,         data: MOCK_FINANCIAL_INDICATORS },
+  { queryKey: ['financial-indicators', CURRENT_YEAR - 1] as const,     data: MOCK_FINANCIAL_INDICATORS },
 
   { queryKey: ['monthly-comparison'] as const,                         data: MOCK_MONTHLY_COMPARISON },
   { queryKey: ['monthly-comparison', CURRENT_YEAR] as const,           data: MOCK_MONTHLY_COMPARISON },
@@ -487,5 +508,33 @@ export const financialMockEntries = [
       { id: 'proj-1', name: 'Energia Solar Unidade 2', budget: 180000, spent: 95000, status: 'Em Andamento' },
       { id: 'proj-2', name: 'Reflorestamento Norte', budget: 250000, spent: 120000, status: 'Em Andamento' },
     ],
+  },
+  // Project profitability — used by AnaliseRentabilidade.tsx
+  {
+    queryKey: ['project-profitability', CURRENT_YEAR],
+    data: [
+      { name: 'Projeto Solar ESG', orcado: 450000, realizado: 380000, economia: 70000, roi: 18.4, status: 'Em andamento' },
+      { name: 'Certificação ISO 14001', orcado: 120000, realizado: 105000, economia: 15000, roi: 12.5, status: 'Concluído' },
+      { name: 'Programa Zero Resíduos', orcado: 85000, realizado: 72000, economia: 13000, roi: 15.3, status: 'Em andamento' },
+      { name: 'Treinamento ESG Colaboradores', orcado: 65000, realizado: 58000, economia: 7000, roi: 10.8, status: 'Concluído' },
+    ],
+  },
+  {
+    queryKey: ['project-profitability'],
+    data: [],
+  },
+  // Category profitability — used by AnaliseRentabilidade.tsx
+  {
+    queryKey: ['category-profitability', CURRENT_YEAR],
+    data: [
+      { category: 'Ambiental', orcado: 800000, realizado: 640000, economia: 160000, eficiencia: 80.0 },
+      { category: 'Social', orcado: 350000, realizado: 290000, economia: 60000, eficiencia: 82.9 },
+      { category: 'Governança', orcado: 200000, realizado: 175000, economia: 25000, eficiencia: 87.5 },
+      { category: 'Operacional', orcado: 5000000, realizado: 4250000, economia: 750000, eficiencia: 85.0 },
+    ],
+  },
+  {
+    queryKey: ['category-profitability'],
+    data: [],
   },
 ];

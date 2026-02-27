@@ -168,12 +168,25 @@ export function DemoDataSeeder({ children }: { children: React.ReactNode }) {
     });
 
     // ── 2a. Toast success suppressor ─────────────────────────────────────────
-    // The write stub resolves with { data: null, error: null }, which causes
-    // onSuccess callbacks to fire and show spurious success toasts (e.g. "Cargo
-    // criado com sucesso"). Suppress toast.success for a short window after each
-    // intercepted write — long enough for the async onSuccess to fire (~50ms),
-    // short enough not to affect unrelated success toasts.
+    // The write stub resolves successfully, causing onSuccess callbacks to fire
+    // and show spurious success toasts (e.g. "Cargo criado com sucesso").
+    // Suppress both sonner's toast.success AND shadcn's useToast (via the
+    // window.__DATON_DEMO_SUPPRESS_TOAST__ flag checked in use-toast.ts) for a
+    // short window after each intercepted write.
     let suppressUntil = 0;
+    let suppressTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const setDemoSuppressToast = () => {
+      suppressUntil = Date.now() + 2000;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).__DATON_DEMO_SUPPRESS_TOAST__ = true;
+      if (suppressTimeout) clearTimeout(suppressTimeout);
+      suppressTimeout = setTimeout(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).__DATON_DEMO_SUPPRESS_TOAST__ = false;
+      }, 2000);
+    };
+
     const originalToastSuccess = toast.success;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (toast as any).success = (...args: Parameters<typeof toast.success>) => {
@@ -194,7 +207,7 @@ export function DemoDataSeeder({ children }: { children: React.ReactNode }) {
         get(target, prop: string | symbol) {
           if (WRITE_METHODS.has(String(prop))) {
             return (..._args: unknown[]) => {
-              suppressUntil = Date.now() + 2000;
+              setDemoSuppressToast();
               triggerDemoBlocked();
               return createDemoWriteStub();
             };
@@ -234,7 +247,7 @@ export function DemoDataSeeder({ children }: { children: React.ReactNode }) {
         get(target, prop: string | symbol) {
           if (STORAGE_WRITE_METHODS.has(String(prop))) {
             return (..._args: unknown[]) => {
-              suppressUntil = Date.now() + 2000;
+              setDemoSuppressToast();
               triggerDemoBlocked();
               return createDemoWriteStub();
             };
@@ -293,6 +306,9 @@ export function DemoDataSeeder({ children }: { children: React.ReactNode }) {
       window.history.pushState = originalPushState;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (toast as any).success = originalToastSuccess;
+      if (suppressTimeout) clearTimeout(suppressTimeout);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).__DATON_DEMO_SUPPRESS_TOAST__ = false;
 
       queryClient.setDefaultOptions({
         queries: {

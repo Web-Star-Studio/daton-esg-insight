@@ -688,7 +688,7 @@ const StakeholderCommunicationHub = () => {
                   ) : (
                     filteredCommunications
                       ?.filter(c => c.direction === 'outbound' && c.status !== 'scheduled')
-                      .map((comm) => (
+                      ?.map((comm) => (
                         <Card
                           key={comm.id}
                           className={cn(
@@ -823,7 +823,7 @@ const StakeholderCommunicationHub = () => {
                   ) : (
                     filteredCommunications
                       ?.filter(c => c.status === 'scheduled')
-                      .map((comm) => (
+                      ?.map((comm) => (
                         <Card
                           key={comm.id}
                           className={cn(
@@ -963,7 +963,7 @@ const StakeholderCommunicationHub = () => {
                         <div>
                           <Label className="text-sm font-medium">Variáveis</Label>
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {template.variables.map((variable) => (
+                            {template.variables?.map((variable) => (
                               <Badge key={variable} variant="outline" className="text-xs">
                                 {variable}
                               </Badge>
