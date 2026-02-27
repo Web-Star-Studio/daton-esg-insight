@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import * as laiaService from "@/services/laiaService";
+import * as laiaBranchConfigService from "@/services/laiaBranchConfigService";
 import type { LAIAAssessmentFormData } from "@/types/laia";
 
 // ============ Sectors ============
@@ -236,6 +237,63 @@ export function useBulkDeleteLAIASectors() {
     onError: (error: Error) => {
       toast({
         title: "Erro ao excluir setores",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// ============ Branch Config ============
+
+export function useLAIABranchConfigs() {
+  return useQuery({
+    queryKey: ["laia-branch-configs"],
+    queryFn: laiaBranchConfigService.getLAIABranchConfigs,
+  });
+}
+
+export function useUpsertLAIABranchConfig() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ branchId, surveyStatus, companyId }: { branchId: string; surveyStatus: string; companyId: string }) =>
+      laiaBranchConfigService.upsertLAIABranchConfig(branchId, surveyStatus as any, companyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["laia-branch-configs"] });
+      toast({
+        title: "Status atualizado",
+        description: "O status de levantamento foi atualizado com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useBulkUpsertLAIABranchConfig() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ branchIds, surveyStatus, companyId }: { branchIds: string[]; surveyStatus: string; companyId: string }) =>
+      laiaBranchConfigService.bulkUpsertLAIABranchConfig(branchIds, surveyStatus as any, companyId),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["laia-branch-configs"] });
+      toast({
+        title: "Status atualizados",
+        description: `${vars.branchIds.length} unidade(s) atualizada(s) com sucesso.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao atualizar status",
         description: error.message,
         variant: "destructive",
       });

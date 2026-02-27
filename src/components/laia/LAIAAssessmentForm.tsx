@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { useLAIASectors, useCreateLAIAAssessment } from "@/hooks/useLAIA";
+import { useLAIASectors, useCreateLAIAAssessment, useUpdateLAIAAssessment } from "@/hooks/useLAIA";
 import {
   TEMPORALITY_OPTIONS,
   OPERATIONAL_SITUATION_OPTIONS,
@@ -34,7 +34,7 @@ import {
   getCategoryColor,
   getSignificanceColor,
 } from "@/types/laia";
-import type { LAIAAssessmentFormData } from "@/types/laia";
+import type { LAIAAssessmentFormData, LAIAAssessment } from "@/types/laia";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -44,11 +44,40 @@ import {
   Info
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { computeChanges, getOrCreateDraftRevision, addChangesToRevision } from "@/services/laiaRevisionService";
 
 interface LAIAAssessmentFormProps {
   branchId: string;
+  initialData?: LAIAAssessment;
   onSuccess?: () => void;
   onCancel?: () => void;
+}
+
+function mapAssessmentToFormData(a: LAIAAssessment, branchId: string): LAIAAssessmentFormData {
+  return {
+    branch_id: a.branch_id || branchId,
+    sector_id: a.sector_id || "",
+    activity_operation: a.activity_operation,
+    environmental_aspect: a.environmental_aspect,
+    environmental_impact: a.environmental_impact,
+    temporality: a.temporality,
+    operational_situation: a.operational_situation,
+    incidence: a.incidence,
+    impact_class: a.impact_class,
+    scope: a.scope,
+    severity: a.severity,
+    frequency_probability: a.frequency_probability,
+    has_legal_requirements: a.has_legal_requirements,
+    has_stakeholder_demand: a.has_stakeholder_demand,
+    has_strategic_options: a.has_strategic_options,
+    control_types: a.control_types || [],
+    existing_controls: a.existing_controls || "",
+    legislation_reference: a.legislation_reference || "",
+    has_lifecycle_control: a.has_lifecycle_control,
+    lifecycle_stages: a.lifecycle_stages || [],
+    output_actions: a.output_actions || "",
+    notes: a.notes || "",
+  };
 }
 
 const STEPS = [
@@ -83,16 +112,20 @@ const defaultFormData: LAIAAssessmentFormData = {
   notes: "",
 };
 
-export function LAIAAssessmentForm({ branchId, onSuccess, onCancel }: LAIAAssessmentFormProps) {
+export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel }: LAIAAssessmentFormProps) {
   const { toast } = useToast();
   const { data: sectors } = useLAIASectors(branchId);
   const createMutation = useCreateLAIAAssessment();
+  const updateMutation = useUpdateLAIAAssessment();
+  const isEditing = !!initialData;
+  const mutation = isEditing ? updateMutation : createMutation;
   
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<LAIAAssessmentFormData>({
-    ...defaultFormData,
-    branch_id: branchId,
-  });
+  const [formData, setFormData] = useState<LAIAAssessmentFormData>(
+    initialData
+      ? mapAssessmentToFormData(initialData, branchId)
+      : { ...defaultFormData, branch_id: branchId }
+  );
 
   // Calculated values
   const consequenceScore = calculateConsequenceScore(formData.scope, formData.severity);
@@ -172,9 +205,43 @@ export function LAIAAssessmentForm({ branchId, onSuccess, onCancel }: LAIAAssess
     }
   };
 
+  const TRACKED_FIELDS = [
+    "activity_operation", "environmental_aspect", "environmental_impact",
+    "temporality", "operational_situation", "incidence", "impact_class",
+    "scope", "severity", "frequency_probability",
+    "has_legal_requirements", "has_stakeholder_demand", "has_strategic_options",
+    "control_types", "existing_controls", "legislation_reference",
+    "has_lifecycle_control", "lifecycle_stages", "output_actions", "notes", "sector_id",
+  ];
+
   const handleSubmit = async () => {
     try {
-      await createMutation.mutateAsync(formData);
+      if (isEditing && initialData) {
+        // Compute diff before saving
+        const initialFormData = mapAssessmentToFormData(initialData, branchId);
+        const changes = computeChanges(
+          'assessment',
+          initialData.id,
+          branchId,
+          initialFormData as Record<string, any>,
+          formData as Record<string, any>,
+          TRACKED_FIELDS
+        );
+
+        await updateMutation.mutateAsync({ id: initialData.id, data: formData });
+
+        // Register changes in revision if any
+        if (changes.length > 0) {
+          try {
+            const draft = await getOrCreateDraftRevision();
+            await addChangesToRevision(draft.id, changes);
+          } catch (revError) {
+            console.error("Erro ao registrar revisão:", revError);
+          }
+        }
+      } else {
+        await createMutation.mutateAsync(formData);
+      }
       onSuccess?.();
     } catch (error) {
       // Error is handled by the mutation
@@ -193,7 +260,7 @@ export function LAIAAssessmentForm({ branchId, onSuccess, onCancel }: LAIAAssess
   return (
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Nova Avaliação LAIA</CardTitle>
+        <CardTitle>{isEditing ? "Editar Avaliação LAIA" : "Nova Avaliação LAIA"}</CardTitle>
         <CardDescription>
           Levantamento e Avaliação dos Aspectos e Impactos Ambientais
         </CardDescription>
@@ -744,9 +811,9 @@ export function LAIAAssessmentForm({ branchId, onSuccess, onCancel }: LAIAAssess
           ) : (
             <Button 
               onClick={handleSubmit} 
-              disabled={createMutation.isPending}
+              disabled={mutation.isPending}
             >
-              {createMutation.isPending ? (
+              {mutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Salvando...
@@ -754,7 +821,7 @@ export function LAIAAssessmentForm({ branchId, onSuccess, onCancel }: LAIAAssess
               ) : (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  Criar Avaliação
+                  {isEditing ? "Salvar Alterações" : "Criar Avaliação"}
                 </>
               )}
             </Button>

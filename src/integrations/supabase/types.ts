@@ -13929,6 +13929,179 @@ export type Database = {
           },
         ]
       }
+      laia_branch_config: {
+        Row: {
+          branch_id: string
+          company_id: string
+          created_at: string | null
+          id: string
+          survey_status: string
+          updated_at: string | null
+        }
+        Insert: {
+          branch_id: string
+          company_id: string
+          created_at?: string | null
+          id?: string
+          survey_status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          branch_id?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          survey_status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "laia_branch_config_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: true
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "laia_branch_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      laia_revision_changes: {
+        Row: {
+          branch_id: string | null
+          change_type: string
+          changed_at: string | null
+          changed_by: string | null
+          entity_id: string
+          entity_type: string
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          revision_id: string
+        }
+        Insert: {
+          branch_id?: string | null
+          change_type: string
+          changed_at?: string | null
+          changed_by?: string | null
+          entity_id: string
+          entity_type: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          revision_id: string
+        }
+        Update: {
+          branch_id?: string | null
+          change_type?: string
+          changed_at?: string | null
+          changed_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          revision_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "laia_revision_changes_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "laia_revision_changes_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "laia_revision_changes_revision_id_fkey"
+            columns: ["revision_id"]
+            isOneToOne: false
+            referencedRelation: "laia_revisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      laia_revisions: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          finalized_at: string | null
+          id: string
+          revision_number: number
+          status: string
+          title: string
+          updated_at: string | null
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          finalized_at?: string | null
+          id?: string
+          revision_number: number
+          status?: string
+          title?: string
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          finalized_at?: string | null
+          id?: string
+          revision_number?: number
+          status?: string
+          title?: string
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "laia_revisions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "laia_revisions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "laia_revisions_validated_by_fkey"
+            columns: ["validated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       laia_sectors: {
         Row: {
           branch_id: string | null
@@ -24774,6 +24947,20 @@ export type Database = {
             Args: { p_company_id: string; p_indicator_id: string }
             Returns: Json
           }
+      get_laia_branch_stats: {
+        Args: { p_company_id: string }
+        Returns: {
+          branch_id: string
+          criticos: number
+          nao_significativos: number
+          significativos: number
+          total: number
+        }[]
+      }
+      get_laia_dashboard_stats: {
+        Args: { p_branch_id?: string; p_company_id: string }
+        Returns: Json
+      }
       get_nc_dashboard_stats: { Args: { p_company_id: string }; Returns: Json }
       get_user_company_id: { Args: never; Returns: string }
       get_user_role: {

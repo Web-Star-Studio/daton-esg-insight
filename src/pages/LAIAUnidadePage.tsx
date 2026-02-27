@@ -163,12 +163,12 @@ export default function LAIAUnidadePage() {
             onCancel={() => setViewMode("list")}
           />
         ) : viewMode === "edit" && selectedAssessment ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Edição em desenvolvimento...</p>
-            <Button variant="link" onClick={() => setViewMode("list")}>
-              Voltar para lista
-            </Button>
-          </div>
+          <LAIAAssessmentForm 
+            branchId={branchId!}
+            initialData={selectedAssessment}
+            onSuccess={handleCreateSuccess}
+            onCancel={() => setViewMode("list")}
+          />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="flex w-full overflow-x-auto">
