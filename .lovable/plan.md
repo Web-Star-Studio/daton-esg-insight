@@ -1,29 +1,34 @@
 
 
-# Corrigir redirecionamento do link de redefinição de senha para domínio de produção
+## Resposta: Sim, admins ignoram restrições individuais de módulo
 
-## Problema
+O código atual em `useModuleSettings.ts` (linhas 72-87) confirma que **roles administrativas (`platform_admin`, `super_admin`, `admin`) fazem bypass das restrições de acesso por usuário**. Ou seja:
 
-O `window.location.origin` retorna a URL do preview do Lovable quando o email é disparado a partir do ambiente de desenvolvimento. Além disso, a edge function `manage-user` tem um fallback para `daton-esg-insight.lovable.app`.
+- Se você desativar um módulo específico para um usuário na gestão de acesso (`user_module_access`), mas esse usuário tiver role `admin`, **ele continuará vendo todos os módulos**.
+- A **única exceção** são módulos **globalmente desativados** na plataforma (quando `enabled_live` e `enabled_demo` são ambos `false`) — esses ficam ocultos para todos, inclusive admins.
 
-## Alterações
+```text
+Fluxo atual:
+┌─────────────────────────────┐
+│ isModuleVisible(moduleKey)  │
+├─────────────────────────────┤
+│ É admin/super_admin?        │
+│   SIM → módulo globalmente  │
+│         desativado?         │
+│     SIM → oculto            │
+│     NÃO → VISÍVEL (ignora   │
+│           user_module_access)│
+│   NÃO → checa global +     │
+│          user_module_access │
+└─────────────────────────────┘
+```
 
-### 1. `src/components/ForgotPasswordModal.tsx`
-- Detectar se está rodando em domínio customizado ou no Lovable preview
-- Se estiver no preview, forçar o `redirectTo` para `https://daton.com.br/reset-password`
-- Lógica: se `window.location.hostname` contém `lovable.app` ou `lovableproject.com`, usar a URL de produção hardcoded; caso contrário, usar `window.location.origin`
+## Opção de correção
 
-### 2. `supabase/functions/manage-user/index.ts`
-- Alterar o fallback de `https://daton-esg-insight.lovable.app` para `https://daton.com.br`
-- Linha ~541: trocar `Deno.env.get('SITE_URL') || 'https://daton-esg-insight.lovable.app'` por `Deno.env.get('SITE_URL') || 'https://daton.com.br'`
+Se você quiser que restrições individuais de módulo se apliquem **mesmo a admins**, a alteração seria em `src/hooks/useModuleSettings.ts`:
 
-### 3. Configuração Supabase (manual pelo usuário)
-- No dashboard Supabase → Authentication → URL Configuration:
-  - **Site URL**: definir como `https://daton.com.br`
-  - **Redirect URLs**: adicionar `https://daton.com.br/**`
+- Na função `isModuleVisible`, após o check global para admins, adicionar a verificação de `userAccess` também para roles administrativas
+- Isso faria com que a configuração individual de acesso prevalecesse sobre a role, permitindo restringir módulos específicos para qualquer usuário
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/components/ForgotPasswordModal.tsx` | Forçar redirect para domínio de produção |
-| `supabase/functions/manage-user/index.ts` | Atualizar fallback URL |
+**Arquivo afetado:** `src/hooks/useModuleSettings.ts` (função `isModuleVisible`, linhas 72-87)
 
