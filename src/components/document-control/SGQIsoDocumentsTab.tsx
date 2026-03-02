@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,11 +99,7 @@ export const SGQIsoDocumentsTab = () => {
     return normalized || "Outros";
   };
 
-  useEffect(() => {
-    loadDocuments();
-  }, []);
-
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('documents')
@@ -142,7 +138,11 @@ export const SGQIsoDocumentsTab = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    void loadDocuments();
+  }, [loadDocuments]);
 
   const handleUpload = async () => {
     if (!selectedFile) {
@@ -157,10 +157,31 @@ export const SGQIsoDocumentsTab = () => {
     setIsUploading(true);
 
     try {
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData.user?.id;
+
+      if (!currentUserId) {
+        throw new Error("Usuário não autenticado.");
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("id", currentUserId)
+        .maybeSingle();
+
+      if (profileError) {
+        throw new Error(profileError.message);
+      }
+
+      if (!profile?.company_id) {
+        throw new Error("Empresa do usuário não encontrada.");
+      }
+
       const uploadedDoc = await uploadDocument(selectedFile, {
         tags: uploadData.tags,
         related_model: 'quality_document',
-        related_id: crypto.randomUUID(),
+        related_id: profile.company_id,
       });
 
       const { error: updateError } = await supabase
@@ -226,10 +247,10 @@ export const SGQIsoDocumentsTab = () => {
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const i = Math.min(sizes.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(k))));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
