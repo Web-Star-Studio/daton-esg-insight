@@ -83,6 +83,22 @@ export const SGQIsoDocumentsTab = () => {
     'Outros'
   ];
 
+  const normalizeDocumentCategory = (doc: Document): string => {
+    const rawType = (doc.document_type || "").trim();
+    if (rawType && rawType !== "interno" && documentCategories.includes(rawType)) {
+      return rawType;
+    }
+
+    const extracted = (doc.ai_extracted_category || "").trim().toLowerCase();
+    if (!extracted) return "Outros";
+
+    const normalized = documentCategories.find((category) =>
+      extracted.includes(category.toLowerCase()),
+    );
+
+    return normalized || "Outros";
+  };
+
   useEffect(() => {
     loadDocuments();
   }, []);
@@ -155,6 +171,7 @@ export const SGQIsoDocumentsTab = () => {
           approval_status: 'em_aprovacao' as const,
           master_list_included: uploadData.controlled_copy,
           document_type: 'interno',
+          ai_extracted_category: uploadData.document_type,
         })
         .eq('id', uploadedDoc.id);
 
@@ -234,7 +251,7 @@ export const SGQIsoDocumentsTab = () => {
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.ai_extracted_category?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
-    const matchesCategory = categoryFilter === 'all' || doc.document_type === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || normalizeDocumentCategory(doc) === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
@@ -429,7 +446,9 @@ export const SGQIsoDocumentsTab = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getCategoryColor(doc.document_type)}>{doc.document_type}</Badge>
+                      <Badge className={getCategoryColor(normalizeDocumentCategory(doc))}>
+                        {normalizeDocumentCategory(doc)}
+                      </Badge>
                     </TableCell>
                     <TableCell>{formatFileSize(doc.file_size)}</TableCell>
                     <TableCell>

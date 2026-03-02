@@ -440,7 +440,21 @@ export const createRegulatoryDocument = async (
   }
 
   if (payload.initial_attachment) {
-    await uploadRegulatoryDocumentAttachment(data.id, payload.initial_attachment);
+    try {
+      await uploadRegulatoryDocumentAttachment(data.id, payload.initial_attachment);
+    } catch (uploadError: any) {
+      const { error: rollbackError } = await supabase.from("licenses").delete().eq("id", data.id);
+
+      if (rollbackError) {
+        throw new Error(
+          `Erro ao anexar documento inicial (${uploadError?.message || "desconhecido"}) e falha ao desfazer cadastro (${rollbackError.message}).`,
+        );
+      }
+
+      throw new Error(
+        `Erro ao anexar documento inicial: ${uploadError?.message || "desconhecido"}. O cadastro foi desfeito.`,
+      );
+    }
   }
 
   return data;
