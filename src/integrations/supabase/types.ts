@@ -15585,9 +15585,11 @@ export type Database = {
           id: string
           license_id: string
           notification_config: Json | null
+          protocol_number: string | null
           protocol_deadline: string
+          renewed_expiration_date: string | null
           scheduled_start_date: string
-          status: string
+          status: Database["public"]["Enums"]["license_renewal_status_enum"]
           updated_at: string
         }
         Insert: {
@@ -15599,9 +15601,11 @@ export type Database = {
           id?: string
           license_id: string
           notification_config?: Json | null
+          protocol_number?: string | null
           protocol_deadline: string
+          renewed_expiration_date?: string | null
           scheduled_start_date: string
-          status?: string
+          status?: Database["public"]["Enums"]["license_renewal_status_enum"]
           updated_at?: string
         }
         Update: {
@@ -15613,9 +15617,11 @@ export type Database = {
           id?: string
           license_id?: string
           notification_config?: Json | null
+          protocol_number?: string | null
           protocol_deadline?: string
+          renewed_expiration_date?: string | null
           scheduled_start_date?: string
-          status?: string
+          status?: Database["public"]["Enums"]["license_renewal_status_enum"]
           updated_at?: string
         }
         Relationships: [
@@ -15717,16 +15723,23 @@ export type Database = {
           ai_last_analysis_at: string | null
           ai_processing_status: string | null
           asset_id: string | null
+          branch_id: string | null
           company_id: string
           compliance_score: number | null
           conditions: string | null
           created_at: string
+          document_identifier_other: string | null
+          document_identifier_type: string | null
+          document_number: string | null
           expiration_date: string
           id: string
           issue_date: string | null
           issuing_body: string
           name: string
+          notes: string | null
           process_number: string | null
+          renewal_alert_days: number | null
+          renewal_required: boolean
           responsible_user_id: string | null
           status: Database["public"]["Enums"]["license_status_enum"]
           type: Database["public"]["Enums"]["license_type_enum"]
@@ -15738,16 +15751,23 @@ export type Database = {
           ai_last_analysis_at?: string | null
           ai_processing_status?: string | null
           asset_id?: string | null
+          branch_id?: string | null
           company_id: string
           compliance_score?: number | null
           conditions?: string | null
           created_at?: string
+          document_identifier_other?: string | null
+          document_identifier_type?: string | null
+          document_number?: string | null
           expiration_date: string
           id?: string
           issue_date?: string | null
           issuing_body: string
           name: string
+          notes?: string | null
           process_number?: string | null
+          renewal_alert_days?: number | null
+          renewal_required?: boolean
           responsible_user_id?: string | null
           status?: Database["public"]["Enums"]["license_status_enum"]
           type: Database["public"]["Enums"]["license_type_enum"]
@@ -15759,16 +15779,23 @@ export type Database = {
           ai_last_analysis_at?: string | null
           ai_processing_status?: string | null
           asset_id?: string | null
+          branch_id?: string | null
           company_id?: string
           compliance_score?: number | null
           conditions?: string | null
           created_at?: string
+          document_identifier_other?: string | null
+          document_identifier_type?: string | null
+          document_number?: string | null
           expiration_date?: string
           id?: string
           issue_date?: string | null
           issuing_body?: string
           name?: string
+          notes?: string | null
           process_number?: string | null
+          renewal_alert_days?: number | null
+          renewal_required?: boolean
           responsible_user_id?: string | null
           status?: Database["public"]["Enums"]["license_status_enum"]
           type?: Database["public"]["Enums"]["license_type_enum"]
@@ -15780,6 +15807,13 @@ export type Database = {
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "licenses_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
             referencedColumns: ["id"]
           },
           {
@@ -20184,6 +20218,32 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      regulatory_document_settings: {
+        Row: {
+          company_id: string
+          default_expiring_days: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          default_expiring_days?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          default_expiring_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_document_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sbt_progress: {
         Row: {
@@ -25128,6 +25188,12 @@ export type Database = {
         | "Social"
         | "Governança"
       jurisdiction_enum: "Federal" | "Estadual" | "Municipal"
+      license_renewal_status_enum:
+        | "nao_iniciado"
+        | "em_andamento"
+        | "protocolado"
+        | "renovado"
+        | "indeferido"
       license_status_enum: "Ativa" | "Em Renovação" | "Vencida" | "Suspensa"
       license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "Outra"
       permission_level_enum: "leitura" | "escrita" | "aprovacao" | "admin"
@@ -25359,6 +25425,13 @@ export const Constants = {
         "Governança",
       ],
       jurisdiction_enum: ["Federal", "Estadual", "Municipal"],
+      license_renewal_status_enum: [
+        "nao_iniciado",
+        "em_andamento",
+        "protocolado",
+        "renovado",
+        "indeferido",
+      ],
       license_status_enum: ["Ativa", "Em Renovação", "Vencida", "Suspensa"],
       license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "Outra"],
       permission_level_enum: ["leitura", "escrita", "aprovacao", "admin"],
