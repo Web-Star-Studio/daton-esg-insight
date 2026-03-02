@@ -24341,6 +24341,7 @@ export type Database = {
         Row: {
           amount_paid: number | null
           asset_id: string | null
+          branch_id: string | null
           cdf_additional_1: string | null
           cdf_additional_2: string | null
           cdf_number: string | null
@@ -24379,6 +24380,7 @@ export type Database = {
         Insert: {
           amount_paid?: number | null
           asset_id?: string | null
+          branch_id?: string | null
           cdf_additional_1?: string | null
           cdf_additional_2?: string | null
           cdf_number?: string | null
@@ -24417,6 +24419,7 @@ export type Database = {
         Update: {
           amount_paid?: number | null
           asset_id?: string | null
+          branch_id?: string | null
           cdf_additional_1?: string | null
           cdf_additional_2?: string | null
           cdf_number?: string | null
@@ -24458,6 +24461,13 @@ export type Database = {
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waste_logs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
             referencedColumns: ["id"]
           },
           {
