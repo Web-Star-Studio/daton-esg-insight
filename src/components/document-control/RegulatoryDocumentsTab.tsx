@@ -804,7 +804,7 @@ export const RegulatoryDocumentsTab = () => {
                       <TableCell>{item.days_remaining}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={getDocumentStatusBadgeClass(item.status)}>
-                          {item.status === "Vigente" ? "🟢 Vigente" : item.status === "A Vencer" ? "🟡 A Vencer" : "🔴 Vencido"}
+                          {item.status}
                         </Badge>
                       </TableCell>
                       <TableCell>{getRenewalStatusLabel(item.renewal_status)}</TableCell>

@@ -34,6 +34,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { useHasRole } from "@/middleware/roleGuard"
 import datonLogo from "@/assets/daton-logo-header.png"
+import { cn } from "@/lib/utils"
 
 // Importações de ícones organizadas por categoria
 import {
@@ -381,7 +382,7 @@ const menuSections: MenuSection[] = [
 export function AppSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { state } = useSidebar()
+  const { state, isMobile } = useSidebar()
   const collapsed = state === "collapsed"
   const { isDemo } = useDemo()
   const { user, restartOnboarding } = useAuth()
@@ -466,7 +467,15 @@ export function AppSidebar() {
     return null;
   }
 
-  const renderSubMenuItem = (item: MenuItem, isParentActive: boolean) => {
+  const getIconContainerClass = (highlighted: boolean) =>
+    cn(
+      "relative flex h-7 w-7 items-center justify-center rounded-lg border transition-all duration-200",
+      highlighted
+        ? "border-border/70 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
+        : "border-transparent bg-background/45 group-hover:border-border/45 group-hover:bg-background/70",
+    )
+
+  const renderSubMenuItem = (item: MenuItem, _isParentActive: boolean) => {
     const active = isActive(item.path)
     const isFav = isFavorite(item.id)
 
@@ -474,16 +483,24 @@ export function AppSidebar() {
       <SidebarMenuSubItem key={item.id}>
         <SidebarMenuSubButton
           onClick={() => navigate(prefixPath(item.path))}
-          className={`group cursor-pointer ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/30"}`}
+          className={cn(
+            "group rounded-lg px-2.5 py-1.5 transition-all duration-200",
+            active
+              ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
+              : "border border-transparent hover:border-border/45 hover:bg-background/55",
+          )}
         >
           <NavigationTooltip
             title={item.title}
             description={item.description}
             disabled={false}
           >
-            <div className="flex items-center flex-1 min-w-0 pl-2">
+            <div className="flex items-center flex-1 min-w-0 pl-1.5">
               {!collapsed && (
-                <span className={`text-[11px] truncate flex-1 min-w-0 ${active ? "" : "text-muted-foreground"}`}>
+                <span className={cn(
+                  "truncate flex-1 min-w-0 text-[12.5px] tracking-[-0.01em]",
+                  active ? "text-sidebar-foreground" : "text-sidebar-foreground/75",
+                )}>
                   {item.title}
                 </span>
               )}
@@ -493,7 +510,7 @@ export function AppSidebar() {
           {!collapsed && (
             <button
               type="button"
-              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center bg-transparent border-0"
+              className="h-5 w-5 rounded-full p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 flex items-center justify-center bg-transparent border-0 hover:bg-background/70"
               onClick={(e) => handleFavoriteToggle(item, e)}
               aria-label={isFav ? `Remover ${item.title} dos favoritos` : `Adicionar ${item.title} aos favoritos`}
               aria-pressed={isFav}
@@ -525,23 +542,24 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton
-                className={`group ${
+                className={cn(
+                  "group rounded-xl px-2.5 transition-all duration-200",
                   isCategory 
-                    ? "font-semibold text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                    ? "h-8 font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground/85 hover:bg-background/45 hover:text-foreground"
                     : active || hasActiveSubItem 
-                      ? "bg-primary/10 text-primary font-medium" 
-                      : "hover:bg-muted/50"
-                }`}
+                      ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] backdrop-blur-sm" 
+                      : "border border-transparent hover:border-border/45 hover:bg-background/55 hover:backdrop-blur-sm"
+                )}
               >
                 <NavigationTooltip
                   title={item.title}
                   description={item.description}
                   disabled={!collapsed}
                 >
-                  <div className="flex items-center gap-3 flex-1">
+                  <div className="flex items-center gap-2.5 flex-1">
                     {!hideIcon && (
-                      <div className="relative">
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                      <div className={getIconContainerClass(active || hasActiveSubItem)}>
+                        <item.icon className="h-[15px] w-[15px] flex-shrink-0 text-sidebar-foreground/85" />
                         {statusIndicator && (
                           <StatusIndicator 
                             status={statusIndicator} 
@@ -552,25 +570,25 @@ export function AppSidebar() {
                       </div>
                     )}
                     {!collapsed && (
-                      <span className={hideIcon ? "text-[11px] text-muted-foreground truncate pl-2" : "text-sm font-medium truncate"}>
+                      <span className={hideIcon ? "text-[11px] uppercase tracking-[0.08em] text-muted-foreground truncate pl-2" : "text-[13px] font-medium tracking-[-0.01em] truncate"}>
                         {item.title}
                       </span>
                     )}
                   </div>
                 </NavigationTooltip>
                 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   {!collapsed && notificationCount > 0 && (
                     <BadgeNotification 
                       count={notificationCount}
                       variant={notificationCount > 5 ? 'destructive' : 'warning'}
-                      className="mr-1"
+                      className="mr-0.5"
                     />
                   )}
                   {!collapsed && (
                     <button
                       type="button"
-                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center bg-transparent border-0"
+                      className="h-6 w-6 rounded-full p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 flex items-center justify-center bg-transparent border-0 hover:bg-background/75"
                       onClick={(e) => handleFavoriteToggle(item, e)}
                       aria-label={isFav ? `Remover ${item.title} dos favoritos` : `Adicionar ${item.title} aos favoritos`}
                       aria-pressed={isFav}
@@ -579,7 +597,7 @@ export function AppSidebar() {
                     </button>
                   )}
                   {!collapsed && (
-                    <ChevronRight className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    <ChevronRight className={`h-3.5 w-3.5 text-sidebar-foreground/65 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                   )}
                 </div>
               </SidebarMenuButton>
@@ -603,17 +621,22 @@ export function AppSidebar() {
         <SidebarMenuButton
           onClick={() => navigate(prefixPath(item.path))}
           aria-current={active ? "page" : undefined}
-          className={`group transition-all duration-200 hover-scale ${active ? "bg-primary/10 text-primary font-medium shadow-sm" : "hover:bg-muted/50 hover:shadow-sm"}`}
+          className={cn(
+            "group rounded-xl px-2.5 transition-all duration-200",
+            active
+              ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] backdrop-blur-sm"
+              : "border border-transparent hover:border-border/45 hover:bg-background/55 hover:backdrop-blur-sm",
+          )}
         >
           <NavigationTooltip
             title={item.title}
             description={item.description}
             disabled={!collapsed}
           >
-            <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center gap-2.5 flex-1">
               {!hideIcon && (
-                <div className="relative">
-                  <item.icon className="h-4 w-4 flex-shrink-0" />
+                <div className={getIconContainerClass(active)}>
+                  <item.icon className="h-[15px] w-[15px] flex-shrink-0 text-sidebar-foreground/85" />
                   {statusIndicator && (
                     <StatusIndicator 
                       status={statusIndicator} 
@@ -624,7 +647,7 @@ export function AppSidebar() {
                 </div>
               )}
               {!collapsed && (
-                <span className={hideIcon ? "text-[11px] text-muted-foreground truncate pl-2" : "text-sm font-medium truncate"}>
+                <span className={hideIcon ? "text-[11px] uppercase tracking-[0.08em] text-muted-foreground truncate pl-2" : "text-[13px] font-medium tracking-[-0.01em] truncate"}>
                   {item.title}
                 </span>
               )}
@@ -635,14 +658,14 @@ export function AppSidebar() {
             <BadgeNotification 
               count={notificationCount}
               variant={notificationCount > 5 ? 'destructive' : 'warning'}
-              className="mr-1"
+              className="mr-0.5"
             />
           )}
           
           {!collapsed && (
             <button
               type="button"
-              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 hover-scale flex items-center justify-center bg-transparent border-0"
+              className="h-6 w-6 rounded-full p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 flex items-center justify-center bg-transparent border-0 hover:bg-background/75"
               onClick={(e) => handleFavoriteToggle(item, e)}
               aria-label={isFav ? `Remover ${item.title} dos favoritos` : `Adicionar ${item.title} aos favoritos`}
               aria-pressed={isFav}
@@ -707,40 +730,41 @@ export function AppSidebar() {
 
   return (
     <Sidebar 
-      className="border-r bg-sidebar transition-all duration-300 hover:shadow-lg" 
+      variant="floating"
+      className="transition-all duration-300"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       data-tour="sidebar"
     >
-      <SidebarHeader className={`p-4 border-b transition-all duration-300 ${isHovering ? 'shadow-sm' : ''}`}>
+      <SidebarHeader className={`px-5 py-4 border-b border-sidebar-border/55 transition-all duration-300 ${isHovering ? 'shadow-sm' : ''}`}>
         <img 
           src={datonLogo} 
           alt="Daton" 
-          className={`transition-all duration-300 ${collapsed ? "w-8 h-8" : "w-24 h-8"} ${isHovering ? 'brightness-110' : ''}`} 
+          className={`transition-all duration-300 ${collapsed ? "w-9 h-9" : "w-28 h-9"} ${isHovering ? 'brightness-110' : ''}`} 
         />
       </SidebarHeader>
 
-      <SidebarContent className="gap-0">
+      <SidebarContent className="gap-1 py-1">
         {/* Quick Search - Only visible when expanded */}
         {!collapsed && (
-          <div className="px-3 py-3 border-b animate-fade-in">
+          <div className="px-4 pt-3 pb-3.5 border-b border-sidebar-border/45 animate-fade-in">
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
               <Input
                 type="text"
                 placeholder="Buscar..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-8 text-xs bg-muted/50 border-muted-foreground/20 focus:border-primary transition-colors"
+                className="h-10 rounded-2xl border border-border/60 bg-background/70 pl-10 pr-10 text-[13px] tracking-[-0.01em] text-foreground placeholder:text-foreground/50 backdrop-blur-md transition-all duration-200 focus-visible:border-border focus-visible:ring-1 focus-visible:ring-foreground/15 focus-visible:ring-offset-0"
               />
               {searchQuery && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent"
+                  className="absolute right-1.5 top-1/2 transform -translate-y-1/2 h-7 w-7 rounded-full p-0 text-foreground/60 hover:bg-background/80 hover:text-foreground"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
@@ -750,12 +774,12 @@ export function AppSidebar() {
 
         {/* Favoritos */}
         {favorites.length > 0 && !collapsed && !searchQuery && (
-          <SidebarGroup className="px-0 animate-fade-in">
-            <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+          <SidebarGroup className="px-1.5 animate-fade-in">
+            <SidebarGroupLabel className="px-3 pt-1.5 pb-1 text-[10px] font-semibold tracking-[0.1em] text-sidebar-foreground/50 uppercase">
               ⭐ FAVORITOS
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="px-1 gap-1.5">
                 {favorites.slice(0, 5).map((fav) => {
                   // Renderizar ícone original do módulo (não estrela)
                   const IconComponent = icons[fav.icon as keyof typeof icons] as React.ComponentType<{ className?: string }> || FileText
@@ -764,13 +788,15 @@ export function AppSidebar() {
                     <SidebarMenuItem key={`fav-${fav.id}`} className="animate-fade-in">
                       <SidebarMenuButton 
                         onClick={() => navigate(prefixPath(fav.path))}
-                        className="group transition-all duration-200 hover-scale"
+                        className="group rounded-xl border border-transparent px-2.5 hover:border-border/45 hover:bg-background/55"
                       >
-                        <IconComponent className="h-4 w-4" />
-                        <span className="text-sm">{fav.title}</span>
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/35 bg-background/55">
+                          <IconComponent className="h-[15px] w-[15px] text-foreground/85" />
+                        </div>
+                        <span className="text-[13px] font-medium tracking-[-0.01em]">{fav.title}</span>
                         {!collapsed && (
                           <div
-                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 hover-scale flex items-center justify-center ml-auto"
+                            className="ml-auto flex h-6 w-6 items-center justify-center rounded-full p-0 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:bg-background/75"
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleFavorite({
@@ -795,7 +821,7 @@ export function AppSidebar() {
 
         {/* Search Results Info */}
         {searchQuery && filteredSections.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground animate-fade-in">
+          <div className="px-5 py-10 text-center text-sm text-muted-foreground animate-fade-in">
             <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>Nenhum resultado encontrado</p>
             <p className="text-xs mt-1">Tente outro termo de busca</p>
@@ -804,20 +830,19 @@ export function AppSidebar() {
 
         {/* Botão Início - Sempre visível no topo */}
         {!searchQuery && (
-          <SidebarGroup className="px-0">
+          <SidebarGroup className="px-1.5">
             <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate(prefixPath('/dashboard'))}
-                    className={`group transition-all duration-200 hover-scale px-4 ${
-                      isActive('/dashboard') ? 'bg-primary/10 text-primary font-medium' : ''
-                    }`}
-                  >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    {!collapsed && <span className="text-sm font-normal">Início</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+              <SidebarMenu className="px-1">
+                {renderMenuItem(
+                  {
+                    id: "inicio",
+                    title: "Início",
+                    icon: LayoutDashboard,
+                    path: "/dashboard",
+                    description: "Página inicial",
+                  },
+                  true,
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -827,7 +852,7 @@ export function AppSidebar() {
         {filteredSections.map((section) => (
           <div key={section.id} className="animate-fade-in">
             {section.hasDivider && !searchQuery && (
-              <div className="mx-4 my-4 border-t border-border"></div>
+              <div className="mx-5 my-3 border-t border-sidebar-border/45"></div>
             )}
             
             {section.isCollapsible && !searchQuery ? (
@@ -836,11 +861,11 @@ export function AppSidebar() {
                 open={searchQuery.length > 0 ? true : expandedSections[section.id]}
                 onOpenChange={(open) => setExpandedSections(prev => ({ ...prev, [section.id]: open }))}
               >
-                <SidebarGroup className="px-0">
+                <SidebarGroup className="px-1.5">
                   <CollapsibleTrigger asChild>
-                    <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase cursor-pointer hover:text-foreground transition-all duration-200 flex items-center justify-between group">
+                    <SidebarGroupLabel className="px-3 py-1.5 text-[10px] font-semibold tracking-[0.1em] text-sidebar-foreground/55 uppercase cursor-pointer rounded-lg hover:bg-background/45 hover:text-foreground transition-all duration-200 flex items-center justify-between group">
                       <div className="flex items-center gap-2">
-                        {section.icon && <section.icon className="h-4 w-4" />}
+                        {section.icon && <section.icon className="h-3.5 w-3.5" />}
                         <span>{section.title}</span>
                       </div>
                       {!collapsed && (
@@ -850,7 +875,7 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent className="transition-all duration-200">
                     <SidebarGroupContent>
-                      <SidebarMenu>
+                      <SidebarMenu className="px-1 gap-1.5">
                         {section.items.map((item) => renderMenuItem(item, true))}
                       </SidebarMenu>
                     </SidebarGroupContent>
@@ -858,19 +883,19 @@ export function AppSidebar() {
                 </SidebarGroup>
               </Collapsible>
             ) : (
-              <SidebarGroup className="px-0">
-                <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+              <SidebarGroup className="px-1.5">
+                <SidebarGroupLabel className="px-3 py-1.5 text-[10px] font-semibold tracking-[0.1em] text-sidebar-foreground/55 uppercase">
                   {section.title}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu>
+                  <SidebarMenu className="px-1 gap-1.5">
                     {section.items.map((item) => renderMenuItem(item, true))}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
             )}
           </div>
-        ))}
+      ))}
       </SidebarContent>
     </Sidebar>
   )

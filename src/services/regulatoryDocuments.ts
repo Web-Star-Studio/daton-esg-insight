@@ -214,7 +214,9 @@ export const updateRegulatorySettings = async (
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("Erro ao atualizar configuração de prazo padrão");
+    throw new Error(
+      `Erro ao atualizar configuração de prazo padrão: ${error?.message || "resposta vazia do banco"}`,
+    );
   }
 
   return data;

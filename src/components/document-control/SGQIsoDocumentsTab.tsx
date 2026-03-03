@@ -39,6 +39,7 @@ interface Document {
   file_name: string;
   file_path: string;
   file_size: number;
+  related_model: string;
   document_type: string;
   ai_extracted_category: string | null;
   upload_date: string;
@@ -108,6 +109,7 @@ export const SGQIsoDocumentsTab = () => {
           file_name,
           file_path,
           file_size,
+          related_model,
           document_type,
           ai_extracted_category,
           upload_date,
@@ -123,11 +125,16 @@ export const SGQIsoDocumentsTab = () => {
           code,
           responsible_department
         `)
-        .eq('related_model', 'quality_document')
         .order('upload_date', { ascending: false });
 
       if (error) throw error;
-      setDocuments((data || []) as Document[]);
+
+      // Keep SGQ/ISO tab backward-compatible with legacy records while
+      // avoiding regulatory attachments managed in the dedicated tab.
+      const nonRegulatoryDocs = (data || []).filter(
+        (doc) => doc.related_model !== 'licenses' && doc.related_model !== 'license',
+      );
+      setDocuments(nonRegulatoryDocs as Document[]);
     } catch (error) {
       console.error('Erro ao carregar documentos:', error);
       toast({
