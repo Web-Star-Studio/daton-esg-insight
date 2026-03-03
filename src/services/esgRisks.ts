@@ -153,6 +153,18 @@ export const getRiskMatrix = async () => {
   };
 
   risks.forEach((risk: ESGRisk) => {
+    const hasValidProbability = Object.prototype.hasOwnProperty.call(matrix, risk.probability);
+    const hasValidImpact = Object.prototype.hasOwnProperty.call(matrix['Baixa'], risk.impact);
+
+    if (!hasValidProbability || !hasValidImpact) {
+      console.warn('Invalid risk matrix axis value', {
+        riskId: risk.id,
+        probability: risk.probability,
+        impact: risk.impact,
+      });
+      return;
+    }
+
     matrix[risk.probability as keyof typeof matrix][risk.impact as keyof typeof matrix['Baixa']]++;
   });
 

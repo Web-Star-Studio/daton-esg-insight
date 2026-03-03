@@ -53,8 +53,26 @@ interface RiskAssessment {
   status: string;
 }
 
+const buildDemoRiskMatrices = (): RiskMatrix[] => [
+  {
+    id: "demo-matrix-1",
+    name: "Matriz de Riscos Operacionais 2024",
+    description: "Matriz principal para avaliação de riscos operacionais em todas as unidades.",
+    matrix_type: "Operacional",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "demo-matrix-2",
+    name: "Riscos Estratégicos",
+    description: "Acompanhamento dos riscos de negócio e estratégia.",
+    matrix_type: "Estratégico",
+    created_at: new Date().toISOString(),
+  },
+];
+
 export default function GestaoRiscos() {
   const { toast } = useToast();
+  const isDemoMode = typeof window !== "undefined" && (window as any).__DATON_DEMO_MODE__ === true;
 
   // Estado dos modais e formulários
   const [isCreateMatrixOpen, setIsCreateMatrixOpen] = useState(false);
@@ -65,6 +83,7 @@ export default function GestaoRiscos() {
   const [selectedRisk, setSelectedRisk] = useState<ESGRisk | null>(null);
   const [selectedMatrix, setSelectedMatrix] = useState<any>(null);
   const [riskModalMode, setRiskModalMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [demoRiskMatrices, setDemoRiskMatrices] = useState<RiskMatrix[]>(() => buildDemoRiskMatrices());
 
   const [newMatrixData, setNewMatrixData] = useState({
     name: '',
@@ -85,26 +104,6 @@ export default function GestaoRiscos() {
   const { data: riskMatricesData, isLoading: matricesLoading, refetch } = useQuery({
     queryKey: ['risk-matrices'],
     queryFn: async () => {
-      const isDemoMode = typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
-      if (isDemoMode) {
-        return [
-          {
-            id: 'demo-matrix-1',
-            name: 'Matriz de Riscos Operacionais 2024',
-            description: 'Matriz principal para avaliação de riscos operacionais em todas as unidades.',
-            matrix_type: 'Operacional',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'demo-matrix-2',
-            name: 'Riscos Estratégicos',
-            description: 'Acompanhamento dos riscos de negócio e estratégia.',
-            matrix_type: 'Estratégico',
-            created_at: new Date().toISOString(),
-          }
-        ] as RiskMatrix[];
-      }
-
       const { data, error } = await supabase
         .from('risk_matrices')
         .select('*')
@@ -113,12 +112,40 @@ export default function GestaoRiscos() {
       if (error) throw error;
       return data as RiskMatrix[];
     },
+    enabled: !isDemoMode,
   });
-  const riskMatrices = Array.isArray(riskMatricesData) ? riskMatricesData : [];
+  const riskMatrices = isDemoMode
+    ? demoRiskMatrices
+    : (Array.isArray(riskMatricesData) ? riskMatricesData : []);
 
   // Handlers dos modais
   const handleCreateMatrix = async () => {
     try {
+      if (isDemoMode) {
+        const newDemoMatrix: RiskMatrix = {
+          id: `demo-matrix-${Date.now()}`,
+          name: newMatrixData.name || "Nova Matriz de Risco",
+          description: newMatrixData.description || "Matriz criada em modo demonstração.",
+          matrix_type: newMatrixData.type,
+          created_at: new Date().toISOString(),
+        };
+
+        setDemoRiskMatrices((prev) => [newDemoMatrix, ...prev]);
+
+        toast({
+          title: "Sucesso",
+          description: "Matriz de risco criada com sucesso (modo demonstração)",
+        });
+
+        setIsCreateMatrixOpen(false);
+        setNewMatrixData({
+          name: '',
+          description: '',
+          type: 'probability_impact'
+        });
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -167,7 +194,9 @@ export default function GestaoRiscos() {
         description: '',
         type: 'probability_impact'
       });
-      refetch();
+      if (!isDemoMode) {
+        refetch();
+      }
     } catch (error) {
       toast({
         title: "Erro",

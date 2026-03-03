@@ -417,16 +417,17 @@ export const governanceMockEntries = [
   {
     queryKey: ['compliance-tasks', DEMO_COMPANY_ID],
     data: [
-      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em progresso', priority: 'high', assigned_to_user_id: 'emp-2', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-1' },
-      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Atrasado', priority: 'medium', assigned_to_user_id: 'emp-7', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-2' },
+      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em Andamento', priority: 'high', assigned_to_user_id: 'emp-2', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-1' },
+      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Em Atraso', priority: 'medium', assigned_to_user_id: 'emp-7', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-2' },
       { id: 'ct-3', title: 'Relatório Trimestral CIPA', requirement: 'NR-05', category: 'Health & Safety', due_date: '2026-03-30', status: 'Pendente', priority: 'medium', assigned_to_user_id: 'emp-4', is_template: false, is_recurring: true, recurrence_pattern: 'quarterly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-3' }
     ]
   },
   {
     queryKey: ['compliance-tasks'],
     data: [
-      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em progresso', priority: 'high', is_template: false },
-      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Atrasado', priority: 'medium', is_template: false },
+      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em Andamento', priority: 'high', is_template: false },
+      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Em Atraso', priority: 'medium', is_template: false },
+      { id: 'ct-3', title: 'Relatório Trimestral CIPA', requirement: 'NR-05', category: 'Health & Safety', due_date: '2026-03-30', status: 'Pendente', priority: 'medium', is_template: false },
     ]
   },
   // Licenses
@@ -697,7 +698,7 @@ export const governanceMockEntries = [
       totalTasks: 3,         // matches 3 entries in ['compliance-tasks'] mock
       pendingTasks: 1,       // ct-3 status 'Pendente'
       duingSoon: 2,          // ct-1 (2026-03-15) and ct-3 (2026-03-30) due within 30 days
-      overdueTasks: 1,       // ct-2 status 'Atrasado'
+      overdueTasks: 1,       // ct-2 status 'Em Atraso'
     },
   },
   // Strategic maps (PlanejamentoEstrategico page)
@@ -836,232 +837,6 @@ export const governanceMockEntries = [
         { month: 'Jan', total: 12, critical: 2, high: 5 },
         { month: 'Fev', total: 12, critical: 2, high: 4 },
       ],
-    },
-  },
-  // Audit programs
-  {
-    queryKey: ['audit-programs'],
-    data: [
-      {
-        id: 'ap-demo-1',
-        company_id: DEMO_COMPANY_ID,
-        year: 2026,
-        title: 'Programa de Auditoria 2026',
-        status: 'in_progress',
-        start_date: '2026-01-01',
-        end_date: '2026-12-31',
-        objectives: 'Avaliar conformidade com ISO 14001, LGPD e requisitos ESG.',
-        scope_description: 'Todas as unidades operacionais e processos críticos.',
-        resources_budget: 150000,
-        created_at: '2025-12-15T10:00:00Z',
-        updated_at: '2026-01-20T09:00:00Z',
-      },
-      {
-        id: 'ap-demo-2',
-        company_id: DEMO_COMPANY_ID,
-        year: 2025,
-        title: 'Programa de Auditoria 2025',
-        status: 'completed',
-        start_date: '2025-01-01',
-        end_date: '2025-12-31',
-        objectives: 'Auditoria de conformidade ambiental e governança.',
-        scope_description: 'Processos de produção e logística.',
-        resources_budget: 120000,
-        created_at: '2024-12-10T10:00:00Z',
-        updated_at: '2025-12-20T16:00:00Z',
-      },
-    ],
-  },
-  // Process maps — status and process_type values match MapeamentoProcessos.tsx filters
-  {
-    queryKey: ['processMaps'],
-    data: [
-      {
-        id: 'pm-demo-1',
-        company_id: DEMO_COMPANY_ID,
-        name: 'Gestão de Resíduos',
-        description: 'Mapa do processo de coleta, segregação e destinação de resíduos sólidos.',
-        process_type: 'Apoio',
-        status: 'Approved',
-        version: '2.1',
-        is_current_version: true,
-        canvas_data: {},
-        created_at: '2025-06-10T09:00:00Z',
-        updated_at: '2026-01-08T14:00:00Z',
-      },
-      {
-        id: 'pm-demo-2',
-        company_id: DEMO_COMPANY_ID,
-        name: 'Controle de Emissões',
-        description: 'Mapeamento do processo de monitoramento e reporte de emissões de GEE.',
-        process_type: 'Estratégico',
-        status: 'Approved',
-        version: '1.3',
-        is_current_version: true,
-        canvas_data: {},
-        created_at: '2025-08-22T11:00:00Z',
-        updated_at: '2025-12-15T10:00:00Z',
-      },
-      {
-        id: 'pm-demo-3',
-        company_id: DEMO_COMPANY_ID,
-        name: 'Gestão de Fornecedores',
-        description: 'Processo de qualificação, avaliação e monitoramento de fornecedores.',
-        process_type: 'Operacional',
-        status: 'Draft',
-        version: '1.0',
-        is_current_version: true,
-        canvas_data: {},
-        created_at: '2026-01-15T08:00:00Z',
-        updated_at: '2026-02-01T11:00:00Z',
-      },
-    ],
-  },
-  // Regulatory requirements (Compliance page)
-  {
-    queryKey: ['regulatory-requirements'],
-    data: [
-      { id: 'rr-1', title: 'LGPD - Lei Geral de Proteção de Dados', category: 'Legal', status: 'Compliant', deadline: '2026-12-31', priority: 'high', created_at: '2025-01-15T08:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
-      { id: 'rr-2', title: 'ISO 14001 - Gestão Ambiental', category: 'Ambiental', status: 'In Progress', deadline: '2026-06-30', priority: 'high', created_at: '2025-02-01T08:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
-      { id: 'rr-3', title: 'NR-15 - Atividades Insalubres', category: 'Segurança', status: 'Compliant', deadline: '2026-03-31', priority: 'medium', created_at: '2025-03-01T08:00:00Z', updated_at: '2026-01-20T10:00:00Z' },
-      { id: 'rr-4', title: 'Resolução CONAMA 307/2002', category: 'Ambiental', status: 'Compliant', deadline: '2026-12-31', priority: 'medium', created_at: '2025-04-01T08:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
-    ],
-  },
-  // Compliance stats (Compliance page)
-  {
-    queryKey: ['compliance-stats'],
-    data: {
-      total: 24,
-      compliant: 18,
-      inProgress: 4,
-      overdue: 2,
-      complianceRate: 75,
-      criticalCount: 2,
-      overdueCount: 2,
-      upcomingCount: 6,
-    },
-  },
-  // Strategic maps (PlanejamentoEstrategico page)
-  {
-    queryKey: ['strategic-maps'],
-    data: [
-      {
-        id: 'sm-demo-1',
-        company_id: DEMO_COMPANY_ID,
-        name: 'Mapa Estratégico ESG 2026',
-        description: 'Planejamento estratégico focado em sustentabilidade e governança corporativa.',
-        created_at: '2025-11-01T09:00:00Z',
-        updated_at: '2026-01-10T14:00:00Z',
-      },
-    ],
-  },
-  // BSC perspectives
-  {
-    queryKey: ['bsc-perspectives', 'sm-demo-1'],
-    data: [
-      { id: 'bsc-1', strategic_map_id: 'sm-demo-1', name: 'Financeira', description: 'Resultados financeiros e retorno sobre investimento ESG', order_index: 1 },
-      { id: 'bsc-2', strategic_map_id: 'sm-demo-1', name: 'Clientes', description: 'Satisfação e valor para clientes e stakeholders', order_index: 2 },
-      { id: 'bsc-3', strategic_map_id: 'sm-demo-1', name: 'Processos Internos', description: 'Eficiência operacional e sustentabilidade', order_index: 3 },
-      { id: 'bsc-4', strategic_map_id: 'sm-demo-1', name: 'Aprendizado e Crescimento', description: 'Capacitação e inovação', order_index: 4 },
-    ],
-  },
-  {
-    queryKey: ['bsc-perspectives'],
-    data: [
-      { id: 'bsc-1', name: 'Financeira', order_index: 1 },
-      { id: 'bsc-2', name: 'Clientes', order_index: 2 },
-      { id: 'bsc-3', name: 'Processos Internos', order_index: 3 },
-      { id: 'bsc-4', name: 'Aprendizado e Crescimento', order_index: 4 },
-    ],
-  },
-  // Strategic objectives
-  {
-    queryKey: ['strategic-objectives', 'sm-demo-1'],
-    data: [
-      { id: 'so-1', strategic_map_id: 'sm-demo-1', perspective_id: 'bsc-1', name: 'Reduzir custos ambientais em 15%', target: 15, current: 8.5, unit: '%' },
-      { id: 'so-2', strategic_map_id: 'sm-demo-1', perspective_id: 'bsc-3', name: 'Zero incidentes ambientais', target: 0, current: 1, unit: 'incidentes' },
-    ],
-  },
-  {
-    queryKey: ['strategic-objectives'],
-    data: [],
-  },
-  // OKR objectives
-  {
-    queryKey: ['okr-objectives', 'sm-demo-1'],
-    data: [
-      { id: 'okr-1', strategic_map_id: 'sm-demo-1', title: 'Neutralidade de Carbono até 2030', quarter: 'Q1/2026', progress: 22, status: 'on_track' },
-      { id: 'okr-2', strategic_map_id: 'sm-demo-1', title: 'Certificação ISO 14001', quarter: 'Q2/2026', progress: 65, status: 'on_track' },
-    ],
-  },
-  {
-    queryKey: ['okr-objectives'],
-    data: [],
-  },
-  // OKRs — queryKey used by OKRManagement.tsx component
-  {
-    queryKey: ['okrs'],
-    data: [
-      { id: 'okr-demo-1', title: 'Neutralidade de Carbono até 2030', description: 'Atingir emissões líquidas zero até 2030 por meio de reduções e compensações.', quarter: 'Q1', year: 2026, status: 'active', progress_percentage: 22, created_at: '2025-12-01T09:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
-      { id: 'okr-demo-2', title: 'Certificação ISO 14001', description: 'Obter certificação do sistema de gestão ambiental até Q2/2026.', quarter: 'Q2', year: 2026, status: 'active', progress_percentage: 65, created_at: '2025-12-01T09:00:00Z', updated_at: '2026-02-15T10:00:00Z' },
-      { id: 'okr-demo-3', title: 'Zero Acidente Fatal', description: 'Manter taxa de acidentes fatais em zero por meio do Programa Zero Acidentes.', quarter: 'Q1', year: 2026, status: 'active', progress_percentage: 100, created_at: '2025-12-01T09:00:00Z', updated_at: '2026-02-27T10:00:00Z' },
-    ],
-  },
-  // Key results for OKRs
-  {
-    queryKey: ['key-results', 'okr-demo-1'],
-    data: [
-      { id: 'kr-1', okr_id: 'okr-demo-1', title: 'Reduzir emissões Escopo 1 em 20%', target_value: 20, current_value: 4.4, unit: '%', progress_percentage: 22, due_date: '2026-12-31T00:00:00Z', status: 'in_progress' },
-      { id: 'kr-2', okr_id: 'okr-demo-1', title: 'Implantar 5 projetos de energia renovável', target_value: 5, current_value: 1, unit: 'projetos', progress_percentage: 20, due_date: '2026-10-31T00:00:00Z', status: 'in_progress' },
-    ],
-  },
-  {
-    queryKey: ['key-results', 'okr-demo-2'],
-    data: [
-      { id: 'kr-3', okr_id: 'okr-demo-2', title: 'Concluir auditoria de pré-certificação', target_value: 1, current_value: 1, unit: 'auditoria', progress_percentage: 100, due_date: '2026-03-31T00:00:00Z', status: 'completed' },
-      { id: 'kr-4', okr_id: 'okr-demo-2', title: 'Fechar 100% das não conformidades', target_value: 100, current_value: 65, unit: '%', progress_percentage: 65, due_date: '2026-05-31T00:00:00Z', status: 'in_progress' },
-    ],
-  },
-  {
-    queryKey: ['key-results'],
-    data: [],
-  },
-  // Benchmark data — BenchmarkComparisonWidget.tsx (DashboardGHG, queryKey: ['benchmark-data'])
-  {
-    queryKey: ['benchmark-data'],
-    data: {
-      sector_comparison: [
-        { metric: 'Emissões GEE (tCO2e)', your_company: 845, sector_average: 1100, best_practice: 420 },
-        { metric: 'Consumo de Água (m³)', your_company: 12450, sector_average: 18000, best_practice: 8000 },
-        { metric: 'Resíduos Reciclados (%)', your_company: 72.5, sector_average: 55, best_practice: 90 },
-        { metric: 'Energia Renovável (%)', your_company: 38, sector_average: 25, best_practice: 75 },
-      ],
-      performance_indicators: [
-        { name: 'Eficiência Energética', description: 'Consumo por unidade produzida', score: 74, status: 'above_average' },
-        { name: 'Gestão Hídrica', description: 'Índice de reuso e captação', score: 68, status: 'average' },
-        { name: 'Gestão de Resíduos', description: 'Taxa de reciclagem e destinação', score: 82, status: 'above_average' },
-        { name: 'Emissões Relativas', description: 'tCO2e por receita líquida', score: 61, status: 'average' },
-      ],
-    },
-  },
-  // Risk occurrences — RiskOccurrencesList.tsx (GestaoRiscos, queryKey: ['risk-occurrences'])
-  {
-    queryKey: ['risk-occurrences'],
-    data: [
-      { id: 'ro-1', title: 'Vazamento de Efluente', description: 'Pequeno vazamento na canaleta de coleta da planta 2', status: 'Em Tratamento', actual_impact: 'Médio', occurrence_date: '2026-02-10T09:30:00Z', financial_impact: 15000, created_at: '2026-02-10T10:00:00Z', updated_at: '2026-02-12T14:00:00Z' },
-      { id: 'ro-2', title: 'Acidente de Trabalho Leve', description: 'Colaborador com lesão ao manusear equipamento de movimentação', status: 'Resolvida', actual_impact: 'Baixo', occurrence_date: '2026-01-22T14:15:00Z', financial_impact: 3500, created_at: '2026-01-22T15:00:00Z', updated_at: '2026-01-28T11:00:00Z' },
-      { id: 'ro-3', title: 'Notificação de Irregularidade Ambiental', description: 'Notificação de irregularidade no descarte de resíduos Classe I', status: 'Aberta', actual_impact: 'Alto', occurrence_date: '2026-02-20T00:00:00Z', financial_impact: 85000, created_at: '2026-02-21T09:00:00Z', updated_at: '2026-02-21T09:00:00Z' },
-    ],
-  },
-  // Occurrence metrics — RiskOccurrencesList.tsx (queryKey: ['occurrence-metrics'])
-  {
-    queryKey: ['occurrence-metrics'],
-    data: {
-      total: 3,
-      open: 2,
-      resolved: 1,
-      avgResolutionDays: 6,
-      totalFinancialImpact: 103500,
     },
   },
   // Audit areas — AuditAreasManagement.tsx (via useAuditAreas hook, queryKey: ['audit-areas'])

@@ -15,6 +15,7 @@ const MOCK_SWOT_ANALYSES: SWOTAnalysis[] = [
 const MOCK_SWOT_ITEMS: SWOTItem[] = [
   {
     id: "item-1",
+    swot_analysis_id: "demo-swot-1",
     category: "strengths",
     item_text: "Marca Forte em Sustentabilidade",
     description: "Reconhecimento no mercado pelas práticas ESG.",
@@ -22,6 +23,7 @@ const MOCK_SWOT_ITEMS: SWOTItem[] = [
   },
   {
     id: "item-2",
+    swot_analysis_id: "demo-swot-1",
     category: "strengths",
     item_text: "Equipe Capacitada",
     description: "Baixa rotatividade e alta especialização técnica.",
@@ -29,6 +31,7 @@ const MOCK_SWOT_ITEMS: SWOTItem[] = [
   },
   {
     id: "item-3",
+    swot_analysis_id: "demo-swot-1",
     category: "weaknesses",
     item_text: "Dependência de Fornecedores Externos",
     description: "Cadeia de suprimentos vulnerável a interrupções globais.",
@@ -36,6 +39,7 @@ const MOCK_SWOT_ITEMS: SWOTItem[] = [
   },
   {
     id: "item-4",
+    swot_analysis_id: "demo-swot-1",
     category: "opportunities",
     item_text: "Expansão para Mercados Verdes",
     description: "Novos produtos focados na economia circular.",
@@ -43,6 +47,7 @@ const MOCK_SWOT_ITEMS: SWOTItem[] = [
   },
   {
     id: "item-5",
+    swot_analysis_id: "demo-swot-1",
     category: "threats",
     item_text: "Novas Regulamentações Ambientais",
     description: "Maior rigor na legislação de emissões.",
@@ -70,6 +75,7 @@ interface SWOTAnalysis {
 
 interface SWOTItem {
   id: string;
+  swot_analysis_id?: string;
   category: 'strengths' | 'weaknesses' | 'opportunities' | 'threats';
   item_text: string;
   description: string;
@@ -118,7 +124,9 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
     queryFn: async () => {
       if (!selectedAnalysis) return [];
 
-      if (isDemoMode()) return MOCK_SWOT_ITEMS;
+      if (isDemoMode()) {
+        return MOCK_SWOT_ITEMS.filter((item) => item.swot_analysis_id === selectedAnalysis);
+      }
 
       const { data, error } = await supabase
         .from("swot_items")
@@ -140,6 +148,18 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
 
   const createAnalysisMutation = useMutation({
     mutationFn: async (analysisData: typeof newAnalysis) => {
+      if (isDemoMode()) {
+        const createdAnalysis: SWOTAnalysis = {
+          id: `demo-swot-${Date.now()}`,
+          title: analysisData.title,
+          description: analysisData.description,
+          created_at: new Date().toISOString(),
+        };
+
+        MOCK_SWOT_ANALYSES.unshift(createdAnalysis);
+        return createdAnalysis;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
@@ -161,8 +181,15 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["swot-analyses"] });
+    onSuccess: (createdAnalysis) => {
+      if (isDemoMode() && createdAnalysis) {
+        queryClient.setQueryData(["swot-analyses"], [...MOCK_SWOT_ANALYSES]);
+        queryClient.setQueryData(["swot-items", createdAnalysis.id], []);
+        setSelectedAnalysis(createdAnalysis.id);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["swot-analyses"] });
+      }
+
       toast.success("Análise SWOT criada com sucesso!");
       setIsCreateOpen(false);
       setNewAnalysis({ title: "", description: "" });
@@ -176,6 +203,20 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
     mutationFn: async (itemData: typeof newItem & { category: string }) => {
       if (!selectedAnalysis) throw new Error("Nenhuma análise selecionada");
 
+      if (isDemoMode()) {
+        const createdItem: SWOTItem = {
+          id: `item-${Date.now()}`,
+          swot_analysis_id: selectedAnalysis,
+          category: itemData.category as SWOTItem["category"],
+          item_text: itemData.item_text,
+          description: itemData.description,
+          impact_level: itemData.impact_level,
+        };
+
+        MOCK_SWOT_ITEMS.push(createdItem);
+        return createdItem;
+      }
+
       const { error } = await supabase
         .from("swot_items")
         .insert([{
@@ -186,8 +227,15 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["swot-items", selectedAnalysis] });
+    onSuccess: (createdItem) => {
+      if (isDemoMode() && selectedAnalysis && createdItem) {
+        queryClient.setQueryData(["swot-items", selectedAnalysis], (current: SWOTItem[] = []) => {
+          return [...current, createdItem];
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["swot-items", selectedAnalysis] });
+      }
+
       toast.success("Item adicionado com sucesso!");
       setIsItemOpen(false);
       setNewItem({ item_text: "", description: "", impact_level: "medium" });
@@ -200,15 +248,31 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
 
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: string) => {
+      if (isDemoMode()) {
+        const itemIndex = MOCK_SWOT_ITEMS.findIndex((item) => item.id === itemId);
+        if (itemIndex >= 0) {
+          MOCK_SWOT_ITEMS.splice(itemIndex, 1);
+        }
+        return itemId;
+      }
+
       const { error } = await supabase
         .from("swot_items")
         .delete()
         .eq("id", itemId);
 
       if (error) throw error;
+      return itemId;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["swot-items", selectedAnalysis] });
+    onSuccess: (deletedItemId) => {
+      if (isDemoMode() && selectedAnalysis) {
+        queryClient.setQueryData(["swot-items", selectedAnalysis], (current: SWOTItem[] = []) => {
+          return current.filter((item) => item.id !== deletedItemId);
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["swot-items", selectedAnalysis] });
+      }
+
       toast.success("Item removido com sucesso!");
     },
     onError: () => {

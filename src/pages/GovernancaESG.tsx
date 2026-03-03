@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,7 +49,10 @@ import { DashboardSkeleton } from "@/components/ui/skeleton-loader";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { toast } from "@/hooks/use-toast";
 
+type GovernanceModalMode = "create" | "edit" | "view" | "investigate";
+
 export default function GovernancaESG() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
 
   // Modal states
@@ -61,7 +65,7 @@ export default function GovernancaESG() {
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [modalMode, setModalMode] = useState('create');
+  const [modalMode, setModalMode] = useState<GovernanceModalMode>("create");
   const [isEmployeeDetailModalOpen, setIsEmployeeDetailModalOpen] = useState(false);
   const [viewingEmployee, setViewingEmployee] = useState(null);
   const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
@@ -75,7 +79,7 @@ export default function GovernancaESG() {
     priority: 'standard',
   });
 
-  const { data: employees, refetch: refetchEmployees, isLoading: loadingEmployees } = useOptimizedQuery({
+  const { data: employees, isLoading: loadingEmployees } = useOptimizedQuery({
     queryKey: ['employees'],
     queryFn: getEmployees,
   });
@@ -111,11 +115,27 @@ export default function GovernancaESG() {
   });
 
   // Event handlers
+  const whistleblowerMode: "create" | "view" | "investigate" =
+    modalMode === "edit" ? "investigate" : modalMode;
+
   const refetchData = () => {
-    toast({
-      title: "Dados Atualizados",
-      description: "As informações de governança foram atualizadas com sucesso.",
-    });
+    void (async () => {
+      await Promise.allSettled([
+        queryClient.invalidateQueries({ queryKey: ["governance-metrics"] }),
+        queryClient.invalidateQueries({ queryKey: ["employees"] }),
+        queryClient.invalidateQueries({ queryKey: ["employee-stats"] }),
+        queryClient.invalidateQueries({ queryKey: ["risk-metrics"] }),
+        queryClient.invalidateQueries({ queryKey: ["board-members"] }),
+        queryClient.invalidateQueries({ queryKey: ["corporate-policies"] }),
+        queryClient.invalidateQueries({ queryKey: ["whistleblower-reports"] }),
+        queryClient.invalidateQueries({ queryKey: ["esg-risks"] }),
+      ]);
+
+      toast({
+        title: "Dados Atualizados",
+        description: "As informações de governança foram atualizadas com sucesso.",
+      });
+    })();
   };
 
   const handleEditMember = (member: any) => {
@@ -351,7 +371,7 @@ export default function GovernancaESG() {
             setSelectedReport(null);
           }}
           report={selectedReport}
-          mode={modalMode as any}
+          mode={whistleblowerMode}
           onUpdate={refetchData}
         />
 
