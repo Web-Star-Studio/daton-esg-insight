@@ -39,10 +39,7 @@ interface Document {
   file_name: string;
   file_path: string;
   file_size: number;
-<<<<<<< HEAD
-=======
   related_model: string;
->>>>>>> bd2b3dbf5dad5a2c91a2a4788a9f2d7e12d6dd13
   document_type: string;
   ai_extracted_category: string | null;
   upload_date: string;
@@ -112,10 +109,7 @@ export const SGQIsoDocumentsTab = () => {
           file_name,
           file_path,
           file_size,
-<<<<<<< HEAD
-=======
           related_model,
->>>>>>> bd2b3dbf5dad5a2c91a2a4788a9f2d7e12d6dd13
           document_type,
           ai_extracted_category,
           upload_date,
@@ -131,13 +125,6 @@ export const SGQIsoDocumentsTab = () => {
           code,
           responsible_department
         `)
-<<<<<<< HEAD
-        .eq('related_model', 'quality_document')
-        .order('upload_date', { ascending: false });
-
-      if (error) throw error;
-      setDocuments((data || []) as Document[]);
-=======
         .order('upload_date', { ascending: false });
 
       if (error) throw error;
@@ -148,7 +135,6 @@ export const SGQIsoDocumentsTab = () => {
         (doc) => doc.related_model !== 'licenses' && doc.related_model !== 'license',
       );
       setDocuments(nonRegulatoryDocs as Document[]);
->>>>>>> bd2b3dbf5dad5a2c91a2a4788a9f2d7e12d6dd13
     } catch (error) {
       console.error('Erro ao carregar documentos:', error);
       toast({
