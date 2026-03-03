@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -544,6 +545,92 @@ serve(async (req) => {
 
         if (linkError) throw linkError;
 
+        const recoveryLink = linkData?.properties?.action_link;
+
+        // Fetch user's full_name for the email
+        const { data: targetProfile } = await supabaseClient
+          .from('profiles')
+          .select('full_name')
+          .eq('id', userData.id)
+          .single();
+
+        const fullName = targetProfile?.full_name || userData.email;
+
+        // Send recovery email via Resend
+        const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+        if (!RESEND_API_KEY) {
+          throw new Error("RESEND_API_KEY não configurada");
+        }
+
+        const resend = new Resend(RESEND_API_KEY);
+
+        const emailHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="utf-8"></head>
+          <body style="margin:0;padding:0;background-color:#f9fafb;font-family:Arial,Helvetica,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;padding:40px 0;">
+              <tr>
+                <td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                    <tr>
+                      <td style="padding:32px 40px 24px 40px;text-align:center;">
+                        <img src="https://dqlvioijqzlvnvvajmft.supabase.co/storage/v1/object/public/assets/logo-daton.png" alt="Daton" width="120" style="margin-bottom:16px;" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:0 40px 32px 40px;">
+                        <h1 style="color:#1a1a1a;font-size:22px;font-weight:600;margin:0 0 16px 0;">Recuperação de Senha</h1>
+                        <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 16px 0;">
+                          Olá <strong>${fullName}</strong>,
+                        </p>
+                        <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 24px 0;">
+                          Recebemos uma solicitação administrativa para redefinir a senha da sua conta na plataforma Daton. Clique no botão abaixo para criar uma nova senha:
+                        </p>
+                        <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px auto;">
+                          <tr>
+                            <td style="background-color:#0f172a;border-radius:6px;padding:14px 32px;">
+                              <a href="${recoveryLink}" style="color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;display:inline-block;">
+                                Redefinir Senha
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+                        <p style="color:#9ca3af;font-size:13px;line-height:1.5;margin:0 0 8px 0;">
+                          Se você não solicitou esta alteração, entre em contato com o administrador da sua empresa.
+                        </p>
+                        <p style="color:#9ca3af;font-size:13px;line-height:1.5;margin:0;">
+                          Este link expira em 24 horas.
+                        </p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:24px 40px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
+                        <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">
+                          Daton - Plataforma ESG &amp; Compliance
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+        `;
+
+        const { error: emailError } = await resend.emails.send({
+          from: "Daton <plataforma@daton.com.br>",
+          to: [userData.email],
+          subject: "Recuperação de Senha - Daton",
+          html: emailHtml,
+        });
+
+        if (emailError) {
+          console.error("Error sending recovery email via Resend:", emailError);
+          throw new Error("Falha ao enviar email de recuperação");
+        }
+
         // Log activity
         await logActivity(
           supabaseClient,
@@ -556,10 +643,7 @@ serve(async (req) => {
 
         return new Response(JSON.stringify({ 
           success: true, 
-          message: 'Link de recuperação enviado',
-          // In production, you'd send this via email service
-          // For now, return the link for testing
-          link: linkData?.properties?.action_link
+          message: 'Email de recuperação enviado com sucesso'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

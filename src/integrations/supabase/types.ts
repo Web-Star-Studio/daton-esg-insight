@@ -15585,8 +15585,8 @@ export type Database = {
           id: string
           license_id: string
           notification_config: Json | null
-          protocol_number: string | null
           protocol_deadline: string
+          protocol_number: string | null
           renewed_expiration_date: string | null
           scheduled_start_date: string
           status: Database["public"]["Enums"]["license_renewal_status_enum"]
@@ -15601,8 +15601,8 @@ export type Database = {
           id?: string
           license_id: string
           notification_config?: Json | null
-          protocol_number?: string | null
           protocol_deadline: string
+          protocol_number?: string | null
           renewed_expiration_date?: string | null
           scheduled_start_date: string
           status?: Database["public"]["Enums"]["license_renewal_status_enum"]
@@ -15617,8 +15617,8 @@ export type Database = {
           id?: string
           license_id?: string
           notification_config?: Json | null
-          protocol_number?: string | null
           protocol_deadline?: string
+          protocol_number?: string | null
           renewed_expiration_date?: string | null
           scheduled_start_date?: string
           status?: Database["public"]["Enums"]["license_renewal_status_enum"]
@@ -19369,6 +19369,32 @@ export type Database = {
         }
         Relationships: []
       }
+      regulatory_document_settings: {
+        Row: {
+          company_id: string
+          default_expiring_days: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          default_expiring_days?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          default_expiring_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_document_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       regulatory_requirements: {
         Row: {
           company_id: string
@@ -20218,32 +20244,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      regulatory_document_settings: {
-        Row: {
-          company_id: string
-          default_expiring_days: number
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          default_expiring_days?: number
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          default_expiring_days?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "regulatory_document_settings_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: true
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       sbt_progress: {
         Row: {
@@ -21576,15 +21576,11 @@ export type Database = {
       supplier_document_evaluations: {
         Row: {
           company_id: string
-          compliance_threshold: number
           compliance_percentage: number | null
           created_at: string | null
-          criteria_snapshot: Json
           evaluated_by: string | null
           evaluation_date: string
-          has_adequation: boolean
           id: string
-          is_compliant: boolean
           next_evaluation_date: string | null
           observation: string | null
           supplier_id: string
@@ -21594,15 +21590,11 @@ export type Database = {
         }
         Insert: {
           company_id: string
-          compliance_threshold?: number
           compliance_percentage?: number | null
           created_at?: string | null
-          criteria_snapshot?: Json
           evaluated_by?: string | null
           evaluation_date?: string
-          has_adequation?: boolean
           id?: string
-          is_compliant?: boolean
           next_evaluation_date?: string | null
           observation?: string | null
           supplier_id: string
@@ -21612,15 +21604,11 @@ export type Database = {
         }
         Update: {
           company_id?: string
-          compliance_threshold?: number
           compliance_percentage?: number | null
           created_at?: string | null
-          criteria_snapshot?: Json
           evaluated_by?: string | null
           evaluation_date?: string
-          has_adequation?: boolean
           id?: string
-          is_compliant?: boolean
           next_evaluation_date?: string | null
           observation?: string | null
           supplier_id?: string
@@ -21657,7 +21645,6 @@ export type Database = {
           file_name: string | null
           file_path: string | null
           id: string
-          is_in_adequation: boolean
           is_exempt: boolean | null
           next_evaluation_date: string | null
           notes: string | null
@@ -21679,7 +21666,6 @@ export type Database = {
           file_name?: string | null
           file_path?: string | null
           id?: string
-          is_in_adequation?: boolean
           is_exempt?: boolean | null
           next_evaluation_date?: string | null
           notes?: string | null
@@ -21701,7 +21687,6 @@ export type Database = {
           file_name?: string | null
           file_path?: string | null
           id?: string
-          is_in_adequation?: boolean
           is_exempt?: boolean | null
           next_evaluation_date?: string | null
           notes?: string | null
