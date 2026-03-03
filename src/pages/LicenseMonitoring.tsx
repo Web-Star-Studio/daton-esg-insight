@@ -113,7 +113,7 @@ export default function LicenseMonitoring() {
           <h1 className="text-3xl font-bold">Dashboard de Monitoramento</h1>
           <p className="text-muted-foreground">Visão completa de alertas e observações</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={() => exportReport('excel')}>
             <Download className="h-4 w-4 mr-2" />
             Exportar Excel

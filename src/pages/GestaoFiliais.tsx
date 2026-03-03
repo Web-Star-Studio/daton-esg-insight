@@ -342,7 +342,7 @@ export default function GestaoFiliais() {
   );
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full overflow-hidden py-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
@@ -354,7 +354,7 @@ export default function GestaoFiliais() {
             Gerencie as filiais e unidades da sua empresa
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <input
             type="file"
             ref={fileInputRef}

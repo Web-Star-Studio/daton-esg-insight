@@ -1,5 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
+const MOCK_SWOT_ANALYSES: SWOTAnalysis[] = [
+  {
+    id: "demo-swot-1",
+    title: "Análise SWOT 2024",
+    description: "Análise estratégica anual de sustentabilidade e negócios.",
+    created_at: new Date().toISOString()
+  }
+];
+
+const MOCK_SWOT_ITEMS: SWOTItem[] = [
+  {
+    id: "item-1",
+    category: "strengths",
+    item_text: "Marca Forte em Sustentabilidade",
+    description: "Reconhecimento no mercado pelas práticas ESG.",
+    impact_level: "high"
+  },
+  {
+    id: "item-2",
+    category: "strengths",
+    item_text: "Equipe Capacitada",
+    description: "Baixa rotatividade e alta especialização técnica.",
+    impact_level: "medium"
+  },
+  {
+    id: "item-3",
+    category: "weaknesses",
+    item_text: "Dependência de Fornecedores Externos",
+    description: "Cadeia de suprimentos vulnerável a interrupções globais.",
+    impact_level: "high"
+  },
+  {
+    id: "item-4",
+    category: "opportunities",
+    item_text: "Expansão para Mercados Verdes",
+    description: "Novos produtos focados na economia circular.",
+    impact_level: "high"
+  },
+  {
+    id: "item-5",
+    category: "threats",
+    item_text: "Novas Regulamentações Ambientais",
+    description: "Maior rigor na legislação de emissões.",
+    impact_level: "medium"
+  }
+];
 import { Plus, Edit, Trash2, Target, Shield, TrendingUp, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -41,9 +90,9 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
     item_text: string;
     description: string;
     impact_level: 'low' | 'medium' | 'high';
-  }>({ 
-    item_text: "", 
-    description: "", 
+  }>({
+    item_text: "",
+    description: "",
     impact_level: "medium"
   });
 
@@ -52,11 +101,13 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   const { data: analyses } = useQuery({
     queryKey: ["swot-analyses"],
     queryFn: async () => {
+      if (isDemoMode()) return MOCK_SWOT_ANALYSES;
+
       const { data, error } = await supabase
         .from("swot_analysis")
         .select("*")
         .order("created_at", { ascending: false });
-      
+
       if (error) throw error;
       return data as SWOTAnalysis[];
     },
@@ -66,18 +117,26 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
     queryKey: ["swot-items", selectedAnalysis],
     queryFn: async () => {
       if (!selectedAnalysis) return [];
-      
+
+      if (isDemoMode()) return MOCK_SWOT_ITEMS;
+
       const { data, error } = await supabase
         .from("swot_items")
         .select("*")
         .eq("swot_analysis_id", selectedAnalysis)
         .order("order_index");
-      
+
       if (error) throw error;
       return data as SWOTItem[];
     },
     enabled: !!selectedAnalysis,
   });
+
+  useEffect(() => {
+    if (analyses && analyses.length > 0 && !selectedAnalysis) {
+      setSelectedAnalysis(analyses[0].id);
+    }
+  }, [analyses, selectedAnalysis]);
 
   const createAnalysisMutation = useMutation({
     mutationFn: async (analysisData: typeof newAnalysis) => {
@@ -94,8 +153,8 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
 
       const { error } = await supabase
         .from("swot_analysis")
-        .insert([{ 
-          ...analysisData, 
+        .insert([{
+          ...analysisData,
           company_id: profile.company_id,
           strategic_map_id: strategicMapId
         }]);
@@ -119,8 +178,8 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
 
       const { error } = await supabase
         .from("swot_items")
-        .insert([{ 
-          ...itemData, 
+        .insert([{
+          ...itemData,
           swot_analysis_id: selectedAnalysis,
           category: itemData.category as SWOTItem['category']
         }]);
@@ -169,37 +228,37 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   const getCategoryInfo = (category: string) => {
     switch (category) {
       case 'strengths':
-        return { 
-          label: 'Forças', 
-          icon: Shield, 
+        return {
+          label: 'Forças',
+          icon: Shield,
           color: 'text-green-600',
           bg: 'bg-green-50 border-green-200'
         };
       case 'weaknesses':
-        return { 
-          label: 'Fraquezas', 
-          icon: AlertTriangle, 
+        return {
+          label: 'Fraquezas',
+          icon: AlertTriangle,
           color: 'text-red-600',
           bg: 'bg-red-50 border-red-200'
         };
       case 'opportunities':
-        return { 
-          label: 'Oportunidades', 
-          icon: TrendingUp, 
+        return {
+          label: 'Oportunidades',
+          icon: TrendingUp,
           color: 'text-blue-600',
           bg: 'bg-blue-50 border-blue-200'
         };
       case 'threats':
-        return { 
-          label: 'Ameaças', 
-          icon: Target, 
+        return {
+          label: 'Ameaças',
+          icon: Target,
           color: 'text-orange-600',
           bg: 'bg-orange-50 border-orange-200'
         };
       default:
-        return { 
-          label: 'Categoria', 
-          icon: Target, 
+        return {
+          label: 'Categoria',
+          icon: Target,
           color: 'text-muted-foreground',
           bg: 'bg-muted'
         };
@@ -221,7 +280,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
             Analise forças, fraquezas, oportunidades e ameaças
           </p>
         </div>
-        
+
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -239,7 +298,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                 <Input
                   id="title"
                   value={newAnalysis.title}
-                  onChange={(e) => setNewAnalysis({...newAnalysis, title: e.target.value})}
+                  onChange={(e) => setNewAnalysis({ ...newAnalysis, title: e.target.value })}
                   placeholder="Nome da análise SWOT"
                 />
               </div>
@@ -248,12 +307,12 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                 <Textarea
                   id="description"
                   value={newAnalysis.description}
-                  onChange={(e) => setNewAnalysis({...newAnalysis, description: e.target.value})}
+                  onChange={(e) => setNewAnalysis({ ...newAnalysis, description: e.target.value })}
                   placeholder="Descrição da análise"
                 />
               </div>
-              <Button 
-                onClick={() => createAnalysisMutation.mutate(newAnalysis)} 
+              <Button
+                onClick={() => createAnalysisMutation.mutate(newAnalysis)}
                 className="w-full"
                 disabled={createAnalysisMutation.isPending}
               >
@@ -314,7 +373,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                   <Input
                     id="item_text"
                     value={newItem.item_text}
-                    onChange={(e) => setNewItem({...newItem, item_text: e.target.value})}
+                    onChange={(e) => setNewItem({ ...newItem, item_text: e.target.value })}
                     placeholder="Descreva o item"
                   />
                 </div>
@@ -323,16 +382,16 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                   <Textarea
                     id="description"
                     value={newItem.description}
-                    onChange={(e) => setNewItem({...newItem, description: e.target.value})}
+                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                     placeholder="Descrição detalhada"
                   />
                 </div>
                 <div>
                   <Label>Nível de Impacto</Label>
-                  <Select 
-                    value={newItem.impact_level} 
-                    onValueChange={(value: 'low' | 'medium' | 'high') => 
-                      setNewItem({...newItem, impact_level: value})
+                  <Select
+                    value={newItem.impact_level}
+                    onValueChange={(value: 'low' | 'medium' | 'high') =>
+                      setNewItem({ ...newItem, impact_level: value })
                     }
                   >
                     <SelectTrigger>
@@ -345,8 +404,8 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button 
-                  onClick={() => createItemMutation.mutate({...newItem, category: selectedCategory})} 
+                <Button
+                  onClick={() => createItemMutation.mutate({ ...newItem, category: selectedCategory })}
                   className="w-full"
                   disabled={createItemMutation.isPending || !selectedCategory}
                 >
@@ -376,8 +435,8 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {categoryItems.map((item) => (
-                      <div 
-                        key={item.id} 
+                      <div
+                        key={item.id}
                         className="p-3 bg-background rounded-lg border shadow-sm"
                       >
                         <div className="flex justify-between items-start gap-2">
@@ -390,12 +449,12 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                             )}
                           </div>
                           <div className="flex items-center gap-1">
-                            <Badge 
+                            <Badge
                               variant={getImpactColor(item.impact_level) as "destructive" | "secondary" | "outline"}
                               className="text-xs"
                             >
-                              {item.impact_level === 'high' ? 'Alto' : 
-                               item.impact_level === 'medium' ? 'Médio' : 'Baixo'}
+                              {item.impact_level === 'high' ? 'Alto' :
+                                item.impact_level === 'medium' ? 'Médio' : 'Baixo'}
                             </Badge>
                             <Button
                               variant="ghost"
@@ -409,7 +468,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                         </div>
                       </div>
                     ))}
-                    
+
                     {categoryItems.length === 0 && (
                       <p className="text-center text-muted-foreground text-sm py-4">
                         Nenhum item cadastrado

@@ -123,7 +123,7 @@ export default function PontoFrequencia() {
 
   if (statsLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-8">
+      <div className="w-full overflow-hidden p-6 space-y-8">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -168,15 +168,15 @@ export default function PontoFrequencia() {
   ];
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
-      <div className="flex justify-between items-center">
+    <div className="w-full overflow-hidden p-6 space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Ponto e Frequência</h1>
           <p className="text-muted-foreground mt-2">
             Controle de horários, presenças e solicitações de funcionários
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
             <Download className="w-4 h-4 mr-2" />
             Exportar Dados
@@ -227,21 +227,21 @@ export default function PontoFrequencia() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
                       Presentes
                     </span>
                     <span className="font-semibold">{attendanceStats?.presentToday}</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-yellow-600" />
                       Atrasos
                     </span>
                     <span className="font-semibold">{attendanceStats?.lateToday}</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="flex items-center gap-2">
                       <XCircle className="w-4 h-4 text-red-600" />
                       Ausentes
@@ -273,35 +273,35 @@ export default function PontoFrequencia() {
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div>
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-1">
                       <span className="text-sm">Segunda-feira</span>
                       <span className="text-sm font-medium">94%</span>
                     </div>
                     <Progress value={94} className="h-2" />
                   </div>
                   <div>
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-1">
                       <span className="text-sm">Terça-feira</span>
                       <span className="text-sm font-medium">96%</span>
                     </div>
                     <Progress value={96} className="h-2" />
                   </div>
                   <div>
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-1">
                       <span className="text-sm">Quarta-feira</span>
                       <span className="text-sm font-medium">93%</span>
                     </div>
                     <Progress value={93} className="h-2" />
                   </div>
                   <div>
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-1">
                       <span className="text-sm">Quinta-feira</span>
                       <span className="text-sm font-medium">95%</span>
                     </div>
                     <Progress value={95} className="h-2" />
                   </div>
                   <div>
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-1">
                       <span className="text-sm">Sexta-feira</span>
                       <span className="text-sm font-medium">89%</span>
                     </div>
@@ -480,7 +480,7 @@ export default function PontoFrequencia() {
                         {translateStatus(request.status)}
                       </Badge>
                       {(request.status === "pending" || request.status === "Pendente") && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                           <Button 
                             size="sm" 
                             variant="outline" 

@@ -115,7 +115,7 @@ export default function BaseConhecimento() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full overflow-hidden p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -124,7 +124,7 @@ export default function BaseConhecimento() {
             Gerencie e compartilhe o conhecimento organizacional
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button 
             variant="outline" 
             onClick={() => setIsBookmarksModalOpen(true)}

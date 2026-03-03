@@ -65,7 +65,7 @@ export default function LAIAUnidadePage() {
 
   if (branchLoading) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="w-full overflow-hidden py-6 space-y-6">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-96 w-full" />
       </div>
@@ -74,7 +74,7 @@ export default function LAIAUnidadePage() {
 
   if (!branch) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="w-full overflow-hidden py-6">
         <div className="text-center py-12">
           <Building2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold mb-2">Unidade não encontrada</h2>
@@ -100,7 +100,7 @@ export default function LAIAUnidadePage() {
         />
       </Helmet>
 
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="w-full overflow-hidden py-6 space-y-6">
         {/* Breadcrumb & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, TrendingUp, TrendingDown, Brain, Target } from 'lucide-react';
+import { useDemo } from '@/contexts/DemoContext';
 import { unifiedQualityService } from '@/services/unifiedQualityService';
 
 interface PredictiveQualityWidgetProps {
@@ -12,22 +13,24 @@ interface PredictiveQualityWidgetProps {
 }
 
 export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = ({ className }) => {
+  const { isDemo } = useDemo();
+
   const { data: metrics, isLoading: isMetricsLoading } = useQuery({
-    queryKey: ['quality-metrics'],
-    queryFn: () => unifiedQualityService.getQualityMetrics(),
+    queryKey: ['quality-metrics', isDemo],
+    queryFn: () => unifiedQualityService.getQualityMetrics(isDemo),
     refetchInterval: 60000, // Refresh every minute
   });
 
   const { data: predictions, isLoading: isPredictionsLoading } = useQuery({
-    queryKey: ['predictive-analysis', metrics],
-    queryFn: () => metrics ? unifiedQualityService.getPredictiveAnalysis() : null,
+    queryKey: ['predictive-analysis', metrics, isDemo],
+    queryFn: () => metrics ? unifiedQualityService.getPredictiveAnalysis(isDemo) : null,
     enabled: !!metrics,
     refetchInterval: 120000, // Refresh every 2 minutes
   });
 
   const { data: trends } = useQuery({
-    queryKey: ['quality-trends'],
-    queryFn: () => unifiedQualityService.getQualityTrends('7d'),
+    queryKey: ['quality-trends', isDemo],
+    queryFn: () => unifiedQualityService.getQualityTrends('7d', isDemo),
     refetchInterval: 300000, // Refresh every 5 minutes
   });
 
@@ -120,13 +123,13 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
               </div>
               <span className="text-sm font-medium">Nível de Risco</span>
             </div>
-            <Badge 
+            <Badge
               variant={riskLevel === 'high' ? 'destructive' :
-                      riskLevel === 'medium' ? 'default' : 'secondary'}
+                riskLevel === 'medium' ? 'default' : 'secondary'}
               className={`${getRiskColor(riskLevel)} animate-in slide-in-from-right duration-500`}
             >
               {riskLevel === 'high' ? 'Alto' :
-               riskLevel === 'medium' ? 'Médio' : 'Baixo'}
+                riskLevel === 'medium' ? 'Médio' : 'Baixo'}
             </Badge>
           </div>
 
@@ -134,11 +137,11 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
           <div className="p-3 rounded-lg border bg-muted/50 space-y-2 hover:shadow-md transition-all duration-200 group">
             <div className="flex justify-between items-center text-sm">
               <span className="font-medium text-foreground">NCs Previstas</span>
-                <span className="font-bold text-lg text-foreground group-hover:scale-105 transition-transform animate-in slide-in-from-right duration-700">
+              <span className="font-bold text-lg text-foreground group-hover:scale-105 transition-transform animate-in slide-in-from-right duration-700">
                 {nextMonthNCs}
               </span>
             </div>
-            <Progress 
+            <Progress
               value={Math.min((nextMonthNCs / 10) * 100, 100)}
               className="h-2 transition-all duration-1000"
             />
@@ -164,7 +167,7 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
                 </span>
               </div>
             </div>
-            <Progress 
+            <Progress
               value={qualityScore}
               className="h-2 transition-all duration-1000"
             />

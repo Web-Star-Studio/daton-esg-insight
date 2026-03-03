@@ -96,7 +96,7 @@ export default function AnaliseMaterialidade() {
   // Tratamento de erro para assessments
   if (assessmentsError) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="w-full overflow-hidden p-6">
         <Card>
           <CardContent className="p-8 text-center">
             <Target className="h-12 w-12 text-destructive mx-auto mb-4" />
@@ -127,7 +127,7 @@ export default function AnaliseMaterialidade() {
   }
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 space-y-6">
+    <div className="w-full overflow-hidden p-4 sm:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

@@ -154,7 +154,7 @@ export default function LAIAUnidades() {
         <title>LAIA | Plataforma Daton</title>
       </Helmet>
 
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="w-full overflow-hidden py-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold flex items-center gap-2">

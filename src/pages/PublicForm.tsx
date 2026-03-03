@@ -45,7 +45,7 @@ export default function PublicForm() {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="container mx-auto py-8">
+      <div className="w-full overflow-hidden py-8">
         <PublicFormRenderer 
           formId={formId}
           trackingId={trackingId}

@@ -302,9 +302,9 @@ const AcoesCorretivas = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
+    <div className="w-full overflow-hidden p-6 space-y-8">
       <div className="flex flex-col space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Ações Corretivas</h1>
             <p className="text-muted-foreground">Gestão de planos de ação corretiva e preventiva</p>
@@ -658,7 +658,7 @@ const AcoesCorretivas = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                           <Button 
                             variant="outline" 
                             size="sm"

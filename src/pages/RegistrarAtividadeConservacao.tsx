@@ -295,7 +295,7 @@ const RegistrarAtividadeConservacao = () => {
                     <Label htmlFor="area_size">
                       Área ({selectedType?.unit || 'hectares'})
                     </Label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                       <Input
                         id="area_size"
                         type="number"

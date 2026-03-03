@@ -299,6 +299,7 @@ const AppContent = () => {
               <Route path="mapeamento-processos" element={<LazyPageWrapper><MapeamentoProcessos /></LazyPageWrapper>} />
               <Route path="planejamento-estrategico" element={<LazyPageWrapper><PlanejamentoEstrategico /></LazyPageWrapper>} />
               <Route path="licenciamento" element={<LazyPageWrapper><Licenciamento /></LazyPageWrapper>} />
+              <Route path="licenciamento/legislacoes" element={<LazyPageWrapper><LegislationsHub /></LazyPageWrapper>} />
               <Route path="laia" element={<LazyPageWrapper><LAIAUnidades /></LazyPageWrapper>} />
               <Route path="fornecedores/dashboard" element={<LazyPageWrapper><SupplierManagementDashboard /></LazyPageWrapper>} />
               <Route path="fornecedores/cadastro" element={<LazyPageWrapper><SupplierRegistration /></LazyPageWrapper>} />
@@ -362,6 +363,8 @@ const AppContent = () => {
               <Route path="financeiro/centros-custo" element={<LazyPageWrapper><CentroCustos /></LazyPageWrapper>} />
               <Route path="financeiro/relatorios" element={<LazyPageWrapper><RelatoriosFinanceiros /></LazyPageWrapper>} />
               <Route path="financeiro/rentabilidade" element={<LazyPageWrapper><AnaliseRentabilidade /></LazyPageWrapper>} />
+              <Route path="financeiro/residuos/contas-a-pagar" element={<LazyPageWrapper><FinanceiroResiduosContasAPagar /></LazyPageWrapper>} />
+              <Route path="financeiro/residuos/contas-a-receber" element={<LazyPageWrapper><FinanceiroResiduosContasAReceber /></LazyPageWrapper>} />
               {/* Rotas faltantes - Dados e Relatórios */}
               <Route path="coleta-dados" element={<LazyPageWrapper><ColetaDados /></LazyPageWrapper>} />
               <Route path="documentos" element={<LazyPageWrapper><DocumentosHub /></LazyPageWrapper>} />
@@ -374,6 +377,8 @@ const AppContent = () => {
               <Route path="biblioteca-fatores" element={<LazyPageWrapper><BibliotecaFatores /></LazyPageWrapper>} />
               <Route path="gestao-usuarios" element={<LazyPageWrapper><GestaoUsuarios /></LazyPageWrapper>} />
               <Route path="formularios-customizados" element={<LazyPageWrapper><FormulariosCustomizados /></LazyPageWrapper>} />
+              <Route path="listas-de-envio" element={<LazyPageWrapper><ListasDeEnvio /></LazyPageWrapper>} />
+              <Route path="system-status" element={<LazyPageWrapper><SystemStatus /></LazyPageWrapper>} />
               {/* Catch-all demo → index */}
               <Route path="*" element={<Navigate to="/demo" replace />} />
             </Route>

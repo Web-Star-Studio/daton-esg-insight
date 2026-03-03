@@ -4,10 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Shield, 
-  FileText, 
-  AlertTriangle, 
+import {
+  Shield,
+  FileText,
+  AlertTriangle,
   MessageSquare,
   Users,
   TrendingUp,
@@ -50,7 +50,7 @@ import { toast } from "@/hooks/use-toast";
 
 export default function GovernancaESG() {
   const [activeTab, setActiveTab] = useState("overview");
-  
+
   // Modal states
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
@@ -184,206 +184,207 @@ export default function GovernancaESG() {
   return (
     <ErrorBoundary>
       <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">ESG Governança</h1>
-              <p className="text-muted-foreground">
-                Gestão completa dos aspectos de governança corporativa
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setIsReportsModalOpen(true)}>
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Relatórios
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Novo Registro
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => {
-                    setSelectedMember(null);
-                    setModalMode('create');
-                    setIsBoardModalOpen(true);
-                  }}>
-                    <Users className="mr-2 h-4 w-4" />
-                    Novo Conselheiro
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    setSelectedPolicy(null);
-                    setModalMode('create');
-                    setIsPolicyModalOpen(true);
-                  }}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Nova Política
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleCreateRisk}>
-                    <AlertTriangle className="mr-2 h-4 w-4" />
-                    Novo Risco ESG
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    setSelectedReport(null);
-                    setModalMode('create');
-                    setIsWhistleblowerModalOpen(true);
-                  }}>
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Nova Denúncia
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    setSelectedEmployee(null);
-                    setModalMode('create');
-                    setIsEmployeeModalOpen(true);
-                  }}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Novo Funcionário
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">ESG Governança</h1>
+            <p className="text-muted-foreground">
+              Gestão completa dos aspectos de governança corporativa
+            </p>
           </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-              <TabsTrigger value="structure">Estrutura</TabsTrigger>
-              <TabsTrigger value="policies">Políticas</TabsTrigger>
-              <TabsTrigger value="employees">Funcionários</TabsTrigger>
-              <TabsTrigger value="risks">Riscos ESG</TabsTrigger>
-              <TabsTrigger value="ethics">Ética</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-6">
-              <LoadingState 
-                loading={loadingGovernance || loadingRisks} 
-                error={governanceError}
-                skeleton={<DashboardSkeleton />}
-              >
-                <div className="grid gap-6 animate-fade-in">
-                  <GovernanceDashboard governanceMetrics={governanceMetrics} riskMetrics={riskMetrics} />
-                  <UnifiedDashboardWidget />
-                </div>
-              </LoadingState>
-            </TabsContent>
-
-            <TabsContent value="structure">
-              <GovernanceStructure 
-                onEditMember={handleEditMember}
-                onCreateMember={() => {
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button onClick={() => setIsReportsModalOpen(true)}>
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Relatórios
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo Registro
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => {
                   setSelectedMember(null);
                   setModalMode('create');
                   setIsBoardModalOpen(true);
-                }}
-              />
-            </TabsContent>
-
-            <TabsContent value="policies">
-              <CorporatePolicies 
-                onEditPolicy={handleEditPolicy}
-                onCreatePolicy={() => {
+                }}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Novo Conselheiro
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
                   setSelectedPolicy(null);
                   setModalMode('create');
                   setIsPolicyModalOpen(true);
-                }}
-              />
-            </TabsContent>
-
-            <TabsContent value="employees">
-              <EmployeesList 
-                onEditEmployee={handleEditEmployee}
-                onCreateEmployee={() => {
-                  setSelectedEmployee(null);
-                  setModalMode('create');
-                  setIsEmployeeModalOpen(true);
-                }}
-                onViewEmployee={handleViewEmployee}
-              />
-            </TabsContent>
-
-            <TabsContent value="risks">
-              <ESGRisksMatrix 
-                onEditRisk={handleEditRisk} 
-                onCreateRisk={handleCreateRisk}
-              />
-            </TabsContent>
-
-            <TabsContent value="ethics">
-              <EthicsChannel 
-                onViewReport={handleViewReport}
-                onInvestigateReport={handleInvestigateReport}
-                onCreateReport={() => {
+                }}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Nova Política
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCreateRisk}>
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  Novo Risco ESG
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
                   setSelectedReport(null);
                   setModalMode('create');
                   setIsWhistleblowerModalOpen(true);
-                }}
-              />
-            </TabsContent>
-          </Tabs>
-
-          {/* Modals */}
-          <BoardMemberModal
-            isOpen={isBoardModalOpen}
-            onClose={() => {
-              setIsBoardModalOpen(false);
-              setSelectedMember(null);
-            }}
-            member={selectedMember}
-            onUpdate={refetchData}
-          />
-
-          <CorporatePolicyModal
-            isOpen={isPolicyModalOpen}
-            onClose={() => {
-              setIsPolicyModalOpen(false);
-              setSelectedPolicy(null);
-            }}
-            policy={selectedPolicy}
-            onUpdate={refetchData}
-          />
-
-          <WhistleblowerModal
-            isOpen={isWhistleblowerModalOpen}
-            onClose={() => {
-              setIsWhistleblowerModalOpen(false);
-              setSelectedReport(null);
-            }}
-            report={selectedReport}
-            mode={modalMode as any}
-            onUpdate={refetchData}
-          />
-
-          <EmployeeModal
-            isOpen={isEmployeeModalOpen}
-            onClose={() => {
-              setIsEmployeeModalOpen(false);
-              setSelectedEmployee(null);
-            }}
-            employee={selectedEmployee}
-            onSuccess={refetchData}
-          />
-
-          <EmployeeDetailModal
-            isOpen={isEmployeeDetailModalOpen}
-            onClose={handleDetailModalClose}
-            onEdit={handleEditFromDetail}
-            employee={viewingEmployee}
-          />
-
-          <GovernanceReportsModal
-            isOpen={isReportsModalOpen}
-            onClose={() => setIsReportsModalOpen(false)}
-          />
-
-          <ESGRiskModal
-            isOpen={isRiskModalOpen}
-            onClose={handleCloseRiskModal}
-            risk={selectedRisk}
-            mode={riskModalMode}
-          />
+                }}>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Nova Denúncia
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  setSelectedEmployee(null);
+                  setModalMode('create');
+                  setIsEmployeeModalOpen(true);
+                }}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Novo Funcionário
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-      </ErrorBoundary>
-    );
-  }
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="structure">Estrutura</TabsTrigger>
+            <TabsTrigger value="policies">Políticas</TabsTrigger>
+            <TabsTrigger value="employees">Funcionários</TabsTrigger>
+            <TabsTrigger value="risks">Riscos ESG</TabsTrigger>
+            <TabsTrigger value="ethics">Ética</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <LoadingState
+              loading={loadingGovernance || loadingRisks}
+              error={governanceError}
+              skeleton={<DashboardSkeleton />}
+            >
+              <div className="grid gap-6 animate-fade-in">
+                <GovernanceDashboard governanceMetrics={governanceMetrics} riskMetrics={riskMetrics} />
+                <UnifiedDashboardWidget />
+              </div>
+            </LoadingState>
+          </TabsContent>
+
+          <TabsContent value="structure">
+            <GovernanceStructure
+              onEditMember={handleEditMember}
+              onCreateMember={() => {
+                setSelectedMember(null);
+                setModalMode('create');
+                setIsBoardModalOpen(true);
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="policies">
+            <CorporatePolicies
+              onEditPolicy={handleEditPolicy}
+              onCreatePolicy={() => {
+                setSelectedPolicy(null);
+                setModalMode('create');
+                setIsPolicyModalOpen(true);
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="employees">
+            <EmployeesList
+              onEditEmployee={handleEditEmployee}
+              onCreateEmployee={() => {
+                setSelectedEmployee(null);
+                setModalMode('create');
+                setIsEmployeeModalOpen(true);
+              }}
+              onViewEmployee={handleViewEmployee}
+            />
+          </TabsContent>
+
+          <TabsContent value="risks">
+            <ESGRisksMatrix
+              onEditRisk={handleEditRisk}
+              onCreateRisk={handleCreateRisk}
+            />
+          </TabsContent>
+
+          <TabsContent value="ethics">
+            <EthicsChannel
+              onViewReport={handleViewReport}
+              onInvestigateReport={handleInvestigateReport}
+              onCreateReport={() => {
+                setSelectedReport(null);
+                setModalMode('create');
+                setIsWhistleblowerModalOpen(true);
+              }}
+            />
+          </TabsContent>
+        </Tabs>
+
+        {/* Modals */}
+        <BoardMemberModal
+          isOpen={isBoardModalOpen}
+          onClose={() => {
+            setIsBoardModalOpen(false);
+            setSelectedMember(null);
+          }}
+          member={selectedMember}
+          onUpdate={refetchData}
+        />
+
+        <CorporatePolicyModal
+          isOpen={isPolicyModalOpen}
+          onClose={() => {
+            setIsPolicyModalOpen(false);
+            setSelectedPolicy(null);
+          }}
+          policy={selectedPolicy}
+          onUpdate={refetchData}
+        />
+
+        <WhistleblowerModal
+          isOpen={isWhistleblowerModalOpen}
+          onClose={() => {
+            setIsWhistleblowerModalOpen(false);
+            setSelectedReport(null);
+          }}
+          report={selectedReport}
+          mode={modalMode as any}
+          onUpdate={refetchData}
+        />
+
+        <EmployeeModal
+          isOpen={isEmployeeModalOpen}
+          onClose={() => {
+            setIsEmployeeModalOpen(false);
+            setSelectedEmployee(null);
+          }}
+          employee={selectedEmployee}
+          onSuccess={refetchData}
+        />
+
+        <EmployeeDetailModal
+          isOpen={isEmployeeDetailModalOpen}
+          onClose={handleDetailModalClose}
+          onEdit={handleEditFromDetail}
+          employee={viewingEmployee}
+        />
+
+        <GovernanceReportsModal
+          isOpen={isReportsModalOpen}
+          onClose={() => setIsReportsModalOpen(false)}
+          governanceMetrics={governanceMetrics}
+        />
+
+        <ESGRiskModal
+          isOpen={isRiskModalOpen}
+          onClose={handleCloseRiskModal}
+          risk={selectedRisk}
+          mode={riskModalMode}
+        />
+      </div>
+    </ErrorBoundary>
+  );
+}

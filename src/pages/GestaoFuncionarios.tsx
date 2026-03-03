@@ -114,7 +114,7 @@ export default function GestaoFuncionarios() {
   ];
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full overflow-hidden py-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Gestão de Colaboradores</h1>
         <p className="text-muted-foreground">

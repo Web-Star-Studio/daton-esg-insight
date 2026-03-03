@@ -113,14 +113,14 @@ export default function SocialESG() {
 
   return (
     <div className="space-y-6">
-    <div className="flex justify-between items-center">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h1 className="text-3xl font-bold text-foreground">ESG Social</h1>
         <p className="text-muted-foreground">
           Gestão completa dos aspectos sociais da sustentabilidade
         </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button onClick={() => setIsQuickActionModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Novo Registro
@@ -415,7 +415,7 @@ export default function SocialESG() {
           {/* Tabela de Projetos */}
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <CardTitle>Projetos Sociais</CardTitle>
                   <CardDescription>Gerencie todos os projetos de impacto social da empresa</CardDescription>

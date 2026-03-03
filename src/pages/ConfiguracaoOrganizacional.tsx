@@ -314,7 +314,7 @@ export default function ConfiguracaoOrganizacional() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <Input
                       placeholder="Nome da unidade"
                       value={newBusinessUnit.name || ''}

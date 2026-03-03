@@ -369,7 +369,7 @@ export default function SeguracaTrabalho() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full overflow-hidden p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
@@ -491,7 +491,7 @@ export default function SeguracaTrabalho() {
                     const widthPercentage = Math.round((count / Math.max(total, 1)) * 16);
                     
                     return (
-                      <div key={severity} className="flex justify-between items-center">
+                      <div key={severity} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <span>{severity}</span>
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-2 bg-muted rounded-full">
@@ -531,7 +531,7 @@ export default function SeguracaTrabalho() {
                     </p>
                   )}
                   {inspections.slice(0, 3).map((inspection) => (
-                    <div key={inspection.id} className="flex justify-between items-center p-3 border rounded-lg">
+                    <div key={inspection.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-3 border rounded-lg">
                       <div>
                         <div className="font-medium">{inspection.title}</div>
                         <div className="text-sm text-muted-foreground">
@@ -550,8 +550,8 @@ export default function SeguracaTrabalho() {
         </TabsContent>
 
         <TabsContent value="incidents" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -713,8 +713,8 @@ export default function SeguracaTrabalho() {
         </TabsContent>
 
         <TabsContent value="inspections" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -1075,19 +1075,19 @@ export default function SeguracaTrabalho() {
                 <CardDescription>KPIs de segurança do trabalho</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <span>Taxa de Frequência (LTIFR)</span>
                   <span className="font-bold">{(safetyMetrics?.ltifr as number) || 0}</span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <span>Taxa de Gravidade</span>
                   <span className="font-bold">{(safetyMetrics?.severityRate as number) || 0}</span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <span>Dias Perdidos</span>
                   <span className="font-bold">{(safetyMetrics?.daysLostTotal as number) || 0}</span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <span>Horas Treinamento</span>
                   <span className="font-bold">{safetyTrainingMetrics?.totalHours || 0}h</span>
                 </div>

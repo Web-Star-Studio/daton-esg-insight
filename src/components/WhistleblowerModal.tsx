@@ -42,6 +42,48 @@ export function WhistleblowerModal({ isOpen, onClose, report, onUpdate, mode = '
     resolution_summary: report?.resolution_summary || '',
   });
 
+  React.useEffect(() => {
+    if (isOpen) {
+      if (report) {
+        setFormData({
+          category: report.category || '',
+          description: report.description || '',
+          incident_date: report.incident_date ? new Date(report.incident_date) : null,
+          location: report.location || '',
+          people_involved: report.people_involved || '',
+          evidence_description: report.evidence_description || '',
+          is_anonymous: report.is_anonymous ?? true,
+          reporter_name: report.reporter_name || '',
+          reporter_email: report.reporter_email || '',
+          reporter_phone: report.reporter_phone || '',
+          status: report.status || 'Nova',
+          priority: report.priority || 'Média',
+          assigned_to_user_id: report.assigned_to_user_id || '',
+          investigation_notes: report.investigation_notes || '',
+          resolution_summary: report.resolution_summary || '',
+        });
+      } else {
+        setFormData({
+          category: '',
+          description: '',
+          incident_date: null,
+          location: '',
+          people_involved: '',
+          evidence_description: '',
+          is_anonymous: true,
+          reporter_name: '',
+          reporter_email: '',
+          reporter_phone: '',
+          status: 'Nova',
+          priority: 'Média',
+          assigned_to_user_id: '',
+          investigation_notes: '',
+          resolution_summary: '',
+        });
+      }
+    }
+  }, [report, isOpen]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isReadOnly = mode === 'view';
   const isInvestigation = mode === 'investigate';
@@ -127,19 +169,19 @@ export function WhistleblowerModal({ isOpen, onClose, report, onUpdate, mode = '
             ) : (
               <Shield className="h-5 w-5" />
             )}
-            {mode === 'view' 
+            {mode === 'view'
               ? `Denúncia ${report?.report_code}`
               : mode === 'investigate'
-              ? `Investigar - ${report?.report_code}`
-              : 'Nova Denúncia'
+                ? `Investigar - ${report?.report_code}`
+                : 'Nova Denúncia'
             }
           </DialogTitle>
           <DialogDescription>
-            {mode === 'view' 
+            {mode === 'view'
               ? 'Visualizar detalhes da denúncia'
               : mode === 'investigate'
-              ? 'Gerenciar investigação da denúncia'
-              : 'Registre uma denúncia de forma segura e confidencial'
+                ? 'Gerenciar investigação da denúncia'
+                : 'Registre uma denúncia de forma segura e confidencial'
             }
           </DialogDescription>
         </DialogHeader>

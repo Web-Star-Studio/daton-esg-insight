@@ -375,7 +375,7 @@ function AssetDetailsPanel({
               </CardHeader>
               <CardContent className="space-y-3">
                 {assetDetails.operational_status && (
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm font-medium">Status Operacional:</span>
                     <Badge variant={assetDetails.operational_status === 'Ativo' ? 'default' : 'secondary'}>
                       {assetDetails.operational_status}
@@ -384,7 +384,7 @@ function AssetDetailsPanel({
                 )}
                 
                 {assetDetails.pollution_potential && (
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm font-medium">Potencial Poluidor:</span>
                     <Badge variant={
                       assetDetails.pollution_potential === 'Alto' ? 'destructive' : 
@@ -396,35 +396,35 @@ function AssetDetailsPanel({
                 )}
 
                 {assetDetails.productive_capacity && assetDetails.capacity_unit && (
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm font-medium">Capacidade:</span>
                     <span className="text-sm">{assetDetails.productive_capacity} {assetDetails.capacity_unit}</span>
                   </div>
                 )}
 
                 {assetDetails.installation_year && (
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm font-medium">Ano de Instalação:</span>
                     <span className="text-sm">{assetDetails.installation_year}</span>
                   </div>
                 )}
 
                 {assetDetails.cnae_code && (
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm font-medium">CNAE:</span>
                     <span className="text-sm font-mono">{assetDetails.cnae_code}</span>
                   </div>
                 )}
 
                 {assetDetails.monitoring_frequency && (
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm font-medium">Freq. Monitoramento:</span>
                     <span className="text-sm">{assetDetails.monitoring_frequency}</span>
                   </div>
                 )}
 
                 {assetDetails.monitoring_responsible && (
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm font-medium">Responsável:</span>
                     <span className="text-sm">{assetDetails.monitoring_responsible}</span>
                   </div>

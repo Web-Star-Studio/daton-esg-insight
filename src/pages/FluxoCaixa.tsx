@@ -109,7 +109,7 @@ export default function FluxoCaixa() {
           <h1 className="text-3xl font-bold text-foreground">Fluxo de Caixa</h1>
           <p className="text-muted-foreground">Controle de entradas e saídas</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(Number(v))}>
             <SelectTrigger className="w-32">
               <SelectValue />
@@ -329,7 +329,7 @@ export default function FluxoCaixa() {
                     </TableCell>
                     <TableCell>{getStatusBadge(transaction.status)}</TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                         {transaction.status === 'previsto' && (
                           <Button
                             size="sm"

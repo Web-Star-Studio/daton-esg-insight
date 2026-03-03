@@ -79,7 +79,7 @@ export default function AprovacoesFinanceiras() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="w-full overflow-hidden p-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
@@ -88,7 +88,7 @@ export default function AprovacoesFinanceiras() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full overflow-hidden p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Aprovações Financeiras</h1>
         <p className="text-muted-foreground">Gerencie solicitações de aprovação pendentes</p>
@@ -154,7 +154,7 @@ export default function AprovacoesFinanceiras() {
                           />
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                           <Button
                             variant="outline"
                             size="sm"

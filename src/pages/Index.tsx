@@ -85,7 +85,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div className="w-full overflow-hidden px-4 sm:px-6 py-6 sm:py-10">
         {/* Cabeçalho da página */}
         <div className="mb-8 sm:mb-12 text-center">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">Centro de Comando ESG</h1>
@@ -325,21 +325,21 @@ const Index = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <span className="text-sm font-medium">Eficiência Energética</span>
                       <span className="text-sm text-muted-foreground">85%</span>
                     </div>
                     <Progress value={85} className="h-2" />
                   </div>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <span className="text-sm font-medium">Redução de Resíduos</span>
                       <span className="text-sm text-muted-foreground">92%</span>
                     </div>
                     <Progress value={92} className="h-2" />
                   </div>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <span className="text-sm font-medium">Compliance Regulatório</span>
                       <span className="text-sm text-muted-foreground">98%</span>
                     </div>
