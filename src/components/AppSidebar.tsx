@@ -535,6 +535,7 @@ export function AppSidebar() {
     const notificationCount = getNotificationCount(item.id)
     const statusIndicator = getStatusIndicator(item.id)
     const isCategory = item.path === "#"
+    const isHomeItem = item.id === "inicio"
 
     if (hasSubItems) {
       return (
@@ -623,7 +624,9 @@ export function AppSidebar() {
           aria-current={active ? "page" : undefined}
           className={cn(
             "group rounded-xl px-2.5 transition-all duration-200",
-            active
+            isHomeItem
+              ? "h-8 border border-transparent bg-transparent text-sidebar-foreground/78 hover:bg-background/45 hover:text-foreground data-[active=true]:bg-background/45 data-[active=true]:text-foreground"
+              : active
               ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] backdrop-blur-sm"
               : "border border-transparent hover:border-border/45 hover:bg-background/55 hover:backdrop-blur-sm",
           )}
@@ -635,26 +638,35 @@ export function AppSidebar() {
           >
             <div className="flex items-center gap-2.5 flex-1">
               {!hideIcon && (
-                <div className={getIconContainerClass(active)}>
-                  <item.icon className="h-[15px] w-[15px] flex-shrink-0 text-sidebar-foreground/85" />
-                  {statusIndicator && (
-                    <StatusIndicator 
-                      status={statusIndicator} 
-                      pulse={statusIndicator === 'warning'}
-                      className="absolute -top-0.5 -right-0.5"
-                    />
-                  )}
-                </div>
+                isHomeItem ? (
+                  <item.icon className="h-[14px] w-[14px] flex-shrink-0 text-sidebar-foreground/78" />
+                ) : (
+                  <div className={getIconContainerClass(active)}>
+                    <item.icon className="h-[15px] w-[15px] flex-shrink-0 text-sidebar-foreground/85" />
+                    {statusIndicator && (
+                      <StatusIndicator 
+                        status={statusIndicator} 
+                        pulse={statusIndicator === 'warning'}
+                        className="absolute -top-0.5 -right-0.5"
+                      />
+                    )}
+                  </div>
+                )
               )}
               {!collapsed && (
-                <span className={hideIcon ? "text-[11px] uppercase tracking-[0.08em] text-muted-foreground truncate pl-2" : "text-[13px] font-medium tracking-[-0.01em] truncate"}>
+                <span className={cn(
+                  hideIcon
+                    ? "text-[11px] uppercase tracking-[0.08em] text-muted-foreground truncate pl-2"
+                    : "text-[13px] font-medium tracking-[-0.01em] truncate",
+                  isHomeItem && "text-[11px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/78"
+                )}>
                   {item.title}
                 </span>
               )}
             </div>
           </NavigationTooltip>
           
-          {!collapsed && notificationCount > 0 && (
+          {!isHomeItem && !collapsed && notificationCount > 0 && (
             <BadgeNotification 
               count={notificationCount}
               variant={notificationCount > 5 ? 'destructive' : 'warning'}
@@ -662,7 +674,7 @@ export function AppSidebar() {
             />
           )}
           
-          {!collapsed && (
+          {!isHomeItem && !collapsed && (
             <button
               type="button"
               className="h-6 w-6 rounded-full p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 flex items-center justify-center bg-transparent border-0 hover:bg-background/75"
@@ -736,7 +748,7 @@ export function AppSidebar() {
       onMouseLeave={() => setIsHovering(false)}
       data-tour="sidebar"
     >
-      <SidebarHeader className={`px-5 py-4 border-b border-sidebar-border/55 transition-all duration-300 ${isHovering ? 'shadow-sm' : ''}`}>
+      <SidebarHeader className={`px-5 py-4 border-b border-sidebar-border/55 transition-all duration-300 flex items-center justify-center ${isHovering ? 'shadow-sm' : ''}`}>
         <img 
           src={datonLogo} 
           alt="Daton" 
@@ -841,7 +853,7 @@ export function AppSidebar() {
                     path: "/dashboard",
                     description: "Página inicial",
                   },
-                  true,
+                  false,
                 )}
               </SidebarMenu>
             </SidebarGroupContent>

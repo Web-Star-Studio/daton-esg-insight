@@ -14,6 +14,9 @@ interface SystemHealth {
   lastCheck: Date;
 }
 
+const floatingCardClass =
+  "overflow-visible rounded-3xl border border-border/60 bg-background/92 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.84),0_0_0_1px_rgba(148,163,184,0.18),0_0_26px_-16px_rgba(15,23,42,0.40),0_20px_36px_-24px_rgba(15,23,42,0.52)]";
+
 export function ProductionHealthWidget() {
   const navigate = useNavigate();
   const [health, setHealth] = useState<SystemHealth>({
@@ -120,7 +123,7 @@ export function ProductionHealthWidget() {
   };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className={`${floatingCardClass} transition-all duration-200`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

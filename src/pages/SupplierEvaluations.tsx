@@ -36,6 +36,10 @@ import {
   getDocumentSubmissions,
   getRequiredDocuments,
   getLatestEvaluationForSuppliers,
+  getBusinessUnits,
+  getSupplierCategories,
+  getSupplierTypes,
+  getSupplierAssignmentsSummary,
 } from "@/services/supplierManagementService";
 
 function TableTooltipHeader({ title, tooltip }: { title: string; tooltip: string }) {
@@ -63,6 +67,9 @@ export default function SupplierEvaluations() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [complianceFilter, setComplianceFilter] = useState<string>("all");
+  const [unitFilter, setUnitFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   const { data: suppliers, isLoading: loadingSuppliers } = useQuery({
     queryKey: ['managed-suppliers'],
@@ -79,11 +86,32 @@ export default function SupplierEvaluations() {
     queryFn: () => getDocumentSubmissions(),
   });
 
+  const { data: businessUnits = [] } = useQuery({
+    queryKey: ['business-units'],
+    queryFn: getBusinessUnits,
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['supplier-categories'],
+    queryFn: getSupplierCategories,
+  });
+
+  const { data: types = [] } = useQuery({
+    queryKey: ['supplier-types'],
+    queryFn: getSupplierTypes,
+  });
+
   // Fetch latest evaluations for all suppliers to get next_evaluation_date
   const supplierIds = suppliers?.map(s => s.id) || [];
   const { data: latestEvaluations } = useQuery({
     queryKey: ['latest-evaluations', supplierIds],
     queryFn: () => getLatestEvaluationForSuppliers(supplierIds),
+    enabled: supplierIds.length > 0,
+  });
+
+  const { data: assignmentsSummary = {} } = useQuery({
+    queryKey: ['suppliers-assignments-summary', supplierIds],
+    queryFn: () => getSupplierAssignmentsSummary(supplierIds),
     enabled: supplierIds.length > 0,
   });
 
@@ -119,9 +147,10 @@ export default function SupplierEvaluations() {
         totalRequired,
         complianceRate,
         nextEvaluationDate,
+        assignments: assignmentsSummary[supplier.id],
       };
     }) || [];
-  }, [suppliers, submissions, requiredDocs, latestEvaluations]);
+  }, [suppliers, submissions, requiredDocs, latestEvaluations, assignmentsSummary]);
 
   // Apply filters
   const filteredSuppliers = useMemo(() => {
@@ -146,9 +175,16 @@ export default function SupplierEvaluations() {
         matchesCompliance = supplier.complianceRate < 50;
       }
 
-      return matchesSearch && matchesStatus && matchesCompliance;
+      const matchesUnit =
+        unitFilter === 'all' || supplier.assignments?.unit_ids?.includes(unitFilter);
+      const matchesCategory =
+        categoryFilter === 'all' || supplier.assignments?.category_ids?.includes(categoryFilter);
+      const matchesType =
+        typeFilter === 'all' || supplier.assignments?.type_ids?.includes(typeFilter);
+
+      return matchesSearch && matchesStatus && matchesCompliance && matchesUnit && matchesCategory && matchesType;
     });
-  }, [supplierCompliance, searchTerm, statusFilter, complianceFilter]);
+  }, [supplierCompliance, searchTerm, statusFilter, complianceFilter, unitFilter, categoryFilter, typeFilter]);
 
   return (
     <div className="space-y-6">
@@ -170,7 +206,7 @@ export default function SupplierEvaluations() {
         {/* Filters */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col md:flex-row md:flex-wrap gap-4">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -203,6 +239,45 @@ export default function SupplierEvaluations() {
                   <SelectItem value="low">Baixa (&lt;50%)</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={unitFilter} onValueChange={setUnitFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Unidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as unidades</SelectItem>
+                  {businessUnits.map((unit) => (
+                    <SelectItem key={unit.id} value={unit.id}>
+                      {unit.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-[190px]">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  {types.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -221,7 +296,7 @@ export default function SupplierEvaluations() {
               error={error?.message}
               retry={refetch}
               empty={!filteredSuppliers?.length}
-              emptyMessage={searchTerm || statusFilter !== 'all' || complianceFilter !== 'all' 
+              emptyMessage={searchTerm || statusFilter !== 'all' || complianceFilter !== 'all' || unitFilter !== 'all' || categoryFilter !== 'all' || typeFilter !== 'all'
                 ? "Nenhum fornecedor encontrado com os filtros aplicados" 
                 : "Nenhum fornecedor cadastrado"}
             >

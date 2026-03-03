@@ -55,10 +55,15 @@ export default function GestaoFornecedores() {
     }
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 4.5) return "text-green-600";
-    if (score >= 3.5) return "text-yellow-600";
-    return "text-red-600";
+  const getQualificationBadgeClass = (qualificationStatus?: string) => {
+    switch (qualificationStatus) {
+      case "Apto":
+        return "bg-green-100 text-green-800";
+      case "Não apto":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
   };
 
   const filteredSuppliers = suppliers.filter((supplier: ManagedSupplierWithTypeCount) => {
@@ -77,10 +82,10 @@ export default function GestaoFornecedores() {
   const totalSuppliers = suppliers.length;
   const activeSuppliers = suppliers.filter((s: ManagedSupplierWithTypeCount) => s.status === "Ativo").length;
   const qualifiedSuppliers = suppliers.filter((s: ManagedSupplierWithTypeCount) => (s.type_count || 0) > 0).length;
-  const avgScore = 0; // Scores vêm do sistema novo de avaliações
+  const aptSuppliers = suppliers.filter((s: ManagedSupplierWithTypeCount) => s.qualification_status === "Apto").length;
 
   const handleSupplierView = (supplier: ManagedSupplierWithTypeCount) => {
-    navigate(`/fornecedores/avaliacoes/${supplier.id}/desempenho`);
+    navigate(`/fornecedores/avaliacao-desempenho/${supplier.id}`);
   };
 
   const handleSupplierEdit = (supplier: ManagedSupplierWithTypeCount) => {
@@ -174,15 +179,15 @@ export default function GestaoFornecedores() {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avaliação Média</CardTitle>
-            <Star className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium">Fornecedores Aptos</CardTitle>
+            <TrendingUp className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${avgScore > 0 ? getScoreColor(avgScore) : 'text-muted-foreground'}`}>
-              {avgScore > 0 ? avgScore.toFixed(1) : "N/A"}
+            <div className="text-2xl font-bold text-blue-600">
+              {aptSuppliers}
             </div>
             <p className="text-xs text-muted-foreground">
-              escala de 0 a 5
+              ativos e conformes na AVA1
             </p>
           </CardContent>
         </Card>
@@ -235,6 +240,7 @@ export default function GestaoFornecedores() {
                       <TableHead>Contato</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Tipos Vinculados</TableHead>
+                      <TableHead>Qualificação</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -292,6 +298,11 @@ export default function GestaoFornecedores() {
                           <TableCell>
                             <Badge variant="secondary">
                               {supplier.type_count || 0} tipo(s)
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getQualificationBadgeClass(supplier.qualification_status)}>
+                              {supplier.qualification_status || "Sem avaliação"}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -357,7 +368,7 @@ export default function GestaoFornecedores() {
                   variant="outline" 
                   asChild
                 >
-                  <Link to="/fornecedores/avaliacao">
+                  <Link to="/fornecedores/avaliacoes">
                     <Star className="h-4 w-4 mr-2" />
                     Ver Avaliações
                   </Link>

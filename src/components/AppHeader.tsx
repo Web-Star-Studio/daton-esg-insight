@@ -75,9 +75,9 @@ export function AppHeader() {
   }
 
   return (
-    <header className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-3 md:py-4 bg-background border-b border-border/40">
+    <header className="mx-3 mt-3 flex items-center justify-between rounded-2xl border border-border/60 bg-background/85 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_18px_36px_-30px_rgba(15,23,42,0.55)] backdrop-blur-md sm:mx-4 sm:px-4 md:mx-6 md:mt-4 md:px-5 md:py-3">
       <div className="flex items-center gap-2 md:gap-4">
-        <SidebarTrigger className="h-11 w-11 hover:bg-muted/50" />
+        <SidebarTrigger className="h-10 w-10 rounded-xl hover:bg-muted/55" />
         
         <div className="hidden sm:block">
           <EnhancedGlobalSearch />
@@ -96,7 +96,7 @@ export function AppHeader() {
             size="icon"
             onClick={() => setIsChatOpen(prev => !prev)}
             aria-label="Assistente IA"
-            className="hover:bg-muted/50"
+            className="rounded-xl hover:bg-muted/55"
           >
             <Sparkles className="h-5 w-5" />
           </Button>
@@ -105,7 +105,7 @@ export function AppHeader() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 hover:bg-muted/50" data-profile>
+            <Button variant="ghost" className="flex items-center gap-2 rounded-xl hover:bg-muted/55" data-profile>
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary/10 text-primary font-medium">
                   {user ? getInitials(user.full_name || user.email) : "?"}
