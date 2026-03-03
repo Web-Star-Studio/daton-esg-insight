@@ -8,6 +8,9 @@ import { getFullAnalysis, FullAnalysis } from '@/services/predictiveAnalytics';
 import { cn } from '@/lib/utils';
 import { logger } from '@/utils/logger';
 
+const floatingCardClass =
+  "overflow-visible rounded-3xl border border-border/60 bg-background/92 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.84),0_0_0_1px_rgba(148,163,184,0.18),0_0_26px_-16px_rgba(15,23,42,0.40),0_20px_36px_-24px_rgba(15,23,42,0.52)]";
+
 export function PredictiveInsightsWidget() {
   const [analysis, setAnalysis] = useState<FullAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +40,7 @@ export function PredictiveInsightsWidget() {
 
   if (loading) {
     return (
-      <Card className="border border-border">
+      <Card className={floatingCardClass}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
@@ -65,7 +68,7 @@ export function PredictiveInsightsWidget() {
     const isAuthError = error.includes('login') || error.includes('Sessão') || error.includes('autorizado');
     
     return (
-      <Card className="border border-border">
+      <Card className={floatingCardClass}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
@@ -176,7 +179,7 @@ export function PredictiveInsightsWidget() {
   ];
 
   return (
-    <Card className="border border-border">
+    <Card className={floatingCardClass}>
       <CardHeader className="pb-3 pt-4 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

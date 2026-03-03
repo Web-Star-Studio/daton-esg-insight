@@ -535,6 +535,7 @@ export function AppSidebar() {
     const notificationCount = getNotificationCount(item.id)
     const statusIndicator = getStatusIndicator(item.id)
     const isCategory = item.path === "#"
+    const isHomeItem = item.id === "inicio"
 
     if (hasSubItems) {
       return (
@@ -654,7 +655,7 @@ export function AppSidebar() {
             </div>
           </NavigationTooltip>
           
-          {!collapsed && notificationCount > 0 && (
+          {!isHomeItem && !collapsed && notificationCount > 0 && (
             <BadgeNotification 
               count={notificationCount}
               variant={notificationCount > 5 ? 'destructive' : 'warning'}
@@ -662,7 +663,7 @@ export function AppSidebar() {
             />
           )}
           
-          {!collapsed && (
+          {!isHomeItem && !collapsed && (
             <button
               type="button"
               className="h-6 w-6 rounded-full p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 flex items-center justify-center bg-transparent border-0 hover:bg-background/75"
