@@ -248,7 +248,7 @@ export function downloadSupplierImportTemplate() {
     'Bairro *',
     'Cidade *', 
     'Estado *',
-    'Estado/Unidade *',
+    'Unidade de Negócio *',
     'Categoria *',
     'Tipo de Fornecedor *',
     'Observações'
@@ -416,7 +416,7 @@ export function validateSupplierImportData(data: ParsedSupplier[]): ValidationRe
       hasError = true;
     }
     if (!supplier.business_unit) {
-      errors.push({ row, field: 'Estado/Unidade', message: 'Campo obrigatório' });
+      errors.push({ row, field: 'Unidade de Negócio', message: 'Campo obrigatório' });
       hasError = true;
     }
     if (!supplier.category_name) {
