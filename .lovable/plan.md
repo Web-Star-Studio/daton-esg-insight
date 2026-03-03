@@ -1,31 +1,16 @@
 
 
-# Corrigir envio de email no Reset de Senha Administrativo
+# Corrigir Dropdown "Papel no Sistema" não abrindo dentro do Dialog
 
 ## Problema
-O `reset_password` no `manage-user/index.ts` usa `generateLink({ type: 'recovery' })` que **gera o link mas não envia email**. O link é retornado no JSON de resposta e logado no console, mas o usuário nunca recebe o email.
-
-## Causa raiz
-O comentário no próprio código confirma: _"In production, you'd send this via email service"_. A integração com Resend nunca foi adicionada neste fluxo.
+O `SelectContent` usa `z-[200]` (definido em `src/components/ui/select.tsx`), mas o `DialogOverlay` usa `z-[1200]` e o `DialogContent` usa `z-[1201]`. Como o Select renderiza via Portal na raiz do DOM, o dropdown fica **atrás** do overlay do dialog, invisível ao usuário.
 
 ## Solução
-Adicionar envio de email via Resend no caso `reset_password` do `manage-user/index.ts`, seguindo o mesmo padrão já usado no `invite-user/index.ts`.
+Aumentar o `z-index` do `SelectContent` para `z-[1300]`, garantindo que fique acima do dialog quando aberto dentro de modais.
 
-### Alteração: `supabase/functions/manage-user/index.ts`
+## Alteração
 
-1. Importar Resend no topo do arquivo:
-   ```typescript
-   import { Resend } from "npm:resend@2.0.0";
-   ```
+**Arquivo:** `src/components/ui/select.tsx`
 
-2. No caso `reset_password` (após gerar o link com `generateLink`), enviar o email:
-   - Instanciar `new Resend(RESEND_API_KEY)`
-   - Buscar o `full_name` do perfil do usuário alvo
-   - Construir HTML do email com o link de recuperação (estilo consistente com os emails de convite)
-   - Enviar via `resend.emails.send()` com `from: "Daton <plataforma@daton.com.br>"`
-
-3. Remover o retorno do `link` na resposta (não expor links de segurança no response JSON)
-
-### Build errors (pré-existentes)
-Os erros de build listados são todos em **outros arquivos** (`daton-ai-chat`, `generate-intelligent-report`, `get-company-quick-stats`, `intelligent-suggestions`, `tool-executors`) e não estão relacionados a esta feature. Serão tratados separadamente se necessário.
+Na classe do `SelectPrimitive.Content` (linha ~72), trocar `z-[200]` por `z-[1300]`.
 
