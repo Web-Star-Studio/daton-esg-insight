@@ -505,28 +505,82 @@ export const qualityMockEntries = [
     data: {
       riskCounts: { total: 8, critical: 2, high: 2, medium: 3, low: 1 },
       matrix: [
-        { probability: 'Alta', impact: 'Alto', risks: [
-          { id: '4', description: 'Multas Ambientais', category: 'Ambiental' },
-          { id: '7', description: 'Acidente de Trabalho Fatal', category: 'Social' },
-        ] },
+        {
+          probability: 'Alta', impact: 'Alto', risks: [
+            { id: '4', description: 'Multas Ambientais', category: 'Ambiental' },
+            { id: '7', description: 'Acidente de Trabalho Fatal', category: 'Social' },
+          ]
+        },
         { probability: 'Alta', impact: 'Médio', risks: [] },
         { probability: 'Alta', impact: 'Baixo', risks: [] },
-        { probability: 'Média', impact: 'Alto', risks: [
-          { id: '1', description: 'Vazamento de Efluentes', category: 'Ambiental' },
-        ] },
-        { probability: 'Média', impact: 'Médio', risks: [
-          { id: '5', description: 'Interrupção de Fornecimento', category: 'Governança' },
-          { id: '8', description: 'Escassez Hídrica', category: 'Ambiental' },
-        ] },
+        {
+          probability: 'Média', impact: 'Alto', risks: [
+            { id: '1', description: 'Vazamento de Efluentes', category: 'Ambiental' },
+          ]
+        },
+        {
+          probability: 'Média', impact: 'Médio', risks: [
+            { id: '5', description: 'Interrupção de Fornecimento', category: 'Governança' },
+            { id: '8', description: 'Escassez Hídrica', category: 'Ambiental' },
+          ]
+        },
         { probability: 'Média', impact: 'Baixo', risks: [] },
-        { probability: 'Baixa', impact: 'Alto', risks: [
-          { id: '2', description: 'Descumprimento NR-12', category: 'Social' },
-          { id: '3', description: 'Fraude Contábil', category: 'Governança' },
-          { id: '6', description: 'Violação LGPD', category: 'Governança' },
-        ] },
+        {
+          probability: 'Baixa', impact: 'Alto', risks: [
+            { id: '2', description: 'Descumprimento NR-12', category: 'Social' },
+            { id: '3', description: 'Fraude Contábil', category: 'Governança' },
+            { id: '6', description: 'Violação LGPD', category: 'Governança' },
+          ]
+        },
         { probability: 'Baixa', impact: 'Médio', risks: [] },
         { probability: 'Baixa', impact: 'Baixo', risks: [] },
       ],
     },
+  },
+  // Quality Metrics (Dashboard Top Cards)
+  {
+    queryKey: ['quality-metrics'],
+    data: {
+      totalNCs: 142,
+      openNCs: 18,
+      resolvedNCs: 124,
+      totalRisks: 45,
+      criticalRisks: 3,
+      actionPlans: 28,
+      overdueActions: 4,
+      qualityScore: 92,
+      avgResolutionTime: 5,
+      trendDirection: 'up'
+    },
+  },
+  // Predictive Analysis (AI Widget)
+  {
+    queryKey: ['predictive-analysis'],
+    data: {
+      nextMonthNCs: 14,
+      riskLevel: 'medium',
+      patterns: [
+        { type: 'Sazonalidade', confidence: 85, description: 'Aumento histórico de NCs de processo nos meses de verão devido a temperatura.' },
+        { type: 'Correlação', confidence: 78, description: 'Forte relação entre atrasos de calibração e aumento de sucata no setor B.' },
+        { type: 'Tendência', confidence: 92, description: 'Redução consistente de anomalias críticas no último trimestre.' }
+      ],
+      recommendations: [
+        { title: 'Antecipar calibrações', description: 'Revisar equipamentos do setor B antes do pico de verão.', impact: 'Alto', effort: 'Médio', priority: 'high' },
+        { title: 'Reforço de treinamento', description: 'Reciclagem em procedimentos de controle de temperatura.', impact: 'Médio', effort: 'Baixo', priority: 'medium' }
+      ]
+    },
+  },
+  // Quality Trends (AI Widget Chart)
+  {
+    queryKey: ['quality-trends'],
+    data: [
+      { date: '2026-01-01', compliance: 85, incidents: 12 },
+      { date: '2026-01-08', compliance: 87, incidents: 10 },
+      { date: '2026-01-15', compliance: 86, incidents: 11 },
+      { date: '2026-01-22', compliance: 89, incidents: 8 },
+      { date: '2026-01-29', compliance: 91, incidents: 6 },
+      { date: '2026-02-05', compliance: 90, incidents: 7 },
+      { date: '2026-02-12', compliance: 92, incidents: 5 }
+    ],
   },
 ];
