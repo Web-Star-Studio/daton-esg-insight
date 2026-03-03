@@ -85,9 +85,17 @@ interface BreadcrumbsProps {
 export function Breadcrumbs({ className }: BreadcrumbsProps) {
   const location = useLocation();
   const items = getBreadcrumbItems(location.pathname);
+  const hiddenBreadcrumbRoutes = new Set([
+    '/',
+    '/auth',
+    '/onboarding',
+    '/dashboard',
+    '/demo',
+    '/demo/dashboard',
+  ]);
 
-  // Don't show breadcrumbs on home/landing or auth pages
-  if (location.pathname === '/' || location.pathname === '/auth' || location.pathname === '/onboarding') {
+  // Don't show breadcrumbs on home/landing, auth, and dashboard routes
+  if (hiddenBreadcrumbRoutes.has(location.pathname)) {
     return null;
   }
 

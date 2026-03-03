@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -34,17 +34,20 @@ import {
   SupplierEvaluationCriteria,
   SupplierCriteriaEvaluation,
 } from "@/services/supplierCriteriaService";
+import { linkEvaluation } from "@/services/supplierDeliveriesService";
 
 type CriteriaStatus = 'ATENDE' | 'NAO_ATENDE' | null;
 
 export default function SupplierPerformanceEvaluationPage() {
   const { id: supplierId } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [criteriaStatuses, setCriteriaStatuses] = useState<Map<string, CriteriaStatus>>(new Map());
   const [observation, setObservation] = useState("");
+  const deliveryId = searchParams.get("delivery");
 
   const { data: supplier } = useQuery({
     queryKey: ["supplier", supplierId],
@@ -102,9 +105,19 @@ export default function SupplierPerformanceEvaluationPage() {
   const percentage = totalWeight > 0 ? Math.round((achievedWeight / totalWeight) * 100) : 0;
 
   const saveMutation = useMutation({
-    mutationFn: createCriteriaEvaluation,
+    mutationFn: async (payload: Parameters<typeof createCriteriaEvaluation>[0]) => {
+      const evaluation = await createCriteriaEvaluation(payload);
+
+      if (deliveryId) {
+        await linkEvaluation(deliveryId, evaluation.id, evaluation.is_approved ? 'Avaliado' : 'Problema');
+      }
+
+      return evaluation;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["criteria-evaluations", supplierId] });
+      queryClient.invalidateQueries({ queryKey: ["supplier-deliveries"] });
+      queryClient.invalidateQueries({ queryKey: ["delivery-stats"] });
       toast({ title: "Avaliação salva com sucesso!" });
       setCriteriaStatuses(new Map());
       setObservation("");
@@ -137,6 +150,7 @@ export default function SupplierPerformanceEvaluationPage() {
 
     saveMutation.mutate({
       supplier_id: supplierId!,
+      delivery_id: deliveryId,
       total_weight: totalWeight,
       achieved_weight: achievedWeight,
       minimum_required: minimumRequired,

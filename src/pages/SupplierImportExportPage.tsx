@@ -236,7 +236,7 @@ export default function SupplierImportExportPage() {
                   Exportar Fornecedores
                 </CardTitle>
                 <CardDescription>
-                  Baixe a lista completa de fornecedores cadastrados
+                  Baixe a lista completa de fornecedores cadastrados no módulo de gestão de fornecedores
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -259,10 +259,13 @@ export default function SupplierImportExportPage() {
                   Importar Fornecedores
                 </CardTitle>
                 <CardDescription>
-                  Cadastre múltiplos fornecedores via arquivo Excel
+                  Cadastre múltiplos fornecedores via arquivo Excel com validação estrita
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  Unidade, categoria e tipo de fornecedor devem existir previamente. Para PJ, responsável e e-mail são obrigatórios.
+                </p>
                 {step === 'upload' && (
                   <div
                     {...supplierDropzone.getRootProps()}
@@ -342,7 +345,7 @@ export default function SupplierImportExportPage() {
                       <TableRow>
                         <TableHead>CNPJ/CPF</TableHead>
                         <TableHead>Tipo</TableHead>
-                        <TableHead>Razão Social</TableHead>
+                        <TableHead>Razão Social/Nome</TableHead>
                         <TableHead>Email</TableHead>
                       </TableRow>
                     </TableHeader>

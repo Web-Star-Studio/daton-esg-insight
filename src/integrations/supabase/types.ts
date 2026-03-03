@@ -21576,11 +21576,15 @@ export type Database = {
       supplier_document_evaluations: {
         Row: {
           company_id: string
+          compliance_threshold: number
           compliance_percentage: number | null
           created_at: string | null
+          criteria_snapshot: Json
           evaluated_by: string | null
           evaluation_date: string
+          has_adequation: boolean
           id: string
+          is_compliant: boolean
           next_evaluation_date: string | null
           observation: string | null
           supplier_id: string
@@ -21590,11 +21594,15 @@ export type Database = {
         }
         Insert: {
           company_id: string
+          compliance_threshold?: number
           compliance_percentage?: number | null
           created_at?: string | null
+          criteria_snapshot?: Json
           evaluated_by?: string | null
           evaluation_date?: string
+          has_adequation?: boolean
           id?: string
+          is_compliant?: boolean
           next_evaluation_date?: string | null
           observation?: string | null
           supplier_id: string
@@ -21604,11 +21612,15 @@ export type Database = {
         }
         Update: {
           company_id?: string
+          compliance_threshold?: number
           compliance_percentage?: number | null
           created_at?: string | null
+          criteria_snapshot?: Json
           evaluated_by?: string | null
           evaluation_date?: string
+          has_adequation?: boolean
           id?: string
+          is_compliant?: boolean
           next_evaluation_date?: string | null
           observation?: string | null
           supplier_id?: string
@@ -21645,6 +21657,7 @@ export type Database = {
           file_name: string | null
           file_path: string | null
           id: string
+          is_in_adequation: boolean
           is_exempt: boolean | null
           next_evaluation_date: string | null
           notes: string | null
@@ -21666,6 +21679,7 @@ export type Database = {
           file_name?: string | null
           file_path?: string | null
           id?: string
+          is_in_adequation?: boolean
           is_exempt?: boolean | null
           next_evaluation_date?: string | null
           notes?: string | null
@@ -21687,6 +21701,7 @@ export type Database = {
           file_name?: string | null
           file_path?: string | null
           id?: string
+          is_in_adequation?: boolean
           is_exempt?: boolean | null
           next_evaluation_date?: string | null
           notes?: string | null

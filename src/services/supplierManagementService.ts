@@ -98,6 +98,7 @@ export interface DocumentSubmission {
   notes?: string;
   expiry_date?: string;
   is_exempt?: boolean;
+  is_in_adequation?: boolean;
   exempt_reason?: string;
   next_evaluation_date?: string;
   evaluation_status?: 'Ativo' | 'Inativo';
@@ -105,6 +106,8 @@ export interface DocumentSubmission {
   updated_at: string;
   required_document?: RequiredDocument;
 }
+
+export type SupplierQualificationStatus = 'Apto' | 'Não apto' | 'Sem avaliação';
 
 // Interface para associação Documento ↔ Tipo
 export interface DocumentTypeRequirement {
@@ -138,6 +141,15 @@ async function getCurrentUserCompanyId(): Promise<string> {
   }
 
   return profile.company_id;
+}
+
+function getQualificationStatusFromEvaluation(
+  evaluation?: { is_compliant?: boolean | null; compliance_percentage?: number | null } | null
+): SupplierQualificationStatus {
+  if (!evaluation) return 'Sem avaliação';
+
+  const isCompliant = evaluation.is_compliant ?? ((evaluation.compliance_percentage || 0) > 90);
+  return isCompliant ? 'Apto' : 'Não apto';
 }
 
 // ==================== DOCUMENTOS OBRIGATÓRIOS ====================
@@ -311,6 +323,7 @@ export async function deleteSupplierType(id: string): Promise<void> {
 
 export interface ManagedSupplierWithTypeCount extends ManagedSupplier {
   type_count?: number;
+  qualification_status?: SupplierQualificationStatus;
 }
 
 export async function getManagedSuppliers(): Promise<ManagedSupplierWithTypeCount[]> {
@@ -329,6 +342,7 @@ export async function getManagedSuppliers(): Promise<ManagedSupplierWithTypeCoun
         registration_date: new Date().toISOString(),
         status: 'Ativo',
         type_count: 2,
+        qualification_status: 'Apto',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       },
@@ -345,6 +359,7 @@ export async function getManagedSuppliers(): Promise<ManagedSupplierWithTypeCoun
         registration_date: new Date().toISOString(),
         status: 'Ativo',
         type_count: 1,
+        qualification_status: 'Não apto',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -377,10 +392,26 @@ export async function getManagedSuppliers(): Promise<ManagedSupplierWithTypeCoun
     typeCounts[a.supplier_id] = (typeCounts[a.supplier_id] || 0) + 1;
   });
 
+  // Buscar última avaliação documental por fornecedor para derivar aptidão
+  const { data: evaluations } = await supabase
+    .from('supplier_document_evaluations')
+    .select('supplier_id, evaluation_date, is_compliant, compliance_percentage')
+    .eq('company_id', companyId)
+    .in('supplier_id', supplierIds)
+    .order('evaluation_date', { ascending: false });
+
+  const latestEvaluationBySupplier = new Map<string, any>();
+  (evaluations || []).forEach((evaluation: any) => {
+    if (!latestEvaluationBySupplier.has(evaluation.supplier_id)) {
+      latestEvaluationBySupplier.set(evaluation.supplier_id, evaluation);
+    }
+  });
+
   // Adicionar contagem aos fornecedores
   return suppliers.map(s => ({
     ...s,
-    type_count: typeCounts[s.id] || 0
+    type_count: typeCounts[s.id] || 0,
+    qualification_status: getQualificationStatusFromEvaluation(latestEvaluationBySupplier.get(s.id))
   })) as ManagedSupplierWithTypeCount[];
 }
 
@@ -702,18 +733,35 @@ export async function evaluateDocumentSubmission(
 export async function getSupplierStats() {
   const companyId = await getCurrentUserCompanyId();
 
-  const [suppliers, types, documents, connections] = await Promise.all([
+  const [suppliers, types, documents, connections, evaluations] = await Promise.all([
     supabase.from('supplier_management').select('id, status, person_type').eq('company_id', companyId),
     supabase.from('supplier_types').select('id').eq('company_id', companyId).eq('is_active', true),
     supabase.from('supplier_required_documents').select('id').eq('company_id', companyId).eq('is_active', true),
-    supabase.from('supplier_connections').select('id').eq('company_id', companyId).eq('is_active', true)
+    supabase.from('supplier_connections').select('id').eq('company_id', companyId).eq('is_active', true),
+    supabase
+      .from('supplier_document_evaluations')
+      .select('supplier_id, evaluation_date, is_compliant, compliance_percentage')
+      .eq('company_id', companyId)
+      .order('evaluation_date', { ascending: false })
   ]);
 
   const supplierList = suppliers.data || [];
+  const latestEvaluationBySupplier = new Map<string, any>();
+  (evaluations.data || []).forEach((evaluation: any) => {
+    if (!latestEvaluationBySupplier.has(evaluation.supplier_id)) {
+      latestEvaluationBySupplier.set(evaluation.supplier_id, evaluation);
+    }
+  });
+
+  const aptSuppliers = supplierList.filter((supplier) => {
+    if (supplier.status !== 'Ativo') return false;
+    return getQualificationStatusFromEvaluation(latestEvaluationBySupplier.get(supplier.id)) === 'Apto';
+  }).length;
 
   return {
     totalSuppliers: supplierList.length,
     activeSuppliers: supplierList.filter(s => s.status === 'Ativo').length,
+    aptSuppliers,
     pfCount: supplierList.filter(s => s.person_type === 'PF').length,
     pjCount: supplierList.filter(s => s.person_type === 'PJ').length,
     totalTypes: types.data?.length || 0,
@@ -1000,6 +1048,16 @@ export interface SupplierAssignments {
   categories: SupplierCategoryAssignment[];
 }
 
+export interface SupplierAssignmentSummary {
+  supplier_id: string;
+  unit_ids: string[];
+  unit_names: string[];
+  category_ids: string[];
+  category_names: string[];
+  type_ids: string[];
+  type_names: string[];
+}
+
 interface BusinessUnit {
   id: string;
   name: string;
@@ -1122,6 +1180,94 @@ export async function updateSupplierAssignments(
   }
 }
 
+export async function getSupplierAssignmentsSummary(
+  supplierIds: string[]
+): Promise<Record<string, SupplierAssignmentSummary>> {
+  if (!supplierIds.length) return {};
+
+  const companyId = await getCurrentUserCompanyId();
+  const businessUnits = await getBusinessUnits();
+  const unitNameById = new Map(businessUnits.map(unit => [unit.id, unit.name]));
+
+  const [unitsResult, categoriesResult, typesResult] = await Promise.all([
+    supabase
+      .from('supplier_unit_assignments')
+      .select('supplier_id, business_unit_id')
+      .eq('company_id', companyId)
+      .in('supplier_id', supplierIds),
+    supabase
+      .from('supplier_category_assignments')
+      .select('supplier_id, category_id, category:supplier_categories(id, name)')
+      .eq('company_id', companyId)
+      .in('supplier_id', supplierIds),
+    supabase
+      .from('supplier_type_assignments')
+      .select('supplier_id, supplier_type_id, supplier_type:supplier_types(id, name)')
+      .in('supplier_id', supplierIds)
+  ]);
+
+  if (unitsResult.error) throw unitsResult.error;
+  if (categoriesResult.error) throw categoriesResult.error;
+  if (typesResult.error) throw typesResult.error;
+
+  const summaryMap = new Map<string, SupplierAssignmentSummary>();
+  supplierIds.forEach((supplierId) => {
+    summaryMap.set(supplierId, {
+      supplier_id: supplierId,
+      unit_ids: [],
+      unit_names: [],
+      category_ids: [],
+      category_names: [],
+      type_ids: [],
+      type_names: [],
+    });
+  });
+
+  (unitsResult.data || []).forEach((assignment: any) => {
+    const summary = summaryMap.get(assignment.supplier_id);
+    if (!summary) return;
+
+    if (!summary.unit_ids.includes(assignment.business_unit_id)) {
+      summary.unit_ids.push(assignment.business_unit_id);
+    }
+
+    const unitName = unitNameById.get(assignment.business_unit_id);
+    if (unitName && !summary.unit_names.includes(unitName)) {
+      summary.unit_names.push(unitName);
+    }
+  });
+
+  (categoriesResult.data || []).forEach((assignment: any) => {
+    const summary = summaryMap.get(assignment.supplier_id);
+    if (!summary) return;
+
+    if (!summary.category_ids.includes(assignment.category_id)) {
+      summary.category_ids.push(assignment.category_id);
+    }
+
+    const categoryName = assignment.category?.name;
+    if (categoryName && !summary.category_names.includes(categoryName)) {
+      summary.category_names.push(categoryName);
+    }
+  });
+
+  (typesResult.data || []).forEach((assignment: any) => {
+    const summary = summaryMap.get(assignment.supplier_id);
+    if (!summary) return;
+
+    if (!summary.type_ids.includes(assignment.supplier_type_id)) {
+      summary.type_ids.push(assignment.supplier_type_id);
+    }
+
+    const typeName = assignment.supplier_type?.name;
+    if (typeName && !summary.type_names.includes(typeName)) {
+      summary.type_names.push(typeName);
+    }
+  });
+
+  return Object.fromEntries(summaryMap);
+}
+
 // ==================== PRODUTOS/SERVIÇOS [ALX] ====================
 
 export interface SupplierProductService {
@@ -1203,11 +1349,27 @@ export interface SupplierDocumentEvaluation {
   total_weight_required: number;
   total_weight_achieved: number;
   compliance_percentage: number;
-  next_evaluation_date?: string;
+  compliance_threshold: number;
+  is_compliant: boolean;
+  has_adequation: boolean;
+  criteria_snapshot: SupplierDocumentEvaluationSnapshotItem[];
+  next_evaluation_date?: string | null;
   observation?: string;
   evaluated_by?: string;
   supplier_status: 'Ativo' | 'Inativo';
   created_at: string;
+}
+
+export interface SupplierDocumentEvaluationSnapshotItem {
+  required_document_id: string;
+  document_name: string;
+  weight: number;
+  is_exempt: boolean;
+  is_in_adequation: boolean;
+  status_label: 'ISENTO' | 'ATENDE_COMPLETAMENTE' | 'ATENDE_PARCIALMENTE' | 'NAO_ATENDE';
+  achieved_weight: number;
+  file_name?: string | null;
+  expiry_date?: string | null;
 }
 
 export async function getSupplierDocumentEvaluations(supplierId: string): Promise<SupplierDocumentEvaluation[]> {
@@ -1229,10 +1391,25 @@ export async function createSupplierDocumentEvaluation(evaluation: {
   total_weight_required: number;
   total_weight_achieved: number;
   compliance_percentage: number;
-  next_evaluation_date?: string | null;
+  next_evaluation_date: string;
+  compliance_threshold: number;
+  is_compliant: boolean;
+  has_adequation: boolean;
+  criteria_snapshot: SupplierDocumentEvaluationSnapshotItem[];
   observation?: string | null;
   supplier_status: 'Ativo' | 'Inativo';
 }): Promise<SupplierDocumentEvaluation> {
+  if (!evaluation.next_evaluation_date) {
+    throw new Error('Próxima avaliação é obrigatória');
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const nextEvaluationDate = new Date(`${evaluation.next_evaluation_date}T00:00:00`);
+  if (Number.isNaN(nextEvaluationDate.getTime()) || nextEvaluationDate < today) {
+    throw new Error('A data da próxima avaliação deve ser hoje ou futura');
+  }
+
   const companyId = await getCurrentUserCompanyId();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -1248,6 +1425,7 @@ export async function createSupplierDocumentEvaluation(evaluation: {
 
 export async function updateDocumentSubmission(id: string, updates: {
   is_exempt?: boolean;
+  is_in_adequation?: boolean;
   exempt_reason?: string | null;
   expiry_date?: string | null;
 }): Promise<void> {
@@ -1283,6 +1461,22 @@ export async function getLatestEvaluationForSuppliers(supplierIds: string[]): Pr
   });
 
   return Array.from(latestBySupplier.values());
+}
+
+export async function getSupplierQualificationByIds(
+  supplierIds: string[]
+): Promise<Record<string, SupplierQualificationStatus>> {
+  if (!supplierIds.length) return {};
+
+  const latestEvaluations = await getLatestEvaluationForSuppliers(supplierIds);
+  const statusBySupplier: Record<string, SupplierQualificationStatus> = {};
+
+  supplierIds.forEach((supplierId) => {
+    const evaluation = latestEvaluations.find((item) => item.supplier_id === supplierId);
+    statusBySupplier[supplierId] = getQualificationStatusFromEvaluation(evaluation);
+  });
+
+  return statusBySupplier;
 }
 
 // ==================== AVALIAÇÕES DE DESEMPENHO [AVA2] ====================

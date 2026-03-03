@@ -52,15 +52,16 @@ export function KPICarousel({
     
     const isPositive = changeType === 'positive';
     const isNegative = changeType === 'negative';
+    const trendArrow = isPositive ? '↗' : isNegative ? '↘' : '→';
     
     return (
       <span className={cn(
-        "text-sm font-medium flex items-center gap-1",
+        "flex items-center gap-1 text-sm font-medium",
         isPositive && "text-success",
         isNegative && "text-destructive",
         !isPositive && !isNegative && "text-muted-foreground"
       )}>
-        <span className="text-xs">↗</span>
+        <span className="text-xs">{trendArrow}</span>
         {Math.abs(change)}%
       </span>
     );
@@ -74,7 +75,7 @@ export function KPICarousel({
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8 rounded-full bg-background shadow-md border-border/50 transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground"
+            className="h-8 w-8 rounded-full border-border/60 bg-background/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] backdrop-blur transition-all hover:bg-background"
             onClick={goForward}
             aria-label="Ver próximos itens"
           >
@@ -89,7 +90,7 @@ export function KPICarousel({
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8 rounded-full bg-background shadow-md border-border/50 transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground"
+            className="h-8 w-8 rounded-full border-border/60 bg-background/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] backdrop-blur transition-all hover:bg-background"
             onClick={goBack}
             aria-label="Ver itens anteriores"
           >
@@ -99,7 +100,7 @@ export function KPICarousel({
       )}
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-2">
+      <div className="grid grid-cols-1 gap-4 px-1 md:grid-cols-2 lg:grid-cols-4">
         {visibleItems.map((kpi, index) => {
           const Icon = kpi.icon;
           
@@ -107,13 +108,13 @@ export function KPICarousel({
             <Card
               key={kpi.id}
               className={cn(
-                "group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1",
-                "animate-fade-in bg-card border-border/50"
+                "group cursor-pointer rounded-3xl border border-border/65 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] transition-all duration-200 hover:border-border hover:bg-background hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_10px_24px_-20px_rgba(15,23,42,0.55)]",
+                "animate-fade-in"
               )}
               style={{ animationDelay: `${index * 0.1}s` }}
               onClick={() => onItemClick?.(kpi)}
             >
-              <CardContent className="p-5">
+              <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className={cn("p-2.5 rounded-xl", kpi.bgColor)}>
                     <Icon className={cn("h-5 w-5", kpi.color)} />
@@ -121,7 +122,7 @@ export function KPICarousel({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-7 w-7 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
                     onClick={(e) => {
                       e.stopPropagation();
                       onMenuClick?.(kpi, 'details');
@@ -131,14 +132,14 @@ export function KPICarousel({
                   </Button>
                 </div>
                 
-                <p className="text-sm text-muted-foreground mb-1">{kpi.title}</p>
+                <p className="mb-1 text-sm text-muted-foreground">{kpi.title}</p>
                 
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-2xl font-bold text-foreground">{kpi.value}</span>
+                <div className="mb-1 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold tracking-[-0.02em] text-foreground">{kpi.value}</span>
                   {getChangeDisplay(kpi.change, kpi.changeType)}
                 </div>
                 
-                <p className="text-xs text-muted-foreground">{kpi.description}</p>
+                <p className="text-xs text-muted-foreground/90">{kpi.description}</p>
               </CardContent>
             </Card>
           );
@@ -153,10 +154,10 @@ export function KPICarousel({
               key={index}
               onClick={() => setCurrentPage(index)}
               className={cn(
-                "rounded-full transition-all duration-300 cursor-pointer",
+                "cursor-pointer rounded-full transition-all duration-300",
                 index === currentPage 
-                  ? "bg-primary w-8 h-2" 
-                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50 w-2 h-2"
+                  ? "h-2 w-8 bg-foreground/75" 
+                  : "h-2 w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
               )}
               aria-label={`Ir para página ${index + 1}`}
             />
