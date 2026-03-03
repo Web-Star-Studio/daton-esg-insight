@@ -417,16 +417,17 @@ export const governanceMockEntries = [
   {
     queryKey: ['compliance-tasks', DEMO_COMPANY_ID],
     data: [
-      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em progresso', priority: 'high', assigned_to_user_id: 'emp-2', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-1' },
-      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Atrasado', priority: 'medium', assigned_to_user_id: 'emp-7', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-2' },
+      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em Andamento', priority: 'high', assigned_to_user_id: 'emp-2', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-1' },
+      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Em Atraso', priority: 'medium', assigned_to_user_id: 'emp-7', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-2' },
       { id: 'ct-3', title: 'Relatório Trimestral CIPA', requirement: 'NR-05', category: 'Health & Safety', due_date: '2026-03-30', status: 'Pendente', priority: 'medium', assigned_to_user_id: 'emp-4', is_template: false, is_recurring: true, recurrence_pattern: 'quarterly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-3' }
     ]
   },
   {
     queryKey: ['compliance-tasks'],
     data: [
-      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em progresso', priority: 'high', is_template: false },
-      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Atrasado', priority: 'medium', is_template: false },
+      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em Andamento', priority: 'high', is_template: false },
+      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Em Atraso', priority: 'medium', is_template: false },
+      { id: 'ct-3', title: 'Relatório Trimestral CIPA', requirement: 'NR-05', category: 'Health & Safety', due_date: '2026-03-30', status: 'Pendente', priority: 'medium', is_template: false },
     ]
   },
   // Licenses
@@ -463,17 +464,17 @@ export const governanceMockEntries = [
   {
     queryKey: ['corporate-policies', DEMO_COMPANY_ID],
     data: [
-      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo', version: '3.0', approval_date: '2025-06-15', next_review: '2026-06-15' },
-      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo', version: '5.1', approval_date: '2025-01-01', next_review: '2026-01-01' },
-      { id: '3', title: 'Política Anticorrupção', category: 'Compliance', status: 'Ativo', version: '2.0', approval_date: '2024-12-01', next_review: '2025-12-01' },
+      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo', version: '3.0', description: 'Diretrizes para gestão sustentável das operações e cadeia de valor da empresa.', effective_date: '2025-07-01T00:00:00Z', approval_date: '2025-06-15T00:00:00Z', review_date: '2026-06-15T00:00:00Z', next_review: '2026-06-15' },
+      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo', version: '5.1', description: 'Princípios e valores que norteiam a conduta de todos os colaboradores e parceiros.', effective_date: '2025-01-15T00:00:00Z', approval_date: '2025-01-01T00:00:00Z', review_date: '2026-01-01T00:00:00Z', next_review: '2026-01-01' },
+      { id: '3', title: 'Política Anticorrupção', category: 'Compliance', status: 'Ativo', version: '2.0', description: 'Diretrizes para prevenção, detecção e combate à corrupção e suborno.', effective_date: '2024-12-15T00:00:00Z', approval_date: '2024-12-01T00:00:00Z', review_date: '2025-12-01T00:00:00Z', next_review: '2025-12-01' },
     ],
   },
   // Corporate policies (base)
   {
     queryKey: ['corporate-policies'],
     data: [
-      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo' },
-      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo' },
+      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo', version: '3.0', description: 'Diretrizes para gestão sustentável das operações.', effective_date: '2025-07-01T00:00:00Z', approval_date: '2025-06-15T00:00:00Z', review_date: '2026-06-15T00:00:00Z' },
+      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo', version: '5.1', description: 'Princípios e valores que norteiam a conduta de todos.', effective_date: '2025-01-15T00:00:00Z', approval_date: '2025-01-01T00:00:00Z', review_date: '2026-01-01T00:00:00Z' },
     ],
   },
   // Audits
@@ -545,34 +546,59 @@ export const governanceMockEntries = [
   {
     queryKey: ['opportunities', DEMO_COMPANY_ID],
     data: [
-      { id: '1', title: 'Créditos de Carbono', category: 'Financeiro', status: 'Em Análise', potential_value: 500000 },
-      { id: '2', title: 'Certificação B Corp', category: 'Reputação', status: 'Identificada', potential_value: null },
+      { id: '1', title: 'Implementação de Painéis Solares', description: 'Redução de custos', category: 'Ambiental', probability: 'Alta', impact: 'Alto', status: 'Em Análise', potential_value: 150000, implementation_cost: 50000 },
+      { id: '2', title: 'Programa de Diversidade', description: 'Atração de talentos', category: 'Social', probability: 'Alta', impact: 'Médio', status: 'Em Implementação', potential_value: null },
+      { id: '3', title: 'Créditos de Carbono', description: 'Venda de créditos', category: 'Financeiro', probability: 'Média', impact: 'Alto', status: 'Em Análise', potential_value: 500000 }
     ],
   },
   // Opportunities (base)
   {
     queryKey: ['opportunities'],
     data: [
-      { id: '1', title: 'Créditos de Carbono', category: 'Financeiro', status: 'Em Análise', potential_value: 500000 },
+      { id: '1', title: 'Implementação de Painéis Solares', description: 'Redução de custos', category: 'Ambiental', probability: 'Alta', impact: 'Alto', status: 'Em Análise', potential_value: 150000, implementation_cost: 50000 },
+      { id: '2', title: 'Programa de Diversidade', description: 'Atração de talentos', category: 'Social', probability: 'Alta', impact: 'Médio', status: 'Em Implementação', potential_value: null },
+      { id: '3', title: 'Créditos de Carbono', description: 'Venda de créditos', category: 'Financeiro', probability: 'Média', impact: 'Alto', status: 'Em Análise', potential_value: 500000 }
     ],
+  },
+  // Opportunity Matrix
+  {
+    queryKey: ['opportunity-matrix'],
+    data: {
+      'Alta': { 'Baixo': 0, 'Médio': 1, 'Alto': 1 },
+      'Média': { 'Baixo': 0, 'Médio': 0, 'Alto': 1 },
+      'Baixa': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 },
+    }
+  },
+  // SWOT Analyses
+  {
+    queryKey: ['swot-analyses'],
+    data: [
+      {
+        id: "demo-swot-1",
+        title: "Análise SWOT 2026",
+        description: "Análise estratégica anual de sustentabilidade e negócios.",
+        created_at: new Date().toISOString()
+      }
+    ]
+  },
+  // SWOT Items
+  {
+    queryKey: ['swot-items', 'demo-swot-1'],
+    data: [
+      { id: "item-1", category: "strengths", item_text: "Marca Forte em Sustentabilidade", description: "Reconhecimento no mercado pelas práticas ESG.", impact_level: "high" },
+      { id: "item-2", category: "strengths", item_text: "Equipe Capacitada", description: "Baixa rotatividade e alta especialização técnica.", impact_level: "medium" },
+      { id: "item-3", category: "weaknesses", item_text: "Dependência de Fornecedores Externos", description: "Cadeia de suprimentos vulnerável a interrupções globais.", impact_level: "high" },
+      { id: "item-4", category: "opportunities", item_text: "Expansão para Mercados Verdes", description: "Novos produtos focados na economia circular.", impact_level: "high" },
+      { id: "item-5", category: "threats", item_text: "Novas Regulamentações Ambientais", description: "Maior rigor na legislação de emissões.", impact_level: "medium" }
+    ]
   },
   // Risk matrix
   {
     queryKey: ['risk-matrix'],
     data: {
-      rows: ['Baixa', 'Média', 'Alta'],
-      cols: ['Baixo', 'Médio', 'Alto'],
-      cells: [
-        { probability: 'Baixa', impact: 'Baixo', risks: 0, level: 'Baixo' },
-        { probability: 'Baixa', impact: 'Médio', risks: 0, level: 'Baixo' },
-        { probability: 'Baixa', impact: 'Alto', risks: 3, level: 'Médio' },
-        { probability: 'Média', impact: 'Baixo', risks: 0, level: 'Baixo' },
-        { probability: 'Média', impact: 'Médio', risks: 2, level: 'Médio' },
-        { probability: 'Média', impact: 'Alto', risks: 1, level: 'Alto' },
-        { probability: 'Alta', impact: 'Baixo', risks: 0, level: 'Baixo' },
-        { probability: 'Alta', impact: 'Médio', risks: 0, level: 'Médio' },
-        { probability: 'Alta', impact: 'Alto', risks: 2, level: 'Crítico' },
-      ],
+      'Baixa': { 'Baixo': 0, 'Médio': 0, 'Alto': 3 },
+      'Média': { 'Baixo': 0, 'Médio': 2, 'Alto': 1 },
+      'Alta': { 'Baixo': 0, 'Médio': 0, 'Alto': 2 }
     },
   },
   // Audit programs
@@ -664,18 +690,15 @@ export const governanceMockEntries = [
       { id: 'rr-4', title: 'Resolução CONAMA 307/2002', category: 'Ambiental', status: 'Compliant', deadline: '2026-12-31', priority: 'medium', created_at: '2025-04-01T08:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
     ],
   },
-  // Compliance stats (Compliance page)
+  // Compliance stats (Compliance page) — shape matches ComplianceStats interface in compliance.ts
   {
     queryKey: ['compliance-stats'],
     data: {
-      total: 24,
-      compliant: 18,
-      inProgress: 4,
-      overdue: 2,
-      complianceRate: 75,
-      criticalCount: 2,
-      overdueCount: 2,
-      upcomingCount: 6,
+      totalRequirements: 4,  // matches 4 entries in ['regulatory-requirements'] mock
+      totalTasks: 3,         // matches 3 entries in ['compliance-tasks'] mock
+      pendingTasks: 1,       // ct-3 status 'Pendente'
+      duingSoon: 2,          // ct-1 (2026-03-15) and ct-3 (2026-03-30) due within 30 days
+      overdueTasks: 1,       // ct-2 status 'Em Atraso'
     },
   },
   // Strategic maps (PlanejamentoEstrategico page)
@@ -799,6 +822,21 @@ export const governanceMockEntries = [
       resolved: 1,
       avgResolutionDays: 6,
       totalFinancialImpact: 103500,
+    },
+  },
+  // Risk management stats — RiskManagementDashboard.tsx (queryKey: ['risk-management-stats'])
+  {
+    queryKey: ['risk-management-stats'],
+    data: {
+      total_risks: 12, critical_risks: 2, mitigated_risks: 8, risks_trend: -3,
+      trend: [
+        { month: 'Set', total: 15, critical: 4, high: 6 },
+        { month: 'Out', total: 14, critical: 3, high: 6 },
+        { month: 'Nov', total: 13, critical: 3, high: 5 },
+        { month: 'Dez', total: 13, critical: 2, high: 5 },
+        { month: 'Jan', total: 12, critical: 2, high: 5 },
+        { month: 'Fev', total: 12, critical: 2, high: 4 },
+      ],
     },
   },
   // Audit areas — AuditAreasManagement.tsx (via useAuditAreas hook, queryKey: ['audit-areas'])

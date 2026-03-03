@@ -14,6 +14,68 @@ import { ptBR } from "date-fns/locale";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))', '#22c55e', '#f59e0b'];
 
+const DEMO_RECEIVABLE_TEMPLATES = [
+  { waste_description: "Papel e Papelão", month: 2, day: 15, quantity: 1250.5, unit: "kg", destination_name: "Recicla Brasil Ltda", revenue_per_unit: 0.45, final_treatment_type: "Reciclagem" },
+  { waste_description: "Plástico PET", month: 2, day: 10, quantity: 780, unit: "kg", destination_name: "Ecopack Reciclagem", revenue_per_unit: 1.2, final_treatment_type: "Reciclagem" },
+  { waste_description: "Metal Ferroso", month: 1, day: 28, quantity: 2100, unit: "kg", destination_name: "Sucatec Metais", revenue_per_unit: 0.6, final_treatment_type: "Reciclagem" },
+  { waste_description: "Alumínio", month: 1, day: 20, quantity: 320, unit: "kg", destination_name: "Sucatec Metais", revenue_per_unit: 4.8, final_treatment_type: "Reciclagem" },
+  { waste_description: "Vidro", month: 3, day: 5, quantity: 650, unit: "kg", destination_name: "Vidrolar", revenue_per_unit: 0.15, final_treatment_type: "Reciclagem" },
+] as const;
+
+const MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+function generateDemoReceivablesForYear(year: number): ReceivableWaste[] {
+  return DEMO_RECEIVABLE_TEMPLATES.map((template, index) => {
+    const revenueTotal = Math.round(template.quantity * template.revenue_per_unit * 100) / 100;
+
+    return {
+      id: `rw-${year}-${index + 1}`,
+      mtr_number: `MTR-${year}-${String(index + 45).padStart(4, "0")}`,
+      waste_description: template.waste_description,
+      collection_date: new Date(Date.UTC(year, template.month - 1, template.day)).toISOString(),
+      quantity: template.quantity,
+      unit: template.unit,
+      destination_name: template.destination_name,
+      revenue_per_unit: template.revenue_per_unit,
+      revenue_total: revenueTotal,
+      final_treatment_type: template.final_treatment_type,
+    };
+  });
+}
+
+function computeDemoStatsFromReceivables(receivablesData: ReceivableWaste[]): ReceivablesStats {
+  const totalRevenueYear = receivablesData.reduce((sum, item) => sum + (item.revenue_total || 0), 0);
+
+  const revenueByMaterial = receivablesData.reduce<Record<string, number>>((acc, item) => {
+    const material = item.waste_description || "Outros";
+    acc[material] = (acc[material] || 0) + (item.revenue_total || 0);
+    return acc;
+  }, {});
+
+  const monthlyRevenue = new Array(12).fill(0);
+  receivablesData.forEach((item) => {
+    const month = new Date(item.collection_date).getMonth();
+    monthlyRevenue[month] += item.revenue_total || 0;
+  });
+
+  const totalQuantityTons = receivablesData.reduce((sum, item) => {
+    const quantityInTons = item.unit.toLowerCase().includes("kg") ? item.quantity / 1000 : item.quantity;
+    return sum + quantityInTons;
+  }, 0);
+
+  return {
+    total_revenue_year: Math.round(totalRevenueYear * 100) / 100,
+    revenue_by_material: Object.fromEntries(
+      Object.entries(revenueByMaterial).map(([material, value]) => [material, Math.round(value * 100) / 100])
+    ),
+    monthly_comparison: monthlyRevenue.map((revenue, index) => ({
+      month: MONTH_NAMES[index],
+      revenue: Math.round(revenue * 100) / 100,
+    })),
+    avg_price_per_ton: totalQuantityTons > 0 ? Math.round((totalRevenueYear / totalQuantityTons) * 100) / 100 : 0,
+  };
+}
+
 export default function FinanceiroResiduosContasAReceber() {
   const [receivables, setReceivables] = useState<ReceivableWaste[]>([]);
   const [stats, setStats] = useState<ReceivablesStats | null>(null);
@@ -28,6 +90,16 @@ export default function FinanceiroResiduosContasAReceber() {
   async function loadData() {
     try {
       setLoading(true);
+
+      if ((window as any).__DATON_DEMO_MODE__ === true) {
+        const demoReceivables = generateDemoReceivablesForYear(selectedYear);
+        const demoStats = computeDemoStatsFromReceivables(demoReceivables);
+        setReceivables(demoReceivables);
+        setStats(demoStats);
+        setLoading(false);
+        return;
+      }
+
       const [receivablesData, statsData] = await Promise.all([
         getReceivableWastes(selectedYear),
         getReceivablesStats(selectedYear)
