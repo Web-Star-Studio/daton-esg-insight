@@ -9,12 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  AlertTriangle, 
-  Shield, 
-  Target, 
-  Eye, 
-  Plus, 
+import {
+  AlertTriangle,
+  Shield,
+  Target,
+  Eye,
+  Plus,
   TrendingUp,
   Activity,
   Users,
@@ -25,7 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RiskManagementDashboard } from "@/components/RiskManagementDashboard";
 import { ESGRisksMatrix } from "@/components/ESGRisksMatrix";
-import { RiskOccurrencesList } from "@/components/RiskOccurrencesList";  
+import { RiskOccurrencesList } from "@/components/RiskOccurrencesList";
 import { OpportunityMapWidget } from "@/components/OpportunityMapWidget";
 import SWOTMatrix from "@/components/SWOTMatrix";
 import { ESGRiskModal } from "@/components/ESGRiskModal";
@@ -55,7 +55,7 @@ interface RiskAssessment {
 
 export default function GestaoRiscos() {
   const { toast } = useToast();
-  
+
   // Estado dos modais e formulários
   const [isCreateMatrixOpen, setIsCreateMatrixOpen] = useState(false);
   const [isCreateRiskOpen, setIsCreateRiskOpen] = useState(false);
@@ -65,7 +65,7 @@ export default function GestaoRiscos() {
   const [selectedRisk, setSelectedRisk] = useState<ESGRisk | null>(null);
   const [selectedMatrix, setSelectedMatrix] = useState<any>(null);
   const [riskModalMode, setRiskModalMode] = useState<'create' | 'edit' | 'view'>('create');
-  
+
   const [newMatrixData, setNewMatrixData] = useState({
     name: '',
     description: '',
@@ -85,11 +85,31 @@ export default function GestaoRiscos() {
   const { data: riskMatricesData, isLoading: matricesLoading, refetch } = useQuery({
     queryKey: ['risk-matrices'],
     queryFn: async () => {
+      const isDemoMode = typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+      if (isDemoMode) {
+        return [
+          {
+            id: 'demo-matrix-1',
+            name: 'Matriz de Riscos Operacionais 2024',
+            description: 'Matriz principal para avaliação de riscos operacionais em todas as unidades.',
+            matrix_type: 'Operacional',
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: 'demo-matrix-2',
+            name: 'Riscos Estratégicos',
+            description: 'Acompanhamento dos riscos de negócio e estratégia.',
+            matrix_type: 'Estratégico',
+            created_at: new Date().toISOString(),
+          }
+        ] as RiskMatrix[];
+      }
+
       const { data, error } = await supabase
         .from('risk_matrices')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       return data as RiskMatrix[];
     },
@@ -240,7 +260,7 @@ export default function GestaoRiscos() {
             Identifique, avalie e gerencie os riscos da sua organização
           </p>
         </div>
-        
+
         <div className="flex gap-2">
           <Dialog open={isCreateMatrixOpen} onOpenChange={setIsCreateMatrixOpen}>
             <DialogTrigger asChild>
@@ -259,7 +279,7 @@ export default function GestaoRiscos() {
                   <Input
                     id="matrix-name"
                     value={newMatrixData.name}
-                    onChange={(e) => setNewMatrixData({...newMatrixData, name: e.target.value})}
+                    onChange={(e) => setNewMatrixData({ ...newMatrixData, name: e.target.value })}
                     placeholder="Ex: Riscos Operacionais 2024"
                   />
                 </div>
@@ -267,7 +287,7 @@ export default function GestaoRiscos() {
                   <Label htmlFor="matrix-type">Tipo da Matriz</Label>
                   <Select
                     value={newMatrixData.type}
-                    onValueChange={(value) => setNewMatrixData({...newMatrixData, type: value})}
+                    onValueChange={(value) => setNewMatrixData({ ...newMatrixData, type: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -285,7 +305,7 @@ export default function GestaoRiscos() {
                   <Textarea
                     id="matrix-description"
                     value={newMatrixData.description}
-                    onChange={(e) => setNewMatrixData({...newMatrixData, description: e.target.value})}
+                    onChange={(e) => setNewMatrixData({ ...newMatrixData, description: e.target.value })}
                     placeholder="Descrição da matriz de risco"
                   />
                 </div>
@@ -354,7 +374,7 @@ export default function GestaoRiscos() {
                 </CardContent>
               </Card>
             ))}
-            
+
             {riskMatrices.length === 0 && (
               <Card className="col-span-full">
                 <CardContent className="text-center py-8">
@@ -374,7 +394,7 @@ export default function GestaoRiscos() {
         </TabsContent>
 
         <TabsContent value="risks" className="space-y-4">
-          <ESGRisksMatrix 
+          <ESGRisksMatrix
             onEditRisk={handleEditRisk}
             onCreateRisk={handleCreateRisk}
             onViewRisk={handleViewRisk}

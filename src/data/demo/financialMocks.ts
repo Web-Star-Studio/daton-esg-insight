@@ -315,14 +315,7 @@ export const financialMockEntries = [
       pendingCount: 12,
     },
   },
-  // Payable wastes
-  {
-    queryKey: ['payable-wastes'],
-    data: [
-      { id: 'pw-1', waste_type: 'Resíduos Classe I', amount: 15000, status: 'Pendente', due_date: '2026-02-28' },
-      { id: 'pw-2', waste_type: 'Resíduos Classe IIA', amount: 8500, status: 'Pago', due_date: '2026-01-31' },
-    ],
-  },
+  // Payable wastes — removed: old entry with wrong shape; correct entries at bottom of file
   // Accounts receivable
   {
     queryKey: ['accounts-receivable', DEMO_COMPANY_ID],
@@ -537,5 +530,38 @@ export const financialMockEntries = [
   {
     queryKey: ['category-profitability'],
     data: [],
+  },
+  // Contas a Pagar - Resíduos
+  {
+    queryKey: ['payable-wastes', 'all'],
+    data: [
+      { id: 'pw-1', mtr_number: 'MTR-2026-0041', waste_description: 'Resíduo Classe II-A — Não Perigoso', collection_date: '2026-02-10T00:00:00Z', destination_name: 'Destina Ambiental', total_payable: 1850.00, amount_paid: 0, payment_status: 'Pendente' },
+      { id: 'pw-2', mtr_number: 'MTR-2026-0034', waste_description: 'Resíduo Classe I — Perigoso (solventes)', collection_date: '2026-01-25T00:00:00Z', destination_name: 'HazWaste Soluções', total_payable: 4200.00, amount_paid: 2000.00, payment_status: 'Parcial' },
+      { id: 'pw-3', mtr_number: 'MTR-2025-0215', waste_description: 'Óleo Lubrificante Usado', collection_date: '2025-12-20T00:00:00Z', destination_name: 'ReOil Brasil', total_payable: 980.00, amount_paid: 980.00, payment_status: 'Quitado' },
+      { id: 'pw-4', mtr_number: 'MTR-2025-0198', waste_description: 'Resíduo de Construção (Classe A)', collection_date: '2025-12-05T00:00:00Z', destination_name: 'Construção Reciclável', total_payable: 2700.00, amount_paid: 0, payment_status: 'Pendente' },
+    ],
+  },
+  // prefix for other status filters
+  {
+    queryKey: ['payable-wastes'],
+    data: [
+      { id: 'pw-1', mtr_number: 'MTR-2026-0041', waste_description: 'Resíduo Classe II-A — Não Perigoso', collection_date: '2026-02-10T00:00:00Z', destination_name: 'Destina Ambiental', total_payable: 1850.00, amount_paid: 0, payment_status: 'Pendente' },
+      { id: 'pw-2', mtr_number: 'MTR-2026-0034', waste_description: 'Resíduo Classe I — Perigoso (solventes)', collection_date: '2026-01-25T00:00:00Z', destination_name: 'HazWaste Soluções', total_payable: 4200.00, amount_paid: 2000.00, payment_status: 'Parcial' },
+      { id: 'pw-3', mtr_number: 'MTR-2025-0215', waste_description: 'Óleo Lubrificante Usado', collection_date: '2025-12-20T00:00:00Z', destination_name: 'ReOil Brasil', total_payable: 980.00, amount_paid: 980.00, payment_status: 'Quitado' },
+      { id: 'pw-4', mtr_number: 'MTR-2025-0198', waste_description: 'Resíduo de Construção (Classe A)', collection_date: '2025-12-05T00:00:00Z', destination_name: 'Construção Reciclável', total_payable: 2700.00, amount_paid: 0, payment_status: 'Pendente' },
+    ],
+  },
+  {
+    queryKey: ['payables-stats'],
+    data: {
+      total_to_pay: 7730.00,
+      overdue_count: 2,
+      overdue_amount: 4550.00,
+      paid_this_month: 980.00,
+      pending_count: 2,
+      pending_amount: 4550.00,
+      partial_count: 1,
+      partial_amount: 2200.00,
+    },
   },
 ];

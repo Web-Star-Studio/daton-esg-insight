@@ -199,26 +199,55 @@ const DEMO_STAKEHOLDER_ANALYTICS = {
 };
 
 export const governanceMockEntries = [
-  // Governance metrics
+  // Governance metrics — GovernancaESG.tsx + GovernanceDashboard.tsx + GovernanceReportsModal.tsx
+  // Shape matches getGovernanceMetrics() return value: { board, policies, ethics }
+  // Values derived from board-members (3 total, 2 independent), corporate-policies (3 active, 1 needs review),
+  // and whistleblower-reports (2 total, 1 open, 1 resolved) mocks below.
   {
     queryKey: ['governance-metrics'],
     data: {
-      board_independence: 60,
-      board_diversity: 40,
-      executive_compensation_link: true,
-      anti_corruption_training: 95,
-      whistleblower_cases_resolved: 100,
-    }
+      board: {
+        totalMembers: 3,
+        independentMembers: 2,
+        independenceRate: 66.7,
+        genderDiversity: { 'Masculino': 2, 'Feminino': 1 },
+      },
+      policies: {
+        totalPolicies: 3,
+        activePolicies: 3,
+        policiesNeedingReview: 1,
+        reviewComplianceRate: 67,
+      },
+      ethics: {
+        totalReports: 2,
+        openReports: 1,
+        currentYearReports: 2,
+        resolutionRate: 50,
+      },
+    },
   },
   {
     queryKey: ['governance-metrics', DEMO_COMPANY_ID],
     data: {
-      board_independence: 60,
-      board_diversity: 40,
-      executive_compensation_link: true,
-      anti_corruption_training: 95,
-      whistleblower_cases_resolved: 100,
-    }
+      board: {
+        totalMembers: 3,
+        independentMembers: 2,
+        independenceRate: 66.7,
+        genderDiversity: { 'Masculino': 2, 'Feminino': 1 },
+      },
+      policies: {
+        totalPolicies: 3,
+        activePolicies: 3,
+        policiesNeedingReview: 1,
+        reviewComplianceRate: 67,
+      },
+      ethics: {
+        totalReports: 2,
+        openReports: 1,
+        currentYearReports: 2,
+        resolutionRate: 50,
+      },
+    },
   },
   // Employees
   {
@@ -244,10 +273,13 @@ export const governanceMockEntries = [
   {
     queryKey: ['risk-metrics'],
     data: {
-      total_risks: 24,
-      critical_risks: 3,
-      mitigated_risks: 15,
-      risks_trend: -2,
+      totalRisks: 24,
+      criticalRisks: 3,
+      highRisks: 6,
+      risksNeedingReview: 2,
+      risksByCategory: { Ambiental: 8, Social: 6, Governança: 10 },
+      risksByLevel: { Crítico: 3, Alto: 6, Médio: 10, Baixo: 5, 'Muito Baixo': 0 },
+      riskTrend: -2,
     }
   },
   // Board members — fields match BoardMember interface used by GovernanceStructure.tsx
@@ -312,12 +344,16 @@ export const governanceMockEntries = [
         id: 'wr-1', company_id: DEMO_COMPANY_ID,
         report_code: 'RPT-2026-001',
         category: 'Assédio Moral',
-        description: 'Relato de comportamento inadequado por parte de liderança intermediária.',
+        description: 'Relato de comportamento inadequado por parte de liderança intermediária. Colaborador relatou episódios recorrentes de pressão psicológica e linguagem ofensiva por parte do supervisor direto.',
         incident_date: '2026-01-05T00:00:00Z',
         location: 'Fábrica Guarulhos',
         is_anonymous: true,
         status: 'Resolvida',
         priority: 'Alta',
+        people_involved: 'Supervisor direto do departamento de produção (cargo, não identificado nominalmente)',
+        evidence_description: 'Depoimentos de duas testemunhas, registros de e-mails corporativos e relatório elaborado pelo departamento de RH',
+        investigation_notes: 'Entrevistas realizadas com 3 colaboradores. Incidente confirmado com base nos depoimentos colhidos e análise das comunicações digitais.',
+        resolution_summary: 'Aplicação de medidas disciplinares ao supervisor envolvido. Realização de treinamento de liderança consciente para toda a equipe de gestão da unidade.',
         created_at: '2026-01-10T09:00:00Z',
         updated_at: '2026-02-15T14:00:00Z',
       },
@@ -325,13 +361,16 @@ export const governanceMockEntries = [
         id: 'wr-2', company_id: DEMO_COMPANY_ID,
         report_code: 'RPT-2026-002',
         category: 'Conflito de Interesses',
-        description: 'Suspeita de contratação com vínculo familiar não declarado.',
-        incident_date: '2026-02-01T00:00:00Z',
+        description: 'Suspeita de contratação com vínculo familiar não declarado. Denunciante relata que fornecedor habitual tem relação de parentesco com gestor de compras, sem declaração formal no sistema de compliance.',
+        incident_date: '2026-01-31T00:00:00Z',
         location: 'Matriz São Paulo',
         is_anonymous: false,
         reporter_name: 'Denúncia Identificada',
         status: 'Em Investigação',
         priority: 'Média',
+        people_involved: 'Gestor de Compras e representante de fornecedor com vínculo familiar não declarado',
+        evidence_description: 'Contratos de fornecimento dos últimos 24 meses, documentos societários do fornecedor e extrato de relacionamento comercial',
+        investigation_notes: 'Análise documental em andamento. Solicitado laudo jurídico ao departamento legal. Aguardando conclusão para emissão de parecer.',
         created_at: '2026-02-08T11:00:00Z',
         updated_at: '2026-02-20T09:00:00Z',
       },
@@ -449,14 +488,27 @@ export const governanceMockEntries = [
   {
     queryKey: ['compliance-audit-trail', DEMO_COMPANY_ID],
     data: [
-      { id: 'cat-1', action_type: 'UPDATE', entity_type: 'compliance_tasks', entity_id: 'ct-1', previous_state: { status: 'Pendente' }, new_state: { status: 'Em progresso' }, created_by_user_id: 'emp-2', created_at: '2026-02-15T14:30:00Z', company_id: DEMO_COMPANY_ID },
-      { id: 'cat-2', action_type: 'CREATE', entity_type: 'compliance_tasks', entity_id: 'ct-3', previous_state: null, new_state: { title: 'Relatório Trimestral CIPA' }, created_by_user_id: 'emp-1', created_at: '2026-02-10T09:15:00Z', company_id: DEMO_COMPANY_ID },
+      { id: 'cat-1', action_type: 'task_completed', description: 'Tarefa "Atualização da Política de Privacidade LGPD" concluída com sucesso.', user_id: 'demo-user-001', user_name: 'Ana Lima', user_initials: 'AL', created_at: '2026-02-28T16:45:00Z', details_json: { tarefa: 'ct-1', status_anterior: 'Em Progresso', status_novo: 'Concluído' } },
+      { id: 'cat-2', action_type: 'approval_granted', description: 'Requisito "ISO 14001 - Gestão Ambiental" aprovado após revisão.', user_id: 'demo-user-002', user_name: 'Carlos Mendes', user_initials: 'CM', created_at: '2026-02-25T14:20:00Z', details_json: { requisito: 'RR-001', aprovador: 'Carlos Mendes' } },
+      { id: 'cat-3', action_type: 'task_updated', description: 'Status da tarefa "Relatório de Conformidade Q4" atualizado para "Em Progresso".', user_id: 'demo-user-001', user_name: 'Ana Lima', user_initials: 'AL', created_at: '2026-02-22T10:30:00Z', details_json: { status_anterior: 'Pendente', status_novo: 'Em Progresso' } },
+      { id: 'cat-4', action_type: 'document_uploaded', description: 'Documento "Certificado ISO 14001 - 2026" enviado para o sistema.', user_id: 'demo-user-003', user_name: 'Fernanda Costa', user_initials: 'FC', created_at: '2026-02-20T09:15:00Z', details_json: null },
+      { id: 'cat-5', action_type: 'requirement_added', description: 'Novo requisito "NR-12 — Segurança em Máquinas e Equipamentos" adicionado ao mapeamento.', user_id: 'demo-user-002', user_name: 'Carlos Mendes', user_initials: 'CM', created_at: '2026-02-18T13:00:00Z', details_json: { categoria: 'Segurança do Trabalho', prioridade: 'Alta' } },
+      { id: 'cat-6', action_type: 'status_changed', description: 'Requisito "Lei Geral de Proteção de Dados (LGPD)" atualizado para "Em Conformidade".', user_id: 'demo-user-001', user_name: 'Ana Lima', user_initials: 'AL', created_at: '2026-02-15T11:30:00Z', details_json: { status_anterior: 'Em Revisão', status_novo: 'Em Conformidade' } },
+      { id: 'cat-7', action_type: 'task_created', description: 'Tarefa "Relatório Trimestral CIPA" criada e atribuída à equipe de SST.', user_id: 'demo-user-003', user_name: 'Fernanda Costa', user_initials: 'FC', created_at: '2026-02-10T08:45:00Z', details_json: { prazo: '2026-03-30', responsavel: 'Equipe SST' } },
+      { id: 'cat-8', action_type: 'bulk_update', description: 'Atualização em lote: 3 tarefas de conformidade tiveram prazos revisados.', user_id: 'demo-user-002', user_name: 'Carlos Mendes', user_initials: 'CM', created_at: '2026-02-05T15:20:00Z', details_json: { tarefas_atualizadas: '3', motivo: 'Revisão de cronograma Q1 2026' } },
     ]
   },
   {
     queryKey: ['compliance-audit-trail'],
     data: [
-      { id: 'cat-1', action_type: 'UPDATE', entity_type: 'compliance_tasks', entity_id: 'ct-1', created_at: '2026-02-15T14:30:00Z' }
+      { id: 'cat-1', action_type: 'task_completed', description: 'Tarefa "Atualização da Política de Privacidade LGPD" concluída com sucesso.', user_id: 'demo-user-001', user_name: 'Ana Lima', user_initials: 'AL', created_at: '2026-02-28T16:45:00Z', details_json: { tarefa: 'ct-1', status_anterior: 'Em Progresso', status_novo: 'Concluído' } },
+      { id: 'cat-2', action_type: 'approval_granted', description: 'Requisito "ISO 14001 - Gestão Ambiental" aprovado após revisão.', user_id: 'demo-user-002', user_name: 'Carlos Mendes', user_initials: 'CM', created_at: '2026-02-25T14:20:00Z', details_json: { requisito: 'RR-001', aprovador: 'Carlos Mendes' } },
+      { id: 'cat-3', action_type: 'task_updated', description: 'Status da tarefa "Relatório de Conformidade Q4" atualizado para "Em Progresso".', user_id: 'demo-user-001', user_name: 'Ana Lima', user_initials: 'AL', created_at: '2026-02-22T10:30:00Z', details_json: { status_anterior: 'Pendente', status_novo: 'Em Progresso' } },
+      { id: 'cat-4', action_type: 'document_uploaded', description: 'Documento "Certificado ISO 14001 - 2026" enviado para o sistema.', user_id: 'demo-user-003', user_name: 'Fernanda Costa', user_initials: 'FC', created_at: '2026-02-20T09:15:00Z', details_json: null },
+      { id: 'cat-5', action_type: 'requirement_added', description: 'Novo requisito "NR-12 — Segurança em Máquinas e Equipamentos" adicionado ao mapeamento.', user_id: 'demo-user-002', user_name: 'Carlos Mendes', user_initials: 'CM', created_at: '2026-02-18T13:00:00Z', details_json: { categoria: 'Segurança do Trabalho', prioridade: 'Alta' } },
+      { id: 'cat-6', action_type: 'status_changed', description: 'Requisito "Lei Geral de Proteção de Dados (LGPD)" atualizado para "Em Conformidade".', user_id: 'demo-user-001', user_name: 'Ana Lima', user_initials: 'AL', created_at: '2026-02-15T11:30:00Z', details_json: { status_anterior: 'Em Revisão', status_novo: 'Em Conformidade' } },
+      { id: 'cat-7', action_type: 'task_created', description: 'Tarefa "Relatório Trimestral CIPA" criada e atribuída à equipe de SST.', user_id: 'demo-user-003', user_name: 'Fernanda Costa', user_initials: 'FC', created_at: '2026-02-10T08:45:00Z', details_json: { prazo: '2026-03-30', responsavel: 'Equipe SST' } },
+      { id: 'cat-8', action_type: 'bulk_update', description: 'Atualização em lote: 3 tarefas de conformidade tiveram prazos revisados.', user_id: 'demo-user-002', user_name: 'Carlos Mendes', user_initials: 'CM', created_at: '2026-02-05T15:20:00Z', details_json: { tarefas_atualizadas: '3', motivo: 'Revisão de cronograma Q1 2026' } },
     ]
   },
   // Corporate policies
@@ -545,34 +597,59 @@ export const governanceMockEntries = [
   {
     queryKey: ['opportunities', DEMO_COMPANY_ID],
     data: [
-      { id: '1', title: 'Créditos de Carbono', category: 'Financeiro', status: 'Em Análise', potential_value: 500000 },
-      { id: '2', title: 'Certificação B Corp', category: 'Reputação', status: 'Identificada', potential_value: null },
+      { id: '1', title: 'Implementação de Painéis Solares', description: 'Redução de custos', category: 'Ambiental', probability: 'Alta', impact: 'Alto', status: 'Em Análise', potential_value: 150000, implementation_cost: 50000 },
+      { id: '2', title: 'Programa de Diversidade', description: 'Atração de talentos', category: 'Social', probability: 'Alta', impact: 'Médio', status: 'Em Implementação', potential_value: null },
+      { id: '3', title: 'Créditos de Carbono', description: 'Venda de créditos', category: 'Financeiro', probability: 'Média', impact: 'Alto', status: 'Em Análise', potential_value: 500000 }
     ],
   },
   // Opportunities (base)
   {
     queryKey: ['opportunities'],
     data: [
-      { id: '1', title: 'Créditos de Carbono', category: 'Financeiro', status: 'Em Análise', potential_value: 500000 },
+      { id: '1', title: 'Implementação de Painéis Solares', description: 'Redução de custos', category: 'Ambiental', probability: 'Alta', impact: 'Alto', status: 'Em Análise', potential_value: 150000, implementation_cost: 50000 },
+      { id: '2', title: 'Programa de Diversidade', description: 'Atração de talentos', category: 'Social', probability: 'Alta', impact: 'Médio', status: 'Em Implementação', potential_value: null },
+      { id: '3', title: 'Créditos de Carbono', description: 'Venda de créditos', category: 'Financeiro', probability: 'Média', impact: 'Alto', status: 'Em Análise', potential_value: 500000 }
     ],
+  },
+  // Opportunity Matrix
+  {
+    queryKey: ['opportunity-matrix'],
+    data: {
+      'Alta': { 'Baixo': 0, 'Médio': 1, 'Alto': 1 },
+      'Média': { 'Baixo': 0, 'Médio': 0, 'Alto': 1 },
+      'Baixa': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 },
+    }
+  },
+  // SWOT Analyses
+  {
+    queryKey: ['swot-analyses'],
+    data: [
+      {
+        id: "demo-swot-1",
+        title: "Análise SWOT 2026",
+        description: "Análise estratégica anual de sustentabilidade e negócios.",
+        created_at: new Date().toISOString()
+      }
+    ]
+  },
+  // SWOT Items
+  {
+    queryKey: ['swot-items', 'demo-swot-1'],
+    data: [
+      { id: "item-1", category: "strengths", item_text: "Marca Forte em Sustentabilidade", description: "Reconhecimento no mercado pelas práticas ESG.", impact_level: "high" },
+      { id: "item-2", category: "strengths", item_text: "Equipe Capacitada", description: "Baixa rotatividade e alta especialização técnica.", impact_level: "medium" },
+      { id: "item-3", category: "weaknesses", item_text: "Dependência de Fornecedores Externos", description: "Cadeia de suprimentos vulnerável a interrupções globais.", impact_level: "high" },
+      { id: "item-4", category: "opportunities", item_text: "Expansão para Mercados Verdes", description: "Novos produtos focados na economia circular.", impact_level: "high" },
+      { id: "item-5", category: "threats", item_text: "Novas Regulamentações Ambientais", description: "Maior rigor na legislação de emissões.", impact_level: "medium" }
+    ]
   },
   // Risk matrix
   {
     queryKey: ['risk-matrix'],
     data: {
-      rows: ['Baixa', 'Média', 'Alta'],
-      cols: ['Baixo', 'Médio', 'Alto'],
-      cells: [
-        { probability: 'Baixa', impact: 'Baixo', risks: 0, level: 'Baixo' },
-        { probability: 'Baixa', impact: 'Médio', risks: 0, level: 'Baixo' },
-        { probability: 'Baixa', impact: 'Alto', risks: 3, level: 'Médio' },
-        { probability: 'Média', impact: 'Baixo', risks: 0, level: 'Baixo' },
-        { probability: 'Média', impact: 'Médio', risks: 2, level: 'Médio' },
-        { probability: 'Média', impact: 'Alto', risks: 1, level: 'Alto' },
-        { probability: 'Alta', impact: 'Baixo', risks: 0, level: 'Baixo' },
-        { probability: 'Alta', impact: 'Médio', risks: 0, level: 'Médio' },
-        { probability: 'Alta', impact: 'Alto', risks: 2, level: 'Crítico' },
-      ],
+      'Baixa': { 'Baixo': 0, 'Médio': 0, 'Alto': 3 },
+      'Média': { 'Baixo': 0, 'Médio': 2, 'Alto': 1 },
+      'Alta': { 'Baixo': 0, 'Médio': 0, 'Alto': 2 }
     },
   },
   // Audit programs
@@ -664,18 +741,15 @@ export const governanceMockEntries = [
       { id: 'rr-4', title: 'Resolução CONAMA 307/2002', category: 'Ambiental', status: 'Compliant', deadline: '2026-12-31', priority: 'medium', created_at: '2025-04-01T08:00:00Z', updated_at: '2026-01-10T10:00:00Z' },
     ],
   },
-  // Compliance stats (Compliance page)
+  // Compliance stats (Compliance page) — shape matches ComplianceStats interface in compliance.ts
   {
     queryKey: ['compliance-stats'],
     data: {
-      total: 24,
-      compliant: 18,
-      inProgress: 4,
-      overdue: 2,
-      complianceRate: 75,
-      criticalCount: 2,
-      overdueCount: 2,
-      upcomingCount: 6,
+      totalRequirements: 4,  // matches 4 entries in ['regulatory-requirements'] mock
+      totalTasks: 3,         // matches 3 entries in ['compliance-tasks'] mock
+      pendingTasks: 1,       // ct-3 status 'Pendente'
+      duingSoon: 2,          // ct-1 (2026-03-15) and ct-3 (2026-03-30) due within 30 days
+      overdueTasks: 1,       // ct-2 status 'Atrasado'
     },
   },
   // Strategic maps (PlanejamentoEstrategico page)

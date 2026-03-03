@@ -36,14 +36,14 @@ export function EmployeeDocumentsTab({ employeeId, employeeName }: EmployeeDocum
   });
 
   const filteredDocuments = documents.filter(doc =>
-    doc.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    (doc.file_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    doc.tags?.some(tag => tag?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleDownload = async (documentId: string, fileName: string) => {
     try {
       const url = await downloadEmployeeDocument(documentId);
-      
+
       // Criar link temporário e fazer download
       const link = document.createElement('a');
       link.href = url;
@@ -51,7 +51,7 @@ export function EmployeeDocumentsTab({ employeeId, employeeName }: EmployeeDocum
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       unifiedToast.success('Download iniciado!');
     } catch (error) {
       console.error('Download error:', error);
@@ -78,14 +78,16 @@ export function EmployeeDocumentsTab({ employeeId, employeeName }: EmployeeDocum
     }
   };
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.includes('pdf') || fileType.includes('word') || fileType.includes('document')) {
+  const getFileIcon = (fileType?: string) => {
+    if (!fileType) return <File className="h-5 w-5" />;
+    const type = fileType.toLowerCase();
+    if (type.includes('pdf') || type.includes('word') || type.includes('document')) {
       return <FileText className="h-5 w-5" />;
     }
-    if (fileType.includes('image')) {
+    if (type.includes('image')) {
       return <Image className="h-5 w-5" />;
     }
-    if (fileType.includes('spreadsheet') || fileType.includes('excel') || fileType.includes('csv')) {
+    if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) {
       return <Sheet className="h-5 w-5" />;
     }
     return <File className="h-5 w-5" />;
@@ -168,16 +170,22 @@ export function EmployeeDocumentsTab({ employeeId, employeeName }: EmployeeDocum
                           {getFileIcon(doc.file_type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium truncate">{doc.file_name}</h4>
+                          <h4 className="font-medium truncate">{doc.file_name || 'Documento sem nome'}</h4>
                           <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                             {doc.tags && doc.tags.length > 0 && (
                               <Badge variant="secondary" className="text-xs">
                                 {doc.tags[0]}
                               </Badge>
                             )}
-                            <span>{formatFileSize(doc.file_size)}</span>
-                            <span>•</span>
-                            <span>{new Date(doc.upload_date).toLocaleDateString('pt-BR')}</span>
+                            {doc.file_size !== undefined && doc.file_size !== null && (
+                              <span>{formatFileSize(doc.file_size)}</span>
+                            )}
+                            {(doc.file_size !== undefined && doc.file_size !== null) && doc.upload_date && (
+                              <span>•</span>
+                            )}
+                            {doc.upload_date && (
+                              <span>{new Date(doc.upload_date).toLocaleDateString('pt-BR')}</span>
+                            )}
                           </div>
                         </div>
                       </div>

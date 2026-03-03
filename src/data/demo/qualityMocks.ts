@@ -529,4 +529,26 @@ export const qualityMockEntries = [
       ],
     },
   },
+  // Licenciamento → Legislações (prefix covers ['legislations', companyId, filters])
+  {
+    queryKey: ['legislations'],
+    data: [
+      { id: 'leg-1', company_id: DEMO_COMPANY_ID, title: 'Lei Federal 12.305/2010 — Política Nacional de Resíduos Sólidos', norm_type: 'Lei Federal', issuing_body: 'Presidência da República', norm_number: '12.305', publication_date: '2010-08-02', jurisdiction: 'federal', overall_applicability: 'real', overall_status: 'conforme', has_alert: false, is_active: true, review_frequency_days: 365, created_at: '2025-01-01T00:00:00Z', updated_at: '2026-01-15T00:00:00Z' },
+      { id: 'leg-2', company_id: DEMO_COMPANY_ID, title: 'Resolução CONAMA 430/2011 — Condições de Lançamento de Efluentes', norm_type: 'Resolução', issuing_body: 'CONAMA', norm_number: '430', publication_date: '2011-05-13', jurisdiction: 'federal', overall_applicability: 'real', overall_status: 'adequacao', has_alert: false, is_active: true, review_frequency_days: 365, created_at: '2025-01-01T00:00:00Z', updated_at: '2026-02-01T00:00:00Z' },
+      { id: 'leg-3', company_id: DEMO_COMPANY_ID, title: 'NR-12 — Segurança no Trabalho em Máquinas e Equipamentos', norm_type: 'Norma Regulamentadora', issuing_body: 'MTE', norm_number: 'NR-12', publication_date: '2010-12-08', jurisdiction: 'federal', overall_applicability: 'real', overall_status: 'conforme', has_alert: false, is_active: true, review_frequency_days: 365, created_at: '2025-01-01T00:00:00Z', updated_at: '2026-01-20T00:00:00Z' },
+      { id: 'leg-4', company_id: DEMO_COMPANY_ID, title: 'Decreto Estadual 8.468/1976 — Proteção dos Recursos Hídricos (SP)', norm_type: 'Decreto Estadual', issuing_body: 'Governo do Estado de SP', norm_number: '8.468', publication_date: '1976-09-08', jurisdiction: 'estadual', overall_applicability: 'potential', overall_status: 'plano_acao', has_alert: true, is_active: true, review_frequency_days: 365, created_at: '2025-01-01T00:00:00Z', updated_at: '2026-02-10T00:00:00Z' },
+    ],
+  },
+  // Legislation KPIs and Charts (prefix covers ['legislation-stats', companyId])
+  {
+    queryKey: ['legislation-stats'],
+    data: {
+      total: 4,
+      byApplicability: { real: 3, potential: 1, revoked: 0, na: 0, pending: 0 },
+      byStatus: { conforme: 2, para_conhecimento: 0, adequacao: 1, plano_acao: 1, pending: 0 },
+      byJurisdiction: { federal: 3, estadual: 1, municipal: 0, nbr: 0, internacional: 0 },
+      pendingTotal: 0,
+      alerts: 1,
+    },
+  },
 ];
