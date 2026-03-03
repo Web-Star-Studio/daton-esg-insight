@@ -417,17 +417,17 @@ export const governanceMockEntries = [
   {
     queryKey: ['compliance-tasks', DEMO_COMPANY_ID],
     data: [
-      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em progresso', priority: 'high', assigned_to_user_id: 'emp-2', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-1' },
-      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Atrasado', priority: 'medium', assigned_to_user_id: 'emp-7', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-2' },
-      { id: 'ct-3', title: 'Relatório Trimestral CIPA', requirement: 'NR-05', category: 'Health & Safety', due_date: '2026-03-30', status: 'Pendente', priority: 'medium', assigned_to_user_id: 'emp-4', is_template: false, is_recurring: true, recurrence_pattern: 'quarterly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-3' }
-    ]
+      { id: 'ct-1', title: 'Renovar Licença de Operação', description: 'Renovação anual da licença de operação junto à CETESB.', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15T00:00:00Z', status: 'Em progresso', priority: 'high', frequency: 'Anual', assigned_to_user_id: 'emp-2', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-1', created_at: '2025-12-01T09:00:00Z', updated_at: '2026-02-15T10:00:00Z' },
+      { id: 'ct-2', title: 'Treinamento LGPD Anual', description: 'Capacitação anual de colaboradores sobre a Lei Geral de Proteção de Dados.', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28T00:00:00Z', status: 'Atrasado', priority: 'medium', frequency: 'Anual', assigned_to_user_id: 'emp-7', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-2', created_at: '2025-12-01T09:00:00Z', updated_at: '2026-02-20T08:00:00Z' },
+      { id: 'ct-3', title: 'Relatório Trimestral CIPA', description: 'Elaboração e envio do relatório trimestral de atividades da CIPA.', requirement: 'NR-05', category: 'Health & Safety', due_date: '2026-03-30T00:00:00Z', status: 'Pendente', priority: 'medium', frequency: 'Trimestral', assigned_to_user_id: 'emp-4', is_template: false, is_recurring: true, recurrence_pattern: 'quarterly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-3', created_at: '2026-01-10T09:00:00Z', updated_at: '2026-01-10T09:00:00Z' },
+    ],
   },
   {
     queryKey: ['compliance-tasks'],
     data: [
-      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em progresso', priority: 'high', is_template: false },
-      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Atrasado', priority: 'medium', is_template: false },
-    ]
+      { id: 'ct-1', title: 'Renovar Licença de Operação', description: 'Renovação anual da licença de operação junto à CETESB.', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15T00:00:00Z', status: 'Em progresso', priority: 'high', frequency: 'Anual', is_template: false, created_at: '2025-12-01T09:00:00Z', updated_at: '2026-02-15T10:00:00Z' },
+      { id: 'ct-2', title: 'Treinamento LGPD Anual', description: 'Capacitação anual de colaboradores sobre a LGPD.', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28T00:00:00Z', status: 'Atrasado', priority: 'medium', frequency: 'Anual', is_template: false, created_at: '2025-12-01T09:00:00Z', updated_at: '2026-02-20T08:00:00Z' },
+    ],
   },
   // Licenses
   {
@@ -463,17 +463,17 @@ export const governanceMockEntries = [
   {
     queryKey: ['corporate-policies', DEMO_COMPANY_ID],
     data: [
-      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo', version: '3.0', approval_date: '2025-06-15', next_review: '2026-06-15' },
-      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo', version: '5.1', approval_date: '2025-01-01', next_review: '2026-01-01' },
-      { id: '3', title: 'Política Anticorrupção', category: 'Compliance', status: 'Ativo', version: '2.0', approval_date: '2024-12-01', next_review: '2025-12-01' },
+      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo', version: '3.0', description: 'Diretrizes para gestão sustentável das operações e cadeia de valor da empresa.', effective_date: '2025-07-01T00:00:00Z', approval_date: '2025-06-15T00:00:00Z', review_date: '2026-06-15T00:00:00Z', next_review: '2026-06-15' },
+      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo', version: '5.1', description: 'Princípios e valores que norteiam a conduta de todos os colaboradores e parceiros.', effective_date: '2025-01-15T00:00:00Z', approval_date: '2025-01-01T00:00:00Z', review_date: '2026-01-01T00:00:00Z', next_review: '2026-01-01' },
+      { id: '3', title: 'Política Anticorrupção', category: 'Compliance', status: 'Ativo', version: '2.0', description: 'Diretrizes para prevenção, detecção e combate à corrupção e suborno.', effective_date: '2024-12-15T00:00:00Z', approval_date: '2024-12-01T00:00:00Z', review_date: '2025-12-01T00:00:00Z', next_review: '2025-12-01' },
     ],
   },
   // Corporate policies (base)
   {
     queryKey: ['corporate-policies'],
     data: [
-      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo' },
-      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo' },
+      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo', version: '3.0', description: 'Diretrizes para gestão sustentável das operações.', effective_date: '2025-07-01T00:00:00Z', approval_date: '2025-06-15T00:00:00Z', review_date: '2026-06-15T00:00:00Z' },
+      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo', version: '5.1', description: 'Princípios e valores que norteiam a conduta de todos.', effective_date: '2025-01-15T00:00:00Z', approval_date: '2025-01-01T00:00:00Z', review_date: '2026-01-01T00:00:00Z' },
     ],
   },
   // Audits
@@ -800,6 +800,53 @@ export const governanceMockEntries = [
       avgResolutionDays: 6,
       totalFinancialImpact: 103500,
     },
+  },
+  // Risk management stats — RiskManagementDashboard.tsx (queryKey: ['risk-management-stats'])
+  {
+    queryKey: ['risk-management-stats'],
+    data: {
+      total_risks: 12, critical_risks: 2, mitigated_risks: 8, risks_trend: -3,
+      trend: [
+        { month: 'Set', total: 15, critical: 4, high: 6 },
+        { month: 'Out', total: 14, critical: 3, high: 6 },
+        { month: 'Nov', total: 13, critical: 3, high: 5 },
+        { month: 'Dez', total: 13, critical: 2, high: 5 },
+        { month: 'Jan', total: 12, critical: 2, high: 5 },
+        { month: 'Fev', total: 12, critical: 2, high: 4 },
+      ],
+    },
+  },
+  // Opportunity metrics — RiskManagementDashboard.tsx (queryKey: ['opportunity-metrics'])
+  {
+    queryKey: ['opportunity-metrics'],
+    data: {
+      total: 8, critical: 1, high: 3, inImplementation: 3, implemented: 2,
+      byCategory: { Ambiental: 3, Social: 2, 'Governança': 3 },
+      byLevel: { 'Crítica': 1, Alta: 3, 'Média': 3, Baixa: 1 },
+      totalPotentialValue: 2800000, totalImplementationCost: 750000, potentialROI: 273,
+    },
+  },
+  // Compliance status — RiskManagementDashboard.tsx (queryKey: ['compliance-status'])
+  {
+    queryKey: ['compliance-status'],
+    data: {
+      compliance: 84,
+      requirements: [
+        { name: 'ISO 14001', status: 'Conforme', description: 'Sistema de Gestão Ambiental' },
+        { name: 'ISO 45001', status: 'Parcial', description: 'Saúde e Segurança do Trabalho' },
+        { name: 'LGPD', status: 'Conforme', description: 'Lei Geral de Proteção de Dados' },
+      ],
+      lastAssessment: '2026-02-01T00:00:00Z',
+    },
+  },
+  // Upcoming reviews — RiskManagementDashboard.tsx (queryKey: ['upcoming-reviews'])
+  {
+    queryKey: ['upcoming-reviews'],
+    data: [
+      { id: 'ur-1', type: 'risk', risk_title: 'Irregularidade Ambiental', next_review_date: '2026-03-10T00:00:00Z', inherent_risk_level: 'Alto' },
+      { id: 'ur-2', type: 'opportunity', title: 'Certificação ISO 14001', next_review_date: '2026-03-20T00:00:00Z', opportunity_level: 'Alta' },
+      { id: 'ur-3', type: 'risk', risk_title: 'Risco de Incêndio na Planta', next_review_date: '2026-04-05T00:00:00Z', inherent_risk_level: 'Médio' },
+    ],
   },
   // Audit areas — AuditAreasManagement.tsx (via useAuditAreas hook, queryKey: ['audit-areas'])
   {

@@ -241,28 +241,29 @@ export const financialMockEntries = [
       esgInvestment: 850000,
     },
   },
-  // Chart of accounts
+  // Chart of accounts — PlanoContas.tsx (queryKey: ['chart-of-accounts'])
+  // Field names must match ChartOfAccount interface: account_code, account_name, account_type, account_nature, status
   {
     queryKey: ['chart-of-accounts', DEMO_COMPANY_ID],
     data: [
-      { id: 'coa-1', code: '1', name: 'ATIVO', type: 'Ativo', level: 1, parent_id: null, is_active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'coa-2', code: '1.1', name: 'Ativo Circulante', type: 'Ativo', level: 2, parent_id: 'coa-1', is_active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'coa-3', code: '1.1.1', name: 'Caixa e Equivalentes', type: 'Ativo', level: 3, parent_id: 'coa-2', is_active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'coa-4', code: '1.1.2', name: 'Contas a Receber', type: 'Ativo', level: 3, parent_id: 'coa-2', is_active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'coa-5', code: '2', name: 'PASSIVO', type: 'Passivo', level: 1, parent_id: null, is_active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'coa-6', code: '2.1', name: 'Passivo Circulante', type: 'Passivo', level: 2, parent_id: 'coa-5', is_active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'coa-7', code: '3', name: 'RECEITAS', type: 'Receita', level: 1, parent_id: null, is_active: true, company_id: DEMO_COMPANY_ID },
-      { id: 'coa-8', code: '4', name: 'DESPESAS', type: 'Despesa', level: 1, parent_id: null, is_active: true, company_id: DEMO_COMPANY_ID },
+      { id: 'coa-1', account_code: '1', account_name: 'ATIVO', account_type: 'Ativo', account_nature: 'Devedora', level: 1, parent_account_id: null, is_analytical: false, accepts_cost_center: false, accepts_project: false, status: 'Ativo', company_id: DEMO_COMPANY_ID, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      { id: 'coa-2', account_code: '1.1', account_name: 'Ativo Circulante', account_type: 'Ativo', account_nature: 'Devedora', level: 2, parent_account_id: 'coa-1', is_analytical: false, accepts_cost_center: false, accepts_project: false, status: 'Ativo', company_id: DEMO_COMPANY_ID, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      { id: 'coa-3', account_code: '1.1.1', account_name: 'Caixa e Equivalentes', account_type: 'Ativo', account_nature: 'Devedora', level: 3, parent_account_id: 'coa-2', is_analytical: true, accepts_cost_center: false, accepts_project: false, status: 'Ativo', company_id: DEMO_COMPANY_ID, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      { id: 'coa-4', account_code: '1.1.2', account_name: 'Contas a Receber', account_type: 'Ativo', account_nature: 'Devedora', level: 3, parent_account_id: 'coa-2', is_analytical: true, accepts_cost_center: true, accepts_project: true, status: 'Ativo', company_id: DEMO_COMPANY_ID, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      { id: 'coa-5', account_code: '2', account_name: 'PASSIVO', account_type: 'Passivo', account_nature: 'Credora', level: 1, parent_account_id: null, is_analytical: false, accepts_cost_center: false, accepts_project: false, status: 'Ativo', company_id: DEMO_COMPANY_ID, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      { id: 'coa-6', account_code: '2.1', account_name: 'Passivo Circulante', account_type: 'Passivo', account_nature: 'Credora', level: 2, parent_account_id: 'coa-5', is_analytical: false, accepts_cost_center: false, accepts_project: false, status: 'Ativo', company_id: DEMO_COMPANY_ID, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      { id: 'coa-7', account_code: '3', account_name: 'RECEITAS', account_type: 'Receita', account_nature: 'Credora', level: 1, parent_account_id: null, is_analytical: false, accepts_cost_center: true, accepts_project: true, status: 'Ativo', company_id: DEMO_COMPANY_ID, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      { id: 'coa-8', account_code: '4', account_name: 'DESPESAS', account_type: 'Despesa', account_nature: 'Devedora', level: 1, parent_account_id: null, is_analytical: false, accepts_cost_center: true, accepts_project: true, status: 'Ativo', company_id: DEMO_COMPANY_ID, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
     ],
   },
-  // Chart of accounts (base)
+  // Chart of accounts (base prefix)
   {
     queryKey: ['chart-of-accounts'],
     data: [
-      { id: 'coa-1', code: '1', name: 'ATIVO', type: 'Ativo', level: 1 },
-      { id: 'coa-5', code: '2', name: 'PASSIVO', type: 'Passivo', level: 1 },
-      { id: 'coa-7', code: '3', name: 'RECEITAS', type: 'Receita', level: 1 },
-      { id: 'coa-8', code: '4', name: 'DESPESAS', type: 'Despesa', level: 1 },
+      { id: 'coa-1', account_code: '1', account_name: 'ATIVO', account_type: 'Ativo', account_nature: 'Devedora', level: 1, parent_account_id: null, is_analytical: false, accepts_cost_center: false, accepts_project: false, status: 'Ativo', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      { id: 'coa-5', account_code: '2', account_name: 'PASSIVO', account_type: 'Passivo', account_nature: 'Credora', level: 1, parent_account_id: null, is_analytical: false, accepts_cost_center: false, accepts_project: false, status: 'Ativo', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      { id: 'coa-7', account_code: '3', account_name: 'RECEITAS', account_type: 'Receita', account_nature: 'Credora', level: 1, parent_account_id: null, is_analytical: false, accepts_cost_center: true, accepts_project: true, status: 'Ativo', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      { id: 'coa-8', account_code: '4', account_name: 'DESPESAS', account_type: 'Despesa', account_nature: 'Devedora', level: 1, parent_account_id: null, is_analytical: false, accepts_cost_center: true, accepts_project: true, status: 'Ativo', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
     ],
   },
   // Accounting entries
