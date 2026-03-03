@@ -11,7 +11,12 @@ import { logger } from '@/utils/logger';
 const floatingCardClass =
   "overflow-visible rounded-3xl border border-border/60 bg-background/92 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.84),0_0_0_1px_rgba(148,163,184,0.18),0_0_26px_-16px_rgba(15,23,42,0.40),0_20px_36px_-24px_rgba(15,23,42,0.52)]";
 
-export function PredictiveInsightsWidget() {
+interface PredictiveInsightsWidgetProps {
+  embedded?: boolean;
+  className?: string;
+}
+
+export function PredictiveInsightsWidget({ embedded = false, className }: PredictiveInsightsWidgetProps) {
   const [analysis, setAnalysis] = useState<FullAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +44,29 @@ export function PredictiveInsightsWidget() {
   }, []);
 
   if (loading) {
+    if (embedded) {
+      return (
+        <div className={cn("space-y-3", className)}>
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-primary" />
+            <h4 className="text-sm font-semibold">Análise Preditiva & Score de Risco</h4>
+          </div>
+          <div className="animate-pulse grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div className="h-4 bg-muted rounded w-2/3"></div>
+              <div className="h-24 bg-muted rounded"></div>
+            </div>
+            <div className="space-y-3">
+              <div className="h-4 bg-muted rounded w-2/3"></div>
+              <div className="h-24 bg-muted rounded"></div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <Card className={floatingCardClass}>
+      <Card className={cn(floatingCardClass, className)}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
@@ -66,9 +92,56 @@ export function PredictiveInsightsWidget() {
   if (error) {
     const isInsufficientData = error.includes('insuficientes') || error.includes('pelo menos');
     const isAuthError = error.includes('login') || error.includes('Sessão') || error.includes('autorizado');
+
+    if (embedded) {
+      return (
+        <div className={cn("space-y-3", className)}>
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-primary" />
+            <h4 className="text-sm font-semibold">Análise Preditiva & Score de Risco</h4>
+          </div>
+          <div className="flex items-center gap-6 rounded-2xl border border-border/60 bg-background/70 p-4">
+            <div className={cn(
+              "w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0",
+              isInsufficientData ? "bg-blue-100" : "bg-yellow-100"
+            )}>
+              {isInsufficientData ? (
+                <Activity className="h-7 w-7 text-blue-600" />
+              ) : (
+                <AlertTriangle className="h-7 w-7 text-yellow-600" />
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">
+                {isInsufficientData
+                  ? 'Dados insuficientes para análise'
+                  : isAuthError
+                  ? 'Erro de autenticação'
+                  : 'Não foi possível carregar'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {error}
+              </p>
+            </div>
+            {!isAuthError && (
+              <Button
+                onClick={fetchAnalysis}
+                variant="outline"
+                size="sm"
+                disabled={loading}
+                className="flex-shrink-0"
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+                Tentar novamente
+              </Button>
+            )}
+          </div>
+        </div>
+      );
+    }
     
     return (
-      <Card className={floatingCardClass}>
+      <Card className={cn(floatingCardClass, className)}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
@@ -178,8 +251,157 @@ export function PredictiveInsightsWidget() {
     { key: 'emissions', label: 'Emissões', value: risk.factors.emission_trends, icon: Cloud, color: 'text-emerald-600 bg-emerald-50' },
   ];
 
+  const content = (
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+      {/* Emission Predictions - Left Side */}
+      <div className="lg:col-span-2 space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-medium text-foreground">Previsão de Emissões</h4>
+          {predictions.predictions.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              {getTrendIcon()}
+              <span className={cn(
+                "text-sm font-semibold",
+                predictions.trend === 'increasing' ? 'text-red-600' :
+                predictions.trend === 'decreasing' ? 'text-green-600' :
+                'text-muted-foreground'
+              )}>
+                {predictions.trend === 'increasing' ? '+' : predictions.trend === 'decreasing' ? '-' : ''}
+                {Math.abs(predictions.trend_percentage)}%
+              </span>
+            </div>
+          )}
+        </div>
+
+        {predictions.predictions.length > 0 ? (
+          <div className="space-y-2">
+            {predictions.predictions.map((pred, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/50">
+                <div>
+                  <p className="text-xs text-muted-foreground">{pred.date}</p>
+                  <p className="text-sm font-semibold text-foreground">{pred.predicted_value.toFixed(2)} tCO2e</p>
+                </div>
+                <Badge variant="secondary" className="text-[10px]">
+                  ±{((pred.confidence_interval.upper - pred.confidence_interval.lower) / 2).toFixed(1)}
+                </Badge>
+              </div>
+            ))}
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs text-muted-foreground">Acurácia</span>
+              <span className="text-xs font-medium text-foreground">{predictions.forecast_accuracy}%</span>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
+            <div className="flex items-start gap-3">
+              <Activity className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-blue-800">Dados insuficientes</p>
+                <p className="text-xs text-blue-600 mt-0.5">
+                  Registre 3+ meses de emissões para previsões
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Score Gauge - Center */}
+      <div className="lg:col-span-1 flex flex-col items-center justify-center">
+        <div className="relative">
+          <svg className="w-24 h-24 transform -rotate-90">
+            <circle
+              cx="48"
+              cy="48"
+              r="40"
+              stroke="currentColor"
+              strokeWidth="8"
+              fill="none"
+              className="text-muted/50"
+            />
+            <circle
+              cx="48"
+              cy="48"
+              r="40"
+              stroke="currentColor"
+              strokeWidth="8"
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 40}`}
+              strokeDashoffset={`${2 * Math.PI * 40 * (1 - risk.overall_score / 100)}`}
+              className={cn("transition-all duration-1000", getScoreColor(risk.risk_level))}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <p className={cn("text-2xl font-bold", getScoreColor(risk.risk_level))}>{risk.overall_score}</p>
+            <p className="text-[10px] text-muted-foreground">de 100</p>
+          </div>
+        </div>
+        <p className="text-xs font-medium text-muted-foreground mt-2">Score Geral</p>
+      </div>
+
+      {/* Risk Factors - Right Side */}
+      <div className="lg:col-span-2 space-y-3">
+        <h4 className="text-sm font-medium text-foreground">Fatores de Risco</h4>
+
+        <div className="grid grid-cols-2 gap-2">
+          {factorItems.map((factor) => {
+            const Icon = factor.icon;
+            return (
+              <div key={factor.key} className="p-2.5 rounded-lg bg-muted/40 border border-border/50">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className={cn("w-6 h-6 rounded flex items-center justify-center", factor.color)}>
+                    <Icon className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">{factor.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Progress value={factor.value} className="h-1.5 flex-1" />
+                  <span className="text-xs font-semibold text-foreground w-8 text-right">{factor.value}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {risk.recommendations.length > 0 && (
+          <div className="pt-1">
+            <p className="text-xs font-medium text-foreground mb-1.5">Recomendações:</p>
+            <ul className="space-y-1">
+              {risk.recommendations.slice(0, 2).map((rec, idx) => (
+                <li key={idx} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span className="line-clamp-1">{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className={cn("space-y-4", className)}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-primary" />
+            <h4 className="text-sm font-semibold">Análise Preditiva & Score de Risco</h4>
+          </div>
+          <Badge variant="outline" className={cn("gap-1.5 border", getRiskColor(risk.risk_level))}>
+            {getRiskIcon(risk.risk_level)}
+            <span className="capitalize font-medium">{risk.risk_level}</span>
+          </Badge>
+        </div>
+        {content}
+      </div>
+    );
+  }
+
   return (
-    <Card className={floatingCardClass}>
+    <Card className={cn(floatingCardClass, className)}>
       <CardHeader className="pb-3 pt-4 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -192,136 +414,8 @@ export function PredictiveInsightsWidget() {
           </Badge>
         </div>
       </CardHeader>
-
       <CardContent className="pt-0 px-4 pb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* Emission Predictions - Left Side */}
-          <div className="lg:col-span-2 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-foreground">Previsão de Emissões</h4>
-              {predictions.predictions.length > 0 && (
-                <div className="flex items-center gap-1.5">
-                  {getTrendIcon()}
-                  <span className={cn(
-                    "text-sm font-semibold",
-                    predictions.trend === 'increasing' ? 'text-red-600' : 
-                    predictions.trend === 'decreasing' ? 'text-green-600' : 
-                    'text-muted-foreground'
-                  )}>
-                    {predictions.trend === 'increasing' ? '+' : predictions.trend === 'decreasing' ? '-' : ''}
-                    {Math.abs(predictions.trend_percentage)}%
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {predictions.predictions.length > 0 ? (
-              <div className="space-y-2">
-                {predictions.predictions.map((pred, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/50">
-                    <div>
-                      <p className="text-xs text-muted-foreground">{pred.date}</p>
-                      <p className="text-sm font-semibold text-foreground">{pred.predicted_value.toFixed(2)} tCO2e</p>
-                    </div>
-                    <Badge variant="secondary" className="text-[10px]">
-                      ±{((pred.confidence_interval.upper - pred.confidence_interval.lower) / 2).toFixed(1)}
-                    </Badge>
-                  </div>
-                ))}
-                
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs text-muted-foreground">Acurácia</span>
-                  <span className="text-xs font-medium text-foreground">{predictions.forecast_accuracy}%</span>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
-                <div className="flex items-start gap-3">
-                  <Activity className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-blue-800">Dados insuficientes</p>
-                    <p className="text-xs text-blue-600 mt-0.5">
-                      Registre 3+ meses de emissões para previsões
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Score Gauge - Center */}
-          <div className="lg:col-span-1 flex flex-col items-center justify-center">
-            <div className="relative">
-              <svg className="w-24 h-24 transform -rotate-90">
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="40"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="none"
-                  className="text-muted/50"
-                />
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="40"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 40}`}
-                  strokeDashoffset={`${2 * Math.PI * 40 * (1 - risk.overall_score / 100)}`}
-                  className={cn("transition-all duration-1000", getScoreColor(risk.risk_level))}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <p className={cn("text-2xl font-bold", getScoreColor(risk.risk_level))}>{risk.overall_score}</p>
-                <p className="text-[10px] text-muted-foreground">de 100</p>
-              </div>
-            </div>
-            <p className="text-xs font-medium text-muted-foreground mt-2">Score Geral</p>
-          </div>
-
-          {/* Risk Factors - Right Side */}
-          <div className="lg:col-span-2 space-y-3">
-            <h4 className="text-sm font-medium text-foreground">Fatores de Risco</h4>
-            
-            <div className="grid grid-cols-2 gap-2">
-              {factorItems.map((factor) => {
-                const Icon = factor.icon;
-                return (
-                  <div key={factor.key} className="p-2.5 rounded-lg bg-muted/40 border border-border/50">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className={cn("w-6 h-6 rounded flex items-center justify-center", factor.color)}>
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-xs text-muted-foreground">{factor.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Progress value={factor.value} className="h-1.5 flex-1" />
-                      <span className="text-xs font-semibold text-foreground w-8 text-right">{factor.value}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {risk.recommendations.length > 0 && (
-              <div className="pt-1">
-                <p className="text-xs font-medium text-foreground mb-1.5">Recomendações:</p>
-                <ul className="space-y-1">
-                  {risk.recommendations.slice(0, 2).map((rec, idx) => (
-                    <li key={idx} className="text-xs text-muted-foreground flex items-start gap-1.5">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span className="line-clamp-1">{rec}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
+        {content}
       </CardContent>
     </Card>
   );

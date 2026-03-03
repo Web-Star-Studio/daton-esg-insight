@@ -17,26 +17,23 @@ import {
 } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { 
+import {
   TrendingUp, 
   Users, 
   Leaf, 
   Shield, 
   Award,
-  Bell,
   Calendar,
   CalendarDays,
   BarChart3,
   Zap,
   Plus,
-  Sparkles,
   CheckCircle,
   AlertCircle,
   Clock,
   Eye
 } from 'lucide-react';
 import { EnhancedLoading } from '@/components/ui/enhanced-loading';
-import { ProductionHealthWidget } from '@/components/production/ProductionHealthWidget';
 import { PredictiveInsightsWidget } from '@/components/dashboard/PredictiveInsightsWidget';
 import { AlertsPanel } from '@/components/alerts/AlertsPanel';
 import { KPICarousel, KPIItem } from '@/components/dashboard/KPICarousel';
@@ -305,7 +302,7 @@ export default function Dashboard() {
   return (
     <div className="content-area space-y-5 sm:space-y-6 lg:space-y-7 animate-fade-in overflow-x-hidden" data-tour="dashboard-main" data-testid="dashboard-content">
         {/* Header */}
-        <div className="rounded-[28px] border border-border/60 bg-background/85 p-4 sm:p-5 lg:p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_42px_-34px_rgba(15,23,42,0.55)] backdrop-blur-md">
+        <div className="rounded-[28px] border border-border/60 bg-background/86 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_42px_-34px_rgba(15,23,42,0.55)] backdrop-blur-md sm:p-5 lg:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-1.5">
               <h1 className="text-2xl font-semibold tracking-[-0.03em] text-foreground sm:text-3xl [font-family:'SF_Pro_Display','SF_Pro_Text',-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
@@ -376,10 +373,10 @@ export default function Dashboard() {
                   size="sm"
                   onClick={() => navigate(action.path)}
                   title={action.description}
-                  className="h-10 min-w-[156px] shrink-0 items-center justify-start gap-2 rounded-2xl border border-border/60 bg-background/90 px-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_12px_24px_-22px_rgba(15,23,42,0.5)] transition-all hover:border-border hover:bg-background hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_16px_30px_-24px_rgba(15,23,42,0.55)]"
+                  className="h-11 min-w-[164px] shrink-0 items-center justify-start gap-2 rounded-2xl border border-border/60 bg-background/90 px-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_12px_24px_-22px_rgba(15,23,42,0.5)] transition-all hover:border-border hover:bg-background hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_16px_30px_-24px_rgba(15,23,42,0.55)]"
                 >
-                  <div className="rounded-lg bg-muted/70 p-1.5">
-                    <Icon className="h-3 w-3 text-foreground/80" />
+                  <div className="rounded-[10px] border border-border/45 bg-muted/60 p-1.5">
+                    <Icon className="h-3.5 w-3.5 text-foreground/80" />
                   </div>
                   <div className="flex min-w-0 flex-col leading-tight">
                     <span className="text-[12.5px] font-medium text-foreground">{action.title}</span>
@@ -423,10 +420,7 @@ export default function Dashboard() {
             hoverable={false}
           >
             <CardHeader className="px-4 pb-2 pt-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-[-0.01em]">
-                <Bell className="h-4 w-4 text-primary" />
-                Atividades Recentes
-              </CardTitle>
+              <CardTitle className="text-sm font-semibold tracking-[-0.01em]">Atividades Recentes</CardTitle>
             </CardHeader>
 
             <CardContent className="px-4 pb-4 pt-0">
@@ -479,13 +473,11 @@ export default function Dashboard() {
           >
             <CardHeader className="px-4 pb-2 pt-4">
               <div className="flex items-center justify-between gap-2">
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-[-0.01em]">
-                  <TrendingUp className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-semibold tracking-[-0.01em]">
                   Score ESG Geral
                 </CardTitle>
-                <Badge variant="secondary" className="gap-1 rounded-full px-2 py-0.5 text-xs">
-                  <Sparkles className="h-3 w-3" />
-                  Tempo real
+                <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-xs">
+                  Atualizado
                 </Badge>
               </div>
             </CardHeader>
@@ -558,18 +550,11 @@ export default function Dashboard() {
                   </Button>
                 </div>
               )}
+
+              <div className="my-4 h-px bg-border/60" />
+              <PredictiveInsightsWidget embedded />
             </CardContent>
           </EnhancedCard>
-        </div>
-
-        {/* Predictive Insights */}
-        <div className="animate-fade-in" style={{ animationDelay: '0.8s' }}>
-          <PredictiveInsightsWidget />
-        </div>
-
-        {/* Production Health Widget */}
-        <div className="animate-fade-in" style={{ animationDelay: '1s' }}>
-          <ProductionHealthWidget />
         </div>
     </div>
   );

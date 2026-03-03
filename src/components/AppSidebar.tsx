@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { Star, StarOff, ChevronRight, Search, X } from "lucide-react"
+import { Star, StarOff, ChevronRight, Search, X, Home } from "lucide-react"
 import * as icons from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { BadgeNotification, StatusIndicator } from "@/components/ui/badge-notification"
@@ -469,7 +469,7 @@ export function AppSidebar() {
 
   const getIconContainerClass = (highlighted: boolean) =>
     cn(
-      "relative flex h-7 w-7 items-center justify-center rounded-lg border transition-all duration-200",
+      "relative flex h-7 w-7 items-center justify-center rounded-[10px] border transition-all duration-200",
       highlighted
         ? "border-border/70 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
         : "border-transparent bg-background/45 group-hover:border-border/45 group-hover:bg-background/70",
@@ -484,9 +484,9 @@ export function AppSidebar() {
         <SidebarMenuSubButton
           onClick={() => navigate(prefixPath(item.path))}
           className={cn(
-            "group rounded-lg px-2.5 py-1.5 transition-all duration-200",
+            "group h-8 rounded-[11px] px-2.5 py-1.5 transition-all duration-200",
             active
-              ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
+              ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.68)]"
               : "border border-transparent hover:border-border/45 hover:bg-background/55",
           )}
         >
@@ -499,7 +499,7 @@ export function AppSidebar() {
               {!collapsed && (
                 <span className={cn(
                   "truncate flex-1 min-w-0 text-[12.5px] tracking-[-0.01em]",
-                  active ? "text-sidebar-foreground" : "text-sidebar-foreground/75",
+                  active ? "font-medium text-sidebar-foreground" : "text-sidebar-foreground/75",
                 )}>
                   {item.title}
                 </span>
@@ -544,11 +544,11 @@ export function AppSidebar() {
             <CollapsibleTrigger asChild>
               <SidebarMenuButton
                 className={cn(
-                  "group rounded-xl px-2.5 transition-all duration-200",
+                  "group h-9 rounded-[12px] px-2.5 transition-all duration-200",
                   isCategory 
-                    ? "h-8 font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground/85 hover:bg-background/45 hover:text-foreground"
+                    ? "h-8 font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground/85 hover:bg-background/50 hover:text-foreground"
                     : active || hasActiveSubItem 
-                      ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] backdrop-blur-sm" 
+                      ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm" 
                       : "border border-transparent hover:border-border/45 hover:bg-background/55 hover:backdrop-blur-sm"
                 )}
               >
@@ -558,7 +558,7 @@ export function AppSidebar() {
                   disabled={!collapsed}
                 >
                   <div className="flex items-center gap-2.5 flex-1">
-                    {!hideIcon && (
+                    {(!hideIcon || isHomeItem) && (
                       <div className={getIconContainerClass(active || hasActiveSubItem)}>
                         <item.icon className="h-[15px] w-[15px] flex-shrink-0 text-sidebar-foreground/85" />
                         {statusIndicator && (
@@ -604,7 +604,7 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <SidebarMenuSub className={isCategory ? "border-l-2 border-muted ml-2 pl-1.5" : ""}>
+              <SidebarMenuSub className={isCategory ? "ml-2 border-l border-sidebar-border/65 pl-2" : ""}>
                 {item.subItems?.map(subItem => 
                   subItem.subItems && subItem.subItems.length > 0 
                     ? renderMenuItem(subItem, hideIcon)
@@ -623,9 +623,9 @@ export function AppSidebar() {
           onClick={() => navigate(prefixPath(item.path))}
           aria-current={active ? "page" : undefined}
           className={cn(
-            "group rounded-xl px-2.5 transition-all duration-200",
+            "group h-9 rounded-[12px] px-2.5 transition-all duration-200",
             active
-              ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] backdrop-blur-sm"
+              ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm"
               : "border border-transparent hover:border-border/45 hover:bg-background/55 hover:backdrop-blur-sm",
           )}
         >
@@ -635,7 +635,7 @@ export function AppSidebar() {
             disabled={!collapsed}
           >
             <div className="flex items-center gap-2.5 flex-1">
-              {!hideIcon && (
+              {(!hideIcon || isHomeItem) && (
                 <div className={getIconContainerClass(active)}>
                   <item.icon className="h-[15px] w-[15px] flex-shrink-0 text-sidebar-foreground/85" />
                   {statusIndicator && (
@@ -737,37 +737,53 @@ export function AppSidebar() {
       onMouseLeave={() => setIsHovering(false)}
       data-tour="sidebar"
     >
-      <SidebarHeader className={`px-5 py-4 border-b border-sidebar-border/55 transition-all duration-300 ${isHovering ? 'shadow-sm' : ''}`}>
-        <img 
-          src={datonLogo} 
-          alt="Daton" 
-          className={`transition-all duration-300 ${collapsed ? "w-9 h-9" : "w-28 h-9"} ${isHovering ? 'brightness-110' : ''}`} 
-        />
+      <SidebarHeader className={cn(
+        "border-b border-sidebar-border/55 px-4 py-3 transition-all duration-300",
+        isHovering && "shadow-[inset_0_1px_0_rgba(255,255,255,0.68)]",
+      )}>
+        <div className="flex w-full min-w-0 items-center justify-center">
+          <img
+            src={datonLogo}
+            alt="Daton"
+            className={`transition-all duration-300 ${collapsed ? "h-9 w-9" : "h-9 w-28"} ${isHovering ? 'brightness-110' : ''}`}
+          />
+        </div>
       </SidebarHeader>
 
-      <SidebarContent className="gap-1 py-1">
+      <SidebarContent className="gap-1 py-1.5">
         {/* Quick Search - Only visible when expanded */}
         {!collapsed && (
-          <div className="px-4 pt-3 pb-3.5 border-b border-sidebar-border/45 animate-fade-in">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
-              <Input
-                type="text"
-                placeholder="Buscar..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-10 rounded-2xl border border-border/60 bg-background/70 pl-10 pr-10 text-[13px] tracking-[-0.01em] text-foreground placeholder:text-foreground/50 backdrop-blur-md transition-all duration-200 focus-visible:border-border focus-visible:ring-1 focus-visible:ring-foreground/15 focus-visible:ring-offset-0"
-              />
-              {searchQuery && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-1.5 top-1/2 transform -translate-y-1/2 h-7 w-7 rounded-full p-0 text-foreground/60 hover:bg-background/80 hover:text-foreground"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              )}
+          <div className="animate-fade-in border-b border-sidebar-border/45 px-4 pb-3.5 pt-3">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate(prefixPath("/dashboard"))}
+                className="h-10 w-10 shrink-0 rounded-xl border-border/60 bg-background/70 p-0 text-foreground/80"
+                aria-label="Início"
+                title="Início"
+              >
+                <Home className="h-4 w-4" />
+              </Button>
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
+                <Input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-10 rounded-2xl border border-border/60 bg-background/70 pl-10 pr-10 text-[13px] tracking-[-0.01em] text-foreground placeholder:text-foreground/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-md transition-all duration-200 focus-visible:border-border focus-visible:ring-1 focus-visible:ring-foreground/15 focus-visible:ring-offset-0"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-1.5 top-1/2 transform -translate-y-1/2 h-7 w-7 rounded-full p-0 text-foreground/60 hover:bg-background/80 hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -776,8 +792,8 @@ export function AppSidebar() {
         {/* Favoritos */}
         {favorites.length > 0 && !collapsed && !searchQuery && (
           <SidebarGroup className="px-1.5 animate-fade-in">
-            <SidebarGroupLabel className="px-3 pt-1.5 pb-1 text-[10px] font-semibold tracking-[0.1em] text-sidebar-foreground/50 uppercase">
-              ⭐ FAVORITOS
+            <SidebarGroupLabel className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/50">
+              FAVORITOS
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="px-1 gap-1.5">
@@ -789,7 +805,7 @@ export function AppSidebar() {
                     <SidebarMenuItem key={`fav-${fav.id}`} className="animate-fade-in">
                       <SidebarMenuButton 
                         onClick={() => navigate(prefixPath(fav.path))}
-                        className="group rounded-xl border border-transparent px-2.5 hover:border-border/45 hover:bg-background/55"
+                        className="group h-9 rounded-[12px] border border-transparent px-2.5 hover:border-border/45 hover:bg-background/55"
                       >
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/35 bg-background/55">
                           <IconComponent className="h-[15px] w-[15px] text-foreground/85" />
@@ -830,7 +846,7 @@ export function AppSidebar() {
         )}
 
         {/* Botão Início - Sempre visível no topo */}
-        {!searchQuery && (
+        {collapsed && !searchQuery && (
           <SidebarGroup className="px-1.5">
             <SidebarGroupContent>
               <SidebarMenu className="px-1">
@@ -842,7 +858,7 @@ export function AppSidebar() {
                     path: "/dashboard",
                     description: "Página inicial",
                   },
-                  true,
+                  false,
                 )}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -864,7 +880,7 @@ export function AppSidebar() {
               >
                 <SidebarGroup className="px-1.5">
                   <CollapsibleTrigger asChild>
-                    <SidebarGroupLabel className="px-3 py-1.5 text-[10px] font-semibold tracking-[0.1em] text-sidebar-foreground/55 uppercase cursor-pointer rounded-lg hover:bg-background/45 hover:text-foreground transition-all duration-200 flex items-center justify-between group">
+                    <SidebarGroupLabel className="group flex cursor-pointer items-center justify-between rounded-lg px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/55 transition-all duration-200 hover:bg-background/45 hover:text-foreground">
                       <div className="flex items-center gap-2">
                         {section.icon && <section.icon className="h-3.5 w-3.5" />}
                         <span>{section.title}</span>
