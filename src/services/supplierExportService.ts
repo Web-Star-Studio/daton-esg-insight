@@ -12,6 +12,80 @@ import type {
   SupplierParticipation
 } from './supplierIndicatorsService';
 
+interface BusinessUnitOption {
+  id: string;
+  name: string;
+}
+
+const normalizeText = (value?: string | null): string =>
+  (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+
+const cleanDocumentNumber = (value?: string | null): string =>
+  (value || '').replace(/\D/g, '');
+
+const getSupplierDocumentValue = (supplier: {
+  person_type: string;
+  cnpj: string | null;
+  cpf: string | null;
+}) => (supplier.person_type === 'PJ' ? supplier.cnpj : supplier.cpf) || '';
+
+const buildFullAddress = (supplier: ParsedSupplier): string =>
+  `${supplier.street || ''}, ${supplier.number || ''} - ${supplier.neighborhood || ''}, ${supplier.city || ''} - ${supplier.state || ''}, CEP: ${supplier.zip_code || ''}`;
+
+const mapBusinessUnits = (unitsJson: unknown): BusinessUnitOption[] => {
+  if (!Array.isArray(unitsJson)) return [];
+
+  return unitsJson.map((unit, index) => {
+    if (typeof unit === 'string') {
+      return {
+        id: `unit-${index}`,
+        name: unit,
+      };
+    }
+
+    if (typeof unit === 'object' && unit !== null) {
+      const raw = unit as Record<string, unknown>;
+      const unitId = raw.id ? String(raw.id) : `unit-${index}`;
+      const unitName =
+        (typeof raw.name === 'string' && raw.name) ||
+        (typeof raw.label === 'string' && raw.label) ||
+        unitId;
+
+      return {
+        id: unitId,
+        name: unitName,
+      };
+    }
+
+    return {
+      id: `unit-${index}`,
+      name: String(unit),
+    };
+  });
+};
+
+const formatImportError = (message: string, personType: 'PF' | 'PJ'): string => {
+  if (message.includes('duplicate key value')) {
+    if (personType === 'PJ') return 'CNPJ já cadastrado para esta empresa';
+    return 'CPF já cadastrado para esta empresa';
+  }
+
+  if (message.includes('idx_supplier_management_cnpj_unique')) {
+    return 'CNPJ já cadastrado para esta empresa';
+  }
+
+  if (message.includes('idx_supplier_management_cpf_unique')) {
+    return 'CPF já cadastrado para esta empresa';
+  }
+
+  return message;
+};
+
 // Export Document Compliance Report
 export function exportDocumentComplianceReport(
   indicators: DocumentComplianceIndicator,
@@ -128,25 +202,25 @@ export function exportPortalParticipationReport(
 
 // Export Suppliers List
 export async function exportSuppliersList(companyId: string, format: 'excel' | 'csv' = 'excel') {
-  const { data: suppliers, error } = await (supabase
-    .from('managed_suppliers' as any)
-    .select('*')
-    .eq('company_id', companyId) as any);
+  const { data: suppliers, error } = await supabase
+    .from('supplier_management')
+    .select('person_type, cnpj, cpf, company_name, full_name, nickname, responsible_name, phone_1, email, status')
+    .eq('company_id', companyId);
 
   if (error || !suppliers?.length) {
     throw new Error('Nenhum fornecedor encontrado');
   }
 
-  const headers = ['CNPJ/CPF', 'Tipo', 'Razão Social', 'Nome Fantasia', 'Responsável', 'Telefone', 'Email', 'Status'];
-  const rows = suppliers.map((s: any) => [
-    s.document_number || '',
+  const headers = ['CNPJ/CPF', 'Tipo', 'Razão Social/Nome', 'Nome Fantasia', 'Responsável', 'Telefone', 'Email', 'Status'];
+  const rows = suppliers.map((s) => [
+    getSupplierDocumentValue(s),
     s.person_type === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física',
-    s.corporate_name || '',
-    s.trade_name || '',
-    s.contact_name || '',
-    s.contact_phone || '',
-    s.contact_email || '',
-    s.status || 'ativo'
+    s.person_type === 'PJ' ? s.company_name || '' : s.full_name || '',
+    s.nickname || '',
+    s.responsible_name || '',
+    s.phone_1 || '',
+    s.email || '',
+    s.status || 'Ativo'
   ]);
 
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -165,16 +239,16 @@ export function downloadSupplierImportTemplate() {
     'Tipo (PF/PJ) *', 
     'Razão Social/Nome *', 
     'Nome Fantasia', 
-    'Responsável', 
-    'Telefone', 
-    'Email', 
-    'CEP',
-    'Logradouro',
-    'Número',
-    'Bairro',
-    'Cidade', 
-    'Estado',
-    'Estado/Unidade *',
+    'Responsável (obrigatório PJ)', 
+    'Telefone *', 
+    'Email (obrigatório PJ)', 
+    'CEP *',
+    'Logradouro *',
+    'Número *',
+    'Bairro *',
+    'Cidade *', 
+    'Estado *',
+    'Unidade de Negócio *',
     'Categoria *',
     'Tipo de Fornecedor *',
     'Observações'
@@ -209,8 +283,10 @@ export function downloadSupplierImportTemplate() {
 
 // Parse Import File
 export interface ParsedSupplier {
+  row_number?: number;
   document_number: string;
   person_type: 'PF' | 'PJ';
+  person_type_source?: string;
   corporate_name: string;
   trade_name?: string;
   contact_name?: string;
@@ -246,26 +322,34 @@ export async function parseSupplierImportFile(file: File): Promise<ParsedSupplie
 
         const rows = jsonData.slice(1);
         const suppliers: ParsedSupplier[] = rows
-          .filter(row => row.length > 0 && row[0])
-          .map(row => ({
-            document_number: String(row[0] || '').trim(),
-            person_type: String(row[1] || 'PJ').toUpperCase() === 'PF' ? 'PF' : 'PJ',
-            corporate_name: String(row[2] || '').trim(),
-            trade_name: String(row[3] || '').trim() || undefined,
-            contact_name: String(row[4] || '').trim() || undefined,
-            contact_phone: String(row[5] || '').trim() || undefined,
-            contact_email: String(row[6] || '').trim() || undefined,
-            zip_code: String(row[7] || '').trim() || undefined,
-            street: String(row[8] || '').trim() || undefined,
-            number: String(row[9] || '').trim() || undefined,
-            neighborhood: String(row[10] || '').trim() || undefined,
-            city: String(row[11] || '').trim() || undefined,
-            state: String(row[12] || '').trim() || undefined,
-            business_unit: String(row[13] || '').trim() || undefined,
-            category_name: String(row[14] || '').trim() || undefined,
-            type_name: String(row[15] || '').trim() || undefined,
-            notes: String(row[16] || '').trim() || undefined,
-          }));
+          .map((row, rowIndex) => ({ row, rowNumber: rowIndex + 2 }))
+          .filter(({ row }) => row.length > 0 && row[0])
+          .map(({ row, rowNumber }) => {
+            const personTypeSource = String(row[1] || '').trim().toUpperCase();
+            const normalizedPersonType: 'PF' | 'PJ' = personTypeSource === 'PF' ? 'PF' : 'PJ';
+
+            return {
+              row_number: rowNumber,
+              document_number: String(row[0] || '').trim(),
+              person_type: normalizedPersonType,
+              person_type_source: personTypeSource || undefined,
+              corporate_name: String(row[2] || '').trim(),
+              trade_name: String(row[3] || '').trim() || undefined,
+              contact_name: String(row[4] || '').trim() || undefined,
+              contact_phone: String(row[5] || '').trim() || undefined,
+              contact_email: String(row[6] || '').trim() || undefined,
+              zip_code: String(row[7] || '').trim() || undefined,
+              street: String(row[8] || '').trim() || undefined,
+              number: String(row[9] || '').trim() || undefined,
+              neighborhood: String(row[10] || '').trim() || undefined,
+              city: String(row[11] || '').trim() || undefined,
+              state: String(row[12] || '').trim() || undefined,
+              business_unit: String(row[13] || '').trim() || undefined,
+              category_name: String(row[14] || '').trim() || undefined,
+              type_name: String(row[15] || '').trim() || undefined,
+              notes: String(row[16] || '').trim() || undefined,
+            };
+          });
 
         resolve(suppliers);
       } catch (error) {
@@ -279,22 +363,60 @@ export async function parseSupplierImportFile(file: File): Promise<ParsedSupplie
 
 export function validateSupplierImportData(data: ParsedSupplier[]): ValidationResult {
   const errors: { row: number; field: string; message: string }[] = [];
-  const validData: ParsedSupplier[] = [];
+  let validData: ParsedSupplier[] = [];
+  const documentRows = new Map<string, number[]>();
 
   data.forEach((supplier, index) => {
-    const row = index + 2;
+    const row = supplier.row_number || index + 2;
     let hasError = false;
+    const cleanDocument = cleanDocumentNumber(supplier.document_number);
+    const typeInput = (supplier.person_type_source || '').trim().toUpperCase();
 
-    if (!supplier.document_number) {
+    if (!cleanDocument) {
       errors.push({ row, field: 'CNPJ/CPF', message: 'Campo obrigatório' });
       hasError = true;
     }
+    if (!typeInput) {
+      errors.push({ row, field: 'Tipo (PF/PJ)', message: 'Campo obrigatório' });
+      hasError = true;
+    } else if (typeInput !== 'PF' && typeInput !== 'PJ') {
+      errors.push({ row, field: 'Tipo (PF/PJ)', message: 'Valor inválido. Use PF ou PJ' });
+      hasError = true;
+    }
     if (!supplier.corporate_name) {
-      errors.push({ row, field: 'Razão Social', message: 'Campo obrigatório' });
+      errors.push({ row, field: 'Razão Social/Nome', message: 'Campo obrigatório' });
+      hasError = true;
+    }
+    if (!supplier.contact_phone) {
+      errors.push({ row, field: 'Telefone', message: 'Campo obrigatório' });
+      hasError = true;
+    }
+    if (!supplier.zip_code) {
+      errors.push({ row, field: 'CEP', message: 'Campo obrigatório' });
+      hasError = true;
+    }
+    if (!supplier.street) {
+      errors.push({ row, field: 'Logradouro', message: 'Campo obrigatório' });
+      hasError = true;
+    }
+    if (!supplier.number) {
+      errors.push({ row, field: 'Número', message: 'Campo obrigatório' });
+      hasError = true;
+    }
+    if (!supplier.neighborhood) {
+      errors.push({ row, field: 'Bairro', message: 'Campo obrigatório' });
+      hasError = true;
+    }
+    if (!supplier.city) {
+      errors.push({ row, field: 'Cidade', message: 'Campo obrigatório' });
+      hasError = true;
+    }
+    if (!supplier.state) {
+      errors.push({ row, field: 'Estado', message: 'Campo obrigatório' });
       hasError = true;
     }
     if (!supplier.business_unit) {
-      errors.push({ row, field: 'Estado/Unidade', message: 'Campo obrigatório' });
+      errors.push({ row, field: 'Unidade de Negócio', message: 'Campo obrigatório' });
       hasError = true;
     }
     if (!supplier.category_name) {
@@ -306,8 +428,53 @@ export function validateSupplierImportData(data: ParsedSupplier[]): ValidationRe
       hasError = true;
     }
 
-    if (!hasError) validData.push(supplier);
+    if (supplier.person_type === 'PJ') {
+      if (!supplier.contact_name) {
+        errors.push({ row, field: 'Responsável', message: 'Campo obrigatório para PJ' });
+        hasError = true;
+      }
+      if (!supplier.contact_email) {
+        errors.push({ row, field: 'Email', message: 'Campo obrigatório para PJ' });
+        hasError = true;
+      }
+    }
+
+    if (cleanDocument) {
+      if (supplier.person_type === 'PJ' && cleanDocument.length !== 14) {
+        errors.push({ row, field: 'CNPJ', message: 'Documento inválido para PJ (14 dígitos)' });
+        hasError = true;
+      }
+      if (supplier.person_type === 'PF' && cleanDocument.length !== 11) {
+        errors.push({ row, field: 'CPF', message: 'Documento inválido para PF (11 dígitos)' });
+        hasError = true;
+      }
+
+      const duplicateRows = documentRows.get(cleanDocument) || [];
+      duplicateRows.push(row);
+      documentRows.set(cleanDocument, duplicateRows);
+    }
+
+    if (!hasError) {
+      validData.push(supplier);
+    }
   });
+
+  const duplicatedRows = new Set<number>();
+  documentRows.forEach((rows, cleanDocument) => {
+    if (rows.length < 2) return;
+    rows.forEach((row) => {
+      duplicatedRows.add(row);
+      errors.push({
+        row,
+        field: 'CNPJ/CPF',
+        message: `Documento duplicado no arquivo (${cleanDocument})`,
+      });
+    });
+  });
+
+  if (duplicatedRows.size > 0) {
+    validData = validData.filter((supplier) => !duplicatedRows.has(supplier.row_number || 0));
+  }
 
   return { isValid: errors.length === 0, errors, validData };
 }
@@ -324,129 +491,176 @@ export async function importSuppliers(companyId: string, data: ParsedSupplier[])
   const errors: { row: number; message: string }[] = [];
 
   // Pre-fetch categories, types, and units for mapping
-  const { data: categories } = await supabase
+  const { data: categories, error: categoriesError } = await supabase
     .from('supplier_categories')
     .select('id, name')
-    .eq('company_id', companyId) as any;
+    .eq('company_id', companyId);
   
-  const { data: types } = await supabase
+  const { data: types, error: typesError } = await supabase
     .from('supplier_types')
     .select('id, name')
-    .eq('company_id', companyId) as any;
-  
-  const { data: units } = await (supabase
-    .from('business_units' as any)
-    .select('id, name')
-    .eq('company_id', companyId) as any);
+    .eq('company_id', companyId);
 
-  const categoryMap = new Map((categories || []).map((c: any) => [c.name.toLowerCase(), c.id]));
-  const typeMap = new Map((types || []).map((t: any) => [t.name.toLowerCase(), t.id]));
-  const unitMap = new Map((units || []).map((u: any) => [u.name.toLowerCase(), u.id]));
+  const { data: companyData, error: companyError } = await supabase
+    .from('companies')
+    .select('business_units')
+    .eq('id', companyId)
+    .single();
+
+  const { data: existingSuppliers, error: existingSuppliersError } = await supabase
+    .from('supplier_management')
+    .select('cnpj, cpf')
+    .eq('company_id', companyId);
+
+  if (categoriesError) throw new Error(`Erro ao buscar categorias: ${categoriesError.message}`);
+  if (typesError) throw new Error(`Erro ao buscar tipos: ${typesError.message}`);
+  if (companyError) throw new Error(`Erro ao buscar unidades: ${companyError.message}`);
+  if (existingSuppliersError) throw new Error(`Erro ao buscar fornecedores existentes: ${existingSuppliersError.message}`);
+
+  const units = mapBusinessUnits(companyData?.business_units);
+  const categoryMap = new Map((categories || []).map((c) => [normalizeText(c.name), c.id]));
+  const typeMap = new Map((types || []).map((t) => [normalizeText(t.name), t.id]));
+  const unitMap = new Map(units.map((u) => [normalizeText(u.name), u.id]));
+  const existingDocuments = new Set<string>();
+
+  (existingSuppliers || []).forEach((supplier) => {
+    const cnpj = cleanDocumentNumber(supplier.cnpj);
+    const cpf = cleanDocumentNumber(supplier.cpf);
+    if (cnpj) existingDocuments.add(cnpj);
+    if (cpf) existingDocuments.add(cpf);
+  });
 
   for (let i = 0; i < data.length; i++) {
     const supplier = data[i];
+    const row = supplier.row_number || i + 2;
+    const cleanDocument = cleanDocumentNumber(supplier.document_number);
+    const businessUnitName = supplier.business_unit || '';
+    const categoryName = supplier.category_name || '';
+    const typeName = supplier.type_name || '';
+    const unitId = unitMap.get(normalizeText(businessUnitName));
+    const categoryId = categoryMap.get(normalizeText(categoryName));
+    const typeId = typeMap.get(normalizeText(typeName));
+    const documentLabel = supplier.person_type === 'PJ' ? 'CNPJ' : 'CPF';
+    let insertedSupplierId: string | null = null;
+
+    if (!unitId) {
+      failed++;
+      errors.push({ row, message: `Unidade "${businessUnitName}" não encontrada` });
+      continue;
+    }
+    if (!categoryId) {
+      failed++;
+      errors.push({ row, message: `Categoria "${categoryName}" não encontrada` });
+      continue;
+    }
+    if (!typeId) {
+      failed++;
+      errors.push({ row, message: `Tipo "${typeName}" não encontrado` });
+      continue;
+    }
+    if (existingDocuments.has(cleanDocument)) {
+      failed++;
+      errors.push({ row, message: `${documentLabel} já cadastrado para esta empresa` });
+      continue;
+    }
+
     try {
       // Insert supplier
-      const { data: insertedSupplier, error } = await (supabase
-        .from('managed_suppliers' as any)
+      const { data: insertedSupplier, error } = await supabase
+        .from('supplier_management')
         .insert({
           company_id: companyId,
-          document_number: supplier.document_number,
           person_type: supplier.person_type,
-          corporate_name: supplier.corporate_name,
-          trade_name: supplier.trade_name,
-          contact_name: supplier.contact_name,
-          contact_phone: supplier.contact_phone,
-          contact_email: supplier.contact_email,
-          zip_code: supplier.zip_code,
+          full_name: supplier.person_type === 'PF' ? supplier.corporate_name : null,
+          cpf: supplier.person_type === 'PF' ? cleanDocument : null,
+          company_name: supplier.person_type === 'PJ' ? supplier.corporate_name : null,
+          cnpj: supplier.person_type === 'PJ' ? cleanDocument : null,
+          responsible_name: supplier.person_type === 'PJ' ? supplier.contact_name || null : null,
+          nickname: supplier.trade_name,
+          full_address: buildFullAddress(supplier),
+          cep: supplier.zip_code,
           street: supplier.street,
-          number: supplier.number,
+          street_number: supplier.number,
           neighborhood: supplier.neighborhood,
           city: supplier.city,
           state: supplier.state,
-          notes: supplier.notes,
-          status: 'ativo'
+          phone_1: supplier.contact_phone || '',
+          email: supplier.contact_email,
+          status: 'Ativo'
         })
         .select('id')
-        .single() as any);
+        .single();
 
       if (error) {
         failed++;
-        errors.push({ row: i + 2, message: error.message });
+        errors.push({ row, message: formatImportError(error.message, supplier.person_type) });
         continue;
       }
 
       const supplierId = insertedSupplier?.id;
       if (!supplierId) {
         failed++;
-        errors.push({ row: i + 2, message: 'Erro ao obter ID do fornecedor' });
+        errors.push({ row, message: 'Erro ao obter ID do fornecedor' });
         continue;
       }
+      insertedSupplierId = supplierId;
 
       // Create assignments for category, type, and unit
-      const assignmentErrors: string[] = [];
+      const { error: unitError } = await supabase
+        .from('supplier_unit_assignments')
+        .insert({
+          company_id: companyId,
+          supplier_id: supplierId,
+          business_unit_id: unitId,
+        });
 
-      // Unit assignment
-      if (supplier.business_unit) {
-        const unitId = unitMap.get(supplier.business_unit.toLowerCase());
-        if (unitId) {
-          const { error: unitError } = await (supabase
-            .from('supplier_unit_assignments' as any)
-            .insert({
-              company_id: companyId,
-              supplier_id: supplierId,
-              business_unit_id: unitId,
-            }) as any);
-          if (unitError) assignmentErrors.push(`Unidade: ${unitError.message}`);
-        } else {
-          assignmentErrors.push(`Unidade "${supplier.business_unit}" não encontrada`);
-        }
+      if (unitError) {
+        throw new Error(`Falha ao vincular unidade: ${unitError.message}`);
       }
 
-      // Category assignment
-      if (supplier.category_name) {
-        const categoryId = categoryMap.get(supplier.category_name.toLowerCase());
-        if (categoryId) {
-          const { error: catError } = await (supabase
-            .from('supplier_category_assignments' as any)
-            .insert({
-              company_id: companyId,
-              supplier_id: supplierId,
-              category_id: categoryId,
-            }) as any);
-          if (catError) assignmentErrors.push(`Categoria: ${catError.message}`);
-        } else {
-          assignmentErrors.push(`Categoria "${supplier.category_name}" não encontrada`);
-        }
+      const { error: catError } = await supabase
+        .from('supplier_category_assignments')
+        .insert({
+          company_id: companyId,
+          supplier_id: supplierId,
+          category_id: categoryId,
+        });
+
+      if (catError) {
+        throw new Error(`Falha ao vincular categoria: ${catError.message}`);
       }
 
-      // Type assignment
-      if (supplier.type_name) {
-        const typeId = typeMap.get(supplier.type_name.toLowerCase());
-        if (typeId) {
-          const { error: typeError } = await (supabase
-            .from('supplier_type_assignments' as any)
-            .insert({
-              company_id: companyId,
-              supplier_id: supplierId,
-              supplier_type_id: typeId,
-            }) as any);
-          if (typeError) assignmentErrors.push(`Tipo: ${typeError.message}`);
-        } else {
-          assignmentErrors.push(`Tipo "${supplier.type_name}" não encontrada`);
-        }
+      const { error: typeError } = await supabase
+        .from('supplier_type_assignments')
+        .insert({
+          company_id: companyId,
+          supplier_id: supplierId,
+          supplier_type_id: typeId,
+        });
+
+      if (typeError) {
+        throw new Error(`Falha ao vincular tipo: ${typeError.message}`);
       }
 
-      if (assignmentErrors.length > 0) {
-        // Supplier was created but with assignment warnings
-        success++;
-        errors.push({ row: i + 2, message: `Criado com avisos: ${assignmentErrors.join('; ')}` });
-      } else {
-        success++;
-      }
+      success++;
+      existingDocuments.add(cleanDocument);
     } catch (err: any) {
+      if (insertedSupplierId) {
+        const { error: rollbackError } = await supabase
+          .from('supplier_management')
+          .delete()
+          .eq('id', insertedSupplierId);
+
+        if (rollbackError) {
+          errors.push({
+            row,
+            message: `Falha ao reverter cadastro após erro: ${rollbackError.message}`,
+          });
+        }
+      }
+
       failed++;
-      errors.push({ row: i + 2, message: err.message || 'Erro' });
+      errors.push({ row, message: formatImportError(err.message || 'Erro', supplier.person_type) });
     }
   }
 
