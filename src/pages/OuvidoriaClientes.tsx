@@ -158,7 +158,7 @@ export default function OuvidoriaClientes() {
                     />
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Button variant="outline" size="sm">
                     <AlertTriangle className="h-4 w-4 mr-2" />
                     Prioridade Alta
@@ -221,19 +221,19 @@ export default function OuvidoriaClientes() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span>Qualidade</span>
                     <span className="font-medium">15 (33%)</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span>Logística</span>
                     <span className="font-medium">12 (27%)</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span>Atendimento</span>
                     <span className="font-medium">10 (22%)</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span>Outros</span>
                     <span className="font-medium">8 (18%)</span>
                   </div>
@@ -247,15 +247,15 @@ export default function OuvidoriaClientes() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span>Alta Prioridade</span>
                     <span className="font-medium">2.5 dias</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span>Média Prioridade</span>
                     <span className="font-medium">5.2 dias</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span>Baixa Prioridade</span>
                     <span className="font-medium">8.1 dias</span>
                   </div>

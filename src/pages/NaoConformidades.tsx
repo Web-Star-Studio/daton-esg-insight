@@ -711,7 +711,7 @@ export default function NaoConformidades() {
                       {formatDateDisplay(nc.detected_date)}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2 items-center">
+                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto items-center">
                         <Button 
                           variant="default" 
                           size="sm"

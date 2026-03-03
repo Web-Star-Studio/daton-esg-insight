@@ -86,7 +86,7 @@ export default function IndicadoresGRI() {
             Sistema inteligente de gestão de indicadores de sustentabilidade
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button onClick={() => setShowManagementModal(true)} className="gap-2">
             <Settings className="h-4 w-4" />
             Gerenciar
@@ -166,7 +166,7 @@ export default function IndicadoresGRI() {
               </div>
             </div>
             
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto flex-wrap">
               {categories.map((category) => (
                 <Badge
                   key={category.value}

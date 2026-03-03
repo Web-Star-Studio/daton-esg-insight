@@ -378,13 +378,13 @@ export default function GestaoTreinamentos() {
   
   if (isInitialLoading) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="w-full overflow-hidden py-6 space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <Skeleton className="h-9 w-64 mb-2" />
             <Skeleton className="h-5 w-96" />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Skeleton className="h-10 w-28" />
             <Skeleton className="h-10 w-32" />
           </div>
@@ -397,7 +397,7 @@ export default function GestaoTreinamentos() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full overflow-hidden py-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Gestão de Treinamentos</h1>

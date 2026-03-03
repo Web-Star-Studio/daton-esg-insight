@@ -193,7 +193,7 @@ export default function Desempenho() {
                 {/* Granularidade */}
                 <div className="space-y-2">
                   <Label>Granularidade</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     {GRANULARITY_OPTIONS.map(option => (
                       <Button
                         key={option.value}

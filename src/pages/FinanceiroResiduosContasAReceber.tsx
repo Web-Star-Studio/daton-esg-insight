@@ -125,7 +125,7 @@ export default function FinanceiroResiduosContasAReceber() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="w-full overflow-hidden py-8">
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Carregando...</p>
         </div>
@@ -134,7 +134,7 @@ export default function FinanceiroResiduosContasAReceber() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="w-full overflow-hidden py-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -143,7 +143,7 @@ export default function FinanceiroResiduosContasAReceber() {
             Receitas com venda de materiais recicláveis
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
             <SelectTrigger className="w-[140px]">
               <SelectValue />

@@ -255,7 +255,7 @@ export default function GestaoDesempenho() {
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-4 w-96" />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Skeleton className="h-10 w-40" />
             <Skeleton className="h-10 w-36" />
           </div>
@@ -277,7 +277,7 @@ export default function GestaoDesempenho() {
             Gerencie avaliações, metas e desenvolvimento dos funcionários
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={() => setIsCycleModalOpen(true)}>
             <Calendar className="h-4 w-4 mr-2" />
             Ciclo de Avaliação
@@ -536,7 +536,7 @@ export default function GestaoDesempenho() {
         <TabsContent value="competencies" className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Gestão de Competências</h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <Button variant="outline" onClick={() => setIsCompetencyAssessmentModalOpen(true)}>
                 <Target className="h-4 w-4 mr-2" />
                 Avaliar Competência

@@ -16,7 +16,7 @@ const AdminDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 flex items-center justify-center min-h-[400px]">
+      <div className="w-full overflow-hidden py-6 flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
@@ -24,7 +24,7 @@ const AdminDashboard = () => {
 
   if (!hasAdminAccess) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="w-full overflow-hidden py-6">
         <Alert variant="destructive">
           <ShieldAlert className="h-4 w-4" />
           <AlertDescription>
@@ -37,7 +37,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full overflow-hidden py-6 space-y-6">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Dashboard Administrativo</h1>
         <p className="text-muted-foreground">

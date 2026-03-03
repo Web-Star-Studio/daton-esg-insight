@@ -97,7 +97,7 @@ export default function SupplierFailureConfigPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="w-full overflow-hidden p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Skeleton className="h-64" />
@@ -108,7 +108,7 @@ export default function SupplierFailureConfigPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full overflow-hidden p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -310,7 +310,7 @@ export default function SupplierFailureConfigPage() {
                     </p>
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {preview.wouldBeInactivated.map(s => (
-                        <div key={s.id} className="text-sm flex justify-between items-center p-2 bg-red-50 rounded">
+                        <div key={s.id} className="text-sm flex justify-between items-start sm:items-center gap-4 flex-col sm:flex-row p-2 bg-red-50 rounded">
                           <span className="truncate">{s.name}</span>
                           <Badge variant="destructive">{s.weightedScore.toFixed(1)} pts</Badge>
                         </div>
@@ -381,7 +381,7 @@ export default function SupplierFailureConfigPage() {
 
           <div className="space-y-3">
             <Label>E-mails para Notificação</Label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <Input
                 type="email"
                 placeholder="email@empresa.com"

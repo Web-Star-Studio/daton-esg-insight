@@ -188,7 +188,7 @@ export default function ColetaDados() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="w-full overflow-hidden px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Central de Coleta de Dados</h1>
@@ -542,7 +542,7 @@ export default function ColetaDados() {
                   Revise e aprove dados coletados antes da consolidação
                 </CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 {selectedTasks.length > 0 && (
                   <>
                     <Button 
@@ -592,7 +592,7 @@ export default function ColetaDados() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                       <Button size="sm" variant="outline">
                         <Eye className="h-4 w-4 mr-2" />
                         Revisar

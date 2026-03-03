@@ -278,14 +278,14 @@ export default function Auditoria() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Sistema Unificado de Auditoria</h1>
           <p className="text-muted-foreground">
             Gestão completa de auditorias gerais e do sistema de qualidade
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={() => setShowCreationWizard(true)}>
             <Wand2 className="mr-2 h-4 w-4" />
             Assistente de Criação
@@ -416,8 +416,8 @@ export default function Auditoria() {
 
         <TabsContent value="audits" className="space-y-4">
           {/* Filters */}
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -747,7 +747,7 @@ export default function Auditoria() {
                           ) : '-'}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                             <Button
                               variant="outline"
                               size="sm"

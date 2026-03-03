@@ -156,19 +156,19 @@ export default function MonitoramentoESG() {
             {hasWaterData ? (
               <>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Captação Total</span>
                     <span className="font-semibold">
                       {waterData.total_withdrawal_m3.toLocaleString('pt-BR')} m³
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Consumo</span>
                     <span className="font-semibold">
                       {waterData.total_consumption_m3.toLocaleString('pt-BR')} m³
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">% Reutilização</span>
                     <span className="font-semibold text-green-600">
                       {((waterData.by_source.reuse / waterData.total_consumption_m3) * 100).toFixed(1)}%
@@ -213,19 +213,19 @@ export default function MonitoramentoESG() {
             {hasEnergyData ? (
               <>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Consumo Total</span>
                     <span className="font-semibold">
                       {energyData.total_consumption_gj.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} GJ
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Em MWh</span>
                     <span className="font-semibold">
                       {(energyData.total_consumption_kwh / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} MWh
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">% Renovável</span>
                     <span className={`font-semibold ${energyData.renewable_percentage >= 50 ? 'text-green-600' : 'text-amber-600'}`}>
                       {energyData.renewable_percentage.toFixed(1)}%
@@ -270,19 +270,19 @@ export default function MonitoramentoESG() {
             {hasEmissionsData ? (
               <>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Emissões Totais</span>
                     <span className="font-semibold">
                       {emissionsData.grand_total.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} tCO₂e
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Escopo 1</span>
                     <span className="font-semibold">
                       {emissionsData.scope_1.total.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} tCO₂e
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Escopo 2</span>
                     <span className="font-semibold">
                       {emissionsData.scope_2.total.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} tCO₂e
@@ -327,19 +327,19 @@ export default function MonitoramentoESG() {
             {hasWasteData ? (
               <>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Total Gerado</span>
                     <span className="font-semibold">
                       {wasteData.total_generated_tonnes.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} t
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Reciclagem</span>
                     <span className="font-semibold">
                       {wasteData.by_treatment.recycling.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} t
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Aterro</span>
                     <span className="font-semibold text-amber-600">
                       {wasteData.by_treatment.landfill.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} t

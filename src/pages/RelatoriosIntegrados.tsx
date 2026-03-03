@@ -222,14 +222,14 @@ export default function RelatoriosIntegrados() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Central de Relatórios ESG Integrados</h1>
           <p className="text-muted-foreground">
             Sistema unificado de relatórios de sustentabilidade e performance ESG
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button className="gap-2" onClick={() => setIsCreateGRIModalOpen(true)}>
             <Leaf className="h-4 w-4" />
             Novo Relatório GRI
@@ -394,7 +394,7 @@ export default function RelatoriosIntegrados() {
                       <TableCell>{report.dataGeracao}</TableCell>
                       <TableCell>{getStatusBadge(report.status)}</TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                           <Button
                             variant="outline"
                             size="sm"
@@ -467,7 +467,7 @@ export default function RelatoriosIntegrados() {
                         </TableCell>
                         <TableCell>{getGRIStatusBadge(report)}</TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                             <Button
                               variant="outline"
                               size="sm"

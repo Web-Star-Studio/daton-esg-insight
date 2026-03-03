@@ -380,7 +380,7 @@ export default function IAInsights() {
                   </div>
                 </div>
                 <Skeleton className="w-full h-16" />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Skeleton className="w-24 h-8" />
                   <Skeleton className="w-20 h-8" />
                 </div>

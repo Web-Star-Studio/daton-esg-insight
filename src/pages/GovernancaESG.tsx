@@ -184,14 +184,14 @@ export default function GovernancaESG() {
   return (
     <ErrorBoundary>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">ESG Governança</h1>
             <p className="text-muted-foreground">
               Gestão completa dos aspectos de governança corporativa
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button onClick={() => setIsReportsModalOpen(true)}>
               <BarChart3 className="mr-2 h-4 w-4" />
               Relatórios

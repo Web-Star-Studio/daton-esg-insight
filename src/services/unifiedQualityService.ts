@@ -131,14 +131,46 @@ class UnifiedQualityService {
     }
   }
 
-  async getQualityDashboard(): Promise<QualityDashboard> {
+  async getQualityDashboard(isDemo: boolean = false): Promise<QualityDashboard> {
     const startTime = Date.now();
     this.log('getQualityDashboard: Starting request');
+
+    // MOCK DATA PARA DEMO MODO
+    const mockData = {
+      metrics: {
+        totalNCs: 142,
+        openNCs: 18,
+        resolvedNCs: 124,
+        totalRisks: 45,
+        criticalRisks: 3,
+        actionPlans: 28,
+        overdueActions: 4,
+        qualityScore: 92,
+        avgResolutionTime: 5,
+        trendDirection: 'up' as const
+      },
+      recentNCs: [
+        { id: '1', nc_number: 'NC-2024-001', title: 'Falha no processo de solda', severity: 'Alta', status: 'Aberta', created_at: new Date().toISOString() },
+        { id: '2', nc_number: 'NC-2024-002', title: 'Documentação desatualizada', severity: 'Baixa', status: 'Em Análise', created_at: new Date(Date.now() - 86400000).toISOString() },
+        { id: '3', nc_number: 'NC-2024-003', title: 'Calibração de equipamento vencida', severity: 'Média', status: 'Aberta', created_at: new Date(Date.now() - 172800000).toISOString() }
+      ],
+      plansProgress: [
+        { id: 'p1', title: 'Adequação ISO 9001', status: 'Em Andamento', totalItems: 45, completedItems: 38, avgProgress: 84, overdueItems: 1 },
+        { id: 'p2', title: 'Treinamento CIPA', status: 'Em Andamento', totalItems: 12, completedItems: 6, avgProgress: 50, overdueItems: 0 },
+        { id: 'p3', title: 'Revisão de POPs', status: 'Atrasado', totalItems: 120, completedItems: 90, avgProgress: 75, overdueItems: 15 }
+      ],
+      insights: []
+    };
+
+    if (isDemo) {
+      const insights = await this.generateQualityInsights(mockData);
+      return { ...mockData, insights };
+    }
 
     try {
       // Use edge function for comprehensive dashboard data
       this.log('getQualityDashboard: Calling edge function quality-management');
-      
+
       const { data, error } = await supabase.functions.invoke('quality-management', {
         body: { action: 'dashboard' }
       });
@@ -148,7 +180,7 @@ class UnifiedQualityService {
       if (error) {
         logger.warn(`[QualityService] Edge function error after ${duration}ms`, 'api', { error });
         this.log('getQualityDashboard: Using fallback data due to edge function error');
-        
+
         // Return fallback data
         const fallbackData = {
           metrics: {
@@ -167,15 +199,15 @@ class UnifiedQualityService {
           plansProgress: [],
           insights: []
         };
-        
+
         // Enhance with AI insights
         const insights = await this.generateQualityInsights(fallbackData);
         return { ...fallbackData, insights };
       }
 
-      this.log(`getQualityDashboard: Edge function success in ${duration}ms`, { 
+      this.log(`getQualityDashboard: Edge function success in ${duration}ms`, {
         hasData: !!data,
-        metricsPresent: !!data?.metrics 
+        metricsPresent: !!data?.metrics
       });
 
       // Enhance with AI insights
@@ -188,7 +220,7 @@ class UnifiedQualityService {
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.error(`[QualityService] getQualityDashboard exception after ${duration}ms`, 'api', { error });
-      
+
       // Return fallback data on error
       const fallbackData = {
         metrics: {
@@ -207,7 +239,7 @@ class UnifiedQualityService {
         plansProgress: [],
         insights: []
       };
-      
+
       try {
         const insights = await this.generateQualityInsights(fallbackData);
         return { ...fallbackData, insights };
@@ -217,9 +249,21 @@ class UnifiedQualityService {
     }
   }
 
-  async getQualityIndicators(): Promise<QualityIndicatorData> {
+  async getQualityIndicators(isDemo: boolean = false): Promise<QualityIndicatorData> {
     const startTime = Date.now();
     this.log('getQualityIndicators: Starting request');
+
+    const mockIndicators = {
+      ncTrend: { current: 18, previous: 25, change: -28 },
+      resolutionRate: { resolved: 124, total: 142, percentage: 87.3 },
+      overdueActions: 4,
+      qualityScore: 92,
+      hasRealIndicators: true
+    };
+
+    if (isDemo) {
+      return mockIndicators;
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('quality-management', {
@@ -234,13 +278,12 @@ class UnifiedQualityService {
       }
 
       this.log(`getQualityIndicators: Success in ${duration}ms`, { hasData: !!data });
-      
-      return data || {
-        ncTrend: { current: 7, previous: 9, change: -22 },
-        resolutionRate: { resolved: 17, total: 24, percentage: 70 },
-        overdueActions: 2,
-        qualityScore: 78
-      };
+
+      // If data is empty or missing metrics, return mock data
+      if (!data || Object.keys(data).length === 0) {
+        return mockIndicators;
+      }
+      return data;
     } catch (error) {
       logger.warn('[QualityService] getQualityIndicators: Using fallback data', 'api', { error });
       return {
@@ -369,7 +412,42 @@ class UnifiedQualityService {
     };
   }
 
-  async getPredictiveAnalysis(): Promise<PredictiveAnalysis> {
+  async getPredictiveAnalysis(isDemo: boolean = false): Promise<PredictiveAnalysis> {
+    if (isDemo) {
+      return {
+        nextMonthNCs: 14,
+        riskLevel: 'medium',
+        patterns: [
+          {
+            type: 'Seasonal',
+            confidence: 0.85,
+            description: 'Tendência de aumento de NCs relacionadas a equipamentos no final do semestre'
+          },
+          {
+            type: 'Process',
+            confidence: 0.92,
+            description: 'Forte correlação entre calibração em dia e redução de refugo'
+          }
+        ],
+        recommendations: [
+          {
+            title: 'Antecipar manutenção preventiva',
+            description: 'Realizar revisão geral nas máquinas Críticas da Linha B antes do pico de produção',
+            impact: 'Alto',
+            effort: 'Médio',
+            priority: 'high'
+          },
+          {
+            title: 'Reforço de Treinamento ISO 9001',
+            description: 'Programar reciclagem para os 15 operadores recém-contratados',
+            impact: 'Médio',
+            effort: 'Baixo',
+            priority: 'medium'
+          }
+        ]
+      };
+    }
+
     try {
       // Get historical data for analysis
       const { data: historicalNCs } = await supabase
@@ -387,7 +465,7 @@ class UnifiedQualityService {
       }) || [];
 
       const nextMonthNCs = Math.max(1, Math.round(recentNCs.length * 1.1));
-      
+
       let riskLevel: 'low' | 'medium' | 'high' = 'low';
       if (nextMonthNCs > 10) riskLevel = 'high';
       else if (nextMonthNCs > 5) riskLevel = 'medium';
@@ -488,7 +566,12 @@ class UnifiedQualityService {
     return insights;
   }
 
-  async getQualityMetrics() {
+  async getQualityMetrics(isDemo: boolean = false) {
+    if (isDemo) {
+      const mockDashboard = await this.getQualityDashboard(true);
+      return mockDashboard.metrics;
+    }
+
     const { data, error } = await supabase.functions.invoke('quality-management', {
       body: { action: 'dashboard' }
     });
@@ -520,7 +603,18 @@ class UnifiedQualityService {
     return this.generateQualityInsights({ metrics });
   }
 
-  async getQualityTrends(_period: string = '30d'): Promise<Array<{ qualityScore?: number; date?: string }>> {
+  async getQualityTrends(_period: string = '30d', isDemo: boolean = false): Promise<Array<{ qualityScore?: number; date?: string }>> {
+    if (isDemo) {
+      // Dummy data for the past 6 intervals (days or weeks)
+      return [
+        { qualityScore: 78, date: new Date(Date.now() - 5 * 86400000).toISOString() },
+        { qualityScore: 82, date: new Date(Date.now() - 4 * 86400000).toISOString() },
+        { qualityScore: 85, date: new Date(Date.now() - 3 * 86400000).toISOString() },
+        { qualityScore: 81, date: new Date(Date.now() - 2 * 86400000).toISOString() },
+        { qualityScore: 88, date: new Date(Date.now() - 1 * 86400000).toISOString() },
+        { qualityScore: 92, date: new Date().toISOString() },
+      ];
+    }
     // Mock trend data for now
     return [];
   }
@@ -550,7 +644,7 @@ class UnifiedQualityService {
       // Organizar riscos em matriz 5x5
       const probabilityLevels = ['Muito Baixa', 'Baixa', 'Média', 'Alta', 'Muito Alta'];
       const impactLevels = ['Muito Baixo', 'Baixo', 'Médio', 'Alto', 'Muito Alto'];
-      
+
       const matrix: RiskMatrixCell[] = [];
       probabilityLevels.forEach(prob => {
         impactLevels.forEach(imp => {
@@ -612,7 +706,7 @@ class UnifiedQualityService {
     return {};
   }
 
-  async getRiskMatrices(): Promise<Array<{ id: string; name: string; [key: string]: unknown }>> {
+  async getRiskMatrices(): Promise<Array<{ id: string; name: string;[key: string]: unknown }>> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -668,19 +762,19 @@ class UnifiedQualityService {
 }
 
 // React Query hooks for the unified service
-export const useQualityDashboard = () => {
+export const useQualityDashboard = (isDemo: boolean = false) => {
   return useQuery({
-    queryKey: ['unified-quality-dashboard'],
-    queryFn: () => unifiedQualityService.getQualityDashboard(),
+    queryKey: ['unified-quality-dashboard', isDemo],
+    queryFn: () => unifiedQualityService.getQualityDashboard(isDemo),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 30000, // 30 seconds
   });
 };
 
-export const useQualityIndicatorsMetrics = () => {
+export const useQualityIndicatorsMetrics = (isDemo: boolean = false) => {
   return useQuery({
-    queryKey: ['quality-indicators-metrics'],
-    queryFn: () => unifiedQualityService.getQualityIndicators(),
+    queryKey: ['quality-indicators-metrics', isDemo],
+    queryFn: () => unifiedQualityService.getQualityIndicators(isDemo),
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };
@@ -706,7 +800,7 @@ export const useCreateQualityIndicator = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (indicator: Partial<QualityIndicator>) => 
+    mutationFn: (indicator: Partial<QualityIndicator>) =>
       unifiedQualityService.createQualityIndicator(indicator),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quality-indicators'] });
@@ -730,11 +824,11 @@ export const useAddIndicatorMeasurement = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (measurement: Partial<IndicatorMeasurement>) => 
+    mutationFn: (measurement: Partial<IndicatorMeasurement>) =>
       unifiedQualityService.addIndicatorMeasurement(measurement),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['indicator-measurements', variables.indicator_id] 
+      queryClient.invalidateQueries({
+        queryKey: ['indicator-measurements', variables.indicator_id]
       });
       queryClient.invalidateQueries({ queryKey: ['unified-quality-dashboard'] });
       toast({

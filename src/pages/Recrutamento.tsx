@@ -210,7 +210,7 @@ export default function Recrutamento() {
 
   if (jobsLoading || applicationsLoading || interviewsLoading || statsLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="w-full overflow-hidden p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -224,15 +224,15 @@ export default function Recrutamento() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="w-full overflow-hidden p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Recrutamento e Seleção</h1>
           <p className="text-muted-foreground">
             Gestão completa do processo de recrutamento e seleção
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button variant="outline">
             <FileText className="h-4 w-4 mr-2" />
             Relatórios
@@ -343,13 +343,13 @@ export default function Recrutamento() {
         <TabsContent value="jobs" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <CardTitle>Gestão de Vagas</CardTitle>
                   <CardDescription>Gerencie suas vagas abertas e processo seletivo</CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <Input
                       placeholder="Buscar vagas..."
                       value={searchTerm}
@@ -426,7 +426,7 @@ export default function Recrutamento() {
                       </div>
                     </div>
                     
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <div className="flex items-center gap-4 text-sm">
                           <span className="flex items-center">
                             <Users className="h-4 w-4 mr-1" />
@@ -434,7 +434,7 @@ export default function Recrutamento() {
                           </span>
                           <span>Publicada em {new Date(job.created_at).toLocaleDateString('pt-BR')}</span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -483,12 +483,12 @@ export default function Recrutamento() {
         <TabsContent value="candidates" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <CardTitle>Banco de Candidatos</CardTitle>
                   <CardDescription>Gerencie candidatos e acompanhe o processo seletivo</CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Input
                     placeholder="Buscar candidatos..."
                     value={searchTerm}
@@ -622,12 +622,12 @@ export default function Recrutamento() {
         <TabsContent value="interviews" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <CardTitle>Agenda de Entrevistas</CardTitle>
                   <CardDescription>Gerencie e acompanhe suas entrevistas</CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Input
                     placeholder="Buscar entrevistas..."
                     value={searchTerm}
@@ -722,12 +722,12 @@ export default function Recrutamento() {
         <TabsContent value="pipeline" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <CardTitle>Pipeline de Recrutamento</CardTitle>
                   <CardDescription>Acompanhe o progresso dos candidatos no funil de seleção</CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Select value={selectedJobForApplications || "all"} onValueChange={setSelectedJobForApplications}>
                     <SelectTrigger className="w-48">
                       <SelectValue placeholder="Filtrar por vaga" />

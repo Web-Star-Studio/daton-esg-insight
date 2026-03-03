@@ -168,7 +168,7 @@ export default function PlanoAcao5W2H() {
 
   return (
     <>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Planos de Ação 5W2H</h1>
           <p className="text-muted-foreground mt-2">
@@ -176,7 +176,7 @@ export default function PlanoAcao5W2H() {
           </p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Dialog open={isCreateItemOpen} onOpenChange={setIsCreateItemOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" disabled={!actionPlans?.length}>
@@ -456,7 +456,7 @@ export default function PlanoAcao5W2H() {
               <CardDescription>{plan.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <Badge className={getPlanTypeColor(plan.plan_type)}>
                   {plan.plan_type}
                 </Badge>
@@ -477,7 +477,7 @@ export default function PlanoAcao5W2H() {
                 <div>Concluídas: {plan.items?.filter(item => item.status === 'Concluído').length || 0}</div>
               </div>
 
-              <div className="flex gap-2 mt-4">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-4">
                 <Button 
                   variant="outline" 
                   size="sm" 

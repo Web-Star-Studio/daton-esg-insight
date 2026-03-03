@@ -106,7 +106,7 @@ const MapeamentoProcessos = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="w-full overflow-hidden p-6">
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -117,7 +117,7 @@ const MapeamentoProcessos = () => {
   // Se um processo está selecionado para edição, mostra o editor
   if (selectedProcessId) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="w-full overflow-hidden p-6">
         <ProcessMapEditor 
           processMapId={selectedProcessId} 
           onClose={() => setSelectedProcessId(null)} 
@@ -127,7 +127,7 @@ const MapeamentoProcessos = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full overflow-hidden p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
@@ -184,7 +184,7 @@ const MapeamentoProcessos = () => {
                   rows={3}
                 />
               </div>
-              <div className="flex gap-2 justify-end">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
                 <Button variant="outline" onClick={() => setIsCreateProcessOpen(false)}>
                   Cancelar
                 </Button>
@@ -316,7 +316,7 @@ const MapeamentoProcessos = () => {
                           )}
                         </div>
                         
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -491,15 +491,15 @@ const MapeamentoProcessos = () => {
                   incluindo recursos, métodos, medições e riscos.
                 </p>
                 <div className="space-y-2 text-xs">
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <div className="bg-primary/10 p-1 px-2 rounded">Entradas</div>
                     <div className="bg-secondary/10 p-1 px-2 rounded">Saídas</div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <div className="bg-accent/10 p-1 px-2 rounded">Recursos</div>
                     <div className="bg-primary/10 p-1 px-2 rounded">Métodos</div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <div className="bg-secondary/10 p-1 px-2 rounded">Medições</div>
                     <div className="bg-accent/10 p-1 px-2 rounded">Riscos</div>
                   </div>

@@ -253,7 +253,7 @@ export default function GestaoRiscos() {
 
   return (
     <>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gestão de Riscos</h1>
           <p className="text-muted-foreground mt-2">
@@ -261,7 +261,7 @@ export default function GestaoRiscos() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Dialog open={isCreateMatrixOpen} onOpenChange={setIsCreateMatrixOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -349,7 +349,7 @@ export default function GestaoRiscos() {
                   <CardDescription>{matrix.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                     <Badge variant="secondary">
                       {matrix.matrix_type}
                     </Badge>
@@ -357,7 +357,7 @@ export default function GestaoRiscos() {
                       Ativa
                     </Badge>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <Button
                       variant="outline"
                       size="sm"

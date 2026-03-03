@@ -231,7 +231,7 @@ export default function ListasDeEnvio() {
                       <span>{list.form_count || 0} formulários</span>
                     </div>
                   </div>
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <Button 
                       variant="outline" 
                       size="sm" 
