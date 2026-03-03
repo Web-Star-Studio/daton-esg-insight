@@ -1,0 +1,1 @@
+UPDATE public.profiles SET email = 'psicologia@transgabardo.com.br' WHERE id = '984a04bf-57e9-43db-b6e1-5d71c460ec86';

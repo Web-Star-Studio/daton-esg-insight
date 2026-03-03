@@ -147,7 +147,7 @@ export default function SupplierDeliveriesPage() {
   };
 
   const handleEvaluate = (delivery: SupplierDelivery) => {
-    navigate(`/fornecedores/avaliacoes/${delivery.supplier_id}/desempenho?delivery=${delivery.id}`);
+    navigate(`/fornecedores/avaliacao-desempenho/${delivery.supplier_id}?delivery=${delivery.id}`);
   };
 
   const getSupplierName = (delivery: SupplierDelivery) => {

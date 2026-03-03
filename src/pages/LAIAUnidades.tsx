@@ -11,6 +11,7 @@ import { useLAIAPendingChangesCount } from "@/hooks/useLAIARevisions";
 import { LAIAUnidadesFilters } from "@/components/laia/LAIAUnidadesFilters";
 import { LAIAConfiguracoes } from "@/components/laia/LAIAConfiguracoes";
 import { LAIARevisoes } from "@/components/laia/LAIARevisoes";
+import { LAIAMetodologia } from "@/components/laia/LAIAMetodologia";
 import { formatCNPJ } from "@/utils/formValidation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -189,14 +190,7 @@ export default function LAIAUnidades() {
           </TabsList>
 
           <TabsContent value="metodologia">
-            <Card>
-              <CardHeader>
-                <CardTitle>Metodologia</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Conteúdo da metodologia em desenvolvimento.</p>
-              </CardContent>
-            </Card>
+            <LAIAMetodologia />
           </TabsContent>
 
           <TabsContent value="unidades" className="space-y-6">

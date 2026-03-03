@@ -1,7 +1,17 @@
-import { HelpCircle } from 'lucide-react';
+import { BookOpen, CheckCircle2, HelpCircle, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLocation } from 'react-router-dom';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useUnifiedTour } from '@/contexts/UnifiedTourContext';
+import { tourDefinitions } from '@/components/tutorial/unified/tourDefinitions';
 
 /**
  * Mapeamento de rotas para links de documentação contextual.
@@ -53,6 +63,8 @@ const HELP_LINKS: Record<string, string> = {
  */
 export function ContextualHelp() {
   const location = useLocation();
+  const { startTour, isTourCompleted } = useUnifiedTour();
+  const tours = Object.values(tourDefinitions);
   
   // Encontra o link de ajuda mais específico para a rota atual
   const getHelpLink = () => {
@@ -81,24 +93,54 @@ export function ContextualHelp() {
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClick}
-            aria-label="Acessar documentação de ajuda"
-            className="h-9 w-9 text-muted-foreground hover:text-foreground"
-          >
-            <HelpCircle className="h-5 w-5" aria-hidden="true" />
-            <span className="sr-only">Ajuda</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          <p>Acessar documentação</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <DropdownMenu>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Abrir menu de ajuda"
+                className="h-10 w-10 rounded-xl text-muted-foreground hover:text-foreground"
+              >
+                <HelpCircle className="h-5 w-5" aria-hidden="true" />
+                <span className="sr-only">Ajuda</span>
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p>Acessar documentação</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      <DropdownMenuContent align="end" className="w-[300px]">
+        <DropdownMenuItem onClick={handleClick} className="cursor-pointer">
+          <BookOpen className="mr-2 h-4 w-4" />
+          Acessar documentação
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Tours Interativos</DropdownMenuLabel>
+        {tours.map((tour) => {
+          const completed = isTourCompleted(tour.id);
+
+          return (
+            <DropdownMenuItem
+              key={tour.id}
+              onClick={() => startTour(tour.id)}
+              className="cursor-pointer"
+            >
+              {completed ? (
+                <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+              ) : (
+                <PlayCircle className="mr-2 h-4 w-4 text-primary" />
+              )}
+              <span className="truncate">{tour.title}</span>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -61,7 +61,7 @@ export async function scheduleRenewal(
           reminders: formData.notification_days,
           channels: formData.notification_channels,
         } as any,
-        status: 'scheduled',
+        status: 'nao_iniciado',
         created_by_user_id: user.id,
       })
       .select()

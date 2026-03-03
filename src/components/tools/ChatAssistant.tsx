@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, Maximize2, Minimize2, User, Sparkles, History, Plus, Paperclip } from 'lucide-react';
+import { X, Send, Loader2, Maximize2, Minimize2, History, Plus, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -12,7 +12,6 @@ import { FileAttachmentCompact } from '@/components/ai/FileAttachmentCompact';
 import { ChatHistory } from '@/components/ai/ChatHistory';
 import { VirtualizedMessageList } from '@/components/ai/VirtualizedMessageList';
 import { DocumentPromptTemplates } from '@/components/ai/DocumentPromptTemplates';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -20,16 +19,31 @@ import { cn } from '@/lib/utils';
 // Chat assistant component with AI action confirmation support
 interface ChatAssistantProps {
   embedded?: boolean; // When true, always shows chat without floating button
+  isOpen?: boolean; // External control of open state
+  onClose?: () => void; // Callback when chat is closed
 }
 
-export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
-  // Persist open state in localStorage (only for non-embedded)
-  const [isOpen, setIsOpen] = useState(() => {
+export function ChatAssistant({ embedded = false, isOpen: externalIsOpen, onClose }: ChatAssistantProps) {
+  const isControlled = externalIsOpen !== undefined;
+  const isHeaderPopover = isControlled && !embedded;
+  
+  // Persist open state in localStorage (only for non-embedded, non-controlled)
+  const [internalIsOpen, setInternalIsOpen] = useState(() => {
     if (embedded) return true;
+    if (isControlled) return false;
     const stored = localStorage.getItem('ai_chat_open');
-    // Default to CLOSED on first use
     return stored === 'true';
   });
+  
+  const isOpen = isControlled ? externalIsOpen : internalIsOpen;
+  const setIsOpen = (value: boolean | ((prev: boolean) => boolean)) => {
+    const newValue = typeof value === 'function' ? value(isOpen) : value;
+    if (isControlled) {
+      if (!newValue && onClose) onClose();
+    } else {
+      setInternalIsOpen(newValue);
+    }
+  };
   
   // Persist fullscreen state
   const [isExpanded, setIsExpanded] = useState(() => {
@@ -190,91 +204,43 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
 
   return (
     <>
-      {/* Floating Chat Button - Only show when not embedded */}
-      <AnimatePresence>
-        {!embedded && !isOpen && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20 }}
-          >
-            <Button
-              onClick={() => setIsOpen(true)}
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-[100] bg-gradient-to-br from-primary to-primary/90"
-              size="icon"
-              aria-label="Abrir chat"
-            >
-              <MessageCircle className="h-6 w-6" />
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: isHeaderPopover ? -8 : 20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            exit={{ opacity: 0, y: isHeaderPopover ? -8 : 20, scale: 0.98 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             className={cn(
               "flex flex-col bg-background",
               embedded 
                 ? "w-full h-full border-0 rounded-none shadow-none" 
-                : cn(
-                    "ai-chat-container shadow-2xl border transition-all duration-300",
-                    isExpanded ? "fullscreen" : "fixed"
-                  )
+                : isHeaderPopover
+                  ? "absolute right-0 top-[calc(100%+0.5rem)] z-[220] h-[min(72vh,640px)] w-[min(420px,calc(100vw-1.5rem))] rounded-2xl border border-border/60 shadow-xl"
+                  : cn(
+                      "ai-chat-container shadow-2xl border transition-all duration-300",
+                      isExpanded ? "fullscreen" : "fixed"
+                    )
             )}
           >
             <Card className={cn(
               "w-full h-full flex flex-col overflow-hidden",
               embedded ? "border-0 shadow-none" : "border"
             )}>
-              {/* Header - Professional Design */}
-              <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+              <div className="flex-shrink-0 border-b bg-background">
                 <div className="flex items-center justify-between px-4 py-3">
-                  {/* Left: Avatar + Info */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative">
-                      <Avatar className="h-10 w-10 ring-2 ring-primary/20 bg-gradient-to-br from-primary to-primary/80">
-                        <AvatarFallback className="bg-transparent text-primary-foreground">
-                          <Sparkles className="h-5 w-5" />
-                        </AvatarFallback>
-                      </Avatar>
-                      {isLoading && (
-                        <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary animate-pulse ring-2 ring-background" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-sm truncate">
-                        Assistente ESG IA
-                      </h3>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        {isLoading ? (
-                        <>
-                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                          <span className="animate-pulse">
-                            {isProcessingAttachments ? (
-                              <>Processando arquivos... {Math.round(processingProgress)}%</>
-                            ) : (
-                              <>Consultando dados da empresa...</>
-                            )}
-                          </span>
-                        </>
-                      ) : (
-                          <>
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                            <span>Online</span>
-                          </>
-                        )}
-                      </p>
-                    </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-sm font-semibold">Assistente IA</h3>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {isLoading
+                        ? isProcessingAttachments
+                          ? `Processando arquivos... ${Math.round(processingProgress)}%`
+                          : "Consultando dados..."
+                        : "Pronto para ajudar"}
+                    </p>
                   </div>
                   
-                  {/* Right: Actions */}
                   <div className="flex items-center gap-1">
                     <Button 
                       variant="ghost" 
@@ -296,7 +262,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
-                    {!embedded && (
+                    {!embedded && !isHeaderPopover && (
                       <>
                         <div className="h-4 w-px bg-border mx-1" />
                         <Button 
@@ -308,16 +274,18 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                         >
                           {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8" 
-                          onClick={() => setIsOpen(false)}
-                          aria-label="Fechar"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
                       </>
+                    )}
+                    {!embedded && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setIsOpen(false)}
+                        aria-label="Fechar"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -367,7 +335,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           )}
 
               {/* Input Area - Redesigned */}
-              <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur">
+              <div className="flex-shrink-0 border-t bg-background">
                 {/* Document Prompt Templates - Show when files are attached */}
                 {attachments.length > 0 && !isLoading && !isUploading && (
                   <div className="px-4 pt-4 pb-3 border-b">
@@ -437,7 +405,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         onKeyDown={handleKeyPress}
-                        className="min-h-[56px] max-h-[200px] resize-none rounded-xl border-2 pr-12 text-sm focus:border-primary/50 transition-colors"
+                        className="min-h-[52px] max-h-[180px] resize-none rounded-xl border pr-12 text-sm transition-colors"
                         disabled={isLoading || isUploading}
                         aria-label="Campo de mensagem"
                       />
@@ -452,18 +420,12 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                       onClick={handleSendMessage}
                       disabled={isLoading || !inputMessage.trim()}
                       size="icon"
-                      className="h-[56px] w-[56px] flex-shrink-0 rounded-xl"
+                      className="h-[52px] w-[52px] flex-shrink-0 rounded-xl"
                       aria-label="Enviar mensagem"
                     >
                       {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                     </Button>
                   </div>
-                  
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">⏎</kbd> enviar
-                    <span className="mx-1">·</span>
-                    <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">⇧⏎</kbd> nova linha
-                  </p>
                 </div>
               </div>
             </Card>

@@ -65,7 +65,10 @@ class AuthService {
 
       // Criar usuário primeiro com dados da empresa nos metadados
       // O trigger handle_new_user() criará empresa e profile automaticamente
-      const redirectUrl = `${window.location.origin}/`;
+      const hostname = window.location.hostname;
+      const isLovablePreview = hostname.includes('lovable.app') || hostname.includes('lovableproject.com');
+      const baseUrl = isLovablePreview ? 'https://daton.com.br' : window.location.origin;
+      const redirectUrl = `${baseUrl}/`;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,

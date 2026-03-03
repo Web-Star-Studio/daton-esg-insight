@@ -15,6 +15,20 @@ export interface WasteLogListItem {
   status: string;
   waste_class?: string;
   destination_name?: string;
+  branch_id?: string | null;
+  destination_cost_per_unit?: number | null;
+  destination_cost_total?: number | null;
+  transport_cost?: number | null;
+  revenue_per_unit?: number | null;
+  revenue_total?: number | null;
+  driver_name?: string | null;
+  vehicle_plate?: string | null;
+  storage_type?: string | null;
+  invoice_generator?: string | null;
+  invoice_payment?: string | null;
+  cdf_number?: string | null;
+  cdf_additional_1?: string | null;
+  cdf_additional_2?: string | null;
 }
 
 export interface WasteLogDetail extends WasteLogListItem {
@@ -23,7 +37,26 @@ export interface WasteLogDetail extends WasteLogListItem {
   destination_cnpj?: string;
   final_treatment_type?: string;
   cost?: number;
+  destination_cost_per_unit?: number;
+  destination_cost_total?: number;
+  transport_cost?: number;
+  revenue_per_unit?: number;
+  revenue_total?: number;
+  total_payable?: number;
+  amount_paid?: number;
+  payment_status?: string;
+  payment_date?: string;
+  payment_notes?: string;
+  driver_name?: string;
+  vehicle_plate?: string;
+  storage_type?: string;
+  invoice_generator?: string;
+  invoice_payment?: string;
+  cdf_number?: string;
+  cdf_additional_1?: string;
+  cdf_additional_2?: string;
   company_id: string;
+  branch_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +75,7 @@ export interface CreateWasteLogData {
   final_treatment_type?: string;
   cost?: number;
   status?: WasteStatusEnum;
+  branch_id?: string;
 }
 
 export interface UpdateWasteLogData {
@@ -58,6 +92,7 @@ export interface UpdateWasteLogData {
   final_treatment_type?: string;
   cost?: number;
   status?: WasteStatusEnum;
+  branch_id?: string;
 }
 
 export interface WasteDashboard {
@@ -70,11 +105,13 @@ export interface WasteDashboard {
 export interface WasteFilters {
   start_date?: string;
   end_date?: string;
+  branch_id?: string;
 }
 
 export interface DashboardFilters {
   month?: number;
   year?: number;
+  branch_id?: string;
 }
 
 // Utility function to convert units to tons
@@ -110,7 +147,21 @@ export const getWasteLogs = async (filters?: WasteFilters): Promise<WasteLogList
       unit,
       status,
       waste_class,
-      destination_name
+      destination_name,
+      branch_id,
+      destination_cost_per_unit,
+      destination_cost_total,
+      transport_cost,
+      revenue_per_unit,
+      revenue_total,
+      driver_name,
+      vehicle_plate,
+      storage_type,
+      invoice_generator,
+      invoice_payment,
+      cdf_number,
+      cdf_additional_1,
+      cdf_additional_2
     `)
     .order('collection_date', { ascending: false });
 
@@ -120,6 +171,9 @@ export const getWasteLogs = async (filters?: WasteFilters): Promise<WasteLogList
   }
   if (filters?.end_date) {
     query = query.lte('collection_date', filters.end_date);
+  }
+  if (filters?.branch_id) {
+    query = query.eq('branch_id', filters.branch_id);
   }
 
   const { data, error } = await query;
@@ -148,10 +202,7 @@ export const getWasteLogById = async (id: string): Promise<WasteLogDetail> => {
     throw new Error('Registro de resíduo não encontrado');
   }
 
-  return {
-    ...data,
-    collection_date: formatDate(data.collection_date)
-  };
+  return data;
 };
 
 // POST /api/v1/waste-logs
@@ -191,6 +242,10 @@ export const createWasteLog = async (wasteData: CreateWasteLogData): Promise<Was
   if (!profile || !profile.company_id) {
     console.error("❌ [API] Profile não encontrado ou sem company_id:", profile);
     throw new Error('Sua conta não está vinculada a uma empresa. Contate o administrador.');
+  }
+
+  if (!wasteData.branch_id) {
+    throw new Error('Selecione a filial para registrar a movimentação de resíduo.');
   }
 
   console.warn("✅ [API] Company ID encontrado:", profile.company_id);
@@ -277,11 +332,17 @@ export const getWasteDashboard = async (filters?: DashboardFilters): Promise<Was
   const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
   const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('waste_logs')
     .select('quantity, unit, final_treatment_type, cost')
     .gte('collection_date', startDate)
     .lte('collection_date', endDate);
+
+  if (filters?.branch_id) {
+    query = query.eq('branch_id', filters.branch_id);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching waste dashboard:', error);
@@ -392,7 +453,7 @@ export const getWasteLogDocuments = async (wasteLogId: string) => {
     .select('*')
     .eq('related_model', 'waste_logs')
     .eq('related_id', wasteLogId)
-    .order('created_at', { ascending: false });
+    .order('upload_date', { ascending: false });
 
   if (error) {
     console.error('Error fetching documents:', error);

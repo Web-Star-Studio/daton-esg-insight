@@ -14,16 +14,18 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { CalendarIcon, Upload, X, FileText, Eye, DollarSign } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query"
-import { createWasteLog, uploadWasteDocument } from "@/services/waste"
+import { createWasteLog, getWasteLogById, updateWasteLog, uploadWasteDocument } from "@/services/waste"
 import { useToast } from "@/hooks/use-toast"
 import { getActivePGRSPlan } from "@/services/pgrsReports"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MTROCRModal } from "@/components/MTROCRModal"
 import { supabase } from "@/integrations/supabase/client"
+import { useBranches } from "@/services/branches"
+import { getBranchDisplayLabel } from "@/utils/branchDisplay"
 
 // Helper functions for CNPJ formatting
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
@@ -41,6 +43,7 @@ const CNPJ_REGEX = /^(\d{14}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})$/;
 
 const formSchema = z.object({
   mtr: z.string().min(1, "Nº MTR/Controle é obrigatório"),
+  branchId: z.string().min(1, "Filial é obrigatória"),
   dataColeta: z.date({ message: "Data da coleta é obrigatória" }),
   descricaoResiduo: z.string().min(1, "Descrição do resíduo é obrigatória"),
   classe: z.string().min(1, "Classe é obrigatória"),
@@ -77,12 +80,18 @@ const formSchema = z.object({
   cdfAdditional2: z.string().optional(),
 })
 
+type WasteFormValues = z.infer<typeof formSchema>
+
 const RegistrarDestinacao = () => {
   const navigate = useNavigate()
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [searchParams] = useSearchParams()
+  const editWasteLogId = searchParams.get("edit")
+  const isEditMode = Boolean(editWasteLogId)
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [showMTROCR, setShowMTROCR] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { data: branches = [] } = useBranches()
 
   // Verificar autenticação
   const { data: authUser } = useQuery({
@@ -126,10 +135,17 @@ const RegistrarDestinacao = () => {
     staleTime: 5 * 60 * 1000 // 5 minutes
   })
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const { data: existingWasteLog, isLoading: isLoadingWasteLog } = useQuery({
+    queryKey: ['waste-logs', 'detail', editWasteLogId],
+    queryFn: () => getWasteLogById(editWasteLogId as string),
+    enabled: isEditMode && !!editWasteLogId,
+  })
+
+  const form = useForm<WasteFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       mtr: "",
+      branchId: "",
       dataColeta: new Date(),
       descricaoResiduo: "",
       classe: "",
@@ -159,9 +175,10 @@ const RegistrarDestinacao = () => {
     },
   })
 
+  const selectedPgrsWasteTypeId = form.watch("pgrsWasteTypeId")
+
   // Auto-fill waste type when PGRS waste type is selected
   useEffect(() => {
-    const selectedPgrsWasteTypeId = form.watch("pgrsWasteTypeId")
     if (selectedPgrsWasteTypeId && activePGRS?.sources) {
       for (const source of activePGRS.sources) {
         const wasteType = source.waste_types?.find((wt: any) => wt.id === selectedPgrsWasteTypeId)
@@ -173,17 +190,57 @@ const RegistrarDestinacao = () => {
         }
       }
     }
-  }, [form.watch("pgrsWasteTypeId"), activePGRS, form])
+  }, [selectedPgrsWasteTypeId, activePGRS, form])
+
+  useEffect(() => {
+    if (!existingWasteLog) return
+
+    form.reset({
+      mtr: existingWasteLog.mtr_number,
+      branchId: existingWasteLog.branch_id || "",
+      dataColeta: existingWasteLog.collection_date ? new Date(`${existingWasteLog.collection_date}T00:00:00`) : new Date(),
+      descricaoResiduo: existingWasteLog.waste_description,
+      classe: existingWasteLog.waste_class || "",
+      quantidade: existingWasteLog.quantity,
+      unidade: existingWasteLog.unit,
+      transportador: existingWasteLog.transporter_name || "",
+      cnpjTransportador: existingWasteLog.transporter_cnpj ? formatCNPJ(existingWasteLog.transporter_cnpj) : "",
+      destinador: existingWasteLog.destination_name || "",
+      cnpjDestinador: existingWasteLog.destination_cnpj ? formatCNPJ(existingWasteLog.destination_cnpj) : "",
+      tipoDestinacao: existingWasteLog.final_treatment_type || "",
+      custo: existingWasteLog.cost || 0,
+      pgrsSourceId: "",
+      pgrsWasteTypeId: "",
+      destinationCostPerUnit: existingWasteLog.destination_cost_per_unit || 0,
+      destinationCostTotal: existingWasteLog.destination_cost_total || 0,
+      transportCost: existingWasteLog.transport_cost || 0,
+      revenuePerUnit: existingWasteLog.revenue_per_unit || 0,
+      revenueTotal: existingWasteLog.revenue_total || 0,
+      driverName: existingWasteLog.driver_name || "",
+      vehiclePlate: existingWasteLog.vehicle_plate || "",
+      storageType: existingWasteLog.storage_type || "",
+      invoiceGenerator: existingWasteLog.invoice_generator || "",
+      invoicePayment: existingWasteLog.invoice_payment || "",
+      cdfNumber: existingWasteLog.cdf_number || "",
+      cdfAdditional1: existingWasteLog.cdf_additional_1 || "",
+      cdfAdditional2: existingWasteLog.cdf_additional_2 || "",
+    })
+  }, [existingWasteLog, form])
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setUploadedFile(file)
-    }
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
+    setUploadedFiles((previous) => {
+      const existingKeys = new Set(previous.map((file) => `${file.name}-${file.size}-${file.lastModified}`))
+      const newItems = files.filter((file) => !existingKeys.has(`${file.name}-${file.size}-${file.lastModified}`))
+      return [...previous, ...newItems]
+    })
+    e.target.value = ""
   }
 
-  const removeFile = () => {
-    setUploadedFile(null)
+  const removeFile = (index: number) => {
+    setUploadedFiles((current) => current.filter((_, currentIndex) => currentIndex !== index))
   }
 
   const handleOCRDataExtracted = (extractedData: any) => {
@@ -206,73 +263,14 @@ const RegistrarDestinacao = () => {
     })
   }
 
-  // Create waste log mutation
-  const createWasteLogMutation = useMutation({
-    mutationFn: createWasteLog,
-    onMutate: () => {
-      console.warn("⏳ [MUTATION] Iniciando mutation...");
-    },
-    onSuccess: async (data) => {
-      console.warn("✅ [MUTATION] Registro criado com sucesso:", data);
-      
-      // If there's a file, upload it
-      if (uploadedFile) {
-        console.warn("📎 [MUTATION] Fazendo upload do documento...");
-        try {
-          await uploadWasteDocument(data.id, uploadedFile);
-          console.warn("✅ [MUTATION] Documento salvo com sucesso");
-          toast({
-            title: "Sucesso!",
-            description: `Registro ${data.mtr_number} e documento salvos com sucesso.`,
-          });
-        } catch (error) {
-          console.error("❌ [MUTATION] Erro no upload:", error);
-          toast({
-            title: "Parcialmente Salvo",
-            description: `Registro ${data.mtr_number} salvo, mas erro ao fazer upload do documento.`,
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Sucesso!",
-          description: `Registro ${data.mtr_number} salvo com sucesso.`,
-        });
-      }
-      
-      // Invalidate and refetch waste logs
-      console.warn("🔄 [MUTATION] Invalidando queries...");
-      queryClient.invalidateQueries({ queryKey: ['waste-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['waste-dashboard'] });
-      
-      // Small delay to ensure queries are refetched
-      console.warn("⏱️ [MUTATION] Aguardando antes de redirecionar...");
-      setTimeout(() => {
-        console.warn("🔀 [MUTATION] Redirecionando para /residuos");
-        navigate("/residuos");
-      }, 500);
-    },
-    onError: (error: Error) => {
-      console.error("❌ [MUTATION] Erro na mutation:", error);
-      console.error("❌ [MUTATION] Stack trace:", error.stack);
-      toast({
-        title: "Erro ao Salvar",
-        description: error.message || "Ocorreu um erro inesperado ao salvar o registro.",
-        variant: "destructive",
-      });
-    }
-  })
-
   const sanitizeCNPJ = (v?: string) => (v ? onlyDigits(v) : undefined);
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.warn("🚀 [SUBMIT] Formulário submetido com valores:", values);
-    
-    // Calcular total_payable automaticamente
+  const buildWastePayload = (values: WasteFormValues) => {
     const totalPayable = (values.destinationCostTotal || 0) + (values.transportCost || 0);
-    
-    const wasteData = {
+
+    return {
       mtr_number: values.mtr,
+      branch_id: values.branchId,
       waste_description: values.descricaoResiduo,
       waste_class: values.classe as "Classe I - Perigoso" | "Classe II A - Não Inerte" | "Classe II B - Inerte",
       collection_date: values.dataColeta.toISOString().split('T')[0],
@@ -284,9 +282,7 @@ const RegistrarDestinacao = () => {
       destination_cnpj: sanitizeCNPJ(values.cnpjDestinador),
       final_treatment_type: values.tipoDestinacao || undefined,
       cost: values.custo || undefined,
-      status: 'Coletado' as const,
-      
-      // Campos Financeiros
+
       destination_cost_per_unit: values.destinationCostPerUnit || undefined,
       destination_cost_total: values.destinationCostTotal || undefined,
       transport_cost: values.transportCost || undefined,
@@ -294,28 +290,102 @@ const RegistrarDestinacao = () => {
       revenue_total: values.revenueTotal || undefined,
       total_payable: totalPayable > 0 ? totalPayable : undefined,
       payment_status: totalPayable > 0 ? 'Pendente' : undefined,
-      
-      // Campos Logísticos
+
       driver_name: values.driverName || undefined,
       vehicle_plate: values.vehiclePlate || undefined,
       storage_type: values.storageType || undefined,
-      
-      // Campos Documentais
+
       invoice_generator: values.invoiceGenerator || undefined,
       invoice_payment: values.invoicePayment || undefined,
       cdf_number: values.cdfNumber || undefined,
       cdf_additional_1: values.cdfAdditional1 || undefined,
       cdf_additional_2: values.cdfAdditional2 || undefined,
     };
+  };
 
-    console.warn("📦 [SUBMIT] Dados formatados para API:", wasteData);
-    console.warn("🔄 [SUBMIT] Chamando mutation...");
-    createWasteLogMutation.mutate(wasteData);
-  }
+  const handlePersistSuccess = async (recordId: string, mtrNumber: string, wasEdit: boolean) => {
+    if (uploadedFiles.length > 0) {
+      const uploadResults = await Promise.allSettled(
+        uploadedFiles.map((file) => uploadWasteDocument(recordId, file))
+      )
+      const successCount = uploadResults.filter((result) => result.status === "fulfilled").length
+      const failedCount = uploadResults.length - successCount
+
+      if (failedCount === 0) {
+        toast({
+          title: "Sucesso!",
+          description: `${wasEdit ? "Registro atualizado" : "Registro criado"} (${mtrNumber}) e ${successCount} documento(s) salvos com sucesso.`,
+        })
+      } else {
+        toast({
+          title: "Parcialmente Salvo",
+          description: `${wasEdit ? "Registro atualizado" : "Registro criado"} (${mtrNumber}). ${successCount} documento(s) enviados e ${failedCount} falharam.`,
+          variant: "destructive",
+        })
+      }
+    } else {
+      toast({
+        title: "Sucesso!",
+        description: wasEdit
+          ? `Registro ${mtrNumber} atualizado com sucesso.`
+          : `Registro ${mtrNumber} salvo com sucesso.`,
+      });
+    }
+
+    setUploadedFiles([])
+    queryClient.invalidateQueries({ queryKey: ['waste-logs'] });
+    queryClient.invalidateQueries({ queryKey: ['waste-dashboard'] });
+    navigate("/residuos");
+  };
+
+  const createWasteLogMutation = useMutation({
+    mutationFn: createWasteLog,
+    onSuccess: async (data) => handlePersistSuccess(data.id, data.mtr_number, false),
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao Salvar",
+        description: error.message || "Ocorreu um erro inesperado ao salvar o registro.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateWasteLogMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Parameters<typeof updateWasteLog>[1] }) =>
+      updateWasteLog(id, updates),
+    onSuccess: async (data) => handlePersistSuccess(data.id, data.mtr_number, true),
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao Atualizar",
+        description: error.message || "Ocorreu um erro inesperado ao atualizar o registro.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const onSubmit = (values: WasteFormValues) => {
+    console.warn("🚀 [SUBMIT] Formulário submetido com valores:", values);
+    const payload = buildWastePayload(values);
+
+    if (isEditMode && editWasteLogId) {
+      updateWasteLogMutation.mutate({
+        id: editWasteLogId,
+        updates: payload,
+      });
+      return;
+    }
+
+    createWasteLogMutation.mutate({
+      ...payload,
+      status: 'Coletado',
+    });
+  };
 
   const handleCancel = () => {
     navigate("/residuos")
   }
+
+  const isSubmitting = createWasteLogMutation.isPending || updateWasteLogMutation.isPending
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -335,9 +405,11 @@ const RegistrarDestinacao = () => {
         {/* Cabeçalho da página */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Registrar Destinação de Resíduo</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              {isEditMode ? "Editar Destinação de Resíduo" : "Registrar Destinação de Resíduo"}
+            </h1>
             <p className="text-muted-foreground mt-1">
-              Preencha os dados da movimentação de resíduo
+              {isEditMode ? "Atualize os dados da movimentação de resíduo" : "Preencha os dados da movimentação de resíduo"}
               {activePGRS && " - Relacionar com PGRS ativo"}
             </p>
           </div>
@@ -348,16 +420,16 @@ const RegistrarDestinacao = () => {
             <Button 
               type="submit" 
               form="residuo-form"
-              disabled={createWasteLogMutation.isPending || !authUser}
+              disabled={isSubmitting || !authUser || (isEditMode && isLoadingWasteLog) || branches.length === 0}
               onClick={() => console.warn("🖱️ [BUTTON] Botão Salvar clicado")}
             >
-              {createWasteLogMutation.isPending ? (
+              {isSubmitting ? (
                 <>
                   <span className="animate-spin mr-2">⏳</span>
                   Salvando...
                 </>
               ) : (
-                "Salvar Registro"
+                isEditMode ? "Salvar Alterações" : "Salvar Registro"
               )}
             </Button>
           </div>
@@ -391,7 +463,7 @@ const RegistrarDestinacao = () => {
                 <CardTitle>Identificação</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <FormField
                     control={form.control}
                     name="mtr"
@@ -401,6 +473,31 @@ const RegistrarDestinacao = () => {
                         <FormControl>
                           <Input placeholder="Insira o código de rastreamento" {...field} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="branchId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Filial</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a filial" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {branches.map((branch) => (
+                              <SelectItem key={branch.id} value={branch.id}>
+                                {getBranchDisplayLabel(branch)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -447,6 +544,11 @@ const RegistrarDestinacao = () => {
                     )}
                   />
                 </div>
+                {branches.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhuma filial cadastrada. Cadastre uma filial em Gestão de Filiais para registrar movimentações.
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -1028,7 +1130,7 @@ const RegistrarDestinacao = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <Label>Upload Manual de Documento (Opcional)</Label>
+                  <Label>Upload Manual de Documentos (Opcional)</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-6">
                     <input
                       type="file"
@@ -1036,6 +1138,7 @@ const RegistrarDestinacao = () => {
                       onChange={handleFileUpload}
                       className="hidden"
                       id="file-upload"
+                      multiple
                     />
                     <label
                       htmlFor="file-upload"
@@ -1051,20 +1154,24 @@ const RegistrarDestinacao = () => {
                     </label>
                   </div>
 
-                  {uploadedFile && (
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <FileText className="h-4 w-4" />
-                        <span className="text-sm font-medium">{uploadedFile.name}</span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={removeFile}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      {uploadedFiles.map((file, index) => (
+                        <div key={`${file.name}-${file.lastModified}`} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <div className="flex items-center space-x-2 min-w-0">
+                            <FileText className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-sm font-medium truncate">{file.name}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFile(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

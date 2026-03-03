@@ -20,8 +20,10 @@ interface UserModuleAccessRecord {
   has_access: boolean;
 }
 
-// Admin roles that bypass module restrictions
+// Admin roles that bypass environment-specific toggles
 const ADMIN_ROLES = ['platform_admin', 'super_admin', 'admin'];
+// Roles that bypass individual user-level module restrictions
+const BYPASS_ROLES = ['platform_admin', 'super_admin'];
 
 export function useModuleSettings() {
   const { isDemo } = useDemo();
@@ -29,6 +31,7 @@ export function useModuleSettings() {
   const { user } = useAuth();
 
   const isAdmin = !!user?.role && ADMIN_ROLES.includes(user.role);
+  const isBypassRole = !!user?.role && BYPASS_ROLES.includes(user.role);
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ['platform-module-settings'],
@@ -70,44 +73,33 @@ export function useModuleSettings() {
   const isLoading = isSettingsLoading || isUserAccessLoading;
 
   const isModuleVisible = useCallback((moduleKey: string): boolean => {
-    // Admins bypass user-level restrictions, but NOT globally disabled modules
-    if (isAdmin) {
-      if (settings) {
-        const setting = settings.find(s => s.module_key === moduleKey);
-        if (setting && !setting.enabled_live && !setting.enabled_demo) {
-          return false; // Globally disabled — hidden even for admins
-        }
-      } else {
-        // Fallback to static config
-        if (moduleKey in ENABLED_MODULES && !ENABLED_MODULES[moduleKey as ModuleKey]) {
-          return false;
-        }
-      }
-      return true;
-    }
-
-    // 1. Check global platform settings
+    // 1. Check global platform settings (applies to ALL users, including admins)
     if (settings) {
       const setting = settings.find(s => s.module_key === moduleKey);
       if (setting) {
-        const globalEnabled = isDemo ? setting.enabled_demo : setting.enabled_live;
-        if (!globalEnabled) return false;
+        // Globally disabled = hidden for everyone
+        if (!setting.enabled_live && !setting.enabled_demo) return false;
+        // Check environment-specific toggle for non-admins
+        if (!isAdmin) {
+          const globalEnabled = isDemo ? setting.enabled_demo : setting.enabled_live;
+          if (!globalEnabled) return false;
+        }
       }
     } else {
       // Fallback to static config
-      if (moduleKey in ENABLED_MODULES) {
-        if (!ENABLED_MODULES[moduleKey as ModuleKey]) return false;
+      if (moduleKey in ENABLED_MODULES && !ENABLED_MODULES[moduleKey as ModuleKey]) {
+        return false;
       }
     }
 
-    // 2. Check user-level access (if restricted)
-    if (userAccess && userAccess.length > 0) {
+    // 2. Check user-level access (bypass for platform_admin/super_admin)
+    if (!isBypassRole && userAccess && userAccess.length > 0) {
       const userPerm = userAccess.find(p => p.module_key === moduleKey);
       if (userPerm && !userPerm.has_access) return false;
     }
 
     return true;
-  }, [settings, userAccess, isDemo, isAdmin]);
+  }, [settings, userAccess, isDemo, isAdmin, isBypassRole]);
 
   // Map section IDs to module keys
   const sectionToModuleKey: Record<string, string> = useMemo(() => ({

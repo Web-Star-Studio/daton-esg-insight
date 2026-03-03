@@ -25,6 +25,7 @@ export interface SupplierCriteriaEvaluation {
   id: string;
   company_id: string;
   supplier_id: string;
+  delivery_id?: string | null;
   evaluation_date: string;
   total_weight: number;
   achieved_weight: number;
@@ -193,6 +194,7 @@ export async function getCriteriaEvaluationItems(evaluationId: string): Promise<
 
 export async function createCriteriaEvaluation(evaluation: {
   supplier_id: string;
+  delivery_id?: string | null;
   total_weight: number;
   achieved_weight: number;
   minimum_required?: number;

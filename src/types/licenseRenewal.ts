@@ -5,7 +5,9 @@ export interface RenewalSchedule {
   scheduled_start_date: string;
   protocol_deadline: string;
   expected_completion_date?: string;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'nao_iniciado' | 'em_andamento' | 'protocolado' | 'renovado' | 'indeferido';
+  protocol_number?: string;
+  renewed_expiration_date?: string;
   assigned_to_user_id?: string;
   notification_config?: {
     reminders: number[]; // days before

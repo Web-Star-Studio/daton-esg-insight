@@ -62,6 +62,7 @@ const LegislationDetail = lazy(() => import("./pages/LegislationDetail"));
 const LegislationReports = lazy(() => import("./pages/LegislationReports"));
 const LegislationComplianceProfiles = lazy(() => import("./pages/LegislationComplianceProfiles"));
 const Residuos = lazy(() => import("./pages/Residuos"));
+const WasteLogDetails = lazy(() => import("./pages/WasteLogDetails"));
 const RegistrarDestinacao = lazy(() => import("./pages/RegistrarDestinacao"));
 const RelatoriosPGRS = lazy(() => import("./pages/RelatoriosPGRS"));
 const Metas = lazy(() => import("./pages/Metas"));
@@ -167,6 +168,7 @@ const SupplierFailuresPage = lazy(() => import("./pages/SupplierFailuresPage"));
 const SupplierFailureConfigPage = lazy(() => import("./pages/SupplierFailureConfigPage"));
 const SupplierDeliveriesPage = lazy(() => import("./pages/SupplierDeliveriesPage"));
 const SupplierDocumentEvaluationPage = lazy(() => import("./pages/SupplierDocumentEvaluationPage"));
+const SupplierPerformanceEvaluationPage = lazy(() => import("./pages/SupplierPerformanceEvaluationPage"));
 
 // Supplier Portal (External)
 const SupplierLogin = lazy(() => import("./pages/supplier-portal/SupplierLogin"));
@@ -309,6 +311,8 @@ const AppContent = () => {
               <Route path="fornecedores/categorias" element={<LazyPageWrapper><SupplierCategoriesPage /></LazyPageWrapper>} />
               <Route path="fornecedores/treinamentos" element={<LazyPageWrapper><SupplierTrainingMaterialsPage /></LazyPageWrapper>} />
               <Route path="fornecedores/entregas" element={<LazyPageWrapper><SupplierDeliveriesPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/avaliacao-desempenho/:id" element={<LazyPageWrapper><SupplierPerformanceEvaluationPage /></LazyPageWrapper>} />
+              <Route path="fornecedores/avaliacoes/:id/desempenho" element={<LazyPageWrapper><SupplierPerformanceEvaluationPage /></LazyPageWrapper>} />
               <Route path="fornecedores/falhas" element={<LazyPageWrapper><SupplierFailuresPage /></LazyPageWrapper>} />
               <Route path="fornecedores/criterios-avaliacao" element={<LazyPageWrapper><SupplierEvaluationCriteriaPage /></LazyPageWrapper>} />
               <Route path="fornecedores/importar-exportar" element={<LazyPageWrapper><SupplierImportExportPage /></LazyPageWrapper>} />
@@ -633,6 +637,11 @@ const AppContent = () => {
                 <Residuos />
               </ProtectedLazyPageWrapper>
             } />
+            <Route path="/residuos/:id" element={
+              <ProtectedLazyPageWrapper>
+                <WasteLogDetails />
+              </ProtectedLazyPageWrapper>
+            } />
             <Route path="/residuos/registrar-destinacao" element={
               <ProtectedLazyPageWrapper>
                 <RegistrarDestinacao />
@@ -801,6 +810,8 @@ const AppContent = () => {
             <Route path="/fornecedores/falhas/configuracao" element={<ProtectedLazyPageWrapper><SupplierFailureConfigPage /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/criterios-avaliacao" element={<ProtectedLazyPageWrapper><SupplierEvaluationCriteriaPage /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/entregas" element={<ProtectedLazyPageWrapper><SupplierDeliveriesPage /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/avaliacao-desempenho/:id" element={<ProtectedLazyPageWrapper><SupplierPerformanceEvaluationPage /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/avaliacoes/:id/desempenho" element={<ProtectedLazyPageWrapper><SupplierPerformanceEvaluationPage /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/avaliacao-documental/:id" element={<ProtectedLazyPageWrapper><SupplierDocumentEvaluationPage /></ProtectedLazyPageWrapper>} />
 
             {/* Demais rotas com lazy loading */}

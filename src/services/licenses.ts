@@ -52,7 +52,14 @@ export interface LicenseData {
   expiration_date: string;
   issuing_body: string;
   process_number?: string;
+  document_number?: string;
+  document_identifier_type?: string;
+  document_identifier_other?: string;
+  branch_id?: string | null;
   conditions?: string;
+  notes?: string;
+  renewal_required?: boolean;
+  renewal_alert_days?: number | null;
   responsible_user_id?: string;
   asset_id?: string;
   company_id: string;
@@ -73,6 +80,12 @@ export interface LicenseListItem {
   expiration_date: string;
   status: string;
   process_number?: string;
+  document_number?: string;
+  document_identifier_type?: string;
+  branch_id?: string | null;
+  notes?: string;
+  renewal_required?: boolean;
+  renewal_alert_days?: number | null;
   issue_date?: string;
   ai_processing_status?: string;
   ai_confidence_score?: number;
@@ -84,10 +97,17 @@ export interface CreateLicenseData {
   type: string
   issuing_body: string
   process_number?: string
+  document_number?: string
+  document_identifier_type?: string
+  document_identifier_other?: string
+  branch_id?: string | null
   issue_date?: Date
   expiration_date: Date
   status: string
   conditions?: string
+  notes?: string
+  renewal_required?: boolean
+  renewal_alert_days?: number | null
   responsible_user_id?: string
 }
 
@@ -96,10 +116,17 @@ export interface UpdateLicenseData {
   type?: string
   issuing_body?: string
   process_number?: string
+  document_number?: string
+  document_identifier_type?: string
+  document_identifier_other?: string
+  branch_id?: string | null
   issue_date?: Date
   expiration_date?: Date
   status?: string
   conditions?: string
+  notes?: string
+  renewal_required?: boolean
+  renewal_alert_days?: number | null
   responsible_user_id?: string
 }
 
@@ -119,7 +146,14 @@ export interface LicenseDetail {
   expiration_date: string;
   issuing_body: string;
   process_number?: string;
+  document_number?: string;
+  document_identifier_type?: string;
+  document_identifier_other?: string;
+  branch_id?: string | null;
   conditions?: string;
+  notes?: string;
+  renewal_required?: boolean;
+  renewal_alert_days?: number | null;
   responsible_user_id?: string;
   asset_id?: string;
   ai_processing_status?: string;
@@ -155,6 +189,12 @@ export async function getLicenses(filters?: LicenseFilters): Promise<LicenseList
         type,
         issuing_body,
         process_number,
+        document_number,
+        document_identifier_type,
+        branch_id,
+        notes,
+        renewal_required,
+        renewal_alert_days,
         issue_date,
         expiration_date,
         status,
@@ -274,10 +314,17 @@ export async function createLicense(licenseData: CreateLicenseData): Promise<Lic
         type: typeValue,
         issuing_body: licenseData.issuing_body,
         process_number: licenseData.process_number,
+        document_number: licenseData.document_number,
+        document_identifier_type: licenseData.document_identifier_type,
+        document_identifier_other: licenseData.document_identifier_other,
+        branch_id: licenseData.branch_id,
         issue_date: licenseData.issue_date?.toISOString().split('T')[0],
         expiration_date: licenseData.expiration_date.toISOString().split('T')[0],
         status: statusValue,
         conditions: licenseData.conditions,
+        notes: licenseData.notes,
+        renewal_required: licenseData.renewal_required ?? true,
+        renewal_alert_days: licenseData.renewal_alert_days,
         responsible_user_id: licenseData.responsible_user_id,
         company_id: profile.company_id
       }])
@@ -312,7 +359,14 @@ export async function updateLicense(id: string, updates: UpdateLicenseData): Pro
     if (updates.type) updateData.type = updates.type
     if (updates.issuing_body) updateData.issuing_body = updates.issuing_body
     if (updates.process_number !== undefined) updateData.process_number = updates.process_number
+    if (updates.document_number !== undefined) updateData.document_number = updates.document_number
+    if (updates.document_identifier_type !== undefined) updateData.document_identifier_type = updates.document_identifier_type
+    if (updates.document_identifier_other !== undefined) updateData.document_identifier_other = updates.document_identifier_other
+    if (updates.branch_id !== undefined) updateData.branch_id = updates.branch_id
     if (updates.conditions !== undefined) updateData.conditions = updates.conditions
+    if (updates.notes !== undefined) updateData.notes = updates.notes
+    if (updates.renewal_required !== undefined) updateData.renewal_required = updates.renewal_required
+    if (updates.renewal_alert_days !== undefined) updateData.renewal_alert_days = updates.renewal_alert_days
     if (updates.responsible_user_id !== undefined) updateData.responsible_user_id = updates.responsible_user_id
     if (updates.status) updateData.status = updates.status
     if (updates.issue_date) updateData.issue_date = updates.issue_date.toISOString().split('T')[0]

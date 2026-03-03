@@ -332,19 +332,4 @@ export const settingsMockEntries = [
     queryKey: ['role-permissions'],
     data: [],
   },
-  // Mailing list details — prevent fallback data from crashing MailingListDetailsModal
-  // (fallback returns array because 'list' is in LIST_LIKE_KEYWORDS, but modal expects single object)
-  {
-    queryKey: ['mailing-list-details'],
-    data: null,
-  },
-  // Listas de Envio
-  {
-    queryKey: ['mailing-lists'],
-    data: [
-      { id: 'ml-1', name: 'Fornecedores ESG', description: 'Lista de fornecedores para formulários de avaliação ESG', company_id: DEMO_COMPANY_ID, created_by_user_id: 'demo-user-001', contact_count: 24, form_count: 3, created_at: '2025-09-15T10:00:00Z', updated_at: '2026-02-01T00:00:00Z' },
-      { id: 'ml-2', name: 'Colaboradores — SIPAT', description: 'Lista de colaboradores para campanhas de segurança do trabalho', company_id: DEMO_COMPANY_ID, created_by_user_id: 'demo-user-001', contact_count: 87, form_count: 2, created_at: '2025-10-01T09:00:00Z', updated_at: '2026-01-20T00:00:00Z' },
-      { id: 'ml-3', name: 'Stakeholders Externos', description: 'Comunidades, ONGs e órgãos regulatórios parceiros', company_id: DEMO_COMPANY_ID, created_by_user_id: 'demo-user-002', contact_count: 12, form_count: 1, created_at: '2025-11-10T14:00:00Z', updated_at: '2026-02-15T00:00:00Z' },
-    ],
-  },
 ];

@@ -178,16 +178,4 @@ export const reportsMockEntries = [
       ],
     },
   },
-  // Widget smart templates — RealtimeReportingWidget.tsx on GovernancaESG (queryKey: ['widget-smart-templates'])
-  // NOTE: Different from ['smart-templates'] used in relatorios-integrados
-  {
-    queryKey: ['widget-smart-templates'],
-    data: [
-      { id: 'wst-1', name: 'Relatório ESG Trimestral', description: 'Consolidação de indicadores ESG do trimestre', category: 'esg', ai_enhanced: true, data_sources: ['Emissões', 'Água', 'Resíduos'], frequency: 'quarterly', next_generation: '2026-04-01T00:00:00Z', insights_count: 8, accuracy_score: 94 },
-      { id: 'wst-2', name: 'Dashboard de Sustentabilidade', description: 'Métricas de sustentabilidade corporativa', category: 'esg', ai_enhanced: false, data_sources: ['Energia', 'GEE'], frequency: 'monthly', next_generation: '2026-03-01T00:00:00Z', insights_count: 5, accuracy_score: 88 },
-      { id: 'wst-3', name: 'Relatório de Conformidade', description: 'Status de conformidade regulatória', category: 'compliance', ai_enhanced: true, data_sources: ['Licenças', 'Auditoria'], frequency: 'monthly', next_generation: '2026-03-15T00:00:00Z', insights_count: 4, accuracy_score: 91 },
-    ],
-  },
-  // Widget recent insights — RealtimeReportingWidget.tsx (queryKey: ['widget-recent-insights'])
-  { queryKey: ['widget-recent-insights'], data: [] },
 ];
