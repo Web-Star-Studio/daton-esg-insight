@@ -202,14 +202,16 @@ Deno.serve(async (req) => {
 
       const srcProg = await fetchAll("training_programs", SRC);
       await ins("training_programs", srcProg.map((p: any) => ({
-        ...p, id: nid(p.id), company_id: TGT,
-        branch_id: remap(p.branch_id),
-        responsible_id: remap(p.responsible_id),
+        id: nid(p.id), company_id: TGT, name: p.name, description: p.description,
+        category: p.category, duration_hours: p.duration_hours, is_mandatory: p.is_mandatory,
+        valid_for_months: p.valid_for_months, status: p.status, scheduled_date: p.scheduled_date,
+        branch_id: remap(p.branch_id), responsible_id: remap(p.responsible_id),
+        start_date: p.start_date, end_date: p.end_date, responsible_name: p.responsible_name,
+        efficacy_evaluation_deadline: p.efficacy_evaluation_deadline,
+        notify_responsible_email: p.notify_responsible_email, responsible_email: p.responsible_email,
         efficacy_evaluator_employee_id: remap(p.efficacy_evaluator_employee_id),
-        created_by_user_id: null,
-        created_at: p.created_at || now, updated_at: now,
+        created_by_user_id: null, created_at: p.created_at || now, updated_at: now,
       })));
-      log.push(`training_programs source count: ${srcProg.length}`);
 
       // Rebuild training program mapping
       const srcET = await fetchAll("employee_trainings", SRC);
