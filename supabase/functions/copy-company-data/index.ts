@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       await ins("legislations", srcLeg.map((l: any) => ({ ...l, id: nid(l.id), company_id: TGT, created_by: null, responsible_user_id: null, revoked_by_legislation_id: null, revokes_legislation_id: null, created_at: l.created_at || now, updated_at: now })));
 
       const srcSup = await fetchAll("supplier_management", SRC);
-      await ins("supplier_management", srcSup.map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, status_changed_by: null, access_code: null, temporary_password: null, password_hash: null, cnpj: null, cpf: null, created_at: s.created_at || now, updated_at: now })));
+      await ins("supplier_management", srcSup.map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, status_changed_by: null, access_code: null, temporary_password: null, password_hash: null, cnpj: s.cnpj, cpf: s.cpf, created_at: s.created_at || now, updated_at: now })));
 
       const srcLic = await fetchAll("licenses", SRC);
       await ins("licenses", srcLic.map((l: any) => ({ ...l, id: nid(l.id), company_id: TGT, branch_id: remap(l.branch_id), asset_id: null, responsible_user_id: null, created_at: l.created_at || now, updated_at: now })));
