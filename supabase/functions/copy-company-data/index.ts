@@ -279,13 +279,14 @@ Deno.serve(async (req) => {
 
     // ===== PHASE 2: Employees (depends on branches) =====
     const srcEmployees = await fetchAll("employees", sourceCompanyId);
-    const empRows = srcEmployees.map((e: any) => ({
+    const empRows = srcEmployees.map((e: any, idx: number) => ({
       ...e,
       id: newId(e.id),
       company_id: targetCompanyId,
       branch_id: remapOrNull(e.branch_id),
       position_id: null, // positions not copied
       manager_id: null, // will update after all employees inserted
+      employee_code: e.employee_code ? `${e.employee_code}-CPY` : null, // unique constraint (company_id, employee_code)
       created_at: e.created_at || now,
       updated_at: now,
     }));
