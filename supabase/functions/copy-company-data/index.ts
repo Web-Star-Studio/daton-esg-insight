@@ -105,8 +105,8 @@ Deno.serve(async (req) => {
 
       // Now dependent non-employee tables that use mappings from above
       await ins("license_conditions", (await fetchAll("license_conditions", SRC)).map((c: any) => ({ ...c, id: nid(c.id), license_id: remap(c.license_id) || c.license_id, approved_by_user_id: null, related_alert_id: null, company_id: TGT, created_at: c.created_at || now, updated_at: now })));
-      await ins("supplier_required_documents", (await fetchAll("supplier_required_documents", SRC)).map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, supplier_id: remap(s.supplier_id), created_at: s.created_at || now, updated_at: now })));
-      await ins("supplier_evaluation_criteria", (await fetchAll("supplier_evaluation_criteria", SRC)).map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, supplier_id: remap(s.supplier_id), created_at: s.created_at || now, updated_at: now })));
+      await ins("supplier_required_documents", (await fetchAll("supplier_required_documents", SRC)).map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, created_at: s.created_at || now, updated_at: now })));
+      await ins("supplier_evaluation_criteria", (await fetchAll("supplier_evaluation_criteria", SRC)).map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, created_at: s.created_at || now, updated_at: now })));
       await ins("legislation_compliance_profiles", (await fetchAll("legislation_compliance_profiles", SRC)).map((l: any) => ({ ...l, id: nid(l.id), company_id: TGT, legislation_id: remap(l.legislation_id), branch_id: remap(l.branch_id), completed_by: null, created_at: l.created_at || now, updated_at: now })));
       await ins("compliance_tasks", (await fetchAll("compliance_tasks", SRC)).map((t: any) => ({ ...t, id: nid(t.id), company_id: TGT, requirement_id: null, responsible_user_id: null, evidence_document_id: null, created_at: t.created_at || now, updated_at: now })));
 
