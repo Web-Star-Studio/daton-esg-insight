@@ -6426,7 +6426,7 @@ export type Database = {
           related_model: string
           requires_approval: boolean | null
           responsible_department: string | null
-          retention_period: unknown
+          retention_period: string | null
           review_frequency:
             | Database["public"]["Enums"]["review_frequency_enum"]
             | null
@@ -6461,7 +6461,7 @@ export type Database = {
           related_model: string
           requires_approval?: boolean | null
           responsible_department?: string | null
-          retention_period?: unknown
+          retention_period?: string | null
           review_frequency?:
             | Database["public"]["Enums"]["review_frequency_enum"]
             | null
@@ -6496,7 +6496,7 @@ export type Database = {
           related_model?: string
           requires_approval?: boolean | null
           responsible_department?: string | null
-          retention_period?: unknown
+          retention_period?: string | null
           review_frequency?:
             | Database["public"]["Enums"]["review_frequency_enum"]
             | null
@@ -24949,7 +24949,7 @@ export type Database = {
       }
       calculate_retry_backoff: {
         Args: { retry_count: number }
-        Returns: unknown
+        Returns: string
       }
       calculate_risk_level: {
         Args: { p_impact: string; p_probability: string }
