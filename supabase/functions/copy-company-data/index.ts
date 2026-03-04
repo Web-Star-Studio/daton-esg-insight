@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
         efficacy_evaluation_deadline: p.efficacy_evaluation_deadline,
         notify_responsible_email: p.notify_responsible_email, responsible_email: p.responsible_email,
         efficacy_evaluator_employee_id: remap(p.efficacy_evaluator_employee_id),
-        created_by_user_id: null, created_at: p.created_at || now, updated_at: now,
+        created_by_user_id: FU, created_at: p.created_at || now, updated_at: now,
       })));
 
       // Rebuild training program mapping
