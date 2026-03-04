@@ -19,9 +19,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { sourceCompanyId, targetCompanyId } = await req.json();
+    const { sourceCompanyId, targetCompanyId, cleanFirst } = await req.json();
     if (!sourceCompanyId || !targetCompanyId) {
       throw new Error("sourceCompanyId and targetCompanyId are required");
+    }
+
+    // Clean up any previously inserted data if requested
+    if (cleanFirst) {
+      const cleanTables = [
+        "compliance_tasks", "legislation_compliance_profiles",
+        "license_conditions", "supplier_evaluation_criteria", "supplier_required_documents",
+        "employee_education", "employee_experiences", "employee_trainings",
+        "training_programs", "employees",
+        "gri_reports", "documents", "audits", "emission_sources", "action_plans",
+        "esg_risks", "non_conformities", "licenses", "supplier_management",
+        "legislations", "branches", "departments",
+      ];
+      for (const t of cleanTables) {
+        await supabase.from(t).delete().eq("company_id", targetCompanyId);
+      }
     }
 
     // Fallback user for NOT NULL user_id fields
