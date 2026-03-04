@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
 
     // Actually, the cleanest solution: generate deterministic UUIDs using crypto
     async function deterministicId(oldId: string): Promise<string> {
-      const data = new TextEncoder().encode(TGT + ":" + oldId);
+      const data = new TextEncoder().encode("COPY-V2:" + TGT + ":" + oldId);
       const hash = await crypto.subtle.digest("SHA-256", data);
       const arr = new Uint8Array(hash);
       // Format as UUID v4-like
