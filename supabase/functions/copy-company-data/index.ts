@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
       await ins("action_plans", (await fetchAll("action_plans", SRC)).map((p: any) => ({ ...p, id: nid(p.id), company_id: TGT, created_by_user_id: FU, created_at: p.created_at || now, updated_at: now })));
       await ins("emission_sources", (await fetchAll("emission_sources", SRC)).map((e: any) => ({ ...e, id: nid(e.id), company_id: TGT, asset_id: null, created_at: e.created_at || now, updated_at: now })));
       await ins("audits", (await fetchAll("audits", SRC)).map((a: any) => ({ ...a, id: nid(a.id), company_id: TGT, category_id: null, template_id: null, planning_locked_by: null, created_at: a.created_at || now, updated_at: now })));
-      await ins("documents", (await fetchAll("documents", SRC)).map((d: any) => ({ ...d, id: nid(d.id), company_id: TGT, uploader_user_id: FU, folder_id: null })));
+      await ins("documents", (await fetchAll("documents", SRC)).map((d: any) => ({ ...d, id: nid(d.id), company_id: TGT, uploader_user_id: FU, folder_id: null, related_id: null })));
       await ins("gri_reports", (await fetchAll("gri_reports", SRC)).map((g: any) => ({ ...g, id: nid(g.id), company_id: TGT, created_by_user_id: FU, created_at: g.created_at || now, updated_at: now })));
 
       // Now dependent non-employee tables that use mappings from above
