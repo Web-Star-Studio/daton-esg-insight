@@ -206,8 +206,10 @@ Deno.serve(async (req) => {
         branch_id: remap(p.branch_id),
         responsible_id: remap(p.responsible_id),
         efficacy_evaluator_employee_id: remap(p.efficacy_evaluator_employee_id),
+        created_by_user_id: null,
         created_at: p.created_at || now, updated_at: now,
       })));
+      log.push(`training_programs source count: ${srcProg.length}`);
 
       // Rebuild training program mapping
       const srcET = await fetchAll("employee_trainings", SRC);
