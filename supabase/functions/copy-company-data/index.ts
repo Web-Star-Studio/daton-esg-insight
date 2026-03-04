@@ -74,7 +74,17 @@ Deno.serve(async (req) => {
       await ins("legislations", srcLeg.map((l: any) => ({ ...l, id: nid(l.id), company_id: TGT, created_by: null, responsible_user_id: null, revoked_by_legislation_id: null, revokes_legislation_id: null, created_at: l.created_at || now, updated_at: now })));
 
       const srcSup = await fetchAll("supplier_management", SRC);
-      await ins("supplier_management", srcSup.map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, status_changed_by: null, access_code: null, temporary_password: null, password_hash: null, cnpj: s.cnpj, cpf: s.cpf, created_at: s.created_at || now, updated_at: now })));
+      // Get existing CNPJs in target to avoid unique constraint violation
+      const tgtSup = await fetchAll("supplier_management", TGT);
+      const existingCnpjs = new Set(tgtSup.filter((s: any) => s.cnpj).map((s: any) => s.cnpj));
+      // Map existing target suppliers by CNPJ so dependent tables can reference them
+      for (const ts of tgtSup) {
+        const matching = srcSup.find((ss: any) => ss.cnpj && ss.cnpj === ts.cnpj);
+        if (matching) idMap.set(matching.id, ts.id);
+      }
+      const newSup = srcSup.filter((s: any) => !s.cnpj || !existingCnpjs.has(s.cnpj));
+      await ins("supplier_management", newSup.map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, status_changed_by: null, access_code: null, temporary_password: null, password_hash: null, cnpj: s.cnpj, cpf: s.cpf, created_at: s.created_at || now, updated_at: now })));
+      log.push(`ℹ️ suppliers skipped (existing CNPJ): ${srcSup.length - newSup.length}`);
 
       const srcLic = await fetchAll("licenses", SRC);
       await ins("licenses", srcLic.map((l: any) => ({ ...l, id: nid(l.id), company_id: TGT, branch_id: remap(l.branch_id), asset_id: null, responsible_user_id: null, created_at: l.created_at || now, updated_at: now })));
