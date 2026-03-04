@@ -238,6 +238,127 @@ Deno.serve(async (req) => {
       })));
     }
 
+    if (phase === "phase_laia") {
+      // Build branch mapping via created_at (preserved from original clone)
+      const srcBranches = await fetchAll("branches", SRC);
+      const tgtBranches = await fetchAll("branches", TGT);
+      const branchMap = new Map<string, string>();
+      for (const sb of srcBranches) {
+        const tb = tgtBranches.find((t: any) => t.created_at === sb.created_at && t.name === sb.name);
+        if (tb) branchMap.set(sb.id, tb.id);
+      }
+      log.push(`✅ branch map: ${branchMap.size}/${srcBranches.length}`);
+
+      // 1. laia_sectors (191)
+      const srcSectors = await fetchAll("laia_sectors", SRC);
+      const sectorMap = new Map<string, string>();
+      const sectorRows = srcSectors.map((s: any) => {
+        const newId = crypto.randomUUID();
+        sectorMap.set(s.id, newId);
+        return {
+          id: newId,
+          company_id: TGT,
+          branch_id: branchMap.get(s.branch_id) || null,
+          code: s.code,
+          name: s.name,
+          description: s.description,
+          is_active: s.is_active,
+          created_at: s.created_at,
+          updated_at: s.updated_at,
+        };
+      });
+      await ins("laia_sectors", sectorRows);
+
+      // 2. laia_branch_config (16)
+      const srcBranchConfig = await fetchAll("laia_branch_config", SRC);
+      await ins("laia_branch_config", srcBranchConfig.map((c: any) => ({
+        id: crypto.randomUUID(),
+        company_id: TGT,
+        branch_id: branchMap.get(c.branch_id) || c.branch_id,
+        survey_status: c.survey_status,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+      })));
+
+      // 3. laia_assessments (2107) in batches
+      const srcAssessments = await fetchAll("laia_assessments", SRC);
+      const assessmentRows = srcAssessments.map((a: any) => ({
+        id: crypto.randomUUID(),
+        company_id: TGT,
+        branch_id: branchMap.get(a.branch_id) || null,
+        sector_id: sectorMap.get(a.sector_id) || null,
+        aspect_code: a.aspect_code,
+        activity_operation: a.activity_operation,
+        environmental_aspect: a.environmental_aspect,
+        environmental_impact: a.environmental_impact,
+        temporality: a.temporality,
+        operational_situation: a.operational_situation,
+        incidence: a.incidence,
+        impact_class: a.impact_class,
+        scope: a.scope,
+        severity: a.severity,
+        consequence_score: a.consequence_score,
+        frequency_probability: a.frequency_probability,
+        freq_prob_score: a.freq_prob_score,
+        total_score: a.total_score,
+        category: a.category,
+        has_legal_requirements: a.has_legal_requirements,
+        has_stakeholder_demand: a.has_stakeholder_demand,
+        has_strategic_options: a.has_strategic_options,
+        significance: a.significance,
+        control_types: a.control_types,
+        existing_controls: a.existing_controls,
+        legislation_reference: a.legislation_reference,
+        has_lifecycle_control: a.has_lifecycle_control,
+        lifecycle_stages: a.lifecycle_stages,
+        output_actions: a.output_actions,
+        responsible_user_id: null,
+        status: a.status,
+        notes: a.notes,
+        created_at: a.created_at,
+        updated_at: a.updated_at,
+      }));
+      await ins("laia_assessments", assessmentRows);
+
+      // 4. laia_revisions (1)
+      const srcRevisions = await fetchAll("laia_revisions", SRC);
+      const revisionMap = new Map<string, string>();
+      await ins("laia_revisions", srcRevisions.map((r: any) => {
+        const newId = crypto.randomUUID();
+        revisionMap.set(r.id, newId);
+        return {
+          id: newId,
+          company_id: TGT,
+          revision_number: r.revision_number,
+          title: r.title,
+          description: r.description,
+          status: r.status,
+          created_by: null,
+          validated_by: null,
+          validated_at: r.validated_at,
+          finalized_at: r.finalized_at,
+          created_at: r.created_at,
+          updated_at: r.updated_at,
+        };
+      }));
+
+      // 5. laia_revision_changes (3)
+      const srcChanges = await fetchAll("laia_revision_changes", SRC);
+      await ins("laia_revision_changes", srcChanges.map((c: any) => ({
+        id: crypto.randomUUID(),
+        revision_id: revisionMap.get(c.revision_id) || c.revision_id,
+        entity_type: c.entity_type,
+        entity_id: c.entity_id,
+        change_type: c.change_type,
+        field_name: c.field_name,
+        old_value: c.old_value,
+        new_value: c.new_value,
+        branch_id: branchMap.get(c.branch_id) || null,
+        changed_by: null,
+        changed_at: c.changed_at,
+      })));
+    }
+
     return new Response(JSON.stringify({ success: true, phase, mappings: idMap.size, log }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     return new Response(JSON.stringify({ error: (error as Error).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
