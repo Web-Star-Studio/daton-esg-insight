@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       const unmappableDocs = srcDocs.filter((d: any) => !idMap.has(d.related_id));
       log.push(`ℹ️ documents mappable: ${mappableDocs.length}, skipped: ${unmappableDocs.length}`);
       await ins("documents", mappableDocs.map((d: any) => ({ ...d, id: nid(d.id), company_id: TGT, uploader_user_id: FU, folder_id: null, related_id: idMap.get(d.related_id)! })));
-      await ins("gri_reports", (await fetchAll("gri_reports", SRC)).map((g: any) => ({ ...g, id: nid(g.id), company_id: TGT, created_by_user_id: FU, created_at: g.created_at || now, updated_at: now })));
+      await ins("gri_reports", (await fetchAll("gri_reports", SRC)).map((g: any) => ({ ...g, id: nid(g.id), company_id: TGT, created_at: g.created_at || now, updated_at: now })));
 
       // Now dependent non-employee tables that use mappings from above
       await ins("license_conditions", (await fetchAll("license_conditions", SRC)).map((c: any) => ({ ...c, id: nid(c.id), license_id: remap(c.license_id) || c.license_id, approved_by_user_id: null, related_alert_id: null, company_id: TGT, created_at: c.created_at || now, updated_at: now })));
