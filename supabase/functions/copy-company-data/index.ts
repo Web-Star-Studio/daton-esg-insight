@@ -86,18 +86,9 @@ Deno.serve(async (req) => {
     // Simplest: for phase approach, use a mapping table or just do name-based lookups.
     // Let's use a practical approach: store mappings in a temp kv table.
 
-    // Actually, the cleanest solution: generate deterministic UUIDs using crypto
-    async function deterministicId(oldId: string): Promise<string> {
-      const data = new TextEncoder().encode("COPY-V2:" + TGT + ":" + oldId);
-      const hash = await crypto.subtle.digest("SHA-256", data);
-      const arr = new Uint8Array(hash);
-      // Format as UUID v4-like
-      arr[6] = (arr[6] & 0x0f) | 0x40;
-      arr[8] = (arr[8] & 0x3f) | 0x80;
-      const hex = Array.from(arr.slice(0, 16))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+    // Use random UUIDs with in-memory cache
+    function deterministicId(_oldId: string): string {
+      return crypto.randomUUID();
     }
 
     // Cached mapping
