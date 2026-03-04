@@ -74,7 +74,17 @@ Deno.serve(async (req) => {
       await ins("legislations", srcLeg.map((l: any) => ({ ...l, id: nid(l.id), company_id: TGT, created_by: null, responsible_user_id: null, revoked_by_legislation_id: null, revokes_legislation_id: null, created_at: l.created_at || now, updated_at: now })));
 
       const srcSup = await fetchAll("supplier_management", SRC);
-      await ins("supplier_management", srcSup.map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, status_changed_by: null, access_code: null, temporary_password: null, password_hash: null, cnpj: null, cpf: null, created_at: s.created_at || now, updated_at: now })));
+      // Get existing CNPJs in target to avoid unique constraint violation
+      const tgtSup = await fetchAll("supplier_management", TGT);
+      const existingCnpjs = new Set(tgtSup.filter((s: any) => s.cnpj).map((s: any) => s.cnpj));
+      // Map existing target suppliers by CNPJ so dependent tables can reference them
+      for (const ts of tgtSup) {
+        const matching = srcSup.find((ss: any) => ss.cnpj && ss.cnpj === ts.cnpj);
+        if (matching) idMap.set(matching.id, ts.id);
+      }
+      const newSup = srcSup.filter((s: any) => !s.cnpj || !existingCnpjs.has(s.cnpj));
+      await ins("supplier_management", newSup.map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, status_changed_by: null, access_code: null, temporary_password: null, password_hash: null, cnpj: s.cnpj, cpf: s.cpf, created_at: s.created_at || now, updated_at: now })));
+      log.push(`ℹ️ suppliers skipped (existing CNPJ): ${srcSup.length - newSup.length}`);
 
       const srcLic = await fetchAll("licenses", SRC);
       await ins("licenses", srcLic.map((l: any) => ({ ...l, id: nid(l.id), company_id: TGT, branch_id: remap(l.branch_id), asset_id: null, responsible_user_id: null, created_at: l.created_at || now, updated_at: now })));
@@ -86,14 +96,18 @@ Deno.serve(async (req) => {
       await ins("action_plans", (await fetchAll("action_plans", SRC)).map((p: any) => ({ ...p, id: nid(p.id), company_id: TGT, created_by_user_id: FU, created_at: p.created_at || now, updated_at: now })));
       await ins("emission_sources", (await fetchAll("emission_sources", SRC)).map((e: any) => ({ ...e, id: nid(e.id), company_id: TGT, asset_id: null, created_at: e.created_at || now, updated_at: now })));
       await ins("audits", (await fetchAll("audits", SRC)).map((a: any) => ({ ...a, id: nid(a.id), company_id: TGT, category_id: null, template_id: null, planning_locked_by: null, created_at: a.created_at || now, updated_at: now })));
-      await ins("documents", (await fetchAll("documents", SRC)).map((d: any) => ({ ...d, id: nid(d.id), company_id: TGT, uploader_user_id: FU, folder_id: null })));
-      await ins("gri_reports", (await fetchAll("gri_reports", SRC)).map((g: any) => ({ ...g, id: nid(g.id), company_id: TGT, created_by_user_id: FU, created_at: g.created_at || now, updated_at: now })));
+      const srcDocs = await fetchAll("documents", SRC);
+      const mappableDocs = srcDocs.filter((d: any) => idMap.has(d.related_id));
+      const unmappableDocs = srcDocs.filter((d: any) => !idMap.has(d.related_id));
+      log.push(`ℹ️ documents mappable: ${mappableDocs.length}, skipped: ${unmappableDocs.length}`);
+      await ins("documents", mappableDocs.map((d: any) => ({ ...d, id: nid(d.id), company_id: TGT, uploader_user_id: FU, folder_id: null, related_id: idMap.get(d.related_id)! })));
+      await ins("gri_reports", (await fetchAll("gri_reports", SRC)).map((g: any) => ({ ...g, id: nid(g.id), company_id: TGT, created_at: g.created_at || now, updated_at: now })));
 
       // Now dependent non-employee tables that use mappings from above
       await ins("license_conditions", (await fetchAll("license_conditions", SRC)).map((c: any) => ({ ...c, id: nid(c.id), license_id: remap(c.license_id) || c.license_id, approved_by_user_id: null, related_alert_id: null, company_id: TGT, created_at: c.created_at || now, updated_at: now })));
-      await ins("supplier_required_documents", (await fetchAll("supplier_required_documents", SRC)).map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, supplier_id: remap(s.supplier_id), created_at: s.created_at || now, updated_at: now })));
-      await ins("supplier_evaluation_criteria", (await fetchAll("supplier_evaluation_criteria", SRC)).map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, supplier_id: remap(s.supplier_id), created_at: s.created_at || now, updated_at: now })));
-      await ins("legislation_compliance_profiles", (await fetchAll("legislation_compliance_profiles", SRC)).map((l: any) => ({ ...l, id: nid(l.id), company_id: TGT, legislation_id: remap(l.legislation_id), branch_id: remap(l.branch_id), completed_by: null, created_at: l.created_at || now, updated_at: now })));
+      await ins("supplier_required_documents", (await fetchAll("supplier_required_documents", SRC)).map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, created_at: s.created_at || now, updated_at: now })));
+      await ins("supplier_evaluation_criteria", (await fetchAll("supplier_evaluation_criteria", SRC)).map((s: any) => ({ ...s, id: nid(s.id), company_id: TGT, created_at: s.created_at || now, updated_at: now })));
+      await ins("legislation_compliance_profiles", (await fetchAll("legislation_compliance_profiles", SRC)).map((l: any) => ({ ...l, id: nid(l.id), company_id: TGT, branch_id: remap(l.branch_id), completed_by: null, created_at: l.created_at || now, updated_at: now })));
       await ins("compliance_tasks", (await fetchAll("compliance_tasks", SRC)).map((t: any) => ({ ...t, id: nid(t.id), company_id: TGT, requirement_id: null, responsible_user_id: null, evidence_document_id: null, created_at: t.created_at || now, updated_at: now })));
 
       // Self-ref updates
@@ -188,11 +202,15 @@ Deno.serve(async (req) => {
 
       const srcProg = await fetchAll("training_programs", SRC);
       await ins("training_programs", srcProg.map((p: any) => ({
-        ...p, id: nid(p.id), company_id: TGT,
-        branch_id: remap(p.branch_id),
-        responsible_id: remap(p.responsible_id),
+        id: nid(p.id), company_id: TGT, name: p.name, description: p.description,
+        category: p.category, duration_hours: p.duration_hours, is_mandatory: p.is_mandatory,
+        valid_for_months: p.valid_for_months, status: p.status, scheduled_date: p.scheduled_date,
+        branch_id: remap(p.branch_id), responsible_id: remap(p.responsible_id),
+        start_date: p.start_date, end_date: p.end_date, responsible_name: p.responsible_name,
+        efficacy_evaluation_deadline: p.efficacy_evaluation_deadline,
+        notify_responsible_email: p.notify_responsible_email, responsible_email: p.responsible_email,
         efficacy_evaluator_employee_id: remap(p.efficacy_evaluator_employee_id),
-        created_at: p.created_at || now, updated_at: now,
+        created_by_user_id: FU, created_at: p.created_at || now, updated_at: now,
       })));
 
       // Rebuild training program mapping
