@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
       cep: b.cep,
       neighborhood: b.neighborhood,
       street_number: b.street_number,
-      cnpj: b.cnpj,
+      cnpj: null, // avoid unique constraint conflicts
       parent_branch_id: null, // will update later
     }));
     await insertBatch("branches", branchRows);
