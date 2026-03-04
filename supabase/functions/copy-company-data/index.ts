@@ -168,6 +168,9 @@ Deno.serve(async (req) => {
       id: newId(s.id),
       company_id: targetCompanyId,
       status_changed_by: null,
+      access_code: null, // unique constraint
+      temporary_password: null,
+      password_hash: null,
       created_at: s.created_at || now,
       updated_at: now,
     }));
