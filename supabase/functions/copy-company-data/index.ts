@@ -197,8 +197,9 @@ Deno.serve(async (req) => {
       id: newId(n.id),
       company_id: targetCompanyId,
       parent_nc_id: null,
-      reported_by_user_id: null,
+      detected_by_user_id: null,
       responsible_user_id: null,
+      approved_by_user_id: null,
       created_at: n.created_at || now,
       updated_at: now,
     }));
