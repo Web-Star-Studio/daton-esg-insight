@@ -296,7 +296,7 @@ export const getRegulatoryDocuments = async (
     licensesQuery = licensesQuery.eq("document_identifier_type", filters.document_identifier_type);
   }
 
-  const { data: licensesData, error: licensesError } = await licensesQuery;
+  const { data: licensesData, error: licensesError } = await licensesQuery as any;
 
   if (licensesError) {
     throw new Error(`Erro ao buscar documentos regulatórios: ${licensesError.message}`);
@@ -490,7 +490,7 @@ export const updateRegulatoryDocument = async (
   id: string,
   payload: UpdateRegulatoryDocumentPayload,
 ): Promise<void> => {
-  const updatePayload: Database["public"]["Tables"]["licenses"]["Update"] = {};
+  const updatePayload: Record<string, unknown> = {};
 
   if (payload.document_identifier_type !== undefined) updatePayload.document_identifier_type = payload.document_identifier_type;
   if (payload.document_identifier_other !== undefined) updatePayload.document_identifier_other = payload.document_identifier_other;
@@ -515,7 +515,7 @@ export const updateRegulatoryDocument = async (
   if (payload.external_source_reference !== undefined) updatePayload.external_source_reference = payload.external_source_reference;
   if (payload.external_source_url !== undefined) updatePayload.external_source_url = payload.external_source_url;
 
-  const { error } = await supabase.from("licenses").update(updatePayload).eq("id", id);
+  const { error } = await supabase.from("licenses").update(updatePayload as any).eq("id", id);
 
   if (error) {
     throw new Error(`Erro ao atualizar documento regulatório: ${error.message}`);
