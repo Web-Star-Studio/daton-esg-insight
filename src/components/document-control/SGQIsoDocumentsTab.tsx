@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -12,12 +14,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Download, FileText, Calendar } from "lucide-react";
+import { Plus, Search, Download, FileText, Calendar, Brain, Building2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import { uploadDocument, downloadDocument } from "@/services/documents";
 import { confirmDocumentRead, getCurrentUserReadConfirmationMap } from "@/services/documentCompliance";
+import { processDocumentWithAI } from "@/services/documentAI";
+import { linkDocumentToBranches, getDocumentsBranchesMap } from "@/services/documentBranches";
+import { useBranches } from "@/services/branches";
+import { getBranchDisplayLabel } from "@/utils/branchDisplay";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 
 interface Document {
   id: string;
@@ -58,6 +65,7 @@ interface Document {
 }
 
 export const SGQIsoDocumentsTab = () => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +73,7 @@ export const SGQIsoDocumentsTab = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [readConfirmationMap, setReadConfirmationMap] = useState<Record<string, boolean>>({});
   const [confirmingReadId, setConfirmingReadId] = useState<string | null>(null);
+  const [branchesMap, setBranchesMap] = useState<Record<string, Array<{ branch_id: string; name: string; code: string | null }>>>({});
   const { toast } = useToast();
 
   const [uploadData, setUploadData] = useState({
@@ -73,7 +82,11 @@ export const SGQIsoDocumentsTab = () => {
     controlled_copy: false
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [aiProcessingStatus, setAiProcessingStatus] = useState<string | null>(null);
+
+  const { data: branches = [] } = useBranches();
 
   const documentCategories = [
     'Manual',
@@ -134,12 +147,17 @@ export const SGQIsoDocumentsTab = () => {
 
       if (error) throw error;
 
-      // Keep SGQ/ISO tab backward-compatible with legacy records while
-      // avoiding regulatory attachments managed in the dedicated tab.
       const nonRegulatoryDocs = (data || []).filter(
         (doc) => doc.related_model !== 'licenses' && doc.related_model !== 'license',
       );
       setDocuments(nonRegulatoryDocs as Document[]);
+
+      // Load branches map
+      const docIds = nonRegulatoryDocs.map((d) => d.id);
+      if (docIds.length > 0) {
+        const bMap = await getDocumentsBranchesMap(docIds);
+        setBranchesMap(bMap);
+      }
 
       try {
         const confirmationMap = await getCurrentUserReadConfirmationMap(
@@ -149,11 +167,6 @@ export const SGQIsoDocumentsTab = () => {
       } catch (confirmationError) {
         console.error("Erro ao carregar confirmações de leitura:", confirmationError);
         setReadConfirmationMap({});
-        toast({
-          title: "Atenção",
-          description: "Não foi possível carregar confirmações de leitura.",
-          variant: "destructive",
-        });
       }
     } catch (error) {
       console.error('Erro ao carregar documentos:', error);
@@ -171,25 +184,32 @@ export const SGQIsoDocumentsTab = () => {
     void loadDocuments();
   }, [loadDocuments]);
 
+  const handleBranchToggle = (branchId: string) => {
+    setSelectedBranchIds((prev) =>
+      prev.includes(branchId)
+        ? prev.filter((id) => id !== branchId)
+        : [...prev, branchId]
+    );
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) {
-      toast({
-        title: "Erro",
-        description: "Selecione um arquivo para upload.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Selecione um arquivo para upload.", variant: "destructive" });
+      return;
+    }
+
+    if (selectedBranchIds.length === 0) {
+      toast({ title: "Erro", description: "Selecione ao menos uma filial.", variant: "destructive" });
       return;
     }
 
     setIsUploading(true);
+    setAiProcessingStatus(null);
 
     try {
       const { data: authData } = await supabase.auth.getUser();
       const currentUserId = authData.user?.id;
-
-      if (!currentUserId) {
-        throw new Error("Usuário não autenticado.");
-      }
+      if (!currentUserId) throw new Error("Usuário não autenticado.");
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
@@ -197,21 +217,18 @@ export const SGQIsoDocumentsTab = () => {
         .eq("id", currentUserId)
         .maybeSingle();
 
-      if (profileError) {
-        throw new Error(profileError.message);
-      }
+      if (profileError) throw new Error(profileError.message);
+      if (!profile?.company_id) throw new Error("Empresa do usuário não encontrada.");
 
-      if (!profile?.company_id) {
-        throw new Error("Empresa do usuário não encontrada.");
-      }
-
+      // Upload document
       const uploadedDoc = await uploadDocument(selectedFile, {
         tags: uploadData.tags,
         related_model: 'quality_document',
         related_id: profile.company_id,
       });
 
-      const { error: updateError } = await supabase
+      // Update document metadata
+      await supabase
         .from('documents')
         .update({
           controlled_copy: uploadData.controlled_copy,
@@ -223,26 +240,47 @@ export const SGQIsoDocumentsTab = () => {
         })
         .eq('id', uploadedDoc.id);
 
-      if (updateError) throw updateError;
+      // Link branches
+      await linkDocumentToBranches(uploadedDoc.id, selectedBranchIds);
 
       toast({
-        title: "Sucesso!",
-        description: `Documento "${selectedFile.name}" enviado com sucesso.`,
+        title: "Upload concluído!",
+        description: `"${selectedFile.name}" enviado. Iniciando análise IA...`,
       });
 
+      // Start AI processing
+      setAiProcessingStatus("Processando com IA...");
+      const aiResult = await processDocumentWithAI(uploadedDoc.id);
+
+      if (aiResult.success) {
+        setAiProcessingStatus("Extração concluída!");
+        toast({
+          title: "IA concluiu a análise",
+          description: "Os dados extraídos estão disponíveis na página do documento.",
+        });
+        // Navigate to detail page
+        setTimeout(() => {
+          setIsUploadModalOpen(false);
+          navigate(`/controle-documentos/${uploadedDoc.id}`);
+        }, 1500);
+      } else {
+        setAiProcessingStatus("Erro na extração IA");
+        toast({
+          title: "Atenção",
+          description: "Upload concluído, mas a extração IA falhou. Você pode reprocessar depois.",
+          variant: "destructive",
+        });
+      }
+
       setSelectedFile(null);
-      setUploadData({
-        document_type: 'Manual',
-        tags: [],
-        controlled_copy: false
-      });
-      setIsUploadModalOpen(false);
+      setSelectedBranchIds([]);
+      setUploadData({ document_type: 'Manual', tags: [], controlled_copy: false });
       await loadDocuments();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro no upload:', error);
       toast({
         title: "Erro no upload",
-        description: error.message || "Não foi possível fazer upload do documento.",
+        description: error instanceof Error ? error.message : "Não foi possível fazer upload do documento.",
         variant: "destructive",
       });
     } finally {
@@ -253,21 +291,18 @@ export const SGQIsoDocumentsTab = () => {
   const handleDownload = async (doc: Document) => {
     try {
       const { url, fileName } = await downloadDocument(doc.id);
-      const link = document.createElement('a');
+      const link = window.document.createElement('a');
       link.href = url;
       link.download = fileName;
-      document.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-
-      if (url.startsWith('blob:')) {
-        URL.revokeObjectURL(url);
-      }
-    } catch (error: any) {
+      window.document.body.removeChild(link);
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+    } catch (error: unknown) {
       console.error('Erro no download:', error);
       toast({
         title: "Erro no download",
-        description: error.message || "Não foi possível baixar o documento.",
+        description: error instanceof Error ? error.message : "Não foi possível baixar o documento.",
         variant: "destructive",
       });
     }
@@ -277,18 +312,12 @@ export const SGQIsoDocumentsTab = () => {
     try {
       setConfirmingReadId(documentId);
       await confirmDocumentRead(documentId);
-      setReadConfirmationMap((prev) => ({
-        ...prev,
-        [documentId]: true,
-      }));
-      toast({
-        title: "Leitura confirmada",
-        description: "A confirmação de leitura foi registrada na trilha de auditoria.",
-      });
-    } catch (error: any) {
+      setReadConfirmationMap((prev) => ({ ...prev, [documentId]: true }));
+      toast({ title: "Leitura confirmada", description: "A confirmação de leitura foi registrada." });
+    } catch (error: unknown) {
       toast({
         title: "Erro ao confirmar leitura",
-        description: error?.message || "Não foi possível registrar a confirmação.",
+        description: error instanceof Error ? error.message : "Não foi possível registrar a confirmação.",
         variant: "destructive",
       });
     } finally {
@@ -350,11 +379,9 @@ export const SGQIsoDocumentsTab = () => {
             setIsUploadModalOpen(open);
             if (!open) {
               setSelectedFile(null);
-              setUploadData({
-                document_type: 'Manual',
-                tags: [],
-                controlled_copy: false,
-              });
+              setSelectedBranchIds([]);
+              setAiProcessingStatus(null);
+              setUploadData({ document_type: 'Manual', tags: [], controlled_copy: false });
             }
           }}
         >
@@ -364,11 +391,14 @@ export const SGQIsoDocumentsTab = () => {
               Novo Documento SGQ
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[560px]">
             <DialogHeader>
-              <DialogTitle>Upload de Documento SGQ/ISO</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                Upload de Documento SGQ/ISO com IA
+              </DialogTitle>
               <DialogDescription>
-                Faça upload de um novo documento do sistema de qualidade.
+                O documento será processado automaticamente pela IA para extração de dados.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -414,29 +444,85 @@ export const SGQIsoDocumentsTab = () => {
                 </Select>
               </div>
 
+              {/* Multi-branch selector */}
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Filiais vinculadas <span className="text-destructive">*</span>
+                </Label>
+                <div className="border border-border rounded-md p-3 max-h-[160px] overflow-y-auto space-y-2">
+                  {branches.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhuma filial cadastrada.</p>
+                  ) : (
+                    branches.map((branch) => (
+                      <div key={branch.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`branch-${branch.id}`}
+                          checked={selectedBranchIds.includes(branch.id)}
+                          onCheckedChange={() => handleBranchToggle(branch.id)}
+                        />
+                        <label
+                          htmlFor={`branch-${branch.id}`}
+                          className="text-sm cursor-pointer flex-1"
+                        >
+                          {getBranchDisplayLabel(branch)}
+                          {branch.is_headquarters && (
+                            <Badge variant="outline" className="ml-2 text-xs">Matriz</Badge>
+                          )}
+                        </label>
+                      </div>
+                    ))
+                  )}
+                </div>
+                {selectedBranchIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedBranchIds.length} filial(is) selecionada(s)
+                  </p>
+                )}
+              </div>
+
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="controlled_copy"
                   checked={uploadData.controlled_copy}
-                  onChange={(e) => setUploadData({ ...uploadData, controlled_copy: e.target.checked })}
-                  className="rounded"
+                  onCheckedChange={(checked) =>
+                    setUploadData({ ...uploadData, controlled_copy: checked === true })
+                  }
                 />
                 <Label htmlFor="controlled_copy">Cópia controlada</Label>
               </div>
+
+              {/* AI Processing Status */}
+              {aiProcessingStatus && (
+                <div className="flex items-center gap-3 p-3 bg-muted rounded-md">
+                  <Brain className="h-5 w-5 text-primary animate-pulse" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{aiProcessingStatus}</p>
+                    {aiProcessingStatus === "Processando com IA..." && (
+                      <Progress value={60} className="mt-2 h-1" />
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsUploadModalOpen(false)}>
+              <Button variant="outline" onClick={() => setIsUploadModalOpen(false)} disabled={isUploading}>
                 Cancelar
               </Button>
-              <Button onClick={handleUpload} disabled={isUploading || !selectedFile}>
+              <Button
+                onClick={handleUpload}
+                disabled={isUploading || !selectedFile || selectedBranchIds.length === 0}
+              >
                 {isUploading ? (
                   <>
                     <EnhancedLoading size="sm" className="mr-2" />
                     Enviando...
                   </>
                 ) : (
-                  'Fazer Upload'
+                  <>
+                    <Brain className="h-4 w-4 mr-2" />
+                    Upload + Análise IA
+                  </>
                 )}
               </Button>
             </DialogFooter>
@@ -496,6 +582,7 @@ export const SGQIsoDocumentsTab = () => {
                 <TableRow>
                   <TableHead>Documento</TableHead>
                   <TableHead>Categoria</TableHead>
+                  <TableHead>Filiais</TableHead>
                   <TableHead>Tamanho</TableHead>
                   <TableHead>Última Atualização</TableHead>
                   <TableHead>Ações</TableHead>
@@ -503,23 +590,35 @@ export const SGQIsoDocumentsTab = () => {
               </TableHeader>
               <TableBody>
                 {filteredDocuments.map((doc) => (
-                  <TableRow key={doc.id}>
+                  <TableRow
+                    key={doc.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => navigate(`/controle-documentos/${doc.id}`)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <FileText className="h-8 w-8 text-blue-600" />
+                        <FileText className="h-8 w-8 text-primary" />
                         <div>
                           <p className="font-medium">{doc.file_name}</p>
                           {doc.ai_extracted_category && (
                             <p className="text-sm text-muted-foreground">{doc.ai_extracted_category}</p>
                           )}
-                          {doc.controlled_copy && (
-                            <Badge variant="outline" className="mt-1 text-xs">Controlado</Badge>
-                          )}
-                          {readConfirmationMap[doc.id] && (
-                            <Badge variant="outline" className="mt-1 ml-2 text-xs border-green-500 text-green-700">
-                              Leitura Confirmada
-                            </Badge>
-                          )}
+                          <div className="flex gap-1 mt-1">
+                            {doc.controlled_copy && (
+                              <Badge variant="outline" className="text-xs">Controlado</Badge>
+                            )}
+                            {readConfirmationMap[doc.id] && (
+                              <Badge variant="outline" className="text-xs border-green-500 text-green-700">
+                                Leitura Confirmada
+                              </Badge>
+                            )}
+                            {doc.ai_processing_status === 'completed' && (
+                              <Badge variant="outline" className="text-xs border-primary text-primary">
+                                <Brain className="h-3 w-3 mr-1" />
+                                IA
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
@@ -527,6 +626,18 @@ export const SGQIsoDocumentsTab = () => {
                       <Badge className={getCategoryColor(normalizeDocumentCategory(doc))}>
                         {normalizeDocumentCategory(doc)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {(branchesMap[doc.id] || []).map((b) => (
+                          <Badge key={b.branch_id} variant="secondary" className="text-xs">
+                            {getBranchDisplayLabel({ code: b.code, name: b.name })}
+                          </Badge>
+                        ))}
+                        {(!branchesMap[doc.id] || branchesMap[doc.id].length === 0) && (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{formatFileSize(doc.file_size)}</TableCell>
                     <TableCell>
@@ -538,9 +649,17 @@ export const SGQIsoDocumentsTab = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button variant="outline" size="sm" onClick={() => handleDownload(doc)} title="Baixar documento">
                           <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/controle-documentos/${doc.id}`)}
+                          title="Ver detalhes"
+                        >
+                          <ExternalLink className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
