@@ -164,3 +164,70 @@ As **principais forças** estão na Lista Mestra (4.0/5) e nos mecanismos de con
 As **lacunas mais críticas** são: ausência de visibilidade de backup (P8), falta de automação de disposição (P15), protocolo de implementação inexistente (P10), e assinatura eletrônica não qualificada (P4). Estas lacunas representam riscos em uma auditoria ISO 9001.
 
 Dos 15 requisitos PSG-DOC mapeados, **5 estão plenamente implementados**, **8 parcialmente**, e **2 ausentes**. O plano de ação priorizado com 15 itens pode elevar a nota para 4.0+ em 1-2 meses.
+
+---
+
+## Status de Implementação — 2026-03-05
+
+### Ações Entregues
+
+| # | Ação | Status | Evidência |
+|---|------|--------|-----------|
+| 1 | Adicionar categorias MSG e FPLAN | ✅ Implementado | `SGQIsoDocumentsTab` atualizado com novas categorias |
+| 2 | Remover `created_by_user_id` hardcoded em versões | ✅ Implementado | `documentVersionsService.createVersion` usa usuário autenticado |
+| 3 | Remover `company_id` hardcoded na Lista Mestra | ✅ Implementado | `DocumentMasterListModal` resolve `company_id` via perfil |
+| 4 | Tornar `changes_summary` obrigatório | ✅ Implementado | validação no serviço + constraint/trigger na migration |
+| 5 | Validação regex para `code` | ✅ Implementado | validação frontend + validação serviço + constraint DB |
+| 6 | Confirmação de leitura (protocolo de implementação) | ✅ Implementado | botão de confirmação + trilha `READ_CONFIRMATION` |
+| 7 | Retenção da trilha para 3+ anos | ✅ Implementado | função `cleanup_document_audit_trail(retention_years >= 3)` |
+| 8 | Toggle automático `is_current` em versões | ✅ Implementado | trigger `normalize_document_version_insert` |
+| 9 | Alertas de revisão/vencimento regulatório | ✅ Implementado | rotina `syncRegulatoryReviewAlerts` + botão/processamento automático |
+| 10 | Lock durante aprovação | ✅ Implementado | trigger `prevent_document_changes_while_in_approval` |
+| 11 | Visibilidade operacional de backup/health | ✅ Implementado | aba `Compliance 7.5` com health check e status |
+| 12 | Workflow de disposição por retenção | ✅ Implementado | fila calculada + ações `arquivar/destruir` com auditoria atômica |
+| 13 | Confirmação por senha na aprovação | ✅ Implementado | assinatura por senha no modal de aprovação (cliente isolado) |
+| 14 | Grupos nomeados de acesso | ✅ Implementado | grupos padrão em permissões (`Administradores SGQ`, `Auditores`, etc.) |
+| 15 | Equivalente funcional SOGI | ✅ Implementado | campos de rastreio de fonte externa em documentos regulatórios |
+
+### Guia E2E de Validação
+
+1. **Categorias SGQ/ISO**
+   - Acesse `/controle-documentos` > aba **SGQ/ISO**.
+   - Confirme presença de `MSG` e `FPLAN` no filtro e no upload.
+
+2. **Lista Mestra + código normativo**
+   - Abra **Lista Mestra** e tente cadastrar código inválido (`DOC-001`): deve bloquear.
+   - Cadastre código válido (`FPLAN-001`): deve aceitar.
+   - Verifique que `company_id` é da empresa autenticada.
+
+3. **Versionamento e resumo de mudanças**
+   - Crie nova versão sem `changes_summary`: deve falhar.
+   - Crie com resumo: deve gravar e marcar somente uma versão como atual.
+
+4. **Assinatura na aprovação**
+   - Em documento `em_aprovacao`, tente aprovar sem senha: bloqueado.
+   - Informe senha válida: aprovação/rejeição deve concluir.
+
+5. **Lock de edição durante aprovação**
+   - Com documento em `em_aprovacao`, tente alterar metadados críticos.
+   - Banco deve rejeitar com erro de bloqueio.
+
+6. **Protocolo de leitura**
+   - Na aba SGQ/ISO, clique **Confirmar leitura** em um documento.
+   - Badge deve mudar para **Leitura Confirmada** e trilha deve registrar `READ_CONFIRMATION`.
+
+7. **Retenção e disposição**
+   - Na aba **Compliance 7.5**, valide lista de documentos vencidos por retenção.
+   - Execute `Arquivar`/`Destruir` e confirme registro na trilha.
+
+8. **Saúde/backup**
+   - Na aba **Compliance 7.5**, execute **health check**.
+   - Verifique status dos checks e alerta/notificação quando houver falha.
+
+9. **Alertas regulatórios**
+   - Na aba regulatória, clique **Processar alertas**.
+   - Verifique criação de notificações para responsáveis de documentos `A Vencer`/`Vencido`.
+
+10. **Fonte externa (equivalente SOGI)**
+   - Em novo/edição de documento regulatório, preencha `Fonte Externa`, `Referência` e `URL`.
+   - Salve e valide exibição na tabela.

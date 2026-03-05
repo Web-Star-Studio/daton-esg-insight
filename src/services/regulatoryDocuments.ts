@@ -59,6 +59,10 @@ export interface RegulatoryDocumentItem {
   latest_update: string;
   notes: string | null;
   renewal_alert_days: number | null;
+  external_source_provider: string | null;
+  external_source_reference: string | null;
+  external_source_url: string | null;
+  external_last_sync_at: string | null;
 }
 
 export interface RegulatoryDocumentFilters {
@@ -82,6 +86,9 @@ export interface CreateRegulatoryDocumentPayload {
   renewal_required?: boolean;
   renewal_alert_days?: number | null;
   notes?: string;
+  external_source_provider?: string | null;
+  external_source_reference?: string | null;
+  external_source_url?: string | null;
   license_type?: Database["public"]["Enums"]["license_type_enum"];
   initial_attachment?: File | null;
 }
@@ -99,6 +106,9 @@ export interface UpdateRegulatoryDocumentPayload {
   renewal_required?: boolean;
   renewal_alert_days?: number | null;
   notes?: string | null;
+  external_source_provider?: string | null;
+  external_source_reference?: string | null;
+  external_source_url?: string | null;
 }
 
 export interface UpsertRenewalPayload {
@@ -263,6 +273,10 @@ export const getRegulatoryDocuments = async (
       renewal_required,
       renewal_alert_days,
       notes,
+      external_source_provider,
+      external_source_reference,
+      external_source_url,
+      external_last_sync_at,
       updated_at,
       branches:branch_id (
         name
@@ -373,6 +387,10 @@ export const getRegulatoryDocuments = async (
       latest_update: latestUpdate,
       notes: license.notes,
       renewal_alert_days: license.renewal_alert_days,
+      external_source_provider: license.external_source_provider,
+      external_source_reference: license.external_source_reference,
+      external_source_url: license.external_source_url,
+      external_last_sync_at: license.external_last_sync_at,
     };
   });
 
@@ -393,6 +411,8 @@ export const getRegulatoryDocuments = async (
       item.branch_name,
       item.responsible_name,
       item.notes,
+      item.external_source_provider,
+      item.external_source_reference,
     ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(normalizedSearch));
@@ -432,6 +452,10 @@ export const createRegulatoryDocument = async (
       renewal_required: payload.renewal_required ?? true,
       renewal_alert_days: payload.renewal_alert_days ?? null,
       notes: payload.notes || null,
+      external_source_provider: payload.external_source_provider || null,
+      external_source_reference: payload.external_source_reference || null,
+      external_source_url: payload.external_source_url || null,
+      external_last_sync_at: payload.external_source_provider ? new Date().toISOString() : null,
       company_id: companyId,
     })
     .select("id")
@@ -484,6 +508,12 @@ export const updateRegulatoryDocument = async (
   if (payload.renewal_required !== undefined) updatePayload.renewal_required = payload.renewal_required;
   if (payload.renewal_alert_days !== undefined) updatePayload.renewal_alert_days = payload.renewal_alert_days;
   if (payload.notes !== undefined) updatePayload.notes = payload.notes;
+  if (payload.external_source_provider !== undefined) {
+    updatePayload.external_source_provider = payload.external_source_provider;
+    updatePayload.external_last_sync_at = payload.external_source_provider ? new Date().toISOString() : null;
+  }
+  if (payload.external_source_reference !== undefined) updatePayload.external_source_reference = payload.external_source_reference;
+  if (payload.external_source_url !== undefined) updatePayload.external_source_url = payload.external_source_url;
 
   const { error } = await supabase.from("licenses").update(updatePayload).eq("id", id);
 

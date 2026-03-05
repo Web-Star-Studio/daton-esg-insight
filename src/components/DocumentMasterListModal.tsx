@@ -9,11 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { masterListService } from '@/services/gedDocuments';
+import { isValidMasterListCode, masterListService } from '@/services/gedDocuments';
 import { ListChecks, Download, Plus, Search, FileText, Calendar, Building, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentMasterListModalProps {
   documentId?: string;
@@ -78,7 +79,7 @@ export const DocumentMasterListModal: React.FC<DocumentMasterListModalProps> = (
     });
   };
 
-  const handleAddToMasterList = () => {
+  const handleAddToMasterList = async () => {
     if (!documentId) {
       toast.error('ID do documento não fornecido');
       return;
@@ -89,10 +90,33 @@ export const DocumentMasterListModal: React.FC<DocumentMasterListModalProps> = (
       return;
     }
 
+    if (!isValidMasterListCode(newMasterListItem.code)) {
+      toast.error('Código inválido. Use: PSG-XX, IT-XX.YY, RG-XX.ZZ, MSG-XX.YY ou FPLAN-XXX.');
+      return;
+    }
+
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', authData.user.id)
+      .maybeSingle();
+
+    if (profileError || !profile?.company_id) {
+      toast.error('Empresa do usuário não encontrada');
+      return;
+    }
+
     addToMasterListMutation.mutate({
       ...newMasterListItem,
       document_id: documentId,
-      company_id: 'current-company', // TODO: Get current company ID
+      company_id: profile.company_id,
+      code: newMasterListItem.code.trim().toUpperCase(),
     });
   };
 
@@ -273,7 +297,7 @@ export const DocumentMasterListModal: React.FC<DocumentMasterListModalProps> = (
                       id="code"
                       value={newMasterListItem.code}
                       onChange={(e) => setNewMasterListItem(prev => ({ ...prev, code: e.target.value }))}
-                      placeholder="Ex: DOC-001"
+                      placeholder="Ex: PSG-01, IT-01.01, RG-01.01, MSG-01.01, FPLAN-001"
                     />
                   </div>
                   <div>

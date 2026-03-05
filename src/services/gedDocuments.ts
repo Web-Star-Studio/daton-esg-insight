@@ -127,6 +127,43 @@ export interface AuditTrailEntry {
   details?: string;
 }
 
+// PSG-DOC code patterns accepted in the Master List
+const MASTER_LIST_CODE_REGEX = /^(PSG-\d{2,3}|IT-\d{2}\.\d{2}|RG-\d{2}\.\d{2}|MSG-\d{2}\.\d{2}|FPLAN-\d{3})$/i;
+
+const normalizeMasterListCode = (code: string) => code.trim().toUpperCase();
+
+export const isValidMasterListCode = (code: string) =>
+  MASTER_LIST_CODE_REGEX.test(normalizeMasterListCode(code));
+
+const getAuthenticatedUser = async () => {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    throw new Error("Usuário não autenticado");
+  }
+
+  return user;
+};
+
+const getAuthenticatedUserCompanyId = async () => {
+  const user = await getAuthenticatedUser();
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("company_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error || !profile?.company_id) {
+    throw new Error("Empresa do usuário não encontrada");
+  }
+
+  return profile.company_id;
+};
+
 // Document Versions Service
 export const documentVersionsService = {
   async getVersions(documentId: string): Promise<DocumentVersion[]> {
@@ -153,14 +190,39 @@ export const documentVersionsService = {
   },
 
   async createVersion(documentId: string, versionData: Partial<DocumentVersion>): Promise<DocumentVersion> {
+    const user = await getAuthenticatedUser();
+    const changesSummary = versionData.changes_summary?.trim();
+    const safeVersionData: Partial<DocumentVersion> = { ...versionData };
+    delete (safeVersionData as { version_number?: number }).version_number;
+
+    if (!changesSummary) {
+      throw new Error("Resumo das alterações é obrigatório para registrar nova versão.");
+    }
+
+    const documentInfo = await supabase
+      .from("documents")
+      .select("file_name, file_path, file_size")
+      .eq("id", documentId)
+      .maybeSingle();
+
+    if (documentInfo.error) {
+      throw new Error(`Erro ao buscar documento para versionamento: ${documentInfo.error.message}`);
+    }
+    if (!documentInfo.data) {
+      throw new Error("Documento não encontrado para criar nova versão.");
+    }
+
     const { data, error } = await supabase
       .from('document_versions')
       .insert({
+        ...safeVersionData,
         document_id: documentId,
-        created_by_user_id: 'current-user',
-        title: 'New Version',
-        version_number: 1,
-        ...versionData
+        created_by_user_id: user.id,
+        title: versionData.title || documentInfo.data.file_name || 'Nova versão',
+        file_path: versionData.file_path || documentInfo.data.file_path,
+        file_size: versionData.file_size ?? documentInfo.data.file_size ?? undefined,
+        changes_summary: changesSummary,
+        is_current: true,
       })
       .select()
       .maybeSingle();
@@ -263,9 +325,10 @@ export const documentApprovalsService = {
     approverUserId?: string,
     notes?: string
   ): Promise<DocumentApproval> {
+    const currentUser = approverUserId || (await getAuthenticatedUser()).id;
     const updates: any = { 
       status,
-      approver_user_id: approverUserId,
+      approver_user_id: currentUser,
       approval_date: new Date().toISOString(),
     };
 
@@ -328,8 +391,17 @@ export const masterListService = {
   },
 
   async addToMasterList(item: any): Promise<any> {
+    if (!isValidMasterListCode(item.code || "")) {
+      throw new Error(
+        "Código inválido. Use um formato válido: PSG-XX, IT-XX.YY, RG-XX.ZZ, MSG-XX.YY ou FPLAN-XXX.",
+      );
+    }
+
+    const companyId = item.company_id || (await getAuthenticatedUserCompanyId());
     const insertData = {
       ...item,
+      company_id: companyId,
+      code: normalizeMasterListCode(item.code),
       distribution_list: JSON.stringify(item.distribution_list || [])
     };
 

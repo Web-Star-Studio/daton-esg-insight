@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import { uploadDocument, downloadDocument } from "@/services/documents";
+import { confirmDocumentRead, getCurrentUserReadConfirmationMap } from "@/services/documentCompliance";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +63,8 @@ export const SGQIsoDocumentsTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [readConfirmationMap, setReadConfirmationMap] = useState<Record<string, boolean>>({});
+  const [confirmingReadId, setConfirmingReadId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [uploadData, setUploadData] = useState({
@@ -77,6 +80,8 @@ export const SGQIsoDocumentsTab = () => {
     'Procedimento',
     'Instrução de Trabalho',
     'Formulário',
+    'MSG',
+    'FPLAN',
     'Política',
     'Plano',
     'Relatório',
@@ -135,6 +140,21 @@ export const SGQIsoDocumentsTab = () => {
         (doc) => doc.related_model !== 'licenses' && doc.related_model !== 'license',
       );
       setDocuments(nonRegulatoryDocs as Document[]);
+
+      try {
+        const confirmationMap = await getCurrentUserReadConfirmationMap(
+          nonRegulatoryDocs.map((doc) => doc.id),
+        );
+        setReadConfirmationMap(confirmationMap);
+      } catch (confirmationError) {
+        console.error("Erro ao carregar confirmações de leitura:", confirmationError);
+        setReadConfirmationMap({});
+        toast({
+          title: "Atenção",
+          description: "Não foi possível carregar confirmações de leitura.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Erro ao carregar documentos:', error);
       toast({
@@ -253,6 +273,29 @@ export const SGQIsoDocumentsTab = () => {
     }
   };
 
+  const handleConfirmRead = async (documentId: string) => {
+    try {
+      setConfirmingReadId(documentId);
+      await confirmDocumentRead(documentId);
+      setReadConfirmationMap((prev) => ({
+        ...prev,
+        [documentId]: true,
+      }));
+      toast({
+        title: "Leitura confirmada",
+        description: "A confirmação de leitura foi registrada na trilha de auditoria.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao confirmar leitura",
+        description: error?.message || "Não foi possível registrar a confirmação.",
+        variant: "destructive",
+      });
+    } finally {
+      setConfirmingReadId(null);
+    }
+  };
+
   const formatFileSize = (bytes: number) => {
     if (!Number.isFinite(bytes) || bytes <= 0) return '0 Bytes';
     const k = 1024;
@@ -267,6 +310,8 @@ export const SGQIsoDocumentsTab = () => {
       'Procedimento': 'bg-green-100 text-green-800 hover:bg-green-100',
       'Instrução de Trabalho': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
       'Formulário': 'bg-purple-100 text-purple-800 hover:bg-purple-100',
+      'MSG': 'bg-indigo-100 text-indigo-800 hover:bg-indigo-100',
+      'FPLAN': 'bg-rose-100 text-rose-800 hover:bg-rose-100',
       'Política': 'bg-red-100 text-red-800 hover:bg-red-100',
       'Plano': 'bg-orange-100 text-orange-800 hover:bg-orange-100',
       'Relatório': 'bg-teal-100 text-teal-800 hover:bg-teal-100',
@@ -470,6 +515,11 @@ export const SGQIsoDocumentsTab = () => {
                           {doc.controlled_copy && (
                             <Badge variant="outline" className="mt-1 text-xs">Controlado</Badge>
                           )}
+                          {readConfirmationMap[doc.id] && (
+                            <Badge variant="outline" className="mt-1 ml-2 text-xs border-green-500 text-green-700">
+                              Leitura Confirmada
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -491,6 +541,19 @@ export const SGQIsoDocumentsTab = () => {
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => handleDownload(doc)} title="Baixar documento">
                           <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleConfirmRead(doc.id)}
+                          disabled={readConfirmationMap[doc.id] || confirmingReadId === doc.id}
+                          title="Registrar confirmação de leitura"
+                        >
+                          {readConfirmationMap[doc.id]
+                            ? "Lido"
+                            : confirmingReadId === doc.id
+                              ? "..."
+                              : "Confirmar leitura"}
                         </Button>
                       </div>
                     </TableCell>
