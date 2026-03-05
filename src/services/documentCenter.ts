@@ -867,7 +867,11 @@ export async function createDocumentRecord(payload: CreateDocumentPayload): Prom
   const created = await uploadDocument(payload.file, {
     tags: payload.tags,
     related_model: payload.documentKind === "controlled" ? "quality_document" : "document",
-    related_id: companyId,
+    // `documents` still carries a legacy uniqueness rule on
+    // (related_model, related_id, file_name). The document center should allow
+    // repeated filenames inside the same company/domain, so each central record
+    // gets its own attachment scope.
+    related_id: crypto.randomUUID(),
     skipAutoProcessing: true,
   });
 

@@ -407,6 +407,9 @@ export const uploadDocument = async (
     // Clean up uploaded file if record creation fails
     logger.debug('Cleaning up storage file...', 'document');
     await supabase.storage.from('documents').remove([uploadData.path]);
+    if (error.code === '23505' || error.message.includes('idx_documents_unique_file')) {
+      throw new Error('Ja existe um documento com esse nome na mesma referencia. Renomeie o arquivo ou use um escopo documental diferente.');
+    }
     throw new Error(`Falha ao criar registro: ${error.message}`);
   }
 
