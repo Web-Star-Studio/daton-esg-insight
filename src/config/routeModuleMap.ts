@@ -34,6 +34,7 @@ export const ROUTE_MODULE_MAP: Record<string, string> = {
   // === Qualidade (SGQ) ===
   '/sgq-dashboard': 'quality',
   '/quality-dashboard': 'quality',
+  '/matriz-partes-interessadas': 'quality',
   '/auditorias-internas': 'quality',
   '/acoes-corretivas': 'quality',
   '/controle-documentos': 'quality',

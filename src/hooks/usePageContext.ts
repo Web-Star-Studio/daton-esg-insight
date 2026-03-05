@@ -22,6 +22,12 @@ export function usePageContext(): PageContext {
         pageTitle: 'Gestão de Stakeholders',
         dataType: 'stakeholders'
       },
+      '/matriz-partes-interessadas': {
+        tables: ['stakeholder_requirements', 'stakeholder_requirement_evidences', 'stakeholder_matrix_reviews'],
+        relevantColumns: ['requirement_title', 'status', 'review_due_date', 'responsible_user_id', 'stakeholder_id'],
+        pageTitle: 'Matriz de Partes Interessadas',
+        dataType: 'stakeholder_requirements'
+      },
       '/inventario-gee': {
         tables: ['emission_sources', 'activity_data', 'calculated_emissions'],
         relevantColumns: ['source_name', 'scope', 'co2e', 'quantity', 'period_start_date'],

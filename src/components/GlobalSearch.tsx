@@ -93,6 +93,7 @@ const SYSTEM_PAGES = [
   
   // Qualidade (SGQ)
   { title: 'Dashboard Qualidade', path: '/quality-dashboard', icon: Award, keywords: ['qualidade', 'sgq', 'indicadores', 'quality'] },
+  { title: 'Matriz de Partes Interessadas', path: '/matriz-partes-interessadas', icon: UsersRound, keywords: ['matriz', 'partes interessadas', 'stakeholder', 'iso 9001', 'requisito'] },
   { title: 'Não Conformidades', path: '/nao-conformidades', icon: AlertTriangle, keywords: ['nc', 'problema', 'desvio', 'nonconformity'] },
   { title: 'Ações Corretivas', path: '/acoes-corretivas', icon: CheckCircle, keywords: ['corretiva', 'acao', 'capa', 'corrective'] },
   { title: 'Gestão de Riscos', path: '/gestao-riscos', icon: Shield, keywords: ['risco', 'mitigacao', 'risk', 'analise'] },

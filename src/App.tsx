@@ -131,6 +131,7 @@ const PlanoAcao5W2H = lazy(() => import("./pages/PlanoAcao5W2H"));
 const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento"));
 const GestaoFornecedores = lazy(() => import("./pages/GestaoFornecedores"));
 const QualityDashboard = lazy(() => import("./pages/QualityDashboard"));
+const MatrizPartesInteressadas = lazy(() => import("./pages/MatrizPartesInteressadas"));
 const GestaoIndicadores = lazy(() => import("./pages/GestaoIndicadores"));
 const IndicadorDetalhes = lazy(() => import("./pages/IndicadorDetalhes"));
 const LAIAUnidades = lazy(() => import("./pages/LAIAUnidades"));
@@ -296,6 +297,7 @@ const AppContent = () => {
               <Route index element={<LazyPageWrapper><Dashboard /></LazyPageWrapper>} />
               <Route path="gestao-esg" element={<LazyPageWrapper><GestaoESG /></LazyPageWrapper>} />
               <Route path="quality-dashboard" element={<LazyPageWrapper><QualityDashboard /></LazyPageWrapper>} />
+              <Route path="matriz-partes-interessadas" element={<LazyPageWrapper><MatrizPartesInteressadas /></LazyPageWrapper>} />
               <Route path="gestao-indicadores" element={<LazyPageWrapper><GestaoIndicadores /></LazyPageWrapper>} />
               <Route path="nao-conformidades" element={<LazyPageWrapper><NaoConformidades /></LazyPageWrapper>} />
               <Route path="acoes-corretivas" element={<LazyPageWrapper><AcoesCorretivas /></LazyPageWrapper>} />
@@ -862,6 +864,7 @@ const AppContent = () => {
             <Route path="/base-conhecimento" element={<ProtectedLazyPageWrapper><BaseConhecimento /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-fornecedores" element={<ProtectedLazyPageWrapper><GestaoFornecedores /></ProtectedLazyPageWrapper>} />
             <Route path="/quality-dashboard" element={<ProtectedLazyPageWrapper><QualityDashboard /></ProtectedLazyPageWrapper>} />
+            <Route path="/matriz-partes-interessadas" element={<ProtectedLazyPageWrapper><MatrizPartesInteressadas /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-indicadores" element={<ProtectedLazyPageWrapper><GestaoIndicadores /></ProtectedLazyPageWrapper>} />
             <Route path="/indicador/:id" element={<ProtectedLazyPageWrapper><IndicadorDetalhes /></ProtectedLazyPageWrapper>} />
             <Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
