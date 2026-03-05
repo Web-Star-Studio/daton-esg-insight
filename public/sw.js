@@ -1,20 +1,11 @@
 // ESG System Service Worker - Advanced Caching and Offline Support
-const CACHE_NAME = 'esg-system-v1.2.0';
+const CACHE_NAME = 'esg-system-v1.3.0';
 const OFFLINE_URL = '/offline.html';
 
 // Recursos críticos para cache (Always cached)
 const CRITICAL_RESOURCES = [
   '/',
-  '/dashboard',
-  '/offline.html',
-  '/manifest.json'
-];
-
-// Recursos estáticos para cache
-const STATIC_RESOURCES = [
-  '/assets/css/main.css',
-  '/assets/js/main.js',
-  '/assets/images/logo.png'
+  OFFLINE_URL
 ];
 
 // APIs que devem ser cached
@@ -33,7 +24,7 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('📦 Pre-caching critical resources');
-        return cache.addAll([...CRITICAL_RESOURCES, ...STATIC_RESOURCES]);
+        return cache.addAll(CRITICAL_RESOURCES);
       })
       .then(() => {
         console.log('✅ Service Worker installed successfully');
@@ -76,6 +67,11 @@ self.addEventListener('fetch', (event) => {
   // Ignorar requests não-HTTP
   if (!request.url.startsWith('http')) return;
 
+  // Evita cache em chunks/versionamento do Vite para não servir bundles desatualizados
+  if (url.pathname.startsWith('/assets/')) {
+    return;
+  }
+
   // Estratégia: Cache First para recursos estáticos
   if (isStaticResource(request)) {
     event.respondWith(cacheFirst(request));
@@ -88,9 +84,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Estratégia: Stale While Revalidate para páginas
+  // Estratégia: Network First para páginas (evita index/chunks defasados)
   if (isNavigationRequest(request)) {
-    event.respondWith(staleWhileRevalidate(request));
+    event.respondWith(networkFirstWithCache(request));
     return;
   }
 
@@ -201,10 +197,7 @@ async function networkFirstWithCache(request) {
     const cached = await caches.match(request);
     
     if (cached) {
-      // Add stale indicator header
-      const staleResponse = cached.clone();
-      staleResponse.headers.set('X-Cache-Status', 'STALE');
-      return staleResponse;
+      return cached;
     }
     
     return createOfflineResponse(request);
@@ -250,8 +243,9 @@ function isAPIRequest(request) {
 }
 
 function isNavigationRequest(request) {
+  const accept = request.headers.get('accept') || '';
   return request.mode === 'navigate' || 
-         (request.method === 'GET' && request.headers.get('accept').includes('text/html'));
+         (request.method === 'GET' && accept.includes('text/html'));
 }
 
 function createOfflineResponse(request) {

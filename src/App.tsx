@@ -23,6 +23,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
 import { GlobalKeyboardShortcuts } from "@/components/GlobalKeyboardShortcuts";
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications";
+import { lazyImportWithRetry } from "@/utils/lazyImportWithRetry";
 
 import AuthErrorHandler from "@/components/AuthErrorHandler";
 
@@ -182,7 +183,10 @@ const SupplierSurveys = lazy(() => import("./pages/supplier-portal/SupplierSurve
 // Lazy loading para RH modules
 const EstruturaOrganizacional = lazy(() => import("./pages/EstruturaOrganizacional"));
 const DescricaoCargos = lazy(() => import("./pages/DescricaoCargos"));
-const GestaoFuncionarios = lazy(() => import("./pages/GestaoFuncionarios"));
+const GestaoFuncionarios = lazyImportWithRetry(
+  () => import("./pages/GestaoFuncionarios"),
+  "lazy-retry:gestao-funcionarios"
+);
 const GestaoTreinamentos = lazy(() => import("./pages/GestaoTreinamentos"));
 const GestaoDesempenho = lazy(() => import("./pages/GestaoDesempenho"));
 const BeneficiosRemuneracao = lazy(() => import("./pages/BeneficiosRemuneracao"));
