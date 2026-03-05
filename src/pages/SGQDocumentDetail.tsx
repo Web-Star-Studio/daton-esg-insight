@@ -1,391 +1,1096 @@
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowLeft,
+  Brain,
+  Building2,
+  CalendarRange,
+  Download,
+  Eye,
+  FilePenLine,
+  FileText,
+  FolderGit2,
+  GitPullRequest,
+  Link2,
+  Loader2,
+  Milestone,
+  RefreshCw,
+  Save,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { EnhancedLoading } from "@/components/ui/enhanced-loading";
-import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Download, RefreshCw, FileText, Brain, Building2, CheckCircle, AlertTriangle, Clock } from "lucide-react";
-import { downloadDocument } from "@/services/documents";
-import { processDocumentWithAI } from "@/services/documentAI";
-import { getDocumentBranches } from "@/services/documentBranches";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { CollaboratorMultiSelect } from "@/components/document-center/CollaboratorMultiSelect";
+import { useBranches } from "@/services/branches";
 import { getBranchDisplayLabel } from "@/utils/branchDisplay";
+import {
+  confirmReadRecipient,
+  createDocumentRelation,
+  createDocumentRequest,
+  createReadCampaign,
+  deleteDocumentRelation,
+  fulfillDocumentRequest,
+  getCompanyUsers,
+  getDocumentDownload,
+  getDocumentRecord,
+  listDocumentRecords,
+  markDocumentViewed,
+  replaceDocumentFile,
+  updateDocumentMetadata,
+  type DocumentDetail,
+} from "@/services/documentCenter";
 
-interface DocumentDetail {
-  id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  file_type: string;
-  document_type: string;
-  ai_extracted_category: string | null;
-  ai_processing_status: string | null;
-  ai_confidence_score: number | null;
-  upload_date: string;
-  tags: string[] | null;
-  controlled_copy: boolean;
-  company_id: string;
+const STATUS_OPTIONS = [
+  { value: "draft", label: "Rascunho" },
+  { value: "active", label: "Ativo" },
+  { value: "in_review", label: "Em revisao" },
+  { value: "rejected", label: "Rejeitado" },
+  { value: "archived", label: "Arquivado" },
+];
+
+const DOMAIN_OPTIONS = [
+  { value: "quality", label: "Qualidade" },
+  { value: "regulatory", label: "Regulatorio" },
+  { value: "waste", label: "Residuos" },
+  { value: "training", label: "Treinamentos" },
+  { value: "people", label: "Pessoas" },
+  { value: "general", label: "Geral" },
+];
+
+const RELATION_OPTIONS = [
+  { value: "references", label: "Referencia" },
+  { value: "complements", label: "Complementa" },
+  { value: "replaces", label: "Substitui" },
+  { value: "depends_on", label: "Depende de" },
+];
+
+const REQUEST_OPTIONS = [
+  { value: "new_document", label: "Novo documento" },
+  { value: "new_version", label: "Nova versao" },
+  { value: "complement", label: "Complemento" },
+];
+
+const CONFIDENTIALITY_OPTIONS = [
+  { value: "public", label: "Publico" },
+  { value: "internal", label: "Interno" },
+  { value: "restricted", label: "Restrito" },
+  { value: "confidential", label: "Confidencial" },
+];
+
+function formatDate(value?: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("pt-BR");
 }
 
-interface BranchInfo {
-  id: string;
-  branch_id: string;
-  branch_name: string;
-  branch_code: string | null;
+function getTimelineBadge(kind: string) {
+  switch (kind) {
+    case "version":
+      return "default";
+    case "change":
+      return "secondary";
+    default:
+      return "outline";
+  }
 }
 
-interface ExtractionData {
-  id: string;
-  extracted_fields: Record<string, any>;
-  confidence_scores: Record<string, number>;
-  target_table: string;
-  validation_status: string;
-  created_at: string;
-}
-
-const SGQDocumentDetail = () => {
+export default function SGQDocumentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: branches = [] } = useBranches();
+  const [replacementFile, setReplacementFile] = useState<File | null>(null);
+  const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
+  const [campaignForm, setCampaignForm] = useState({
+    title: "",
+    message: "",
+    dueAt: "",
+  });
+  const [requestForm, setRequestForm] = useState({
+    title: "",
+    description: "",
+    requestType: "new_version",
+    requestedFromUserId: "",
+    dueAt: "",
+    priority: "medium",
+  });
+  const [relationForm, setRelationForm] = useState({
+    relationType: "references",
+    targetDocumentId: "",
+    notes: "",
+  });
+  const [metadataForm, setMetadataForm] = useState({
+    title: "",
+    summary: "",
+    tagsText: "",
+    documentDomain: "general",
+    status: "draft",
+    branchIds: [] as string[],
+    code: "",
+    documentTypeLabel: "",
+    normReference: "",
+    issuerName: "",
+    confidentialityLevel: "public",
+    validityStartDate: "",
+    validityEndDate: "",
+    reviewDueDate: "",
+    responsibleDepartment: "",
+    controlledCopy: false,
+  });
 
-  const [document, setDocument] = useState<DocumentDetail | null>(null);
-  const [branches, setBranches] = useState<BranchInfo[]>([]);
-  const [extractions, setExtractions] = useState<ExtractionData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [reprocessing, setReprocessing] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const documentId = id || "";
 
-  const loadDocument = useCallback(async () => {
-    if (!id) return;
-    try {
-      const { data, error } = await supabase
-        .from("documents")
-        .select("id, file_name, file_path, file_size, file_type, document_type, ai_extracted_category, ai_processing_status, ai_confidence_score, upload_date, tags, controlled_copy, company_id")
-        .eq("id", id)
-        .single();
+  const { data: document, isLoading } = useQuery({
+    queryKey: ["document-center-detail", documentId],
+    queryFn: () => getDocumentRecord(documentId),
+    enabled: Boolean(documentId),
+  });
 
-      if (error) throw error;
-      setDocument(data as DocumentDetail);
+  const { data: collaborators = [] } = useQuery({
+    queryKey: ["document-center-collaborators"],
+    queryFn: getCompanyUsers,
+  });
 
-      // Load branches
-      const branchData = await getDocumentBranches(id);
-      setBranches(branchData);
-
-      // Load extractions
-      const { data: extractionData } = await supabase
-        .from("extracted_data_preview")
-        .select("id, extracted_fields, confidence_scores, target_table, validation_status, created_at")
-        .eq("company_id", data.company_id)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      setExtractions((extractionData || []) as ExtractionData[]);
-
-      // Generate preview URL for PDFs/images
-      if (data.file_path) {
-        const { data: urlData } = await supabase.storage
-          .from("documents")
-          .createSignedUrl(data.file_path, 3600);
-        if (urlData?.signedUrl) setPreviewUrl(urlData.signedUrl);
-      }
-    } catch (error: unknown) {
-      console.error("Erro ao carregar documento:", error);
-      toast({
-        title: "Erro",
-        description: "Documento não encontrado.",
-        variant: "destructive",
-      });
-      navigate("/controle-documentos");
-    } finally {
-      setLoading(false);
-    }
-  }, [id, navigate, toast]);
+  const { data: relationOptions = [] } = useQuery({
+    queryKey: ["document-center-relations-options"],
+    queryFn: () => listDocumentRecords({}),
+  });
 
   useEffect(() => {
-    void loadDocument();
-  }, [loadDocument]);
+    if (!documentId) return;
+    void markDocumentViewed(documentId).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["document-center-detail", documentId] });
+      queryClient.invalidateQueries({ queryKey: ["document-center"] });
+    });
+  }, [documentId, queryClient]);
+
+  useEffect(() => {
+    if (!document) return;
+    setMetadataForm({
+      title: document.title,
+      summary: document.summary || "",
+      tagsText: document.tags.join(", "),
+      documentDomain: document.document_domain,
+      status: document.status,
+      branchIds: document.branch_ids,
+      code: document.control_profile?.code || "",
+      documentTypeLabel: document.control_profile?.document_type_label || "",
+      normReference: document.control_profile?.norm_reference || "",
+      issuerName: document.control_profile?.issuer_name || "",
+      confidentialityLevel: document.control_profile?.confidentiality_level || "public",
+      validityStartDate: document.control_profile?.validity_start_date || "",
+      validityEndDate: document.control_profile?.validity_end_date || "",
+      reviewDueDate: document.control_profile?.review_due_date || "",
+      responsibleDepartment: document.control_profile?.responsible_department || "",
+      controlledCopy: document.control_profile?.controlled_copy || false,
+    });
+  }, [document]);
+
+  const sameDomainRelationOptions = useMemo(() => {
+    if (!document) return [];
+    return relationOptions
+      .filter((option) => option.id !== document.id)
+      .sort((left, right) => {
+        const leftPriority = left.document_domain === document.document_domain ? 0 : 1;
+        const rightPriority = right.document_domain === document.document_domain ? 0 : 1;
+        return leftPriority - rightPriority || left.title.localeCompare(right.title);
+      });
+  }, [document, relationOptions]);
+
+  const refreshDocument = () => {
+    queryClient.invalidateQueries({ queryKey: ["document-center-detail", documentId] });
+    queryClient.invalidateQueries({ queryKey: ["document-center"] });
+  };
+
+  const metadataMutation = useMutation({
+    mutationFn: async () => {
+      if (!document) return;
+      await updateDocumentMetadata(document.id, {
+        title: metadataForm.title,
+        summary: metadataForm.summary || null,
+        tags: metadataForm.tagsText
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        documentDomain: metadataForm.documentDomain,
+        status: metadataForm.status as DocumentDetail["status"],
+        branchIds: metadataForm.branchIds,
+        controlProfile:
+          document.document_kind === "controlled"
+            ? {
+                code: metadataForm.code || null,
+                document_type_label: metadataForm.documentTypeLabel,
+                norm_reference: metadataForm.normReference || null,
+                issuer_name: metadataForm.issuerName || null,
+                confidentiality_level: metadataForm.confidentialityLevel,
+                validity_start_date: metadataForm.validityStartDate || null,
+                validity_end_date: metadataForm.validityEndDate || null,
+                review_due_date: metadataForm.reviewDueDate || null,
+                responsible_department: metadataForm.responsibleDepartment || null,
+                controlled_copy: metadataForm.controlledCopy,
+              }
+            : undefined,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Metadados atualizados.");
+      refreshDocument();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const replaceFileMutation = useMutation({
+    mutationFn: async () => {
+      if (!document || !replacementFile) {
+        throw new Error("Selecione um arquivo para substituir.");
+      }
+      await replaceDocumentFile(document.id, replacementFile);
+    },
+    onSuccess: () => {
+      toast.success("Nova revisao registrada.");
+      setReplacementFile(null);
+      refreshDocument();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const campaignMutation = useMutation({
+    mutationFn: async () => {
+      if (!document) return;
+      await createReadCampaign({
+        documentId: document.id,
+        title: campaignForm.title,
+        message: campaignForm.message,
+        dueAt: campaignForm.dueAt || null,
+        recipientIds: selectedRecipientIds,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Campanha de leitura criada.");
+      setCampaignForm({ title: "", message: "", dueAt: "" });
+      setSelectedRecipientIds([]);
+      refreshDocument();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const requestMutation = useMutation({
+    mutationFn: async () => {
+      if (!document) return;
+      await createDocumentRequest({
+        documentId: document.id,
+        title: requestForm.title,
+        description: requestForm.description,
+        requestType: requestForm.requestType as "new_document" | "new_version" | "complement",
+        requestedFromUserId: requestForm.requestedFromUserId,
+        dueAt: requestForm.dueAt || null,
+        priority: requestForm.priority as "low" | "medium" | "high",
+      });
+    },
+    onSuccess: () => {
+      toast.success("Solicitacao registrada.");
+      setRequestForm({
+        title: "",
+        description: "",
+        requestType: "new_version",
+        requestedFromUserId: "",
+        dueAt: "",
+        priority: "medium",
+      });
+      refreshDocument();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const fulfillMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      if (!document) return;
+      const currentVersion = document.versions.find((version) => version.is_current);
+      await fulfillDocumentRequest({
+        requestId,
+        fulfilledDocumentId: document.id,
+        fulfilledVersionId: currentVersion?.id || null,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Solicitacao concluida.");
+      refreshDocument();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const relationMutation = useMutation({
+    mutationFn: async () => {
+      if (!document) return;
+      await createDocumentRelation({
+        sourceDocumentId: document.id,
+        targetDocumentId: relationForm.targetDocumentId,
+        relationType: relationForm.relationType as "references" | "complements" | "replaces" | "depends_on",
+        notes: relationForm.notes,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Relacao criada.");
+      setRelationForm({ relationType: "references", targetDocumentId: "", notes: "" });
+      refreshDocument();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const removeRelationMutation = useMutation({
+    mutationFn: deleteDocumentRelation,
+    onSuccess: () => {
+      toast.success("Relacao removida.");
+      refreshDocument();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const confirmRecipientMutation = useMutation({
+    mutationFn: ({ recipientId, note }: { recipientId: string; note?: string }) => confirmReadRecipient(recipientId, note),
+    onSuccess: () => {
+      toast.success("Leitura confirmada.");
+      refreshDocument();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   const handleDownload = async () => {
     if (!document) return;
     try {
-      const { url, fileName } = await downloadDocument(document.id);
+      const { url, fileName } = await getDocumentDownload(document.id);
       const link = window.document.createElement("a");
       link.href = url;
       link.download = fileName;
       window.document.body.appendChild(link);
       link.click();
       window.document.body.removeChild(link);
-      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
-    } catch (error: unknown) {
-      toast({
-        title: "Erro no download",
-        description: error instanceof Error ? error.message : "Falha ao baixar.",
-        variant: "destructive",
-      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao baixar documento.");
     }
   };
 
-  const handleReprocess = async () => {
-    if (!document) return;
-    setReprocessing(true);
-    try {
-      const result = await processDocumentWithAI(document.id);
-      if (result.success) {
-        toast({ title: "Reprocessamento iniciado", description: "A IA está analisando o documento novamente." });
-        // Reload after a delay
-        setTimeout(() => void loadDocument(), 3000);
-      } else {
-        toast({ title: "Erro", description: result.error || "Falha ao reprocessar.", variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Erro", description: "Falha ao reprocessar documento.", variant: "destructive" });
-    } finally {
-      setReprocessing(false);
-    }
+  const toggleBranch = (branchId: string) => {
+    setMetadataForm((current) => ({
+      ...current,
+      branchIds: current.branchIds.includes(branchId)
+        ? current.branchIds.filter((id) => id !== branchId)
+        : [...current.branchIds, branchId],
+    }));
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (!Number.isFinite(bytes) || bytes <= 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.min(sizes.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(k))));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
-  const getStatusBadge = (status: string | null) => {
-    switch (status) {
-      case "completed":
-      case "Concluído":
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Processado</Badge>;
-      case "processing":
-        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="h-3 w-3 mr-1" />Processando</Badge>;
-      case "failed":
-      case "Erro":
-        return <Badge className="bg-red-100 text-red-800"><AlertTriangle className="h-3 w-3 mr-1" />Erro</Badge>;
-      default:
-        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Pendente</Badge>;
-    }
-  };
-
-  if (loading) {
+  if (isLoading || !document) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <EnhancedLoading size="lg" text="Carregando documento..." />
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!document) return null;
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/controle-documentos")}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground">{document.file_name}</h1>
-          <p className="text-muted-foreground">
-            Enviado em {new Date(document.upload_date).toLocaleDateString("pt-BR")} · {formatFileSize(document.file_size)}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleDownload}>
-            <Download className="h-4 w-4 mr-2" />
-            Download
+      <header className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/documentos")}>
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <Button onClick={handleReprocess} disabled={reprocessing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${reprocessing ? "animate-spin" : ""}`} />
-            {reprocessing ? "Processando..." : "Reprocessar IA"}
-          </Button>
+          <Badge variant="outline" className="gap-2">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Pagina dedicada do documento
+          </Badge>
+          <Badge variant={document.document_kind === "controlled" ? "default" : "secondary"}>
+            {document.document_kind === "controlled" ? "Controlado" : "Geral"}
+          </Badge>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Document Info + Preview */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Document Preview */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight">{document.title}</h1>
+            <p className="text-muted-foreground">
+              {document.file_name} · enviado em {formatDate(document.upload_date)} · Rev. {document.current_version_number}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={handleDownload} className="gap-2">
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+            <Button variant="outline" onClick={refreshDocument} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Atualizar
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {document.document_kind === "controlled" && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="grid gap-4 p-6 md:grid-cols-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Titulo</p>
+              <p className="font-semibold">{document.title}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Tipo</p>
+              <p className="font-semibold">{document.control_profile?.document_type_label || "—"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Confidencialidade</p>
+              <p className="font-semibold">{document.control_profile?.confidentiality_level || "—"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Revisao</p>
+              <p className="font-semibold">{document.current_version_number}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Norma</p>
+              <p className="font-semibold">{document.control_profile?.norm_reference || "—"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Codigo</p>
+              <p className="font-semibold">{document.control_profile?.code || "—"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Emitente</p>
+              <p className="font-semibold">{document.control_profile?.issuer_name || "—"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Validade</p>
+              <p className="font-semibold">
+                {formatDate(document.control_profile?.validity_start_date)} ate {formatDate(document.control_profile?.validity_end_date)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Visualização do Documento
-              </CardTitle>
+              <CardTitle>Visualizacao</CardTitle>
+              <CardDescription>Preview do arquivo atual e acesso rapido ao download.</CardDescription>
             </CardHeader>
             <CardContent>
-              {previewUrl && document.file_type?.includes("pdf") ? (
-                <iframe
-                  src={previewUrl}
-                  className="w-full h-[500px] rounded-md border border-border"
-                  title="Preview do documento"
-                />
-              ) : previewUrl && document.file_type?.startsWith("image") ? (
-                <img
-                  src={previewUrl}
-                  alt={document.file_name}
-                  className="max-w-full max-h-[500px] rounded-md border border-border object-contain mx-auto"
-                />
+              {document.preview_url && document.file_type.includes("pdf") ? (
+                <iframe src={document.preview_url} className="h-[620px] w-full rounded-lg border" title={document.file_name} />
+              ) : document.preview_url && document.file_type.startsWith("image") ? (
+                <img src={document.preview_url} alt={document.file_name} className="max-h-[620px] w-full rounded-lg border object-contain" />
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                  <FileText className="h-16 w-16 mb-4" />
-                  <p>Preview não disponível para este tipo de arquivo.</p>
-                  <Button variant="outline" className="mt-4" onClick={handleDownload}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Baixar para visualizar
-                  </Button>
+                <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-lg border border-dashed text-center">
+                  <FileText className="h-10 w-10 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Preview nao disponivel para este formato.</p>
+                    <p className="text-sm text-muted-foreground">Use o download para abrir o arquivo original.</p>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* AI Extraction Results */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                Resultados da Extração IA
-              </CardTitle>
-              <CardDescription>Dados extraídos automaticamente do documento</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Metadados e governanca</CardTitle>
+                <CardDescription>Atualize cabecalho, status, vigencia, dominio e filiais vinculadas.</CardDescription>
+              </div>
+              <Button onClick={() => metadataMutation.mutate()} disabled={metadataMutation.isPending} className="gap-2">
+                <Save className="h-4 w-4" />
+                Salvar
+              </Button>
             </CardHeader>
-            <CardContent>
-              {extractions.length > 0 ? (
-                <div className="space-y-4">
-                  {extractions.map((extraction) => (
-                    <Card key={extraction.id} className="border border-border">
-                      <CardContent className="pt-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <Badge variant="outline">{extraction.target_table}</Badge>
-                          <Badge className={
-                            extraction.validation_status === "Aprovado"
-                              ? "bg-green-100 text-green-800"
-                              : extraction.validation_status === "Rejeitado"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-yellow-100 text-yellow-800"
-                          }>
-                            {extraction.validation_status}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {Object.entries(extraction.extracted_fields || {}).map(([key, value]) => (
-                            <div key={key} className="space-y-1">
-                              <p className="text-xs font-medium text-muted-foreground uppercase">{key.replace(/_/g, " ")}</p>
-                              <p className="text-sm">{String(value ?? "-")}</p>
-                              {extraction.confidence_scores?.[key] != null && (
-                                <div className="flex items-center gap-2">
-                                  <Progress value={(extraction.confidence_scores[key] || 0) * 100} className="h-1 flex-1" />
-                                  <span className="text-xs text-muted-foreground">
-                                    {((extraction.confidence_scores[key] || 0) * 100).toFixed(0)}%
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+            <CardContent className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>Titulo</Label>
+                  <Input
+                    value={metadataForm.title}
+                    onChange={(event) => setMetadataForm((current) => ({ ...current, title: event.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={metadataForm.status}
+                    onValueChange={(value) => setMetadataForm((current) => ({ ...current, status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Resumo</Label>
+                <Textarea
+                  value={metadataForm.summary}
+                  onChange={(event) => setMetadataForm((current) => ({ ...current, summary: event.target.value }))}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>Dominio</Label>
+                  <Select
+                    value={metadataForm.documentDomain}
+                    onValueChange={(value) => setMetadataForm((current) => ({ ...current, documentDomain: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DOMAIN_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Tags</Label>
+                  <Input
+                    value={metadataForm.tagsText}
+                    onChange={(event) => setMetadataForm((current) => ({ ...current, tagsText: event.target.value }))}
+                    placeholder="frota, pneus, combustivel"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Filiais</Label>
+                <div className="grid gap-2 rounded-md border p-3 md:grid-cols-2">
+                  {branches.map((branch) => (
+                    <label key={branch.id} className="flex items-center gap-3 text-sm">
+                      <Checkbox checked={metadataForm.branchIds.includes(branch.id)} onCheckedChange={() => toggleBranch(branch.id)} />
+                      {getBranchDisplayLabel(branch)}
+                    </label>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Brain className="h-12 w-12 mx-auto mb-3" />
-                  <p className="font-medium">Nenhum dado extraído ainda</p>
-                  <p className="text-sm mt-1">Clique em "Reprocessar IA" para iniciar a extração.</p>
-                </div>
+              </div>
+
+              {document.document_kind === "controlled" && (
+                <>
+                  <Separator />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-2">
+                      <Label>Codigo</Label>
+                      <Input
+                        value={metadataForm.code}
+                        onChange={(event) => setMetadataForm((current) => ({ ...current, code: event.target.value }))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Tipo controlado</Label>
+                      <Input
+                        value={metadataForm.documentTypeLabel}
+                        onChange={(event) =>
+                          setMetadataForm((current) => ({ ...current, documentTypeLabel: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Norma</Label>
+                      <Input
+                        value={metadataForm.normReference}
+                        onChange={(event) =>
+                          setMetadataForm((current) => ({ ...current, normReference: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Emitente</Label>
+                      <Input
+                        value={metadataForm.issuerName}
+                        onChange={(event) => setMetadataForm((current) => ({ ...current, issuerName: event.target.value }))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Confidencialidade</Label>
+                      <Select
+                        value={metadataForm.confidentialityLevel}
+                        onValueChange={(value) =>
+                          setMetadataForm((current) => ({ ...current, confidentialityLevel: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CONFIDENTIALITY_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Departamento responsavel</Label>
+                      <Input
+                        value={metadataForm.responsibleDepartment}
+                        onChange={(event) =>
+                          setMetadataForm((current) => ({ ...current, responsibleDepartment: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Vigencia inicial</Label>
+                      <Input
+                        type="date"
+                        value={metadataForm.validityStartDate}
+                        onChange={(event) =>
+                          setMetadataForm((current) => ({ ...current, validityStartDate: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Vigencia final</Label>
+                      <Input
+                        type="date"
+                        value={metadataForm.validityEndDate}
+                        onChange={(event) =>
+                          setMetadataForm((current) => ({ ...current, validityEndDate: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Revisao prevista</Label>
+                      <Input
+                        type="date"
+                        value={metadataForm.reviewDueDate}
+                        onChange={(event) =>
+                          setMetadataForm((current) => ({ ...current, reviewDueDate: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <label className="flex items-center gap-3 rounded-md border p-3 text-sm">
+                      <Checkbox
+                        checked={metadataForm.controlledCopy}
+                        onCheckedChange={(checked) =>
+                          setMetadataForm((current) => ({ ...current, controlledCopy: checked === true }))
+                        }
+                      />
+                      Copia controlada
+                    </label>
+                  </div>
+                </>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Versionamento formal</CardTitle>
+                <CardDescription>Troque o arquivo atual para gerar uma nova revisao major automaticamente.</CardDescription>
+              </div>
+              <Badge variant="outline" className="gap-2">
+                <FolderGit2 className="h-3.5 w-3.5" />
+                Rev. {document.current_version_number}
+              </Badge>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                <Input type="file" onChange={(event) => setReplacementFile(event.target.files?.[0] || null)} />
+                <Button onClick={() => replaceFileMutation.mutate()} disabled={replaceFileMutation.isPending || !replacementFile}>
+                  {replaceFileMutation.isPending ? "Substituindo..." : "Substituir arquivo"}
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {document.versions.map((version) => (
+                  <div key={version.id} className="rounded-lg border p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium">Revisao {version.version_number}</p>
+                        <p className="text-sm text-muted-foreground">{version.changes_summary || "Sem resumo informado."}</p>
+                      </div>
+                      {version.is_current && <Badge>Atual</Badge>}
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {formatDate(version.created_at)} · por {version.created_by_user_id}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Timeline documental</CardTitle>
+              <CardDescription>Revisoes formais, alteracoes de metadado e eventos legados em uma linha do tempo unica.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {document.timeline.map((entry) => (
+                <div key={entry.id} className="rounded-lg border p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getTimelineBadge(entry.kind)}>{entry.kind}</Badge>
+                        <p className="font-medium">{entry.title}</p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{entry.description}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{new Date(entry.timestamp).toLocaleString("pt-BR")}</p>
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: Metadata */}
         <div className="space-y-6">
-          {/* Status IA */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Status IA</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-4 w-4" />
+                Painel de IA
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Status</span>
-                {getStatusBadge(document.ai_processing_status)}
+                <Badge variant="outline">{document.ai_processing_status || "pending"}</Badge>
               </div>
-              {document.ai_confidence_score != null && (
+              {document.ai_confidence_score !== null && (
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-muted-foreground">Confiança</span>
-                    <span className="text-sm font-medium">{(document.ai_confidence_score * 100).toFixed(0)}%</span>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Confianca</span>
+                    <span>{Math.round(document.ai_confidence_score * 100)}%</span>
                   </div>
                   <Progress value={document.ai_confidence_score * 100} />
                 </div>
               )}
-              {document.ai_extracted_category && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Categoria IA</span>
-                  <Badge variant="outline">{document.ai_extracted_category}</Badge>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Branches */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Filiais Vinculadas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {branches.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {branches.map((branch) => (
-                    <Badge key={branch.id} variant="secondary">
-                      {getBranchDisplayLabel({ code: branch.branch_code, name: branch.branch_name })}
-                    </Badge>
-                  ))}
+              {document.latest_extraction ? (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary">{document.latest_extraction.target_table}</Badge>
+                    <Badge variant="outline">{document.latest_extraction.validation_status}</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    {Object.entries(document.latest_extraction.extracted_fields)
+                      .slice(0, 5)
+                      .map(([key, value]) => (
+                        <div key={key} className="flex items-start justify-between gap-3 text-sm">
+                          <span className="text-muted-foreground">{key}</span>
+                          <span className="text-right">{String(value)}</span>
+                        </div>
+                      ))}
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => navigate("/documentos?tab=extracoes")}>
+                    Abrir fila de extracoes
+                  </Button>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Nenhuma filial vinculada.</p>
+                <p className="text-sm text-muted-foreground">A extracao automatica ainda nao gerou um preview validavel para este documento.</p>
               )}
             </CardContent>
           </Card>
 
-          {/* Document Metadata */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Informações</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Campanhas de leitura
+              </CardTitle>
+              <CardDescription>Envie o documento para leitura obrigatoria e acompanhe confirmacoes por colaborador.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Tipo</span>
-                <span className="text-sm">{document.document_type || "-"}</span>
+            <CardContent className="space-y-4">
+              <div className="space-y-3 rounded-lg border p-4">
+                <Input
+                  value={campaignForm.title}
+                  onChange={(event) => setCampaignForm((current) => ({ ...current, title: event.target.value }))}
+                  placeholder="Titulo da campanha"
+                />
+                <Textarea
+                  value={campaignForm.message}
+                  onChange={(event) => setCampaignForm((current) => ({ ...current, message: event.target.value }))}
+                  placeholder="Mensagem e orientacoes para leitura."
+                />
+                <Input
+                  type="datetime-local"
+                  value={campaignForm.dueAt}
+                  onChange={(event) => setCampaignForm((current) => ({ ...current, dueAt: event.target.value }))}
+                />
+                <CollaboratorMultiSelect
+                  collaborators={collaborators}
+                  selectedIds={selectedRecipientIds}
+                  onChange={setSelectedRecipientIds}
+                  placeholder="Selecionar destinatarios"
+                />
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => campaignMutation.mutate()}
+                  disabled={campaignMutation.isPending || !campaignForm.title.trim() || selectedRecipientIds.length === 0}
+                >
+                  <Send className="h-4 w-4" />
+                  Enviar campanha
+                </Button>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Tamanho</span>
-                <span className="text-sm">{formatFileSize(document.file_size)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Cópia Controlada</span>
-                <span className="text-sm">{document.controlled_copy ? "Sim" : "Não"}</span>
-              </div>
-              {document.tags && document.tags.length > 0 && (
-                <div>
-                  <span className="text-sm text-muted-foreground">Tags</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {document.tags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
-                    ))}
+
+              <div className="space-y-3">
+                {document.read_campaigns.map((campaign) => (
+                  <div key={campaign.id} className="rounded-lg border p-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-medium">{campaign.title}</p>
+                        <Badge variant="outline">{campaign.status}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{campaign.message || "Sem mensagem complementar."}</p>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {campaign.recipients.map((recipient) => (
+                        <div key={recipient.id} className="flex items-center justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 text-sm">
+                          <div>
+                            <p>{recipient.user_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {recipient.status} · prazo {formatDate(recipient.due_at)}
+                            </p>
+                          </div>
+                          {recipient.status !== "confirmed" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => confirmRecipientMutation.mutate({ recipientId: recipient.id })}
+                            >
+                              Confirmar
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GitPullRequest className="h-4 w-4" />
+                Solicitacoes internas
+              </CardTitle>
+              <CardDescription>Peça nova versao, complemento ou novo documento para um colaborador da empresa.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3 rounded-lg border p-4">
+                <Input
+                  value={requestForm.title}
+                  onChange={(event) => setRequestForm((current) => ({ ...current, title: event.target.value }))}
+                  placeholder="Titulo da solicitacao"
+                />
+                <Textarea
+                  value={requestForm.description}
+                  onChange={(event) => setRequestForm((current) => ({ ...current, description: event.target.value }))}
+                  placeholder="Descreva o que precisa ser entregue."
+                />
+                <Select
+                  value={requestForm.requestType}
+                  onValueChange={(value) => setRequestForm((current) => ({ ...current, requestType: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REQUEST_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={requestForm.requestedFromUserId}
+                  onValueChange={(value) => setRequestForm((current) => ({ ...current, requestedFromUserId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Responsavel pela entrega" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {collaborators.map((collaborator) => (
+                      <SelectItem key={collaborator.id} value={collaborator.id}>
+                        {collaborator.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Input
+                    type="datetime-local"
+                    value={requestForm.dueAt}
+                    onChange={(event) => setRequestForm((current) => ({ ...current, dueAt: event.target.value }))}
+                  />
+                  <Select
+                    value={requestForm.priority}
+                    onValueChange={(value) => setRequestForm((current) => ({ ...current, priority: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Baixa</SelectItem>
+                      <SelectItem value="medium">Media</SelectItem>
+                      <SelectItem value="high">Alta</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => requestMutation.mutate()}
+                  disabled={requestMutation.isPending || !requestForm.title.trim() || !requestForm.requestedFromUserId}
+                >
+                  <Milestone className="h-4 w-4" />
+                  Criar solicitacao
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {document.requests.map((request) => (
+                  <div key={request.id} className="rounded-lg border p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium">{request.title}</p>
+                        <p className="text-sm text-muted-foreground">{request.description || "Sem descricao complementar."}</p>
+                      </div>
+                      <Badge variant="outline">{request.status}</Badge>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                      <span>Tipo: {request.request_type}</span>
+                      <span>Responsavel: {request.requested_from_name}</span>
+                      <span>Prazo: {formatDate(request.due_at)}</span>
+                    </div>
+                    {request.status !== "fulfilled" && (
+                      <Button className="mt-3" size="sm" variant="outline" onClick={() => fulfillMutation.mutate(request.id)}>
+                        Marcar como atendida
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                Relacoes documentais
+              </CardTitle>
+              <CardDescription>Vincule documentos relacionados por referencia, complemento, substituicao ou dependencia.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3 rounded-lg border p-4">
+                <Select
+                  value={relationForm.relationType}
+                  onValueChange={(value) => setRelationForm((current) => ({ ...current, relationType: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RELATION_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={relationForm.targetDocumentId}
+                  onValueChange={(value) => setRelationForm((current) => ({ ...current, targetDocumentId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar documento relacionado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sameDomainRelationOptions.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.title} · {option.document_domain}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Textarea
+                  value={relationForm.notes}
+                  onChange={(event) => setRelationForm((current) => ({ ...current, notes: event.target.value }))}
+                  placeholder="Observacao sobre a relacao."
+                />
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => relationMutation.mutate()}
+                  disabled={relationMutation.isPending || !relationForm.targetDocumentId}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Criar relacao
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {document.relations_outgoing.map((relation) => (
+                  <div key={relation.id} className="rounded-lg border p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium">{relation.target_document?.title || relation.target_document_id}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {relation.relation_type} · {relation.notes || "Sem observacoes."}
+                        </p>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => removeRelationMutation.mutate(relation.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                {document.relations_incoming.length > 0 && (
+                  <>
+                    <Separator />
+                    {document.relations_incoming.map((relation) => (
+                      <div key={relation.id} className="rounded-lg border p-4">
+                        <p className="font-medium">{relation.target_document?.title || relation.source_document_id}</p>
+                        <p className="text-sm text-muted-foreground">Relaciona este documento como {relation.relation_type}.</p>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
     </div>
   );
-};
-
-export default SGQDocumentDetail;
+}

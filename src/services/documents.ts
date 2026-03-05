@@ -346,14 +346,7 @@ export const uploadDocument = async (
     throw new Error('User profile or company not found');
   }
 
-  // Check if auto AI processing is enabled
-  const { data: company } = await supabase
-    .from('companies')
-    .select('auto_ai_processing')
-    .eq('id', profile.company_id)
-    .maybeSingle();
-
-  const shouldAutoProcess = company?.auto_ai_processing && !options?.skipAutoProcessing;
+  const shouldAutoProcess = !options?.skipAutoProcessing;
 
   // Sanitize filename
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
