@@ -348,7 +348,7 @@ export const getRegulatoryDocuments = async (
     }
   }
 
-  const mapped = licenses.map<RegulatoryDocumentItem>((license) => {
+  const mapped = (licenses as any[]).map<RegulatoryDocumentItem>((license) => {
     const renewal = latestScheduleByLicense.get(license.id);
     const renewalStatus: RenewalStatus = renewal?.status || "nao_iniciado";
     const threshold = license.renewal_alert_days ?? settings.default_expiring_days ?? 30;
