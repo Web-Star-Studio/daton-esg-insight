@@ -212,10 +212,7 @@ export const documentVersionsService = {
       throw new Error("Documento não encontrado para criar nova versão.");
     }
 
-    const { data, error } = await supabase
-      .from('document_versions')
-      .insert({
-        ...safeVersionData,
+    const insertPayload: Record<string, unknown> = {
         document_id: documentId,
         created_by_user_id: user.id,
         title: versionData.title || documentInfo.data.file_name || 'Nova versão',
@@ -223,7 +220,14 @@ export const documentVersionsService = {
         file_size: versionData.file_size ?? documentInfo.data.file_size ?? undefined,
         changes_summary: changesSummary,
         is_current: true,
-      })
+        version_number: 0, // placeholder, will be set below
+      };
+    if (safeVersionData.content_hash) insertPayload.content_hash = safeVersionData.content_hash;
+    if (safeVersionData.metadata) insertPayload.metadata = safeVersionData.metadata;
+
+    const { data, error } = await supabase
+      .from('document_versions')
+      .insert(insertPayload as any)
       .select()
       .maybeSingle();
 

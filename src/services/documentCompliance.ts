@@ -326,8 +326,8 @@ export const getPendingDocumentDispositions = async (): Promise<PendingDispositi
         retention_period: doc.retention_period || "",
         due_date: toDateOnly(dueDate),
         days_overdue: daysOverdue,
-        approval_status: doc.approval_status,
-      } satisfies PendingDispositionDocument;
+        approval_status: doc.approval_status as string | null,
+      } as PendingDispositionDocument;
     })
     .filter((doc): doc is PendingDispositionDocument => !!doc && doc.approval_status !== "obsoleto")
     .sort((a, b) => a.due_date.localeCompare(b.due_date));

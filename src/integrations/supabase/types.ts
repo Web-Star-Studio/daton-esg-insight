@@ -15768,6 +15768,10 @@ export type Database = {
           document_identifier_type: string | null
           document_number: string | null
           expiration_date: string
+          external_last_sync_at: string | null
+          external_source_provider: string | null
+          external_source_reference: string | null
+          external_source_url: string | null
           id: string
           issue_date: string | null
           issuing_body: string
@@ -15796,6 +15800,10 @@ export type Database = {
           document_identifier_type?: string | null
           document_number?: string | null
           expiration_date: string
+          external_last_sync_at?: string | null
+          external_source_provider?: string | null
+          external_source_reference?: string | null
+          external_source_url?: string | null
           id?: string
           issue_date?: string | null
           issuing_body: string
@@ -15824,6 +15832,10 @@ export type Database = {
           document_identifier_type?: string | null
           document_number?: string | null
           expiration_date?: string
+          external_last_sync_at?: string | null
+          external_source_provider?: string | null
+          external_source_reference?: string | null
+          external_source_url?: string | null
           id?: string
           issue_date?: string | null
           issuing_body?: string
