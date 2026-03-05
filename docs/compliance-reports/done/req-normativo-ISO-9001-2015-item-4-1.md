@@ -1,6 +1,6 @@
 # Relatório Centralizado de Conformidade do Sistema
 
-Data da última atualização: 2026-03-04
+Data da última atualização: 2026-03-05
 
 ## Item 001
 
@@ -55,6 +55,50 @@ Como esta checagem é majoritariamente documental, o E2E aplicável é de **rast
 5. Critério de aceite recomendado:
    - PASSA: SWOT vigente + planejamento estratégico alinhado + rastreabilidade de ações + revisão dentro do ciclo definido.
    - FALHA: ausência de revisão no ciclo, ações sem evidência, ou documento sem versão vigente.
+
+---
+
+## Status de Implementação — 2026-03-05
+
+### Ações Entregues
+
+| # | Ação | Status | Evidência |
+|---|------|--------|-----------|
+| 1 | Formalizar periodicidade de revisão SWOT | ✅ Implementado | `swot_analysis.review_frequency` (default `anual`) + atualização de `next_review_date` |
+| 2 | Registrar histórico imutável de revisões | ✅ Implementado | tabela `swot_analysis_reviews` com `revision_number` incremental e RLS somente `SELECT/INSERT` |
+| 3 | Exigir evidência de análise crítica da revisão | ✅ Implementado | campos obrigatórios `review_summary` e `management_review_reference` ao registrar revisão |
+| 4 | Controlar datas da revisão | ✅ Implementado | trigger pós-inserção atualiza `last_review_date` e `next_review_date` em `swot_analysis` |
+| 5 | Classificar decisão de tratamento por item SWOT | ✅ Implementado | campo `swot_items.treatment_decision` (`nao_classificado`, `irrelevante`, `relevante_requer_acoes`) |
+| 6 | Rastreabilidade 1:1 para itens relevantes | ✅ Implementado | `linked_action_plan_item_id` e `external_action_reference` com constraint obrigando vínculo para itens relevantes |
+| 7 | Evidência visual de compliance no módulo SWOT | ✅ Implementado | status da revisão (Em dia/Vencida/Sem revisão), histórico de revisões, e contadores de rastreabilidade |
+
+### Guia E2E de Validação
+
+1. **Configurar periodicidade**
+   - Acesse `/planejamento-estrategico` > aba **SWOT**.
+   - Crie análise com periodicidade `Anual` e confirme persistência do campo.
+
+2. **Registrar revisão formal**
+   - Na análise criada, clique em **Registrar Revisão**.
+   - Preencha data, resumo e referência de análise crítica (ata/SOGI).
+   - Verifique criação da revisão no histórico com número incremental.
+
+3. **Validar imutabilidade de revisão**
+   - Confirme que a revisão é exibida no histórico e não possui fluxo de edição/exclusão na UI.
+   - Em auditoria técnica, validar que RLS da tabela permite apenas `SELECT/INSERT`.
+
+4. **Classificar item relevante e exigir rastreabilidade**
+   - Crie/edite item SWOT com decisão **Relevante: requer ações**.
+   - Tente salvar sem vínculo interno/externo: deve bloquear.
+   - Vincule item de `action_plan_items` ou preencha referência externa e salve.
+
+5. **Conferir indicadores de conformidade**
+   - Verifique os contadores:
+     - Itens relevantes
+     - Relevantes rastreados
+     - Relevantes pendentes
+     - Taxa de rastreabilidade
+   - Verifique status da revisão (`Em dia`, `Vencida` ou `Sem revisão registrada`) conforme datas.
 
 ---
 
