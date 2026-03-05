@@ -141,6 +141,7 @@ const GerenciamentoProjetos = lazy(() => import("./pages/GerenciamentoProjetos")
 
 const AcoesCorretivas = lazy(() => import("./pages/AcoesCorretivas"));
 const ControleDocumentos = lazy(() => import("./pages/ControleDocumentos"));
+const SGQDocumentDetail = lazy(() => import("./pages/SGQDocumentDetail"));
 const ExtracoesDocumentos = lazy(() => import("./pages/ExtracoesDocumentos"));
 
 // Phase 5-8: Novas páginas ESG
@@ -865,6 +866,7 @@ const AppContent = () => {
             <Route path="/gestao-indicadores" element={<ProtectedLazyPageWrapper><GestaoIndicadores /></ProtectedLazyPageWrapper>} />
             <Route path="/indicador/:id" element={<ProtectedLazyPageWrapper><IndicadorDetalhes /></ProtectedLazyPageWrapper>} />
             <Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
+            <Route path="/controle-documentos/:id" element={<ProtectedLazyPageWrapper><SGQDocumentDetail /></ProtectedLazyPageWrapper>} />
             <Route path="/gerenciamento-projetos" element={<ProtectedLazyPageWrapper><GerenciamentoProjetos /></ProtectedLazyPageWrapper>} />
             <Route path="/laia" element={<ProtectedLazyPageWrapper><LAIAUnidades /></ProtectedLazyPageWrapper>} />
             <Route path="/laia/unidade/:branchId" element={<ProtectedLazyPageWrapper><LAIAUnidadePage /></ProtectedLazyPageWrapper>} />

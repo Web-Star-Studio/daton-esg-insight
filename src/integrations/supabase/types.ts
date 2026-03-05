@@ -5972,6 +5972,42 @@ export type Database = {
           },
         ]
       }
+      document_branches: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          document_id: string
+          id: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          document_id: string
+          id?: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          document_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_branches_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_branches_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_controlled_copies: {
         Row: {
           assigned_department: string | null
@@ -15731,10 +15767,6 @@ export type Database = {
           document_identifier_other: string | null
           document_identifier_type: string | null
           document_number: string | null
-          external_last_sync_at: string | null
-          external_source_provider: string | null
-          external_source_reference: string | null
-          external_source_url: string | null
           expiration_date: string
           id: string
           issue_date: string | null
@@ -15763,10 +15795,6 @@ export type Database = {
           document_identifier_other?: string | null
           document_identifier_type?: string | null
           document_number?: string | null
-          external_last_sync_at?: string | null
-          external_source_provider?: string | null
-          external_source_reference?: string | null
-          external_source_url?: string | null
           expiration_date: string
           id?: string
           issue_date?: string | null
@@ -15795,10 +15823,6 @@ export type Database = {
           document_identifier_other?: string | null
           document_identifier_type?: string | null
           document_number?: string | null
-          external_last_sync_at?: string | null
-          external_source_provider?: string | null
-          external_source_reference?: string | null
-          external_source_url?: string | null
           expiration_date?: string
           id?: string
           issue_date?: string | null
