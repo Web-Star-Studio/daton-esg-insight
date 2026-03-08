@@ -691,7 +691,7 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
     throw new Error(`Erro ao carregar campanhas de leitura: ${error.message}`);
   }
 
-  const campaignIds = (campaigns || []).map((campaign: { id: string }) => campaign.id);
+  const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
   const { data: recipients, error: recipientsError } = campaignIds.length
     ? await supabase
         .from("document_read_recipients" as any)
