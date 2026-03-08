@@ -302,7 +302,7 @@ class StakeholderRequirementsService {
       .from("stakeholder_requirement_evidences" as any)
       .select("stakeholder_requirement_id")
       .eq("stakeholder_requirement_id", requirementId)
-      .eq("company_id", companyId);
+      .eq("company_id", companyId)) as any;
 
     if (evidenceError) {
       throw new Error(`Erro ao carregar evidências: ${evidenceError.message}`);
