@@ -263,8 +263,8 @@ class StakeholderRequirementsService {
       return [];
     }
 
-    const { data: evidences, error: evidenceError } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { data: evidences, error: evidenceError } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .select("stakeholder_requirement_id")
       .in("stakeholder_requirement_id", requirementIds)
       .eq("company_id", companyId);
