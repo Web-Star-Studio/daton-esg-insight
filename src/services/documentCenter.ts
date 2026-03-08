@@ -491,7 +491,7 @@ async function getLatestExtractions(documentIds: string[]): Promise<Record<strin
   }
 
   return Object.entries(latestJobIdsByDocument).reduce<Record<string, DocumentRecord["latest_extraction"]>>((acc, [documentId, jobId]) => {
-    const preview = (previews || []).find((item) => item.job_id === jobId);
+    const preview = ((previews || []) as any[]).find((item) => item.job_id === jobId);
     if (preview) {
       acc[documentId] = {
         id: preview.id,
