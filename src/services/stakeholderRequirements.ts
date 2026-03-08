@@ -430,8 +430,8 @@ class StakeholderRequirementsService {
   async getRequirementEvidences(requirementId: string): Promise<StakeholderRequirementEvidence[]> {
     const { companyId } = await resolveUserContext();
 
-    const { data, error } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { data, error } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .select(
         `
           *,
@@ -441,7 +441,7 @@ class StakeholderRequirementsService {
       )
       .eq("stakeholder_requirement_id", requirementId)
       .eq("company_id", companyId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })) as any;
 
     if (error) {
       throw new Error(`Erro ao carregar evidências: ${error.message}`);
