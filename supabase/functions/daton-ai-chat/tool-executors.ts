@@ -338,7 +338,7 @@ async function queryRisks(args: any, companyId: string, supabase: any) {
 
   const summary = {
     total: data?.length || 0,
-    byLevel: {},
+    byLevel: {} as Record<string, number>,
     critical: 0
   };
 
