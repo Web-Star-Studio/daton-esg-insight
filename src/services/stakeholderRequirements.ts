@@ -201,8 +201,8 @@ class StakeholderRequirementsService {
   ): Promise<StakeholderRequirement[]> {
     const { companyId } = await resolveUserContext();
 
-    let query = supabase
-      .from("stakeholder_requirements")
+    let query = (supabase
+      .from("stakeholder_requirements" as any)
       .select(
         `
           *,
