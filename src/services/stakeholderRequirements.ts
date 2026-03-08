@@ -378,13 +378,13 @@ class StakeholderRequirementsService {
         input.review_due_date !== undefined ? input.review_due_date || null : undefined,
     };
 
-    const { data, error } = await supabase
-      .from("stakeholder_requirements")
+    const { data, error } = await (supabase
+      .from("stakeholder_requirements" as any)
       .update(payload)
       .eq("id", requirementId)
       .eq("company_id", companyId)
       .select("*")
-      .single();
+      .single()) as any;
 
     if (error || !data) {
       throw new Error(error?.message || "Erro ao atualizar requisito");
