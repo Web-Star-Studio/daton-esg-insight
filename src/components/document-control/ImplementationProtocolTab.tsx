@@ -49,7 +49,7 @@ export const ImplementationProtocolTab = () => {
 
       // Get read confirmations
       const docIds = controlledDocs.map((d: any) => d.id);
-      const { data: confirmations } = await supabase
+      const { data: confirmations } = await (supabase as any)
         .from("document_read_confirmations")
         .select("*")
         .in("document_id", docIds);
