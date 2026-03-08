@@ -481,10 +481,10 @@ async function getLatestExtractions(documentIds: string[]): Promise<Record<strin
     return {};
   }
 
-  const { data: previews, error: previewsError } = await supabase
-    .from("extracted_data_preview")
+  const { data: previews, error: previewsError } = await (supabase
+    .from("extracted_data_preview" as any)
     .select("id, job_id, validation_status, target_table, created_at, extracted_fields")
-    .in("job_id", jobIds);
+    .in("job_id", jobIds) as any);
 
   if (previewsError) {
     throw new Error(`Erro ao buscar extrações: ${previewsError.message}`);
