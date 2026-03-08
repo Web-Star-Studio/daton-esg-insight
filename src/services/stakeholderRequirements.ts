@@ -279,8 +279,8 @@ class StakeholderRequirementsService {
   async getStakeholderRequirementById(requirementId: string): Promise<StakeholderRequirement> {
     const { companyId } = await resolveUserContext();
 
-    const { data: requirement, error } = await supabase
-      .from("stakeholder_requirements")
+    const { data: requirement, error } = await (supabase
+      .from("stakeholder_requirements" as any)
       .select(
         `
           *,
