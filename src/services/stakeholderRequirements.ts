@@ -273,7 +273,7 @@ class StakeholderRequirementsService {
       throw new Error(`Erro ao carregar evidências dos requisitos: ${evidenceError.message}`);
     }
 
-    return withRequirementMetadata(requirements || [], evidences || []);
+    return withRequirementMetadata((requirements || []) as any[], (evidences || []) as any[]);
   }
 
   async getStakeholderRequirementById(requirementId: string): Promise<StakeholderRequirement> {
