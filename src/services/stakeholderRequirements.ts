@@ -334,11 +334,11 @@ class StakeholderRequirementsService {
       review_due_date: input.review_due_date || null,
     };
 
-    const { data, error } = await supabase
-      .from("stakeholder_requirements")
+    const { data, error } = await (supabase
+      .from("stakeholder_requirements" as any)
       .insert(payload)
       .select("*")
-      .single();
+      .single()) as any;
 
     if (error || !data) {
       throw new Error(error?.message || "Erro ao criar requisito");
