@@ -442,7 +442,7 @@ async function getDashboardSummary(args: any, companyId: string, supabase: any) 
   const summary = {
     goals: {
       total: goals?.length || 0,
-      active: goals?.filter(g => g.status === 'Em Andamento').length || 0
+      active: goals?.filter((g: any) => g.status === 'Em Andamento').length || 0
     },
     tasks: {
       total: tasks?.length || 0,
