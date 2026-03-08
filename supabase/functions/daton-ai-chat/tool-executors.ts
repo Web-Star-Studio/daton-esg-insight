@@ -401,8 +401,8 @@ async function queryEmployees(args: any, companyId: string, supabase: any) {
 
   const summary = {
     total: data?.length || 0,
-    byGender: {},
-    byDepartment: {}
+    byGender: {} as Record<string, number>,
+    byDepartment: {} as Record<string, number>
   };
 
   data?.forEach((emp: any) => {
