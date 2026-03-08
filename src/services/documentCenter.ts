@@ -1033,7 +1033,7 @@ export async function createReadCampaign(input: {
     .from("document_read_recipients" as any)
     .insert(
       input.recipientIds.map((recipientId) => ({
-        campaign_id: campaign.id,
+        campaign_id: (campaign as any).id,
         user_id: recipientId,
         due_at: input.dueAt || null,
       })),
