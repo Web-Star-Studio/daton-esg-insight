@@ -465,8 +465,8 @@ class StakeholderRequirementsService {
       added_by_user_id: userId,
     };
 
-    const { data, error } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { data, error } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .insert(payload)
       .select(
         `
@@ -475,7 +475,7 @@ class StakeholderRequirementsService {
           added_by:profiles!stakeholder_requirement_evidences_added_by_user_id_fkey(id, full_name)
         `,
       )
-      .single();
+      .single()) as any;
 
     if (error || !data) {
       throw new Error(error?.message || "Erro ao adicionar evidência");
