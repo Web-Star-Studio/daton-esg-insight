@@ -446,8 +446,8 @@ async function getDashboardSummary(args: any, companyId: string, supabase: any) 
     },
     tasks: {
       total: tasks?.length || 0,
-      overdue: tasks?.filter(t => t.status === 'Em Atraso').length || 0,
-      pending: tasks?.filter(t => t.status === 'Pendente').length || 0
+      overdue: tasks?.filter((t: any) => t.status === 'Em Atraso').length || 0,
+      pending: tasks?.filter((t: any) => t.status === 'Pendente').length || 0
     },
     licenses: {
       total: licenses?.length || 0,
