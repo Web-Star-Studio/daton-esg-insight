@@ -571,7 +571,7 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     throw new Error(`Erro ao buscar destinatários de leitura: ${recipientsError.message}`);
   }
 
-  const documentIdByCampaign = (campaigns || []).reduce<Record<string, string>>((acc, campaign: { id: string; document_id: string }) => {
+  const documentIdByCampaign = ((campaigns || []) as any[]).reduce<Record<string, string>>((acc, campaign: { id: string; document_id: string }) => {
     acc[campaign.id] = campaign.document_id;
     return acc;
   }, {});
