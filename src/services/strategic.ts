@@ -231,11 +231,11 @@ export const updateSWOTAnalysisReviewCadence = async (
 };
 
 export const getSWOTReviewHistory = async (analysisId: string): Promise<SWOTAnalysisReview[]> => {
-  const { data, error } = await supabase
-    .from("swot_analysis_reviews")
+  const { data, error } = await (supabase
+    .from("swot_analysis_reviews" as any)
     .select("*")
     .eq("swot_analysis_id", analysisId)
-    .order("revision_number", { ascending: false });
+    .order("revision_number", { ascending: false })) as any;
 
   if (error) throw error;
   return (data || []) as SWOTAnalysisReview[];
