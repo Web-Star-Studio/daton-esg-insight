@@ -648,7 +648,7 @@ async function fetchDocumentRelations(documentId: string): Promise<{
     throw new Error(`Erro ao carregar relações documentais: ${error.message}`);
   }
 
-  const relations = (data || []) as DocumentRelation[];
+  const relations = ((data || []) as unknown) as DocumentRelation[];
   const relatedIds = Array.from(
     new Set(
       relations.flatMap((relation) => [relation.source_document_id, relation.target_document_id]).filter((id) => id !== documentId),
