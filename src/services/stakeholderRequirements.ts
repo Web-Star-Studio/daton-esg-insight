@@ -487,11 +487,11 @@ class StakeholderRequirementsService {
   async removeRequirementEvidence(evidenceId: string): Promise<void> {
     const { companyId } = await resolveUserContext();
 
-    const { error } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { error } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .delete()
       .eq("id", evidenceId)
-      .eq("company_id", companyId);
+      .eq("company_id", companyId)) as any;
 
     if (error) {
       throw new Error(`Erro ao remover evidência: ${error.message}`);

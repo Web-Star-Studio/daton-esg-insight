@@ -1213,8 +1213,8 @@ export async function deleteDocumentRelation(relationId: string): Promise<void> 
     throw new Error(`Erro ao remover relação documental: ${deleteError.message}`);
   }
 
-  await createChangeLog(data.company_id, data.source_document_id, "relation_change", "Relação documental removida", {
-    targetDocumentId: data.target_document_id,
-    relationType: data.relation_type,
+  await createChangeLog((data as any).company_id, (data as any).source_document_id, "relation_change", "Relação documental removida", {
+    targetDocumentId: (data as any).target_document_id,
+    relationType: (data as any).relation_type,
   });
 }
