@@ -731,7 +731,7 @@ async function fetchDocumentRequests(documentId: string): Promise<DocumentReques
   }
 
   const userMap = await getProfilesMap(
-    (data || []).flatMap((row: DocumentRequest) => [row.requester_user_id, row.requested_from_user_id]),
+    ((data || []) as any[]).flatMap((row: DocumentRequest) => [row.requester_user_id, row.requested_from_user_id]),
   );
 
   return (data || []).map((row: DocumentRequest) => ({
