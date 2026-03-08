@@ -292,7 +292,7 @@ class StakeholderRequirementsService {
       )
       .eq("id", requirementId)
       .eq("company_id", companyId)
-      .single();
+      .single()) as any;
 
     if (error || !requirement) {
       throw new Error(error?.message || "Requisito não encontrado");
