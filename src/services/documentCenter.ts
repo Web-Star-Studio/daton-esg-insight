@@ -518,7 +518,7 @@ async function syncDerivedStatuses(documentIds?: string[]): Promise<void> {
       .select("id")
       .in("document_id", documentIds);
 
-    const campaignIds = (campaigns || []).map((campaign: { id: string }) => campaign.id);
+    const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
     if (campaignIds.length > 0) {
       readRecipientsQuery = readRecipientsQuery.in("campaign_id", campaignIds);
     }
