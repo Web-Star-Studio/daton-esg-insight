@@ -556,7 +556,7 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     throw new Error(`Erro ao buscar campanhas de leitura: ${campaignError.message}`);
   }
 
-  const campaignIds = (campaigns || []).map((campaign: { id: string }) => campaign.id);
+  const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
   if (campaignIds.length === 0) {
     return {};
   }
