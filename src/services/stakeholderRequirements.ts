@@ -298,8 +298,8 @@ class StakeholderRequirementsService {
       throw new Error(error?.message || "Requisito não encontrado");
     }
 
-    const { data: evidences, error: evidenceError } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { data: evidences, error: evidenceError } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .select("stakeholder_requirement_id")
       .eq("stakeholder_requirement_id", requirementId)
       .eq("company_id", companyId);
