@@ -219,12 +219,12 @@ export const updateSWOTAnalysisReviewCadence = async (
   analysisId: string,
   reviewFrequency: SWOTReviewFrequency,
 ) => {
-  const { data, error } = await supabase
-    .from("swot_analysis")
-    .update({ review_frequency: reviewFrequency })
+  const { data, error } = await (supabase
+    .from("swot_analysis" as any)
+    .update({ review_frequency: reviewFrequency } as any)
     .eq("id", analysisId)
     .select()
-    .single();
+    .single()) as any;
 
   if (error) throw error;
   return data as SWOTAnalysis;
