@@ -1,4 +1,4 @@
-import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+// Use 'any' for supabase client to avoid cross-file version conflicts
 
 export interface IntelligentSuggestion {
   insights: string[];
