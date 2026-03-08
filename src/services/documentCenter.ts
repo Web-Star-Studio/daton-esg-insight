@@ -734,7 +734,7 @@ async function fetchDocumentRequests(documentId: string): Promise<DocumentReques
     ((data || []) as any[]).flatMap((row: DocumentRequest) => [row.requester_user_id, row.requested_from_user_id]),
   );
 
-  return (data || []).map((row: DocumentRequest) => ({
+  return ((data || []) as any[]).map((row: DocumentRequest) => ({
     ...row,
     requester_name: userMap[row.requester_user_id]?.full_name || "Solicitante",
     requested_from_name: userMap[row.requested_from_user_id]?.full_name || "Responsável",
