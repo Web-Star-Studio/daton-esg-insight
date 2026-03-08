@@ -150,7 +150,7 @@ async function processReportGeneration(
       .from("report_generation_jobs")
       .update({
         status: "failed",
-        error_message: error.message,
+        error_message: (error as Error).message,
       })
       .eq("id", jobId);
   }

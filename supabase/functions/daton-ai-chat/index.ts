@@ -1690,7 +1690,7 @@ ${attachmentContext}`;
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
               complete: true,
               message: fullAccumulatedContent,
-              dataAccessed: toolResults?.map((r: any) => r.name) || []
+              dataAccessed: []
             })}\n\n`));
             controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
             controller.close();

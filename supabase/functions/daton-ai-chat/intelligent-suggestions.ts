@@ -51,16 +51,16 @@ export async function generateIntelligentSuggestions(
       
       case 'emissions_report':
       case 'emissions_spreadsheet':
-        return generateEmissionsSuggestions(extractedData, companyContext, goals, emissions);
+        return generateEmissionsSuggestions(extractedData, companyContext, goals || [], emissions || []);
       
       case 'environmental_license':
-        return generateLicenseSuggestions(extractedData, companyContext, licenses);
+        return generateLicenseSuggestions(extractedData, companyContext, licenses || []);
       
       case 'employee_spreadsheet':
         return generateEmployeeSuggestions(extractedData, companyContext, supabaseClient);
       
       case 'goals_spreadsheet':
-        return generateGoalsSuggestions(extractedData, companyContext, goals);
+        return generateGoalsSuggestions(extractedData, companyContext, goals || []);
       
       default:
         return generateGenericSuggestions(extractedData, documentType);

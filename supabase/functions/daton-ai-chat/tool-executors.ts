@@ -561,7 +561,7 @@ async function globalSearch(args: any, companyId: string, supabase: any) {
     };
   } catch (error) {
     console.error('Global search error:', error);
-    return { error: error.message };
+    return { error: (error as Error).message };
   }
 }
 
