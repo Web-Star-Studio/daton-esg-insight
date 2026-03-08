@@ -451,8 +451,8 @@ async function getDashboardSummary(args: any, companyId: string, supabase: any) 
     },
     licenses: {
       total: licenses?.length || 0,
-      active: licenses?.filter(l => l.status === 'Ativa').length || 0,
-      expired: licenses?.filter(l => l.status === 'Vencida').length || 0
+      active: licenses?.filter((l: any) => l.status === 'Ativa').length || 0,
+      expired: licenses?.filter((l: any) => l.status === 'Vencida').length || 0
     },
     risks: {
       total: risks?.length || 0,
