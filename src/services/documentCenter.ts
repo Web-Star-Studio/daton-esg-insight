@@ -601,7 +601,7 @@ async function getOpenRequestMap(documentIds: string[]): Promise<Record<string, 
     throw new Error(`Erro ao carregar solicitações: ${error.message}`);
   }
 
-  return (data || []).reduce<Record<string, number>>((acc, row: { target_document_id: string | null }) => {
+  return ((data || []) as any[]).reduce<Record<string, number>>((acc, row: { target_document_id: string | null }) => {
     if (!row.target_document_id) {
       return acc;
     }
