@@ -1,35 +1,72 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RegulatoryDocumentsTab } from "@/components/document-control/RegulatoryDocumentsTab";
-import { SGQIsoDocumentsTab } from "@/components/document-control/SGQIsoDocumentsTab";
-import { DocumentComplianceOperationsTab } from "@/components/document-control/DocumentComplianceOperationsTab";
+import { SystemDocumentsTab } from "@/components/document-control/SystemDocumentsTab";
+import { MasterListTab } from "@/components/document-control/MasterListTab";
+import { ApprovalQueueTab } from "@/components/document-control/ApprovalQueueTab";
+import { ImplementationProtocolTab } from "@/components/document-control/ImplementationProtocolTab";
+import { ObsolescenceRetentionTab } from "@/components/document-control/ObsolescenceRetentionTab";
+import { ExternalDocumentsTab } from "@/components/document-control/ExternalDocumentsTab";
+import { FileText, List, CheckSquare, BookOpen, Archive, ExternalLink } from "lucide-react";
 
 const ControleDocumentos = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Controle de Documentos</h1>
+        <h1 className="text-3xl font-bold text-foreground">Controle de Documentos e Registros</h1>
         <p className="text-muted-foreground">
-          Gestão separada entre documentos regulatórios e documentos SGQ/ISO.
+          Gestão conforme ISO 9001:2015 — Item 7.5 (Informação Documentada)
         </p>
       </div>
 
-      <Tabs defaultValue="regulatorio" className="space-y-6">
-        <TabsList className="grid w-full max-w-[620px] grid-cols-3">
-          <TabsTrigger value="regulatorio">Documentos Regulatórios</TabsTrigger>
-          <TabsTrigger value="sgq-iso">SGQ/ISO</TabsTrigger>
-          <TabsTrigger value="compliance-75">Compliance 7.5</TabsTrigger>
+      <Tabs defaultValue="sistema" className="space-y-6">
+        <TabsList className="grid w-full max-w-[800px] grid-cols-6">
+          <TabsTrigger value="sistema" className="gap-1 text-xs sm:text-sm">
+            <FileText className="h-3.5 w-3.5 hidden sm:block" />
+            Docs Sistema
+          </TabsTrigger>
+          <TabsTrigger value="lista-mestra" className="gap-1 text-xs sm:text-sm">
+            <List className="h-3.5 w-3.5 hidden sm:block" />
+            Lista Mestra
+          </TabsTrigger>
+          <TabsTrigger value="aprovacao" className="gap-1 text-xs sm:text-sm">
+            <CheckSquare className="h-3.5 w-3.5 hidden sm:block" />
+            Aprovação
+          </TabsTrigger>
+          <TabsTrigger value="implementacao" className="gap-1 text-xs sm:text-sm">
+            <BookOpen className="h-3.5 w-3.5 hidden sm:block" />
+            Implementação
+          </TabsTrigger>
+          <TabsTrigger value="obsolescencia" className="gap-1 text-xs sm:text-sm">
+            <Archive className="h-3.5 w-3.5 hidden sm:block" />
+            Obsol. & Ret.
+          </TabsTrigger>
+          <TabsTrigger value="externos" className="gap-1 text-xs sm:text-sm">
+            <ExternalLink className="h-3.5 w-3.5 hidden sm:block" />
+            Docs Externos
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="regulatorio" className="space-y-6">
-          <RegulatoryDocumentsTab />
+        <TabsContent value="sistema" className="space-y-6">
+          <SystemDocumentsTab />
         </TabsContent>
 
-        <TabsContent value="sgq-iso" className="space-y-6">
-          <SGQIsoDocumentsTab />
+        <TabsContent value="lista-mestra" className="space-y-6">
+          <MasterListTab />
         </TabsContent>
 
-        <TabsContent value="compliance-75" className="space-y-6">
-          <DocumentComplianceOperationsTab />
+        <TabsContent value="aprovacao" className="space-y-6">
+          <ApprovalQueueTab />
+        </TabsContent>
+
+        <TabsContent value="implementacao" className="space-y-6">
+          <ImplementationProtocolTab />
+        </TabsContent>
+
+        <TabsContent value="obsolescencia" className="space-y-6">
+          <ObsolescenceRetentionTab />
+        </TabsContent>
+
+        <TabsContent value="externos" className="space-y-6">
+          <ExternalDocumentsTab />
         </TabsContent>
       </Tabs>
     </div>
