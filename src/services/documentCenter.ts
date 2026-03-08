@@ -427,7 +427,7 @@ async function getControlProfiles(documentIds: string[]): Promise<Record<string,
     throw new Error(`Erro ao carregar perfis controlados: ${error.message}`);
   }
 
-  return (data || []).reduce<Record<string, DocumentControlProfile>>((acc, row: DocumentControlProfile) => {
+  return ((data || []) as any[]).reduce<Record<string, DocumentControlProfile>>((acc, row: DocumentControlProfile) => {
     acc[row.document_id] = row;
     return acc;
   }, {});
@@ -481,17 +481,17 @@ async function getLatestExtractions(documentIds: string[]): Promise<Record<strin
     return {};
   }
 
-  const { data: previews, error: previewsError } = await supabase
-    .from("extracted_data_preview")
+  const { data: previews, error: previewsError } = await (supabase
+    .from("extracted_data_preview" as any)
     .select("id, job_id, validation_status, target_table, created_at, extracted_fields")
-    .in("job_id", jobIds);
+    .in("job_id", jobIds) as any);
 
   if (previewsError) {
     throw new Error(`Erro ao buscar extrações: ${previewsError.message}`);
   }
 
   return Object.entries(latestJobIdsByDocument).reduce<Record<string, DocumentRecord["latest_extraction"]>>((acc, [documentId, jobId]) => {
-    const preview = (previews || []).find((item) => item.job_id === jobId);
+    const preview = ((previews || []) as any[]).find((item) => item.job_id === jobId);
     if (preview) {
       acc[documentId] = {
         id: preview.id,
@@ -518,7 +518,7 @@ async function syncDerivedStatuses(documentIds?: string[]): Promise<void> {
       .select("id")
       .in("document_id", documentIds);
 
-    const campaignIds = (campaigns || []).map((campaign: { id: string }) => campaign.id);
+    const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
     if (campaignIds.length > 0) {
       readRecipientsQuery = readRecipientsQuery.in("campaign_id", campaignIds);
     }
@@ -556,7 +556,7 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     throw new Error(`Erro ao buscar campanhas de leitura: ${campaignError.message}`);
   }
 
-  const campaignIds = (campaigns || []).map((campaign: { id: string }) => campaign.id);
+  const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
   if (campaignIds.length === 0) {
     return {};
   }
@@ -571,12 +571,12 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     throw new Error(`Erro ao buscar destinatários de leitura: ${recipientsError.message}`);
   }
 
-  const documentIdByCampaign = (campaigns || []).reduce<Record<string, string>>((acc, campaign: { id: string; document_id: string }) => {
+  const documentIdByCampaign = ((campaigns || []) as any[]).reduce<Record<string, string>>((acc, campaign: { id: string; document_id: string }) => {
     acc[campaign.id] = campaign.document_id;
     return acc;
   }, {});
 
-  return (recipients || []).reduce<Record<string, number>>((acc, recipient: { campaign_id: string }) => {
+  return ((recipients || []) as any[]).reduce<Record<string, number>>((acc, recipient: { campaign_id: string }) => {
     const documentId = documentIdByCampaign[recipient.campaign_id];
     if (!documentId) {
       return acc;
@@ -601,7 +601,7 @@ async function getOpenRequestMap(documentIds: string[]): Promise<Record<string, 
     throw new Error(`Erro ao carregar solicitações: ${error.message}`);
   }
 
-  return (data || []).reduce<Record<string, number>>((acc, row: { target_document_id: string | null }) => {
+  return ((data || []) as any[]).reduce<Record<string, number>>((acc, row: { target_document_id: string | null }) => {
     if (!row.target_document_id) {
       return acc;
     }
@@ -648,7 +648,7 @@ async function fetchDocumentRelations(documentId: string): Promise<{
     throw new Error(`Erro ao carregar relações documentais: ${error.message}`);
   }
 
-  const relations = (data || []) as DocumentRelation[];
+  const relations = ((data || []) as unknown) as DocumentRelation[];
   const relatedIds = Array.from(
     new Set(
       relations.flatMap((relation) => [relation.source_document_id, relation.target_document_id]).filter((id) => id !== documentId),
@@ -691,7 +691,7 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
     throw new Error(`Erro ao carregar campanhas de leitura: ${error.message}`);
   }
 
-  const campaignIds = (campaigns || []).map((campaign: { id: string }) => campaign.id);
+  const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
   const { data: recipients, error: recipientsError } = campaignIds.length
     ? await supabase
         .from("document_read_recipients" as any)
@@ -704,7 +704,7 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
     throw new Error(`Erro ao carregar destinatários das campanhas: ${recipientsError.message}`);
   }
 
-  const userMap = await getProfilesMap((recipients || []).map((item: { user_id: string }) => item.user_id));
+  const userMap = await getProfilesMap(((recipients || []) as any[]).map((item: { user_id: string }) => item.user_id));
 
   return (campaigns || []).map((campaign: any) => ({
     ...campaign,
@@ -731,10 +731,10 @@ async function fetchDocumentRequests(documentId: string): Promise<DocumentReques
   }
 
   const userMap = await getProfilesMap(
-    (data || []).flatMap((row: DocumentRequest) => [row.requester_user_id, row.requested_from_user_id]),
+    ((data || []) as any[]).flatMap((row: DocumentRequest) => [row.requester_user_id, row.requested_from_user_id]),
   );
 
-  return (data || []).map((row: DocumentRequest) => ({
+  return ((data || []) as any[]).map((row: DocumentRequest) => ({
     ...row,
     requester_name: userMap[row.requester_user_id]?.full_name || "Solicitante",
     requested_from_name: userMap[row.requested_from_user_id]?.full_name || "Responsável",
@@ -1033,7 +1033,7 @@ export async function createReadCampaign(input: {
     .from("document_read_recipients" as any)
     .insert(
       input.recipientIds.map((recipientId) => ({
-        campaign_id: campaign.id,
+        campaign_id: (campaign as any).id,
         user_id: recipientId,
         due_at: input.dueAt || null,
       })),
@@ -1152,9 +1152,9 @@ export async function fulfillDocumentRequest(input: {
     throw new Error(`Erro ao concluir solicitação: ${error.message}`);
   }
 
-  if (request.target_document_id) {
-    await createChangeLog(request.company_id, request.target_document_id, "request_fulfilled", "Solicitação concluída", {
-      requestId: request.id,
+  if ((request as any).target_document_id) {
+    await createChangeLog((request as any).company_id, (request as any).target_document_id, "request_fulfilled", "Solicitação concluída", {
+      requestId: (request as any).id,
       fulfilledDocumentId: input.fulfilledDocumentId || null,
       fulfilledVersionId: input.fulfilledVersionId || null,
     });
@@ -1213,8 +1213,8 @@ export async function deleteDocumentRelation(relationId: string): Promise<void> 
     throw new Error(`Erro ao remover relação documental: ${deleteError.message}`);
   }
 
-  await createChangeLog(data.company_id, data.source_document_id, "relation_change", "Relação documental removida", {
-    targetDocumentId: data.target_document_id,
-    relationType: data.relation_type,
+  await createChangeLog((data as any).company_id, (data as any).source_document_id, "relation_change", "Relação documental removida", {
+    targetDocumentId: (data as any).target_document_id,
+    relationType: (data as any).relation_type,
   });
 }

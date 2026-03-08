@@ -20866,224 +20866,6 @@ export type Database = {
           },
         ]
       }
-      stakeholder_matrix_reviews: {
-        Row: {
-          company_id: string
-          created_at: string
-          id: string
-          management_review_reference: string
-          next_review_due_date: string | null
-          review_date: string
-          review_summary: string
-          reviewed_by_user_id: string
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          id?: string
-          management_review_reference: string
-          next_review_due_date?: string | null
-          review_date: string
-          review_summary: string
-          reviewed_by_user_id: string
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          id?: string
-          management_review_reference?: string
-          next_review_due_date?: string | null
-          review_date?: string
-          review_summary?: string
-          reviewed_by_user_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stakeholder_matrix_reviews_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stakeholder_matrix_reviews_reviewed_by_user_id_fkey"
-            columns: ["reviewed_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      stakeholder_requirement_evidences: {
-        Row: {
-          added_by_user_id: string
-          company_id: string
-          created_at: string
-          document_id: string | null
-          evidence_date: string
-          evidence_note: string | null
-          evidence_url: string | null
-          id: string
-          stakeholder_requirement_id: string
-        }
-        Insert: {
-          added_by_user_id: string
-          company_id: string
-          created_at?: string
-          document_id?: string | null
-          evidence_date?: string
-          evidence_note?: string | null
-          evidence_url?: string | null
-          id?: string
-          stakeholder_requirement_id: string
-        }
-        Update: {
-          added_by_user_id?: string
-          company_id?: string
-          created_at?: string
-          document_id?: string | null
-          evidence_date?: string
-          evidence_note?: string | null
-          evidence_url?: string | null
-          id?: string
-          stakeholder_requirement_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stakeholder_requirement_evidences_added_by_user_id_fkey"
-            columns: ["added_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stakeholder_requirement_evidences_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stakeholder_requirement_evidences_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stakeholder_requirement_evidences_stakeholder_requirement_id_fkey"
-            columns: ["stakeholder_requirement_id"]
-            isOneToOne: false
-            referencedRelation: "stakeholder_requirements"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      stakeholder_requirements: {
-        Row: {
-          company_id: string
-          created_at: string
-          created_by_user_id: string
-          id: string
-          is_legal_requirement: boolean
-          is_relevant_to_sgq: boolean
-          iso_clause: string
-          iso_standard: string
-          last_checked_at: string | null
-          linked_compliance_task_id: string | null
-          monitoring_method: string | null
-          requirement_description: string | null
-          requirement_title: string
-          responsible_user_id: string | null
-          review_due_date: string | null
-          source_reference: string | null
-          stakeholder_id: string
-          status: Database["public"]["Enums"]["stakeholder_requirement_status_enum"]
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          created_by_user_id: string
-          id?: string
-          is_legal_requirement?: boolean
-          is_relevant_to_sgq?: boolean
-          iso_clause?: string
-          iso_standard?: string
-          last_checked_at?: string | null
-          linked_compliance_task_id?: string | null
-          monitoring_method?: string | null
-          requirement_description?: string | null
-          requirement_title: string
-          responsible_user_id?: string | null
-          review_due_date?: string | null
-          source_reference?: string | null
-          stakeholder_id: string
-          status?: Database["public"]["Enums"]["stakeholder_requirement_status_enum"]
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          created_by_user_id?: string
-          id?: string
-          is_legal_requirement?: boolean
-          is_relevant_to_sgq?: boolean
-          iso_clause?: string
-          iso_standard?: string
-          last_checked_at?: string | null
-          linked_compliance_task_id?: string | null
-          monitoring_method?: string | null
-          requirement_description?: string | null
-          requirement_title?: string
-          responsible_user_id?: string | null
-          review_due_date?: string | null
-          source_reference?: string | null
-          stakeholder_id?: string
-          status?: Database["public"]["Enums"]["stakeholder_requirement_status_enum"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stakeholder_requirements_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stakeholder_requirements_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stakeholder_requirements_linked_compliance_task_id_fkey"
-            columns: ["linked_compliance_task_id"]
-            isOneToOne: false
-            referencedRelation: "compliance_tasks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stakeholder_requirements_responsible_user_id_fkey"
-            columns: ["responsible_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stakeholder_requirements_stakeholder_id_fkey"
-            columns: ["stakeholder_id"]
-            isOneToOne: false
-            referencedRelation: "stakeholders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       stakeholder_surveys: {
         Row: {
           assessment_id: string
@@ -23390,9 +23172,6 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
-          last_review_date: string | null
-          next_review_date: string | null
-          review_frequency: Database["public"]["Enums"]["review_frequency_enum"]
           strategic_map_id: string | null
           title: string
           updated_at: string
@@ -23402,9 +23181,6 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          last_review_date?: string | null
-          next_review_date?: string | null
-          review_frequency?: Database["public"]["Enums"]["review_frequency_enum"]
           strategic_map_id?: string | null
           title: string
           updated_at?: string
@@ -23414,127 +23190,47 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          last_review_date?: string | null
-          next_review_date?: string | null
-          review_frequency?: Database["public"]["Enums"]["review_frequency_enum"]
           strategic_map_id?: string | null
           title?: string
           updated_at?: string
         }
         Relationships: []
       }
-      swot_analysis_reviews: {
-        Row: {
-          company_id: string
-          created_at: string
-          id: string
-          management_review_reference: string
-          review_date: string
-          review_summary: string
-          reviewed_by_user_id: string
-          revision_number: number
-          swot_analysis_id: string
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          id?: string
-          management_review_reference: string
-          review_date: string
-          review_summary: string
-          reviewed_by_user_id: string
-          revision_number?: number
-          swot_analysis_id: string
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          id?: string
-          management_review_reference?: string
-          review_date?: string
-          review_summary?: string
-          reviewed_by_user_id?: string
-          revision_number?: number
-          swot_analysis_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "swot_analysis_reviews_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "swot_analysis_reviews_reviewed_by_user_id_fkey"
-            columns: ["reviewed_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "swot_analysis_reviews_swot_analysis_id_fkey"
-            columns: ["swot_analysis_id"]
-            isOneToOne: false
-            referencedRelation: "swot_analysis"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       swot_items: {
         Row: {
           category: string
           created_at: string
           description: string | null
-          external_action_reference: string | null
           id: string
           impact_level: string | null
           item_text: string
-          linked_action_plan_item_id: string | null
           order_index: number | null
           swot_analysis_id: string
-          treatment_decision: Database["public"]["Enums"]["swot_treatment_decision_enum"]
           updated_at: string
         }
         Insert: {
           category: string
           created_at?: string
           description?: string | null
-          external_action_reference?: string | null
           id?: string
           impact_level?: string | null
           item_text: string
-          linked_action_plan_item_id?: string | null
           order_index?: number | null
           swot_analysis_id: string
-          treatment_decision?: Database["public"]["Enums"]["swot_treatment_decision_enum"]
           updated_at?: string
         }
         Update: {
           category?: string
           created_at?: string
           description?: string | null
-          external_action_reference?: string | null
           id?: string
           impact_level?: string | null
           item_text?: string
-          linked_action_plan_item_id?: string | null
           order_index?: number | null
           swot_analysis_id?: string
-          treatment_decision?: Database["public"]["Enums"]["swot_treatment_decision_enum"]
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "swot_items_linked_action_plan_item_id_fkey"
-            columns: ["linked_action_plan_item_id"]
-            isOneToOne: false
-            referencedRelation: "action_plan_items"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "swot_items_swot_analysis_id_fkey"
             columns: ["swot_analysis_id"]
@@ -25567,15 +25263,6 @@ export type Database = {
         | "semestral"
         | "anual"
         | "bienal"
-      stakeholder_requirement_status_enum:
-        | "nao_iniciado"
-        | "em_atendimento"
-        | "atendido"
-        | "bloqueado"
-      swot_treatment_decision_enum:
-        | "nao_classificado"
-        | "irrelevante"
-        | "relevante_requer_acoes"
       user_role_enum: "Admin" | "Editor" | "Leitor"
       user_role_type:
         | "super_admin"
@@ -25816,17 +25503,6 @@ export const Constants = {
         "semestral",
         "anual",
         "bienal",
-      ],
-      stakeholder_requirement_status_enum: [
-        "nao_iniciado",
-        "em_atendimento",
-        "atendido",
-        "bloqueado",
-      ],
-      swot_treatment_decision_enum: [
-        "nao_classificado",
-        "irrelevante",
-        "relevante_requer_acoes",
       ],
       user_role_enum: ["Admin", "Editor", "Leitor"],
       user_role_type: [

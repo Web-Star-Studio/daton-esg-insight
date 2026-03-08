@@ -219,23 +219,23 @@ export const updateSWOTAnalysisReviewCadence = async (
   analysisId: string,
   reviewFrequency: SWOTReviewFrequency,
 ) => {
-  const { data, error } = await supabase
-    .from("swot_analysis")
-    .update({ review_frequency: reviewFrequency })
+  const { data, error } = await (supabase
+    .from("swot_analysis" as any)
+    .update({ review_frequency: reviewFrequency } as any)
     .eq("id", analysisId)
     .select()
-    .single();
+    .single()) as any;
 
   if (error) throw error;
   return data as SWOTAnalysis;
 };
 
 export const getSWOTReviewHistory = async (analysisId: string): Promise<SWOTAnalysisReview[]> => {
-  const { data, error } = await supabase
-    .from("swot_analysis_reviews")
+  const { data, error } = await (supabase
+    .from("swot_analysis_reviews" as any)
     .select("*")
     .eq("swot_analysis_id", analysisId)
-    .order("revision_number", { ascending: false });
+    .order("revision_number", { ascending: false })) as any;
 
   if (error) throw error;
   return (data || []) as SWOTAnalysisReview[];
@@ -267,11 +267,11 @@ export const registerSWOTReview = async (
     revision_number: reviewData.revision_number,
   };
 
-  const { data, error } = await supabase
-    .from("swot_analysis_reviews")
+  const { data, error } = await (supabase
+    .from("swot_analysis_reviews" as any)
     .insert([payload])
     .select()
-    .single();
+    .single()) as any;
 
   if (error) throw error;
   return data as SWOTAnalysisReview;

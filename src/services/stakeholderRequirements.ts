@@ -202,7 +202,7 @@ class StakeholderRequirementsService {
     const { companyId } = await resolveUserContext();
 
     let query = supabase
-      .from("stakeholder_requirements")
+      .from("stakeholder_requirements" as any)
       .select(
         `
           *,
@@ -214,7 +214,7 @@ class StakeholderRequirementsService {
       )
       .eq("company_id", companyId)
       .order("review_due_date", { ascending: true })
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) as any;
 
     if (filters.status && filters.status !== "all") {
       query = query.eq("status", filters.status);
@@ -257,30 +257,30 @@ class StakeholderRequirementsService {
       throw new Error(`Erro ao carregar requisitos de partes interessadas: ${error.message}`);
     }
 
-    const requirementIds = (requirements || []).map((item) => item.id);
+    const requirementIds = ((requirements || []) as any[]).map((item: any) => item.id);
 
     if (requirementIds.length === 0) {
       return [];
     }
 
-    const { data: evidences, error: evidenceError } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { data: evidences, error: evidenceError } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .select("stakeholder_requirement_id")
       .in("stakeholder_requirement_id", requirementIds)
-      .eq("company_id", companyId);
+      .eq("company_id", companyId)) as any;
 
     if (evidenceError) {
       throw new Error(`Erro ao carregar evidências dos requisitos: ${evidenceError.message}`);
     }
 
-    return withRequirementMetadata(requirements || [], evidences || []);
+    return withRequirementMetadata((requirements || []) as any[], (evidences || []) as any[]);
   }
 
   async getStakeholderRequirementById(requirementId: string): Promise<StakeholderRequirement> {
     const { companyId } = await resolveUserContext();
 
-    const { data: requirement, error } = await supabase
-      .from("stakeholder_requirements")
+    const { data: requirement, error } = await (supabase
+      .from("stakeholder_requirements" as any)
       .select(
         `
           *,
@@ -292,23 +292,23 @@ class StakeholderRequirementsService {
       )
       .eq("id", requirementId)
       .eq("company_id", companyId)
-      .single();
+      .single()) as any;
 
     if (error || !requirement) {
       throw new Error(error?.message || "Requisito não encontrado");
     }
 
-    const { data: evidences, error: evidenceError } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { data: evidences, error: evidenceError } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .select("stakeholder_requirement_id")
       .eq("stakeholder_requirement_id", requirementId)
-      .eq("company_id", companyId);
+      .eq("company_id", companyId)) as any;
 
     if (evidenceError) {
       throw new Error(`Erro ao carregar evidências: ${evidenceError.message}`);
     }
 
-    return withRequirementMetadata([requirement], evidences || [])[0];
+    return withRequirementMetadata([requirement] as any[], (evidences || []) as any[])[0];
   }
 
   async createStakeholderRequirement(
@@ -334,11 +334,11 @@ class StakeholderRequirementsService {
       review_due_date: input.review_due_date || null,
     };
 
-    const { data, error } = await supabase
-      .from("stakeholder_requirements")
+    const { data, error } = await (supabase
+      .from("stakeholder_requirements" as any)
       .insert(payload)
       .select("*")
-      .single();
+      .single()) as any;
 
     if (error || !data) {
       throw new Error(error?.message || "Erro ao criar requisito");
@@ -378,23 +378,23 @@ class StakeholderRequirementsService {
         input.review_due_date !== undefined ? input.review_due_date || null : undefined,
     };
 
-    const { data, error } = await supabase
-      .from("stakeholder_requirements")
+    const { data, error } = await (supabase
+      .from("stakeholder_requirements" as any)
       .update(payload)
       .eq("id", requirementId)
       .eq("company_id", companyId)
       .select("*")
-      .single();
+      .single()) as any;
 
     if (error || !data) {
       throw new Error(error?.message || "Erro ao atualizar requisito");
     }
 
-    const { data: evidenceRows, error: evidenceError } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { data: evidenceRows, error: evidenceError } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .select("id")
       .eq("stakeholder_requirement_id", requirementId)
-      .eq("company_id", companyId);
+      .eq("company_id", companyId)) as any;
 
     if (evidenceError) {
       throw new Error(`Erro ao carregar evidências após atualização: ${evidenceError.message}`);
@@ -430,8 +430,8 @@ class StakeholderRequirementsService {
   async getRequirementEvidences(requirementId: string): Promise<StakeholderRequirementEvidence[]> {
     const { companyId } = await resolveUserContext();
 
-    const { data, error } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { data, error } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .select(
         `
           *,
@@ -441,7 +441,7 @@ class StakeholderRequirementsService {
       )
       .eq("stakeholder_requirement_id", requirementId)
       .eq("company_id", companyId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })) as any;
 
     if (error) {
       throw new Error(`Erro ao carregar evidências: ${error.message}`);
@@ -465,8 +465,8 @@ class StakeholderRequirementsService {
       added_by_user_id: userId,
     };
 
-    const { data, error } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { data, error } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .insert(payload)
       .select(
         `
@@ -475,7 +475,7 @@ class StakeholderRequirementsService {
           added_by:profiles!stakeholder_requirement_evidences_added_by_user_id_fkey(id, full_name)
         `,
       )
-      .single();
+      .single()) as any;
 
     if (error || !data) {
       throw new Error(error?.message || "Erro ao adicionar evidência");
@@ -487,11 +487,11 @@ class StakeholderRequirementsService {
   async removeRequirementEvidence(evidenceId: string): Promise<void> {
     const { companyId } = await resolveUserContext();
 
-    const { error } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { error } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .delete()
       .eq("id", evidenceId)
-      .eq("company_id", companyId);
+      .eq("company_id", companyId)) as any;
 
     if (error) {
       throw new Error(`Erro ao remover evidência: ${error.message}`);
@@ -501,8 +501,8 @@ class StakeholderRequirementsService {
   async getStakeholderMatrixReviews(): Promise<StakeholderMatrixReview[]> {
     const { companyId } = await resolveUserContext();
 
-    const { data, error } = await supabase
-      .from("stakeholder_matrix_reviews")
+    const { data, error } = await (supabase
+      .from("stakeholder_matrix_reviews" as any)
       .select(
         `
           *,
@@ -510,7 +510,7 @@ class StakeholderRequirementsService {
         `,
       )
       .eq("company_id", companyId)
-      .order("review_date", { ascending: false });
+      .order("review_date", { ascending: false })) as any;
 
     if (error) {
       throw new Error(`Erro ao carregar revisões da matriz: ${error.message}`);
@@ -533,8 +533,8 @@ class StakeholderRequirementsService {
       next_review_due_date: input.next_review_due_date || null,
     };
 
-    const { data, error } = await supabase
-      .from("stakeholder_matrix_reviews")
+    const { data, error } = await (supabase
+      .from("stakeholder_matrix_reviews" as any)
       .insert(payload)
       .select(
         `
@@ -542,7 +542,7 @@ class StakeholderRequirementsService {
           reviewed_by:profiles!stakeholder_matrix_reviews_reviewed_by_user_id_fkey(id, full_name)
         `,
       )
-      .single();
+      .single()) as any;
 
     if (error || !data) {
       throw new Error(error?.message || "Erro ao registrar revisão da matriz");
