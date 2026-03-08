@@ -704,7 +704,7 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
     throw new Error(`Erro ao carregar destinatários das campanhas: ${recipientsError.message}`);
   }
 
-  const userMap = await getProfilesMap((recipients || []).map((item: { user_id: string }) => item.user_id));
+  const userMap = await getProfilesMap(((recipients || []) as any[]).map((item: { user_id: string }) => item.user_id));
 
   return (campaigns || []).map((campaign: any) => ({
     ...campaign,
