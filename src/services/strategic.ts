@@ -267,11 +267,11 @@ export const registerSWOTReview = async (
     revision_number: reviewData.revision_number,
   };
 
-  const { data, error } = await supabase
-    .from("swot_analysis_reviews")
+  const { data, error } = await (supabase
+    .from("swot_analysis_reviews" as any)
     .insert([payload])
     .select()
-    .single();
+    .single()) as any;
 
   if (error) throw error;
   return data as SWOTAnalysisReview;

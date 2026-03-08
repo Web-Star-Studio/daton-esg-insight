@@ -533,8 +533,8 @@ class StakeholderRequirementsService {
       next_review_due_date: input.next_review_due_date || null,
     };
 
-    const { data, error } = await supabase
-      .from("stakeholder_matrix_reviews")
+    const { data, error } = await (supabase
+      .from("stakeholder_matrix_reviews" as any)
       .insert(payload)
       .select(
         `
@@ -542,7 +542,7 @@ class StakeholderRequirementsService {
           reviewed_by:profiles!stakeholder_matrix_reviews_reviewed_by_user_id_fkey(id, full_name)
         `,
       )
-      .single();
+      .single()) as any;
 
     if (error || !data) {
       throw new Error(error?.message || "Erro ao registrar revisão da matriz");
