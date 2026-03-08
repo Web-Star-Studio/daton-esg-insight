@@ -257,7 +257,7 @@ class StakeholderRequirementsService {
       throw new Error(`Erro ao carregar requisitos de partes interessadas: ${error.message}`);
     }
 
-    const requirementIds = (requirements || []).map((item) => item.id);
+    const requirementIds = ((requirements || []) as any[]).map((item: any) => item.id);
 
     if (requirementIds.length === 0) {
       return [];
