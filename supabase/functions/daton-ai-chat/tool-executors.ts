@@ -456,7 +456,7 @@ async function getDashboardSummary(args: any, companyId: string, supabase: any) 
     },
     risks: {
       total: risks?.length || 0,
-      critical: risks?.filter(r => r.inherent_risk_level === 'Crítico').length || 0
+      critical: risks?.filter((r: any) => r.inherent_risk_level === 'Crítico').length || 0
     },
     emissions: {
       sources: emissions?.length || 0
