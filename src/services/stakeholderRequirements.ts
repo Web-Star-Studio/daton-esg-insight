@@ -390,11 +390,11 @@ class StakeholderRequirementsService {
       throw new Error(error?.message || "Erro ao atualizar requisito");
     }
 
-    const { data: evidenceRows, error: evidenceError } = await supabase
-      .from("stakeholder_requirement_evidences")
+    const { data: evidenceRows, error: evidenceError } = await (supabase
+      .from("stakeholder_requirement_evidences" as any)
       .select("id")
       .eq("stakeholder_requirement_id", requirementId)
-      .eq("company_id", companyId);
+      .eq("company_id", companyId)) as any;
 
     if (evidenceError) {
       throw new Error(`Erro ao carregar evidências após atualização: ${evidenceError.message}`);
