@@ -1,15 +1,12 @@
 
+# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
-# Fix: `/controle-documentos` redirecting to `/documentos`
+## Problema
+Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
 
-## Problem
-In `src/App.tsx`, both route definitions for `/controle-documentos` (lines 310 and 882) use `<Navigate to="/documentos?document_kind=controlled" replace />` instead of rendering the `ControleDocumentos` page component. The component is already lazy-imported (line 144) but never used.
+## Solução
+Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
 
-## Fix
-Replace both `<Navigate>` redirects with the actual component:
+## Alteração
 
-- **Line 310** (demo routes): `<Route path="controle-documentos" element={<LazyPageWrapper><ControleDocumentos /></LazyPageWrapper>} />`
-- **Line 882** (protected routes): `<Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />`
-
-Two lines changed, no new files.
-
+**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.
