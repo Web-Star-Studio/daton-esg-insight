@@ -230,7 +230,7 @@ async function queryGoalsProgress(args: any, companyId: string, supabase: any) {
 
   const summary = {
     total: data?.length || 0,
-    byStatus: {},
+    byStatus: {} as Record<string, number>,
     avgProgress: 0
   };
 
