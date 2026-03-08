@@ -576,7 +576,7 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     return acc;
   }, {});
 
-  return (recipients || []).reduce<Record<string, number>>((acc, recipient: { campaign_id: string }) => {
+  return ((recipients || []) as any[]).reduce<Record<string, number>>((acc, recipient: { campaign_id: string }) => {
     const documentId = documentIdByCampaign[recipient.campaign_id];
     if (!documentId) {
       return acc;
