@@ -427,7 +427,7 @@ async function getControlProfiles(documentIds: string[]): Promise<Record<string,
     throw new Error(`Erro ao carregar perfis controlados: ${error.message}`);
   }
 
-  return (data || []).reduce<Record<string, DocumentControlProfile>>((acc, row: DocumentControlProfile) => {
+  return ((data || []) as any[]).reduce<Record<string, DocumentControlProfile>>((acc, row: DocumentControlProfile) => {
     acc[row.document_id] = row;
     return acc;
   }, {});
