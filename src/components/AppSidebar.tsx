@@ -369,6 +369,16 @@ const menuSections: MenuSection[] = [
     ]
   },
   {
+    id: "document-management",
+    title: "DOCUMENTOS",
+    icon: FileText,
+    isCollapsible: false,
+    hasDivider: true,
+    items: [
+      { id: "document-control-main", title: "Controle de Documentos", icon: FileText, path: "/controle-documentos", description: "Gestão de documentos e registros (ISO 9001:2015 - Item 7.5)" }
+    ]
+  },
+  {
     id: "help",
     title: "AJUDA",
     icon: HelpCircle,
