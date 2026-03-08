@@ -1152,9 +1152,9 @@ export async function fulfillDocumentRequest(input: {
     throw new Error(`Erro ao concluir solicitação: ${error.message}`);
   }
 
-  if (request.target_document_id) {
-    await createChangeLog(request.company_id, request.target_document_id, "request_fulfilled", "Solicitação concluída", {
-      requestId: request.id,
+  if ((request as any).target_document_id) {
+    await createChangeLog((request as any).company_id, (request as any).target_document_id, "request_fulfilled", "Solicitação concluída", {
+      requestId: (request as any).id,
       fulfilledDocumentId: input.fulfilledDocumentId || null,
       fulfilledVersionId: input.fulfilledVersionId || null,
     });
