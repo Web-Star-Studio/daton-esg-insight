@@ -501,8 +501,8 @@ class StakeholderRequirementsService {
   async getStakeholderMatrixReviews(): Promise<StakeholderMatrixReview[]> {
     const { companyId } = await resolveUserContext();
 
-    const { data, error } = await supabase
-      .from("stakeholder_matrix_reviews")
+    const { data, error } = await (supabase
+      .from("stakeholder_matrix_reviews" as any)
       .select(
         `
           *,
@@ -510,7 +510,7 @@ class StakeholderRequirementsService {
         `,
       )
       .eq("company_id", companyId)
-      .order("review_date", { ascending: false });
+      .order("review_date", { ascending: false })) as any;
 
     if (error) {
       throw new Error(`Erro ao carregar revisões da matriz: ${error.message}`);
