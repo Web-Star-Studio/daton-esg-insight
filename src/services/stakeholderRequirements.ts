@@ -201,7 +201,7 @@ class StakeholderRequirementsService {
   ): Promise<StakeholderRequirement[]> {
     const { companyId } = await resolveUserContext();
 
-    let query = (supabase
+    let query = supabase
       .from("stakeholder_requirements" as any)
       .select(
         `
@@ -214,7 +214,7 @@ class StakeholderRequirementsService {
       )
       .eq("company_id", companyId)
       .order("review_due_date", { ascending: true })
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) as any;
 
     if (filters.status && filters.status !== "all") {
       query = query.eq("status", filters.status);
