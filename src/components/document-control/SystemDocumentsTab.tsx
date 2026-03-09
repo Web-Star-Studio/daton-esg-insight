@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,15 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Download, FileText, Eye } from "lucide-react";
+import { Plus, Search, FileText } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { EnhancedLoading } from "@/components/ui/enhanced-loading";
+import { uploadDocument, downloadDocument } from "@/services/documents";
+import { DocumentLevelBadge, LEVEL_OPTIONS, type DocumentLevel } from "./DocumentLevelBadge";
+import { generateDocumentCode } from "./DocumentCodeGenerator";
+import { gedDocumentsService } from "@/services/gedDocuments";
+import { DocumentActionsDropdown } from "./DocumentActionsDropdown";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
