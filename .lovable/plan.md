@@ -1,25 +1,12 @@
 
+# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
-## Fix: `/controle-documentos` redireciona para `/documentos` em vez de renderizar a página própria
+## Problema
+Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
 
-### Problema
-Há **dois `<Navigate>` redirects** em `src/App.tsx` que redirecionam `/controle-documentos` → `/documentos?document_kind=controlled`:
-- **Linha 310**: dentro do layout de qualidade (rota relativa `controle-documentos`)
-- **Linha 882**: rota standalone absoluta `/controle-documentos`
+## Solução
+Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
 
-O componente `ControleDocumentos` já está importado com lazy (linha 144) mas nunca é usado.
+## Alteração
 
-### Correção em `src/App.tsx`
-
-1. **Linha 310** — substituir o `<Navigate>` por renderizar o componente:
-```tsx
-<Route path="controle-documentos" element={<LazyPageWrapper><ControleDocumentos /></LazyPageWrapper>} />
-```
-
-2. **Linha 882** — substituir o `<Navigate>` por renderizar com wrapper protegido:
-```tsx
-<Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
-```
-
-Ambas as rotas passam a renderizar a página `ControleDocumentos.tsx` com suas tabs de Documentos Regulatórios, SGQ/ISO e Configurações.
-
+**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.
