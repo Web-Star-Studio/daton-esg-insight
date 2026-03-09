@@ -765,12 +765,11 @@ export async function getDocumentRecord(documentId: string): Promise<DocumentDet
   }
 
   const row = data as LegacyDocumentRow;
-  const [controlProfiles, branchesMap, versions, extractionMap, campaigns, requests, relations, auditTrail, changeLog, previewUrl] =
+  const [controlProfiles, branchesMap, versions, campaigns, requests, relations, auditTrail, changeLog, previewUrl] =
     await Promise.all([
       getControlProfiles([documentId]),
       getDocumentsBranchesMap([documentId]),
       documentVersionsService.getVersions(documentId) as Promise<DocumentVersionSummary[]>,
-      getLatestExtractions([documentId]),
       fetchReadCampaigns(documentId),
       fetchDocumentRequests(documentId),
       fetchDocumentRelations(documentId),
@@ -795,7 +794,6 @@ export async function getDocumentRecord(documentId: string): Promise<DocumentDet
     branchesMap,
     controlProfiles,
     { [documentId]: versions.find((version) => version.is_current)?.version_number || 1 },
-    extractionMap,
     {
       [documentId]: campaigns.reduce((acc, campaign) => {
         return acc + campaign.recipients.filter((recipient) => ["pending", "viewed", "overdue"].includes(recipient.status)).length;
