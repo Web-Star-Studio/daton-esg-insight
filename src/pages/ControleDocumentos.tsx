@@ -27,9 +27,6 @@ const ControleDocumentos = () => {
           <SGQIsoDocumentsTab />
         </TabsContent>
 
-        <TabsContent value="compliance-75" className="space-y-6">
-          <DocumentComplianceOperationsTab />
-        </TabsContent>
       </Tabs>
     </div>
   );
