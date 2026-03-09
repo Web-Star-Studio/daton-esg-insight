@@ -492,9 +492,39 @@ export default function SGQDocumentDetail() {
               <RefreshCw className="h-4 w-4" />
               Atualizar
             </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              className="gap-2"
+              disabled={deleteMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+            </Button>
           </div>
         </div>
       </header>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir documento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir "{document.title}"? Esta ação não pode ser desfeita.
+              Todas as versões, campanhas de leitura e relações serão removidas permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir permanentemente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {document.document_kind === "controlled" && (
         <Card className="border-primary/20 bg-primary/5">
