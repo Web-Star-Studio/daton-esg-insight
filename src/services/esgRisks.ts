@@ -31,6 +31,9 @@ export interface ESGRisk {
   updated_at: string;
 }
 
+<<<<<<< Updated upstream
+export const getESGRisks = async () => {
+=======
 const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
 
 const MOCK_ESG_RISKS: ESGRisk[] = [
@@ -84,16 +87,17 @@ const MOCK_ESG_RISKS: ESGRisk[] = [
 
 export const getESGRisks = async (): Promise<ESGRisk[]> => {
   if (isDemoMode()) {
-    return MOCK_ESG_RISKS;
+    return MOCK_ESG_RISKS.map(r => ({ ...r }));
   }
 
+>>>>>>> Stashed changes
   const { data, error } = await supabase
     .from('esg_risks')
     .select('*')
     .order('inherent_risk_level', { ascending: false });
 
   if (error) throw error;
-  return data as ESGRisk[];
+  return data;
 };
 
 export const getESGRisk = async (id: string) => {
@@ -109,6 +113,17 @@ export const getESGRisk = async (id: string) => {
 };
 
 export const createESGRisk = async (risk: Omit<ESGRisk, 'id' | 'inherent_risk_level' | 'created_at' | 'updated_at'>) => {
+  if (isDemoMode()) {
+    const created: ESGRisk = {
+      ...(risk as ESGRisk),
+      id: `risk-${Date.now()}`,
+      inherent_risk_level: (risk as any).inherent_risk_level ?? 'Médio',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    MOCK_ESG_RISKS.unshift(created);
+    return created;
+  }
   const { data, error } = await supabase
     .from('esg_risks')
     .insert(risk)
@@ -121,6 +136,12 @@ export const createESGRisk = async (risk: Omit<ESGRisk, 'id' | 'inherent_risk_le
 };
 
 export const updateESGRisk = async (id: string, updates: Partial<ESGRisk>) => {
+  if (isDemoMode()) {
+    const index = MOCK_ESG_RISKS.findIndex((r) => r.id === id);
+    if (index < 0) throw new Error('Risco não encontrado');
+    MOCK_ESG_RISKS[index] = { ...MOCK_ESG_RISKS[index], ...updates, updated_at: new Date().toISOString() };
+    return MOCK_ESG_RISKS[index];
+  }
   const { data, error } = await supabase
     .from('esg_risks')
     .update(updates)
@@ -134,6 +155,11 @@ export const updateESGRisk = async (id: string, updates: Partial<ESGRisk>) => {
 };
 
 export const deleteESGRisk = async (id: string) => {
+  if (isDemoMode()) {
+    const index = MOCK_ESG_RISKS.findIndex((r) => r.id === id);
+    if (index >= 0) MOCK_ESG_RISKS.splice(index, 1);
+    return;
+  }
   const { error } = await supabase
     .from('esg_risks')
     .delete()
@@ -143,8 +169,12 @@ export const deleteESGRisk = async (id: string) => {
 };
 
 export const getRiskMatrix = async () => {
-  const allRisks = await getESGRisks();
-  const risks = allRisks.filter((r: ESGRisk) => r.status === 'Ativo');
+  const { data: risks, error } = await supabase
+    .from('esg_risks')
+    .select('*')
+    .eq('status', 'Ativo');
+
+  if (error) throw error;
 
   const matrix = {
     'Baixa': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 },
@@ -152,33 +182,51 @@ export const getRiskMatrix = async () => {
     'Alta': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 }
   };
 
+<<<<<<< Updated upstream
+  risks.forEach(risk => {
+    const row = matrix[risk.probability as keyof typeof matrix];
+    if (!row) return;
+    const impact = risk.impact as keyof typeof matrix['Baixa'];
+    if (!(impact in row)) return;
+    row[impact]++;
+=======
   risks.forEach((risk: ESGRisk) => {
-    matrix[risk.probability as keyof typeof matrix][risk.impact as keyof typeof matrix['Baixa']]++;
+    const prob = risk.probability as keyof typeof matrix;
+    const imp = risk.impact as keyof typeof matrix['Baixa'];
+    if (Object.prototype.hasOwnProperty.call(matrix, prob) &&
+      Object.prototype.hasOwnProperty.call(matrix['Baixa'], imp)) {
+      matrix[prob][imp]++;
+    }
+>>>>>>> Stashed changes
   });
 
   return matrix;
 };
 
 export const getRiskMetrics = async () => {
-  const allRisks = await getESGRisks();
-  const risks = allRisks.filter((r: ESGRisk) => r.status === 'Ativo');
+  const { data: risks, error } = await supabase
+    .from('esg_risks')
+    .select('*')
+    .eq('status', 'Ativo');
+
+  if (error) throw error;
 
   const totalRisks = risks.length;
-  const risksByCategory = risks.reduce((acc: Record<string, number>, risk: ESGRisk) => {
+  const risksByCategory = risks.reduce((acc, risk) => {
     acc[risk.esg_category] = (acc[risk.esg_category] || 0) + 1;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
 
-  const risksByLevel = risks.reduce((acc: Record<string, number>, risk: ESGRisk) => {
+  const risksByLevel = risks.reduce((acc, risk) => {
     const level = risk.inherent_risk_level || 'Indefinido';
     acc[level] = (acc[level] || 0) + 1;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
 
-  const criticalRisks = risks.filter((r: ESGRisk) => r.inherent_risk_level === 'Crítico').length;
-  const highRisks = risks.filter((r: ESGRisk) => r.inherent_risk_level === 'Alto').length;
+  const criticalRisks = risks.filter(r => r.inherent_risk_level === 'Crítico').length;
+  const highRisks = risks.filter(r => r.inherent_risk_level === 'Alto').length;
 
-  const risksNeedingReview = risks.filter((r: ESGRisk) =>
+  const risksNeedingReview = risks.filter(r =>
     r.next_review_date && new Date(r.next_review_date) <= new Date()
   ).length;
 
