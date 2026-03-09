@@ -17,9 +17,15 @@ export interface SWOTAnalysis {
   strategic_map_id?: string;
   title: string;
   description?: string;
+  review_frequency: SWOTReviewFrequency;
+  last_review_date?: string | null;
+  next_review_date?: string | null;
   created_at: string;
   updated_at: string;
 }
+
+export type SWOTReviewFrequency = "mensal" | "trimestral" | "semestral" | "anual" | "bienal";
+export type SWOTTreatmentDecision = "nao_classificado" | "irrelevante" | "relevante_requer_acoes";
 
 export interface SWOTItem {
   id: string;
@@ -28,9 +34,62 @@ export interface SWOTItem {
   item_text: string;
   description?: string;
   impact_level: 'low' | 'medium' | 'high';
+  treatment_decision: SWOTTreatmentDecision;
+  linked_action_plan_item_id?: string | null;
+  external_action_reference?: string | null;
   order_index: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface SWOTAnalysisReview {
+  id: string;
+  company_id: string;
+  swot_analysis_id: string;
+  revision_number: number;
+  review_date: string;
+  review_summary: string;
+  management_review_reference: string;
+  reviewed_by_user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSWOTAnalysisData {
+  strategic_map_id?: string;
+  title: string;
+  description?: string;
+  review_frequency?: SWOTReviewFrequency;
+}
+
+export interface CreateSWOTItemData {
+  swot_analysis_id: string;
+  category: SWOTItem["category"];
+  item_text: string;
+  description?: string;
+  impact_level?: SWOTItem["impact_level"];
+  treatment_decision?: SWOTTreatmentDecision;
+  linked_action_plan_item_id?: string | null;
+  external_action_reference?: string | null;
+  order_index?: number;
+}
+
+export interface UpdateSWOTItemData {
+  category?: SWOTItem["category"];
+  item_text?: string;
+  description?: string;
+  impact_level?: SWOTItem["impact_level"];
+  treatment_decision?: SWOTTreatmentDecision;
+  linked_action_plan_item_id?: string | null;
+  external_action_reference?: string | null;
+  order_index?: number;
+}
+
+export interface CreateSWOTReviewData {
+  review_date: string;
+  review_summary: string;
+  management_review_reference: string;
+  revision_number?: number;
 }
 
 // OKRs
@@ -130,7 +189,7 @@ export const getSWOTItems = async (analysisId: string): Promise<SWOTItem[]> => {
   return (data || []) as SWOTItem[];
 };
 
-export const createSWOTAnalysis = async (analysisData: Omit<SWOTAnalysis, 'id' | 'company_id' | 'created_at' | 'updated_at'>) => {
+export const createSWOTAnalysis = async (analysisData: CreateSWOTAnalysisData) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário não autenticado");
 
@@ -146,7 +205,8 @@ export const createSWOTAnalysis = async (analysisData: Omit<SWOTAnalysis, 'id' |
     .from("swot_analysis")
     .insert([{ 
       ...analysisData, 
-      company_id: profile.company_id 
+      company_id: profile.company_id,
+      review_frequency: analysisData.review_frequency || "anual",
     }])
     .select()
     .single();
@@ -155,16 +215,99 @@ export const createSWOTAnalysis = async (analysisData: Omit<SWOTAnalysis, 'id' |
   return data;
 };
 
-export const createSWOTItem = async (itemData: Omit<SWOTItem, 'id' | 'created_at' | 'updated_at'>) => {
+export const updateSWOTAnalysisReviewCadence = async (
+  analysisId: string,
+  reviewFrequency: SWOTReviewFrequency,
+) => {
+  const { data, error } = await (supabase
+    .from("swot_analysis" as any)
+    .update({ review_frequency: reviewFrequency } as any)
+    .eq("id", analysisId)
+    .select()
+    .single()) as any;
+
+  if (error) throw error;
+  return data as SWOTAnalysis;
+};
+
+export const getSWOTReviewHistory = async (analysisId: string): Promise<SWOTAnalysisReview[]> => {
+  const { data, error } = await (supabase
+    .from("swot_analysis_reviews" as any)
+    .select("*")
+    .eq("swot_analysis_id", analysisId)
+    .order("revision_number", { ascending: false })) as any;
+
+  if (error) throw error;
+  return (data || []) as SWOTAnalysisReview[];
+};
+
+export const registerSWOTReview = async (
+  analysisId: string,
+  reviewData: CreateSWOTReviewData,
+): Promise<SWOTAnalysisReview> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
+  const { data: analysis, error: analysisError } = await supabase
+    .from("swot_analysis")
+    .select("company_id")
+    .eq("id", analysisId)
+    .single();
+
+  if (analysisError) throw analysisError;
+  if (!analysis?.company_id) throw new Error("Análise SWOT não encontrada");
+
+  const payload = {
+    swot_analysis_id: analysisId,
+    company_id: analysis.company_id,
+    review_date: reviewData.review_date,
+    review_summary: reviewData.review_summary,
+    management_review_reference: reviewData.management_review_reference,
+    reviewed_by_user_id: user.id,
+    revision_number: reviewData.revision_number,
+  };
+
+  const { data, error } = await (supabase
+    .from("swot_analysis_reviews" as any)
+    .insert([payload])
+    .select()
+    .single()) as any;
+
+  if (error) throw error;
+  return data as SWOTAnalysisReview;
+};
+
+export const createSWOTItem = async (itemData: CreateSWOTItemData) => {
   const { data, error } = await supabase
     .from("swot_items")
-    .insert([itemData])
+    .insert([{
+      ...itemData,
+      impact_level: itemData.impact_level || "medium",
+      treatment_decision: itemData.treatment_decision || "nao_classificado",
+    }])
     .select()
     .single();
 
   if (error) throw error;
   return data;
 };
+
+export const updateSWOTItem = async (itemId: string, itemData: UpdateSWOTItemData) => {
+  const { data, error } = await supabase
+    .from("swot_items")
+    .update(itemData)
+    .eq("id", itemId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as SWOTItem;
+};
+
+export const updateSWOTItemTraceability = async (
+  itemId: string,
+  traceability: Pick<UpdateSWOTItemData, "treatment_decision" | "linked_action_plan_item_id" | "external_action_reference">,
+) => updateSWOTItem(itemId, traceability);
 
 export const deleteSWOTItem = async (itemId: string) => {
   const { error } = await supabase

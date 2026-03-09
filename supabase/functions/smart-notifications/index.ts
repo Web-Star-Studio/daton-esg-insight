@@ -50,6 +50,9 @@ serve(async (req) => {
       case 'check_legislation_reviews':
         result = await checkLegislationReviews(supabase)
         break
+      case 'check_stakeholder_requirement_reviews':
+        result = await checkStakeholderRequirementReviews(supabase)
+        break
       default:
         return new Response(
           JSON.stringify({ error: `Invalid action: ${action}` }),
@@ -594,6 +597,134 @@ async function checkLegislationReviews(supabase: any) {
     return { processed: legislations?.length || 0, created: notificationsCreated }
   } catch (error) {
     console.error('Error in checkLegislationReviews:', error)
+    throw error
+  }
+}
+
+async function checkStakeholderRequirementReviews(supabase: any) {
+  try {
+    console.warn('Checking stakeholder requirement review deadlines...')
+
+    const { data: requirements, error: requirementsError } = await supabase
+      .from('stakeholder_requirements')
+      .select(`
+        id,
+        requirement_title,
+        review_due_date,
+        responsible_user_id,
+        company_id,
+        status,
+        stakeholder:stakeholders(name)
+      `)
+      .not('review_due_date', 'is', null)
+      .neq('status', 'atendido')
+      .not('responsible_user_id', 'is', null)
+
+    if (requirementsError) {
+      console.error('Error fetching stakeholder requirements:', requirementsError)
+      throw requirementsError
+    }
+
+    console.warn(`Found ${requirements?.length || 0} stakeholder requirements with review dates`)
+
+    let notificationsCreated = 0
+    const now = new Date()
+
+    for (const requirement of requirements || []) {
+      try {
+        const reviewDate = new Date(`${requirement.review_due_date}T00:00:00`)
+        const daysUntilReview = Math.ceil(
+          (reviewDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        )
+
+        let alertWindow: '30_days' | '7_days' | 'due_or_overdue' | null = null
+        let title = ''
+        let message = ''
+        let type: 'info' | 'warning' | 'error' = 'info'
+        let priority = 'info'
+        let lookbackDays = 14
+
+        if (daysUntilReview <= 0) {
+          alertWindow = 'due_or_overdue'
+          title = daysUntilReview === 0
+            ? 'Revisão de requisito vence hoje'
+            : 'Revisão de requisito vencida'
+          message = daysUntilReview === 0
+            ? `O requisito "${requirement.requirement_title}" vence hoje e exige revisão imediata`
+            : `O requisito "${requirement.requirement_title}" está com revisão atrasada há ${Math.abs(daysUntilReview)} dias`
+          type = 'error'
+          priority = 'critical'
+          lookbackDays = 3
+        } else if (daysUntilReview <= 7) {
+          alertWindow = '7_days'
+          title = 'Revisão de requisito urgente'
+          message = `O requisito "${requirement.requirement_title}" precisa ser revisado em ${daysUntilReview} dias`
+          type = 'warning'
+          priority = 'important'
+          lookbackDays = 3
+        } else if (daysUntilReview <= 30) {
+          alertWindow = '30_days'
+          title = 'Revisão de requisito próxima'
+          message = `O requisito "${requirement.requirement_title}" precisa ser revisado em ${daysUntilReview} dias`
+          type = 'info'
+          priority = 'info'
+          lookbackDays = 14
+        }
+
+        if (!alertWindow || !requirement.responsible_user_id) {
+          continue
+        }
+
+        const { data: existingAlert } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('category', 'stakeholder_requirement')
+          .eq('user_id', requirement.responsible_user_id)
+          .eq('metadata->>stakeholder_requirement_id', requirement.id)
+          .eq('metadata->>alert_window', alertWindow)
+          .gte('created_at', new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString())
+          .maybeSingle()
+
+        if (existingAlert) {
+          continue
+        }
+
+        const { error: insertError } = await supabase.from('notifications').insert({
+          user_id: requirement.responsible_user_id,
+          company_id: requirement.company_id,
+          title,
+          message,
+          type,
+          category: 'stakeholder_requirement',
+          priority,
+          is_read: false,
+          action_url: '/matriz-partes-interessadas',
+          action_label: 'Ver Matriz',
+          metadata: {
+            stakeholder_requirement_id: requirement.id,
+            stakeholder_name: requirement.stakeholder?.name ?? null,
+            alert_window: alertWindow,
+            days_remaining: daysUntilReview > 0 ? daysUntilReview : 0,
+            days_overdue: daysUntilReview < 0 ? Math.abs(daysUntilReview) : 0,
+            review_date: requirement.review_due_date
+          }
+        })
+
+        if (insertError) {
+          console.error('Error creating stakeholder requirement notification:', insertError)
+        } else {
+          notificationsCreated++
+          console.warn(`Created stakeholder requirement notification for: ${requirement.requirement_title}`)
+        }
+      } catch (requirementError) {
+        console.error(`Error processing stakeholder requirement ${requirement.id}:`, requirementError)
+        continue
+      }
+    }
+
+    return { processed: requirements?.length || 0, created: notificationsCreated }
+  } catch (error) {
+    console.error('Error in checkStakeholderRequirementReviews:', error)
     throw error
   }
 }

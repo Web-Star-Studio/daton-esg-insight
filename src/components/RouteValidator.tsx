@@ -17,6 +17,7 @@ const VALID_ROUTES = [
   '/gestao-riscos', '/nao-conformidades', '/plano-acao-5w2h',
   '/base-conhecimento', '/gestao-fornecedores',
   '/quality-dashboard', '/gerenciamento-projetos',
+  '/matriz-partes-interessadas',
   '/sgq-dashboard', '/auditorias-internas', '/acoes-corretivas',
   '/controle-documentos', '/avaliacao-fornecedores',
   '/estrutura-organizacional', '/descricao-cargos', '/gestao-funcionarios',

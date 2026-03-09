@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { documentApprovalsService, approvalWorkflowsService } from '@/services/gedDocuments';
@@ -13,6 +14,9 @@ import { CheckCircle2, XCircle, Clock, FileText, AlertCircle, User, Calendar } f
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentApprovalModalProps {
   isOpen: boolean;
@@ -29,10 +33,48 @@ export const DocumentApprovalModal: React.FC<DocumentApprovalModalProps> = ({
   documentName,
   onApprovalComplete
 }) => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string>('');
   const [approvalNotes, setApprovalNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [approvalPassword, setApprovalPassword] = useState('');
+  const [failedApprovalAuthAttempts, setFailedApprovalAuthAttempts] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    return Number(window.sessionStorage.getItem('approval-auth-failed-attempts') || 0);
+  });
+  const [lastFailedApprovalAuthAt, setLastFailedApprovalAuthAt] = useState<number | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const value = window.sessionStorage.getItem('approval-auth-last-failed-at');
+    return value ? Number(value) : null;
+  });
   const queryClient = useQueryClient();
+
+  const isolatedSupabase = useMemo(() => {
+    if (!supabaseUrl || !supabaseAnonKey) return null;
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
+  }, [supabaseAnonKey, supabaseUrl]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.setItem('approval-auth-failed-attempts', String(failedApprovalAuthAttempts));
+  }, [failedApprovalAuthAttempts]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (lastFailedApprovalAuthAt) {
+      window.sessionStorage.setItem('approval-auth-last-failed-at', String(lastFailedApprovalAuthAt));
+      return;
+    }
+    window.sessionStorage.removeItem('approval-auth-last-failed-at');
+  }, [lastFailedApprovalAuthAt]);
 
   const { data: workflows } = useQuery({
     queryKey: ['approval-workflows'],
@@ -92,9 +134,6 @@ export const DocumentApprovalModal: React.FC<DocumentApprovalModalProps> = ({
       queryClient.invalidateQueries({ queryKey: ['document-approvals'] });
       queryClient.invalidateQueries({ queryKey: ['pending-approvals'] });
       onApprovalComplete?.();
-    },
-    onError: () => {
-      toast.error('Erro ao processar aprovação');
     }
   });
 
@@ -107,29 +146,89 @@ export const DocumentApprovalModal: React.FC<DocumentApprovalModalProps> = ({
     });
   };
 
-  const handleApprove = (approvalId: string) => {
-    updateApprovalMutation.mutate({
-      id: approvalId,
-      status: 'aprovado',
-      notes: approvalNotes,
-      userId: 'current-user' // TODO: Get current user ID
-    });
-    setApprovalNotes('');
+  const getCurrentUserId = async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      throw new Error('Usuário não autenticado');
+    }
+    return data.user.id;
   };
 
-  const handleReject = (approvalId: string) => {
+  const verifyApprovalPassword = async () => {
+    if (!approvalPassword.trim()) {
+      throw new Error('Informe sua senha para confirmar a assinatura eletrônica.');
+    }
+
+    if (
+      failedApprovalAuthAttempts >= 5 &&
+      lastFailedApprovalAuthAt &&
+      Date.now() - lastFailedApprovalAuthAt < 10 * 60 * 1000
+    ) {
+      throw new Error('Muitas tentativas de assinatura. Aguarde alguns minutos e tente novamente.');
+    }
+
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user?.email) {
+      throw new Error('Não foi possível validar usuário para assinatura.');
+    }
+
+    if (!isolatedSupabase) {
+      throw new Error('Configuração de autenticação indisponível para validar assinatura.');
+    }
+
+    const { error: signInError } = await isolatedSupabase.auth.signInWithPassword({
+      email: data.user.email,
+      password: approvalPassword,
+    });
+
+    if (signInError) {
+      setFailedApprovalAuthAttempts((current) => current + 1);
+      setLastFailedApprovalAuthAt(Date.now());
+      throw new Error('Senha inválida para confirmação da aprovação.');
+    }
+
+    setFailedApprovalAuthAttempts(0);
+    setLastFailedApprovalAuthAt(null);
+  };
+
+  const handleApprove = async (approvalId: string) => {
+    try {
+      await verifyApprovalPassword();
+      const userId = await getCurrentUserId();
+      await updateApprovalMutation.mutateAsync({
+        id: approvalId,
+        status: 'aprovado',
+        notes: approvalNotes,
+        userId,
+      });
+      setApprovalNotes('');
+      setApprovalPassword('');
+    } catch (error: any) {
+      toast.error(error?.message || 'Não foi possível identificar o usuário aprovador');
+    }
+  };
+
+  const handleReject = async (approvalId: string) => {
     if (!rejectionReason.trim()) {
       toast.error('Por favor, informe o motivo da rejeição');
       return;
     }
 
-    updateApprovalMutation.mutate({
-      id: approvalId,
-      status: 'rejeitado',
-      notes: rejectionReason,
-      userId: 'current-user' // TODO: Get current user ID
-    });
-    setRejectionReason('');
+    try {
+      await verifyApprovalPassword();
+      const userId = await getCurrentUserId();
+
+      await updateApprovalMutation.mutateAsync({
+        id: approvalId,
+        status: 'rejeitado',
+        notes: rejectionReason,
+        userId,
+      });
+      setRejectionReason('');
+      setApprovalPassword('');
+    } catch (error: any) {
+      toast.error(error?.message || 'Não foi possível identificar o usuário revisor');
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -257,10 +356,25 @@ export const DocumentApprovalModal: React.FC<DocumentApprovalModalProps> = ({
                       />
                     </div>
 
+                    <div>
+                      <Label htmlFor="approval-password">Confirmação por senha*</Label>
+                      <Input
+                        id="approval-password"
+                        type="password"
+                        value={approvalPassword}
+                        onChange={(e) => setApprovalPassword(e.target.value)}
+                        placeholder="Digite sua senha para assinar esta decisão"
+                        autoComplete="current-password"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Requisito obrigatório de assinatura eletrônica para aprovar ou rejeitar.
+                      </p>
+                    </div>
+
                     <div className="flex gap-3 pt-2">
                       <Button
                         onClick={() => handleApprove(currentApproval.id)}
-                        disabled={updateApprovalMutation.isPending}
+                        disabled={updateApprovalMutation.isPending || !approvalPassword.trim()}
                         className="gap-2 bg-green-600 hover:bg-green-700"
                       >
                         <CheckCircle2 className="h-4 w-4" />
@@ -269,7 +383,7 @@ export const DocumentApprovalModal: React.FC<DocumentApprovalModalProps> = ({
                       <Button
                         variant="destructive"
                         onClick={() => handleReject(currentApproval.id)}
-                        disabled={updateApprovalMutation.isPending || !rejectionReason.trim()}
+                        disabled={updateApprovalMutation.isPending || !rejectionReason.trim() || !approvalPassword.trim()}
                         className="gap-2"
                       >
                         <XCircle className="h-4 w-4" />

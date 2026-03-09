@@ -33,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useBranches } from "@/services/branches";
+import { syncRegulatoryReviewAlerts } from "@/services/documentCompliance";
 import { downloadDocument } from "@/services/documents";
 import {
   createRegulatoryDocument,
@@ -43,7 +44,7 @@ import {
   getResponsibleUsers,
   REGULATORY_DOCUMENT_IDENTIFIER_OPTIONS,
   updateRegulatoryDocument,
-  updateRegulatorySettings,
+  
   uploadRegulatoryDocumentAttachment,
   upsertRenewalData,
   type DocumentStatus,
@@ -60,7 +61,6 @@ import {
   Plus,
   Save,
   Search,
-  Settings,
   Upload,
 } from "lucide-react";
 
@@ -79,6 +79,9 @@ type FormState = {
   document_number: string;
   issuing_body: string;
   process_number: string;
+  external_source_provider: string;
+  external_source_reference: string;
+  external_source_url: string;
   branch_id: string;
   responsible_user_id: string;
   issue_date: string;
@@ -99,6 +102,9 @@ const DEFAULT_FORM: FormState = {
   document_number: "",
   issuing_body: "",
   process_number: "",
+  external_source_provider: "",
+  external_source_reference: "",
+  external_source_url: "",
   branch_id: "",
   responsible_user_id: "",
   issue_date: "",
@@ -142,6 +148,7 @@ export const RegulatoryDocumentsTab = () => {
   const { data: branches = [] } = useBranches();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const hasAutoSyncedAlertsRef = useRef(false);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -155,7 +162,7 @@ export const RegulatoryDocumentsTab = () => {
   const [isVersionsOpen, setIsVersionsOpen] = useState(false);
   const [selectedVersionsLicenseId, setSelectedVersionsLicenseId] = useState<string | null>(null);
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
-  const [settingsValue, setSettingsValue] = useState("30");
+  
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
 
   const { data: settings } = useQuery({
@@ -163,11 +170,6 @@ export const RegulatoryDocumentsTab = () => {
     queryFn: getRegulatorySettings,
   });
 
-  useEffect(() => {
-    if (settings?.default_expiring_days !== undefined) {
-      setSettingsValue(String(settings.default_expiring_days));
-    }
-  }, [settings?.default_expiring_days]);
 
   const { data: users = [] } = useQuery({
     queryKey: ["regulatory-documents", "responsibles"],
@@ -194,17 +196,6 @@ export const RegulatoryDocumentsTab = () => {
     enabled: isVersionsOpen && !!selectedVersionsLicenseId,
   });
 
-  const saveSettingsMutation = useMutation({
-    mutationFn: updateRegulatorySettings,
-    onSuccess: () => {
-      toast({ title: "Configuração salva", description: "Prazo padrão atualizado com sucesso." });
-      queryClient.invalidateQueries({ queryKey: ["regulatory-documents", "settings"] });
-      queryClient.invalidateQueries({ queryKey: ["regulatory-documents"] });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    },
-  });
 
   const persistMutation = useMutation({
     mutationFn: async (payload: FormState) => {
@@ -214,6 +205,9 @@ export const RegulatoryDocumentsTab = () => {
         document_number: payload.document_number,
         issuing_body: payload.issuing_body,
         process_number: payload.process_number,
+        external_source_provider: payload.external_source_provider || null,
+        external_source_reference: payload.external_source_reference || null,
+        external_source_url: payload.external_source_url || null,
         branch_id: payload.branch_id,
         responsible_user_id: payload.responsible_user_id,
         issue_date: payload.issue_date || undefined,
@@ -277,6 +271,27 @@ export const RegulatoryDocumentsTab = () => {
     },
   });
 
+  const syncRegulatoryAlertsMutation = useMutation({
+    mutationFn: syncRegulatoryReviewAlerts,
+    onSuccess: (result) => {
+      toast({
+        title: "Alertas processados",
+        description: `${result.alertsCreated} alerta(s) criado(s) em ${result.scanned} documento(s) analisado(s).`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const syncRegulatoryAlerts = syncRegulatoryAlertsMutation.mutate;
+
+  useEffect(() => {
+    if (!items.length || hasAutoSyncedAlertsRef.current) return;
+    hasAutoSyncedAlertsRef.current = true;
+    syncRegulatoryAlerts();
+  }, [items.length, syncRegulatoryAlerts]);
+
   const branchLabelById = useMemo(
     () => new Map(branches.map((branch) => [branch.id, getBranchDisplayLabel(branch)])),
     [branches],
@@ -295,6 +310,9 @@ export const RegulatoryDocumentsTab = () => {
       document_number: item.document_number || "",
       issuing_body: item.issuing_body || "",
       process_number: item.process_number || "",
+      external_source_provider: item.external_source_provider || "",
+      external_source_reference: item.external_source_reference || "",
+      external_source_url: item.external_source_url || "",
       branch_id: item.branch_id || "",
       responsible_user_id: item.responsible_user_id || "",
       issue_date: item.issue_date || "",
@@ -354,6 +372,13 @@ export const RegulatoryDocumentsTab = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => syncRegulatoryAlertsMutation.mutate()}
+            disabled={syncRegulatoryAlertsMutation.isPending}
+          >
+            {syncRegulatoryAlertsMutation.isPending ? "Processando alertas..." : "Processar alertas"}
+          </Button>
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
               <Button onClick={openCreate} className="gap-2">
@@ -423,6 +448,39 @@ export const RegulatoryDocumentsTab = () => {
                   <Input
                     value={form.process_number}
                     onChange={(e) => setForm((current) => ({ ...current, process_number: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Fonte Externa (SOGI/equivalente)</Label>
+                  <Input
+                    value={form.external_source_provider}
+                    onChange={(e) =>
+                      setForm((current) => ({ ...current, external_source_provider: e.target.value }))
+                    }
+                    placeholder="Ex.: SOGI, sistema interno, consultoria externa"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Referência Externa</Label>
+                  <Input
+                    value={form.external_source_reference}
+                    onChange={(e) =>
+                      setForm((current) => ({ ...current, external_source_reference: e.target.value }))
+                    }
+                    placeholder="ID/código de referência externo"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>URL Externa</Label>
+                  <Input
+                    value={form.external_source_url}
+                    onChange={(e) =>
+                      setForm((current) => ({ ...current, external_source_url: e.target.value }))
+                    }
+                    placeholder="https://..."
                   />
                 </div>
 
@@ -608,41 +666,6 @@ export const RegulatoryDocumentsTab = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Configuração de Prazo Padrão
-          </CardTitle>
-          <CardDescription>
-            Define quantos dias antes do vencimento o status passa para "A Vencer".
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end gap-3">
-            <div className="space-y-2">
-              <Label>Dias padrão</Label>
-              <Input
-                type="number"
-                min={0}
-                value={settingsValue}
-                onChange={(e) => setSettingsValue(e.target.value)}
-                placeholder={String(settings?.default_expiring_days ?? 30)}
-                className="w-[140px]"
-              />
-            </div>
-            <Button
-              onClick={() => saveSettingsMutation.mutate(Number(settingsValue || 30))}
-              disabled={saveSettingsMutation.isPending}
-            >
-              Salvar padrão
-            </Button>
-            <p className="text-sm text-muted-foreground">
-              Atual: {settings?.default_expiring_days ?? 30} dias
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
@@ -777,6 +800,7 @@ export const RegulatoryDocumentsTab = () => {
                     <TableHead>Dias Restantes</TableHead>
                     <TableHead>Status Documento</TableHead>
                     <TableHead>Status Renovação</TableHead>
+                    <TableHead>Fonte Externa</TableHead>
                     <TableHead>Protocolo</TableHead>
                     <TableHead>Versões</TableHead>
                     <TableHead>Última Atualização</TableHead>
@@ -808,6 +832,7 @@ export const RegulatoryDocumentsTab = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>{getRenewalStatusLabel(item.renewal_status)}</TableCell>
+                      <TableCell>{item.external_source_provider || "-"}</TableCell>
                       <TableCell>{item.renewal_protocol_number || "-"}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm" onClick={() => openVersions(item.id)} className="gap-1">

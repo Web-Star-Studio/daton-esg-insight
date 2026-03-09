@@ -76,7 +76,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error generating report:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -150,7 +150,7 @@ async function processReportGeneration(
       .from("report_generation_jobs")
       .update({
         status: "failed",
-        error_message: error.message,
+        error_message: (error as Error).message,
       })
       .eq("id", jobId);
   }

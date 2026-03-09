@@ -195,8 +195,8 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   });
 
   const saveItemMutation = useMutation({
-    mutationFn: async (analysisId: string) => {
-      if (!analysisId) throw new Error("Nenhuma análise selecionada.");
+    mutationFn: async () => {
+      if (!selectedAnalysis) throw new Error("Nenhuma análise selecionada.");
 
       if (
         itemForm.treatment_decision === "relevante_requer_acoes" &&
@@ -222,12 +222,12 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
       }
 
       return createSWOTItem({
-        swot_analysis_id: analysisId,
+        swot_analysis_id: selectedAnalysis,
         ...payload,
       });
     },
-    onSuccess: (_, analysisId) => {
-      queryClient.invalidateQueries({ queryKey: ["swot-items", analysisId] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["swot-items", selectedAnalysis] });
       toast.success(editingItem ? "Item SWOT atualizado com sucesso!" : "Item SWOT adicionado com sucesso!");
       handleCloseItemDialog();
     },
@@ -237,20 +237,20 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   });
 
   const registerReviewMutation = useMutation({
-    mutationFn: async (analysisId: string) => {
-      if (!analysisId) throw new Error("Nenhuma análise selecionada.");
+    mutationFn: async () => {
+      if (!selectedAnalysis) throw new Error("Nenhuma análise selecionada.");
       if (!reviewForm.review_date || !reviewForm.review_summary.trim() || !reviewForm.management_review_reference.trim()) {
         throw new Error("Preencha todos os campos obrigatórios da revisão.");
       }
 
-      return registerSWOTReview(analysisId, {
+      return registerSWOTReview(selectedAnalysis, {
         review_date: reviewForm.review_date,
         review_summary: reviewForm.review_summary,
         management_review_reference: reviewForm.management_review_reference,
       });
     },
-    onSuccess: (_, analysisId) => {
-      queryClient.invalidateQueries({ queryKey: ["swot-review-history", analysisId] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["swot-review-history", selectedAnalysis] });
       queryClient.invalidateQueries({ queryKey: ["swot-analyses", strategicMapId] });
       toast.success("Revisão registrada com sucesso!");
       setIsReviewOpen(false);
@@ -561,13 +561,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                       </div>
                       <Button
                         className="w-full"
-                        onClick={() => {
-                          if (!selectedAnalysis) {
-                            toast.error("Nenhuma análise selecionada.");
-                            return;
-                          }
-                          registerReviewMutation.mutate(selectedAnalysis);
-                        }}
+                        onClick={() => registerReviewMutation.mutate()}
                         disabled={registerReviewMutation.isPending}
                       >
                         {registerReviewMutation.isPending ? "Registrando..." : "Registrar Revisão"}
@@ -742,11 +736,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                       toast.error("Informe o item SWOT.");
                       return;
                     }
-                    if (!selectedAnalysis) {
-                      toast.error("Nenhuma análise selecionada.");
-                      return;
-                    }
-                    saveItemMutation.mutate(selectedAnalysis);
+                    saveItemMutation.mutate();
                   }}
                   disabled={saveItemMutation.isPending}
                 >

@@ -1,506 +1,699 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Plus, Search, Download, FileText, Calendar } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { EnhancedLoading } from "@/components/ui/enhanced-loading";
-import { uploadDocument, downloadDocument } from "@/services/documents";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { useBranches } from "@/services/branches";
+import { downloadDocument } from "@/services/documents";
+import { CollaboratorMultiSelect } from "@/components/document-center/CollaboratorMultiSelect";
+import {
+  createSgqDocument, createSgqDocumentVersion,
+  getSgqDocuments, getSgqDocumentVersions, getSgqReadCampaigns,
+  getSgqResponsibleUsers, getSgqSettings, getSystemDocumentsForReference,
+  confirmSgqRead,
+  SGQ_DOCUMENT_IDENTIFIER_OPTIONS,
+  type DocumentStatus, type SgqDocumentItem,
+} from "@/services/sgqIsoDocuments";
+import { getBranchDisplayLabel } from "@/utils/branchDisplay";
+import {
+  BookOpen, Check, Clock, Download, Eye, FileText, History,
+  Link2, Pencil, Plus, Save, Search, Upload, Users,
+} from "lucide-react";
 
-interface Document {
-  id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  related_model: string;
-  document_type: string;
-  ai_extracted_category: string | null;
-  upload_date: string;
-  uploader_user_id: string;
-  company_id: string;
-  tags: string[] | null;
-  ai_processing_status: string | null;
-  ai_confidence_score: number | null;
-  controlled_copy: boolean;
-  requires_approval: boolean;
-  approval_status: string;
-  master_list_included: boolean;
-  code: string | null;
-  responsible_department: string | null;
-}
+// ── Helpers ──
+
+const getStatusBadgeClass = (status: DocumentStatus) => {
+  switch (status) {
+    case "Vigente": return "bg-green-100 text-green-700 border-green-200";
+    case "A Vencer": return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    case "Vencido": return "bg-red-100 text-red-700 border-red-200";
+    default: return "";
+  }
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return "-";
+  return new Date(`${value.split("T")[0]}T00:00:00`).toLocaleDateString("pt-BR");
+};
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "-";
+  return new Date(value).toLocaleString("pt-BR");
+};
+
+const recipientStatusLabel = (status: string) => {
+  switch (status) {
+    case "pending": return "Pendente";
+    case "viewed": return "Visualizado";
+    case "confirmed": return "Confirmado";
+    default: return status;
+  }
+};
+
+const recipientStatusBadge = (status: string) => {
+  switch (status) {
+    case "pending": return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    case "viewed": return "bg-blue-100 text-blue-700 border-blue-200";
+    case "confirmed": return "bg-green-100 text-green-700 border-green-200";
+    default: return "";
+  }
+};
+
+// ── Types ──
+
+type CreateFormState = {
+  title: string;
+  document_identifier_type: string;
+  document_identifier_other: string;
+  branch_id: string;
+  elaborated_by_user_id: string;
+  approved_by_user_id: string;
+  expiration_date: string;
+  notes: string;
+  initial_attachment: File | null;
+  recipient_user_ids: string[];
+  referenced_document_ids: string[];
+};
+
+const DEFAULT_CREATE_FORM: CreateFormState = {
+  title: "",
+  document_identifier_type: SGQ_DOCUMENT_IDENTIFIER_OPTIONS[0],
+  document_identifier_other: "",
+  branch_id: "",
+  elaborated_by_user_id: "",
+  approved_by_user_id: "",
+  expiration_date: "",
+  notes: "",
+  initial_attachment: null,
+  recipient_user_ids: [],
+  referenced_document_ids: [],
+};
+
+type NewVersionFormState = {
+  changes_summary: string;
+  elaborated_by_user_id: string;
+  approved_by_user_id: string;
+  attachment: File | null;
+  recipient_user_ids: string[];
+};
+
+const DEFAULT_VERSION_FORM: NewVersionFormState = {
+  changes_summary: "",
+  elaborated_by_user_id: "",
+  approved_by_user_id: "",
+  attachment: null,
+  recipient_user_ids: [],
+};
+
+// ── Component ──
 
 export const SGQIsoDocumentsTab = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { data: branches = [] } = useBranches();
 
-  const [uploadData, setUploadData] = useState({
-    document_type: 'Manual',
-    tags: [] as string[],
-    controlled_copy: false
+  const [filters, setFilters] = useState({ search: "", branch_id: "all", document_identifier_type: "all", status: "all" });
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<CreateFormState>(DEFAULT_CREATE_FORM);
+
+  const [versionsDocId, setVersionsDocId] = useState<string | null>(null);
+  const [isVersionsOpen, setIsVersionsOpen] = useState(false);
+
+  const [newVersionDocId, setNewVersionDocId] = useState<string | null>(null);
+  const [isNewVersionOpen, setIsNewVersionOpen] = useState(false);
+  const [versionForm, setVersionForm] = useState<NewVersionFormState>(DEFAULT_VERSION_FORM);
+
+  const [recipientsDocId, setRecipientsDocId] = useState<string | null>(null);
+  const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["sgq-documents", "responsibles"],
+    queryFn: getSgqResponsibleUsers,
   });
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
 
-  const documentCategories = [
-    'Manual',
-    'Procedimento',
-    'Instrução de Trabalho',
-    'Formulário',
-    'Política',
-    'Plano',
-    'Relatório',
-    'Certificado',
-    'Outros'
-  ];
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["sgq-documents", filters],
+    queryFn: () => getSgqDocuments({
+      search: filters.search || undefined,
+      branch_id: filters.branch_id === "all" ? undefined : filters.branch_id,
+      document_identifier_type: filters.document_identifier_type === "all" ? undefined : filters.document_identifier_type,
+      status: filters.status === "all" ? undefined : (filters.status as DocumentStatus),
+    }),
+  });
 
-  const normalizeDocumentCategory = (doc: Document): string => {
-    const rawType = (doc.document_type || "").trim();
-    if (rawType && rawType !== "interno" && documentCategories.includes(rawType)) {
-      return rawType;
-    }
+  const { data: systemDocs = [] } = useQuery({
+    queryKey: ["sgq-documents", "system-docs"],
+    queryFn: getSystemDocumentsForReference,
+    enabled: isCreateOpen,
+  });
 
-    const extracted = (doc.ai_extracted_category || "").trim().toLowerCase();
-    if (!extracted) return "Outros";
+  const { data: versions = [], isLoading: isLoadingVersions } = useQuery({
+    queryKey: ["sgq-documents", "versions", versionsDocId],
+    queryFn: () => getSgqDocumentVersions(versionsDocId!),
+    enabled: isVersionsOpen && !!versionsDocId,
+  });
 
-    const normalized = documentCategories.find((category) =>
-      extracted.includes(category.toLowerCase()),
-    );
+  const { data: campaigns = [], isLoading: isLoadingCampaigns } = useQuery({
+    queryKey: ["sgq-documents", "campaigns", recipientsDocId],
+    queryFn: () => getSgqReadCampaigns(recipientsDocId!),
+    enabled: isRecipientsOpen && !!recipientsDocId,
+  });
 
-    return normalized || "Outros";
-  };
+  const collaborators = useMemo(() => users.map((u) => ({ id: u.id, full_name: u.full_name })), [users]);
 
-  const loadDocuments = useCallback(async () => {
+  const branchLabelById = useMemo(
+    () => new Map(branches.map((b) => [b.id, getBranchDisplayLabel(b)])),
+    [branches],
+  );
+
+  // ── Mutations ──
+
+  const createMutation = useMutation({
+    mutationFn: async (form: CreateFormState) => {
+      if (!form.initial_attachment) throw new Error("Anexo inicial é obrigatório");
+      return createSgqDocument({
+        title: form.title,
+        document_identifier_type: form.document_identifier_type,
+        document_identifier_other: form.document_identifier_other,
+        branch_id: form.branch_id || undefined,
+        elaborated_by_user_id: form.elaborated_by_user_id,
+        approved_by_user_id: form.approved_by_user_id,
+        expiration_date: form.expiration_date,
+        notes: form.notes,
+        initial_attachment: form.initial_attachment,
+        recipient_user_ids: form.recipient_user_ids,
+        referenced_document_ids: form.referenced_document_ids.length > 0 ? form.referenced_document_ids : undefined,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Sucesso", description: "Documento SGQ criado com sucesso." });
+      setIsCreateOpen(false);
+      setCreateForm(DEFAULT_CREATE_FORM);
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const newVersionMutation = useMutation({
+    mutationFn: async ({ docId, form }: { docId: string; form: NewVersionFormState }) => {
+      if (!form.attachment) throw new Error("Anexo é obrigatório");
+      return createSgqDocumentVersion({
+        sgq_document_id: docId,
+        changes_summary: form.changes_summary,
+        elaborated_by_user_id: form.elaborated_by_user_id,
+        approved_by_user_id: form.approved_by_user_id,
+        attachment: form.attachment,
+        recipient_user_ids: form.recipient_user_ids.length > 0 ? form.recipient_user_ids : undefined,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Sucesso", description: "Nova versão criada com sucesso." });
+      setIsNewVersionOpen(false);
+      setVersionForm(DEFAULT_VERSION_FORM);
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao criar versão", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const confirmReadMutation = useMutation({
+    mutationFn: (recipientId: string) => confirmSgqRead(recipientId),
+    onSuccess: () => {
+      toast({ title: "Leitura confirmada" });
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents", "campaigns", recipientsDocId] });
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleDownload = async (documentId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select(`
-          id,
-          file_name,
-          file_path,
-          file_size,
-          related_model,
-          document_type,
-          ai_extracted_category,
-          upload_date,
-          uploader_user_id,
-          company_id,
-          tags,
-          ai_processing_status,
-          ai_confidence_score,
-          controlled_copy,
-          requires_approval,
-          approval_status,
-          master_list_included,
-          code,
-          responsible_department
-        `)
-        .order('upload_date', { ascending: false });
-
-      if (error) throw error;
-
-      // Keep SGQ/ISO tab backward-compatible with legacy records while
-      // avoiding regulatory attachments managed in the dedicated tab.
-      const nonRegulatoryDocs = (data || []).filter(
-        (doc) => doc.related_model !== 'licenses' && doc.related_model !== 'license',
-      );
-      setDocuments(nonRegulatoryDocs as Document[]);
-    } catch (error) {
-      console.error('Erro ao carregar documentos:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os documentos SGQ/ISO.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    void loadDocuments();
-  }, [loadDocuments]);
-
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "Erro",
-        description: "Selecione um arquivo para upload.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUploading(true);
-
-    try {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData.user?.id;
-
-      if (!currentUserId) {
-        throw new Error("Usuário não autenticado.");
-      }
-
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", currentUserId)
-        .maybeSingle();
-
-      if (profileError) {
-        throw new Error(profileError.message);
-      }
-
-      if (!profile?.company_id) {
-        throw new Error("Empresa do usuário não encontrada.");
-      }
-
-      const uploadedDoc = await uploadDocument(selectedFile, {
-        tags: uploadData.tags,
-        related_model: 'quality_document',
-        related_id: profile.company_id,
-      });
-
-      const { error: updateError } = await supabase
-        .from('documents')
-        .update({
-          controlled_copy: uploadData.controlled_copy,
-          requires_approval: true,
-          approval_status: 'em_aprovacao' as const,
-          master_list_included: uploadData.controlled_copy,
-          document_type: 'interno',
-          ai_extracted_category: uploadData.document_type,
-        })
-        .eq('id', uploadedDoc.id);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Sucesso!",
-        description: `Documento "${selectedFile.name}" enviado com sucesso.`,
-      });
-
-      setSelectedFile(null);
-      setUploadData({
-        document_type: 'Manual',
-        tags: [],
-        controlled_copy: false
-      });
-      setIsUploadModalOpen(false);
-      await loadDocuments();
-    } catch (error: any) {
-      console.error('Erro no upload:', error);
-      toast({
-        title: "Erro no upload",
-        description: error.message || "Não foi possível fazer upload do documento.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleDownload = async (doc: Document) => {
-    try {
-      const { url, fileName } = await downloadDocument(doc.id);
-      const link = document.createElement('a');
+      const { url, fileName } = await downloadDocument(documentId);
+      const link = document.createElement("a");
       link.href = url;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      if (url.startsWith('blob:')) {
-        URL.revokeObjectURL(url);
-      }
+      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
     } catch (error: any) {
-      console.error('Erro no download:', error);
-      toast({
-        title: "Erro no download",
-        description: error.message || "Não foi possível baixar o documento.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro ao baixar", description: error?.message, variant: "destructive" });
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (!Number.isFinite(bytes) || bytes <= 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.min(sizes.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(k))));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: { [key: string]: string } = {
-      'Manual': 'bg-blue-100 text-blue-800 hover:bg-blue-100',
-      'Procedimento': 'bg-green-100 text-green-800 hover:bg-green-100',
-      'Instrução de Trabalho': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
-      'Formulário': 'bg-purple-100 text-purple-800 hover:bg-purple-100',
-      'Política': 'bg-red-100 text-red-800 hover:bg-red-100',
-      'Plano': 'bg-orange-100 text-orange-800 hover:bg-orange-100',
-      'Relatório': 'bg-teal-100 text-teal-800 hover:bg-teal-100',
-      'Certificado': 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100',
-      'Outros': 'bg-gray-100 text-gray-800 hover:bg-gray-100'
-    };
-    return colors[category] || colors['Outros'];
-  };
-
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.ai_extracted_category?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
-    const matchesCategory = categoryFilter === 'all' || normalizeDocumentCategory(doc) === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
-
-  if (loading) {
-    return (
-      <div className="min-h-[300px] flex items-center justify-center">
-        <EnhancedLoading size="lg" text="Carregando documentos SGQ/ISO..." />
-      </div>
-    );
-  }
+  const openVersions = (docId: string) => { setVersionsDocId(docId); setIsVersionsOpen(true); };
+  const openNewVersion = (docId: string) => { setNewVersionDocId(docId); setVersionForm(DEFAULT_VERSION_FORM); setIsNewVersionOpen(true); };
+  const openRecipients = (docId: string) => { setRecipientsDocId(docId); setIsRecipientsOpen(true); };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Documentos SGQ/ISO</h2>
-          <p className="text-muted-foreground">Instruções de Trabalho, Procedimentos e documentos de qualidade</p>
+          <p className="text-muted-foreground">
+            Controle de versões, revisões, aprovações e protocolo de recebimento.
+          </p>
         </div>
 
-        <Dialog
-          open={isUploadModalOpen}
-          onOpenChange={(open) => {
-            setIsUploadModalOpen(open);
-            if (!open) {
-              setSelectedFile(null);
-              setUploadData({
-                document_type: 'Manual',
-                tags: [],
-                controlled_copy: false,
-              });
-            }
-          }}
-        >
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Novo Documento SGQ
+            <Button onClick={() => { setCreateForm(DEFAULT_CREATE_FORM); setIsCreateOpen(true); }} className="gap-2">
+              <Plus className="h-4 w-4" /> Novo Documento SGQ
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Upload de Documento SGQ/ISO</DialogTitle>
-              <DialogDescription>
-                Faça upload de um novo documento do sistema de qualidade.
-              </DialogDescription>
+              <DialogTitle>Novo Documento SGQ</DialogTitle>
+              <DialogDescription>Preencha os dados do documento, anexe o arquivo inicial e selecione os destinatários.</DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="file">Arquivo</Label>
-                <Input
-                  id="file"
-                  type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setSelectedFile(file);
-                  }}
-                />
-                {selectedFile && (
-                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md mt-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <span className="text-sm flex-1">{selectedFile.name}</span>
-                    <span className="text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</span>
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)} className="h-6 w-6 p-0">
-                      ×
-                    </Button>
-                  </div>
-                )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+              <div className="md:col-span-2 space-y-2">
+                <Label>Título do Documento *</Label>
+                <Input value={createForm.title} onChange={(e) => setCreateForm((c) => ({ ...c, title: e.target.value }))} placeholder="Ex.: Manual da Qualidade" />
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="document_type">Tipo de Documento</Label>
-                <Select
-                  value={uploadData.document_type}
-                  onValueChange={(value) => setUploadData({ ...uploadData, document_type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+              <div className="space-y-2">
+                <Label>Tipo</Label>
+                <Select value={createForm.document_identifier_type} onValueChange={(v) => setCreateForm((c) => ({ ...c, document_identifier_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {documentCategories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
+                    {SGQ_DOCUMENT_IDENTIFIER_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="controlled_copy"
-                  checked={uploadData.controlled_copy}
-                  onChange={(e) => setUploadData({ ...uploadData, controlled_copy: e.target.checked })}
-                  className="rounded"
+              {createForm.document_identifier_type === "Outro" && (
+                <div className="space-y-2">
+                  <Label>Outro tipo</Label>
+                  <Input value={createForm.document_identifier_other} onChange={(e) => setCreateForm((c) => ({ ...c, document_identifier_other: e.target.value }))} />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Filial</Label>
+                <Select value={createForm.branch_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, branch_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>{getBranchDisplayLabel(b)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Elaborado por *</Label>
+                <Select value={createForm.elaborated_by_user_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, elaborated_by_user_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Aprovado por *</Label>
+                <Select value={createForm.approved_by_user_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, approved_by_user_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data de Validade *</Label>
+                <Input type="date" value={createForm.expiration_date} onChange={(e) => setCreateForm((c) => ({ ...c, expiration_date: e.target.value }))} />
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label>Anexo Inicial *</Label>
+                <Input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                  onChange={(e) => setCreateForm((c) => ({ ...c, initial_attachment: e.target.files?.[0] || null }))}
                 />
-                <Label htmlFor="controlled_copy">Cópia controlada</Label>
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label>Destinatários (protocolo de recebimento) *</Label>
+                <CollaboratorMultiSelect
+                  collaborators={collaborators}
+                  selectedIds={createForm.recipient_user_ids}
+                  onChange={(ids) => setCreateForm((c) => ({ ...c, recipient_user_ids: ids }))}
+                  placeholder="Selecionar destinatários"
+                />
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label>Referências a outros documentos</Label>
+                <CollaboratorMultiSelect
+                  collaborators={systemDocs.map((d) => ({ id: d.id, full_name: d.file_name }))}
+                  selectedIds={createForm.referenced_document_ids}
+                  onChange={(ids) => setCreateForm((c) => ({ ...c, referenced_document_ids: ids }))}
+                  placeholder="Selecionar documentos referenciados"
+                />
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label>Observações</Label>
+                <Textarea value={createForm.notes} onChange={(e) => setCreateForm((c) => ({ ...c, notes: e.target.value }))} rows={3} />
               </div>
             </div>
+
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsUploadModalOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleUpload} disabled={isUploading || !selectedFile}>
-                {isUploading ? (
-                  <>
-                    <EnhancedLoading size="sm" className="mr-2" />
-                    Enviando...
-                  </>
-                ) : (
-                  'Fazer Upload'
-                )}
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+              <Button onClick={() => createMutation.mutate(createForm)} disabled={createMutation.isPending} className="gap-2">
+                <Save className="h-4 w-4" />
+                {createMutation.isPending ? "Salvando..." : "Salvar"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Pesquisar documentos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[260px]">
-            <SelectValue placeholder="Filtrar por categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as categorias</SelectItem>
-            {documentCategories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Filters */}
+      <Card>
+        <CardHeader><CardTitle>Filtros</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="relative lg:col-span-2">
+            <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+            <Input className="pl-9" placeholder="Buscar por título, tipo, filial..." value={filters.search} onChange={(e) => setFilters((c) => ({ ...c, search: e.target.value }))} />
+          </div>
 
+          <Select value={filters.branch_id} onValueChange={(v) => setFilters((c) => ({ ...c, branch_id: v }))}>
+            <SelectTrigger><SelectValue placeholder="Filial" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as filiais</SelectItem>
+              {branches.map((b) => (
+                <SelectItem key={b.id} value={b.id}>{getBranchDisplayLabel(b)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.status} onValueChange={(v) => setFilters((c) => ({ ...c, status: v }))}>
+            <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="Vigente">Vigente</SelectItem>
+              <SelectItem value="A Vencer">A Vencer</SelectItem>
+              <SelectItem value="Vencido">Vencido</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Biblioteca SGQ/ISO
-          </CardTitle>
-          <CardDescription>
-            Controle de versão e gestão de documentos do sistema de qualidade
-          </CardDescription>
+          <CardTitle>Registros SGQ/ISO</CardTitle>
+          <CardDescription>Controle de versões, aprovações e protocolo de recebimento.</CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredDocuments.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : items.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">Nenhum documento encontrado</h3>
-              <p className="text-muted-foreground">
-                {searchTerm || categoryFilter !== 'all'
-                  ? 'Tente uma pesquisa diferente ou altere os filtros.'
-                  : 'Comece fazendo upload do seu primeiro documento SGQ/ISO.'}
-              </p>
+              <p className="mt-3 text-muted-foreground">Nenhum documento SGQ/ISO encontrado.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Documento</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Tamanho</TableHead>
-                  <TableHead>Última Atualização</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDocuments.map((doc) => (
-                  <TableRow key={doc.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-8 w-8 text-blue-600" />
-                        <div>
-                          <p className="font-medium">{doc.file_name}</p>
-                          {doc.ai_extracted_category && (
-                            <p className="text-sm text-muted-foreground">{doc.ai_extracted_category}</p>
-                          )}
-                          {doc.controlled_copy && (
-                            <Badge variant="outline" className="mt-1 text-xs">Controlado</Badge>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getCategoryColor(normalizeDocumentCategory(doc))}>
-                        {normalizeDocumentCategory(doc)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatFileSize(doc.file_size)}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(doc.upload_date).toLocaleDateString('pt-BR')}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleDownload(doc)} title="Baixar documento">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Filial</TableHead>
+                    <TableHead>Elaborador</TableHead>
+                    <TableHead>Aprovador</TableHead>
+                    <TableHead>Validade</TableHead>
+                    <TableHead>Dias Restantes</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Versão</TableHead>
+                    <TableHead>Recebimentos Pendentes</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium max-w-[200px] truncate" title={item.title}>{item.title || "-"}</TableCell>
+                      <TableCell>
+                        {item.document_identifier_type}
+                        {item.document_identifier_type === "Outro" && item.document_identifier_other ? ` (${item.document_identifier_other})` : ""}
+                      </TableCell>
+                      <TableCell>{item.branch_id ? branchLabelById.get(item.branch_id) || item.branch_name || "-" : "-"}</TableCell>
+                      <TableCell>{item.elaborated_by_name || "-"}</TableCell>
+                      <TableCell>{item.approved_by_name || "-"}</TableCell>
+                      <TableCell>{formatDate(item.expiration_date)}</TableCell>
+                      <TableCell>{item.days_remaining}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusBadgeClass(item.status)}>{item.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => openVersions(item.id)} className="gap-1">
+                          <History className="h-4 w-4" /> v{item.current_version_number}
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => openRecipients(item.id)} className="gap-1">
+                          <Users className="h-4 w-4" />
+                          {item.pending_recipients > 0 ? (
+                            <Badge variant="outline" className="bg-yellow-100 text-yellow-700 border-yellow-200">{item.pending_recipients}</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">OK</Badge>
+                          )}
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openNewVersion(item.id)} title="Nova versão">
+                            <Upload className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Versions Dialog */}
+      <Dialog open={isVersionsOpen} onOpenChange={setIsVersionsOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><History className="h-5 w-5" /> Histórico de Versões</DialogTitle>
+            <DialogDescription>Todas as revisões do documento com detalhes de elaboração e aprovação.</DialogDescription>
+          </DialogHeader>
+
+          {isLoadingVersions ? (
+            <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+          ) : versions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Nenhuma versão encontrada.</div>
+          ) : (
+            <div className="space-y-3">
+              {versions.map((v) => (
+                <div key={v.id} className="rounded-lg border p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={v.version_number === versions[0]?.version_number ? "default" : "outline"}>
+                        v{v.version_number}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">{formatDateTime(v.created_at)}</span>
+                    </div>
+                    {v.attachment_document_id && (
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => handleDownload(v.attachment_document_id!)}>
+                        <Download className="h-4 w-4" /> {v.attachment_file_name || "Baixar"}
+                      </Button>
+                    )}
+                  </div>
+                  {v.changes_summary && (
+                    <p className="text-sm"><span className="font-medium">O que mudou:</span> {v.changes_summary}</p>
+                  )}
+                  <div className="flex gap-4 text-sm text-muted-foreground">
+                    <span><Pencil className="h-3.5 w-3.5 inline mr-1" />Elaborado por: {v.elaborated_by_name || "-"}</span>
+                    <span><Check className="h-3.5 w-3.5 inline mr-1" />Aprovado por: {v.approved_by_name || "-"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* New Version Dialog */}
+      <Dialog open={isNewVersionOpen} onOpenChange={setIsNewVersionOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Upload className="h-5 w-5" /> Nova Versão</DialogTitle>
+            <DialogDescription>Anexe o novo arquivo e descreva as alterações realizadas.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>O que mudou nesta versão? *</Label>
+              <Textarea value={versionForm.changes_summary} onChange={(e) => setVersionForm((c) => ({ ...c, changes_summary: e.target.value }))} rows={3} placeholder="Descreva as alterações..." />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Elaborado por *</Label>
+              <Select value={versionForm.elaborated_by_user_id} onValueChange={(v) => setVersionForm((c) => ({ ...c, elaborated_by_user_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Aprovado por *</Label>
+              <Select value={versionForm.approved_by_user_id} onValueChange={(v) => setVersionForm((c) => ({ ...c, approved_by_user_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Novo Anexo *</Label>
+              <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={(e) => setVersionForm((c) => ({ ...c, attachment: e.target.files?.[0] || null }))} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Destinatários da nova versão (opcional)</Label>
+              <CollaboratorMultiSelect
+                collaborators={collaborators}
+                selectedIds={versionForm.recipient_user_ids}
+                onChange={(ids) => setVersionForm((c) => ({ ...c, recipient_user_ids: ids }))}
+                placeholder="Selecionar destinatários"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewVersionOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => newVersionDocId && newVersionMutation.mutate({ docId: newVersionDocId, form: versionForm })}
+              disabled={newVersionMutation.isPending}
+              className="gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {newVersionMutation.isPending ? "Salvando..." : "Criar Versão"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Recipients / Read Campaigns Dialog */}
+      <Dialog open={isRecipientsOpen} onOpenChange={setIsRecipientsOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5" /> Protocolo de Recebimento</DialogTitle>
+            <DialogDescription>Acompanhe quem recebeu e confirmou a leitura do documento.</DialogDescription>
+          </DialogHeader>
+
+          {isLoadingCampaigns ? (
+            <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+          ) : campaigns.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Nenhuma campanha de leitura encontrada.</div>
+          ) : (
+            <div className="space-y-4">
+              {campaigns.map((campaign) => (
+                <div key={campaign.id} className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{campaign.title}</p>
+                      <p className="text-sm text-muted-foreground">{formatDateTime(campaign.created_at)}</p>
+                    </div>
+                    {campaign.version_number && (
+                      <Badge variant="outline">v{campaign.version_number}</Badge>
+                    )}
+                  </div>
+
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Destinatário</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Enviado em</TableHead>
+                        <TableHead>Confirmado em</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {campaign.recipients.map((r) => (
+                        <TableRow key={r.id}>
+                          <TableCell>{r.user_name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={recipientStatusBadge(r.status)}>
+                              {recipientStatusLabel(r.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{formatDateTime(r.sent_at)}</TableCell>
+                          <TableCell>{r.confirmed_at ? formatDateTime(r.confirmed_at) : "-"}</TableCell>
+                          <TableCell>
+                            {r.status === "pending" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1"
+                                onClick={() => confirmReadMutation.mutate(r.id)}
+                                disabled={confirmReadMutation.isPending}
+                              >
+                                <Eye className="h-3.5 w-3.5" /> Confirmar
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
