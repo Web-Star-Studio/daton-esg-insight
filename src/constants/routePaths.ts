@@ -55,6 +55,7 @@ export const ROUTE_PATHS = {
   // Quality Module (SGQ)
   QUALITY: {
     DASHBOARD: '/quality-dashboard',
+    STAKEHOLDER_MATRIX: '/matriz-partes-interessadas',
     STRATEGIC_PLANNING: '/planejamento-estrategico',
     PROCESS_MAPPING: '/mapeamento-processos',
     NON_CONFORMITIES: '/nao-conformidades',

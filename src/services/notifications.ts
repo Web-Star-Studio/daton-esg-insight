@@ -185,12 +185,14 @@ const eventToActionMap: Record<string, string | null> = {
   'quality_issue_detected': null, // No batch action available
   'gri_indicator_updated': null, // No batch action available
   'risk_assessment_completed': null, // No batch action available
+  'stakeholder_requirement_review_due': 'check_stakeholder_requirement_reviews',
   // Direct actions are also valid
   'check_goal_deadlines': 'check_goal_deadlines',
   'check_compliance_tasks': 'check_compliance_tasks',
   'check_emission_spikes': 'check_emission_spikes',
   'check_efficacy_evaluations': 'check_efficacy_evaluations',
   'check_legislation_reviews': 'check_legislation_reviews',
+  'check_stakeholder_requirement_reviews': 'check_stakeholder_requirement_reviews',
 };
 
 export const triggerSmartNotifications = async (eventType: string): Promise<void> => {

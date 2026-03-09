@@ -230,7 +230,7 @@ async function queryGoalsProgress(args: any, companyId: string, supabase: any) {
 
   const summary = {
     total: data?.length || 0,
-    byStatus: {},
+    byStatus: {} as Record<string, number>,
     avgProgress: 0
   };
 
@@ -338,7 +338,7 @@ async function queryRisks(args: any, companyId: string, supabase: any) {
 
   const summary = {
     total: data?.length || 0,
-    byLevel: {},
+    byLevel: {} as Record<string, number>,
     critical: 0
   };
 
@@ -401,8 +401,8 @@ async function queryEmployees(args: any, companyId: string, supabase: any) {
 
   const summary = {
     total: data?.length || 0,
-    byGender: {},
-    byDepartment: {}
+    byGender: {} as Record<string, number>,
+    byDepartment: {} as Record<string, number>
   };
 
   data?.forEach((emp: any) => {
@@ -442,21 +442,21 @@ async function getDashboardSummary(args: any, companyId: string, supabase: any) 
   const summary = {
     goals: {
       total: goals?.length || 0,
-      active: goals?.filter(g => g.status === 'Em Andamento').length || 0
+      active: goals?.filter((g: any) => g.status === 'Em Andamento').length || 0
     },
     tasks: {
       total: tasks?.length || 0,
-      overdue: tasks?.filter(t => t.status === 'Em Atraso').length || 0,
-      pending: tasks?.filter(t => t.status === 'Pendente').length || 0
+      overdue: tasks?.filter((t: any) => t.status === 'Em Atraso').length || 0,
+      pending: tasks?.filter((t: any) => t.status === 'Pendente').length || 0
     },
     licenses: {
       total: licenses?.length || 0,
-      active: licenses?.filter(l => l.status === 'Ativa').length || 0,
-      expired: licenses?.filter(l => l.status === 'Vencida').length || 0
+      active: licenses?.filter((l: any) => l.status === 'Ativa').length || 0,
+      expired: licenses?.filter((l: any) => l.status === 'Vencida').length || 0
     },
     risks: {
       total: risks?.length || 0,
-      critical: risks?.filter(r => r.inherent_risk_level === 'Crítico').length || 0
+      critical: risks?.filter((r: any) => r.inherent_risk_level === 'Crítico').length || 0
     },
     emissions: {
       sources: emissions?.length || 0
@@ -561,7 +561,7 @@ async function globalSearch(args: any, companyId: string, supabase: any) {
     };
   } catch (error) {
     console.error('Global search error:', error);
-    return { error: error.message };
+    return { error: (error as Error).message };
   }
 }
 

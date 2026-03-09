@@ -99,6 +99,7 @@ export const useBreadcrumbs = () => {
       '/auditorias': [{ label: 'Governança', href: '/painel-governanca' }, { label: 'Auditorias' }],
       '/auditoria': [{ label: 'Governança', href: '/painel-governanca' }, { label: 'Auditorias' }],
       '/quality-dashboard': [{ label: 'SGQ' }],
+      '/matriz-partes-interessadas': [{ label: 'SGQ', href: '/quality-dashboard' }, { label: 'Matriz de Partes Interessadas' }],
       '/gestao-indicadores': [{ label: 'SGQ', href: '/quality-dashboard' }, { label: 'Gestão de Indicadores' }],
       '/planejamento-estrategico': [{ label: 'SGQ', href: '/quality-dashboard' }, { label: 'Planejamento Estratégico' }],
       '/mapeamento-processos': [{ label: 'SGQ', href: '/quality-dashboard' }, { label: 'Mapeamento de Processos' }],

@@ -48,6 +48,7 @@ const searchData: SearchResult[] = [
 
   // GESTÃO DA QUALIDADE (SGQ)
   { id: 'sgq-dashboard', title: 'Dashboard SGQ', path: '/sgq-dashboard', description: 'Painel de gestão da qualidade', category: 'SGQ', icon: 'BarChart3', keywords: ['sgq', 'qualidade', 'dashboard', 'painel'] },
+  { id: 'stakeholder-matrix', title: 'Matriz de Partes Interessadas', path: '/matriz-partes-interessadas', description: 'Controle de requisitos por parte interessada com revisão anual e alertas 30/7/0', category: 'SGQ', icon: 'Users', keywords: ['matriz', 'partes interessadas', 'stakeholder', 'iso 9001', '4.2', 'requisitos'] },
   { id: 'strategic-planning', title: 'Planejamento Estratégico', path: '/planejamento-estrategico', description: 'Definição de estratégias organizacionais', category: 'SGQ', icon: 'Target', keywords: ['planejamento', 'estrategico', 'estrategias', 'organizacional'] },
   { id: 'process-mapping', title: 'Mapeamento de Processos', path: '/mapeamento-processos', description: 'Documentação e otimização de processos', category: 'SGQ', icon: 'FileText', keywords: ['mapeamento', 'processos', 'documentacao', 'otimizacao'] },
   { id: 'non-conformities', title: 'Não Conformidades', path: '/nao-conformidades', description: 'Gestão de não conformidades e ações corretivas', category: 'SGQ', icon: 'FileText', keywords: ['nao conformidades', 'acoes', 'corretivas', 'gestao'] },
