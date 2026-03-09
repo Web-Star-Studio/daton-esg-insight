@@ -61,7 +61,6 @@ import {
   Plus,
   Save,
   Search,
-  Settings,
   Upload,
 } from "lucide-react";
 
