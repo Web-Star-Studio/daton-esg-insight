@@ -683,41 +683,6 @@ export const RegulatoryDocumentsTab = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Configuração de Prazo Padrão
-          </CardTitle>
-          <CardDescription>
-            Define quantos dias antes do vencimento o status passa para "A Vencer".
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end gap-3">
-            <div className="space-y-2">
-              <Label>Dias padrão</Label>
-              <Input
-                type="number"
-                min={0}
-                value={settingsValue}
-                onChange={(e) => setSettingsValue(e.target.value)}
-                placeholder={String(settings?.default_expiring_days ?? 30)}
-                className="w-[140px]"
-              />
-            </div>
-            <Button
-              onClick={() => saveSettingsMutation.mutate(Number(settingsValue || 30))}
-              disabled={saveSettingsMutation.isPending}
-            >
-              Salvar padrão
-            </Button>
-            <p className="text-sm text-muted-foreground">
-              Atual: {settings?.default_expiring_days ?? 30} dias
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
