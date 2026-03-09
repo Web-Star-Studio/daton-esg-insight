@@ -510,37 +510,41 @@ async function getLatestExtractions(documentIds: string[]): Promise<Record<strin
 }
 
 async function syncDerivedStatuses(documentIds?: string[]): Promise<void> {
-  let readRecipientsQuery = supabase
-    .from("document_read_recipients" as any)
-    .update({ status: "overdue" })
-    .lt("due_at", new Date().toISOString())
-    .in("status", ["pending", "viewed"]);
+  try {
+    let readRecipientsQuery = supabase
+      .from("document_read_recipients" as any)
+      .update({ status: "overdue" })
+      .lt("due_at", new Date().toISOString())
+      .in("status", ["pending", "viewed"]);
 
-  if (documentIds && documentIds.length > 0) {
-    const { data: campaigns } = await supabase
-      .from("document_read_campaigns" as any)
-      .select("id")
-      .in("document_id", documentIds);
+    if (documentIds && documentIds.length > 0) {
+      const { data: campaigns } = await supabase
+        .from("document_read_campaigns" as any)
+        .select("id")
+        .in("document_id", documentIds);
 
-    const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
-    if (campaignIds.length > 0) {
-      readRecipientsQuery = readRecipientsQuery.in("campaign_id", campaignIds);
+      const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
+      if (campaignIds.length > 0) {
+        readRecipientsQuery = readRecipientsQuery.in("campaign_id", campaignIds);
+      }
     }
+
+    await readRecipientsQuery;
+
+    let requestsQuery = supabase
+      .from("document_requests" as any)
+      .update({ status: "overdue" })
+      .lt("due_at", new Date().toISOString())
+      .in("status", ["open", "in_progress"]);
+
+    if (documentIds && documentIds.length > 0) {
+      requestsQuery = requestsQuery.in("target_document_id", documentIds);
+    }
+
+    await requestsQuery;
+  } catch (err) {
+    console.warn("syncDerivedStatuses falhou (tabelas podem não existir):", err);
   }
-
-  await readRecipientsQuery;
-
-  let requestsQuery = supabase
-    .from("document_requests" as any)
-    .update({ status: "overdue" })
-    .lt("due_at", new Date().toISOString())
-    .in("status", ["open", "in_progress"]);
-
-  if (documentIds && documentIds.length > 0) {
-    requestsQuery = requestsQuery.in("target_document_id", documentIds);
-  }
-
-  await requestsQuery;
 }
 
 async function getPendingReadMap(documentIds: string[]): Promise<Record<string, number>> {
