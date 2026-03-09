@@ -1,29 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Plus, Search, Download, FileText, Calendar, Brain, Building2, ExternalLink } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { EnhancedLoading } from "@/components/ui/enhanced-loading";
-import { uploadDocument, downloadDocument } from "@/services/documents";
-import { confirmDocumentRead, getCurrentUserReadConfirmationMap } from "@/services/documentCompliance";
-import { processDocumentWithAI } from "@/services/documentAI";
-import { linkDocumentToBranches, getDocumentsBranchesMap } from "@/services/documentBranches";
-import { useBranches } from "@/services/branches";
-import { getBranchDisplayLabel } from "@/utils/branchDisplay";
 import {
   Dialog,
   DialogContent,
@@ -40,649 +21,752 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { useBranches } from "@/services/branches";
+import { downloadDocument } from "@/services/documents";
+import {
+  createSgqDocument,
+  getSgqDocuments,
+  getSgqDocumentVersions,
+  getSgqResponsibleUsers,
+  getSgqSettings,
+  getSgqRenewalStatusLabel,
+  SGQ_DOCUMENT_IDENTIFIER_OPTIONS,
+  updateSgqDocument,
+  uploadSgqAttachment,
+  upsertSgqRenewalData,
+  type DocumentStatus,
+  type RenewalStatus,
+  type SgqDocumentItem,
+} from "@/services/sgqIsoDocuments";
+import { getBranchDisplayLabel } from "@/utils/branchDisplay";
+import {
+  Calendar,
+  Download,
+  FileText,
+  History,
+  Pencil,
+  Plus,
+  Save,
+  Search,
+  Upload,
+} from "lucide-react";
 
-interface Document {
-  id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  related_model: string;
-  document_type: string;
-  ai_extracted_category: string | null;
-  upload_date: string;
-  uploader_user_id: string;
-  company_id: string;
-  tags: string[] | null;
-  ai_processing_status: string | null;
-  ai_confidence_score: number | null;
-  controlled_copy: boolean;
-  requires_approval: boolean;
-  approval_status: string;
-  master_list_included: boolean;
-  code: string | null;
-  responsible_department: string | null;
-}
+const RENEWAL_STATUS_OPTIONS: Array<{ value: RenewalStatus; label: string }> = [
+  { value: "nao_iniciado", label: "Não iniciado" },
+  { value: "em_andamento", label: "Em andamento" },
+  { value: "protocolado", label: "Protocolado" },
+  { value: "renovado", label: "Renovado" },
+  { value: "indeferido", label: "Indeferido" },
+];
+
+type FormState = {
+  id?: string;
+  document_identifier_type: string;
+  document_identifier_other: string;
+  document_number: string;
+  issuing_body: string;
+  process_number: string;
+  external_source_provider: string;
+  external_source_reference: string;
+  external_source_url: string;
+  branch_id: string;
+  responsible_user_id: string;
+  issue_date: string;
+  expiration_date: string;
+  renewal_required: boolean;
+  renewal_alert_days: string;
+  notes: string;
+  renewal_status: RenewalStatus;
+  renewal_start_date: string;
+  renewal_protocol_number: string;
+  renewed_expiration_date: string;
+  new_attachment: File | null;
+};
+
+const DEFAULT_FORM: FormState = {
+  document_identifier_type: SGQ_DOCUMENT_IDENTIFIER_OPTIONS[0],
+  document_identifier_other: "",
+  document_number: "",
+  issuing_body: "",
+  process_number: "",
+  external_source_provider: "",
+  external_source_reference: "",
+  external_source_url: "",
+  branch_id: "",
+  responsible_user_id: "",
+  issue_date: "",
+  expiration_date: "",
+  renewal_required: true,
+  renewal_alert_days: "",
+  notes: "",
+  renewal_status: "nao_iniciado",
+  renewal_start_date: "",
+  renewal_protocol_number: "",
+  renewed_expiration_date: "",
+  new_attachment: null,
+};
+
+const getDocumentStatusBadgeClass = (status: DocumentStatus) => {
+  switch (status) {
+    case "Vigente":
+      return "bg-green-100 text-green-700 border-green-200";
+    case "A Vencer":
+      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    case "Vencido":
+      return "bg-red-100 text-red-700 border-red-200";
+    default:
+      return "";
+  }
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return "-";
+  return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR");
+};
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "-";
+  return new Date(value).toLocaleString("pt-BR");
+};
 
 export const SGQIsoDocumentsTab = () => {
-  const navigate = useNavigate();
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [readConfirmationMap, setReadConfirmationMap] = useState<Record<string, boolean>>({});
-  const [confirmingReadId, setConfirmingReadId] = useState<string | null>(null);
-  const [branchesMap, setBranchesMap] = useState<Record<string, Array<{ branch_id: string; name: string; code: string | null }>>>({});
+  const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  const [uploadData, setUploadData] = useState({
-    document_type: 'Manual',
-    tags: [] as string[],
-    controlled_copy: false
-  });
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [aiProcessingStatus, setAiProcessingStatus] = useState<string | null>(null);
-
   const { data: branches = [] } = useBranches();
 
-  const documentCategories = [
-    'Manual',
-    'Procedimento',
-    'Instrução de Trabalho',
-    'Formulário',
-    'MSG',
-    'FPLAN',
-    'Política',
-    'Plano',
-    'Relatório',
-    'Certificado',
-    'Outros'
-  ];
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const normalizeDocumentCategory = (doc: Document): string => {
-    const rawType = (doc.document_type || "").trim();
-    if (rawType && rawType !== "interno" && documentCategories.includes(rawType)) {
-      return rawType;
-    }
-
-    const extracted = (doc.ai_extracted_category || "").trim().toLowerCase();
-    if (!extracted) return "Outros";
-
-    const normalized = documentCategories.find((category) =>
-      extracted.includes(category.toLowerCase()),
-    );
-
-    return normalized || "Outros";
-  };
-
-  const loadDocuments = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select(`
-          id,
-          file_name,
-          file_path,
-          file_size,
-          related_model,
-          document_type,
-          ai_extracted_category,
-          upload_date,
-          uploader_user_id,
-          company_id,
-          tags,
-          ai_processing_status,
-          ai_confidence_score,
-          controlled_copy,
-          requires_approval,
-          approval_status,
-          master_list_included,
-          code,
-          responsible_department
-        `)
-        .order('upload_date', { ascending: false });
-
-      if (error) throw error;
-
-      const nonRegulatoryDocs = (data || []).filter(
-        (doc) => doc.related_model !== 'licenses' && doc.related_model !== 'license',
-      );
-      setDocuments(nonRegulatoryDocs as Document[]);
-
-      // Load branches map
-      const docIds = nonRegulatoryDocs.map((d) => d.id);
-      if (docIds.length > 0) {
-        const bMap = await getDocumentsBranchesMap(docIds);
-        setBranchesMap(bMap);
-      }
-
-      try {
-        const confirmationMap = await getCurrentUserReadConfirmationMap(
-          nonRegulatoryDocs.map((doc) => doc.id),
-        );
-        setReadConfirmationMap(confirmationMap);
-      } catch (confirmationError) {
-        console.error("Erro ao carregar confirmações de leitura:", confirmationError);
-        setReadConfirmationMap({});
-      }
-    } catch (error) {
-      console.error('Erro ao carregar documentos:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os documentos SGQ/ISO.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    void loadDocuments();
-  }, [loadDocuments]);
-
-  const handleBranchToggle = (branchId: string) => {
-    setSelectedBranchIds((prev) =>
-      prev.includes(branchId)
-        ? prev.filter((id) => id !== branchId)
-        : [...prev, branchId]
-    );
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      toast({ title: "Erro", description: "Selecione um arquivo para upload.", variant: "destructive" });
-      return;
-    }
-
-    if (selectedBranchIds.length === 0) {
-      toast({ title: "Erro", description: "Selecione ao menos uma filial.", variant: "destructive" });
-      return;
-    }
-
-    setIsUploading(true);
-    setAiProcessingStatus(null);
-
-    try {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData.user?.id;
-      if (!currentUserId) throw new Error("Usuário não autenticado.");
-
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", currentUserId)
-        .maybeSingle();
-
-      if (profileError) throw new Error(profileError.message);
-      if (!profile?.company_id) throw new Error("Empresa do usuário não encontrada.");
-
-      // Upload document
-      const uploadedDoc = await uploadDocument(selectedFile, {
-        tags: uploadData.tags,
-        related_model: 'quality_document',
-        related_id: profile.company_id,
-      });
-
-      // Update document metadata
-      await supabase
-        .from('documents')
-        .update({
-          controlled_copy: uploadData.controlled_copy,
-          requires_approval: true,
-          approval_status: 'em_aprovacao' as const,
-          master_list_included: uploadData.controlled_copy,
-          document_type: 'interno',
-          ai_extracted_category: uploadData.document_type,
-        })
-        .eq('id', uploadedDoc.id);
-
-      // Link branches
-      await linkDocumentToBranches(uploadedDoc.id, selectedBranchIds);
-
-      toast({
-        title: "Upload concluído!",
-        description: `"${selectedFile.name}" enviado. Iniciando análise IA...`,
-      });
-
-      // Start AI processing
-      setAiProcessingStatus("Processando com IA...");
-      const aiResult = await processDocumentWithAI(uploadedDoc.id);
-
-      if (aiResult.success) {
-        setAiProcessingStatus("Extração concluída!");
-        toast({
-          title: "IA concluiu a análise",
-          description: "Os dados extraídos estão disponíveis na página do documento.",
-        });
-        // Navigate to detail page
-        setTimeout(() => {
-          setIsUploadModalOpen(false);
-          navigate(`/controle-documentos/${uploadedDoc.id}`);
-        }, 1500);
-      } else {
-        setAiProcessingStatus("Erro na extração IA");
-        toast({
-          title: "Atenção",
-          description: "Upload concluído, mas a extração IA falhou. Você pode reprocessar depois.",
-          variant: "destructive",
-        });
-      }
-
-      setSelectedFile(null);
-      setSelectedBranchIds([]);
-      setUploadData({ document_type: 'Manual', tags: [], controlled_copy: false });
-      await loadDocuments();
-    } catch (error: unknown) {
-      console.error('Erro no upload:', error);
-      toast({
-        title: "Erro no upload",
-        description: error instanceof Error ? error.message : "Não foi possível fazer upload do documento.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleDownload = async (doc: Document) => {
-    try {
-      const { url, fileName } = await downloadDocument(doc.id);
-      const link = window.document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
-      if (url.startsWith('blob:')) URL.revokeObjectURL(url);
-    } catch (error: unknown) {
-      console.error('Erro no download:', error);
-      toast({
-        title: "Erro no download",
-        description: error instanceof Error ? error.message : "Não foi possível baixar o documento.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleConfirmRead = async (documentId: string) => {
-    try {
-      setConfirmingReadId(documentId);
-      await confirmDocumentRead(documentId);
-      setReadConfirmationMap((prev) => ({ ...prev, [documentId]: true }));
-      toast({ title: "Leitura confirmada", description: "A confirmação de leitura foi registrada." });
-    } catch (error: unknown) {
-      toast({
-        title: "Erro ao confirmar leitura",
-        description: error instanceof Error ? error.message : "Não foi possível registrar a confirmação.",
-        variant: "destructive",
-      });
-    } finally {
-      setConfirmingReadId(null);
-    }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (!Number.isFinite(bytes) || bytes <= 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.min(sizes.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(k))));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: { [key: string]: string } = {
-      'Manual': 'bg-blue-100 text-blue-800 hover:bg-blue-100',
-      'Procedimento': 'bg-green-100 text-green-800 hover:bg-green-100',
-      'Instrução de Trabalho': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
-      'Formulário': 'bg-purple-100 text-purple-800 hover:bg-purple-100',
-      'MSG': 'bg-indigo-100 text-indigo-800 hover:bg-indigo-100',
-      'FPLAN': 'bg-rose-100 text-rose-800 hover:bg-rose-100',
-      'Política': 'bg-red-100 text-red-800 hover:bg-red-100',
-      'Plano': 'bg-orange-100 text-orange-800 hover:bg-orange-100',
-      'Relatório': 'bg-teal-100 text-teal-800 hover:bg-teal-100',
-      'Certificado': 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100',
-      'Outros': 'bg-gray-100 text-gray-800 hover:bg-gray-100'
-    };
-    return colors[category] || colors['Outros'];
-  };
-
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.ai_extracted_category?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
-    const matchesCategory = categoryFilter === 'all' || normalizeDocumentCategory(doc) === categoryFilter;
-    return matchesSearch && matchesCategory;
+  const [filters, setFilters] = useState({
+    search: "",
+    branch_id: "all",
+    document_identifier_type: "all",
+    status: "all",
+    renewal_status: "all",
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-[300px] flex items-center justify-center">
-        <EnhancedLoading size="lg" text="Carregando documentos SGQ/ISO..." />
-      </div>
-    );
-  }
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isVersionsOpen, setIsVersionsOpen] = useState(false);
+  const [selectedVersionsDocId, setSelectedVersionsDocId] = useState<string | null>(null);
+  const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
+
+  const [form, setForm] = useState<FormState>(DEFAULT_FORM);
+
+  const { data: settings } = useQuery({
+    queryKey: ["sgq-documents", "settings"],
+    queryFn: getSgqSettings,
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["sgq-documents", "responsibles"],
+    queryFn: getSgqResponsibleUsers,
+  });
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["sgq-documents", filters],
+    queryFn: () =>
+      getSgqDocuments({
+        search: filters.search || undefined,
+        branch_id: filters.branch_id === "all" ? undefined : filters.branch_id,
+        document_identifier_type:
+          filters.document_identifier_type === "all" ? undefined : filters.document_identifier_type,
+        status: filters.status === "all" ? undefined : (filters.status as DocumentStatus),
+        renewal_status:
+          filters.renewal_status === "all" ? undefined : (filters.renewal_status as RenewalStatus),
+      }),
+  });
+
+  const { data: versions = [], isLoading: isLoadingVersions } = useQuery({
+    queryKey: ["sgq-documents", "versions", selectedVersionsDocId],
+    queryFn: () => getSgqDocumentVersions(selectedVersionsDocId as string),
+    enabled: isVersionsOpen && !!selectedVersionsDocId,
+  });
+
+  const persistMutation = useMutation({
+    mutationFn: async (payload: FormState) => {
+      const commonPayload = {
+        document_identifier_type: payload.document_identifier_type,
+        document_identifier_other: payload.document_identifier_type === "Outro" ? payload.document_identifier_other : "",
+        document_number: payload.document_number,
+        issuing_body: payload.issuing_body,
+        process_number: payload.process_number,
+        external_source_provider: payload.external_source_provider || null,
+        external_source_reference: payload.external_source_reference || null,
+        external_source_url: payload.external_source_url || null,
+        branch_id: payload.branch_id,
+        responsible_user_id: payload.responsible_user_id,
+        issue_date: payload.issue_date || undefined,
+        expiration_date: payload.expiration_date,
+        renewal_required: payload.renewal_required,
+        renewal_alert_days: payload.renewal_alert_days ? Number(payload.renewal_alert_days) : null,
+        notes: payload.notes,
+      };
+
+      let id = payload.id;
+
+      if (id) {
+        await updateSgqDocument(id, commonPayload);
+      } else {
+        const created = await createSgqDocument({
+          ...commonPayload,
+          initial_attachment: payload.new_attachment,
+        });
+        id = created.id;
+      }
+
+      await upsertSgqRenewalData(id as string, {
+        status: payload.renewal_status,
+        scheduled_start_date: payload.renewal_start_date || null,
+        protocol_number: payload.renewal_protocol_number || null,
+        renewed_expiration_date: payload.renewed_expiration_date || null,
+      });
+
+      if (payload.id && payload.new_attachment) {
+        await uploadSgqAttachment(payload.id, payload.new_attachment);
+      }
+
+      return id;
+    },
+    onSuccess: () => {
+      toast({ title: "Sucesso", description: "Documento SGQ salvo com sucesso." });
+      setIsFormOpen(false);
+      setForm(DEFAULT_FORM);
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const uploadVersionMutation = useMutation({
+    mutationFn: async ({ docId, file }: { docId: string; file: File }) => {
+      await uploadSgqAttachment(docId, file);
+    },
+    onSuccess: () => {
+      toast({ title: "Versão anexada", description: "Novo anexo enviado com sucesso." });
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+      if (selectedVersionsDocId) {
+        queryClient.invalidateQueries({
+          queryKey: ["sgq-documents", "versions", selectedVersionsDocId],
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const branchLabelById = useMemo(
+    () => new Map(branches.map((branch) => [branch.id, getBranchDisplayLabel(branch)])),
+    [branches],
+  );
+
+  const openCreate = () => {
+    setForm(DEFAULT_FORM);
+    setIsFormOpen(true);
+  };
+
+  const openEdit = (item: SgqDocumentItem) => {
+    setForm({
+      id: item.id,
+      document_identifier_type: item.document_identifier_type || SGQ_DOCUMENT_IDENTIFIER_OPTIONS[0],
+      document_identifier_other: item.document_identifier_other || "",
+      document_number: item.document_number || "",
+      issuing_body: item.issuing_body || "",
+      process_number: item.process_number || "",
+      external_source_provider: item.external_source_provider || "",
+      external_source_reference: item.external_source_reference || "",
+      external_source_url: item.external_source_url || "",
+      branch_id: item.branch_id || "",
+      responsible_user_id: item.responsible_user_id || "",
+      issue_date: item.issue_date || "",
+      expiration_date: item.expiration_date || "",
+      renewal_required: item.renewal_required,
+      renewal_alert_days: item.renewal_alert_days ? String(item.renewal_alert_days) : "",
+      notes: item.notes || "",
+      renewal_status: item.renewal_status,
+      renewal_start_date: item.renewal_start_date || "",
+      renewal_protocol_number: item.renewal_protocol_number || "",
+      renewed_expiration_date: item.renewed_expiration_date || "",
+      new_attachment: null,
+    });
+    setIsFormOpen(true);
+  };
+
+  const openVersions = (docId: string) => {
+    setSelectedVersionsDocId(docId);
+    setIsVersionsOpen(true);
+  };
+
+  const onFileUploadClick = (docId: string) => {
+    setUploadTargetId(docId);
+    fileInputRef.current?.click();
+  };
+
+  const handleDownloadVersion = async (documentId: string) => {
+    try {
+      const { url, fileName } = await downloadDocument(documentId);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao baixar versão",
+        description: error?.message || "Não foi possível baixar o arquivo.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Documentos SGQ/ISO</h2>
-          <p className="text-muted-foreground">Instruções de Trabalho, Procedimentos e documentos de qualidade</p>
+          <p className="text-muted-foreground">
+            Controle de validade, renovação, versões e anexos de documentos de qualidade.
+          </p>
         </div>
 
-        <Dialog
-          open={isUploadModalOpen}
-          onOpenChange={(open) => {
-            setIsUploadModalOpen(open);
-            if (!open) {
-              setSelectedFile(null);
-              setSelectedBranchIds([]);
-              setAiProcessingStatus(null);
-              setUploadData({ document_type: 'Manual', tags: [], controlled_copy: false });
-            }
-          }}
-        >
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button onClick={openCreate} className="gap-2">
               <Plus className="h-4 w-4" />
               Novo Documento SGQ
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[560px]">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                Upload de Documento SGQ/ISO com IA
-              </DialogTitle>
+              <DialogTitle>{form.id ? "Editar Documento SGQ" : "Novo Documento SGQ"}</DialogTitle>
               <DialogDescription>
-                O documento será processado automaticamente pela IA para extração de dados.
+                Preencha os dados de identificação, validade, renovação e anexos do documento.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="file">Arquivo</Label>
-                <Input
-                  id="file"
-                  type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setSelectedFile(file);
-                  }}
-                />
-                {selectedFile && (
-                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md mt-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <span className="text-sm flex-1">{selectedFile.name}</span>
-                    <span className="text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</span>
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)} className="h-6 w-6 p-0">
-                      ×
-                    </Button>
-                  </div>
-                )}
-              </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="document_type">Tipo de Documento</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+              <div className="space-y-2">
+                <Label>Identificação do Documento</Label>
                 <Select
-                  value={uploadData.document_type}
-                  onValueChange={(value) => setUploadData({ ...uploadData, document_type: value })}
+                  value={form.document_identifier_type}
+                  onValueChange={(value) => setForm((c) => ({ ...c, document_identifier_type: value }))}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {documentCategories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
+                    {SGQ_DOCUMENT_IDENTIFIER_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>{option}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Multi-branch selector */}
-              <div className="grid gap-2">
-                <Label className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Filiais vinculadas <span className="text-destructive">*</span>
-                </Label>
-                <div className="border border-border rounded-md p-3 max-h-[160px] overflow-y-auto space-y-2">
-                  {branches.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhuma filial cadastrada.</p>
-                  ) : (
-                    branches.map((branch) => (
-                      <div key={branch.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`branch-${branch.id}`}
-                          checked={selectedBranchIds.includes(branch.id)}
-                          onCheckedChange={() => handleBranchToggle(branch.id)}
-                        />
-                        <label
-                          htmlFor={`branch-${branch.id}`}
-                          className="text-sm cursor-pointer flex-1"
-                        >
-                          {getBranchDisplayLabel(branch)}
-                          {branch.is_headquarters && (
-                            <Badge variant="outline" className="ml-2 text-xs">Matriz</Badge>
-                          )}
-                        </label>
-                      </div>
-                    ))
-                  )}
-                </div>
-                {selectedBranchIds.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {selectedBranchIds.length} filial(is) selecionada(s)
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="controlled_copy"
-                  checked={uploadData.controlled_copy}
-                  onCheckedChange={(checked) =>
-                    setUploadData({ ...uploadData, controlled_copy: checked === true })
-                  }
-                />
-                <Label htmlFor="controlled_copy">Cópia controlada</Label>
-              </div>
-
-              {/* AI Processing Status */}
-              {aiProcessingStatus && (
-                <div className="flex items-center gap-3 p-3 bg-muted rounded-md">
-                  <Brain className="h-5 w-5 text-primary animate-pulse" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{aiProcessingStatus}</p>
-                    {aiProcessingStatus === "Processando com IA..." && (
-                      <Progress value={60} className="mt-2 h-1" />
-                    )}
-                  </div>
+              {form.document_identifier_type === "Outro" && (
+                <div className="space-y-2">
+                  <Label>Outro tipo</Label>
+                  <Input
+                    value={form.document_identifier_other}
+                    onChange={(e) => setForm((c) => ({ ...c, document_identifier_other: e.target.value }))}
+                    placeholder="Ex.: Certificado ISO"
+                  />
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label>Número do Documento</Label>
+                <Input value={form.document_number} onChange={(e) => setForm((c) => ({ ...c, document_number: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Órgão Emissor</Label>
+                <Input value={form.issuing_body} onChange={(e) => setForm((c) => ({ ...c, issuing_body: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Nº do Processo</Label>
+                <Input value={form.process_number} onChange={(e) => setForm((c) => ({ ...c, process_number: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Fonte Externa (SOGI/equivalente)</Label>
+                <Input
+                  value={form.external_source_provider}
+                  onChange={(e) => setForm((c) => ({ ...c, external_source_provider: e.target.value }))}
+                  placeholder="Ex.: SOGI, sistema interno"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Referência Externa</Label>
+                <Input
+                  value={form.external_source_reference}
+                  onChange={(e) => setForm((c) => ({ ...c, external_source_reference: e.target.value }))}
+                  placeholder="ID/código de referência externo"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>URL Externa</Label>
+                <Input
+                  value={form.external_source_url}
+                  onChange={(e) => setForm((c) => ({ ...c, external_source_url: e.target.value }))}
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Filial</Label>
+                <Select value={form.branch_id} onValueChange={(value) => setForm((c) => ({ ...c, branch_id: value }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a filial" /></SelectTrigger>
+                  <SelectContent>
+                    {branches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>{getBranchDisplayLabel(branch)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Responsável pelo Documento</Label>
+                <Select value={form.responsible_user_id} onValueChange={(value) => setForm((c) => ({ ...c, responsible_user_id: value }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o responsável" /></SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>{user.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data de Emissão</Label>
+                <Input type="date" value={form.issue_date} onChange={(e) => setForm((c) => ({ ...c, issue_date: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data de Validade</Label>
+                <Input type="date" value={form.expiration_date} onChange={(e) => setForm((c) => ({ ...c, expiration_date: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Renovação</Label>
+                <Select value={form.renewal_required ? "sim" : "nao"} onValueChange={(value) => setForm((c) => ({ ...c, renewal_required: value === "sim" }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Prazo de alerta (dias)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.renewal_alert_days}
+                  onChange={(e) => setForm((c) => ({ ...c, renewal_alert_days: e.target.value }))}
+                  placeholder={`Padrão global: ${settings?.default_expiring_days ?? 30}`}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status da Renovação</Label>
+                <Select value={form.renewal_status} onValueChange={(value) => setForm((c) => ({ ...c, renewal_status: value as RenewalStatus }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {RENEWAL_STATUS_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data de Início da Renovação</Label>
+                <Input type="date" value={form.renewal_start_date} onChange={(e) => setForm((c) => ({ ...c, renewal_start_date: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Nº do Protocolo de Renovação</Label>
+                <Input value={form.renewal_protocol_number} onChange={(e) => setForm((c) => ({ ...c, renewal_protocol_number: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Nova data de validade (após renovação)</Label>
+                <Input type="date" value={form.renewed_expiration_date} onChange={(e) => setForm((c) => ({ ...c, renewed_expiration_date: e.target.value }))} />
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label>Documento (anexo)</Label>
+                <Input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                  onChange={(e) => setForm((c) => ({ ...c, new_attachment: e.target.files?.[0] || null }))}
+                />
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label>Observações</Label>
+                <Textarea
+                  value={form.notes}
+                  onChange={(e) => setForm((c) => ({ ...c, notes: e.target.value }))}
+                  placeholder="Informações adicionais"
+                  rows={4}
+                />
+              </div>
             </div>
+
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsUploadModalOpen(false)} disabled={isUploading}>
-                Cancelar
-              </Button>
+              <Button variant="outline" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
               <Button
-                onClick={handleUpload}
-                disabled={isUploading || !selectedFile || selectedBranchIds.length === 0}
+                onClick={() => persistMutation.mutate(form)}
+                disabled={persistMutation.isPending}
+                className="gap-2"
               >
-                {isUploading ? (
-                  <>
-                    <EnhancedLoading size="sm" className="mr-2" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="h-4 w-4 mr-2" />
-                    Upload + Análise IA
-                  </>
-                )}
+                <Save className="h-4 w-4" />
+                {persistMutation.isPending ? "Salvando..." : "Salvar"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Pesquisar documentos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[260px]">
-            <SelectValue placeholder="Filtrar por categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as categorias</SelectItem>
-            {documentCategories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Filters */}
+      <Card>
+        <CardHeader><CardTitle>Filtros</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="relative lg:col-span-2">
+            <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Buscar por número, órgão, processo..."
+              value={filters.search}
+              onChange={(e) => setFilters((c) => ({ ...c, search: e.target.value }))}
+            />
+          </div>
 
+          <Select value={filters.branch_id} onValueChange={(value) => setFilters((c) => ({ ...c, branch_id: value }))}>
+            <SelectTrigger><SelectValue placeholder="Filial" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as filiais</SelectItem>
+              {branches.map((branch) => (
+                <SelectItem key={branch.id} value={branch.id}>{getBranchDisplayLabel(branch)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.document_identifier_type} onValueChange={(value) => setFilters((c) => ({ ...c, document_identifier_type: value }))}>
+            <SelectTrigger><SelectValue placeholder="Identificação" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os tipos</SelectItem>
+              {SGQ_DOCUMENT_IDENTIFIER_OPTIONS.map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.status} onValueChange={(value) => setFilters((c) => ({ ...c, status: value }))}>
+            <SelectTrigger><SelectValue placeholder="Status do Documento" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="Vigente">Vigente</SelectItem>
+              <SelectItem value="A Vencer">A Vencer</SelectItem>
+              <SelectItem value="Vencido">Vencido</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.renewal_status} onValueChange={(value) => setFilters((c) => ({ ...c, renewal_status: value }))}>
+            <SelectTrigger><SelectValue placeholder="Status da Renovação" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {RENEWAL_STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Biblioteca SGQ/ISO
-          </CardTitle>
-          <CardDescription>
-            Controle de versão e gestão de documentos do sistema de qualidade
-          </CardDescription>
+          <CardTitle>Registros SGQ/ISO</CardTitle>
+          <CardDescription>Controle de validade, renovação, versões e anexos.</CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredDocuments.length === 0 ? (
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file && uploadTargetId) {
+                uploadVersionMutation.mutate({ docId: uploadTargetId, file });
+              }
+              e.currentTarget.value = "";
+              setUploadTargetId(null);
+            }}
+          />
+
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : items.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">Nenhum documento encontrado</h3>
-              <p className="text-muted-foreground">
-                {searchTerm || categoryFilter !== 'all'
-                  ? 'Tente uma pesquisa diferente ou altere os filtros.'
-                  : 'Comece fazendo upload do seu primeiro documento SGQ/ISO.'}
-              </p>
+              <p className="mt-3 text-muted-foreground">Nenhum documento SGQ/ISO encontrado.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Documento</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Filiais</TableHead>
-                  <TableHead>Tamanho</TableHead>
-                  <TableHead>Última Atualização</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDocuments.map((doc) => (
-                  <TableRow
-                    key={doc.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate(`/controle-documentos/${doc.id}`)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-8 w-8 text-primary" />
-                        <div>
-                          <p className="font-medium">{doc.file_name}</p>
-                          {doc.ai_extracted_category && (
-                            <p className="text-sm text-muted-foreground">{doc.ai_extracted_category}</p>
-                          )}
-                          <div className="flex gap-1 mt-1">
-                            {doc.controlled_copy && (
-                              <Badge variant="outline" className="text-xs">Controlado</Badge>
-                            )}
-                            {readConfirmationMap[doc.id] && (
-                              <Badge variant="outline" className="text-xs border-green-500 text-green-700">
-                                Leitura Confirmada
-                              </Badge>
-                            )}
-                            {doc.ai_processing_status === 'completed' && (
-                              <Badge variant="outline" className="text-xs border-primary text-primary">
-                                <Brain className="h-3 w-3 mr-1" />
-                                IA
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getCategoryColor(normalizeDocumentCategory(doc))}>
-                        {normalizeDocumentCategory(doc)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1 max-w-[200px]">
-                        {(branchesMap[doc.id] || []).map((b) => (
-                          <Badge key={b.branch_id} variant="secondary" className="text-xs">
-                            {getBranchDisplayLabel({ code: b.code, name: b.name })}
-                          </Badge>
-                        ))}
-                        {(!branchesMap[doc.id] || branchesMap[doc.id].length === 0) && (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatFileSize(doc.file_size)}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(doc.upload_date).toLocaleDateString('pt-BR')}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="outline" size="sm" onClick={() => handleDownload(doc)} title="Baixar documento">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/controle-documentos/${doc.id}`)}
-                          title="Ver detalhes"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleConfirmRead(doc.id)}
-                          disabled={readConfirmationMap[doc.id] || confirmingReadId === doc.id}
-                          title="Registrar confirmação de leitura"
-                        >
-                          {readConfirmationMap[doc.id]
-                            ? "Lido"
-                            : confirmingReadId === doc.id
-                              ? "..."
-                              : "Confirmar leitura"}
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Identificação</TableHead>
+                    <TableHead>Nº Documento</TableHead>
+                    <TableHead>Órgão Emissor</TableHead>
+                    <TableHead>Processo</TableHead>
+                    <TableHead>Filial</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    <TableHead>Emissão</TableHead>
+                    <TableHead>Validade</TableHead>
+                    <TableHead>Dias Restantes</TableHead>
+                    <TableHead>Status Documento</TableHead>
+                    <TableHead>Status Renovação</TableHead>
+                    <TableHead>Fonte Externa</TableHead>
+                    <TableHead>Protocolo</TableHead>
+                    <TableHead>Versões</TableHead>
+                    <TableHead>Última Atualização</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        {item.document_identifier_type}
+                        {item.document_identifier_type === "Outro" && item.document_identifier_other
+                          ? ` (${item.document_identifier_other})`
+                          : ""}
+                      </TableCell>
+                      <TableCell>{item.document_number || "-"}</TableCell>
+                      <TableCell>{item.issuing_body || "-"}</TableCell>
+                      <TableCell>{item.process_number || "-"}</TableCell>
+                      <TableCell>
+                        {item.branch_id ? branchLabelById.get(item.branch_id) || item.branch_name || "-" : "-"}
+                      </TableCell>
+                      <TableCell>{item.responsible_name || "-"}</TableCell>
+                      <TableCell>{formatDate(item.issue_date)}</TableCell>
+                      <TableCell>{formatDate(item.expiration_date)}</TableCell>
+                      <TableCell>{item.days_remaining}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getDocumentStatusBadgeClass(item.status)}>
+                          {item.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{getSgqRenewalStatusLabel(item.renewal_status)}</TableCell>
+                      <TableCell>{item.external_source_provider || "-"}</TableCell>
+                      <TableCell>{item.renewal_protocol_number || "-"}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => openVersions(item.id)} className="gap-1">
+                          <History className="h-4 w-4" />
+                          {item.versions_count}
+                        </Button>
+                      </TableCell>
+                      <TableCell>{formatDateTime(item.latest_update)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(item)} title="Editar">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onFileUploadClick(item.id)}
+                            title="Anexar nova versão"
+                            disabled={uploadVersionMutation.isPending}
+                          >
+                            <Upload className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Versions Dialog */}
+      <Dialog open={isVersionsOpen} onOpenChange={setIsVersionsOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Histórico de versões por anexo
+            </DialogTitle>
+            <DialogDescription>
+              Cada novo upload gera uma nova versão lógica deste documento SGQ.
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingVersions ? (
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : versions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Nenhuma versão encontrada.</div>
+          ) : (
+            <div className="space-y-3">
+              {versions.map((version) => (
+                <div key={version.id} className="rounded-lg border p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{version.version_label} • {version.file_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5 inline mr-1" />
+                        {new Date(version.upload_date).toLocaleString("pt-BR")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {version.is_current && <Badge className="bg-primary">Atual</Badge>}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => handleDownloadVersion(version.id)}
+                      >
+                        <Download className="h-4 w-4" />
+                        Baixar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
