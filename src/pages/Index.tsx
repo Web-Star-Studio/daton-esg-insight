@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import SGQDashboardWidget from "@/components/SGQDashboardWidget"
-import { AIProcessingStatusWidget } from "@/components/AIProcessingStatusWidget"
+
 import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem"
 import UnifiedDashboardWidget from "@/components/UnifiedDashboardWidget"
 import AdvancedNotificationPanel from "@/components/AdvancedNotificationPanel"
