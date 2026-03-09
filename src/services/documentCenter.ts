@@ -561,6 +561,10 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     .eq("status", "active");
 
   if (campaignError) {
+    if (campaignError.code === "PGRST205" || campaignError.code === "42P01") {
+      console.warn("document_read_campaigns não disponível:", campaignError.message);
+      return {};
+    }
     throw new Error(`Erro ao buscar campanhas de leitura: ${campaignError.message}`);
   }
 
@@ -576,6 +580,9 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     .in("status", ["pending", "viewed", "overdue"]);
 
   if (recipientsError) {
+    if (recipientsError.code === "PGRST205" || recipientsError.code === "42P01") {
+      return {};
+    }
     throw new Error(`Erro ao buscar destinatários de leitura: ${recipientsError.message}`);
   }
 
