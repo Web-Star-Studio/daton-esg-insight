@@ -664,6 +664,10 @@ async function fetchDocumentRelations(documentId: string): Promise<{
     .or(`source_document_id.eq.${documentId},target_document_id.eq.${documentId}`);
 
   if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      console.warn("document_relations não disponível:", error.message);
+      return { outgoing: [], incoming: [] };
+    }
     throw new Error(`Erro ao carregar relações documentais: ${error.message}`);
   }
 
