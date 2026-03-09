@@ -1,14 +1,12 @@
 
+# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
-## Plan: Promote user to platform_admin
+## Problema
+Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
 
-### What
-Insert `fgsantunes@gmail.com` (user ID `48e5f925-9470-43a5-91b7-01490747cec3`) into the `platform_admins` table and update their role in `user_roles` to `platform_admin`.
+## Solução
+Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
 
-### Steps
-1. **Insert into `platform_admins`** table with the user's ID
-2. **Update `user_roles`** to set role = `platform_admin` for this user (or insert if not present with that role)
+## Alteração
 
-### Access Point
-No sidebar change needed — the "Platform Admin" button already appears in the **header profile dropdown** (avatar menu, top-right) for `platform_admin` users, as designed.
-
+**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.
