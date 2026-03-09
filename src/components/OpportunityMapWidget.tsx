@@ -207,17 +207,19 @@ export function OpportunityMapWidget() {
                     >
                       {cellOpps.length > 0 ? (
                         cellOpps.map(opp => (
-                          <div
+                          <button
+                            type="button"
                             key={opp.id}
-                            className={`text-xs p-1 rounded bg-background border truncate cursor-pointer hover:border-primary text-left`}
+                            className={`text-xs p-1 rounded bg-background border truncate cursor-pointer hover:border-primary text-left w-full`}
                             onClick={() => handleViewOpportunity(opp)}
                             title={opp.title}
+                            aria-label={`Visualizar oportunidade: ${opp.title}`}
                           >
                             <div className="flex justify-between items-center gap-1">
                               <span className="truncate">{opp.title}</span>
                               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getOpportunityLevelColor(opp.opportunity_level).replace('text-', 'bg-').replace('border-', '')}`} />
                             </div>
-                          </div>
+                          </button>
                         ))
                       ) : (
                         <div className="flex-1 flex items-center justify-center text-xl font-bold opacity-30">

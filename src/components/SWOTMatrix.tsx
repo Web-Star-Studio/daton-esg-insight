@@ -209,18 +209,15 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   });
 
   const saveItemMutation = useMutation({
-<<<<<<< Updated upstream
-    mutationFn: async () => {
-      if (!selectedAnalysis) throw new Error("Nenhuma análise selecionada.");
-=======
-    mutationFn: async (analysisId: string) => {
-      if (!analysisId) throw new Error("Nenhuma análise selecionada.");
+    mutationFn: async (analysisId?: string) => {
+      const swotAnalysisId = analysisId ?? selectedAnalysis;
+      if (!swotAnalysisId) throw new Error("Nenhuma análise selecionada.");
+
       if (isDemo) {
         queryClient.invalidateQueries({ queryKey: ["swot-items"] });
         toast.success("Item SWOT salvo.");
         return;
       }
->>>>>>> Stashed changes
 
       if (
         itemForm.treatment_decision === "relevante_requer_acoes" &&
@@ -246,12 +243,13 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
       }
 
       return createSWOTItem({
-        swot_analysis_id: selectedAnalysis,
+        swot_analysis_id: swotAnalysisId,
         ...payload,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["swot-items", selectedAnalysis] });
+    onSuccess: (_, variables) => {
+      const swotAnalysisId = variables ?? selectedAnalysis;
+      queryClient.invalidateQueries({ queryKey: ["swot-items", swotAnalysisId] });
       toast.success(editingItem ? "Item SWOT atualizado com sucesso!" : "Item SWOT adicionado com sucesso!");
       handleCloseItemDialog();
     },
@@ -760,7 +758,11 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                       toast.error("Informe o item SWOT.");
                       return;
                     }
-                    saveItemMutation.mutate();
+                    if (!selectedAnalysis) {
+                      toast.error("Nenhuma análise selecionada.");
+                      return;
+                    }
+                    saveItemMutation.mutate(selectedAnalysis);
                   }}
                   disabled={saveItemMutation.isPending}
                 >
