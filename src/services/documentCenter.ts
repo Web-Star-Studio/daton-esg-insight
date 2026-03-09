@@ -711,6 +711,10 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
     .order("created_at", { ascending: false });
 
   if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      console.warn("document_read_campaigns não disponível:", error.message);
+      return [];
+    }
     throw new Error(`Erro ao carregar campanhas de leitura: ${error.message}`);
   }
 
@@ -724,6 +728,9 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
     : { data: [], error: null };
 
   if (recipientsError) {
+    if (recipientsError.code === "PGRST205" || recipientsError.code === "42P01") {
+      return (campaigns || []).map((campaign: any) => ({ ...campaign, recipients: [] }));
+    }
     throw new Error(`Erro ao carregar destinatários das campanhas: ${recipientsError.message}`);
   }
 
