@@ -802,7 +802,8 @@ export async function getDocumentRecord(documentId: string): Promise<DocumentDet
       }),
       supabase.from("document_change_log" as any).select("*").eq("document_id", documentId).order("created_at", { ascending: false }).then(({ data: changeData, error: changeError }) => {
         if (changeError) {
-          throw new Error(`Erro ao carregar timeline documental: ${changeError.message}`);
+          console.warn("Falha ao carregar timeline documental:", changeError.message);
+          return [];
         }
         return changeData || [];
       }),

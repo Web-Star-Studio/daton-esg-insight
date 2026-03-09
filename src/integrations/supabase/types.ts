@@ -6008,6 +6008,50 @@ export type Database = {
           },
         ]
       }
+      document_change_log: {
+        Row: {
+          change_type: string
+          created_at: string
+          description: string | null
+          document_id: string
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          user_id: string | null
+        }
+        Insert: {
+          change_type?: string
+          created_at?: string
+          description?: string | null
+          document_id: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          change_type?: string
+          created_at?: string
+          description?: string | null
+          document_id?: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_change_log_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_controlled_copies: {
         Row: {
           assigned_department: string | null
