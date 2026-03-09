@@ -424,6 +424,10 @@ async function getControlProfiles(documentIds: string[]): Promise<Record<string,
     .in("document_id", documentIds);
 
   if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      console.warn("document_control_profiles não disponível:", error.message);
+      return {};
+    }
     throw new Error(`Erro ao carregar perfis controlados: ${error.message}`);
   }
 
@@ -506,37 +510,41 @@ async function getLatestExtractions(documentIds: string[]): Promise<Record<strin
 }
 
 async function syncDerivedStatuses(documentIds?: string[]): Promise<void> {
-  let readRecipientsQuery = supabase
-    .from("document_read_recipients" as any)
-    .update({ status: "overdue" })
-    .lt("due_at", new Date().toISOString())
-    .in("status", ["pending", "viewed"]);
+  try {
+    let readRecipientsQuery = supabase
+      .from("document_read_recipients" as any)
+      .update({ status: "overdue" })
+      .lt("due_at", new Date().toISOString())
+      .in("status", ["pending", "viewed"]);
 
-  if (documentIds && documentIds.length > 0) {
-    const { data: campaigns } = await supabase
-      .from("document_read_campaigns" as any)
-      .select("id")
-      .in("document_id", documentIds);
+    if (documentIds && documentIds.length > 0) {
+      const { data: campaigns } = await supabase
+        .from("document_read_campaigns" as any)
+        .select("id")
+        .in("document_id", documentIds);
 
-    const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
-    if (campaignIds.length > 0) {
-      readRecipientsQuery = readRecipientsQuery.in("campaign_id", campaignIds);
+      const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
+      if (campaignIds.length > 0) {
+        readRecipientsQuery = readRecipientsQuery.in("campaign_id", campaignIds);
+      }
     }
+
+    await readRecipientsQuery;
+
+    let requestsQuery = supabase
+      .from("document_requests" as any)
+      .update({ status: "overdue" })
+      .lt("due_at", new Date().toISOString())
+      .in("status", ["open", "in_progress"]);
+
+    if (documentIds && documentIds.length > 0) {
+      requestsQuery = requestsQuery.in("target_document_id", documentIds);
+    }
+
+    await requestsQuery;
+  } catch (err) {
+    console.warn("syncDerivedStatuses falhou (tabelas podem não existir):", err);
   }
-
-  await readRecipientsQuery;
-
-  let requestsQuery = supabase
-    .from("document_requests" as any)
-    .update({ status: "overdue" })
-    .lt("due_at", new Date().toISOString())
-    .in("status", ["open", "in_progress"]);
-
-  if (documentIds && documentIds.length > 0) {
-    requestsQuery = requestsQuery.in("target_document_id", documentIds);
-  }
-
-  await requestsQuery;
 }
 
 async function getPendingReadMap(documentIds: string[]): Promise<Record<string, number>> {
@@ -553,6 +561,10 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     .eq("status", "active");
 
   if (campaignError) {
+    if (campaignError.code === "PGRST205" || campaignError.code === "42P01") {
+      console.warn("document_read_campaigns não disponível:", campaignError.message);
+      return {};
+    }
     throw new Error(`Erro ao buscar campanhas de leitura: ${campaignError.message}`);
   }
 
@@ -568,6 +580,9 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     .in("status", ["pending", "viewed", "overdue"]);
 
   if (recipientsError) {
+    if (recipientsError.code === "PGRST205" || recipientsError.code === "42P01") {
+      return {};
+    }
     throw new Error(`Erro ao buscar destinatários de leitura: ${recipientsError.message}`);
   }
 
@@ -598,6 +613,10 @@ async function getOpenRequestMap(documentIds: string[]): Promise<Record<string, 
     .in("status", ["open", "in_progress", "overdue"]);
 
   if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      console.warn("document_requests não disponível:", error.message);
+      return {};
+    }
     throw new Error(`Erro ao carregar solicitações: ${error.message}`);
   }
 
@@ -645,6 +664,10 @@ async function fetchDocumentRelations(documentId: string): Promise<{
     .or(`source_document_id.eq.${documentId},target_document_id.eq.${documentId}`);
 
   if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      console.warn("document_relations não disponível:", error.message);
+      return { outgoing: [], incoming: [] };
+    }
     throw new Error(`Erro ao carregar relações documentais: ${error.message}`);
   }
 
@@ -688,6 +711,10 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
     .order("created_at", { ascending: false });
 
   if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      console.warn("document_read_campaigns não disponível:", error.message);
+      return [];
+    }
     throw new Error(`Erro ao carregar campanhas de leitura: ${error.message}`);
   }
 
@@ -701,6 +728,9 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
     : { data: [], error: null };
 
   if (recipientsError) {
+    if (recipientsError.code === "PGRST205" || recipientsError.code === "42P01") {
+      return (campaigns || []).map((campaign: any) => ({ ...campaign, recipients: [] }));
+    }
     throw new Error(`Erro ao carregar destinatários das campanhas: ${recipientsError.message}`);
   }
 
@@ -727,6 +757,10 @@ async function fetchDocumentRequests(documentId: string): Promise<DocumentReques
     .order("created_at", { ascending: false });
 
   if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      console.warn("document_requests não disponível:", error.message);
+      return [];
+    }
     throw new Error(`Erro ao carregar solicitações do documento: ${error.message}`);
   }
 

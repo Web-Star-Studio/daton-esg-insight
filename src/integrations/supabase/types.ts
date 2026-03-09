@@ -6011,42 +6011,117 @@ export type Database = {
       document_change_log: {
         Row: {
           change_type: string
+          company_id: string | null
           created_at: string
+          created_by_user_id: string | null
           description: string | null
+          diff: Json | null
           document_id: string
           field_name: string | null
           id: string
           new_value: string | null
           old_value: string | null
+          summary: string | null
           user_id: string | null
         }
         Insert: {
           change_type?: string
+          company_id?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           description?: string | null
+          diff?: Json | null
           document_id: string
           field_name?: string | null
           id?: string
           new_value?: string | null
           old_value?: string | null
+          summary?: string | null
           user_id?: string | null
         }
         Update: {
           change_type?: string
+          company_id?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           description?: string | null
+          diff?: Json | null
           document_id?: string
           field_name?: string | null
           id?: string
           new_value?: string | null
           old_value?: string | null
+          summary?: string | null
           user_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "document_change_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "document_change_log_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_control_profiles: {
+        Row: {
+          code: string | null
+          confidentiality_level: string
+          controlled_copy: boolean
+          created_at: string
+          document_id: string
+          document_type_label: string
+          issuer_name: string | null
+          norm_reference: string | null
+          responsible_department: string | null
+          review_due_date: string | null
+          updated_at: string
+          validity_end_date: string | null
+          validity_start_date: string | null
+        }
+        Insert: {
+          code?: string | null
+          confidentiality_level?: string
+          controlled_copy?: boolean
+          created_at?: string
+          document_id: string
+          document_type_label?: string
+          issuer_name?: string | null
+          norm_reference?: string | null
+          responsible_department?: string | null
+          review_due_date?: string | null
+          updated_at?: string
+          validity_end_date?: string | null
+          validity_start_date?: string | null
+        }
+        Update: {
+          code?: string | null
+          confidentiality_level?: string
+          controlled_copy?: boolean
+          created_at?: string
+          document_id?: string
+          document_type_label?: string
+          issuer_name?: string | null
+          norm_reference?: string | null
+          responsible_department?: string | null
+          review_due_date?: string | null
+          updated_at?: string
+          validity_end_date?: string | null
+          validity_start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_control_profiles_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
             referencedRelation: "documents"
             referencedColumns: ["id"]
           },
@@ -6510,6 +6585,241 @@ export type Database = {
           {
             foreignKeyName: "document_processing_audit_document_id_fkey"
             columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_read_campaigns: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          document_id: string
+          due_at: string | null
+          id: string
+          message: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          document_id: string
+          due_at?: string | null
+          id?: string
+          message?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          document_id?: string
+          due_at?: string | null
+          id?: string
+          message?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_read_campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_read_campaigns_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_read_recipients: {
+        Row: {
+          campaign_id: string
+          confirmation_note: string | null
+          confirmed_at: string | null
+          created_at: string
+          due_at: string | null
+          id: string
+          last_reminder_at: string | null
+          sent_at: string
+          status: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          confirmation_note?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          sent_at?: string
+          status?: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          confirmation_note?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          sent_at?: string
+          status?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_read_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "document_read_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_relations: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          notes: string | null
+          relation_type: string
+          source_document_id: string
+          target_document_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          notes?: string | null
+          relation_type?: string
+          source_document_id: string
+          target_document_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          notes?: string | null
+          relation_type?: string
+          source_document_id?: string
+          target_document_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_relations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relations_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relations_target_document_id_fkey"
+            columns: ["target_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          due_at: string | null
+          fulfilled_document_id: string | null
+          fulfilled_version_id: string | null
+          id: string
+          priority: string
+          request_type: string
+          requested_from_user_id: string
+          requester_user_id: string
+          status: string
+          target_document_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          fulfilled_document_id?: string | null
+          fulfilled_version_id?: string | null
+          id?: string
+          priority?: string
+          request_type?: string
+          requested_from_user_id: string
+          requester_user_id: string
+          status?: string
+          target_document_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          fulfilled_document_id?: string | null
+          fulfilled_version_id?: string | null
+          id?: string
+          priority?: string
+          request_type?: string
+          requested_from_user_id?: string
+          requester_user_id?: string
+          status?: string
+          target_document_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_requests_fulfilled_document_id_fkey"
+            columns: ["fulfilled_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_requests_target_document_id_fkey"
+            columns: ["target_document_id"]
             isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["id"]
