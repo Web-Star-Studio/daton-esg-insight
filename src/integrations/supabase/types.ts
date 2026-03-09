@@ -21062,6 +21062,180 @@ export type Database = {
           },
         ]
       }
+      sgq_iso_document_settings: {
+        Row: {
+          company_id: string
+          default_expiring_days: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          default_expiring_days?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          default_expiring_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_iso_document_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_iso_documents: {
+        Row: {
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          document_identifier_other: string | null
+          document_identifier_type: string
+          document_number: string | null
+          expiration_date: string
+          external_last_sync_at: string | null
+          external_source_provider: string | null
+          external_source_reference: string | null
+          external_source_url: string | null
+          id: string
+          issue_date: string | null
+          issuing_body: string
+          notes: string | null
+          process_number: string | null
+          renewal_alert_days: number | null
+          renewal_required: boolean
+          responsible_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          document_identifier_other?: string | null
+          document_identifier_type?: string
+          document_number?: string | null
+          expiration_date: string
+          external_last_sync_at?: string | null
+          external_source_provider?: string | null
+          external_source_reference?: string | null
+          external_source_url?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_body?: string
+          notes?: string | null
+          process_number?: string | null
+          renewal_alert_days?: number | null
+          renewal_required?: boolean
+          responsible_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          document_identifier_other?: string | null
+          document_identifier_type?: string
+          document_number?: string | null
+          expiration_date?: string
+          external_last_sync_at?: string | null
+          external_source_provider?: string | null
+          external_source_reference?: string | null
+          external_source_url?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_body?: string
+          notes?: string | null
+          process_number?: string | null
+          renewal_alert_days?: number | null
+          renewal_required?: boolean
+          responsible_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_iso_documents_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_iso_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_iso_documents_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_renewal_schedules: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          protocol_deadline: string | null
+          protocol_number: string | null
+          renewed_expiration_date: string | null
+          scheduled_start_date: string
+          sgq_document_id: string
+          status: Database["public"]["Enums"]["license_renewal_status_enum"]
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          protocol_deadline?: string | null
+          protocol_number?: string | null
+          renewed_expiration_date?: string | null
+          scheduled_start_date?: string
+          sgq_document_id: string
+          status?: Database["public"]["Enums"]["license_renewal_status_enum"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          protocol_deadline?: string | null
+          protocol_number?: string | null
+          renewed_expiration_date?: string | null
+          scheduled_start_date?: string
+          sgq_document_id?: string
+          status?: Database["public"]["Enums"]["license_renewal_status_enum"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_renewal_schedules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_renewal_schedules_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sipoc_elements: {
         Row: {
           created_at: string
