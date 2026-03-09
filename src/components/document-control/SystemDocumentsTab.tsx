@@ -50,6 +50,7 @@ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secon
 };
 
 export const SystemDocumentsTab = () => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<SystemDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
