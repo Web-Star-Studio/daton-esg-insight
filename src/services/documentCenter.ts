@@ -979,7 +979,7 @@ export async function replaceDocumentFile(documentId: string, file: File): Promi
     throw new Error(`Erro ao atualizar arquivo do documento: ${updateError.message}`);
   }
 
-  processDocumentWithAI(documentId).catch(() => undefined);
+  
 }
 
 export async function createReadCampaign(input: {
