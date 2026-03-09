@@ -456,60 +456,6 @@ async function getCurrentVersionsMap(documentIds: string[]): Promise<Record<stri
   }, {});
 }
 
-async function getLatestExtractions(documentIds: string[]): Promise<Record<string, DocumentRecord["latest_extraction"]>> {
-  if (documentIds.length === 0) {
-    return {};
-  }
-
-  const { data, error } = await supabase
-    .from("document_extraction_jobs")
-    .select("id, document_id")
-    .in("document_id", documentIds)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(`Erro ao buscar jobs de extração: ${error.message}`);
-  }
-
-  const latestJobIdsByDocument = (data || []).reduce<Record<string, string>>((acc, row) => {
-    if (!acc[row.document_id]) {
-      acc[row.document_id] = row.id;
-    }
-    return acc;
-  }, {});
-
-  const jobIds = Object.values(latestJobIdsByDocument);
-  if (jobIds.length === 0) {
-    return {};
-  }
-
-  const { data: previews, error: previewsError } = await (supabase
-    .from("extracted_data_preview" as any)
-    .select("id, extraction_job_id, validation_status, target_table, created_at, extracted_fields")
-    .in("extraction_job_id", jobIds) as any);
-
-  if (previewsError) {
-    if (previewsError.code === "PGRST205" || previewsError.code === "42P01" || previewsError.code === "42703") {
-      console.warn("extracted_data_preview query failed, returning empty:", previewsError.message);
-      return {};
-    }
-    throw new Error(`Erro ao buscar extrações: ${previewsError.message}`);
-  }
-
-  return Object.entries(latestJobIdsByDocument).reduce<Record<string, DocumentRecord["latest_extraction"]>>((acc, [documentId, jobId]) => {
-    const preview = ((previews || []) as any[]).find((item) => item.extraction_job_id === jobId);
-    if (preview) {
-      acc[documentId] = {
-        id: preview.id,
-        validation_status: preview.validation_status,
-        target_table: preview.target_table,
-        created_at: preview.created_at,
-        extracted_fields: (preview.extracted_fields as Record<string, unknown>) || {},
-      };
-    }
-    return acc;
-  }, {});
-}
 
 async function syncDerivedStatuses(documentIds?: string[]): Promise<void> {
   try {

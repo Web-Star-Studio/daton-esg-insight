@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Brain,
-  Building2,
   CalendarRange,
   Download,
   Eye,
