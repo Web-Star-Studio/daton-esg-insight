@@ -372,6 +372,7 @@ export const governanceMockEntries = [
     },
   },
   // ESG Risks — fields match ESGRisk interface used by ESGRisksMatrix.tsx
+  // A single comprehensive dataset is shared for both the scoped and unscoped query keys.
   {
     queryKey: ['esg-risks', DEMO_COMPANY_ID],
     data: [
@@ -382,14 +383,14 @@ export const governanceMockEntries = [
       { id: '5', company_id: DEMO_COMPANY_ID, risk_title: 'Interrupção de Fornecimento', risk_description: 'Risco de paralisação da cadeia produtiva por falha em fornecedor crítico.', esg_category: 'Governança', probability: 'Média', impact: 'Médio', inherent_risk_level: 'Médio', status: 'Ativo', owner_user_id: 'emp-1', treatment_plan: 'Diversificação de fornecedores', next_review_date: '2026-05-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
       { id: '6', company_id: DEMO_COMPANY_ID, risk_title: 'Violação LGPD', risk_description: 'Risco de incidente de segurança com dados pessoais de colaboradores ou clientes.', esg_category: 'Governança', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'Médio', status: 'Ativo', owner_user_id: 'emp-7', treatment_plan: 'Programa de adequação LGPD', next_review_date: '2026-06-15T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
       { id: '7', company_id: DEMO_COMPANY_ID, risk_title: 'Acidente de Trabalho Fatal', risk_description: 'Risco de acidente grave envolvendo colaboradores nas operações industriais.', esg_category: 'Social', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'Crítico', status: 'Ativo', owner_user_id: 'emp-4', treatment_plan: 'Programa Zero Acidentes', next_review_date: '2026-03-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
-      { id: '8', company_id: DEMO_COMPANY_ID, risk_title: 'Escassez Hídrica', risk_description: 'Risco de restrição no uso de água por crise hídrica regional.', esg_category: 'Ambiental', probability: 'Média', impact: 'Médio', inherent_risk_level: 'Médio', status: 'Ativo', owner_user_id: 'emp-2', treatment_plan: 'Sistema de reuso de água', next_review_date: '2026-04-15T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
+      { id: '8', company_id: DEMO_COMPANY_ID, risk_title: 'Escassez Hítrica', risk_description: 'Risco de restrição no uso de água por crise hítrica regional.', esg_category: 'Ambiental', probability: 'Média', impact: 'Médio', inherent_risk_level: 'Médio', status: 'Ativo', owner_user_id: 'emp-2', treatment_plan: 'Sistema de reuso de água', next_review_date: '2026-04-15T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
     ],
   },
-  // ESG Risks (base)
+  // ESG Risks (unscoped) — same dataset for consumers that don't scope by company id
   {
     queryKey: ['esg-risks'],
     data: [
-      { id: '1', company_id: DEMO_COMPANY_ID, risk_title: 'Vazamento de Efluentes', risk_description: 'Risco de vazamento de efluentes industriais.', esg_category: 'Ambiental', probability: 'Média', impact: 'Alto', inherent_risk_level: 'Alto', status: 'Ativo', next_review_date: '2026-04-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
+      { id: '1', company_id: DEMO_COMPANY_ID, risk_title: 'Vazamento de Efluentes', risk_description: 'Risco de vazamento de efluentes industriais nos sistemas de tratamento.', esg_category: 'Ambiental', probability: 'Média', impact: 'Alto', inherent_risk_level: 'Alto', status: 'Ativo', next_review_date: '2026-04-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
       { id: '4', company_id: DEMO_COMPANY_ID, risk_title: 'Multas Ambientais', risk_description: 'Risco de aplicação de multas por descumprimento ambiental.', esg_category: 'Ambiental', probability: 'Alta', impact: 'Alto', inherent_risk_level: 'Crítico', status: 'Ativo', next_review_date: '2026-03-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
       { id: '7', company_id: DEMO_COMPANY_ID, risk_title: 'Acidente de Trabalho Fatal', risk_description: 'Risco de acidente grave nas operações industriais.', esg_category: 'Social', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'Crítico', status: 'Ativo', next_review_date: '2026-03-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
     ],

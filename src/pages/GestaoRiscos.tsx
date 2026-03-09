@@ -33,6 +33,8 @@ import { RiskDetailsModal } from "@/components/RiskDetailsModal";
 import { RiskMatrixModal } from "@/components/RiskMatrixModal";
 import { ESGRisk } from "@/services/esgRisks";
 
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
 // Interfaces
 interface RiskMatrix {
   id: string;
@@ -69,7 +71,7 @@ export default function GestaoRiscos() {
   const [newMatrixData, setNewMatrixData] = useState({
     name: '',
     description: '',
-    type: 'probability_impact'
+    type: 'Estratégico'
   });
   const [newRiskData, setNewRiskData] = useState({
     title: '',
@@ -83,28 +85,8 @@ export default function GestaoRiscos() {
 
   // Query para matrizes de risco
   const { data: riskMatricesData, isLoading: matricesLoading, refetch } = useQuery({
-    queryKey: ['risk-matrices'],
+    queryKey: ['risk-matrices', isDemoMode()],
     queryFn: async () => {
-      const isDemoMode = typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
-      if (isDemoMode) {
-        return [
-          {
-            id: 'demo-matrix-1',
-            name: 'Matriz de Riscos Operacionais 2024',
-            description: 'Matriz principal para avaliação de riscos operacionais em todas as unidades.',
-            matrix_type: 'Operacional',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'demo-matrix-2',
-            name: 'Riscos Estratégicos',
-            description: 'Acompanhamento dos riscos de negócio e estratégia.',
-            matrix_type: 'Estratégico',
-            created_at: new Date().toISOString(),
-          }
-        ] as RiskMatrix[];
-      }
-
       const { data, error } = await supabase
         .from('risk_matrices')
         .select('*')
@@ -165,7 +147,7 @@ export default function GestaoRiscos() {
       setNewMatrixData({
         name: '',
         description: '',
-        type: 'probability_impact'
+        type: 'Estratégico'
       });
       refetch();
     } catch (error) {
