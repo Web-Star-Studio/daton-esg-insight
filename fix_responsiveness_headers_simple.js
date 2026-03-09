@@ -23,8 +23,15 @@ walkDir(directoryPath, function (filePath) {
         let content = fs.readFileSync(filePath, 'utf8');
         let originalContent = content;
 
-        // Simple string replacement for exactly "flex justify-between items-center"
-        content = content.split("flex justify-between items-center").join("flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4");
+        // Replace only inside quoted className attributes
+        const target = /\bflex justify-between items-center\b/g;
+        content = content.replace(
+            /className\s*=\s*(["'])([^"']*?)\1/gm,
+            (match, quote, classes) =>
+                target.test(classes)
+                    ? `className=${quote}${classes.replace(target, "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4")}${quote}`
+                    : match
+        );
 
         if (content !== originalContent) {
             fs.writeFileSync(filePath, content, 'utf8');

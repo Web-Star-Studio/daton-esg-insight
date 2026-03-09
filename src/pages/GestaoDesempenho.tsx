@@ -541,7 +541,10 @@ export default function GestaoDesempenho() {
                   <Target className="h-4 w-4 mr-2" />
                   Avaliar Competência
                 </Button>
-                <Button onClick={() => setIsCompetencyModalOpen(true)}>
+                <Button onClick={() => {
+                  setSelectedCompetency(null);
+                  setIsCompetencyModalOpen(true);
+                }}>
                   <Award className="h-4 w-4 mr-2" />
                   Nova Competência
                 </Button>

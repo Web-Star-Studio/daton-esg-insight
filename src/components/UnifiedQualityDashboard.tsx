@@ -48,15 +48,15 @@ export const UnifiedQualityDashboard: React.FC = () => {
     queryFn: () => unifiedQualityService.getQualityIndicators()
   });
 
-<<<<<<< Updated upstream
   const isLoading = isLoadingDashboard || isLoadingIndicators;
   const error = dashboardError ?? indicatorsError;
 
   if (error) {
     console.error('Error loading dashboard:', error);
-=======
-  if (error && !dashboardData) {
->>>>>>> Stashed changes
+  }
+
+  // Avoid turning refetch failures into a full-screen outage if we already have data
+  if (error && !dashboardData && !indicators) {
     return (
       <div className="space-y-6">
         <Card>

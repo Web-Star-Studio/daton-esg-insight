@@ -105,7 +105,7 @@ export default function GovernancaESG() {
     queryFn: getWhistleblowerReports,
   });
 
-  const { data: risks, isLoading: loadingESGRisks } = useOptimizedQuery({
+  const { data: risks, isLoading: loadingESGRisks, error: risksError } = useOptimizedQuery({
     queryKey: ['esg-risks'],
     queryFn: getESGRisks,
   });
@@ -259,7 +259,7 @@ export default function GovernancaESG() {
           <TabsContent value="overview" className="space-y-6">
             <LoadingState
               loading={loadingGovernance || loadingRisks}
-              error={governanceError}
+              error={governanceError || risksError}
               skeleton={<DashboardSkeleton />}
             >
               <div className="grid gap-6 animate-fade-in">

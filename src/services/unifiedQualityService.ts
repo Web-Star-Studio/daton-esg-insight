@@ -279,9 +279,15 @@ class UnifiedQualityService {
 
       this.log(`getQualityIndicators: Success in ${duration}ms`, { hasData: !!data });
 
-      // If data is empty or missing metrics, return mock data
+      // If data is empty or missing metrics, return neutral zeroed data to prevent fake data in production
       if (!data || Object.keys(data).length === 0) {
-        return mockIndicators;
+        return {
+          ncTrend: { current: 0, previous: 0, change: 0 },
+          resolutionRate: { resolved: 0, total: 0, percentage: 0 },
+          overdueActions: 0,
+          qualityScore: 0,
+          hasRealIndicators: false
+        };
       }
       return data;
     } catch (error) {

@@ -110,7 +110,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
     queryFn: () => getSWOTAnalyses(strategicMapId),
   });
 
-  const { data: items } = useQuery({
+  const { data: items, isLoading: isLoadingItems } = useQuery({
     queryKey: ["swot-items", selectedAnalysis],
     queryFn: () => getSWOTItems(selectedAnalysis as string),
     enabled: Boolean(selectedAnalysis),
@@ -137,8 +137,13 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   });
 
   useEffect(() => {
-    if (analyses?.length && !selectedAnalysis) {
-      setSelectedAnalysis(analyses[0].id);
+    if (analyses?.length) {
+      const isValid = analyses.some(a => a.id === selectedAnalysis);
+      if (!selectedAnalysis || !isValid) {
+        setSelectedAnalysis(analyses[0].id);
+      }
+    } else if (analyses && analyses.length === 0) {
+      setSelectedAnalysis(null);
     }
   }, [analyses, selectedAnalysis]);
 
@@ -209,10 +214,6 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   });
 
   const saveItemMutation = useMutation({
-<<<<<<< Updated upstream
-    mutationFn: async () => {
-      if (!selectedAnalysis) throw new Error("Nenhuma análise selecionada.");
-=======
     mutationFn: async (analysisId: string) => {
       if (!analysisId) throw new Error("Nenhuma análise selecionada.");
       if (isDemo) {
@@ -220,7 +221,6 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
         toast.success("Item SWOT salvo.");
         return;
       }
->>>>>>> Stashed changes
 
       if (
         itemForm.treatment_decision === "relevante_requer_acoes" &&
@@ -230,6 +230,8 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
         throw new Error("Itens relevantes exigem vínculo com ação (interna ou externa).");
       }
 
+      const isRelevante = itemForm.treatment_decision === "relevante_requer_acoes";
+
       const payload = {
         category: itemForm.category,
         item_text: itemForm.item_text,
@@ -237,8 +239,8 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
         impact_level: itemForm.impact_level,
         treatment_decision: itemForm.treatment_decision,
         linked_action_plan_item_id:
-          itemForm.linked_action_plan_item_id === "none" ? null : itemForm.linked_action_plan_item_id,
-        external_action_reference: itemForm.external_action_reference || null,
+          !isRelevante || itemForm.linked_action_plan_item_id === "none" ? null : itemForm.linked_action_plan_item_id,
+        external_action_reference: !isRelevante ? null : itemForm.external_action_reference || null,
       };
 
       if (editingItem) {
@@ -246,7 +248,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
       }
 
       return createSWOTItem({
-        swot_analysis_id: selectedAnalysis,
+        swot_analysis_id: analysisId,
         ...payload,
       });
     },
@@ -760,7 +762,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                       toast.error("Informe o item SWOT.");
                       return;
                     }
-                    saveItemMutation.mutate();
+                    saveItemMutation.mutate(selectedAnalysis as string);
                   }}
                   disabled={saveItemMutation.isPending}
                 >
@@ -775,7 +777,11 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
           </Dialog>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {CATEGORY_ORDER.map((category) => {
+            {isLoadingItems ? (
+              <div className="col-span-1 md:col-span-2 flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : CATEGORY_ORDER.map((category) => {
               const categoryInfo = getCategoryInfo(category);
               const categoryItems = groupedItems[category] || [];
               const Icon = categoryInfo.icon;

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, lazy, Suspense } from "react";
+import { useState, useRef, useMemo, lazy, Suspense, Fragment } from "react";
 import { Building2, Plus, MapPin, User, Map, List, GitBranch, FileUp, Loader2, Crown, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -205,7 +205,7 @@ export default function GestaoFiliais() {
   };
 
   const filteredBranches = useMemo(() => {
-    return (branches || []).filter((branch) => {
+    const matchedBranches = (branches || []).filter((branch) => {
       // Filtro de busca por texto
       const matchesSearch =
         branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -232,6 +232,22 @@ export default function GestaoFiliais() {
 
       return matchesSearch && matchesStatus && matchesType && matchesParent;
     });
+
+    // Ensure parents of matching children are included
+    const parentIdsToInclude = new Set(
+      matchedBranches
+        .map(b => b.parent_branch_id)
+        .filter(Boolean)
+    );
+
+    parentIdsToInclude.forEach(pid => {
+      if (!matchedBranches.some(b => b.id === pid)) {
+        const parent = (branches || []).find(b => b.id === pid);
+        if (parent) matchedBranches.push(parent);
+      }
+    });
+
+    return matchedBranches;
   }, [branches, searchTerm, statusFilter, typeFilter, parentBranchFilter]);
 
   const { groups, independent } = useMemo(() =>
@@ -514,10 +530,10 @@ export default function GestaoFiliais() {
                       <TableBody>
                         {/* Render grouped branches by headquarters */}
                         {groups.map((group) => (
-                          <>
+                          <Fragment key={group.headquarters.id}>
                             {renderBranchRow(group.headquarters)}
                             {group.children.map((child) => renderBranchRow(child, true))}
-                          </>
+                          </Fragment>
                         ))}
 
                         {/* Independent branches section */}

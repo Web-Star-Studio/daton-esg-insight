@@ -23,9 +23,15 @@ walkDir(directoryPath, function (filePath) {
         let content = fs.readFileSync(filePath, 'utf8');
         let originalContent = content;
 
-        // More robust regex for headers that doesn't rely on a prefix character
-        content = content.replace(/className=(["'{`])([^"'{`]*?)(^|\s)flex justify-between items-center([^"'{`]*?)(["'}])/gm,
-            'className=$1$2$3flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4$4$5');
+        // More robust replacement for headers classNames
+        const swap = (cls) => cls.replace(/\bflex justify-between items-center\b/g, 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4');
+
+        content = content
+            .replace(/className\s*=\s*"([^"]*)"/g, (m, p1) => `className="${swap(p1)}"`)
+            .replace(/className\s*=\s*'([^']*)'/g, (m, p1) => `className='${swap(p1)}'`)
+            .replace(/className\s*=\s*\{\s*`([^`]*)`\s*\}/g, (m, p1) => `className={\`${swap(p1)}\`}`)
+            .replace(/className\s*=\s*\{\s*"([^"]*)"\s*\}/g, (m, p1) => `className={"${swap(p1)}"}`)
+            .replace(/className\s*=\s*\{\s*'([^']*)'\s*\}/g, (m, p1) => `className={'${swap(p1)}'}`);
 
         if (content !== originalContent) {
             fs.writeFileSync(filePath, content, 'utf8');
