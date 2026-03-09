@@ -307,7 +307,7 @@ const AppContent = () => {
               <Route path="gestao-indicadores" element={<LazyPageWrapper><GestaoIndicadores /></LazyPageWrapper>} />
               <Route path="nao-conformidades" element={<LazyPageWrapper><NaoConformidades /></LazyPageWrapper>} />
               <Route path="acoes-corretivas" element={<LazyPageWrapper><AcoesCorretivas /></LazyPageWrapper>} />
-              <Route path="controle-documentos" element={<Navigate to="/documentos?document_kind=controlled" replace />} />
+              <Route path="controle-documentos" element={<LazyPageWrapper><ControleDocumentos /></LazyPageWrapper>} />
               <Route path="mapeamento-processos" element={<LazyPageWrapper><MapeamentoProcessos /></LazyPageWrapper>} />
               <Route path="planejamento-estrategico" element={<LazyPageWrapper><PlanejamentoEstrategico /></LazyPageWrapper>} />
               <Route path="licenciamento" element={<LazyPageWrapper><Licenciamento /></LazyPageWrapper>} />
