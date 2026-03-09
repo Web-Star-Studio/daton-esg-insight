@@ -148,8 +148,6 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       setTags([]);
       setNewTag('');
       setUploadProgress(0);
-      setAIProcessingStatus('');
-      setProcessingResults([]);
       onClose();
     }
   };
