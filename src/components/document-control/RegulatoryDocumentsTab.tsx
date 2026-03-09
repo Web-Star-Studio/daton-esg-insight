@@ -163,7 +163,7 @@ export const RegulatoryDocumentsTab = () => {
   const [isVersionsOpen, setIsVersionsOpen] = useState(false);
   const [selectedVersionsLicenseId, setSelectedVersionsLicenseId] = useState<string | null>(null);
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
-  const [settingsValue, setSettingsValue] = useState("30");
+  
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
 
   const { data: settings } = useQuery({
