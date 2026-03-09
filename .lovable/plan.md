@@ -1,12 +1,18 @@
 
-# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
-## Problema
-Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
+# Fix: coluna `job_id` não existe em `extracted_data_preview`
 
-## Solução
-Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
+## Causa raiz
 
-## Alteração
+Em `src/services/documentCenter.ts` (linha 490), a query usa `job_id` mas a coluna real na tabela é `extraction_job_id`. O mesmo erro ocorre na linha 498 onde filtra por `item.job_id`.
 
-**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.
+## Correção
+
+Arquivo: `src/services/documentCenter.ts`
+
+Linha 490: trocar `.select("id, job_id, ...")` por `.select("id, extraction_job_id, ...")`  
+Linha 491: trocar `.in("job_id", jobIds)` por `.in("extraction_job_id", jobIds)`  
+Linha 498: trocar `item.job_id` por `item.extraction_job_id`
+
+Também tornar resiliente (catch em vez de throw) para não quebrar a página inteira se essa query auxiliar falhar.
+
