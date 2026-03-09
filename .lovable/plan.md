@@ -1,12 +1,17 @@
 
-# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
-## Problema
-Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
+## Problem
+The `package.json` scripts use `npm exec --yes node@24 -- ./node_modules/vite/bin/vite.js` which fails with `code 127` because the cached node binary at `/.npm/_npx/...` is missing or corrupted.
 
-## Solução
-Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
+## Fix
+Replace all 4 scripts (`dev`, `build`, `build:dev`, `preview`) to call `vite` directly:
 
-## Alteração
+```json
+"dev": "vite",
+"build": "vite build",
+"build:dev": "vite build --mode development",
+"preview": "vite preview"
+```
 
-**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.
+This is a single-line change in `package.json` lines 7-11. No other files affected.
+
