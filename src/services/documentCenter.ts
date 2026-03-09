@@ -1197,3 +1197,49 @@ export async function deleteDocumentRelation(relationId: string): Promise<void> 
     relationType: (data as any).relation_type,
   });
 }
+
+/**
+ * Exclui um documento e todos os dados relacionados (perfil de controle,
+ * campanhas de leitura, relações, solicitações, change log, versões).
+ */
+export async function deleteDocumentRecord(documentId: string): Promise<void> {
+  const relatedTables = [
+    "document_control_profiles",
+    "document_read_recipients",
+    "document_read_campaigns",
+    "document_relations",
+    "document_requests",
+    "document_change_log",
+  ] as const;
+
+  for (const table of relatedTables) {
+    const column = table === "document_control_profiles" ? "document_id" : "document_id";
+    const { error } = await supabase.from(table as any).delete().eq(column, documentId);
+    // Ignore PGRST204 (no rows) and PGRST116 (table not found / relation does not exist)
+    if (error && !error.code?.startsWith("PGRST")) {
+      console.warn(`Falha ao limpar ${table}:`, error.message);
+    }
+  }
+
+  // Remover versões de documento
+  const { error: versionsError } = await supabase
+    .from("document_versions" as any)
+    .delete()
+    .eq("document_id", documentId);
+  if (versionsError && !versionsError.code?.startsWith("PGRST")) {
+    console.warn("Falha ao limpar versões:", versionsError.message);
+  }
+
+  // Remover vínculos de filiais
+  const { error: branchError } = await supabase
+    .from("document_branches" as any)
+    .delete()
+    .eq("document_id", documentId);
+  if (branchError && !branchError.code?.startsWith("PGRST")) {
+    console.warn("Falha ao limpar vínculos de filiais:", branchError.message);
+  }
+
+  // Finalmente, remover storage + registro principal
+  const { deleteDocument } = await import("@/services/documents");
+  await deleteDocument(documentId);
+}

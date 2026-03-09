@@ -47,6 +47,7 @@ import {
   createDocumentRelation,
   createDocumentRequest,
   createReadCampaign,
+  deleteDocumentRecord,
   deleteDocumentRelation,
   fulfillDocumentRequest,
   getCompanyUsers,
@@ -58,6 +59,16 @@ import {
   updateDocumentMetadata,
   type DocumentDetail,
 } from "@/services/documentCenter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Rascunho" },
@@ -117,6 +128,7 @@ export default function SGQDocumentDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: branches = [] } = useBranches();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [replacementFile, setReplacementFile] = useState<File | null>(null);
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [campaignForm, setCampaignForm] = useState({
@@ -375,6 +387,16 @@ export default function SGQDocumentDetail() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteDocumentRecord(documentId),
+    onSuccess: () => {
+      toast.success("Documento excluído com sucesso.");
+      queryClient.invalidateQueries({ queryKey: ["document-center"] });
+      navigate("/documentos");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const handleDownload = async () => {
     if (!document) return;
     try {
@@ -470,9 +492,39 @@ export default function SGQDocumentDetail() {
               <RefreshCw className="h-4 w-4" />
               Atualizar
             </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              className="gap-2"
+              disabled={deleteMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+            </Button>
           </div>
         </div>
       </header>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir documento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir "{document.title}"? Esta ação não pode ser desfeita.
+              Todas as versões, campanhas de leitura e relações serão removidas permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir permanentemente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {document.document_kind === "controlled" && (
         <Card className="border-primary/20 bg-primary/5">

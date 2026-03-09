@@ -1,29 +1,12 @@
 
+# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
-# Adicionar botão "Excluir documento" na página de detalhes
+## Problema
+Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
 
-## O que falta
+## Solução
+Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
 
-A página `SGQDocumentDetail.tsx` não possui botão para excluir o documento. Já existe a função `deleteDocument` em `src/services/documents.ts` que remove o arquivo do storage e o registro do banco. Basta conectar.
+## Alteração
 
-## Plano
-
-### 1. Adicionar botão de exclusão no header da página (`SGQDocumentDetail.tsx`)
-- Importar `deleteDocument` de `src/services/documents`
-- Importar `AlertDialog` components de `@/components/ui/alert-dialog`
-- Criar mutation `deleteMutation` que chama `deleteDocument(id)`, exibe toast de sucesso e navega para `/documentos`
-- Adicionar estado `showDeleteDialog` para confirmação
-- Colocar botão vermelho com ícone `Trash2` ao lado dos botões existentes no header (Voltar, Download, etc.)
-- Ao clicar, abre `AlertDialog` pedindo confirmação ("Esta ação não pode ser desfeita")
-- Ao confirmar, executa a mutation
-
-### 2. Limpar dados relacionados antes de excluir (`documentCenter.ts`)
-- Criar função `deleteDocumentRecord(documentId)` que:
-  - Remove registros de `document_control_profiles`, `document_read_campaigns`, `document_read_recipients`, `document_relations`, `document_requests`, `document_change_log` vinculados ao documento
-  - Trata erros de tabela ausente (PGRST205) graciosamente
-  - Chama `deleteDocument` do `documents.ts` no final (storage + registro principal)
-
-### Arquivos editados
-- `src/pages/SGQDocumentDetail.tsx` — botão + dialog + mutation
-- `src/services/documentCenter.ts` — função `deleteDocumentRecord`
-
+**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.
