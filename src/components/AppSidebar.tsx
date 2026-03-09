@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { Star, StarOff, ChevronRight, Search, X, Home } from "lucide-react"
 import * as icons from "lucide-react"
@@ -408,7 +408,7 @@ export function AppSidebar() {
   const prefixPath = (path: string) => path === '#' ? '#' : `${demoPrefix}${path}`
 
   // Auto-expand category if active page belongs to it
-  useState(() => {
+  useEffect(() => {
     const environmentalPaths = ['/monitoramento-esg', '/monitoramento-agua', '/monitoramento-energia', '/monitoramento-emissoes', '/monitoramento-residuos', '/inventario-gee', '/dashboard-ghg', '/projetos-carbono', '/residuos', '/financeiro/residuos', '/licenciamento', '/metas-sustentabilidade']
     const socialPaths = ['/social-esg', '/gestao-funcionarios', '/seguranca-trabalho', '/gestao-treinamentos', '/desenvolvimento-carreira']
     const governancePaths = ['/governanca-esg', '/gestao-riscos', '/compliance', '/auditoria', '/gestao-stakeholders', '/analise-materialidade']
@@ -420,7 +420,7 @@ export function AppSidebar() {
     } else if (governancePaths.some(p => currentPath.startsWith(p))) {
       setExpandedSections(prev => ({ ...prev, 'governance-category': true }))
     }
-  })
+  }, [currentPath])
 
   const handleFavoriteToggle = (item: MenuItem, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -724,7 +724,7 @@ export function AppSidebar() {
         return section
       })
       .filter(section => section.items.length > 0)
-  }, [isSectionVisible, isEsgCategoryVisible, menuSections])
+  }, [isSectionVisible, isEsgCategoryVisible])
 
   const filteredSections = searchQuery.trim()
     ? modulesFilteredSections

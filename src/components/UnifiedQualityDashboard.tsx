@@ -40,15 +40,7 @@ export const UnifiedQualityDashboard: React.FC = () => {
 
   const { data: dashboardData, isLoading: isLoadingDashboard, error: dashboardError } = useQuery({
     queryKey: ['unified-quality-dashboard'],
-    queryFn: async () => {
-      const data = await unifiedQualityService.getQualityDashboard();
-      console.warn('Dashboard data received:', {
-        hasPlansProgress: !!data?.plansProgress,
-        plansCount: data?.plansProgress?.length || 0,
-        plans: data?.plansProgress
-      });
-      return data;
-    }
+    queryFn: () => unifiedQualityService.getQualityDashboard()
   });
 
   const { data: indicators, isLoading: isLoadingIndicators, error: indicatorsError } = useQuery({
@@ -56,11 +48,15 @@ export const UnifiedQualityDashboard: React.FC = () => {
     queryFn: () => unifiedQualityService.getQualityIndicators()
   });
 
+<<<<<<< Updated upstream
   const isLoading = isLoadingDashboard || isLoadingIndicators;
   const error = dashboardError ?? indicatorsError;
 
   if (error) {
     console.error('Error loading dashboard:', error);
+=======
+  if (error && !dashboardData) {
+>>>>>>> Stashed changes
     return (
       <div className="space-y-6">
         <Card>

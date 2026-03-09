@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Activity, Calendar, TrendingUp, TrendingDown, 
+import {
+  Activity, Calendar, TrendingUp, TrendingDown,
   Droplets, Zap, Cloud, Trash2, AlertCircle, CheckCircle,
   ArrowRight, Info
 } from "lucide-react";
@@ -80,7 +80,7 @@ export default function MonitoramentoESG() {
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <Input
@@ -134,7 +134,7 @@ export default function MonitoramentoESG() {
       {/* KPIs Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Card Água */}
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/monitoramento-agua')}
         >
@@ -171,7 +171,9 @@ export default function MonitoramentoESG() {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">% Reutilização</span>
                     <span className="font-semibold text-green-600">
-                      {((waterData.by_source.reuse / waterData.total_consumption_m3) * 100).toFixed(1)}%
+                      {waterData.total_consumption_m3 > 0
+                        ? `${((waterData.by_source.reuse / waterData.total_consumption_m3) * 100).toFixed(1)}%`
+                        : "0.0%"}
                     </span>
                   </div>
                 </div>
@@ -191,7 +193,7 @@ export default function MonitoramentoESG() {
         </Card>
 
         {/* Card Energia */}
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/monitoramento-energia')}
         >
@@ -248,7 +250,7 @@ export default function MonitoramentoESG() {
         </Card>
 
         {/* Card Emissões */}
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/monitoramento-emissoes')}
         >
@@ -305,7 +307,7 @@ export default function MonitoramentoESG() {
         </Card>
 
         {/* Card Resíduos */}
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/monitoramento-residuos')}
         >
@@ -372,8 +374,8 @@ export default function MonitoramentoESG() {
         </CardHeader>
         <CardContent className="space-y-3">
           {!hasWaterData && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={() => navigate('/monitoramento-agua')}
             >
@@ -382,8 +384,8 @@ export default function MonitoramentoESG() {
             </Button>
           )}
           {!hasEnergyData && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={() => navigate('/monitoramento-energia')}
             >
@@ -392,8 +394,8 @@ export default function MonitoramentoESG() {
             </Button>
           )}
           {!hasEmissionsData && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={() => navigate('/monitoramento-emissoes')}
             >
@@ -402,8 +404,8 @@ export default function MonitoramentoESG() {
             </Button>
           )}
           {!hasWasteData && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={() => navigate('/monitoramento-residuos')}
             >
@@ -429,7 +431,7 @@ export default function MonitoramentoESG() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           Todos os dados visualizados aqui são automaticamente consolidados e disponibilizados no{" "}
-          <strong>Wizard GRI</strong> para geração de relatórios de sustentabilidade. 
+          <strong>Wizard GRI</strong> para geração de relatórios de sustentabilidade.
           Não é necessário duplicar entrada de dados entre os módulos de monitoramento e o wizard de relatórios.
         </CardContent>
       </Card>
