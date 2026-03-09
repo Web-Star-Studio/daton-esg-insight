@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import SGQDashboardWidget from "@/components/SGQDashboardWidget"
-import { AIProcessingStatusWidget } from "@/components/AIProcessingStatusWidget"
+
 import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem"
 import UnifiedDashboardWidget from "@/components/UnifiedDashboardWidget"
 import AdvancedNotificationPanel from "@/components/AdvancedNotificationPanel"
@@ -301,9 +301,6 @@ const Index = () => {
         {/* Terceira Linha - Conteúdo Dinâmico */}
         <div className="space-y-8">
           <div className="w-full">
-            <AIProcessingStatusWidget />
-          </div>
-          <div className="w-full">
             <SGQDashboardWidget />
           </div>
           <div className="w-full">
@@ -393,8 +390,6 @@ const Index = () => {
           {/* Insights Tab */}
           <TabsContent value="insights" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* AI Processing Status */}
-              <AIProcessingStatusWidget />
               
               {/* Smart Insights */}
               <Card className="shadow-card">

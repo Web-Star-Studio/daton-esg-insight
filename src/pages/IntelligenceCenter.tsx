@@ -3,8 +3,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, Upload, FileText, BarChart3, Database, Zap } from 'lucide-react';
-import { DocumentAIAnalysis } from '@/components/intelligence/DocumentAIAnalysis';
-import { ExtractedDataManager } from '@/components/intelligence/ExtractedDataManager';
 import { UnclassifiedDataManager } from '@/components/intelligence/UnclassifiedDataManager';
 import { AutomationRulesManager } from '@/components/intelligence/AutomationRulesManager';
 import { DocumentAnalyticsDashboard } from '@/components/intelligence/DocumentAnalyticsDashboard';
@@ -30,15 +28,8 @@ export default function IntelligenceCenter() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-5xl grid-cols-6">
-          <TabsTrigger value="analyze" className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            Analisar
-          </TabsTrigger>
-          <TabsTrigger value="extracted" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Extraídos
-          </TabsTrigger>
+        <TabsList className="grid w-full max-w-5xl grid-cols-4">
+
           <TabsTrigger value="unclassified" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Não Classificados
@@ -56,14 +47,6 @@ export default function IntelligenceCenter() {
             Performance IA
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="analyze" className="space-y-6">
-          <DocumentAIAnalysis />
-        </TabsContent>
-
-        <TabsContent value="extracted" className="space-y-6">
-          <ExtractedDataManager />
-        </TabsContent>
 
         <TabsContent value="unclassified" className="space-y-6">
           <UnclassifiedDataManager />

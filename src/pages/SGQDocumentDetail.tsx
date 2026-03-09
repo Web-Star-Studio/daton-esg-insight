@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Brain,
-  Building2,
   CalendarRange,
   Download,
   Eye,
@@ -801,52 +800,6 @@ export default function SGQDocumentDetail() {
         </div>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-4 w-4" />
-                Painel de IA
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <Badge variant="outline">{document.ai_processing_status || "pending"}</Badge>
-              </div>
-              {document.ai_confidence_score !== null && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Confianca</span>
-                    <span>{Math.round(document.ai_confidence_score * 100)}%</span>
-                  </div>
-                  <Progress value={document.ai_confidence_score * 100} />
-                </div>
-              )}
-              {document.latest_extraction ? (
-                <div className="space-y-3 rounded-lg border p-4">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary">{document.latest_extraction.target_table}</Badge>
-                    <Badge variant="outline">{document.latest_extraction.validation_status}</Badge>
-                  </div>
-                  <div className="space-y-2">
-                    {Object.entries(document.latest_extraction.extracted_fields)
-                      .slice(0, 5)
-                      .map(([key, value]) => (
-                        <div key={key} className="flex items-start justify-between gap-3 text-sm">
-                          <span className="text-muted-foreground">{key}</span>
-                          <span className="text-right">{String(value)}</span>
-                        </div>
-                      ))}
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => navigate("/documentos?tab=extracoes")}>
-                    Abrir fila de extracoes
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">A extracao automatica ainda nao gerou um preview validavel para este documento.</p>
-              )}
-            </CardContent>
-          </Card>
 
           <Card>
             <CardHeader>

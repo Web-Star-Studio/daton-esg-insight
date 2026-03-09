@@ -143,7 +143,7 @@ const GerenciamentoProjetos = lazy(() => import("./pages/GerenciamentoProjetos")
 const AcoesCorretivas = lazy(() => import("./pages/AcoesCorretivas"));
 const ControleDocumentos = lazy(() => import("./pages/ControleDocumentos"));
 const SGQDocumentDetail = lazy(() => import("./pages/SGQDocumentDetail"));
-const ExtracoesDocumentos = lazy(() => import("./pages/ExtracoesDocumentos"));
+
 
 // Phase 5-8: Novas páginas ESG
 const Fornecedores = lazy(() => import("./pages/Fornecedores"));
@@ -569,7 +569,7 @@ const AppContent = () => {
             } />
 
             {/* Redirects antigos para o novo hub */}
-            <Route path="/extracoes-documentos" element={<Navigate to="/documentos?tab=extracoes" replace />} />
+            <Route path="/extracoes-documentos" element={<Navigate to="/documentos" replace />} />
             <Route path="/reconciliacao-documentos" element={<Navigate to="/documentos?tab=reconciliacao" replace />} />
 
             {/* Licenciamento */}

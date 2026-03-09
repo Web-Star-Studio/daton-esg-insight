@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { processDocumentWithAI } from "@/services/documentAI";
 import { downloadDocument, uploadDocument } from "@/services/documents";
 import { getDocumentsBranchesMap, linkDocumentToBranches, updateDocumentBranches } from "@/services/documentBranches";
 import { documentVersionsService } from "@/services/gedDocuments";
@@ -371,7 +370,6 @@ function mapDocumentRow(
   branchesMap: Record<string, Array<{ branch_id: string; name: string; code: string | null }>>,
   controlProfiles: Record<string, DocumentControlProfile>,
   versionsMap: Record<string, number>,
-  extractionMap: Record<string, DocumentRecord["latest_extraction"]>,
   pendingReadMap: Record<string, number>,
   requestMap: Record<string, number>,
 ): DocumentRecord {
@@ -406,7 +404,6 @@ function mapDocumentRow(
     branch_ids: branches.map((branch) => branch.branch_id),
     branches,
     current_version_number: versionsMap[row.id] || 1,
-    latest_extraction: extractionMap[row.id] || null,
     control_profile: kind === "controlled" ? controlProfile : null,
     pending_read_count: pendingReadMap[row.id] || 0,
     open_request_count: requestMap[row.id] || 0,
@@ -458,60 +455,6 @@ async function getCurrentVersionsMap(documentIds: string[]): Promise<Record<stri
   }, {});
 }
 
-async function getLatestExtractions(documentIds: string[]): Promise<Record<string, DocumentRecord["latest_extraction"]>> {
-  if (documentIds.length === 0) {
-    return {};
-  }
-
-  const { data, error } = await supabase
-    .from("document_extraction_jobs")
-    .select("id, document_id")
-    .in("document_id", documentIds)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(`Erro ao buscar jobs de extração: ${error.message}`);
-  }
-
-  const latestJobIdsByDocument = (data || []).reduce<Record<string, string>>((acc, row) => {
-    if (!acc[row.document_id]) {
-      acc[row.document_id] = row.id;
-    }
-    return acc;
-  }, {});
-
-  const jobIds = Object.values(latestJobIdsByDocument);
-  if (jobIds.length === 0) {
-    return {};
-  }
-
-  const { data: previews, error: previewsError } = await (supabase
-    .from("extracted_data_preview" as any)
-    .select("id, extraction_job_id, validation_status, target_table, created_at, extracted_fields")
-    .in("extraction_job_id", jobIds) as any);
-
-  if (previewsError) {
-    if (previewsError.code === "PGRST205" || previewsError.code === "42P01" || previewsError.code === "42703") {
-      console.warn("extracted_data_preview query failed, returning empty:", previewsError.message);
-      return {};
-    }
-    throw new Error(`Erro ao buscar extrações: ${previewsError.message}`);
-  }
-
-  return Object.entries(latestJobIdsByDocument).reduce<Record<string, DocumentRecord["latest_extraction"]>>((acc, [documentId, jobId]) => {
-    const preview = ((previews || []) as any[]).find((item) => item.extraction_job_id === jobId);
-    if (preview) {
-      acc[documentId] = {
-        id: preview.id,
-        validation_status: preview.validation_status,
-        target_table: preview.target_table,
-        created_at: preview.created_at,
-        extracted_fields: (preview.extracted_fields as Record<string, unknown>) || {},
-      };
-    }
-    return acc;
-  }, {});
-}
 
 async function syncDerivedStatuses(documentIds?: string[]): Promise<void> {
   try {
@@ -795,17 +738,16 @@ export async function listDocumentRecords(filters: DocumentListFilters): Promise
   const rows = (data || []) as LegacyDocumentRow[];
   const documentIds = rows.map((row) => row.id);
 
-  const [controlProfiles, branchesMap, versionsMap, extractionMap, pendingReadMap, requestMap] = await Promise.all([
+  const [controlProfiles, branchesMap, versionsMap, pendingReadMap, requestMap] = await Promise.all([
     getControlProfiles(documentIds),
     getDocumentsBranchesMap(documentIds),
     getCurrentVersionsMap(documentIds),
-    getLatestExtractions(documentIds),
     getPendingReadMap(documentIds),
     getOpenRequestMap(documentIds),
   ]);
 
   const documents = rows.map((row) =>
-    mapDocumentRow(row, branchesMap, controlProfiles, versionsMap, extractionMap, pendingReadMap, requestMap),
+    mapDocumentRow(row, branchesMap, controlProfiles, versionsMap, pendingReadMap, requestMap),
   );
 
   return applyDocumentCenterFilters(documents, filters);
@@ -823,12 +765,11 @@ export async function getDocumentRecord(documentId: string): Promise<DocumentDet
   }
 
   const row = data as LegacyDocumentRow;
-  const [controlProfiles, branchesMap, versions, extractionMap, campaigns, requests, relations, auditTrail, changeLog, previewUrl] =
+  const [controlProfiles, branchesMap, versions, campaigns, requests, relations, auditTrail, changeLog, previewUrl] =
     await Promise.all([
       getControlProfiles([documentId]),
       getDocumentsBranchesMap([documentId]),
       documentVersionsService.getVersions(documentId) as Promise<DocumentVersionSummary[]>,
-      getLatestExtractions([documentId]),
       fetchReadCampaigns(documentId),
       fetchDocumentRequests(documentId),
       fetchDocumentRelations(documentId),
@@ -853,7 +794,6 @@ export async function getDocumentRecord(documentId: string): Promise<DocumentDet
     branchesMap,
     controlProfiles,
     { [documentId]: versions.find((version) => version.is_current)?.version_number || 1 },
-    extractionMap,
     {
       [documentId]: campaigns.reduce((acc, campaign) => {
         return acc + campaign.recipients.filter((recipient) => ["pending", "viewed", "overdue"].includes(recipient.status)).length;
@@ -950,7 +890,7 @@ export async function createDocumentRecord(payload: CreateDocumentPayload): Prom
     }
   }
 
-  processDocumentWithAI(created.id).catch(() => undefined);
+  
 
   return getDocumentRecord(created.id);
 }
@@ -1039,7 +979,7 @@ export async function replaceDocumentFile(documentId: string, file: File): Promi
     throw new Error(`Erro ao atualizar arquivo do documento: ${updateError.message}`);
   }
 
-  processDocumentWithAI(documentId).catch(() => undefined);
+  
 }
 
 export async function createReadCampaign(input: {

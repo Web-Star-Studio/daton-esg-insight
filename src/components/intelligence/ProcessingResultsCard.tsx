@@ -1,6 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, AlertCircle, FileText, Database } from 'lucide-react';
-import { ProcessingResult } from '@/hooks/useDocumentProcessing';
+interface ProcessingResult {
+  fileName: string;
+  status: 'success' | 'error' | 'processing';
+  documentType?: string;
+  entitiesExtracted?: number;
+  autoInserted?: boolean;
+  error?: string;
+  documentId?: string;
+}
 
 interface ProcessingResultsCardProps {
   results: ProcessingResult[];
