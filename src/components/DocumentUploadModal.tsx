@@ -111,75 +111,25 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
     setUploading(true);
     setUploadProgress(0);
-    setProcessingResults([]);
 
     try {
-      const results: ProcessingResult[] = [];
-      const isAutoProcessingEnabled = autoProcessing?.enabled || false;
-
-      // Fase 1: Upload dos arquivos
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        const document = await uploadDocument(file, {
+        await uploadDocument(file, {
           folder_id: selectedFolderId || undefined,
           tags: tags.length > 0 ? tags : undefined,
-          // Skip auto processing if we want to do manual processing OR if auto is disabled
-          skipAutoProcessing: !isAutoProcessingEnabled && !processWithAI,
           onProgress: (progress) => {
-            const totalProgress = ((i / files.length) * 50) + (progress / files.length / 2);
+            const totalProgress = ((i / files.length) * 100) + (progress / files.length);
             setUploadProgress(Math.round(totalProgress));
           }
         });
-
-        results.push({
-          documentId: document.id,
-          fileName: file.name,
-          category: detectFileCategory(file.name, file.type)
-        });
-      }
-
-      setProcessingResults(results);
-      toast.success(`${files.length} arquivo(s) enviado(s) com sucesso`);
-
-      // Fase 2: Processamento manual com IA (apenas se auto-processing está DESATIVADO e toggle está ativado)
-      if (!isAutoProcessingEnabled && processWithAI) {
-        setAIProcessingStatus('Iniciando processamento com IA...');
-        
-        for (let i = 0; i < results.length; i++) {
-          const result = results[i];
-          
-          try {
-            setAIProcessingStatus(`Processando: ${result.fileName}`);
-            
-            const aiResult = await processDocumentWithAI(result.documentId);
-            
-            // Atualizar resultado com informações da IA
-            results[i].aiJobId = aiResult.jobId;
-            
-            const aiProgress = 50 + ((i + 1) / results.length) * 50;
-            setUploadProgress(Math.round(aiProgress));
-            
-            toast.success(`IA iniciou processamento: ${result.fileName}`);
-            
-          } catch (aiError) {
-            logger.warn(`AI processing failed for ${result.fileName}`, aiError);
-            toast.error(`Falha no processamento IA: ${result.fileName}`);
-          }
-        }
-        
-        setAIProcessingStatus('Processamento com IA concluído!');
-        toast.success('Documentos enviados para processamento IA');
-      } else if (isAutoProcessingEnabled) {
-        // Informar que o processamento automático está em andamento
-        toast.success('Documentos sendo processados automaticamente pela IA em segundo plano');
-        setAIProcessingStatus('Processamento automático em andamento...');
       }
 
       setUploadProgress(100);
+      toast.success(`${files.length} arquivo(s) enviado(s) com sucesso`);
       onSuccess();
       
-      // Delay para mostrar o progresso completo
       setTimeout(() => {
         handleClose();
       }, 1500);
