@@ -47,6 +47,7 @@ import {
   createDocumentRelation,
   createDocumentRequest,
   createReadCampaign,
+  deleteDocumentRecord,
   deleteDocumentRelation,
   fulfillDocumentRequest,
   getCompanyUsers,
@@ -58,6 +59,16 @@ import {
   updateDocumentMetadata,
   type DocumentDetail,
 } from "@/services/documentCenter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Rascunho" },
