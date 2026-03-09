@@ -26,3 +26,10 @@ playwright-report/
 test-results/
 blob-report/
 .env
+
+#arquivos 
+.claude
+/tmp
+.agent
+*.pdf
+*.Identifier
