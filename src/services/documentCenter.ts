@@ -890,7 +890,7 @@ export async function createDocumentRecord(payload: CreateDocumentPayload): Prom
     }
   }
 
-  processDocumentWithAI(created.id).catch(() => undefined);
+  
 
   return getDocumentRecord(created.id);
 }
