@@ -424,6 +424,10 @@ async function getControlProfiles(documentIds: string[]): Promise<Record<string,
     .in("document_id", documentIds);
 
   if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      console.warn("document_control_profiles não disponível:", error.message);
+      return {};
+    }
     throw new Error(`Erro ao carregar perfis controlados: ${error.message}`);
   }
 
