@@ -170,70 +170,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Upload Inteligente de Documentos
+            Upload de Documentos
           </DialogTitle>
         </DialogHeader>
 
-        {/* Auto-Processing Status Badge */}
-        {autoProcessing?.enabled && (
-          <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
-            <Zap className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <AlertDescription className="text-green-800 dark:text-green-300 flex items-center justify-between">
-              <span>
-                <strong>Processamento automático ativado</strong>
-                <br />
-                Os documentos serão processados automaticamente após o upload.
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs"
-                onClick={() => window.location.href = '/configuracao'}
-                type="button"
-              >
-                <Settings className="h-3 w-3 mr-1" />
-                Configurar
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* IA Processing Toggle - Only shown when auto-processing is disabled */}
-          {!autoProcessing?.enabled && (
-            <>
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Bot className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Processar com IA</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Extração automática de dados dos documentos
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  checked={processWithAI}
-                  onCheckedChange={setProcessWithAI}
-                  disabled={uploading}
-                />
-              </div>
-
-              {processWithAI && (
-                <Alert>
-                  <Brain className="h-4 w-4" />
-                  <AlertDescription>
-                    A IA analisará automaticamente seus documentos e extrairá dados relevantes 
-                    para facilitar a importação para o sistema ESG/GHG. 
-                    Os dados extraídos serão disponibilizados para revisão manual.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </>
-          )}
-
           {/* File Drop Zone */}
           <div
             className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center transition-colors hover:border-muted-foreground/50 hover:bg-muted/25"
@@ -272,7 +213,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
             </div>
           </div>
 
-          {/* Selected Files with AI Preview */}
+          {/* Selected Files */}
           {files.length > 0 && (
             <div className="space-y-3">
               <Label className="text-base font-medium">
@@ -280,40 +221,28 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
               </Label>
               
               <div className="max-h-48 overflow-y-auto space-y-2">
-                {files.map((file, index) => {
-                  const detectedCategory = detectFileCategory(file.name, file.type);
-                  
-                  return (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {getFileIcon(file.name, file.type)}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{file.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-muted-foreground">
-                              {formatFileSize(file.size)}
-                            </span>
-                            {processWithAI && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Zap className="h-3 w-3 mr-1" />
-                                {detectedCategory}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
+                {files.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {getFileIcon(file.name, file.type)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <span className="text-xs text-muted-foreground">
+                          {formatFileSize(file.size)}
+                        </span>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFile(index)}
-                        disabled={uploading}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
-                  );
-                })}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFile(index)}
+                      disabled={uploading}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -372,31 +301,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-                  <span className="text-sm font-medium">
-                    {aiProcessingStatus || 'Enviando arquivos...'}
-                  </span>
+                  <span className="text-sm font-medium">Enviando arquivos...</span>
                 </div>
                 <span className="text-sm text-muted-foreground">{uploadProgress}%</span>
               </div>
-              
               <Progress value={uploadProgress} className="h-2" />
-              
-              {processingResults.length > 0 && (
-                <div className="space-y-2">
-                  {processingResults.map((result, index) => (
-                    <div key={result.documentId} className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="truncate">{result.fileName}</span>
-                      {result.aiJobId && (
-                        <Badge variant="outline" className="text-xs">
-                          <Bot className="h-3 w-3 mr-1" />
-                          IA Processando
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
@@ -422,7 +331,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                 </>
               ) : (
                 <>
-                  {processWithAI && <Bot className="h-4 w-4" />}
+                  <Upload className="h-4 w-4" />
                   Enviar {files.length} arquivo(s)
                 </>
               )}
