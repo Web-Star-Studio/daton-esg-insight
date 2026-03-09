@@ -23,13 +23,6 @@ import { DocumentLevelBadge, LEVEL_OPTIONS, type DocumentLevel } from "./Documen
 import { generateDocumentCode } from "./DocumentCodeGenerator";
 import { gedDocumentsService } from "@/services/gedDocuments";
 import { DocumentActionsDropdown } from "./DocumentActionsDropdown";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { EnhancedLoading } from "@/components/ui/enhanced-loading";
-import { uploadDocument, downloadDocument } from "@/services/documents";
-import { DocumentLevelBadge, LEVEL_OPTIONS, type DocumentLevel } from "./DocumentLevelBadge";
-import { generateDocumentCode } from "./DocumentCodeGenerator";
-import { gedDocumentsService } from "@/services/gedDocuments";
 
 interface SystemDocument {
   id: string;
