@@ -1,12 +1,12 @@
 
-# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
-## Problema
-Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
+## Remove "Compliance 7.5" tab from /controle-documentos
 
-## Solução
-Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
+Remove the third tab (`compliance-75`) from the `ControleDocumentos` page, including its trigger, content, and the import of `DocumentComplianceOperationsTab`. Update the grid from 3 columns to 2.
 
-## Alteração
+**File: `src/pages/ControleDocumentos.tsx`**
+- Remove import of `DocumentComplianceOperationsTab`
+- Change `grid-cols-3` to `grid-cols-2` on `TabsList`
+- Remove the `<TabsTrigger value="compliance-75">` element
+- Remove the `<TabsContent value="compliance-75">` block
 
-**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.
