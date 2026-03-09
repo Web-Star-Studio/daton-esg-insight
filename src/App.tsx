@@ -879,7 +879,7 @@ const AppContent = () => {
             <Route path="/matriz-partes-interessadas" element={<ProtectedLazyPageWrapper><MatrizPartesInteressadas /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-indicadores" element={<ProtectedLazyPageWrapper><GestaoIndicadores /></ProtectedLazyPageWrapper>} />
             <Route path="/indicador/:id" element={<ProtectedLazyPageWrapper><IndicadorDetalhes /></ProtectedLazyPageWrapper>} />
-            <Route path="/controle-documentos" element={<Navigate to="/documentos?document_kind=controlled" replace />} />
+            <Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
             <Route path="/controle-documentos/:id" element={<LegacyDocumentRedirect />} />
             <Route path="/gerenciamento-projetos" element={<ProtectedLazyPageWrapper><GerenciamentoProjetos /></ProtectedLazyPageWrapper>} />
             <Route path="/laia" element={<ProtectedLazyPageWrapper><LAIAUnidades /></ProtectedLazyPageWrapper>} />
