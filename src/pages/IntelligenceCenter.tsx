@@ -3,8 +3,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, Upload, FileText, BarChart3, Database, Zap } from 'lucide-react';
-import { DocumentAIAnalysis } from '@/components/intelligence/DocumentAIAnalysis';
-import { ExtractedDataManager } from '@/components/intelligence/ExtractedDataManager';
 import { UnclassifiedDataManager } from '@/components/intelligence/UnclassifiedDataManager';
 import { AutomationRulesManager } from '@/components/intelligence/AutomationRulesManager';
 import { DocumentAnalyticsDashboard } from '@/components/intelligence/DocumentAnalyticsDashboard';
