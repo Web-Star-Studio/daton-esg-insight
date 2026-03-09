@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,17 +21,19 @@ import { useBranches } from "@/services/branches";
 import { downloadDocument } from "@/services/documents";
 import { CollaboratorMultiSelect } from "@/components/document-center/CollaboratorMultiSelect";
 import {
-  createSgqDocument, createSgqDocumentVersion,
+  createSgqDocument,
   getSgqDocuments, getSgqDocumentVersions, getSgqReadCampaigns,
-  getSgqResponsibleUsers, getSgqSettings, getSystemDocumentsForReference,
-  confirmSgqRead,
+  getSgqResponsibleUsers, getSystemDocumentsForReference,
+  confirmSgqRead, getCurrentUserId,
+  createReviewRequest, getPendingReviewRequests,
+  approveReviewRequest, rejectReviewRequest,
   SGQ_DOCUMENT_IDENTIFIER_OPTIONS,
   type DocumentStatus, type SgqDocumentItem,
 } from "@/services/sgqIsoDocuments";
 import { getBranchDisplayLabel } from "@/utils/branchDisplay";
 import {
   BookOpen, Check, Clock, Download, Eye, FileText, History,
-  Link2, Pencil, Plus, Save, Search, Upload, Users,
+  Link2, Pencil, Plus, Save, Search, Send, Upload, Users, XCircle, ClipboardCheck,
 } from "lucide-react";
 
 // ── Helpers ──
@@ -73,6 +75,24 @@ const recipientStatusBadge = (status: string) => {
   }
 };
 
+const reviewStatusLabel = (status: string) => {
+  switch (status) {
+    case "pending": return "Pendente";
+    case "approved": return "Aprovada";
+    case "rejected": return "Rejeitada";
+    default: return status;
+  }
+};
+
+const reviewStatusBadge = (status: string) => {
+  switch (status) {
+    case "pending": return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    case "approved": return "bg-green-100 text-green-700 border-green-200";
+    case "rejected": return "bg-red-100 text-red-700 border-red-200";
+    default: return "";
+  }
+};
+
 // ── Types ──
 
 type CreateFormState = {
@@ -103,20 +123,16 @@ const DEFAULT_CREATE_FORM: CreateFormState = {
   referenced_document_ids: [],
 };
 
-type NewVersionFormState = {
+type ReviewFormState = {
   changes_summary: string;
-  elaborated_by_user_id: string;
-  approved_by_user_id: string;
+  reviewer_user_id: string;
   attachment: File | null;
-  recipient_user_ids: string[];
 };
 
-const DEFAULT_VERSION_FORM: NewVersionFormState = {
+const DEFAULT_REVIEW_FORM: ReviewFormState = {
   changes_summary: "",
-  elaborated_by_user_id: "",
-  approved_by_user_id: "",
+  reviewer_user_id: "",
   attachment: null,
-  recipient_user_ids: [],
 };
 
 // ── Component ──
@@ -126,6 +142,12 @@ export const SGQIsoDocumentsTab = () => {
   const { toast } = useToast();
   const { data: branches = [] } = useBranches();
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    getCurrentUserId().then(setCurrentUserId);
+  }, []);
+
   const [filters, setFilters] = useState({ search: "", branch_id: "all", document_identifier_type: "all", status: "all" });
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateFormState>(DEFAULT_CREATE_FORM);
@@ -133,9 +155,16 @@ export const SGQIsoDocumentsTab = () => {
   const [versionsDocId, setVersionsDocId] = useState<string | null>(null);
   const [isVersionsOpen, setIsVersionsOpen] = useState(false);
 
-  const [newVersionDocId, setNewVersionDocId] = useState<string | null>(null);
-  const [isNewVersionOpen, setIsNewVersionOpen] = useState(false);
-  const [versionForm, setVersionForm] = useState<NewVersionFormState>(DEFAULT_VERSION_FORM);
+  // Review request (replaces new version)
+  const [reviewDocId, setReviewDocId] = useState<string | null>(null);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewForm, setReviewForm] = useState<ReviewFormState>(DEFAULT_REVIEW_FORM);
+
+  // Pending reviews dialog
+  const [reviewsDocId, setReviewsDocId] = useState<string | null>(null);
+  const [isReviewsOpen, setIsReviewsOpen] = useState(false);
+  const [rejectNotes, setRejectNotes] = useState("");
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   const [recipientsDocId, setRecipientsDocId] = useState<string | null>(null);
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
@@ -171,6 +200,12 @@ export const SGQIsoDocumentsTab = () => {
     queryKey: ["sgq-documents", "campaigns", recipientsDocId],
     queryFn: () => getSgqReadCampaigns(recipientsDocId!),
     enabled: isRecipientsOpen && !!recipientsDocId,
+  });
+
+  const { data: pendingReviews = [], isLoading: isLoadingReviews } = useQuery({
+    queryKey: ["sgq-documents", "reviews", reviewsDocId],
+    queryFn: () => getPendingReviewRequests(reviewsDocId || undefined),
+    enabled: isReviewsOpen,
   });
 
   const collaborators = useMemo(() => users.map((u) => ({ id: u.id, full_name: u.full_name })), [users]);
@@ -210,26 +245,52 @@ export const SGQIsoDocumentsTab = () => {
     },
   });
 
-  const newVersionMutation = useMutation({
-    mutationFn: async ({ docId, form }: { docId: string; form: NewVersionFormState }) => {
+  const sendReviewMutation = useMutation({
+    mutationFn: async ({ docId, form }: { docId: string; form: ReviewFormState }) => {
       if (!form.attachment) throw new Error("Anexo é obrigatório");
-      return createSgqDocumentVersion({
+      if (!form.changes_summary.trim()) throw new Error("Descreva as alterações");
+      if (!form.reviewer_user_id) throw new Error("Selecione o revisor/aprovador");
+      return createReviewRequest({
         sgq_document_id: docId,
+        reviewer_user_id: form.reviewer_user_id,
         changes_summary: form.changes_summary,
-        elaborated_by_user_id: form.elaborated_by_user_id,
-        approved_by_user_id: form.approved_by_user_id,
         attachment: form.attachment,
-        recipient_user_ids: form.recipient_user_ids.length > 0 ? form.recipient_user_ids : undefined,
       });
     },
     onSuccess: () => {
-      toast({ title: "Sucesso", description: "Nova versão criada com sucesso." });
-      setIsNewVersionOpen(false);
-      setVersionForm(DEFAULT_VERSION_FORM);
+      toast({ title: "Sucesso", description: "Documento enviado para revisão." });
+      setIsReviewOpen(false);
+      setReviewForm(DEFAULT_REVIEW_FORM);
       queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
     },
     onError: (error: Error) => {
-      toast({ title: "Erro ao criar versão", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: ({ requestId, notes }: { requestId: string; notes?: string }) =>
+      approveReviewRequest(requestId, notes),
+    onSuccess: () => {
+      toast({ title: "Revisão aprovada", description: "Nova versão criada automaticamente." });
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao aprovar", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ requestId, notes }: { requestId: string; notes: string }) =>
+      rejectReviewRequest(requestId, notes),
+    onSuccess: () => {
+      toast({ title: "Revisão rejeitada" });
+      setRejectingId(null);
+      setRejectNotes("");
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao rejeitar", description: error.message, variant: "destructive" });
     },
   });
 
@@ -261,7 +322,8 @@ export const SGQIsoDocumentsTab = () => {
   };
 
   const openVersions = (docId: string) => { setVersionsDocId(docId); setIsVersionsOpen(true); };
-  const openNewVersion = (docId: string) => { setNewVersionDocId(docId); setVersionForm(DEFAULT_VERSION_FORM); setIsNewVersionOpen(true); };
+  const openSendReview = (docId: string) => { setReviewDocId(docId); setReviewForm(DEFAULT_REVIEW_FORM); setIsReviewOpen(true); };
+  const openReviews = (docId: string) => { setReviewsDocId(docId); setIsReviewsOpen(true); };
   const openRecipients = (docId: string) => { setRecipientsDocId(docId); setIsRecipientsOpen(true); };
 
   return (
@@ -275,128 +337,133 @@ export const SGQIsoDocumentsTab = () => {
           </p>
         </div>
 
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => { setCreateForm(DEFAULT_CREATE_FORM); setIsCreateOpen(true); }} className="gap-2">
-              <Plus className="h-4 w-4" /> Novo Documento SGQ
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Novo Documento SGQ</DialogTitle>
-              <DialogDescription>Preencha os dados do documento, anexe o arquivo inicial e selecione os destinatários.</DialogDescription>
-            </DialogHeader>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
-              <div className="md:col-span-2 space-y-2">
-                <Label>Título do Documento *</Label>
-                <Input value={createForm.title} onChange={(e) => setCreateForm((c) => ({ ...c, title: e.target.value }))} placeholder="Ex.: Manual da Qualidade" />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select value={createForm.document_identifier_type} onValueChange={(v) => setCreateForm((c) => ({ ...c, document_identifier_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {SGQ_DOCUMENT_IDENTIFIER_OPTIONS.map((opt) => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {createForm.document_identifier_type === "Outro" && (
-                <div className="space-y-2">
-                  <Label>Outro tipo</Label>
-                  <Input value={createForm.document_identifier_other} onChange={(e) => setCreateForm((c) => ({ ...c, document_identifier_other: e.target.value }))} />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label>Filial</Label>
-                <Select value={createForm.branch_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, branch_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    {branches.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>{getBranchDisplayLabel(b)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Elaborado por *</Label>
-                <Select value={createForm.elaborated_by_user_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, elaborated_by_user_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Aprovado por *</Label>
-                <Select value={createForm.approved_by_user_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, approved_by_user_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Data de Validade *</Label>
-                <Input type="date" value={createForm.expiration_date} onChange={(e) => setCreateForm((c) => ({ ...c, expiration_date: e.target.value }))} />
-              </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <Label>Anexo Inicial *</Label>
-                <Input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                  onChange={(e) => setCreateForm((c) => ({ ...c, initial_attachment: e.target.files?.[0] || null }))}
-                />
-              </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <Label>Destinatários (protocolo de recebimento) *</Label>
-                <CollaboratorMultiSelect
-                  collaborators={collaborators}
-                  selectedIds={createForm.recipient_user_ids}
-                  onChange={(ids) => setCreateForm((c) => ({ ...c, recipient_user_ids: ids }))}
-                  placeholder="Selecionar destinatários"
-                />
-              </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <Label>Referências a outros documentos</Label>
-                <CollaboratorMultiSelect
-                  collaborators={systemDocs.map((d) => ({ id: d.id, full_name: d.file_name }))}
-                  selectedIds={createForm.referenced_document_ids}
-                  onChange={(ids) => setCreateForm((c) => ({ ...c, referenced_document_ids: ids }))}
-                  placeholder="Selecionar documentos referenciados"
-                />
-              </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <Label>Observações</Label>
-                <Textarea value={createForm.notes} onChange={(e) => setCreateForm((c) => ({ ...c, notes: e.target.value }))} rows={3} />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
-              <Button onClick={() => createMutation.mutate(createForm)} disabled={createMutation.isPending} className="gap-2">
-                <Save className="h-4 w-4" />
-                {createMutation.isPending ? "Salvando..." : "Salvar"}
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { setReviewsDocId(null); setIsReviewsOpen(true); }} className="gap-2">
+            <ClipboardCheck className="h-4 w-4" /> Revisões Pendentes
+          </Button>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => { setCreateForm(DEFAULT_CREATE_FORM); setIsCreateOpen(true); }} className="gap-2">
+                <Plus className="h-4 w-4" /> Novo Documento SGQ
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Novo Documento SGQ</DialogTitle>
+                <DialogDescription>Preencha os dados do documento, anexe o arquivo inicial e selecione os destinatários.</DialogDescription>
+              </DialogHeader>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+                <div className="md:col-span-2 space-y-2">
+                  <Label>Título do Documento *</Label>
+                  <Input value={createForm.title} onChange={(e) => setCreateForm((c) => ({ ...c, title: e.target.value }))} placeholder="Ex.: Manual da Qualidade" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tipo</Label>
+                  <Select value={createForm.document_identifier_type} onValueChange={(v) => setCreateForm((c) => ({ ...c, document_identifier_type: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SGQ_DOCUMENT_IDENTIFIER_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {createForm.document_identifier_type === "Outro" && (
+                  <div className="space-y-2">
+                    <Label>Outro tipo</Label>
+                    <Input value={createForm.document_identifier_other} onChange={(e) => setCreateForm((c) => ({ ...c, document_identifier_other: e.target.value }))} />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Filial</Label>
+                  <Select value={createForm.branch_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, branch_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {branches.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>{getBranchDisplayLabel(b)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Elaborado por *</Label>
+                  <Select value={createForm.elaborated_by_user_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, elaborated_by_user_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {users.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Aprovado por *</Label>
+                  <Select value={createForm.approved_by_user_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, approved_by_user_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {users.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Data de Validade *</Label>
+                  <Input type="date" value={createForm.expiration_date} onChange={(e) => setCreateForm((c) => ({ ...c, expiration_date: e.target.value }))} />
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <Label>Anexo Inicial *</Label>
+                  <Input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                    onChange={(e) => setCreateForm((c) => ({ ...c, initial_attachment: e.target.files?.[0] || null }))}
+                  />
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <Label>Destinatários (protocolo de recebimento) *</Label>
+                  <CollaboratorMultiSelect
+                    collaborators={collaborators}
+                    selectedIds={createForm.recipient_user_ids}
+                    onChange={(ids) => setCreateForm((c) => ({ ...c, recipient_user_ids: ids }))}
+                    placeholder="Selecionar destinatários"
+                  />
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <Label>Referências a outros documentos</Label>
+                  <CollaboratorMultiSelect
+                    collaborators={systemDocs.map((d) => ({ id: d.id, full_name: d.file_name }))}
+                    selectedIds={createForm.referenced_document_ids}
+                    onChange={(ids) => setCreateForm((c) => ({ ...c, referenced_document_ids: ids }))}
+                    placeholder="Selecionar documentos referenciados"
+                  />
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <Label>Observações</Label>
+                  <Textarea value={createForm.notes} onChange={(e) => setCreateForm((c) => ({ ...c, notes: e.target.value }))} rows={3} />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+                <Button onClick={() => createMutation.mutate(createForm)} disabled={createMutation.isPending} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  {createMutation.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Filters */}
@@ -462,7 +529,8 @@ export const SGQIsoDocumentsTab = () => {
                     <TableHead>Dias Restantes</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Versão</TableHead>
-                    <TableHead>Recebimentos Pendentes</TableHead>
+                    <TableHead>Revisões</TableHead>
+                    <TableHead>Recebimentos</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -488,6 +556,16 @@ export const SGQIsoDocumentsTab = () => {
                         </Button>
                       </TableCell>
                       <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => openReviews(item.id)} className="gap-1">
+                          <ClipboardCheck className="h-4 w-4" />
+                          {item.pending_reviews > 0 ? (
+                            <Badge variant="outline" className="bg-yellow-100 text-yellow-700 border-yellow-200">{item.pending_reviews}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">0</span>
+                          )}
+                        </Button>
+                      </TableCell>
+                      <TableCell>
                         <Button variant="ghost" size="sm" onClick={() => openRecipients(item.id)} className="gap-1">
                           <Users className="h-4 w-4" />
                           {item.pending_recipients > 0 ? (
@@ -498,11 +576,9 @@ export const SGQIsoDocumentsTab = () => {
                         </Button>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openNewVersion(item.id)} title="Nova versão">
-                            <Upload className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => openSendReview(item.id)} title="Enviar para Revisão">
+                          <Send className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -556,36 +632,24 @@ export const SGQIsoDocumentsTab = () => {
         </DialogContent>
       </Dialog>
 
-      {/* New Version Dialog */}
-      <Dialog open={isNewVersionOpen} onOpenChange={setIsNewVersionOpen}>
+      {/* Send for Review Dialog */}
+      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Upload className="h-5 w-5" /> Nova Versão</DialogTitle>
-            <DialogDescription>Anexe o novo arquivo e descreva as alterações realizadas.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><Send className="h-5 w-5" /> Enviar para Revisão</DialogTitle>
+            <DialogDescription>Anexe o novo arquivo e selecione quem deve revisar e aprovar as alterações. A nova versão será criada automaticamente após a aprovação.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>O que mudou nesta versão? *</Label>
-              <Textarea value={versionForm.changes_summary} onChange={(e) => setVersionForm((c) => ({ ...c, changes_summary: e.target.value }))} rows={3} placeholder="Descreva as alterações..." />
+              <Label>O que mudou? *</Label>
+              <Textarea value={reviewForm.changes_summary} onChange={(e) => setReviewForm((c) => ({ ...c, changes_summary: e.target.value }))} rows={3} placeholder="Descreva as alterações realizadas..." />
             </div>
 
             <div className="space-y-2">
-              <Label>Elaborado por *</Label>
-              <Select value={versionForm.elaborated_by_user_id} onValueChange={(v) => setVersionForm((c) => ({ ...c, elaborated_by_user_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Aprovado por *</Label>
-              <Select value={versionForm.approved_by_user_id} onValueChange={(v) => setVersionForm((c) => ({ ...c, approved_by_user_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <Label>Revisor / Aprovador *</Label>
+              <Select value={reviewForm.reviewer_user_id} onValueChange={(v) => setReviewForm((c) => ({ ...c, reviewer_user_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione quem vai revisar" /></SelectTrigger>
                 <SelectContent>
                   {users.map((u) => (
                     <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
@@ -596,31 +660,121 @@ export const SGQIsoDocumentsTab = () => {
 
             <div className="space-y-2">
               <Label>Novo Anexo *</Label>
-              <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={(e) => setVersionForm((c) => ({ ...c, attachment: e.target.files?.[0] || null }))} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Destinatários da nova versão (opcional)</Label>
-              <CollaboratorMultiSelect
-                collaborators={collaborators}
-                selectedIds={versionForm.recipient_user_ids}
-                onChange={(ids) => setVersionForm((c) => ({ ...c, recipient_user_ids: ids }))}
-                placeholder="Selecionar destinatários"
-              />
+              <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={(e) => setReviewForm((c) => ({ ...c, attachment: e.target.files?.[0] || null }))} />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNewVersionOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setIsReviewOpen(false)}>Cancelar</Button>
             <Button
-              onClick={() => newVersionDocId && newVersionMutation.mutate({ docId: newVersionDocId, form: versionForm })}
-              disabled={newVersionMutation.isPending}
+              onClick={() => reviewDocId && sendReviewMutation.mutate({ docId: reviewDocId, form: reviewForm })}
+              disabled={sendReviewMutation.isPending}
               className="gap-2"
             >
-              <Save className="h-4 w-4" />
-              {newVersionMutation.isPending ? "Salvando..." : "Criar Versão"}
+              <Send className="h-4 w-4" />
+              {sendReviewMutation.isPending ? "Enviando..." : "Enviar para Revisão"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pending Reviews Dialog */}
+      <Dialog open={isReviewsOpen} onOpenChange={(open) => { setIsReviewsOpen(open); if (!open) { setRejectingId(null); setRejectNotes(""); } }}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><ClipboardCheck className="h-5 w-5" /> Solicitações de Revisão</DialogTitle>
+            <DialogDescription>
+              {reviewsDocId ? "Revisões deste documento." : "Todas as solicitações de revisão."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingReviews ? (
+            <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+          ) : pendingReviews.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Nenhuma solicitação de revisão encontrada.</div>
+          ) : (
+            <div className="space-y-3">
+              {pendingReviews.map((r) => (
+                <div key={r.id} className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{r.document_title || "Documento"}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Solicitado por {r.requested_by_name} em {formatDateTime(r.created_at)}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={reviewStatusBadge(r.status)}>
+                      {reviewStatusLabel(r.status)}
+                    </Badge>
+                  </div>
+
+                  <p className="text-sm"><span className="font-medium">Alterações:</span> {r.changes_summary}</p>
+
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>Revisor: {r.reviewer_name}</span>
+                    {r.attachment_document_id && (
+                      <Button variant="outline" size="sm" className="gap-1 ml-2" onClick={() => handleDownload(r.attachment_document_id!)}>
+                        <Download className="h-3.5 w-3.5" /> {r.attachment_file_name || "Anexo"}
+                      </Button>
+                    )}
+                  </div>
+
+                  {r.status === "pending" && r.reviewer_user_id === currentUserId && (
+                    <div className="flex items-center gap-2 pt-2 border-t">
+                      {rejectingId === r.id ? (
+                        <div className="flex-1 space-y-2">
+                          <Textarea
+                            value={rejectNotes}
+                            onChange={(e) => setRejectNotes(e.target.value)}
+                            placeholder="Motivo da rejeição..."
+                            rows={2}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => rejectMutation.mutate({ requestId: r.id, notes: rejectNotes })}
+                              disabled={!rejectNotes.trim() || rejectMutation.isPending}
+                            >
+                              Confirmar Rejeição
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => { setRejectingId(null); setRejectNotes(""); }}>
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            className="gap-1"
+                            onClick={() => approveMutation.mutate({ requestId: r.id })}
+                            disabled={approveMutation.isPending}
+                          >
+                            <Check className="h-4 w-4" /> Aprovar
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1"
+                            onClick={() => setRejectingId(r.id)}
+                          >
+                            <XCircle className="h-4 w-4" /> Rejeitar
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {r.status !== "pending" && r.reviewer_notes && (
+                    <p className="text-sm border-t pt-2">
+                      <span className="font-medium">Notas do revisor:</span> {r.reviewer_notes}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -672,7 +826,7 @@ export const SGQIsoDocumentsTab = () => {
                           <TableCell>{formatDateTime(r.sent_at)}</TableCell>
                           <TableCell>{r.confirmed_at ? formatDateTime(r.confirmed_at) : "-"}</TableCell>
                           <TableCell>
-                            {r.status === "pending" && (
+                            {r.status === "pending" && r.user_id === currentUserId && (
                               <Button
                                 variant="outline"
                                 size="sm"
