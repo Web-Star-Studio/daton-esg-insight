@@ -197,17 +197,6 @@ export const RegulatoryDocumentsTab = () => {
     enabled: isVersionsOpen && !!selectedVersionsLicenseId,
   });
 
-  const saveSettingsMutation = useMutation({
-    mutationFn: updateRegulatorySettings,
-    onSuccess: () => {
-      toast({ title: "Configuração salva", description: "Prazo padrão atualizado com sucesso." });
-      queryClient.invalidateQueries({ queryKey: ["regulatory-documents", "settings"] });
-      queryClient.invalidateQueries({ queryKey: ["regulatory-documents"] });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    },
-  });
 
   const persistMutation = useMutation({
     mutationFn: async (payload: FormState) => {
