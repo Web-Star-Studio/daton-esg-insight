@@ -245,32 +245,11 @@ export const SGQIsoDocumentsTab = () => {
 
       toast({
         title: "Upload concluído!",
-        description: `"${selectedFile.name}" enviado. Iniciando análise IA...`,
+        description: `"${selectedFile.name}" enviado com sucesso.`,
       });
 
-      // Start AI processing
-      setAiProcessingStatus("Processando com IA...");
-      const aiResult = await processDocumentWithAI(uploadedDoc.id);
-
-      if (aiResult.success) {
-        setAiProcessingStatus("Extração concluída!");
-        toast({
-          title: "IA concluiu a análise",
-          description: "Os dados extraídos estão disponíveis na página do documento.",
-        });
-        // Navigate to detail page
-        setTimeout(() => {
-          setIsUploadModalOpen(false);
-          navigate(`/controle-documentos/${uploadedDoc.id}`);
-        }, 1500);
-      } else {
-        setAiProcessingStatus("Erro na extração IA");
-        toast({
-          title: "Atenção",
-          description: "Upload concluído, mas a extração IA falhou. Você pode reprocessar depois.",
-          variant: "destructive",
-        });
-      }
+      setIsUploadModalOpen(false);
+      navigate(`/controle-documentos/${uploadedDoc.id}`);
 
       setSelectedFile(null);
       setSelectedBranchIds([]);
