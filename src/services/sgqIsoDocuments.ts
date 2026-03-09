@@ -570,12 +570,12 @@ export const getSgqDocumentReferences = async (docId: string): Promise<Array<{ i
 
 // ── System Documents (for references picker) ──
 
-export const getSystemDocumentsForReference = async (): Promise<Array<{ id: string; file_name: string; category: string | null }>> => {
+export const getSystemDocumentsForReference = async (): Promise<Array<{ id: string; file_name: string }>> => {
   const { companyId } = await getCurrentUserAndCompany();
 
   const { data, error } = await supabase
     .from("documents")
-    .select("id, file_name, category")
+    .select("id, file_name")
     .eq("company_id", companyId)
     .order("file_name", { ascending: true })
     .limit(500);
