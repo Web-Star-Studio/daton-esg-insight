@@ -177,12 +177,13 @@ export default function SGQDocumentDetail() {
   });
 
   useEffect(() => {
-    if (!documentId) return;
-    void markDocumentViewed(documentId).then(() => {
-      queryClient.invalidateQueries({ queryKey: ["document-center-detail", documentId] });
-      queryClient.invalidateQueries({ queryKey: ["document-center"] });
-    });
-  }, [documentId, queryClient]);
+    if (!documentId || !document) return;
+    markDocumentViewed(documentId)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["document-center"] });
+      })
+      .catch((err) => console.warn("Falha ao registrar visualização:", err));
+  }, [documentId, document, queryClient]);
 
   useEffect(() => {
     if (!document) return;
