@@ -387,6 +387,16 @@ export default function SGQDocumentDetail() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteDocumentRecord(documentId),
+    onSuccess: () => {
+      toast.success("Documento excluído com sucesso.");
+      queryClient.invalidateQueries({ queryKey: ["document-center"] });
+      navigate("/documentos");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const handleDownload = async () => {
     if (!document) return;
     try {
