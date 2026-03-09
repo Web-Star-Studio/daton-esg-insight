@@ -400,10 +400,41 @@ export default function SGQDocumentDetail() {
     }));
   };
 
-  if (isLoading || !document) {
+  if (isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError || !document) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-destructive">
+              {isError ? "Erro ao carregar documento" : "Documento não encontrado"}
+            </CardTitle>
+            <CardDescription>
+              {isError
+                ? (queryError instanceof Error ? queryError.message : "Ocorreu um erro inesperado.")
+                : "O documento solicitado não foi encontrado."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-2 justify-center">
+            {isError && (
+              <Button variant="outline" onClick={() => refetch()} className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Tentar novamente
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => navigate("/documentos")} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
