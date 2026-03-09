@@ -44,7 +44,7 @@ import {
   getResponsibleUsers,
   REGULATORY_DOCUMENT_IDENTIFIER_OPTIONS,
   updateRegulatoryDocument,
-  updateRegulatorySettings,
+  
   uploadRegulatoryDocumentAttachment,
   upsertRenewalData,
   type DocumentStatus,
