@@ -128,6 +128,7 @@ export default function SGQDocumentDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: branches = [] } = useBranches();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [replacementFile, setReplacementFile] = useState<File | null>(null);
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [campaignForm, setCampaignForm] = useState({
