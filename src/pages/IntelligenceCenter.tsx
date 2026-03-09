@@ -28,15 +28,8 @@ export default function IntelligenceCenter() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-5xl grid-cols-6">
-          <TabsTrigger value="analyze" className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            Analisar
-          </TabsTrigger>
-          <TabsTrigger value="extracted" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Extraídos
-          </TabsTrigger>
+        <TabsList className="grid w-full max-w-5xl grid-cols-4">
+
           <TabsTrigger value="unclassified" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Não Classificados
