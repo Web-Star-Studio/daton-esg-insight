@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RegulatoryDocumentsTab } from "@/components/document-control/RegulatoryDocumentsTab";
 import { SGQIsoDocumentsTab } from "@/components/document-control/SGQIsoDocumentsTab";
-import { DocumentComplianceOperationsTab } from "@/components/document-control/DocumentComplianceOperationsTab";
+
 
 const ControleDocumentos = () => {
   return (
