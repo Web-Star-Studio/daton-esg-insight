@@ -7,7 +7,6 @@ import { GlobalSearch } from './GlobalSearch';
  * Global keyboard shortcuts for the application
  * Ctrl/Cmd + K: Global search
  * Ctrl/Cmd + D: Go to Documents
- * Ctrl/Cmd + E: Go to Extractions/Approvals
  * Ctrl/Cmd + I: Open AI Assistant (placeholder)
  * Ctrl/Cmd + H: Show shortcuts help
  */
@@ -31,13 +30,6 @@ export function GlobalKeyboardShortcuts() {
           e.preventDefault();
           navigate('/documentos');
           toast.success('Navegando para Documentos');
-          break;
-        }
-        
-        case 'e': {
-          e.preventDefault();
-          navigate('/extracoes-documentos');
-          toast.success('Navegando para Aprovações');
           break;
         }
         
@@ -78,7 +70,6 @@ export function GlobalKeyboardShortcuts() {
   const showShortcutsHelp = () => {
     const shortcuts = [
       { key: 'Ctrl/Cmd + D', action: 'Documentos' },
-      { key: 'Ctrl/Cmd + E', action: 'Aprovações de Extrações' },
       { key: 'Ctrl/Cmd + M', action: 'Monitoramento de Água' },
       { key: 'Ctrl/Cmd + G', action: 'GRI' },
       { key: 'Ctrl/Cmd + I', action: 'Assistente IA' },
