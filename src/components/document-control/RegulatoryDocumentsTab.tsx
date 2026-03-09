@@ -171,11 +171,6 @@ export const RegulatoryDocumentsTab = () => {
     queryFn: getRegulatorySettings,
   });
 
-  useEffect(() => {
-    if (settings?.default_expiring_days !== undefined) {
-      setSettingsValue(String(settings.default_expiring_days));
-    }
-  }, [settings?.default_expiring_days]);
 
   const { data: users = [] } = useQuery({
     queryKey: ["regulatory-documents", "responsibles"],
