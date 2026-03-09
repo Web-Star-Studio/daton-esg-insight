@@ -297,10 +297,13 @@ export const SystemDocumentsTab = () => {
                         <TableCell className="font-mono font-medium">{doc.code || "—"}</TableCell>
                         <TableCell><DocumentLevelBadge level={doc.document_level} /></TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => navigate(`/documentos/${doc.id}`)}
+                            className="flex items-center gap-2 hover:underline text-left"
+                          >
                             <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <span className="truncate max-w-[200px]">{doc.file_name}</span>
-                          </div>
+                          </button>
                         </TableCell>
                         <TableCell><Badge variant={status.variant}>{status.label}</Badge></TableCell>
                         <TableCell>{doc.responsible_department || "—"}</TableCell>
@@ -310,9 +313,11 @@ export const SystemDocumentsTab = () => {
                             : "—"}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <DocumentActionsDropdown
+                            documentId={doc.id}
+                            documentName={doc.file_name}
+                            onDownload={() => handleDownload(doc)}
+                          />
                         </TableCell>
                       </TableRow>
                     );
