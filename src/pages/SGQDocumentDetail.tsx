@@ -159,10 +159,11 @@ export default function SGQDocumentDetail() {
 
   const documentId = id || "";
 
-  const { data: document, isLoading } = useQuery({
+  const { data: document, isLoading, isError, error: queryError, refetch } = useQuery({
     queryKey: ["document-center-detail", documentId],
     queryFn: () => getDocumentRecord(documentId),
     enabled: Boolean(documentId),
+    retry: 1,
   });
 
   const { data: collaborators = [] } = useQuery({
