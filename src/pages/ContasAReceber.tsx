@@ -21,14 +21,14 @@ export default function ContasAReceber() {
     { accessorKey: 'invoice_number', header: 'Nº Nota' },
     { accessorKey: 'customer_name', header: 'Cliente' },
     { accessorKey: 'category', header: 'Categoria' },
-    { 
-      accessorKey: 'original_amount', 
+    {
+      accessorKey: 'original_amount',
       header: 'Valor',
       cell: ({ row }: any) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.original.original_amount)
     },
     { accessorKey: 'due_date', header: 'Vencimento' },
-    { 
-      accessorKey: 'status', 
+    {
+      accessorKey: 'status',
       header: 'Status',
       cell: ({ row }: any) => <Badge variant={row.original.status === 'Recebido' ? 'default' : 'secondary'}>{row.original.status}</Badge>
     },
@@ -87,7 +87,9 @@ export default function ContasAReceber() {
           <CardTitle>Lista de Contas a Receber</CardTitle>
         </CardHeader>
         <CardContent>
-          <DataTable columns={columns} data={receivables} />
+          <div className="overflow-x-auto">
+            <DataTable columns={columns} data={receivables} />
+          </div>
         </CardContent>
       </Card>
     </div>

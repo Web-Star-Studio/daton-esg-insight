@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  BookOpen, 
-  Plus, 
-  Search, 
-  Filter, 
-  Eye, 
-  Edit, 
-  Calendar, 
+import {
+  BookOpen,
+  Plus,
+  Search,
+  Filter,
+  Eye,
+  Edit,
+  Calendar,
   User,
   FileText,
   Bookmark,
@@ -31,7 +31,7 @@ import { BookmarkedArticlesModal } from "@/components/BookmarkedArticlesModal";
 
 const KNOWLEDGE_CATEGORIES = [
   "Qualidade",
-  "Meio Ambiente", 
+  "Meio Ambiente",
   "Saúde e Segurança",
   "Processos",
   "Normas e Regulamentos",
@@ -78,7 +78,7 @@ export default function BaseConhecimento() {
   // Filter articles based on search and category
   const filteredArticles = articles.filter((article) => {
     const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.content.toLowerCase().includes(searchTerm.toLowerCase());
+      article.content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || article.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -86,7 +86,7 @@ export default function BaseConhecimento() {
   const getCategoryColor = (category: string) => {
     const colors = {
       "Qualidade": "bg-blue-100 text-blue-800",
-      "Meio Ambiente": "bg-green-100 text-green-800", 
+      "Meio Ambiente": "bg-green-100 text-green-800",
       "Saúde e Segurança": "bg-red-100 text-red-800",
       "Processos": "bg-purple-100 text-purple-800",
       "Normas e Regulamentos": "bg-orange-100 text-orange-800",
@@ -115,18 +115,18 @@ export default function BaseConhecimento() {
   };
 
   return (
-    <div className="w-full overflow-hidden p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Base de Conhecimento</h1>
           <p className="text-muted-foreground">
             Gerencie e compartilhe o conhecimento organizacional
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <Button 
-            variant="outline" 
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
             onClick={() => setIsBookmarksModalOpen(true)}
           >
             <Bookmark className="h-4 w-4 mr-2" />
@@ -213,13 +213,13 @@ export default function BaseConhecimento() {
                 <Card key={article.id} className="group hover:shadow-md transition-shadow cursor-pointer">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <CardTitle 
+                      <CardTitle
                         className="text-base font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2"
                         onClick={() => handleViewArticle(article)}
                       >
                         {article.title}
                       </CardTitle>
-                      <ArticleBookmarkButton 
+                      <ArticleBookmarkButton
                         articleId={article.id}
                         variant="ghost"
                         size="sm"
@@ -256,16 +256,16 @@ export default function BaseConhecimento() {
                         <span>{article.view_count || 0} visualizações</span>
                       </div>
                       <div className="flex gap-1">
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleViewArticle(article)}
                           className="h-8 px-2"
                         >
                           <Eye className="h-3 w-3" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleEditArticle(article)}
                           className="h-8 px-2"
@@ -286,7 +286,7 @@ export default function BaseConhecimento() {
                 <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">Nenhum artigo encontrado</h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm || selectedCategory !== "all" 
+                  {searchTerm || selectedCategory !== "all"
                     ? "Tente ajustar os filtros ou criar um novo artigo."
                     : "Comece criando seu primeiro artigo na base de conhecimento."
                   }

@@ -34,17 +34,14 @@ import QualityTrendsAnalyzer from './QualityTrendsAnalyzer';
 import { PredictiveQualityWidget } from './PredictiveQualityWidget';
 import SGQDashboardWidget from './SGQDashboardWidget';
 
-import { useDemo } from '@/contexts/DemoContext';
-
 export const UnifiedQualityDashboard: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const navigate = useNavigate();
-  const { isDemo } = useDemo();
 
-  const { data: dashboardData, isLoading: isLoadingDashboard, error } = useQuery({
-    queryKey: ['unified-quality-dashboard', isDemo],
+  const { data: dashboardData, isLoading: isLoadingDashboard, error: dashboardError } = useQuery({
+    queryKey: ['unified-quality-dashboard'],
     queryFn: async () => {
-      const data = await unifiedQualityService.getQualityDashboard(isDemo);
+      const data = await unifiedQualityService.getQualityDashboard();
       console.warn('Dashboard data received:', {
         hasPlansProgress: !!data?.plansProgress,
         plansCount: data?.plansProgress?.length || 0,
@@ -54,12 +51,13 @@ export const UnifiedQualityDashboard: React.FC = () => {
     }
   });
 
-  const { data: indicators, isLoading: isLoadingIndicators } = useQuery({
-    queryKey: ['quality-indicators-metrics', isDemo],
-    queryFn: () => unifiedQualityService.getQualityIndicators(isDemo)
+  const { data: indicators, isLoading: isLoadingIndicators, error: indicatorsError } = useQuery({
+    queryKey: ['quality-indicators-metrics'],
+    queryFn: () => unifiedQualityService.getQualityIndicators()
   });
 
   const isLoading = isLoadingDashboard || isLoadingIndicators;
+  const error = dashboardError ?? indicatorsError;
 
   if (error) {
     console.error('Error loading dashboard:', error);

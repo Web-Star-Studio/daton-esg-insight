@@ -33,6 +33,8 @@ import { RiskDetailsModal } from "@/components/RiskDetailsModal";
 import { RiskMatrixModal } from "@/components/RiskMatrixModal";
 import { ESGRisk } from "@/services/esgRisks";
 
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
 // Interfaces
 interface RiskMatrix {
   id: string;
@@ -69,7 +71,7 @@ export default function GestaoRiscos() {
   const [newMatrixData, setNewMatrixData] = useState({
     name: '',
     description: '',
-    type: 'probability_impact'
+    type: 'Estratégico'
   });
   const [newRiskData, setNewRiskData] = useState({
     title: '',
@@ -83,28 +85,8 @@ export default function GestaoRiscos() {
 
   // Query para matrizes de risco
   const { data: riskMatricesData, isLoading: matricesLoading, refetch } = useQuery({
-    queryKey: ['risk-matrices'],
+    queryKey: ['risk-matrices', isDemoMode()],
     queryFn: async () => {
-      const isDemoMode = typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
-      if (isDemoMode) {
-        return [
-          {
-            id: 'demo-matrix-1',
-            name: 'Matriz de Riscos Operacionais 2024',
-            description: 'Matriz principal para avaliação de riscos operacionais em todas as unidades.',
-            matrix_type: 'Operacional',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'demo-matrix-2',
-            name: 'Riscos Estratégicos',
-            description: 'Acompanhamento dos riscos de negócio e estratégia.',
-            matrix_type: 'Estratégico',
-            created_at: new Date().toISOString(),
-          }
-        ] as RiskMatrix[];
-      }
-
       const { data, error } = await supabase
         .from('risk_matrices')
         .select('*')
@@ -165,7 +147,7 @@ export default function GestaoRiscos() {
       setNewMatrixData({
         name: '',
         description: '',
-        type: 'probability_impact'
+        type: 'Estratégico'
       });
       refetch();
     } catch (error) {
@@ -253,7 +235,7 @@ export default function GestaoRiscos() {
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gestão de Riscos</h1>
           <p className="text-muted-foreground mt-2">
@@ -261,7 +243,7 @@ export default function GestaoRiscos() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex gap-2">
           <Dialog open={isCreateMatrixOpen} onOpenChange={setIsCreateMatrixOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -349,7 +331,7 @@ export default function GestaoRiscos() {
                   <CardDescription>{matrix.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                  <div className="flex justify-between items-center mb-4">
                     <Badge variant="secondary">
                       {matrix.matrix_type}
                     </Badge>
@@ -357,7 +339,7 @@ export default function GestaoRiscos() {
                       Ativa
                     </Badge>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"

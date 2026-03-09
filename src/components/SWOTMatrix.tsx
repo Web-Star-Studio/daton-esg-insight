@@ -1,55 +1,18 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
-
-const MOCK_SWOT_ANALYSES: SWOTAnalysis[] = [
-  {
-    id: "demo-swot-1",
-    title: "Análise SWOT 2024",
-    description: "Análise estratégica anual de sustentabilidade e negócios.",
-    created_at: new Date().toISOString()
-  }
-];
-
-const MOCK_SWOT_ITEMS: SWOTItem[] = [
-  {
-    id: "item-1",
-    category: "strengths",
-    item_text: "Marca Forte em Sustentabilidade",
-    description: "Reconhecimento no mercado pelas práticas ESG.",
-    impact_level: "high"
-  },
-  {
-    id: "item-2",
-    category: "strengths",
-    item_text: "Equipe Capacitada",
-    description: "Baixa rotatividade e alta especialização técnica.",
-    impact_level: "medium"
-  },
-  {
-    id: "item-3",
-    category: "weaknesses",
-    item_text: "Dependência de Fornecedores Externos",
-    description: "Cadeia de suprimentos vulnerável a interrupções globais.",
-    impact_level: "high"
-  },
-  {
-    id: "item-4",
-    category: "opportunities",
-    item_text: "Expansão para Mercados Verdes",
-    description: "Novos produtos focados na economia circular.",
-    impact_level: "high"
-  },
-  {
-    id: "item-5",
-    category: "threats",
-    item_text: "Novas Regulamentações Ambientais",
-    description: "Maior rigor na legislação de emissões.",
-    impact_level: "medium"
-  }
-];
-import { Plus, Edit, Trash2, Target, Shield, TrendingUp, AlertTriangle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Target,
+  Shield,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  Calendar,
+  FileText,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,231 +23,343 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-
-interface SWOTAnalysis {
-  id: string;
-  title: string;
-  description: string;
-  created_at: string;
-}
-
-interface SWOTItem {
-  id: string;
-  category: 'strengths' | 'weaknesses' | 'opportunities' | 'threats';
-  item_text: string;
-  description: string;
-  impact_level: 'low' | 'medium' | 'high';
-}
+import {
+  createSWOTAnalysis,
+  createSWOTItem,
+  deleteSWOTItem,
+  getSWOTAnalyses,
+  getSWOTItems,
+  getSWOTReviewHistory,
+  registerSWOTReview,
+  SWOTAnalysis,
+  SWOTItem,
+  SWOTReviewFrequency,
+  SWOTTreatmentDecision,
+  updateSWOTAnalysisReviewCadence,
+  updateSWOTItem,
+} from "@/services/strategic";
+import {
+  calculateSWOTTraceabilityMetrics,
+  getSWOTReviewStatus,
+  hasTraceabilityEvidence,
+} from "@/utils/swotCompliance";
 
 interface SWOTMatrixProps {
   strategicMapId?: string;
 }
 
+interface ActionPlanItemOption {
+  id: string;
+  what_action: string;
+  action_plan_id: string;
+  action_plans?: {
+    title: string;
+  } | null;
+}
+
+const REVIEW_FREQUENCY_OPTIONS: { value: SWOTReviewFrequency; label: string }[] = [
+  { value: "mensal", label: "Mensal" },
+  { value: "trimestral", label: "Trimestral" },
+  { value: "semestral", label: "Semestral" },
+  { value: "anual", label: "Anual" },
+  { value: "bienal", label: "Bienal" },
+];
+
+const TREATMENT_OPTIONS: { value: SWOTTreatmentDecision; label: string }[] = [
+  { value: "nao_classificado", label: "Não classificado" },
+  { value: "irrelevante", label: "Irrelevante" },
+  { value: "relevante_requer_acoes", label: "Relevante: requer ações" },
+];
+
+const CATEGORY_ORDER: SWOTItem["category"][] = ["strengths", "weaknesses", "opportunities", "threats"];
+
 export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isItemOpen, setIsItemOpen] = useState(false);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [newAnalysis, setNewAnalysis] = useState({ title: "", description: "" });
-  const [newItem, setNewItem] = useState<{
-    item_text: string;
-    description: string;
-    impact_level: 'low' | 'medium' | 'high';
-  }>({
+  const [editingItem, setEditingItem] = useState<SWOTItem | null>(null);
+
+  const [newAnalysis, setNewAnalysis] = useState({
+    title: "",
+    description: "",
+    review_frequency: "anual" as SWOTReviewFrequency,
+  });
+
+  const [itemForm, setItemForm] = useState({
+    category: "strengths" as SWOTItem["category"],
     item_text: "",
     description: "",
-    impact_level: "medium"
+    impact_level: "medium" as SWOTItem["impact_level"],
+    treatment_decision: "nao_classificado" as SWOTTreatmentDecision,
+    linked_action_plan_item_id: "none",
+    external_action_reference: "",
+  });
+
+  const [reviewForm, setReviewForm] = useState({
+    review_date: "",
+    review_summary: "",
+    management_review_reference: "",
   });
 
   const queryClient = useQueryClient();
 
   const { data: analyses } = useQuery({
-    queryKey: ["swot-analyses"],
-    queryFn: async () => {
-      if (isDemoMode()) return MOCK_SWOT_ANALYSES;
-
-      const { data, error } = await supabase
-        .from("swot_analysis")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as SWOTAnalysis[];
-    },
+    queryKey: ["swot-analyses", strategicMapId],
+    queryFn: () => getSWOTAnalyses(strategicMapId),
   });
 
   const { data: items } = useQuery({
     queryKey: ["swot-items", selectedAnalysis],
+    queryFn: () => getSWOTItems(selectedAnalysis as string),
+    enabled: Boolean(selectedAnalysis),
+  });
+
+  const { data: reviewHistory } = useQuery({
+    queryKey: ["swot-review-history", selectedAnalysis],
+    queryFn: () => getSWOTReviewHistory(selectedAnalysis as string),
+    enabled: Boolean(selectedAnalysis),
+  });
+
+  const { data: actionPlanItems } = useQuery({
+    queryKey: ["swot-action-plan-items"],
     queryFn: async () => {
-      if (!selectedAnalysis) return [];
-
-      if (isDemoMode()) return MOCK_SWOT_ITEMS;
-
       const { data, error } = await supabase
-        .from("swot_items")
-        .select("*")
-        .eq("swot_analysis_id", selectedAnalysis)
-        .order("order_index");
+        .from("action_plan_items")
+        .select("id, what_action, action_plan_id, action_plans(title)")
+        .order("created_at", { ascending: false })
+        .limit(200);
 
       if (error) throw error;
-      return data as SWOTItem[];
+      return (data || []) as ActionPlanItemOption[];
     },
-    enabled: !!selectedAnalysis,
   });
 
   useEffect(() => {
-    if (analyses && analyses.length > 0 && !selectedAnalysis) {
+    if (analyses?.length && !selectedAnalysis) {
       setSelectedAnalysis(analyses[0].id);
     }
   }, [analyses, selectedAnalysis]);
 
+  const selectedAnalysisData = useMemo(
+    () => analyses?.find((analysis) => analysis.id === selectedAnalysis) || null,
+    [analyses, selectedAnalysis],
+  );
+
+  const traceabilityMetrics = useMemo(
+    () => calculateSWOTTraceabilityMetrics(items || []),
+    [items],
+  );
+
+  const reviewStatus = useMemo(() => {
+    if (!selectedAnalysisData) return null;
+    return getSWOTReviewStatus(selectedAnalysisData);
+  }, [selectedAnalysisData]);
+
+  const groupedItems = useMemo(() => {
+    return (items || []).reduce(
+      (acc, item) => {
+        if (!acc[item.category]) {
+          acc[item.category] = [];
+        }
+        acc[item.category].push(item);
+        return acc;
+      },
+      {} as Record<SWOTItem["category"], SWOTItem[]>,
+    );
+  }, [items]);
+
   const createAnalysisMutation = useMutation({
-    mutationFn: async (analysisData: typeof newAnalysis) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error("Company ID não encontrado");
-
-      const { error } = await supabase
-        .from("swot_analysis")
-        .insert([{
-          ...analysisData,
-          company_id: profile.company_id,
-          strategic_map_id: strategicMapId
-        }]);
-
-      if (error) throw error;
-    },
+    mutationFn: () => createSWOTAnalysis({ ...newAnalysis, strategic_map_id: strategicMapId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["swot-analyses"] });
+      queryClient.invalidateQueries({ queryKey: ["swot-analyses", strategicMapId] });
       toast.success("Análise SWOT criada com sucesso!");
       setIsCreateOpen(false);
-      setNewAnalysis({ title: "", description: "" });
+      setNewAnalysis({ title: "", description: "", review_frequency: "anual" });
     },
-    onError: () => {
-      toast.error("Erro ao criar análise SWOT");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar análise SWOT");
     },
   });
 
-  const createItemMutation = useMutation({
-    mutationFn: async (itemData: typeof newItem & { category: string }) => {
-      if (!selectedAnalysis) throw new Error("Nenhuma análise selecionada");
-
-      const { error } = await supabase
-        .from("swot_items")
-        .insert([{
-          ...itemData,
-          swot_analysis_id: selectedAnalysis,
-          category: itemData.category as SWOTItem['category']
-        }]);
-
-      if (error) throw error;
-    },
+  const updateCadenceMutation = useMutation({
+    mutationFn: ({ analysisId, frequency }: { analysisId: string; frequency: SWOTReviewFrequency }) =>
+      updateSWOTAnalysisReviewCadence(analysisId, frequency),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["swot-items", selectedAnalysis] });
-      toast.success("Item adicionado com sucesso!");
-      setIsItemOpen(false);
-      setNewItem({ item_text: "", description: "", impact_level: "medium" });
-      setSelectedCategory('');
+      queryClient.invalidateQueries({ queryKey: ["swot-analyses", strategicMapId] });
+      toast.success("Periodicidade da revisão atualizada.");
     },
-    onError: () => {
-      toast.error("Erro ao adicionar item");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar periodicidade");
+    },
+  });
+
+  const saveItemMutation = useMutation({
+    mutationFn: async (analysisId: string) => {
+      if (!analysisId) throw new Error("Nenhuma análise selecionada.");
+
+      if (
+        itemForm.treatment_decision === "relevante_requer_acoes" &&
+        itemForm.linked_action_plan_item_id === "none" &&
+        !itemForm.external_action_reference.trim()
+      ) {
+        throw new Error("Itens relevantes exigem vínculo com ação (interna ou externa).");
+      }
+
+      const payload = {
+        category: itemForm.category,
+        item_text: itemForm.item_text,
+        description: itemForm.description || null,
+        impact_level: itemForm.impact_level,
+        treatment_decision: itemForm.treatment_decision,
+        linked_action_plan_item_id:
+          itemForm.linked_action_plan_item_id === "none" ? null : itemForm.linked_action_plan_item_id,
+        external_action_reference: itemForm.external_action_reference || null,
+      };
+
+      if (editingItem) {
+        return updateSWOTItem(editingItem.id, payload);
+      }
+
+      return createSWOTItem({
+        swot_analysis_id: analysisId,
+        ...payload,
+      });
+    },
+    onSuccess: (_, analysisId) => {
+      queryClient.invalidateQueries({ queryKey: ["swot-items", analysisId] });
+      toast.success(editingItem ? "Item SWOT atualizado com sucesso!" : "Item SWOT adicionado com sucesso!");
+      handleCloseItemDialog();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao salvar item SWOT");
+    },
+  });
+
+  const registerReviewMutation = useMutation({
+    mutationFn: async (analysisId: string) => {
+      if (!analysisId) throw new Error("Nenhuma análise selecionada.");
+      if (!reviewForm.review_date || !reviewForm.review_summary.trim() || !reviewForm.management_review_reference.trim()) {
+        throw new Error("Preencha todos os campos obrigatórios da revisão.");
+      }
+
+      return registerSWOTReview(analysisId, {
+        review_date: reviewForm.review_date,
+        review_summary: reviewForm.review_summary,
+        management_review_reference: reviewForm.management_review_reference,
+      });
+    },
+    onSuccess: (_, analysisId) => {
+      queryClient.invalidateQueries({ queryKey: ["swot-review-history", analysisId] });
+      queryClient.invalidateQueries({ queryKey: ["swot-analyses", strategicMapId] });
+      toast.success("Revisão registrada com sucesso!");
+      setIsReviewOpen(false);
+      setReviewForm({ review_date: "", review_summary: "", management_review_reference: "" });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar revisão");
     },
   });
 
   const deleteItemMutation = useMutation({
-    mutationFn: async (itemId: string) => {
-      const { error } = await supabase
-        .from("swot_items")
-        .delete()
-        .eq("id", itemId);
-
-      if (error) throw error;
-    },
+    mutationFn: (itemId: string) => deleteSWOTItem(itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["swot-items", selectedAnalysis] });
       toast.success("Item removido com sucesso!");
     },
-    onError: () => {
-      toast.error("Erro ao remover item");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover item");
     },
   });
 
-  const getImpactColor = (level: string): "destructive" | "secondary" | "outline" => {
-    switch (level) {
-      case 'high': return 'destructive';
-      case 'medium': return 'secondary';
-      case 'low': return 'outline';
-      default: return 'outline';
-    }
-  };
-
-  const getCategoryInfo = (category: string) => {
+  const getCategoryInfo = (category: SWOTItem["category"]) => {
     switch (category) {
-      case 'strengths':
-        return {
-          label: 'Forças',
-          icon: Shield,
-          color: 'text-green-600',
-          bg: 'bg-green-50 border-green-200'
-        };
-      case 'weaknesses':
-        return {
-          label: 'Fraquezas',
-          icon: AlertTriangle,
-          color: 'text-red-600',
-          bg: 'bg-red-50 border-red-200'
-        };
-      case 'opportunities':
-        return {
-          label: 'Oportunidades',
-          icon: TrendingUp,
-          color: 'text-blue-600',
-          bg: 'bg-blue-50 border-blue-200'
-        };
-      case 'threats':
-        return {
-          label: 'Ameaças',
-          icon: Target,
-          color: 'text-orange-600',
-          bg: 'bg-orange-50 border-orange-200'
-        };
+      case "strengths":
+        return { label: "Forças", icon: Shield, color: "text-green-600", bg: "bg-green-50 border-green-200" };
+      case "weaknesses":
+        return { label: "Fraquezas", icon: AlertTriangle, color: "text-red-600", bg: "bg-red-50 border-red-200" };
+      case "opportunities":
+        return { label: "Oportunidades", icon: TrendingUp, color: "text-blue-600", bg: "bg-blue-50 border-blue-200" };
+      case "threats":
       default:
-        return {
-          label: 'Categoria',
-          icon: Target,
-          color: 'text-muted-foreground',
-          bg: 'bg-muted'
-        };
+        return { label: "Ameaças", icon: Target, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" };
     }
   };
 
-  const groupedItems = items?.reduce((acc, item) => {
-    if (!acc[item.category]) acc[item.category] = [];
-    acc[item.category].push(item);
-    return acc;
-  }, {} as Record<string, SWOTItem[]>) || {};
+  const getTreatmentBadge = (decision: SWOTTreatmentDecision) => {
+    switch (decision) {
+      case "relevante_requer_acoes":
+        return <Badge variant="destructive">Relevante: requer ações</Badge>;
+      case "irrelevante":
+        return <Badge variant="secondary">Irrelevante</Badge>;
+      default:
+        return <Badge variant="outline">Não classificado</Badge>;
+    }
+  };
+
+  const getTraceabilityBadge = (item: SWOTItem) => {
+    if (item.treatment_decision === "nao_classificado") {
+      return <Badge variant="outline">Não classificado</Badge>;
+    }
+
+    if (item.treatment_decision === "irrelevante") {
+      return <Badge variant="outline">Não aplicável</Badge>;
+    }
+
+    return hasTraceabilityEvidence(item) ? (
+      <Badge className="bg-green-100 text-green-800">Rastreado</Badge>
+    ) : (
+      <Badge variant="destructive">Pendente</Badge>
+    );
+  };
+
+  const handleOpenEditItem = (item: SWOTItem) => {
+    setEditingItem(item);
+    setItemForm({
+      category: item.category,
+      item_text: item.item_text,
+      description: item.description || "",
+      impact_level: item.impact_level,
+      treatment_decision: item.treatment_decision,
+      linked_action_plan_item_id: item.linked_action_plan_item_id || "none",
+      external_action_reference: item.external_action_reference || "",
+    });
+    setIsItemOpen(true);
+  };
+
+  const handleOpenNewItem = () => {
+    setEditingItem(null);
+    setItemForm({
+      category: "strengths",
+      item_text: "",
+      description: "",
+      impact_level: "medium",
+      treatment_decision: "nao_classificado",
+      linked_action_plan_item_id: "none",
+      external_action_reference: "",
+    });
+    setIsItemOpen(true);
+  };
+
+  const handleCloseItemDialog = () => {
+    setIsItemOpen(false);
+    setEditingItem(null);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold">Análise SWOT</h3>
           <p className="text-sm text-muted-foreground">
-            Analise forças, fraquezas, oportunidades e ameaças
+            Controle de contexto organizacional com periodicidade formal, revisões e rastreabilidade de ações.
           </p>
         </div>
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Nova Análise
             </Button>
           </DialogTrigger>
@@ -294,38 +369,63 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="title">Título</Label>
+                <Label htmlFor="analysis-title">Título</Label>
                 <Input
-                  id="title"
+                  id="analysis-title"
                   value={newAnalysis.title}
-                  onChange={(e) => setNewAnalysis({ ...newAnalysis, title: e.target.value })}
+                  onChange={(event) => setNewAnalysis((prev) => ({ ...prev, title: event.target.value }))}
                   placeholder="Nome da análise SWOT"
                 />
               </div>
               <div>
-                <Label htmlFor="description">Descrição</Label>
+                <Label htmlFor="analysis-description">Descrição</Label>
                 <Textarea
-                  id="description"
+                  id="analysis-description"
                   value={newAnalysis.description}
-                  onChange={(e) => setNewAnalysis({ ...newAnalysis, description: e.target.value })}
+                  onChange={(event) => setNewAnalysis((prev) => ({ ...prev, description: event.target.value }))}
                   placeholder="Descrição da análise"
                 />
               </div>
+              <div>
+                <Label>Periodicidade de Revisão</Label>
+                <Select
+                  value={newAnalysis.review_frequency}
+                  onValueChange={(value: SWOTReviewFrequency) =>
+                    setNewAnalysis((prev) => ({ ...prev, review_frequency: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REVIEW_FREQUENCY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
-                onClick={() => createAnalysisMutation.mutate(newAnalysis)}
                 className="w-full"
+                onClick={() => {
+                  if (!newAnalysis.title.trim()) {
+                    toast.error("Informe o título da análise SWOT.");
+                    return;
+                  }
+                  createAnalysisMutation.mutate();
+                }}
                 disabled={createAnalysisMutation.isPending}
               >
-                Criar Análise
+                {createAnalysisMutation.isPending ? "Criando..." : "Criar Análise"}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Seletor de Análise */}
       {analyses && analyses.length > 0 && (
-        <Select value={selectedAnalysis || "none"} onValueChange={setSelectedAnalysis}>
+        <Select value={selectedAnalysis || undefined} onValueChange={(value) => setSelectedAnalysis(value)}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione uma análise SWOT" />
           </SelectTrigger>
@@ -339,26 +439,196 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
         </Select>
       )}
 
-      {selectedAnalysis && (
+      {selectedAnalysisData && (
         <>
-          {/* Botão para adicionar item */}
-          <Dialog open={isItemOpen} onOpenChange={setIsItemOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Item
-              </Button>
-            </DialogTrigger>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Governança da Revisão</CardTitle>
+              <CardDescription>
+                Defina a periodicidade e registre evidências formais das revisões de contexto.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-4">
+                <div>
+                  <Label>Periodicidade</Label>
+                  <Select
+                    value={selectedAnalysisData.review_frequency}
+                    onValueChange={(value: SWOTReviewFrequency) =>
+                      updateCadenceMutation.mutate({
+                        analysisId: selectedAnalysisData.id,
+                        frequency: value,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REVIEW_FREQUENCY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Última Revisão</Label>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {selectedAnalysisData.last_review_date || "Não registrada"}
+                  </p>
+                </div>
+                <div>
+                  <Label>Próxima Revisão</Label>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {selectedAnalysisData.next_review_date || "Não calculada"}
+                  </p>
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <div className="mt-2">
+                    {reviewStatus?.status === "on_time" && (
+                      <Badge className="bg-green-100 text-green-800">
+                        <CheckCircle2 className="mr-1 h-3 w-3" />
+                        {reviewStatus.label}
+                      </Badge>
+                    )}
+                    {reviewStatus?.status === "overdue" && (
+                      <Badge variant="destructive">
+                        <Clock3 className="mr-1 h-3 w-3" />
+                        {reviewStatus.label}
+                      </Badge>
+                    )}
+                    {reviewStatus?.status === "no_review" && (
+                      <Badge variant="outline">
+                        <FileText className="mr-1 h-3 w-3" />
+                        {reviewStatus.label}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Registrar Revisão
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Registrar Revisão SWOT</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="review-date">Data da Revisão</Label>
+                        <Input
+                          id="review-date"
+                          type="date"
+                          value={reviewForm.review_date}
+                          onChange={(event) =>
+                            setReviewForm((prev) => ({ ...prev, review_date: event.target.value }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="review-summary">Resumo da Revisão</Label>
+                        <Textarea
+                          id="review-summary"
+                          value={reviewForm.review_summary}
+                          onChange={(event) =>
+                            setReviewForm((prev) => ({ ...prev, review_summary: event.target.value }))
+                          }
+                          placeholder="Principais mudanças e conclusões da revisão"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="review-reference">Referência da Análise Crítica (ata/SOGI)</Label>
+                        <Input
+                          id="review-reference"
+                          value={reviewForm.management_review_reference}
+                          onChange={(event) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              management_review_reference: event.target.value,
+                            }))
+                          }
+                          placeholder="Ex.: ATA-AC-2026-03 / SOGI#5678"
+                        />
+                      </div>
+                      <Button
+                        className="w-full"
+                        onClick={() => {
+                          if (!selectedAnalysis) {
+                            toast.error("Nenhuma análise selecionada.");
+                            return;
+                          }
+                          registerReviewMutation.mutate(selectedAnalysis);
+                        }}
+                        disabled={registerReviewMutation.isPending}
+                      >
+                        {registerReviewMutation.isPending ? "Registrando..." : "Registrar Revisão"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-3 md:grid-cols-4">
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-xs text-muted-foreground">Itens Relevantes</p>
+                <p className="text-2xl font-semibold">{traceabilityMetrics.totalRelevant}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-xs text-muted-foreground">Relevantes Rastreado(s)</p>
+                <p className="text-2xl font-semibold text-green-700">{traceabilityMetrics.tracedRelevant}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-xs text-muted-foreground">Relevantes Pendentes</p>
+                <p className="text-2xl font-semibold text-red-700">{traceabilityMetrics.pendingRelevant}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-xs text-muted-foreground">Taxa de Rastreabilidade</p>
+                <p className="text-2xl font-semibold">{traceabilityMetrics.traceabilityRate}%</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={handleOpenNewItem}>
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Item
+            </Button>
+          </div>
+
+          <Dialog open={isItemOpen} onOpenChange={(open) => (open ? setIsItemOpen(true) : handleCloseItemDialog())}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Adicionar Item SWOT</DialogTitle>
+                <DialogTitle>{editingItem ? "Editar Item SWOT" : "Adicionar Item SWOT"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
                   <Label>Categoria</Label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <Select
+                    value={itemForm.category}
+                    onValueChange={(value: SWOTItem["category"]) =>
+                      setItemForm((prev) => ({ ...prev, category: value }))
+                    }
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione a categoria" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="strengths">Forças</SelectItem>
@@ -369,29 +639,29 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="item_text">Item</Label>
+                  <Label htmlFor="item-text">Item</Label>
                   <Input
-                    id="item_text"
-                    value={newItem.item_text}
-                    onChange={(e) => setNewItem({ ...newItem, item_text: e.target.value })}
+                    id="item-text"
+                    value={itemForm.item_text}
+                    onChange={(event) => setItemForm((prev) => ({ ...prev, item_text: event.target.value }))}
                     placeholder="Descreva o item"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="description">Descrição</Label>
+                  <Label htmlFor="item-description">Descrição</Label>
                   <Textarea
-                    id="description"
-                    value={newItem.description}
-                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                    id="item-description"
+                    value={itemForm.description}
+                    onChange={(event) => setItemForm((prev) => ({ ...prev, description: event.target.value }))}
                     placeholder="Descrição detalhada"
                   />
                 </div>
                 <div>
                   <Label>Nível de Impacto</Label>
                   <Select
-                    value={newItem.impact_level}
-                    onValueChange={(value: 'low' | 'medium' | 'high') =>
-                      setNewItem({ ...newItem, impact_level: value })
+                    value={itemForm.impact_level}
+                    onValueChange={(value: SWOTItem["impact_level"]) =>
+                      setItemForm((prev) => ({ ...prev, impact_level: value }))
                     }
                   >
                     <SelectTrigger>
@@ -404,20 +674,94 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label>Decisão de Tratamento</Label>
+                  <Select
+                    value={itemForm.treatment_decision}
+                    onValueChange={(value: SWOTTreatmentDecision) =>
+                      setItemForm((prev) => ({ ...prev, treatment_decision: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TREATMENT_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {itemForm.treatment_decision === "relevante_requer_acoes" && (
+                  <>
+                    <div>
+                      <Label>Vincular item interno de Plano de Ação (5W2H)</Label>
+                      <Select
+                        value={itemForm.linked_action_plan_item_id}
+                        onValueChange={(value) =>
+                          setItemForm((prev) => ({ ...prev, linked_action_plan_item_id: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um item de ação" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sem vínculo interno</SelectItem>
+                          {(actionPlanItems || []).map((option) => (
+                            <SelectItem key={option.id} value={option.id}>
+                              {(option.action_plans?.title || "Plano") + " • " + option.what_action}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="external-reference">Referência externa (FPLAN 020/FPLAN 007)</Label>
+                      <Input
+                        id="external-reference"
+                        value={itemForm.external_action_reference}
+                        onChange={(event) =>
+                          setItemForm((prev) => ({
+                            ...prev,
+                            external_action_reference: event.target.value,
+                          }))
+                        }
+                        placeholder="Ex.: FPLAN 020 - Ação AC-33"
+                      />
+                    </div>
+                  </>
+                )}
+
                 <Button
-                  onClick={() => createItemMutation.mutate({ ...newItem, category: selectedCategory })}
                   className="w-full"
-                  disabled={createItemMutation.isPending || !selectedCategory}
+                  onClick={() => {
+                    if (!itemForm.item_text.trim()) {
+                      toast.error("Informe o item SWOT.");
+                      return;
+                    }
+                    if (!selectedAnalysis) {
+                      toast.error("Nenhuma análise selecionada.");
+                      return;
+                    }
+                    saveItemMutation.mutate(selectedAnalysis);
+                  }}
+                  disabled={saveItemMutation.isPending}
                 >
-                  Adicionar Item
+                  {saveItemMutation.isPending
+                    ? "Salvando..."
+                    : editingItem
+                      ? "Atualizar Item"
+                      : "Adicionar Item"}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
 
-          {/* Matriz SWOT */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {['strengths', 'weaknesses', 'opportunities', 'threats'].map((category) => {
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {CATEGORY_ORDER.map((category) => {
               const categoryInfo = getCategoryInfo(category);
               const categoryItems = groupedItems[category] || [];
               const Icon = categoryInfo.icon;
@@ -429,33 +773,27 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                       <Icon className="h-5 w-5" />
                       {categoryInfo.label}
                     </CardTitle>
-                    <CardDescription>
-                      {categoryItems.length} itens identificados
-                    </CardDescription>
+                    <CardDescription>{categoryItems.length} item(ns) identificado(s)</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {categoryItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-3 bg-background rounded-lg border shadow-sm"
-                      >
-                        <div className="flex justify-between items-start gap-2">
+                      <div key={item.id} className="rounded-lg border bg-background p-3 shadow-sm">
+                        <div className="mb-2 flex items-start justify-between gap-2">
                           <div className="flex-1">
-                            <p className="font-medium text-sm">{item.item_text}</p>
+                            <p className="text-sm font-medium">{item.item_text}</p>
                             {item.description && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {item.description}
-                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-1">
-                            <Badge
-                              variant={getImpactColor(item.impact_level) as "destructive" | "secondary" | "outline"}
-                              className="text-xs"
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => handleOpenEditItem(item)}
                             >
-                              {item.impact_level === 'high' ? 'Alto' :
-                                item.impact_level === 'medium' ? 'Médio' : 'Baixo'}
-                            </Badge>
+                              <Edit className="h-3 w-3" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -466,32 +804,67 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                             </Button>
                           </div>
                         </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant={item.impact_level === "high" ? "destructive" : item.impact_level === "medium" ? "secondary" : "outline"}>
+                            Impacto: {item.impact_level === "high" ? "Alto" : item.impact_level === "medium" ? "Médio" : "Baixo"}
+                          </Badge>
+                          {getTreatmentBadge(item.treatment_decision)}
+                          {getTraceabilityBadge(item)}
+                        </div>
                       </div>
                     ))}
 
                     {categoryItems.length === 0 && (
-                      <p className="text-center text-muted-foreground text-sm py-4">
-                        Nenhum item cadastrado
-                      </p>
+                      <p className="py-4 text-center text-sm text-muted-foreground">Nenhum item cadastrado</p>
                     )}
                   </CardContent>
                 </Card>
               );
             })}
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Histórico de Revisões</CardTitle>
+              <CardDescription>
+                Registros imutáveis das revisões de contexto organizacional para evidência de auditoria.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {reviewHistory && reviewHistory.length > 0 ? (
+                <div className="space-y-2">
+                  {reviewHistory.map((review) => (
+                    <div
+                      key={review.id}
+                      className="flex flex-col gap-2 rounded-md border p-3 text-sm md:flex-row md:items-center md:justify-between"
+                    >
+                      <div>
+                        <p className="font-medium">Revisão #{review.revision_number} - {review.review_date}</p>
+                        <p className="text-muted-foreground">{review.review_summary}</p>
+                      </div>
+                      <Badge variant="outline">{review.management_review_reference}</Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhuma revisão registrada.</p>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
 
       {!analyses?.length && (
         <Card>
-          <CardContent className="text-center py-8">
-            <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhuma análise SWOT</h3>
-            <p className="text-muted-foreground mb-4">
-              Crie sua primeira análise SWOT para identificar forças, fraquezas, oportunidades e ameaças
+          <CardContent className="py-8 text-center">
+            <Target className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+            <h3 className="mb-2 text-lg font-semibold">Nenhuma análise SWOT</h3>
+            <p className="mb-4 text-muted-foreground">
+              Crie sua primeira análise SWOT para identificar forças, fraquezas, oportunidades e ameaças.
             </p>
             <Button onClick={() => setIsCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Criar Primeira Análise
             </Button>
           </CardContent>

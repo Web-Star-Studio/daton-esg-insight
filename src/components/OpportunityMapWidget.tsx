@@ -297,6 +297,7 @@ export function OpportunityMapWidget() {
                       <Button
                         size="sm"
                         variant="outline"
+                        aria-label={`Visualizar oportunidade ${opportunity.title}`}
                         onClick={() => handleViewOpportunity(opportunity)}
                       >
                         <Eye className="h-4 w-4" />
@@ -304,6 +305,7 @@ export function OpportunityMapWidget() {
                       <Button
                         size="sm"
                         variant="outline"
+                        aria-label={`Editar oportunidade ${opportunity.title}`}
                         onClick={() => handleEditOpportunity(opportunity)}
                       >
                         <Edit className="h-4 w-4" />

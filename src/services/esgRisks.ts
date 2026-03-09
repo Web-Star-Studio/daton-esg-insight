@@ -31,69 +31,14 @@ export interface ESGRisk {
   updated_at: string;
 }
 
-const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
-
-const MOCK_ESG_RISKS: ESGRisk[] = [
-  {
-    id: "risk-1",
-    company_id: "demo-company",
-    risk_title: "Vazamento de Efluentes Industriais",
-    risk_description: "Risco de contaminação do solo e lençol freático devido a falhas no sistema de tratamento.",
-    esg_category: "Ambiental",
-    probability: "Média",
-    impact: "Alto",
-    inherent_risk_level: "Alto",
-    mitigation_actions: "Manutenção preventiva trimestral e instalação de sensores de vazamento.",
-    control_measures: "Monitoramento contínuo",
-    residual_risk_level: "Médio",
-    status: "Ativo",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: "risk-2",
-    company_id: "demo-company",
-    risk_title: "Acidente de Trabalho Fatal",
-    risk_description: "Risco de fatalidade nas operações de içamento de carga.",
-    esg_category: "Social",
-    probability: "Baixa",
-    impact: "Alto",
-    inherent_risk_level: "Alto",
-    mitigation_actions: "Treinamento obrigatório de NR-35 e NR-11.",
-    control_measures: "Equipamentos de proteção individual",
-    status: "Ativo",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: "risk-3",
-    company_id: "demo-company",
-    risk_title: "Violação de Dados (LGPD)",
-    risk_description: "Risco de vazamento de dados pessoais de clientes e colaboradores.",
-    esg_category: "Governança",
-    probability: "Média",
-    impact: "Alto",
-    inherent_risk_level: "Crítico",
-    mitigation_actions: "Implementação de MFA e auditoria de sistemas.",
-    control_measures: "Firewall e criptografia",
-    status: "Ativo",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
-];
-
-export const getESGRisks = async (): Promise<ESGRisk[]> => {
-  if (isDemoMode()) {
-    return MOCK_ESG_RISKS;
-  }
-
+export const getESGRisks = async () => {
   const { data, error } = await supabase
     .from('esg_risks')
     .select('*')
     .order('inherent_risk_level', { ascending: false });
 
   if (error) throw error;
-  return data as ESGRisk[];
+  return data;
 };
 
 export const getESGRisk = async (id: string) => {
@@ -143,8 +88,12 @@ export const deleteESGRisk = async (id: string) => {
 };
 
 export const getRiskMatrix = async () => {
-  const allRisks = await getESGRisks();
-  const risks = allRisks.filter((r: ESGRisk) => r.status === 'Ativo');
+  const { data: risks, error } = await supabase
+    .from('esg_risks')
+    .select('*')
+    .eq('status', 'Ativo');
+
+  if (error) throw error;
 
   const matrix = {
     'Baixa': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 },
@@ -152,33 +101,41 @@ export const getRiskMatrix = async () => {
     'Alta': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 }
   };
 
-  risks.forEach((risk: ESGRisk) => {
-    matrix[risk.probability as keyof typeof matrix][risk.impact as keyof typeof matrix['Baixa']]++;
+  risks.forEach(risk => {
+    const row = matrix[risk.probability as keyof typeof matrix];
+    if (!row) return;
+    const impact = risk.impact as keyof typeof matrix['Baixa'];
+    if (!(impact in row)) return;
+    row[impact]++;
   });
 
   return matrix;
 };
 
 export const getRiskMetrics = async () => {
-  const allRisks = await getESGRisks();
-  const risks = allRisks.filter((r: ESGRisk) => r.status === 'Ativo');
+  const { data: risks, error } = await supabase
+    .from('esg_risks')
+    .select('*')
+    .eq('status', 'Ativo');
+
+  if (error) throw error;
 
   const totalRisks = risks.length;
-  const risksByCategory = risks.reduce((acc: Record<string, number>, risk: ESGRisk) => {
+  const risksByCategory = risks.reduce((acc, risk) => {
     acc[risk.esg_category] = (acc[risk.esg_category] || 0) + 1;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
 
-  const risksByLevel = risks.reduce((acc: Record<string, number>, risk: ESGRisk) => {
+  const risksByLevel = risks.reduce((acc, risk) => {
     const level = risk.inherent_risk_level || 'Indefinido';
     acc[level] = (acc[level] || 0) + 1;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
 
-  const criticalRisks = risks.filter((r: ESGRisk) => r.inherent_risk_level === 'Crítico').length;
-  const highRisks = risks.filter((r: ESGRisk) => r.inherent_risk_level === 'Alto').length;
+  const criticalRisks = risks.filter(r => r.inherent_risk_level === 'Crítico').length;
+  const highRisks = risks.filter(r => r.inherent_risk_level === 'Alto').length;
 
-  const risksNeedingReview = risks.filter((r: ESGRisk) =>
+  const risksNeedingReview = risks.filter(r =>
     r.next_review_date && new Date(r.next_review_date) <= new Date()
   ).length;
 

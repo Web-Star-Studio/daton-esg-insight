@@ -33,7 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBranchesWithManager, useDeleteBranch, BranchWithManager } from "@/services/branches";
 import { BranchFormModal, BranchImportData } from "@/components/branches/BranchFormModal";
 // Lazy load do mapa para evitar problemas com react-leaflet
-const BranchesMap = lazy(() => 
+const BranchesMap = lazy(() =>
   import("@/components/branches/BranchesMap").then(module => ({
     default: module.BranchesMap
   }))
@@ -53,15 +53,15 @@ interface GroupedBranches {
 function groupBranchesByHeadquarters(branches: BranchWithManager[]) {
   const hqs = branches.filter(b => b.is_headquarters);
   const others = branches.filter(b => !b.is_headquarters);
-  
+
   const groups: GroupedBranches[] = hqs.map(hq => ({
     headquarters: hq,
     children: others.filter(b => b.parent_branch_id === hq.id)
   }));
-  
+
   // Filiais independentes (sem parent_branch_id e não são matriz)
   const independent = others.filter(b => !b.parent_branch_id);
-  
+
   return { groups, independent };
 }
 
@@ -82,16 +82,16 @@ export default function GestaoFiliais() {
   const deleteMutation = useDeleteBranch();
 
   // Lista de matrizes para o filtro
-  const headquarters = useMemo(() => 
-    (branches || []).filter(b => b.is_headquarters), 
+  const headquarters = useMemo(() =>
+    (branches || []).filter(b => b.is_headquarters),
     [branches]
   );
 
   // Verificar se há filtros ativos
-  const hasActiveFilters = 
-    searchTerm || 
-    statusFilter !== "all" || 
-    typeFilter !== "all" || 
+  const hasActiveFilters =
+    searchTerm ||
+    statusFilter !== "all" ||
+    typeFilter !== "all" ||
     parentBranchFilter !== "all";
 
   // Limpar todos os filtros
@@ -144,7 +144,7 @@ export default function GestaoFiliais() {
 
       // Call Edge Function with appropriate data
       const { data, error } = await supabase.functions.invoke('cnpj-pdf-extractor', {
-        body: isImage 
+        body: isImage
           ? { imageBase64: base64, fileName: file.name, fileType: file.type }
           : { pdfBase64: base64, fileName: file.name, fileType: file.type }
       });
@@ -207,35 +207,35 @@ export default function GestaoFiliais() {
   const filteredBranches = useMemo(() => {
     return (branches || []).filter((branch) => {
       // Filtro de busca por texto
-      const matchesSearch = 
+      const matchesSearch =
         branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         branch.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         branch.city?.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       // Filtro de status
-      const matchesStatus = 
+      const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "active" && (branch.status === "Ativo" || branch.status === "Ativa")) ||
         (statusFilter === "inactive" && branch.status === "Inativa");
-      
+
       // Filtro de tipo
-      const matchesType = 
+      const matchesType =
         typeFilter === "all" ||
         (typeFilter === "headquarters" && branch.is_headquarters) ||
         (typeFilter === "branch" && !branch.is_headquarters);
-      
+
       // Filtro de matriz vinculada
-      const matchesParent = 
+      const matchesParent =
         parentBranchFilter === "all" ||
         (parentBranchFilter === "independent" && !branch.parent_branch_id && !branch.is_headquarters) ||
         branch.parent_branch_id === parentBranchFilter;
-      
+
       return matchesSearch && matchesStatus && matchesType && matchesParent;
     });
   }, [branches, searchTerm, statusFilter, typeFilter, parentBranchFilter]);
 
-  const { groups, independent } = useMemo(() => 
-    groupBranchesByHeadquarters(filteredBranches), 
+  const { groups, independent } = useMemo(() =>
+    groupBranchesByHeadquarters(filteredBranches),
     [filteredBranches]
   );
 
@@ -262,8 +262,8 @@ export default function GestaoFiliais() {
   };
 
   const renderBranchRow = (branch: BranchWithManager, isChild = false) => (
-    <TableRow 
-      key={branch.id} 
+    <TableRow
+      key={branch.id}
       className={branch.is_headquarters ? "bg-amber-50/50" : isChild ? "bg-muted/30" : ""}
     >
       <TableCell className="font-medium">
@@ -497,39 +497,41 @@ export default function GestaoFiliais() {
                   </p>
                 </div>
               ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Código</TableHead>
-                        <TableHead>CNPJ</TableHead>
-                        <TableHead>Localização</TableHead>
-                        <TableHead>Gerente</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {/* Render grouped branches by headquarters */}
-                      {groups.map((group) => (
-                        <>
-                          {renderBranchRow(group.headquarters)}
-                          {group.children.map((child) => renderBranchRow(child, true))}
-                        </>
-                      ))}
-                      
-                      {/* Independent branches section */}
-                      {independent.length > 0 && groups.length > 0 && (
-                        <TableRow className="bg-muted/20 border-t-2">
-                          <TableCell colSpan={7} className="py-2 text-xs font-medium text-muted-foreground">
-                            Filiais Independentes
-                          </TableCell>
+                <div className="w-full overflow-x-auto">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Código</TableHead>
+                          <TableHead>CNPJ</TableHead>
+                          <TableHead>Localização</TableHead>
+                          <TableHead>Gerente</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
-                      )}
-                      {independent.map((branch) => renderBranchRow(branch))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {/* Render grouped branches by headquarters */}
+                        {groups.map((group) => (
+                          <>
+                            {renderBranchRow(group.headquarters)}
+                            {group.children.map((child) => renderBranchRow(child, true))}
+                          </>
+                        ))}
+
+                        {/* Independent branches section */}
+                        {independent.length > 0 && groups.length > 0 && (
+                          <TableRow className="bg-muted/20 border-t-2">
+                            <TableCell colSpan={7} className="py-2 text-xs font-medium text-muted-foreground">
+                              Filiais Independentes
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {independent.map((branch) => renderBranchRow(branch))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               )}
             </>

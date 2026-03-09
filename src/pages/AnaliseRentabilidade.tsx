@@ -177,39 +177,41 @@ export default function AnaliseRentabilidade() {
           <CardTitle>Detalhamento de Rentabilidade</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{analysisType === 'project' ? 'Projeto' : 'Categoria'}</TableHead>
-                <TableHead className="text-right">Orçado</TableHead>
-                <TableHead className="text-right">Realizado</TableHead>
-                <TableHead className="text-right">Economia</TableHead>
-                <TableHead className="text-right">Eficiência</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(Array.isArray(chartData) ? chartData : []).map((item: any, index: number) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">
-                    {analysisType === 'project' ? item.name : item.category}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    R$ {item.orcado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    R$ {item.realizado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className={`text-right ${item.economia >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                    R$ {Math.abs(item.economia).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    {item.economia < 0 && ' (excedido)'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {analysisType === 'project' ? (item.roi || 0).toFixed(1) : (item.eficiencia || 0).toFixed(1)}%
-                  </TableCell>
+          <div className="w-full overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{analysisType === 'project' ? 'Projeto' : 'Categoria'}</TableHead>
+                  <TableHead className="text-right">Orçado</TableHead>
+                  <TableHead className="text-right">Realizado</TableHead>
+                  <TableHead className="text-right">Economia</TableHead>
+                  <TableHead className="text-right">Eficiência</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {(Array.isArray(chartData) ? chartData : []).map((item: any, index: number) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">
+                      {analysisType === 'project' ? item.name : item.category}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      R$ {item.orcado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      R$ {item.realizado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className={`text-right ${item.economia >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                      R$ {Math.abs(item.economia).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {item.economia < 0 && ' (excedido)'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {analysisType === 'project' ? (item.roi || 0).toFixed(1) : (item.eficiencia || 0).toFixed(1)}%
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

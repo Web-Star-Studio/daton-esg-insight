@@ -191,7 +191,7 @@ export default function GovernancaESG() {
               Gestão completa dos aspectos de governança corporativa
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="flex gap-2">
             <Button onClick={() => setIsReportsModalOpen(true)}>
               <BarChart3 className="mr-2 h-4 w-4" />
               Relatórios
@@ -247,7 +247,7 @@ export default function GovernancaESG() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="flex h-auto flex-wrap">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="structure">Estrutura</TabsTrigger>
             <TabsTrigger value="policies">Políticas</TabsTrigger>
@@ -375,7 +375,6 @@ export default function GovernancaESG() {
         <GovernanceReportsModal
           isOpen={isReportsModalOpen}
           onClose={() => setIsReportsModalOpen(false)}
-          governanceMetrics={governanceMetrics}
         />
 
         <ESGRiskModal
