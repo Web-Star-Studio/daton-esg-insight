@@ -1,796 +1,842 @@
-import React, { useState, useEffect } from 'react';
-
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Search,
-  Upload,
-  FolderPlus,
-  MoreHorizontal,
-  Download,
-  FolderOpen,
-  File,
-  Grid3X3,
-  List,
-  Tag,
-  Calendar,
+  Brain,
+  Building2,
+  CalendarRange,
   Eye,
-  SortAsc,
-  SortDesc,
-  Filter
-} from 'lucide-react';
+  FilePlus2,
+  FileText,
+  FolderGit2,
+  GitPullRequest,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { FolderTreeView } from '@/components/FolderTreeView';
-import { DocumentUploadModal } from '@/components/DocumentUploadModal';
-import { CreateFolderModal } from '@/components/CreateFolderModal';
-import { DocumentCard } from '@/components/DocumentCard';
-import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
-import { BulkActionsBar } from '@/components/BulkActionsBar';
-import { toast } from 'sonner';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
-  getDocuments,
-  getFolders,
-  deleteDocument,
-  downloadDocument,
-  type Document,
-  type DocumentFolder,
-  type DocumentFilters,
-  formatFileSize,
-  getFileIcon
-} from '@/services/documents';
-import { processDocumentWithAI, getExtractionJobStatus } from '@/services/documentAI';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useBranches } from "@/services/branches";
+import { getBranchDisplayLabel } from "@/utils/branchDisplay";
+import {
+  createDocumentRecord,
+  listDocumentRecords,
+  type DocumentListFilters,
+  type DocumentRecord,
+} from "@/services/documentCenter";
+import { formatFileSize } from "@/services/documents";
+
+const DOCUMENT_KIND_OPTIONS = [
+  { value: "all", label: "Todos os tipos" },
+  { value: "general", label: "Gerais" },
+  { value: "controlled", label: "Controlados" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "Todos os status" },
+  { value: "draft", label: "Rascunho" },
+  { value: "active", label: "Ativo" },
+  { value: "in_review", label: "Em revisao" },
+  { value: "rejected", label: "Rejeitado" },
+  { value: "archived", label: "Arquivado" },
+];
+
+const DOMAIN_LABELS: Record<string, string> = {
+  quality: "Qualidade",
+  regulatory: "Regulatorio",
+  waste: "Residuos",
+  training: "Treinamentos",
+  people: "Pessoas",
+  document: "Documental",
+  general: "Geral",
+};
+
+const CONFIDENTIALITY_OPTIONS = [
+  { value: "public", label: "Publico" },
+  { value: "internal", label: "Interno" },
+  { value: "restricted", label: "Restrito" },
+  { value: "confidential", label: "Confidencial" },
+];
+
+const CONTROL_TYPE_OPTIONS = [
+  "Procedimento",
+  "Instrucao de Trabalho",
+  "Formulario",
+  "Politica",
+  "Plano",
+  "Manual",
+  "Relatorio",
+];
+
+function getStatusBadgeVariant(status: DocumentRecord["status"]) {
+  switch (status) {
+    case "active":
+      return "default";
+    case "in_review":
+      return "secondary";
+    case "rejected":
+      return "destructive";
+    case "archived":
+      return "outline";
+    default:
+      return "secondary";
+  }
+}
+
+function formatDateLabel(value?: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("pt-BR");
+}
 
 export default function Documentos() {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [folders, setFolders] = useState<DocumentFolder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [selectedTag, setSelectedTag] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
-  
-  // SEO
-  useEffect(() => {
-    document.title = 'Central de Documentos | Gestão de Documentos com IA';
-    const desc = 'Gerencie, pesquise e analise documentos com IA. Upload inteligente, pastas e reconciliação de dados.';
-    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
-    if (meta) meta.setAttribute('content', desc);
-    else {
-      meta = document.createElement('meta');
-      meta.name = 'description';
-      meta.content = desc;
-      document.head.appendChild(meta);
-    }
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    const href = `${window.location.origin}/documentos`;
-    if (canonical) canonical.setAttribute('href', href);
-    else {
-      canonical = document.createElement('link');
-      canonical.rel = 'canonical';
-      canonical.href = href;
-      document.head.appendChild(canonical);
-    }
-  }, []);
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalDocuments, setTotalDocuments] = useState(0);
-  const itemsPerPage = 20;
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { data: branches = [] } = useBranches();
 
-  // Selection and bulk operations
-  const [selectedDocuments, setSelectedDocuments] = useState<Document[]>([]);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
-  const [analyzingDocId, setAnalyzingDocId] = useState<string | null>(null);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadForm, setUploadForm] = useState({
+    title: "",
+    summary: "",
+    tagsText: "",
+    documentKind: (searchParams.get("document_kind") as "general" | "controlled" | null) || "general",
+    documentDomain: "quality",
+    branchIds: [] as string[],
+    code: "",
+    documentTypeLabel: "Procedimento",
+    normReference: "",
+    issuerName: "",
+    confidentialityLevel: "public",
+    validityStartDate: "",
+    validityEndDate: "",
+    reviewDueDate: "",
+    responsibleDepartment: "",
+    controlledCopy: false,
+  });
 
-  // Advanced filters
-  const [sortBy, setSortBy] = useState<string>('upload_date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const filters = useMemo<DocumentListFilters>(
+    () => ({
+      search: searchParams.get("search") || "",
+      documentKind: (searchParams.get("document_kind") as DocumentListFilters["documentKind"]) || "all",
+      documentDomain: searchParams.get("document_domain") || "all",
+      status: searchParams.get("status") || "all",
+      branchId: searchParams.get("branch_id") || "all",
+      validityState: (searchParams.get("validity") as DocumentListFilters["validityState"]) || undefined,
+      reviewState: (searchParams.get("review") as DocumentListFilters["reviewState"]) || undefined,
+      readState: (searchParams.get("reads") as DocumentListFilters["readState"]) || undefined,
+      requestState: (searchParams.get("requests") as DocumentListFilters["requestState"]) || undefined,
+    }),
+    [searchParams],
+  );
 
-  // Get current folder name for breadcrumb
-  const getCurrentFolderName = (folderId: string | null): string => {
-    if (!folderId) return 'Documentos';
-    
-    const findFolder = (folders: DocumentFolder[], id: string): DocumentFolder | null => {
-      for (const folder of folders) {
-        if (folder.id === id) return folder;
-        if (folder.children) {
-          const found = findFolder(folder.children, id);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
+  const { data: documents = [], isLoading } = useQuery({
+    queryKey: ["document-center", filters],
+    queryFn: () => listDocumentRecords(filters),
+  });
 
-    const folder = findFolder(folders, folderId);
-    return folder ? folder.name : 'Documentos';
-  };
-
-  // Load folders and documents
-  const loadData = async () => {
-    try {
-      setLoading(true);
-
-      // Demo mode: return anonymized mock data; never call live storage service
-      if ((window as any).__DATON_DEMO_MODE__ === true) {
-        const demoFolders: DocumentFolder[] = [
-          { id: 'df-1', company_id: 'demo', name: 'Documentos ESG', created_at: '2025-01-10T09:00:00Z', updated_at: '2026-01-10T09:00:00Z', children: [
-            { id: 'df-1-1', company_id: 'demo', name: 'Relatórios Anuais', parent_folder_id: 'df-1', created_at: '2025-01-10T09:00:00Z', updated_at: '2026-01-10T09:00:00Z' },
-            { id: 'df-1-2', company_id: 'demo', name: 'Inventários GEE', parent_folder_id: 'df-1', created_at: '2025-03-01T09:00:00Z', updated_at: '2026-01-10T09:00:00Z' },
-          ] },
-          { id: 'df-2', company_id: 'demo', name: 'Licenças e Autorizações', created_at: '2025-02-01T09:00:00Z', updated_at: '2026-02-01T09:00:00Z' },
-          { id: 'df-3', company_id: 'demo', name: 'Políticas Corporativas', created_at: '2025-01-15T09:00:00Z', updated_at: '2026-01-20T09:00:00Z' },
-          { id: 'df-4', company_id: 'demo', name: 'Auditorias', created_at: '2025-04-01T09:00:00Z', updated_at: '2025-12-10T09:00:00Z' },
-        ];
-
-        const allDemoDocs: Document[] = [
-          { id: 'dd-1', company_id: 'demo', file_name: 'relatorio-esg-anual-2025.pdf', file_path: 'demo/relatorio-esg-anual-2025.pdf', file_type: 'application/pdf', file_size: 2457600, folder_id: 'df-1-1', tags: ['ESG', 'Anual'], related_model: 'document', related_id: 'dd-1', uploader_user_id: 'emp-1', upload_date: '2026-01-15T10:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 94 },
-          { id: 'dd-2', company_id: 'demo', file_name: 'inventario-ghg-2025.pdf', file_path: 'demo/inventario-ghg-2025.pdf', file_type: 'application/pdf', file_size: 1843200, folder_id: 'df-1-2', tags: ['GEE', 'Emissões'], related_model: 'document', related_id: 'dd-2', uploader_user_id: 'emp-2', upload_date: '2026-01-20T14:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 91 },
-          { id: 'dd-3', company_id: 'demo', file_name: 'licenca-operacao-2026.pdf', file_path: 'demo/licenca-operacao-2026.pdf', file_type: 'application/pdf', file_size: 512000, folder_id: 'df-2', tags: ['Licença', 'Ambiental'], related_model: 'document', related_id: 'dd-3', uploader_user_id: 'emp-1', upload_date: '2026-02-05T09:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 98 },
-          { id: 'dd-4', company_id: 'demo', file_name: 'politica-meio-ambiente.pdf', file_path: 'demo/politica-meio-ambiente.pdf', file_type: 'application/pdf', file_size: 768000, folder_id: 'df-3', tags: ['Política', 'Ambiental'], related_model: 'document', related_id: 'dd-4', uploader_user_id: 'emp-1', upload_date: '2025-11-10T10:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 89 },
-          { id: 'dd-5', company_id: 'demo', file_name: 'politica-diversidade-inclusao.pdf', file_path: 'demo/politica-diversidade-inclusao.pdf', file_type: 'application/pdf', file_size: 614400, folder_id: 'df-3', tags: ['Política', 'Social', 'RH'], related_model: 'document', related_id: 'dd-5', uploader_user_id: 'emp-1', upload_date: '2025-10-05T09:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 92 },
-          { id: 'dd-6', company_id: 'demo', file_name: 'relatorio-auditoria-iso14001-2025.pdf', file_path: 'demo/relatorio-auditoria-iso14001-2025.pdf', file_type: 'application/pdf', file_size: 1228800, folder_id: 'df-4', tags: ['Auditoria', 'ISO 14001'], related_model: 'document', related_id: 'dd-6', uploader_user_id: 'emp-3', upload_date: '2025-12-15T11:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 96 },
-          { id: 'dd-7', company_id: 'demo', file_name: 'plano-gestao-residuos-2026.pdf', file_path: 'demo/plano-gestao-residuos-2026.pdf', file_type: 'application/pdf', file_size: 921600, folder_id: 'df-1', tags: ['Resíduos', 'Ambiental'], related_model: 'document', related_id: 'dd-7', uploader_user_id: 'emp-2', upload_date: '2026-02-10T14:00:00Z', ai_processing_status: 'pending', ai_confidence_score: undefined },
-          { id: 'dd-8', company_id: 'demo', file_name: 'relatorio-social-2025.pdf', file_path: 'demo/relatorio-social-2025.pdf', file_type: 'application/pdf', file_size: 1638400, folder_id: 'df-1-1', tags: ['Social', 'Anual'], related_model: 'document', related_id: 'dd-8', uploader_user_id: 'emp-1', upload_date: '2026-01-25T10:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 88 },
-          { id: 'dd-9', company_id: 'demo', file_name: 'matriz-materialidade-2025.xlsx', file_path: 'demo/matriz-materialidade-2025.xlsx', file_type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', file_size: 409600, folder_id: 'df-1', tags: ['Materialidade', 'ESG'], related_model: 'document', related_id: 'dd-9', uploader_user_id: 'emp-1', upload_date: '2025-09-20T09:00:00Z', ai_processing_status: 'completed', ai_confidence_score: 85 },
-        ];
-
-        // Filter by folder
-        let filtered = selectedFolderId
-          ? allDemoDocs.filter(d => d.folder_id === selectedFolderId)
-          : allDemoDocs;
-
-        // Filter by search term
-        if (searchTerm) {
-          const term = searchTerm.toLowerCase();
-          filtered = filtered.filter(d => d.file_name.toLowerCase().includes(term));
-        }
-
-        // Filter by tag
-        if (selectedTag && selectedTag !== 'all') {
-          filtered = filtered.filter(d => d.tags?.includes(selectedTag));
-        }
-
-        const total = filtered.length;
-        const start = (currentPage - 1) * itemsPerPage;
-        const paginated = filtered.slice(start, start + itemsPerPage);
-
-        setFolders(demoFolders);
-        setDocuments(paginated);
-        setTotalPages(Math.max(1, Math.ceil(total / itemsPerPage)));
-        setTotalDocuments(total);
-        return;
+  const uploadMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedFile) {
+        throw new Error("Selecione um arquivo para upload.");
       }
 
-      const filters = {
-        search: searchTerm || undefined,
-        folder_id: selectedFolderId || undefined,
-        tag: selectedTag === 'all' ? undefined : selectedTag,
-        page: currentPage,
-        limit: itemsPerPage,
-        sortBy,
-        sortOrder
-      };
-
-      const [foldersData, documentsResponse] = await Promise.all([
-        getFolders(),
-        getDocuments(filters)
-      ]);
-
-      setFolders(foldersData);
-      setDocuments(documentsResponse.documents);
-      setTotalPages(documentsResponse.totalPages);
-      setTotalDocuments(documentsResponse.total);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Erro ao carregar dados');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [searchTerm, selectedFolderId, selectedTag, currentPage, sortBy, sortOrder]);
-
-  useEffect(() => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    }
-  }, [searchTerm, selectedFolderId, selectedTag, sortBy, sortOrder]);
-
-  // Selection handlers
-  const toggleDocumentSelection = (document: Document) => {
-    setSelectedDocuments(prev => {
-      const isSelected = prev.find(d => d.id === document.id);
-      if (isSelected) {
-        return prev.filter(d => d.id !== document.id);
-      } else {
-        return [...prev, document];
-      }
-    });
-  };
-
-  const selectAllDocuments = () => {
-    setSelectedDocuments(documents);
-  };
-
-  const clearSelection = () => {
-    setSelectedDocuments([]);
-  };
-
-  const isDocumentSelected = (documentId: string) => {
-    return selectedDocuments.some(d => d.id === documentId);
-  };
-
-  const isAllSelected = documents.length > 0 && selectedDocuments.length === documents.length;
-
-  // Handle document actions
-  const handleDownload = async (document: Document) => {
-    if ((window as any).__DATON_DEMO_MODE__ === true) {
-      toast.info('Download não disponível em modo demonstração.');
-      return;
-    }
-    try {
-      const { url, fileName } = await downloadDocument(document.id);
-      const link = window.document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
-      toast.success('Download iniciado');
-    } catch (error) {
-      console.error('Error downloading document:', error);
-      toast.error('Erro ao baixar documento');
-    }
-  };
-
-  const handleDelete = async (document: Document) => {
-    if ((window as any).__DATON_DEMO_MODE__ === true) {
-      toast.info('Exclusão não disponível em modo demonstração.');
-      return;
-    }
-    if (confirm(`Tem certeza que deseja excluir "${document.file_name}"?`)) {
-      try {
-        await deleteDocument(document.id);
-        toast.success('Documento excluído com sucesso');
-        // Remove from selection if selected
-        setSelectedDocuments(prev => prev.filter(d => d.id !== document.id));
-        loadData();
-      } catch (error) {
-        console.error('Error deleting document:', error);
-        toast.error('Erro ao excluir documento');
-      }
-    }
-  };
-
-  const handlePreview = (document: Document) => {
-    setPreviewDocument(document);
-    setShowPreviewModal(true);
-  };
-
-  const handleAnalyze = async (document: Document) => {
-    setAnalyzingDocId(document.id);
-    
-    // Enhanced user feedback with processing steps
-    const processingToastId = toast.loading('🔄 Processando documento...', { 
-      description: (
-        <div className="space-y-1 text-xs">
-          <p>✓ Etapa 1/5: Parseando documento</p>
-          <p className="text-muted-foreground">⏳ Aguarde aproximadamente 15-30 segundos</p>
-        </div>
-      )
-    });
-    
-    try {
-      const result = await processDocumentWithAI(document.id);
-      
-      if (!result.success) {
-        toast.dismiss(processingToastId);
-        
-        const errorDetails = result.details || {};
-        toast.error('❌ Falha no processamento', { 
-          description: (
-            <div className="space-y-2">
-              <p><strong>Erro:</strong> {result.error || 'Erro desconhecido'}</p>
-              {errorDetails.step && (
-                <p className="text-xs text-muted-foreground">
-                  Falha na etapa: {errorDetails.step}
-                </p>
-              )}
-              <div className="pt-2 border-t border-border">
-                <p className="text-xs font-medium mb-1">Possíveis soluções:</p>
-                <ul className="text-xs space-y-1 text-muted-foreground">
-                  <li>• Verifique se o arquivo não está corrompido</li>
-                  <li>• Tente converter para PDF antes do upload</li>
-                  <li>• Para imagens, certifique-se que o texto está legível</li>
-                </ul>
-              </div>
-              <button 
-                onClick={() => window.open('/docs/troubleshooting', '_blank')}
-                className="text-sm font-medium underline text-left pt-2"
-              >
-                Ver guia completo de solução de problemas →
-              </button>
-            </div>
-          ),
-          duration: 15000,
-        });
-        return;
-      }
-      
-      // Poll job status if we have a jobId
-      if (result.jobId) {
-        toast.loading('⏳ Verificando status do processamento...', { 
-          id: processingToastId,
-          description: 'Aguarde enquanto verificamos o resultado...'
-        });
-        
-        // Poll for job completion (max 30 attempts, 2 seconds each = 1 minute)
-        let jobCompleted = false;
-        for (let i = 0; i < 30 && !jobCompleted; i++) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          try {
-            const status = await getExtractionJobStatus(result.jobId);
-            
-            if (status?.status === 'Concluído') {
-              jobCompleted = true;
-              toast.dismiss(processingToastId);
-              
-              toast.success('✅ Processamento concluído!', {
-                description: (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">
-                      📋 Dados enviados para aprovação na aba "Aprovações"
-                    </p>
-                    <button 
-                      onClick={() => {
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('tab', 'extracoes');
-                        window.location.href = url.toString();
-                      }}
-                      className="text-sm font-medium underline text-left mt-1"
-                    >
-                      Ver na seção de Aprovações →
-                    </button>
-                  </div>
-                ),
-                duration: 10000,
-              });
-              
-              await loadData();
-              break;
-            }
-            
-            if (status?.status === 'Erro') {
-              jobCompleted = true;
-              toast.dismiss(processingToastId);
-              
-              toast.error('❌ Erro no processamento', {
-                description: status.error_message || 'Erro desconhecido durante o processamento',
-                duration: 10000,
-              });
-              break;
-            }
-            
-            // Update progress
-            if (i % 5 === 0) { // Update every 10 seconds
-              toast.loading(`⏳ Processando... (${i * 2}s)`, { 
-                id: processingToastId,
-                description: 'O processamento está em andamento...'
-              });
-            }
-          } catch (pollError) {
-            console.error('Error polling job status:', pollError);
-          }
-        }
-        
-        if (!jobCompleted) {
-          toast.dismiss(processingToastId);
-          toast.warning('⚠️ Processamento demorou mais que o esperado', {
-            description: 'Verifique a aba "Aprovações" em alguns minutos para ver o resultado.',
-            duration: 10000,
-          });
-        }
-      } else {
-        // Fallback for old response format
-        toast.dismiss(processingToastId);
-        
-        await loadData();
-        
-        const summary = result.summary || {};
-        toast.success('✅ Processamento concluído!', {
-          description: (
-            <div className="space-y-2">
-              <div className="space-y-1">
-                <p><strong>Tipo identificado:</strong> {summary.document_type || 'Não classificado'}</p>
-                <p><strong>Relevância ESG:</strong> {summary.esg_relevance || 0}%</p>
-                <p><strong>Confiança:</strong> {Math.round((summary.overall_confidence || 0) * 100)}%</p>
-              </div>
-              
-              {summary.auto_inserted ? (
-                <div className="pt-2 border-t border-border">
-                  <p className="text-sm font-medium text-green-600">
-                    ✓ {summary.records_inserted || 0} registro(s) inserido(s) automaticamente
-                  </p>
-                </div>
-              ) : (
-                <div className="pt-2 border-t border-border">
-                  <p className="text-sm font-medium">
-                    📋 Dados enviados para aprovação manual
-                  </p>
-                  <button 
-                    onClick={() => {
-                      const url = new URL(window.location.href);
-                      url.searchParams.set('tab', 'extracoes');
-                      window.location.href = url.toString();
-                    }}
-                    className="text-sm font-medium underline text-left mt-1"
-                  >
-                    Ver na seção de Aprovações →
-                  </button>
-                </div>
-              )}
-              
-              <div className="pt-2 text-xs text-muted-foreground">
-                ⏱️ Processado em {result.total_duration_ms ? `${(result.total_duration_ms / 1000).toFixed(1)}s` : 'tempo desconhecido'}
-              </div>
-            </div>
-          ),
-          duration: 10000,
-        });
-      }
-      
-    } catch (error) {
-      toast.dismiss(processingToastId);
-      
-      console.error('Error analyzing document with AI:', error);
-      toast.error('❌ Erro crítico no processamento', {
-        description: (
-          <div className="space-y-2">
-            <p>{error instanceof Error ? error.message : 'Erro desconhecido'}</p>
-            <p className="text-xs text-muted-foreground">Verifique os logs ou tente novamente</p>
-          </div>
-        ),
-        duration: 10000,
+      return createDocumentRecord({
+        file: selectedFile,
+        title: uploadForm.title,
+        summary: uploadForm.summary,
+        tags: uploadForm.tagsText
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
+        documentKind: uploadForm.documentKind,
+        documentDomain: uploadForm.documentDomain,
+        branchIds: uploadForm.branchIds,
+        controlProfile:
+          uploadForm.documentKind === "controlled"
+            ? {
+                code: uploadForm.code || null,
+                document_type_label: uploadForm.documentTypeLabel,
+                norm_reference: uploadForm.normReference || null,
+                issuer_name: uploadForm.issuerName || null,
+                confidentiality_level: uploadForm.confidentialityLevel,
+                validity_start_date: uploadForm.validityStartDate || null,
+                validity_end_date: uploadForm.validityEndDate || null,
+                review_due_date: uploadForm.reviewDueDate || null,
+                responsible_department: uploadForm.responsibleDepartment || null,
+                controlled_copy: uploadForm.controlledCopy,
+              }
+            : undefined,
       });
-    } finally {
-      setAnalyzingDocId(null);
+    },
+    onSuccess: (document) => {
+      toast.success("Documento criado com sucesso.");
+      setIsUploadOpen(false);
+      setSelectedFile(null);
+      setUploadForm({
+        title: "",
+        summary: "",
+        tagsText: "",
+        documentKind: "general",
+        documentDomain: "quality",
+        branchIds: [],
+        code: "",
+        documentTypeLabel: "Procedimento",
+        normReference: "",
+        issuerName: "",
+        confidentialityLevel: "public",
+        validityStartDate: "",
+        validityEndDate: "",
+        reviewDueDate: "",
+        responsibleDepartment: "",
+        controlledCopy: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ["document-center"] });
+      navigate(`/documentos/${document.id}`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const documentDomains = useMemo(() => {
+    const values = Array.from(new Set(documents.map((document) => document.document_domain))).sort();
+    return values;
+  }, [documents]);
+
+  const stats = useMemo(
+    () => ({
+      total: documents.length,
+      controlled: documents.filter((document) => document.document_kind === "controlled").length,
+      pendingReads: documents.filter((document) => document.pending_read_count > 0).length,
+      openRequests: documents.filter((document) => document.open_request_count > 0).length,
+    }),
+    [documents],
+  );
+
+  const setFilterValue = (key: string, value: string | undefined) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (!value || value === "all") {
+      nextParams.delete(key);
+    } else {
+      nextParams.set(key, value);
     }
+    setSearchParams(nextParams);
   };
-  // Get all unique tags from documents
-  const allTags = Array.from(
-    new Set(documents.flatMap(doc => doc.tags || []))
-  ).sort();
+
+  const toggleBranch = (branchId: string) => {
+    setUploadForm((current) => ({
+      ...current,
+      branchIds: current.branchIds.includes(branchId)
+        ? current.branchIds.filter((id) => id !== branchId)
+        : [...current.branchIds, branchId],
+    }));
+  };
 
   return (
-    <>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-2">
+          <Badge variant="outline" className="gap-2">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Central hibrida de documentos
+          </Badge>
           <div>
-            <h1 className="text-3xl font-bold">Central de Documentos</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Central Documental</h1>
             <p className="text-muted-foreground">
-              Gerencie todos os documentos da sua empresa
+              Gestao unificada de documentos, revisoes, leituras obrigatorias, relacoes e solicitacoes internas.
             </p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowCreateFolderModal(true)}
-            >
-              <FolderPlus className="h-4 w-4 mr-2" />
-              Nova Pasta
-            </Button>
-            <Button onClick={() => setShowUploadModal(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload
-            </Button>
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <Card className="p-4">
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex-1 min-w-[300px]">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <FilePlus2 className="h-4 w-4" />
+              Novo documento
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Novo documento na central</DialogTitle>
+              <DialogDescription>
+                Documentos controlados exigem filiais e cabecalho SGQ. A IA sera disparada automaticamente apos o upload.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-5 py-2">
+              <div className="grid gap-2">
+                <Label htmlFor="file">Arquivo</Label>
+                <Input
+                  id="file"
+                  type="file"
+                  onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>Titulo</Label>
                   <Input
-                    placeholder="Pesquisar documentos..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    value={uploadForm.title}
+                    onChange={(event) => setUploadForm((current) => ({ ...current, title: event.target.value }))}
+                    placeholder="Ex.: Procedimento de frota"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Dominio</Label>
+                  <Select
+                    value={uploadForm.documentDomain}
+                    onValueChange={(value) => setUploadForm((current) => ({ ...current, documentDomain: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="quality">Qualidade</SelectItem>
+                      <SelectItem value="regulatory">Regulatorio</SelectItem>
+                      <SelectItem value="waste">Residuos</SelectItem>
+                      <SelectItem value="training">Treinamentos</SelectItem>
+                      <SelectItem value="people">Pessoas</SelectItem>
+                      <SelectItem value="general">Geral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>Tipo documental</Label>
+                  <Select
+                    value={uploadForm.documentKind}
+                    onValueChange={(value: "general" | "controlled") =>
+                      setUploadForm((current) => ({ ...current, documentKind: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">Documento geral</SelectItem>
+                      <SelectItem value="controlled">Documento controlado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Tags</Label>
+                  <Input
+                    value={uploadForm.tagsText}
+                    onChange={(event) => setUploadForm((current) => ({ ...current, tagsText: event.target.value }))}
+                    placeholder="frota, pneus, combustivel"
                   />
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <Select value={selectedTag} onValueChange={setSelectedTag}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Tag" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as tags</SelectItem>
-                    {allTags.map(tag => (
-                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
 
-                <Select value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
-                  const [field, order] = value.split('-') as [string, 'asc' | 'desc'];
-                  setSortBy(field);
-                  setSortOrder(order);
-                }}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Ordenar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="upload_date-desc">Mais recente</SelectItem>
-                    <SelectItem value="upload_date-asc">Mais antigo</SelectItem>
-                    <SelectItem value="file_name-asc">Nome A-Z</SelectItem>
-                    <SelectItem value="file_name-desc">Nome Z-A</SelectItem>
-                    <SelectItem value="file_size-desc">Maior arquivo</SelectItem>
-                    <SelectItem value="file_size-asc">Menor arquivo</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <div className="flex border rounded-md">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="grid gap-2">
+                <Label>Resumo</Label>
+                <Textarea
+                  value={uploadForm.summary}
+                  onChange={(event) => setUploadForm((current) => ({ ...current, summary: event.target.value }))}
+                  placeholder="Contexto do documento, uso e observacoes."
+                />
               </div>
-            </div>
 
-            {/* Selection Controls */}
-            {documents.length > 0 && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={isAllSelected}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          selectAllDocuments();
-                        } else {
-                          clearSelection();
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Filiais vinculadas
+                </Label>
+                <div className="grid max-h-48 gap-2 overflow-y-auto rounded-md border p-3">
+                  {branches.map((branch) => (
+                    <label key={branch.id} className="flex items-center gap-3 text-sm">
+                      <Checkbox
+                        checked={uploadForm.branchIds.includes(branch.id)}
+                        onCheckedChange={() => toggleBranch(branch.id)}
+                      />
+                      <span>{getBranchDisplayLabel(branch)}</span>
+                    </label>
+                  ))}
+                </div>
+                {uploadForm.documentKind === "controlled" && (
+                  <p className="text-xs text-muted-foreground">
+                    Para documentos controlados, ao menos uma filial e obrigatoria.
+                  </p>
+                )}
+              </div>
+
+              {uploadForm.documentKind === "controlled" && (
+                <Card className="border-dashed">
+                  <CardHeader>
+                    <CardTitle className="text-base">Cabecalho SGQ</CardTitle>
+                    <CardDescription>
+                      Esses campos ficam restritos aos documentos controlados e aparecem na pagina dedicada do documento.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-2">
+                      <Label>Codigo</Label>
+                      <Input
+                        value={uploadForm.code}
+                        onChange={(event) => setUploadForm((current) => ({ ...current, code: event.target.value }))}
+                        placeholder="PSG-001"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Tipo controlado</Label>
+                      <Select
+                        value={uploadForm.documentTypeLabel}
+                        onValueChange={(value) => setUploadForm((current) => ({ ...current, documentTypeLabel: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CONTROL_TYPE_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>Norma</Label>
+                      <Input
+                        value={uploadForm.normReference}
+                        onChange={(event) => setUploadForm((current) => ({ ...current, normReference: event.target.value }))}
+                        placeholder="ISO 9001 / ISO 14001"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Emitente</Label>
+                      <Input
+                        value={uploadForm.issuerName}
+                        onChange={(event) => setUploadForm((current) => ({ ...current, issuerName: event.target.value }))}
+                        placeholder="Area emissora"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>Confidencialidade</Label>
+                      <Select
+                        value={uploadForm.confidentialityLevel}
+                        onValueChange={(value) => setUploadForm((current) => ({ ...current, confidentialityLevel: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CONFIDENTIALITY_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Departamento responsavel</Label>
+                      <Input
+                        value={uploadForm.responsibleDepartment}
+                        onChange={(event) =>
+                          setUploadForm((current) => ({ ...current, responsibleDepartment: event.target.value }))
                         }
-                      }}
-                    />
-                    <span className="text-sm">
-                      Selecionar todos ({documents.length})
-                    </span>
-                  </div>
-                  
-                  {selectedDocuments.length > 0 && (
-                    <Badge variant="secondary">
-                      {selectedDocuments.length} selecionado(s)
-                    </Badge>
-                  )}
-                </div>
+                        placeholder="Qualidade / RH / Frota"
+                      />
+                    </div>
 
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>
-                    Mostrando {documents.length} de {totalDocuments} documentos
-                  </span>
-                  {totalPages > 1 && (
-                    <span>• Página {currentPage} de {totalPages}</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Main Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar - Folder Tree */}
-          <div className="lg:col-span-1">
-            <Card className="p-4">
-              <h3 className="font-semibold mb-4 flex items-center">
-                <FolderOpen className="h-4 w-4 mr-2" />
-                Pastas
-              </h3>
-              <FolderTreeView
-                folders={folders}
-                selectedFolderId={selectedFolderId}
-                onFolderSelect={setSelectedFolderId}
-              />
-            </Card>
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-4">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedFolderId(null)}
-                className="h-auto p-1"
-              >
-                Documentos
-              </Button>
-              {selectedFolderId && (
-                <>
-                  <span>/</span>
-                  <span>{getCurrentFolderName(selectedFolderId)}</span>
-                </>
-              )}
-            </div>
-
-            {/* Documents Display */}
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : documents.length === 0 ? (
-              <Card className="p-12 text-center">
-                <File className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum documento encontrado</h3>
-                <p className="text-muted-foreground mb-4">
-                  {searchTerm || selectedTag !== 'all' ? 'Tente ajustar os filtros de busca' : 'Comece fazendo upload de seus primeiros documentos'}
-                </p>
-                <Button onClick={() => setShowUploadModal(true)}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload de Arquivo
-                </Button>
-              </Card>
-            ) : (
-              <>
-                <div className={viewMode === 'grid' 
-                  ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'
-                  : 'space-y-2'
-                }>
-                  {documents.map((document) => (
-                    <div key={document.id} className="relative">
-                      {viewMode === 'grid' && (
-                        <div className="absolute top-2 left-2 z-10">
-                          <Checkbox
-                            checked={isDocumentSelected(document.id)}
-                            onCheckedChange={() => toggleDocumentSelection(document)}
-                            className="bg-background border-2"
-                          />
-                        </div>
-                      )}
-                      <DocumentCard
-                        document={document}
-                        viewMode={viewMode}
-                        onDownload={() => handleDownload(document)}
-                        onDelete={() => handleDelete(document)}
-                        onPreview={() => handlePreview(document)}
-                        onUpdate={loadData}
-                        isSelected={isDocumentSelected(document.id)}
-                        onToggleSelect={() => toggleDocumentSelection(document)}
-                        onAnalyze={() => handleAnalyze(document)}
-                        isAnalyzing={analyzingDocId === document.id}
-                        extraActions={
-                          <div className="flex gap-1">
-                            {/* GED components will be added here */}
-                          </div>
+                    <div className="grid gap-2">
+                      <Label>Vigencia inicial</Label>
+                      <Input
+                        type="date"
+                        value={uploadForm.validityStartDate}
+                        onChange={(event) =>
+                          setUploadForm((current) => ({ ...current, validityStartDate: event.target.value }))
                         }
                       />
                     </div>
-                  ))}
-                </div>
+                    <div className="grid gap-2">
+                      <Label>Vigencia final</Label>
+                      <Input
+                        type="date"
+                        value={uploadForm.validityEndDate}
+                        onChange={(event) =>
+                          setUploadForm((current) => ({ ...current, validityEndDate: event.target.value }))
+                        }
+                      />
+                    </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex justify-center mt-8">
-                    <Pagination>
-                      <PaginationContent>
-                        {currentPage > 1 && (
-                          <PaginationItem>
-                            <PaginationPrevious 
-                              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                              className="cursor-pointer"
-                            />
-                          </PaginationItem>
-                        )}
-                        
-                        {/* Page numbers */}
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          let pageNum;
-                          if (totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
-                          
-                          return (
-                            <PaginationItem key={pageNum}>
-                              <PaginationLink
-                                onClick={() => setCurrentPage(pageNum)}
-                                isActive={currentPage === pageNum}
-                                className="cursor-pointer"
-                              >
-                                {pageNum}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        })}
-                        
-                        {currentPage < totalPages && (
-                          <PaginationItem>
-                            <PaginationNext 
-                              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                              className="cursor-pointer"
-                            />
-                          </PaginationItem>
-                        )}
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
-              </>
-            )}
+                    <div className="grid gap-2">
+                      <Label>Revisao prevista</Label>
+                      <Input
+                        type="date"
+                        value={uploadForm.reviewDueDate}
+                        onChange={(event) =>
+                          setUploadForm((current) => ({ ...current, reviewDueDate: event.target.value }))
+                        }
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-3 rounded-md border p-3 text-sm md:col-span-2">
+                      <Checkbox
+                        checked={uploadForm.controlledCopy}
+                        onCheckedChange={(checked) =>
+                          setUploadForm((current) => ({ ...current, controlledCopy: checked === true }))
+                        }
+                      />
+                      Copia controlada
+                    </label>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsUploadOpen(false)} disabled={uploadMutation.isPending}>
+                Cancelar
+              </Button>
+              <Button onClick={() => uploadMutation.mutate()} disabled={uploadMutation.isPending || !selectedFile}>
+                {uploadMutation.isPending ? "Criando..." : "Criar documento"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </header>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Total visivel</CardDescription>
+            <CardTitle className="text-3xl">{stats.total}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Controlados</CardDescription>
+            <CardTitle className="text-3xl">{stats.controlled}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Leituras pendentes</CardDescription>
+            <CardTitle className="text-3xl">{stats.pendingReads}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Solicitacoes abertas</CardDescription>
+            <CardTitle className="text-3xl">{stats.openRequests}</CardTitle>
+          </CardHeader>
+        </Card>
+      </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Filtros operacionais</CardTitle>
+          <CardDescription>
+            Consulte documentos por tipo, dominio, filial, validade, leitura pendente e solicitacoes internas.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 lg:grid-cols-4">
+          <div className="grid gap-2 lg:col-span-2">
+            <Label>Busca</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={filters.search || ""}
+                onChange={(event) => setFilterValue("search", event.target.value || undefined)}
+                className="pl-9"
+                placeholder="Titulo, codigo, tags ou resumo"
+              />
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Bulk Actions Bar */}
-      <BulkActionsBar
-        selectedDocuments={selectedDocuments}
-        onClearSelection={clearSelection}
-        onRefresh={loadData}
-        folders={folders}
-      />
+          <div className="grid gap-2">
+            <Label>Tipo</Label>
+            <Select value={filters.documentKind || "all"} onValueChange={(value) => setFilterValue("document_kind", value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DOCUMENT_KIND_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      {/* Modals */}
-      <DocumentUploadModal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        onSuccess={loadData}
-        selectedFolderId={selectedFolderId}
-      />
+          <div className="grid gap-2">
+            <Label>Status</Label>
+            <Select value={filters.status || "all"} onValueChange={(value) => setFilterValue("status", value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <CreateFolderModal
-        isOpen={showCreateFolderModal}
-        onClose={() => setShowCreateFolderModal(false)}
-        onSuccess={loadData}
-        parentFolderId={selectedFolderId}
-      />
+          <div className="grid gap-2">
+            <Label>Dominio</Label>
+            <Select value={filters.documentDomain || "all"} onValueChange={(value) => setFilterValue("document_domain", value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os dominios</SelectItem>
+                {documentDomains.map((domain) => (
+                  <SelectItem key={domain} value={domain}>
+                    {DOMAIN_LABELS[domain] || domain}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <DocumentPreviewModal
-        document={previewDocument}
-        isOpen={showPreviewModal}
-        onClose={() => setShowPreviewModal(false)}
-      />
-    </>
+          <div className="grid gap-2">
+            <Label>Filial</Label>
+            <Select value={filters.branchId || "all"} onValueChange={(value) => setFilterValue("branch_id", value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as filiais</SelectItem>
+                {branches.map((branch) => (
+                  <SelectItem key={branch.id} value={branch.id}>
+                    {getBranchDisplayLabel(branch)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Validade</Label>
+            <Select value={filters.validityState || "all"} onValueChange={(value) => setFilterValue("validity", value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="active">Vigentes</SelectItem>
+                <SelectItem value="expired">Vencidas</SelectItem>
+                <SelectItem value="missing">Sem vigencia</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Revisao</Label>
+            <Select value={filters.reviewState || "all"} onValueChange={(value) => setFilterValue("review", value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="pending">Pendentes</SelectItem>
+                <SelectItem value="ok">Em dia</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Leitura</Label>
+            <Select value={filters.readState || "all"} onValueChange={(value) => setFilterValue("reads", value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="pending">Com pendencia</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Solicitacoes</Label>
+            <Select value={filters.requestState || "all"} onValueChange={(value) => setFilterValue("requests", value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="open">Com abertas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Documentos</CardTitle>
+          <CardDescription>
+            {isLoading ? "Carregando central..." : `${documents.length} documento(s) retornado(s) para os filtros atuais.`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {documents.length === 0 && !isLoading ? (
+            <div className="flex min-h-72 flex-col items-center justify-center gap-3 text-center">
+              <FileText className="h-12 w-12 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Nenhum documento encontrado.</p>
+                <p className="text-sm text-muted-foreground">
+                  Revise os filtros ou crie um novo documento na central.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Documento</TableHead>
+                  <TableHead>Dominio</TableHead>
+                  <TableHead>Filiais</TableHead>
+                  <TableHead>Revisao</TableHead>
+                  <TableHead>Atencao</TableHead>
+                  <TableHead>Vigencia</TableHead>
+                  <TableHead className="text-right">Abrir</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {documents.map((document) => (
+                  <TableRow key={document.id} className="cursor-pointer hover:bg-muted/40" onClick={() => navigate(`/documentos/${document.id}`)}>
+                    <TableCell>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{document.title}</p>
+                          <Badge variant={getStatusBadgeVariant(document.status)}>{document.status}</Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span>{document.file_name}</span>
+                          <span>{formatFileSize(document.file_size || 0)}</span>
+                          {document.control_profile?.code && <span>{document.control_profile.code}</span>}
+                        </div>
+                        {document.summary && (
+                          <p className="line-clamp-2 max-w-xl text-sm text-muted-foreground">{document.summary}</p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-2">
+                        <Badge variant="outline">{DOMAIN_LABELS[document.document_domain] || document.document_domain}</Badge>
+                        <p className="text-xs text-muted-foreground">
+                          {document.document_kind === "controlled" ? "Controlado" : "Geral"}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex max-w-48 flex-wrap gap-1">
+                        {document.branches.length === 0 ? (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        ) : (
+                          document.branches.map((branch) => (
+                            <Badge key={branch.branch_id} variant="secondary">
+                              {getBranchDisplayLabel({ code: branch.code, name: branch.name })}
+                            </Badge>
+                          ))
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex items-center gap-2">
+                          <FolderGit2 className="h-4 w-4 text-muted-foreground" />
+                          Rev. {document.current_version_number}
+                        </div>
+                        {document.control_profile?.review_due_date && (
+                          <p className="text-xs text-muted-foreground">
+                            Revisao: {formatDateLabel(document.control_profile.review_due_date)}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Brain className="h-4 w-4 text-muted-foreground" />
+                          {document.ai_processing_status || "Pendente"}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {document.pending_read_count > 0 && (
+                            <Badge variant="outline" className="gap-1">
+                              <Eye className="h-3 w-3" />
+                              {document.pending_read_count} leitura(s)
+                            </Badge>
+                          )}
+                          {document.open_request_count > 0 && (
+                            <Badge variant="outline" className="gap-1">
+                              <GitPullRequest className="h-3 w-3" />
+                              {document.open_request_count} solicitacao(oes)
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {document.document_kind === "controlled" ? (
+                        <div className="space-y-1 text-sm">
+                          <div className="flex items-center gap-2">
+                            <CalendarRange className="h-4 w-4 text-muted-foreground" />
+                            {formatDateLabel(document.control_profile?.validity_start_date)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            ate {formatDateLabel(document.control_profile?.validity_end_date)}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Nao se aplica</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/documentos/${document.id}`)}>
+                        Abrir
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

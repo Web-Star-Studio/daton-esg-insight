@@ -1,70 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Building2, Mail, Lock, User, FileText, Info, CheckCircle2, XCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
-import { logger } from '@/utils/logger';
-import { ForgotPasswordModal } from '@/components/ForgotPasswordModal';
-import { validatePassword, getPasswordRequirementChecks } from '@/utils/passwordValidation';
-import { motion } from 'framer-motion';
-import datonLogo from '@/assets/daton-logo-header.png';
-import '@/components/landing/heimdall/heimdall.css';
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import {
+  Building2,
+  Mail,
+  Lock,
+  User,
+  FileText,
+  Info,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/utils/logger";
+import { ForgotPasswordModal } from "@/components/ForgotPasswordModal";
+import {
+  validatePassword,
+  getPasswordRequirementChecks,
+} from "@/utils/passwordValidation";
+import { motion } from "framer-motion";
+import datonLogo from "@/assets/daton-logo-header.png";
+import "@/components/landing/heimdall/heimdall.css";
 
 export default function Auth() {
   const { login, register, isLoading, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('login');
+  const [activeTab, setActiveTab] = useState("login");
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
     if (!isLoading && user) {
-      logger.info('User already logged in, redirecting to dashboard', 'auth', { userId: user.id });
-      navigate('/dashboard', { replace: true });
+      logger.info("User already logged in, redirecting to dashboard", "auth", {
+        userId: user.id,
+      });
+      navigate("/dashboard", { replace: true });
     }
   }, [isLoading, user, navigate]);
 
   // Estados para login
   const [loginData, setLoginData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
 
   // Estados para registro
   const [registerData, setRegisterData] = useState({
-    company_name: '',
-    cnpj: '',
-    user_name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+    company_name: "",
+    cnpj: "",
+    user_name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      logger.info('Submitting login form', 'auth', { email: loginData.email });
+      logger.info("Submitting login form", "auth", { email: loginData.email });
       await login(loginData.email, loginData.password);
-      logger.info('Login successful, navigating to dashboard', 'auth');
-      navigate('/dashboard', { replace: true });
+      logger.info("Login successful, navigating to dashboard", "auth");
+      navigate("/dashboard", { replace: true });
     } catch (error) {
-      logger.error('Login form submission failed', error, 'auth');
+      logger.error("Login form submission failed", error, "auth");
     }
   };
 
-  const cleanCNPJ = (cnpj: string) => cnpj.replace(/[^\d]/g, '');
+  const cleanCNPJ = (cnpj: string) => cnpj.replace(/[^\d]/g, "");
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const passwordValidation = validatePassword(registerData.password);
     if (!passwordValidation.valid) {
       toast({
@@ -74,7 +88,7 @@ export default function Auth() {
       });
       return;
     }
-    
+
     if (registerData.password !== registerData.confirmPassword) {
       toast({
         variant: "destructive",
@@ -85,7 +99,7 @@ export default function Auth() {
     }
 
     const cleanedCnpj = cleanCNPJ(registerData.cnpj);
-    
+
     if (cleanedCnpj.length !== 14) {
       toast({
         variant: "destructive",
@@ -101,13 +115,15 @@ export default function Auth() {
         cnpj: cleanedCnpj,
         user_name: registerData.user_name.trim(),
         email: registerData.email.trim().toLowerCase(),
-        password: registerData.password
+        password: registerData.password,
       });
-      
+
       // Check if user got auto-logged in (no email confirmation required)
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
-        navigate('/onboarding');
+        navigate("/onboarding");
       }
       // If no session, user needs to confirm email - toast already shown by register()
     } catch (error) {
@@ -115,8 +131,10 @@ export default function Auth() {
     }
   };
 
-  const inputClassName = "pl-10 bg-white/60 border-[var(--heimdall-border)] focus:border-[var(--heimdall-accent)] focus:ring-[var(--heimdall-accent)] transition-colors";
-  const inputClassNameNoIcon = "bg-white/60 border-[var(--heimdall-border)] focus:border-[var(--heimdall-accent)] focus:ring-[var(--heimdall-accent)] transition-colors";
+  const inputClassName =
+    "pl-10 bg-white/60 border-[var(--heimdall-border)] focus:border-[var(--heimdall-accent)] focus:ring-[var(--heimdall-accent)] transition-colors";
+  const inputClassNameNoIcon =
+    "bg-white/60 border-[var(--heimdall-border)] focus:border-[var(--heimdall-accent)] focus:ring-[var(--heimdall-accent)] transition-colors";
 
   return (
     <div className="heimdall-page min-h-screen flex items-center justify-center p-4 precision-grid">
@@ -129,7 +147,10 @@ export default function Auth() {
           className="text-center mb-8"
         >
           <div className="flex items-center justify-center mb-3">
-            <button onClick={() => navigate('/')} className="bg-transparent border-none cursor-pointer p-0">
+            <button
+              onClick={() => navigate("/")}
+              className="bg-transparent border-none cursor-pointer p-0"
+            >
               <img src={datonLogo} alt="Daton" className="h-9" />
             </button>
           </div>
@@ -142,7 +163,11 @@ export default function Auth() {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="glass-card p-6 md:p-8"
         >
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2 bg-transparent border-b border-[var(--heimdall-border)] rounded-none p-0 h-auto">
               <TabsTrigger
                 value="login"
@@ -160,11 +185,6 @@ export default function Auth() {
 
             {/* Login Tab */}
             <TabsContent value="login" className="mt-6">
-              <h2 className="heimdall-heading-sm text-center">Bem-vindo de volta</h2>
-              <p className="heimdall-body-sm text-center mt-1">
-                Entre com suas credenciais para acessar sua conta
-              </p>
-
               {!isLoading && user && (
                 <div className="mt-4 p-3 bg-[var(--heimdall-accent)]/10 border border-[var(--heimdall-accent)]/20 rounded-lg text-sm text-center">
                   Você já está logado, redirecionando...
@@ -173,7 +193,12 @@ export default function Auth() {
 
               <form onSubmit={handleLogin} className="space-y-4 mt-6">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email" className="text-[var(--heimdall-text-secondary)] text-sm">Email</Label>
+                  <Label
+                    htmlFor="login-email"
+                    className="text-[var(--heimdall-text-secondary)] text-sm"
+                  >
+                    Email
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-[var(--heimdall-text-muted)]" />
                     <Input
@@ -182,14 +207,21 @@ export default function Auth() {
                       placeholder="seu@email.com"
                       className={inputClassName}
                       value={loginData.email}
-                      onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                      onChange={(e) =>
+                        setLoginData({ ...loginData, email: e.target.value })
+                      }
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="login-password" className="text-[var(--heimdall-text-secondary)] text-sm">Senha</Label>
+                  <Label
+                    htmlFor="login-password"
+                    className="text-[var(--heimdall-text-secondary)] text-sm"
+                  >
+                    Senha
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-[var(--heimdall-text-muted)]" />
                     <Input
@@ -198,7 +230,9 @@ export default function Auth() {
                       placeholder="••••••••"
                       className={inputClassName}
                       value={loginData.password}
-                      onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                      onChange={(e) =>
+                        setLoginData({ ...loginData, password: e.target.value })
+                      }
                       required
                     />
                   </div>
@@ -209,7 +243,7 @@ export default function Auth() {
                   disabled={isLoading}
                   className="heimdall-btn heimdall-btn-primary w-full text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? 'Entrando...' : 'Entrar'}
+                  {isLoading ? "Entrando..." : "Entrar"}
                 </button>
 
                 <div className="text-center">
@@ -226,7 +260,9 @@ export default function Auth() {
 
             {/* Register Tab */}
             <TabsContent value="register" className="mt-6">
-              <h2 className="heimdall-heading-sm text-center">Criar Conta Empresarial</h2>
+              <h2 className="heimdall-heading-sm text-center">
+                Criar Conta Empresarial
+              </h2>
               <p className="heimdall-body-sm text-center mt-1">
                 Registre sua empresa na plataforma Daton
               </p>
@@ -235,7 +271,9 @@ export default function Auth() {
               <Alert className="mt-4 bg-[var(--heimdall-accent)]/5 border-[var(--heimdall-accent)]/20">
                 <Info className="h-4 w-4 text-[var(--heimdall-accent)]" />
                 <AlertDescription className="text-[var(--heimdall-text-secondary)] text-sm">
-                  <strong>Recebeu um convite?</strong> Use o link enviado por email para definir sua senha. Não é necessário criar uma nova conta.
+                  <strong>Recebeu um convite?</strong> Use o link enviado por
+                  email para definir sua senha. Não é necessário criar uma nova
+                  conta.
                 </AlertDescription>
               </Alert>
 
@@ -244,23 +282,40 @@ export default function Auth() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-[var(--heimdall-text-muted)]" />
-                    <span className="heimdall-label text-[0.7rem]">Dados da Empresa</span>
+                    <span className="heimdall-label text-[0.7rem]">
+                      Dados da Empresa
+                    </span>
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <Label htmlFor="company-name" className="text-[var(--heimdall-text-secondary)] text-sm">Nome da Empresa</Label>
+                    <Label
+                      htmlFor="company-name"
+                      className="text-[var(--heimdall-text-secondary)] text-sm"
+                    >
+                      Nome da Empresa
+                    </Label>
                     <Input
                       id="company-name"
                       placeholder="Sua Empresa Ltda"
                       className={inputClassNameNoIcon}
                       value={registerData.company_name}
-                      onChange={(e) => setRegisterData({...registerData, company_name: e.target.value})}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          company_name: e.target.value,
+                        })
+                      }
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cnpj" className="text-[var(--heimdall-text-secondary)] text-sm">CNPJ</Label>
+                    <Label
+                      htmlFor="cnpj"
+                      className="text-[var(--heimdall-text-secondary)] text-sm"
+                    >
+                      CNPJ
+                    </Label>
                     <div className="relative">
                       <FileText className="absolute left-3 top-3 h-4 w-4 text-[var(--heimdall-text-muted)]" />
                       <Input
@@ -268,12 +323,20 @@ export default function Auth() {
                         placeholder="00.123.456/0001-89"
                         className={inputClassName}
                         value={registerData.cnpj}
-                        onChange={(e) => setRegisterData({...registerData, cnpj: e.target.value})}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            cnpj: e.target.value,
+                          })
+                        }
                         aria-describedby="cnpj-hint"
                         required
                       />
                     </div>
-                    <small id="cnpj-hint" className="text-xs text-[var(--heimdall-text-muted)]">
+                    <small
+                      id="cnpj-hint"
+                      className="text-xs text-[var(--heimdall-text-muted)]"
+                    >
                       Apenas números, 14 dígitos
                     </small>
                   </div>
@@ -285,23 +348,40 @@ export default function Auth() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-[var(--heimdall-text-muted)]" />
-                    <span className="heimdall-label text-[0.7rem]">Dados do Administrador</span>
+                    <span className="heimdall-label text-[0.7rem]">
+                      Dados do Administrador
+                    </span>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="user-name" className="text-[var(--heimdall-text-secondary)] text-sm">Nome Completo</Label>
+                    <Label
+                      htmlFor="user-name"
+                      className="text-[var(--heimdall-text-secondary)] text-sm"
+                    >
+                      Nome Completo
+                    </Label>
                     <Input
                       id="user-name"
                       placeholder="Seu Nome Completo"
                       className={inputClassNameNoIcon}
                       value={registerData.user_name}
-                      onChange={(e) => setRegisterData({...registerData, user_name: e.target.value})}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          user_name: e.target.value,
+                        })
+                      }
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="register-email" className="text-[var(--heimdall-text-secondary)] text-sm">Email</Label>
+                    <Label
+                      htmlFor="register-email"
+                      className="text-[var(--heimdall-text-secondary)] text-sm"
+                    >
+                      Email
+                    </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-[var(--heimdall-text-muted)]" />
                       <Input
@@ -310,18 +390,31 @@ export default function Auth() {
                         placeholder="admin@suaempresa.com"
                         className={inputClassName}
                         value={registerData.email}
-                        onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            email: e.target.value,
+                          })
+                        }
                         aria-describedby="email-hint"
                         required
                       />
                     </div>
-                    <small id="email-hint" className="text-xs text-[var(--heimdall-text-muted)]">
+                    <small
+                      id="email-hint"
+                      className="text-xs text-[var(--heimdall-text-muted)]"
+                    >
                       Use seu email corporativo
                     </small>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="register-password" className="text-[var(--heimdall-text-secondary)] text-sm">Senha</Label>
+                    <Label
+                      htmlFor="register-password"
+                      className="text-[var(--heimdall-text-secondary)] text-sm"
+                    >
+                      Senha
+                    </Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-[var(--heimdall-text-muted)]" />
                       <Input
@@ -330,20 +423,36 @@ export default function Auth() {
                         placeholder="••••••••"
                         className={inputClassName}
                         value={registerData.password}
-                        onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            password: e.target.value,
+                          })
+                        }
                         required
                       />
                     </div>
                     {registerData.password && (
                       <div className="mt-2 space-y-1">
-                        {getPasswordRequirementChecks(registerData.password).map((req, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-xs">
+                        {getPasswordRequirementChecks(
+                          registerData.password,
+                        ).map((req, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 text-xs"
+                          >
                             {req.met ? (
                               <CheckCircle2 className="h-3 w-3 text-[var(--heimdall-accent)]" />
                             ) : (
                               <XCircle className="h-3 w-3 text-[var(--heimdall-text-muted)]" />
                             )}
-                            <span className={req.met ? 'text-[var(--heimdall-accent)]' : 'text-[var(--heimdall-text-muted)]'}>
+                            <span
+                              className={
+                                req.met
+                                  ? "text-[var(--heimdall-accent)]"
+                                  : "text-[var(--heimdall-text-muted)]"
+                              }
+                            >
                               {req.label}
                             </span>
                           </div>
@@ -353,7 +462,12 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password" className="text-[var(--heimdall-text-secondary)] text-sm">Confirmar Senha</Label>
+                    <Label
+                      htmlFor="confirm-password"
+                      className="text-[var(--heimdall-text-secondary)] text-sm"
+                    >
+                      Confirmar Senha
+                    </Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-[var(--heimdall-text-muted)]" />
                       <Input
@@ -362,7 +476,12 @@ export default function Auth() {
                         placeholder="••••••••"
                         className={inputClassName}
                         value={registerData.confirmPassword}
-                        onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            confirmPassword: e.target.value,
+                          })
+                        }
                         required
                       />
                     </div>
@@ -374,7 +493,7 @@ export default function Auth() {
                   disabled={isLoading}
                   className="heimdall-btn heimdall-btn-primary w-full text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? 'Criando Conta...' : 'Criar Conta Empresarial'}
+                  {isLoading ? "Criando Conta..." : "Criar Conta Empresarial"}
                 </button>
               </form>
             </TabsContent>
@@ -389,12 +508,18 @@ export default function Auth() {
           className="text-center mt-6 text-sm text-[var(--heimdall-text-muted)]"
         >
           <p>
-            Ao criar uma conta, você concorda com nossos{' '}
-            <Link to="/termos" className="text-[var(--heimdall-accent)] hover:underline">
+            Ao criar uma conta, você concorda com nossos{" "}
+            <Link
+              to="/termos"
+              className="text-[var(--heimdall-accent)] hover:underline"
+            >
               Termos de Serviço
-            </Link>{' '}
-            e{' '}
-            <Link to="/privacidade" className="text-[var(--heimdall-accent)] hover:underline">
+            </Link>{" "}
+            e{" "}
+            <Link
+              to="/privacidade"
+              className="text-[var(--heimdall-accent)] hover:underline"
+            >
               Política de Privacidade
             </Link>
           </p>

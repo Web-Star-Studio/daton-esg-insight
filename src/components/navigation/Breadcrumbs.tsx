@@ -31,6 +31,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/gestao-usuarios': 'Gestão de Usuários',
   '/configuracao': 'Configurações',
   '/quality-dashboard': 'Dashboard SGQ',
+  '/matriz-partes-interessadas': 'Matriz de Partes Interessadas',
   '/nao-conformidades': 'Não Conformidades',
   '/acoes-corretivas': 'Ações Corretivas',
   '/gestao-riscos': 'Gestão de Riscos',

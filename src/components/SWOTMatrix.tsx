@@ -43,7 +43,6 @@ import {
   getSWOTReviewStatus,
   hasTraceabilityEvidence,
 } from "@/utils/swotCompliance";
-import { isDemoMode } from "@/utils/demoMode";
 
 interface SWOTMatrixProps {
   strategicMapId?: string;
@@ -170,26 +169,13 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
     );
   }, [items]);
 
-  const isDemo = isDemoMode();
-
   const createAnalysisMutation = useMutation({
-    mutationFn: async (): Promise<void> => {
-      if (isDemo) {
-        toast.success("Análise SWOT criada com sucesso!");
-        setIsCreateOpen(false);
-        setNewAnalysis({ title: "", description: "", review_frequency: "anual" });
-        queryClient.invalidateQueries({ queryKey: ["swot-analyses"] });
-        return;
-      }
-      await createSWOTAnalysis({ ...newAnalysis, strategic_map_id: strategicMapId });
-    },
+    mutationFn: () => createSWOTAnalysis({ ...newAnalysis, strategic_map_id: strategicMapId }),
     onSuccess: () => {
-      if (!isDemo) {
-        queryClient.invalidateQueries({ queryKey: ["swot-analyses", strategicMapId] });
-        toast.success("Análise SWOT criada com sucesso!");
-        setIsCreateOpen(false);
-        setNewAnalysis({ title: "", description: "", review_frequency: "anual" });
-      }
+      queryClient.invalidateQueries({ queryKey: ["swot-analyses", strategicMapId] });
+      toast.success("Análise SWOT criada com sucesso!");
+      setIsCreateOpen(false);
+      setNewAnalysis({ title: "", description: "", review_frequency: "anual" });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao criar análise SWOT");
@@ -209,15 +195,8 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   });
 
   const saveItemMutation = useMutation({
-    mutationFn: async (analysisId?: string) => {
-      const swotAnalysisId = analysisId ?? selectedAnalysis;
-      if (!swotAnalysisId) throw new Error("Nenhuma análise selecionada.");
-
-      if (isDemo) {
-        queryClient.invalidateQueries({ queryKey: ["swot-items"] });
-        toast.success("Item SWOT salvo.");
-        return;
-      }
+    mutationFn: async () => {
+      if (!selectedAnalysis) throw new Error("Nenhuma análise selecionada.");
 
       if (
         itemForm.treatment_decision === "relevante_requer_acoes" &&
@@ -243,13 +222,12 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
       }
 
       return createSWOTItem({
-        swot_analysis_id: swotAnalysisId,
+        swot_analysis_id: selectedAnalysis,
         ...payload,
       });
     },
-    onSuccess: (_, variables) => {
-      const swotAnalysisId = variables ?? selectedAnalysis;
-      queryClient.invalidateQueries({ queryKey: ["swot-items", swotAnalysisId] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["swot-items", selectedAnalysis] });
       toast.success(editingItem ? "Item SWOT atualizado com sucesso!" : "Item SWOT adicionado com sucesso!");
       handleCloseItemDialog();
     },
@@ -758,11 +736,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                       toast.error("Informe o item SWOT.");
                       return;
                     }
-                    if (!selectedAnalysis) {
-                      toast.error("Nenhuma análise selecionada.");
-                      return;
-                    }
-                    saveItemMutation.mutate(selectedAnalysis);
+                    saveItemMutation.mutate();
                   }}
                   disabled={saveItemMutation.isPending}
                 >
@@ -806,7 +780,6 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0"
-                              aria-label={`Editar item SWOT: ${item.item_text}`}
                               onClick={() => handleOpenEditItem(item)}
                             >
                               <Edit className="h-3 w-3" />

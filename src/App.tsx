@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ENABLED_MODULES } from "@/config/enabledModules";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -23,6 +23,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
 import { GlobalKeyboardShortcuts } from "@/components/GlobalKeyboardShortcuts";
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications";
+import { lazyImportWithRetry } from "@/utils/lazyImportWithRetry";
 
 import AuthErrorHandler from "@/components/AuthErrorHandler";
 
@@ -130,6 +131,7 @@ const PlanoAcao5W2H = lazy(() => import("./pages/PlanoAcao5W2H"));
 const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento"));
 const GestaoFornecedores = lazy(() => import("./pages/GestaoFornecedores"));
 const QualityDashboard = lazy(() => import("./pages/QualityDashboard"));
+const MatrizPartesInteressadas = lazy(() => import("./pages/MatrizPartesInteressadas"));
 const GestaoIndicadores = lazy(() => import("./pages/GestaoIndicadores"));
 const IndicadorDetalhes = lazy(() => import("./pages/IndicadorDetalhes"));
 const LAIAUnidades = lazy(() => import("./pages/LAIAUnidades"));
@@ -140,6 +142,7 @@ const GerenciamentoProjetos = lazy(() => import("./pages/GerenciamentoProjetos")
 
 const AcoesCorretivas = lazy(() => import("./pages/AcoesCorretivas"));
 const ControleDocumentos = lazy(() => import("./pages/ControleDocumentos"));
+const SGQDocumentDetail = lazy(() => import("./pages/SGQDocumentDetail"));
 const ExtracoesDocumentos = lazy(() => import("./pages/ExtracoesDocumentos"));
 
 // Phase 5-8: Novas páginas ESG
@@ -182,7 +185,10 @@ const SupplierSurveys = lazy(() => import("./pages/supplier-portal/SupplierSurve
 // Lazy loading para RH modules
 const EstruturaOrganizacional = lazy(() => import("./pages/EstruturaOrganizacional"));
 const DescricaoCargos = lazy(() => import("./pages/DescricaoCargos"));
-const GestaoFuncionarios = lazy(() => import("./pages/GestaoFuncionarios"));
+const GestaoFuncionarios = lazyImportWithRetry(
+  () => import("./pages/GestaoFuncionarios"),
+  "lazy-retry:gestao-funcionarios"
+);
 const GestaoTreinamentos = lazy(() => import("./pages/GestaoTreinamentos"));
 const GestaoDesempenho = lazy(() => import("./pages/GestaoDesempenho"));
 const BeneficiosRemuneracao = lazy(() => import("./pages/BeneficiosRemuneracao"));
@@ -226,6 +232,11 @@ const DemoLayout = lazy(() => import("./components/DemoLayout").then(m => ({ def
 
 // Backward-compat alias
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
+
+function LegacyDocumentRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/documentos/${id}` : "/documentos?document_kind=controlled"} replace />;
+}
 
 // Query client with optimized cache and retry logic
 const queryClient = new QueryClient({
@@ -292,6 +303,7 @@ const AppContent = () => {
               <Route index element={<LazyPageWrapper><Dashboard /></LazyPageWrapper>} />
               <Route path="gestao-esg" element={<LazyPageWrapper><GestaoESG /></LazyPageWrapper>} />
               <Route path="quality-dashboard" element={<LazyPageWrapper><QualityDashboard /></LazyPageWrapper>} />
+              <Route path="matriz-partes-interessadas" element={<LazyPageWrapper><MatrizPartesInteressadas /></LazyPageWrapper>} />
               <Route path="gestao-indicadores" element={<LazyPageWrapper><GestaoIndicadores /></LazyPageWrapper>} />
               <Route path="nao-conformidades" element={<LazyPageWrapper><NaoConformidades /></LazyPageWrapper>} />
               <Route path="acoes-corretivas" element={<LazyPageWrapper><AcoesCorretivas /></LazyPageWrapper>} />
@@ -368,6 +380,7 @@ const AppContent = () => {
               {/* Rotas faltantes - Dados e Relatórios */}
               <Route path="coleta-dados" element={<LazyPageWrapper><ColetaDados /></LazyPageWrapper>} />
               <Route path="documentos" element={<LazyPageWrapper><DocumentosHub /></LazyPageWrapper>} />
+              <Route path="documentos/:id" element={<LazyPageWrapper><SGQDocumentDetail /></LazyPageWrapper>} />
               <Route path="relatorios-integrados" element={<LazyPageWrapper><RelatoriosIntegrados /></LazyPageWrapper>} />
               <Route path="sdg-dashboard" element={<LazyPageWrapper><SDGDashboard /></LazyPageWrapper>} />
               <Route path="indicadores-recomendados" element={<LazyPageWrapper><IndicadoresRecomendados /></LazyPageWrapper>} />
@@ -552,6 +565,11 @@ const AppContent = () => {
             <Route path="/documentos" element={
               <ProtectedLazyPageWrapper>
                 <DocumentosHub />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/documentos/:id" element={
+              <ProtectedLazyPageWrapper>
+                <SGQDocumentDetail />
               </ProtectedLazyPageWrapper>
             } />
 
@@ -863,9 +881,11 @@ const AppContent = () => {
             <Route path="/base-conhecimento" element={<ProtectedLazyPageWrapper><BaseConhecimento /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-fornecedores" element={<ProtectedLazyPageWrapper><GestaoFornecedores /></ProtectedLazyPageWrapper>} />
             <Route path="/quality-dashboard" element={<ProtectedLazyPageWrapper><QualityDashboard /></ProtectedLazyPageWrapper>} />
+            <Route path="/matriz-partes-interessadas" element={<ProtectedLazyPageWrapper><MatrizPartesInteressadas /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-indicadores" element={<ProtectedLazyPageWrapper><GestaoIndicadores /></ProtectedLazyPageWrapper>} />
             <Route path="/indicador/:id" element={<ProtectedLazyPageWrapper><IndicadorDetalhes /></ProtectedLazyPageWrapper>} />
             <Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
+            <Route path="/controle-documentos/:id" element={<LegacyDocumentRedirect />} />
             <Route path="/gerenciamento-projetos" element={<ProtectedLazyPageWrapper><GerenciamentoProjetos /></ProtectedLazyPageWrapper>} />
             <Route path="/laia" element={<ProtectedLazyPageWrapper><LAIAUnidades /></ProtectedLazyPageWrapper>} />
             <Route path="/laia/unidade/:branchId" element={<ProtectedLazyPageWrapper><LAIAUnidadePage /></ProtectedLazyPageWrapper>} />

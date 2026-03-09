@@ -5972,6 +5972,161 @@ export type Database = {
           },
         ]
       }
+      document_branches: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          document_id: string
+          id: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          document_id: string
+          id?: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          document_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_branches_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_branches_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_change_log: {
+        Row: {
+          change_type: string
+          company_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          diff: Json | null
+          document_id: string
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          summary: string | null
+          user_id: string | null
+        }
+        Insert: {
+          change_type?: string
+          company_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          diff?: Json | null
+          document_id: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          summary?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          change_type?: string
+          company_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          diff?: Json | null
+          document_id?: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          summary?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_change_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_change_log_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_control_profiles: {
+        Row: {
+          code: string | null
+          confidentiality_level: string
+          controlled_copy: boolean
+          created_at: string
+          document_id: string
+          document_type_label: string
+          issuer_name: string | null
+          norm_reference: string | null
+          responsible_department: string | null
+          review_due_date: string | null
+          updated_at: string
+          validity_end_date: string | null
+          validity_start_date: string | null
+        }
+        Insert: {
+          code?: string | null
+          confidentiality_level?: string
+          controlled_copy?: boolean
+          created_at?: string
+          document_id: string
+          document_type_label?: string
+          issuer_name?: string | null
+          norm_reference?: string | null
+          responsible_department?: string | null
+          review_due_date?: string | null
+          updated_at?: string
+          validity_end_date?: string | null
+          validity_start_date?: string | null
+        }
+        Update: {
+          code?: string | null
+          confidentiality_level?: string
+          controlled_copy?: boolean
+          created_at?: string
+          document_id?: string
+          document_type_label?: string
+          issuer_name?: string | null
+          norm_reference?: string | null
+          responsible_department?: string | null
+          review_due_date?: string | null
+          updated_at?: string
+          validity_end_date?: string | null
+          validity_start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_control_profiles_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_controlled_copies: {
         Row: {
           assigned_department: string | null
@@ -6015,6 +6170,97 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_external: {
+        Row: {
+          company_id: string
+          compliance_status: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          document_name: string
+          document_type: string
+          effective_date: string | null
+          expiration_date: string | null
+          file_path: string | null
+          id: string
+          is_active: boolean | null
+          issuing_authority: string | null
+          notes: string | null
+          origin: string | null
+          publication_date: string | null
+          reference_number: string | null
+          responsible_user_id: string | null
+          revalidation_date: string | null
+          revalidation_frequency: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          compliance_status?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          document_name: string
+          document_type?: string
+          effective_date?: string | null
+          expiration_date?: string | null
+          file_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          issuing_authority?: string | null
+          notes?: string | null
+          origin?: string | null
+          publication_date?: string | null
+          reference_number?: string | null
+          responsible_user_id?: string | null
+          revalidation_date?: string | null
+          revalidation_frequency?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          compliance_status?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          document_name?: string
+          document_type?: string
+          effective_date?: string | null
+          expiration_date?: string | null
+          file_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          issuing_authority?: string | null
+          notes?: string | null
+          origin?: string | null
+          publication_date?: string | null
+          reference_number?: string | null
+          responsible_user_id?: string | null
+          revalidation_date?: string | null
+          revalidation_frequency?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_external_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_external_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_external_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -6345,6 +6591,241 @@ export type Database = {
           },
         ]
       }
+      document_read_campaigns: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          document_id: string
+          due_at: string | null
+          id: string
+          message: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          document_id: string
+          due_at?: string | null
+          id?: string
+          message?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          document_id?: string
+          due_at?: string | null
+          id?: string
+          message?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_read_campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_read_campaigns_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_read_recipients: {
+        Row: {
+          campaign_id: string
+          confirmation_note: string | null
+          confirmed_at: string | null
+          created_at: string
+          due_at: string | null
+          id: string
+          last_reminder_at: string | null
+          sent_at: string
+          status: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          confirmation_note?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          sent_at?: string
+          status?: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          confirmation_note?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          sent_at?: string
+          status?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_read_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "document_read_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_relations: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          notes: string | null
+          relation_type: string
+          source_document_id: string
+          target_document_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          notes?: string | null
+          relation_type?: string
+          source_document_id: string
+          target_document_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          notes?: string | null
+          relation_type?: string
+          source_document_id?: string
+          target_document_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_relations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relations_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relations_target_document_id_fkey"
+            columns: ["target_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          due_at: string | null
+          fulfilled_document_id: string | null
+          fulfilled_version_id: string | null
+          id: string
+          priority: string
+          request_type: string
+          requested_from_user_id: string
+          requester_user_id: string
+          status: string
+          target_document_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          fulfilled_document_id?: string | null
+          fulfilled_version_id?: string | null
+          id?: string
+          priority?: string
+          request_type?: string
+          requested_from_user_id: string
+          requester_user_id: string
+          status?: string
+          target_document_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          fulfilled_document_id?: string | null
+          fulfilled_version_id?: string | null
+          id?: string
+          priority?: string
+          request_type?: string
+          requested_from_user_id?: string
+          requester_user_id?: string
+          status?: string
+          target_document_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_requests_fulfilled_document_id_fkey"
+            columns: ["fulfilled_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_requests_target_document_id_fkey"
+            columns: ["target_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_versions: {
         Row: {
           changes_summary: string | null
@@ -6410,6 +6891,9 @@ export type Database = {
           company_id: string
           controlled_copy: boolean | null
           distribution_list: Json | null
+          document_level:
+            | Database["public"]["Enums"]["document_level_enum"]
+            | null
           document_type:
             | Database["public"]["Enums"]["document_type_enum"]
             | null
@@ -6426,7 +6910,7 @@ export type Database = {
           related_model: string
           requires_approval: boolean | null
           responsible_department: string | null
-          retention_period: unknown
+          retention_period: string | null
           review_frequency:
             | Database["public"]["Enums"]["review_frequency_enum"]
             | null
@@ -6445,6 +6929,9 @@ export type Database = {
           company_id: string
           controlled_copy?: boolean | null
           distribution_list?: Json | null
+          document_level?:
+            | Database["public"]["Enums"]["document_level_enum"]
+            | null
           document_type?:
             | Database["public"]["Enums"]["document_type_enum"]
             | null
@@ -6461,7 +6948,7 @@ export type Database = {
           related_model: string
           requires_approval?: boolean | null
           responsible_department?: string | null
-          retention_period?: unknown
+          retention_period?: string | null
           review_frequency?:
             | Database["public"]["Enums"]["review_frequency_enum"]
             | null
@@ -6480,6 +6967,9 @@ export type Database = {
           company_id?: string
           controlled_copy?: boolean | null
           distribution_list?: Json | null
+          document_level?:
+            | Database["public"]["Enums"]["document_level_enum"]
+            | null
           document_type?:
             | Database["public"]["Enums"]["document_type_enum"]
             | null
@@ -6496,7 +6986,7 @@ export type Database = {
           related_model?: string
           requires_approval?: boolean | null
           responsible_department?: string | null
-          retention_period?: unknown
+          retention_period?: string | null
           review_frequency?:
             | Database["public"]["Enums"]["review_frequency_enum"]
             | null
@@ -15732,6 +16222,10 @@ export type Database = {
           document_identifier_type: string | null
           document_number: string | null
           expiration_date: string
+          external_last_sync_at: string | null
+          external_source_provider: string | null
+          external_source_reference: string | null
+          external_source_url: string | null
           id: string
           issue_date: string | null
           issuing_body: string
@@ -15760,6 +16254,10 @@ export type Database = {
           document_identifier_type?: string | null
           document_number?: string | null
           expiration_date: string
+          external_last_sync_at?: string | null
+          external_source_provider?: string | null
+          external_source_reference?: string | null
+          external_source_url?: string | null
           id?: string
           issue_date?: string | null
           issuing_body: string
@@ -15788,6 +16286,10 @@ export type Database = {
           document_identifier_type?: string | null
           document_number?: string | null
           expiration_date?: string
+          external_last_sync_at?: string | null
+          external_source_provider?: string | null
+          external_source_reference?: string | null
+          external_source_url?: string | null
           id?: string
           issue_date?: string | null
           issuing_body?: string
@@ -20560,6 +21062,523 @@ export type Database = {
           },
         ]
       }
+      sgq_document_references: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          referenced_document_id: string
+          sgq_document_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          referenced_document_id: string
+          sgq_document_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          referenced_document_id?: string
+          sgq_document_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_document_references_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_references_referenced_document_id_fkey"
+            columns: ["referenced_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_references_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_document_versions: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          attachment_document_id: string | null
+          changes_summary: string | null
+          company_id: string
+          created_at: string
+          elaborated_by_user_id: string | null
+          id: string
+          sgq_document_id: string
+          version_number: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          attachment_document_id?: string | null
+          changes_summary?: string | null
+          company_id: string
+          created_at?: string
+          elaborated_by_user_id?: string | null
+          id?: string
+          sgq_document_id: string
+          version_number: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          attachment_document_id?: string | null
+          changes_summary?: string | null
+          company_id?: string
+          created_at?: string
+          elaborated_by_user_id?: string | null
+          id?: string
+          sgq_document_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_document_versions_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_versions_attachment_document_id_fkey"
+            columns: ["attachment_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_versions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_versions_elaborated_by_user_id_fkey"
+            columns: ["elaborated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_versions_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_iso_document_settings: {
+        Row: {
+          company_id: string
+          default_expiring_days: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          default_expiring_days?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          default_expiring_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_iso_document_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_iso_documents: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          current_version_number: number
+          document_identifier_other: string | null
+          document_identifier_type: string
+          document_number: string | null
+          elaborated_by_user_id: string | null
+          expiration_date: string
+          external_last_sync_at: string | null
+          external_source_provider: string | null
+          external_source_reference: string | null
+          external_source_url: string | null
+          id: string
+          issue_date: string | null
+          issuing_body: string
+          notes: string | null
+          process_number: string | null
+          renewal_alert_days: number | null
+          renewal_required: boolean
+          responsible_user_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          current_version_number?: number
+          document_identifier_other?: string | null
+          document_identifier_type?: string
+          document_number?: string | null
+          elaborated_by_user_id?: string | null
+          expiration_date: string
+          external_last_sync_at?: string | null
+          external_source_provider?: string | null
+          external_source_reference?: string | null
+          external_source_url?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_body?: string
+          notes?: string | null
+          process_number?: string | null
+          renewal_alert_days?: number | null
+          renewal_required?: boolean
+          responsible_user_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          current_version_number?: number
+          document_identifier_other?: string | null
+          document_identifier_type?: string
+          document_number?: string | null
+          elaborated_by_user_id?: string | null
+          expiration_date?: string
+          external_last_sync_at?: string | null
+          external_source_provider?: string | null
+          external_source_reference?: string | null
+          external_source_url?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_body?: string
+          notes?: string | null
+          process_number?: string | null
+          renewal_alert_days?: number | null
+          renewal_required?: boolean
+          responsible_user_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_iso_documents_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_iso_documents_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_iso_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_iso_documents_elaborated_by_user_id_fkey"
+            columns: ["elaborated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_iso_documents_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_read_campaigns: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          due_at: string | null
+          id: string
+          message: string | null
+          sgq_document_id: string
+          status: string
+          title: string
+          version_number: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          due_at?: string | null
+          id?: string
+          message?: string | null
+          sgq_document_id: string
+          status?: string
+          title: string
+          version_number?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          due_at?: string | null
+          id?: string
+          message?: string | null
+          sgq_document_id?: string
+          status?: string
+          title?: string
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_read_campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_read_campaigns_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_read_campaigns_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_read_recipients: {
+        Row: {
+          campaign_id: string
+          confirmation_note: string | null
+          confirmed_at: string | null
+          due_at: string | null
+          id: string
+          sent_at: string
+          status: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          confirmation_note?: string | null
+          confirmed_at?: string | null
+          due_at?: string | null
+          id?: string
+          sent_at?: string
+          status?: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          confirmation_note?: string | null
+          confirmed_at?: string | null
+          due_at?: string | null
+          id?: string
+          sent_at?: string
+          status?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_read_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_read_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_read_recipients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_renewal_schedules: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          protocol_deadline: string | null
+          protocol_number: string | null
+          renewed_expiration_date: string | null
+          scheduled_start_date: string
+          sgq_document_id: string
+          status: Database["public"]["Enums"]["license_renewal_status_enum"]
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          protocol_deadline?: string | null
+          protocol_number?: string | null
+          renewed_expiration_date?: string | null
+          scheduled_start_date?: string
+          sgq_document_id: string
+          status?: Database["public"]["Enums"]["license_renewal_status_enum"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          protocol_deadline?: string | null
+          protocol_number?: string | null
+          renewed_expiration_date?: string | null
+          scheduled_start_date?: string
+          sgq_document_id?: string
+          status?: Database["public"]["Enums"]["license_renewal_status_enum"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_renewal_schedules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_renewal_schedules_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_review_requests: {
+        Row: {
+          attachment_document_id: string | null
+          changes_summary: string
+          company_id: string
+          created_at: string | null
+          id: string
+          requested_by_user_id: string
+          reviewed_at: string | null
+          reviewer_notes: string | null
+          reviewer_user_id: string
+          sgq_document_id: string
+          status: string
+        }
+        Insert: {
+          attachment_document_id?: string | null
+          changes_summary: string
+          company_id: string
+          created_at?: string | null
+          id?: string
+          requested_by_user_id: string
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          reviewer_user_id: string
+          sgq_document_id: string
+          status?: string
+        }
+        Update: {
+          attachment_document_id?: string | null
+          changes_summary?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          requested_by_user_id?: string
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          reviewer_user_id?: string
+          sgq_document_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_review_requests_attachment_document_id_fkey"
+            columns: ["attachment_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_review_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_review_requests_requested_by_user_id_fkey"
+            columns: ["requested_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_review_requests_reviewer_user_id_fkey"
+            columns: ["reviewer_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_review_requests_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sipoc_elements: {
         Row: {
           created_at: string
@@ -24949,7 +25968,7 @@ export type Database = {
       }
       calculate_retry_backoff: {
         Args: { retry_count: number }
-        Returns: unknown
+        Returns: string
       }
       calculate_risk_level: {
         Args: { p_impact: string; p_probability: string }
@@ -25159,6 +26178,12 @@ export type Database = {
         | "Concluído"
         | "Em Atraso"
       credit_status_enum: "Disponível" | "Aposentado" | "Reservado"
+      document_level_enum:
+        | "nivel_1_msg"
+        | "nivel_2_psg"
+        | "nivel_3_it_pso"
+        | "nivel_4_rg"
+        | "nivel_5_fplan"
       document_type_enum: "interno" | "externo" | "registro" | "legal"
       emission_factor_type_enum: "system" | "custom"
       emission_source_status_enum: "Ativo" | "Inativo"
@@ -25392,6 +26417,13 @@ export const Constants = {
         "Em Atraso",
       ],
       credit_status_enum: ["Disponível", "Aposentado", "Reservado"],
+      document_level_enum: [
+        "nivel_1_msg",
+        "nivel_2_psg",
+        "nivel_3_it_pso",
+        "nivel_4_rg",
+        "nivel_5_fplan",
+      ],
       document_type_enum: ["interno", "externo", "registro", "legal"],
       emission_factor_type_enum: ["system", "custom"],
       emission_source_status_enum: ["Ativo", "Inativo"],

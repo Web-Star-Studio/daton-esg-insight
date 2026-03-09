@@ -1,0 +1,4 @@
+INSERT INTO laia_revision_changes (id, revision_id, entity_type, entity_id, change_type, field_name, old_value, new_value, branch_id, changed_by, changed_at) VALUES
+('a1b2c3d4-0001-4000-8000-000000000001', '33a9ef6b-98ba-4168-94db-bc6a23612354', 'assessment', 'd011f343-5b79-4749-88b0-2f9009790427', 'updated', 'severity', '"baixa"', '"media"', 'bb631bdc-0702-40e1-8554-39894540033c', NULL, '2026-02-25 19:59:35.756336+00'),
+('a1b2c3d4-0002-4000-8000-000000000002', '33a9ef6b-98ba-4168-94db-bc6a23612354', 'assessment', '5d38d5ff-9e56-4d69-87ed-0816a34d5247', 'updated', 'temporality', '"futura"', '"atual"', '01e9becd-505e-4e3a-9f9e-5c5b966e576e', NULL, '2026-02-27 13:42:14.46094+00'),
+('a1b2c3d4-0003-4000-8000-000000000003', '33a9ef6b-98ba-4168-94db-bc6a23612354', 'assessment', '5d38d5ff-9e56-4d69-87ed-0816a34d5247', 'updated', 'frequency_probability', '"baixa"', '"media"', '01e9becd-505e-4e3a-9f9e-5c5b966e576e', NULL, '2026-02-27 13:42:14.46094+00')

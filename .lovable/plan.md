@@ -1,16 +1,12 @@
 
-
-# Corrigir Dropdown "Papel no Sistema" não abrindo dentro do Dialog
+# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
 ## Problema
-O `SelectContent` usa `z-[200]` (definido em `src/components/ui/select.tsx`), mas o `DialogOverlay` usa `z-[1200]` e o `DialogContent` usa `z-[1201]`. Como o Select renderiza via Portal na raiz do DOM, o dropdown fica **atrás** do overlay do dialog, invisível ao usuário.
+Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
 
 ## Solução
-Aumentar o `z-index` do `SelectContent` para `z-[1300]`, garantindo que fique acima do dialog quando aberto dentro de modais.
+Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
 
 ## Alteração
 
-**Arquivo:** `src/components/ui/select.tsx`
-
-Na classe do `SelectPrimitive.Content` (linha ~72), trocar `z-[200]` por `z-[1300]`.
-
+**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.

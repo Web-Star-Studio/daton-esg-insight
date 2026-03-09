@@ -9,10 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { documentPermissionsService } from '@/services/gedDocuments';
+import { getNamedDocumentGroups } from '@/services/documentCompliance';
 import { Shield, Plus, User, Users, Calendar, Trash2, Eye, Edit, CheckCircle2, Settings } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentPermissionsModalProps {
   documentId?: string;
@@ -34,6 +36,7 @@ export const DocumentPermissionsModal: React.FC<DocumentPermissionsModalProps> =
     permission_level: '' as 'leitura' | 'escrita' | 'aprovacao' | 'admin',
     expires_at: ''
   });
+  const namedGroups = getNamedDocumentGroups();
   const queryClient = useQueryClient();
 
   const { data: permissions, isLoading } = useQuery({
@@ -75,7 +78,7 @@ export const DocumentPermissionsModal: React.FC<DocumentPermissionsModalProps> =
     });
   };
 
-  const handleGrantPermission = () => {
+  const handleGrantPermission = async () => {
     if (!newPermission.permission_level) {
       toast.error('Selecione um nível de permissão');
       return;
@@ -86,11 +89,17 @@ export const DocumentPermissionsModal: React.FC<DocumentPermissionsModalProps> =
       return;
     }
 
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
     const permissionData = {
       ...(documentId && { document_id: documentId }),
       ...(folderId && { folder_id: folderId }),
       permission_level: newPermission.permission_level,
-      granted_by_user_id: 'current-user', // TODO: Get current user ID
+      granted_by_user_id: authData.user.id,
       ...(newPermission.user_id && { user_id: newPermission.user_id }),
       ...(newPermission.role && { role: newPermission.role }),
       ...(newPermission.expires_at && { expires_at: newPermission.expires_at }),
@@ -210,6 +219,25 @@ export const DocumentPermissionsModal: React.FC<DocumentPermissionsModalProps> =
                         }))}
                         placeholder="Nome da função (opcional se usuário for selecionado)"
                       />
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {namedGroups.map((group) => (
+                          <Button
+                            key={group.name}
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="h-7"
+                            title={group.description}
+                            onClick={() => setNewPermission((prev) => ({
+                              ...prev,
+                              role: group.name,
+                              user_id: '',
+                            }))}
+                          >
+                            {group.name}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <Label htmlFor="permission_level">Nível de Permissão*</Label>
