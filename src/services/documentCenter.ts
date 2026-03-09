@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { downloadDocument, uploadDocument } from "@/services/documents";
-import { downloadDocument, uploadDocument } from "@/services/documents";
 import { getDocumentsBranchesMap, linkDocumentToBranches, updateDocumentBranches } from "@/services/documentBranches";
 import { documentVersionsService } from "@/services/gedDocuments";
 
