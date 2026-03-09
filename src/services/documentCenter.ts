@@ -757,6 +757,10 @@ async function fetchDocumentRequests(documentId: string): Promise<DocumentReques
     .order("created_at", { ascending: false });
 
   if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      console.warn("document_requests não disponível:", error.message);
+      return [];
+    }
     throw new Error(`Erro ao carregar solicitações do documento: ${error.message}`);
   }
 
