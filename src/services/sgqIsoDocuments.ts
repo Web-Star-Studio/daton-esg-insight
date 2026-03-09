@@ -43,6 +43,7 @@ export interface SgqDocumentItem {
   status: DocumentStatus;
   current_version_number: number;
   pending_recipients: number;
+  pending_reviews: number;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -80,6 +81,23 @@ export interface SgqReadCampaignItem {
   recipients: SgqReadRecipientItem[];
 }
 
+export interface SgqReviewRequestItem {
+  id: string;
+  sgq_document_id: string;
+  document_title: string | null;
+  requested_by_user_id: string;
+  requested_by_name: string | null;
+  reviewer_user_id: string;
+  reviewer_name: string | null;
+  status: string;
+  changes_summary: string;
+  attachment_document_id: string | null;
+  attachment_file_name: string | null;
+  reviewer_notes: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
 export interface CreateSgqDocumentPayload {
   title: string;
   document_identifier_type: string;
@@ -101,6 +119,13 @@ export interface CreateSgqVersionPayload {
   approved_by_user_id: string;
   attachment: File;
   recipient_user_ids?: string[];
+}
+
+export interface CreateReviewRequestPayload {
+  sgq_document_id: string;
+  reviewer_user_id: string;
+  changes_summary: string;
+  attachment: File;
 }
 
 // ── Helpers ──
@@ -249,6 +274,18 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
     }
   }
 
+  // Count pending reviews per document
+  const { data: reviewsData } = await (supabase as any)
+    .from("sgq_review_requests")
+    .select("sgq_document_id")
+    .in("sgq_document_id", docIds)
+    .eq("status", "pending");
+
+  const pendingReviewsByDoc = new Map<string, number>();
+  for (const r of reviewsData || []) {
+    pendingReviewsByDoc.set(r.sgq_document_id, (pendingReviewsByDoc.get(r.sgq_document_id) || 0) + 1);
+  }
+
   const threshold = settings.default_expiring_days ?? 30;
 
   const mapped = documents.map<SgqDocumentItem>((doc: any) => {
@@ -269,6 +306,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
       status: resolveDocumentStatus(daysRemaining, threshold),
       current_version_number: doc.current_version_number || 1,
       pending_recipients: pendingByDoc.get(doc.id) || 0,
+      pending_reviews: pendingReviewsByDoc.get(doc.id) || 0,
       notes: doc.notes,
       created_at: doc.created_at,
       updated_at: doc.updated_at,
@@ -372,7 +410,6 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
       await (supabase as any).from("sgq_document_references").insert(refs);
     }
   } catch (err: any) {
-    // Rollback main document on failure
     await (supabase as any).from("sgq_iso_documents").delete().eq("id", doc.id);
     throw new Error(`Erro ao finalizar criação do documento: ${err?.message || "desconhecido"}. Cadastro desfeito.`);
   }
@@ -380,12 +417,11 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
   return doc;
 };
 
-// ── Create New Version ──
+// ── Create New Version (called internally by approve) ──
 
 export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload): Promise<void> => {
   const { user, companyId } = await getCurrentUserAndCompany();
 
-  // Get current version
   const { data: doc } = await (supabase as any)
     .from("sgq_iso_documents")
     .select("current_version_number, title")
@@ -396,14 +432,12 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
 
   const newVersion = (doc.current_version_number || 1) + 1;
 
-  // Upload attachment
   const attachment = await uploadDocument(payload.attachment, {
     related_model: "sgq_iso_document",
     related_id: payload.sgq_document_id,
     tags: ["sgq-document"],
   });
 
-  // Create version record
   await (supabase as any)
     .from("sgq_document_versions")
     .insert({
@@ -417,7 +451,6 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
       attachment_document_id: attachment.id,
     });
 
-  // Update main document version
   await (supabase as any)
     .from("sgq_iso_documents")
     .update({
@@ -429,7 +462,6 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
     })
     .eq("id", payload.sgq_document_id);
 
-  // Create read campaign if recipients provided
   if (payload.recipient_user_ids && payload.recipient_user_ids.length > 0) {
     const { data: campaign } = await (supabase as any)
       .from("sgq_read_campaigns")
@@ -453,6 +485,186 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
       await (supabase as any).from("sgq_read_recipients").insert(recipients);
     }
   }
+};
+
+// ── Review Requests ──
+
+export const createReviewRequest = async (payload: CreateReviewRequestPayload): Promise<void> => {
+  const { user, companyId } = await getCurrentUserAndCompany();
+
+  // Upload attachment
+  const attachment = await uploadDocument(payload.attachment, {
+    related_model: "sgq_iso_document",
+    related_id: payload.sgq_document_id,
+    tags: ["sgq-review"],
+  });
+
+  const { error } = await (supabase as any)
+    .from("sgq_review_requests")
+    .insert({
+      sgq_document_id: payload.sgq_document_id,
+      company_id: companyId,
+      requested_by_user_id: user.id,
+      reviewer_user_id: payload.reviewer_user_id,
+      status: "pending",
+      changes_summary: payload.changes_summary,
+      attachment_document_id: attachment.id,
+    });
+
+  if (error) throw new Error(`Erro ao enviar para revisão: ${error.message}`);
+};
+
+export const getPendingReviewRequests = async (docId?: string): Promise<SgqReviewRequestItem[]> => {
+  let query = (supabase as any)
+    .from("sgq_review_requests")
+    .select(`
+      id, sgq_document_id, requested_by_user_id, reviewer_user_id,
+      status, changes_summary, attachment_document_id,
+      reviewer_notes, reviewed_at, created_at,
+      requester:requested_by_user_id ( full_name ),
+      reviewer:reviewer_user_id ( full_name ),
+      document:sgq_document_id ( title ),
+      attachment:attachment_document_id ( file_name )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (docId) {
+    query = query.eq("sgq_document_id", docId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Erro ao buscar revisões: ${error.message}`);
+
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    sgq_document_id: r.sgq_document_id,
+    document_title: r.document?.title || null,
+    requested_by_user_id: r.requested_by_user_id,
+    requested_by_name: r.requester?.full_name || null,
+    reviewer_user_id: r.reviewer_user_id,
+    reviewer_name: r.reviewer?.full_name || null,
+    status: r.status,
+    changes_summary: r.changes_summary,
+    attachment_document_id: r.attachment_document_id,
+    attachment_file_name: r.attachment?.file_name || null,
+    reviewer_notes: r.reviewer_notes,
+    reviewed_at: r.reviewed_at,
+    created_at: r.created_at,
+  }));
+};
+
+export const approveReviewRequest = async (requestId: string, reviewerNotes?: string): Promise<void> => {
+  const { user, companyId } = await getCurrentUserAndCompany();
+
+  // Get the review request
+  const { data: request, error: fetchErr } = await (supabase as any)
+    .from("sgq_review_requests")
+    .select("*, document:sgq_document_id ( current_version_number, title )")
+    .eq("id", requestId)
+    .maybeSingle();
+
+  if (fetchErr || !request) throw new Error("Solicitação de revisão não encontrada");
+  if (request.status !== "pending") throw new Error("Esta solicitação já foi processada");
+  if (request.reviewer_user_id !== user.id) throw new Error("Apenas o revisor designado pode aprovar");
+
+  // 1. Mark as approved
+  const { error: updateErr } = await (supabase as any)
+    .from("sgq_review_requests")
+    .update({
+      status: "approved",
+      reviewer_notes: reviewerNotes || null,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", requestId);
+
+  if (updateErr) throw new Error(`Erro ao aprovar: ${updateErr.message}`);
+
+  // 2. Create new version automatically
+  const doc = request.document;
+  const newVersion = (doc?.current_version_number || 1) + 1;
+
+  await (supabase as any)
+    .from("sgq_document_versions")
+    .insert({
+      sgq_document_id: request.sgq_document_id,
+      company_id: companyId,
+      version_number: newVersion,
+      changes_summary: request.changes_summary,
+      elaborated_by_user_id: request.requested_by_user_id,
+      approved_by_user_id: user.id,
+      approved_at: new Date().toISOString(),
+      attachment_document_id: request.attachment_document_id,
+    });
+
+  // 3. Update main document
+  await (supabase as any)
+    .from("sgq_iso_documents")
+    .update({
+      current_version_number: newVersion,
+      elaborated_by_user_id: request.requested_by_user_id,
+      approved_by_user_id: user.id,
+      approved_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", request.sgq_document_id);
+
+  // 4. Create read campaign for existing active campaign recipients
+  const { data: existingCampaigns } = await (supabase as any)
+    .from("sgq_read_campaigns")
+    .select("id")
+    .eq("sgq_document_id", request.sgq_document_id)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (existingCampaigns && existingCampaigns.length > 0) {
+    const { data: existingRecipients } = await (supabase as any)
+      .from("sgq_read_recipients")
+      .select("user_id")
+      .eq("campaign_id", existingCampaigns[0].id);
+
+    const recipientIds = (existingRecipients || []).map((r: any) => r.user_id);
+
+    if (recipientIds.length > 0) {
+      const { data: campaign } = await (supabase as any)
+        .from("sgq_read_campaigns")
+        .insert({
+          sgq_document_id: request.sgq_document_id,
+          company_id: companyId,
+          version_number: newVersion,
+          title: `Recebimento: ${doc?.title || "Documento"} - v${newVersion}`,
+          created_by_user_id: user.id,
+          status: "active",
+        })
+        .select("id")
+        .maybeSingle();
+
+      if (campaign) {
+        const recipients = recipientIds.map((uid: string) => ({
+          campaign_id: campaign.id,
+          user_id: uid,
+          status: "pending",
+        }));
+        await (supabase as any).from("sgq_read_recipients").insert(recipients);
+      }
+    }
+  }
+};
+
+export const rejectReviewRequest = async (requestId: string, reviewerNotes: string): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
+  const { error } = await (supabase as any)
+    .from("sgq_review_requests")
+    .update({
+      status: "rejected",
+      reviewer_notes: reviewerNotes,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", requestId);
+
+  if (error) throw new Error(`Erro ao rejeitar: ${error.message}`);
 };
 
 // ── Versions ──
@@ -582,4 +794,10 @@ export const getSystemDocumentsForReference = async (): Promise<Array<{ id: stri
 
   if (error) throw new Error(`Erro ao buscar documentos: ${error.message}`);
   return data || [];
+};
+
+// ── Get current user id ──
+export const getCurrentUserId = async (): Promise<string | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id || null;
 };

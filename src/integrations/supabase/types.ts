@@ -21501,6 +21501,84 @@ export type Database = {
           },
         ]
       }
+      sgq_review_requests: {
+        Row: {
+          attachment_document_id: string | null
+          changes_summary: string
+          company_id: string
+          created_at: string | null
+          id: string
+          requested_by_user_id: string
+          reviewed_at: string | null
+          reviewer_notes: string | null
+          reviewer_user_id: string
+          sgq_document_id: string
+          status: string
+        }
+        Insert: {
+          attachment_document_id?: string | null
+          changes_summary: string
+          company_id: string
+          created_at?: string | null
+          id?: string
+          requested_by_user_id: string
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          reviewer_user_id: string
+          sgq_document_id: string
+          status?: string
+        }
+        Update: {
+          attachment_document_id?: string | null
+          changes_summary?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          requested_by_user_id?: string
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          reviewer_user_id?: string
+          sgq_document_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_review_requests_attachment_document_id_fkey"
+            columns: ["attachment_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_review_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_review_requests_requested_by_user_id_fkey"
+            columns: ["requested_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_review_requests_reviewer_user_id_fkey"
+            columns: ["reviewer_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_review_requests_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sipoc_elements: {
         Row: {
           created_at: string
