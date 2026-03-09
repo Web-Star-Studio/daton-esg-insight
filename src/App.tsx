@@ -569,7 +569,7 @@ const AppContent = () => {
             } />
 
             {/* Redirects antigos para o novo hub */}
-            <Route path="/extracoes-documentos" element={<Navigate to="/documentos?tab=extracoes" replace />} />
+            <Route path="/extracoes-documentos" element={<Navigate to="/documentos" replace />} />
             <Route path="/reconciliacao-documentos" element={<Navigate to="/documentos?tab=reconciliacao" replace />} />
 
             {/* Licenciamento */}

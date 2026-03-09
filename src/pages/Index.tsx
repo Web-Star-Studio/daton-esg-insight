@@ -390,8 +390,6 @@ const Index = () => {
           {/* Insights Tab */}
           <TabsContent value="insights" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* AI Processing Status */}
-              <AIProcessingStatusWidget />
               
               {/* Smart Insights */}
               <Card className="shadow-card">

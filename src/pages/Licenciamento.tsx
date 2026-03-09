@@ -411,10 +411,6 @@ export default function Licenciamento() {
             </Card>
           </TabsContent>
 
-          {/* AI Analysis Tab */}
-          <TabsContent value="ai-analysis" className="space-y-4">
-            <AIExtractionDashboard />
-          </TabsContent>
 
           {/* Workflow Tab */}
           <TabsContent value="workflow" className="space-y-4">

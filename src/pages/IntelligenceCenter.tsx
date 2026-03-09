@@ -48,14 +48,6 @@ export default function IntelligenceCenter() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="analyze" className="space-y-6">
-          <DocumentAIAnalysis />
-        </TabsContent>
-
-        <TabsContent value="extracted" className="space-y-6">
-          <ExtractedDataManager />
-        </TabsContent>
-
         <TabsContent value="unclassified" className="space-y-6">
           <UnclassifiedDataManager />
         </TabsContent>
