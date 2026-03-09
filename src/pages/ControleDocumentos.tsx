@@ -14,10 +14,9 @@ const ControleDocumentos = () => {
       </div>
 
       <Tabs defaultValue="regulatorio" className="space-y-6">
-        <TabsList className="grid w-full max-w-[620px] grid-cols-3">
+        <TabsList className="grid w-full max-w-[420px] grid-cols-2">
           <TabsTrigger value="regulatorio">Documentos Regulatórios</TabsTrigger>
           <TabsTrigger value="sgq-iso">SGQ/ISO</TabsTrigger>
-          <TabsTrigger value="compliance-75">Compliance 7.5</TabsTrigger>
         </TabsList>
 
         <TabsContent value="regulatorio" className="space-y-6">
