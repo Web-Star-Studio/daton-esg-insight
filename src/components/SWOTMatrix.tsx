@@ -12,6 +12,7 @@ import {
   Clock3,
   Calendar,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
 
   const queryClient = useQueryClient();
 
-  const { data: analyses } = useQuery({
+  const { data: analyses, isSuccess: isSuccessAnalyses } = useQuery({
     queryKey: ["swot-analyses", strategicMapId],
     queryFn: () => getSWOTAnalyses(strategicMapId),
   });
@@ -116,7 +117,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
     enabled: Boolean(selectedAnalysis),
   });
 
-  const { data: reviewHistory } = useQuery({
+  const { data: reviewHistory, isSuccess: isSuccessReviewHistory } = useQuery({
     queryKey: ["swot-review-history", selectedAnalysis],
     queryFn: () => getSWOTReviewHistory(selectedAnalysis as string),
     enabled: Boolean(selectedAnalysis),
@@ -837,7 +838,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                       </div>
                     ))}
 
-                    {categoryItems.length === 0 && (
+                    {!isLoadingItems && categoryItems.length === 0 && (
                       <p className="py-4 text-center text-sm text-muted-foreground">Nenhum item cadastrado</p>
                     )}
                   </CardContent>
@@ -854,7 +855,11 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {reviewHistory && reviewHistory.length > 0 ? (
+              {!isSuccessReviewHistory ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : reviewHistory && reviewHistory.length > 0 ? (
                 <div className="space-y-2">
                   {reviewHistory.map((review) => (
                     <div
@@ -877,7 +882,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
         </>
       )}
 
-      {!analyses?.length && (
+      {isSuccessAnalyses && (!analyses || analyses.length === 0) && (
         <Card>
           <CardContent className="py-8 text-center">
             <Target className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />

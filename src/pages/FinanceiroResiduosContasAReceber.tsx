@@ -39,11 +39,24 @@ export default function FinanceiroResiduosContasAReceber() {
         ];
 
         const filteredReceivables = allReceivables.filter(r => r.collection_date.startsWith(selectedYear));
+        const totalRevenueYear = filteredReceivables.reduce((sum, item) => sum + (item.revenue_total || 0), 0);
+
+        // Sum revenue by material for demo
+        const revenueByMaterial = filteredReceivables.reduce((acc, curr) => {
+          if (curr.waste_description && curr.revenue_total) {
+            acc[curr.waste_description] = (acc[curr.waste_description] || 0) + curr.revenue_total;
+          }
+          return acc;
+        }, {} as Record<string, number>);
+
+        const totalQuantity = filteredReceivables.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const avgPricePerTon = totalQuantity > 0 ? (totalRevenueYear / totalQuantity) * 1000 : 0;
+
         setReceivables(filteredReceivables);
         setStats({
-          total_revenue_year: 8450.30,
-          avg_price_per_ton: 380.00,
-          revenue_by_material: { 'Papel e Papelão': 2340.50, 'Plástico PET': 1850.20, 'Metal Ferroso': 2200.00, 'Alumínio': 1560.80, 'Vidro': 498.80 },
+          total_revenue_year: totalRevenueYear || 8450.30,
+          avg_price_per_ton: avgPricePerTon || 380.00,
+          revenue_by_material: Object.keys(revenueByMaterial).length > 0 ? revenueByMaterial : { 'Papel e Papelão': 2340.50, 'Plástico PET': 1850.20, 'Metal Ferroso': 2200.00, 'Alumínio': 1560.80, 'Vidro': 498.80 },
           monthly_comparison: [
             { month: 'Set', revenue: 1200.50 }, { month: 'Out', revenue: 1350.20 },
             { month: 'Nov', revenue: 1450.80 }, { month: 'Dez', revenue: 1680.40 },

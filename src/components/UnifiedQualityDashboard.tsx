@@ -38,14 +38,16 @@ export const UnifiedQualityDashboard: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const navigate = useNavigate();
 
+  const isDemo = typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
   const { data: dashboardData, isLoading: isLoadingDashboard, error: dashboardError } = useQuery({
-    queryKey: ['unified-quality-dashboard'],
-    queryFn: () => unifiedQualityService.getQualityDashboard()
+    queryKey: ['unified-quality-dashboard', isDemo],
+    queryFn: () => unifiedQualityService.getQualityDashboard(isDemo)
   });
 
   const { data: indicators, isLoading: isLoadingIndicators, error: indicatorsError } = useQuery({
-    queryKey: ['quality-indicators-metrics'],
-    queryFn: () => unifiedQualityService.getQualityIndicators()
+    queryKey: ['quality-indicators-metrics', isDemo],
+    queryFn: () => unifiedQualityService.getQualityIndicators(isDemo)
   });
 
   const isLoading = isLoadingDashboard || isLoadingIndicators;

@@ -56,8 +56,8 @@ export function OpportunityMapWidget() {
   const filteredOpportunities = opportunities?.filter(opp => {
     const matchesSearch = opp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (opp.description || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !filterCategory || opp.category === filterCategory;
-    const matchesStatus = !filterStatus || opp.status === filterStatus;
+    const matchesCategory = !filterCategory || filterCategory === 'all' || opp.category === filterCategory;
+    const matchesStatus = !filterStatus || filterStatus === 'all' || opp.status === filterStatus;
 
     return matchesSearch && matchesCategory && matchesStatus;
   }) || [];
