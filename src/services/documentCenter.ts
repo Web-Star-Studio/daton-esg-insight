@@ -613,6 +613,10 @@ async function getOpenRequestMap(documentIds: string[]): Promise<Record<string, 
     .in("status", ["open", "in_progress", "overdue"]);
 
   if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      console.warn("document_requests não disponível:", error.message);
+      return {};
+    }
     throw new Error(`Erro ao carregar solicitações: ${error.message}`);
   }
 
