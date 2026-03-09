@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Download, FileText, Eye } from "lucide-react";
+import { Plus, Search, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
@@ -21,6 +22,7 @@ import { uploadDocument, downloadDocument } from "@/services/documents";
 import { DocumentLevelBadge, LEVEL_OPTIONS, type DocumentLevel } from "./DocumentLevelBadge";
 import { generateDocumentCode } from "./DocumentCodeGenerator";
 import { gedDocumentsService } from "@/services/gedDocuments";
+import { DocumentActionsDropdown } from "./DocumentActionsDropdown";
 
 interface SystemDocument {
   id: string;
@@ -48,6 +50,7 @@ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secon
 };
 
 export const SystemDocumentsTab = () => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<SystemDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -295,10 +298,13 @@ export const SystemDocumentsTab = () => {
                         <TableCell className="font-mono font-medium">{doc.code || "—"}</TableCell>
                         <TableCell><DocumentLevelBadge level={doc.document_level} /></TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => navigate(`/documentos/${doc.id}`)}
+                            className="flex items-center gap-2 hover:underline text-left"
+                          >
                             <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <span className="truncate max-w-[200px]">{doc.file_name}</span>
-                          </div>
+                          </button>
                         </TableCell>
                         <TableCell><Badge variant={status.variant}>{status.label}</Badge></TableCell>
                         <TableCell>{doc.responsible_department || "—"}</TableCell>
@@ -308,9 +314,11 @@ export const SystemDocumentsTab = () => {
                             : "—"}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <DocumentActionsDropdown
+                            documentId={doc.id}
+                            documentName={doc.file_name}
+                            onDownload={() => handleDownload(doc)}
+                          />
                         </TableCell>
                       </TableRow>
                     );

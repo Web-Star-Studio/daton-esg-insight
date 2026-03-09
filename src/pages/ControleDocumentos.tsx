@@ -11,9 +11,9 @@ const ControleDocumentos = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Controle de Documentos e Registros</h1>
+        <h1 className="text-3xl font-bold text-foreground">Controle de Documentos SGQ</h1>
         <p className="text-muted-foreground">
-          Gestão conforme ISO 9001:2015 — Item 7.5 (Informação Documentada)
+          Gestão de documentos e registros do Sistema de Gestão da Qualidade
         </p>
       </div>
 
