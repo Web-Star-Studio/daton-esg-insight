@@ -371,7 +371,6 @@ function mapDocumentRow(
   branchesMap: Record<string, Array<{ branch_id: string; name: string; code: string | null }>>,
   controlProfiles: Record<string, DocumentControlProfile>,
   versionsMap: Record<string, number>,
-  extractionMap: Record<string, DocumentRecord["latest_extraction"]>,
   pendingReadMap: Record<string, number>,
   requestMap: Record<string, number>,
 ): DocumentRecord {
@@ -406,7 +405,6 @@ function mapDocumentRow(
     branch_ids: branches.map((branch) => branch.branch_id),
     branches,
     current_version_number: versionsMap[row.id] || 1,
-    latest_extraction: extractionMap[row.id] || null,
     control_profile: kind === "controlled" ? controlProfile : null,
     pending_read_count: pendingReadMap[row.id] || 0,
     open_request_count: requestMap[row.id] || 0,
