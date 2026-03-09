@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Brain,
+  Building2,
   CalendarRange,
   Download,
   Eye,
@@ -47,7 +48,6 @@ import {
   createDocumentRelation,
   createDocumentRequest,
   createReadCampaign,
-  deleteDocumentRecord,
   deleteDocumentRelation,
   fulfillDocumentRequest,
   getCompanyUsers,
@@ -59,16 +59,6 @@ import {
   updateDocumentMetadata,
   type DocumentDetail,
 } from "@/services/documentCenter";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Rascunho" },
@@ -128,7 +118,6 @@ export default function SGQDocumentDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: branches = [] } = useBranches();
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [replacementFile, setReplacementFile] = useState<File | null>(null);
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [campaignForm, setCampaignForm] = useState({
@@ -170,11 +159,10 @@ export default function SGQDocumentDetail() {
 
   const documentId = id || "";
 
-  const { data: document, isLoading, isError, error: queryError, refetch } = useQuery({
+  const { data: document, isLoading } = useQuery({
     queryKey: ["document-center-detail", documentId],
     queryFn: () => getDocumentRecord(documentId),
     enabled: Boolean(documentId),
-    retry: 1,
   });
 
   const { data: collaborators = [] } = useQuery({
@@ -188,13 +176,12 @@ export default function SGQDocumentDetail() {
   });
 
   useEffect(() => {
-    if (!documentId || !document) return;
-    markDocumentViewed(documentId)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ["document-center"] });
-      })
-      .catch((err) => console.warn("Falha ao registrar visualização:", err));
-  }, [documentId, document, queryClient]);
+    if (!documentId) return;
+    void markDocumentViewed(documentId).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["document-center-detail", documentId] });
+      queryClient.invalidateQueries({ queryKey: ["document-center"] });
+    });
+  }, [documentId, queryClient]);
 
   useEffect(() => {
     if (!document) return;
@@ -387,16 +374,6 @@ export default function SGQDocumentDetail() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteDocumentRecord(documentId),
-    onSuccess: () => {
-      toast.success("Documento excluído com sucesso.");
-      queryClient.invalidateQueries({ queryKey: ["document-center"] });
-      navigate("/documentos");
-    },
-    onError: (error: Error) => toast.error(error.message),
-  });
-
   const handleDownload = async () => {
     if (!document) return;
     try {
@@ -421,41 +398,10 @@ export default function SGQDocumentDetail() {
     }));
   };
 
-  if (isLoading) {
+  if (isLoading || !document) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (isError || !document) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-destructive">
-              {isError ? "Erro ao carregar documento" : "Documento não encontrado"}
-            </CardTitle>
-            <CardDescription>
-              {isError
-                ? (queryError instanceof Error ? queryError.message : "Ocorreu um erro inesperado.")
-                : "O documento solicitado não foi encontrado."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex gap-2 justify-center">
-            {isError && (
-              <Button variant="outline" onClick={() => refetch()} className="gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Tentar novamente
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => navigate("/documentos")} className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Voltar
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -492,39 +438,9 @@ export default function SGQDocumentDetail() {
               <RefreshCw className="h-4 w-4" />
               Atualizar
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              className="gap-2"
-              disabled={deleteMutation.isPending}
-            >
-              <Trash2 className="h-4 w-4" />
-              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
-            </Button>
           </div>
         </div>
       </header>
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir documento</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir "{document.title}"? Esta ação não pode ser desfeita.
-              Todas as versões, campanhas de leitura e relações serão removidas permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteMutation.mutate()}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir permanentemente
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {document.document_kind === "controlled" && (
         <Card className="border-primary/20 bg-primary/5">
@@ -852,6 +768,52 @@ export default function SGQDocumentDetail() {
         </div>
 
         <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-4 w-4" />
+                Painel de IA
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Status</span>
+                <Badge variant="outline">{document.ai_processing_status || "pending"}</Badge>
+              </div>
+              {document.ai_confidence_score !== null && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Confianca</span>
+                    <span>{Math.round(document.ai_confidence_score * 100)}%</span>
+                  </div>
+                  <Progress value={document.ai_confidence_score * 100} />
+                </div>
+              )}
+              {document.latest_extraction ? (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary">{document.latest_extraction.target_table}</Badge>
+                    <Badge variant="outline">{document.latest_extraction.validation_status}</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    {Object.entries(document.latest_extraction.extracted_fields)
+                      .slice(0, 5)
+                      .map(([key, value]) => (
+                        <div key={key} className="flex items-start justify-between gap-3 text-sm">
+                          <span className="text-muted-foreground">{key}</span>
+                          <span className="text-right">{String(value)}</span>
+                        </div>
+                      ))}
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => navigate("/documentos?tab=extracoes")}>
+                    Abrir fila de extracoes
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">A extracao automatica ainda nao gerou um preview validavel para este documento.</p>
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

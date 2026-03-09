@@ -37,7 +37,7 @@ import {
   Trash2,
   RefreshCw
 } from 'lucide-react'
-
+import { AIExtractionDashboard } from '@/components/AIExtractionDashboard'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getLicenses, getLicenseStats, type LicenseListItem } from '@/services/licenses'
@@ -411,6 +411,10 @@ export default function Licenciamento() {
             </Card>
           </TabsContent>
 
+          {/* AI Analysis Tab */}
+          <TabsContent value="ai-analysis" className="space-y-4">
+            <AIExtractionDashboard />
+          </TabsContent>
 
           {/* Workflow Tab */}
           <TabsContent value="workflow" className="space-y-4">

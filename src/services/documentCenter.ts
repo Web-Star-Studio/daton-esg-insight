@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { processDocumentWithAI } from "@/services/documentAI";
 import { downloadDocument, uploadDocument } from "@/services/documents";
 import { getDocumentsBranchesMap, linkDocumentToBranches, updateDocumentBranches } from "@/services/documentBranches";
 import { documentVersionsService } from "@/services/gedDocuments";
@@ -370,6 +371,7 @@ function mapDocumentRow(
   branchesMap: Record<string, Array<{ branch_id: string; name: string; code: string | null }>>,
   controlProfiles: Record<string, DocumentControlProfile>,
   versionsMap: Record<string, number>,
+  extractionMap: Record<string, DocumentRecord["latest_extraction"]>,
   pendingReadMap: Record<string, number>,
   requestMap: Record<string, number>,
 ): DocumentRecord {
@@ -404,6 +406,7 @@ function mapDocumentRow(
     branch_ids: branches.map((branch) => branch.branch_id),
     branches,
     current_version_number: versionsMap[row.id] || 1,
+    latest_extraction: extractionMap[row.id] || null,
     control_profile: kind === "controlled" ? controlProfile : null,
     pending_read_count: pendingReadMap[row.id] || 0,
     open_request_count: requestMap[row.id] || 0,
@@ -421,10 +424,6 @@ async function getControlProfiles(documentIds: string[]): Promise<Record<string,
     .in("document_id", documentIds);
 
   if (error) {
-    if (error.code === "PGRST205" || error.code === "42P01") {
-      console.warn("document_control_profiles não disponível:", error.message);
-      return {};
-    }
     throw new Error(`Erro ao carregar perfis controlados: ${error.message}`);
   }
 
@@ -455,43 +454,89 @@ async function getCurrentVersionsMap(documentIds: string[]): Promise<Record<stri
   }, {});
 }
 
+async function getLatestExtractions(documentIds: string[]): Promise<Record<string, DocumentRecord["latest_extraction"]>> {
+  if (documentIds.length === 0) {
+    return {};
+  }
+
+  const { data, error } = await supabase
+    .from("document_extraction_jobs")
+    .select("id, document_id")
+    .in("document_id", documentIds)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Erro ao buscar jobs de extração: ${error.message}`);
+  }
+
+  const latestJobIdsByDocument = (data || []).reduce<Record<string, string>>((acc, row) => {
+    if (!acc[row.document_id]) {
+      acc[row.document_id] = row.id;
+    }
+    return acc;
+  }, {});
+
+  const jobIds = Object.values(latestJobIdsByDocument);
+  if (jobIds.length === 0) {
+    return {};
+  }
+
+  const { data: previews, error: previewsError } = await (supabase
+    .from("extracted_data_preview" as any)
+    .select("id, job_id, validation_status, target_table, created_at, extracted_fields")
+    .in("job_id", jobIds) as any);
+
+  if (previewsError) {
+    throw new Error(`Erro ao buscar extrações: ${previewsError.message}`);
+  }
+
+  return Object.entries(latestJobIdsByDocument).reduce<Record<string, DocumentRecord["latest_extraction"]>>((acc, [documentId, jobId]) => {
+    const preview = ((previews || []) as any[]).find((item) => item.job_id === jobId);
+    if (preview) {
+      acc[documentId] = {
+        id: preview.id,
+        validation_status: preview.validation_status,
+        target_table: preview.target_table,
+        created_at: preview.created_at,
+        extracted_fields: (preview.extracted_fields as Record<string, unknown>) || {},
+      };
+    }
+    return acc;
+  }, {});
+}
 
 async function syncDerivedStatuses(documentIds?: string[]): Promise<void> {
-  try {
-    let readRecipientsQuery = supabase
-      .from("document_read_recipients" as any)
-      .update({ status: "overdue" })
-      .lt("due_at", new Date().toISOString())
-      .in("status", ["pending", "viewed"]);
+  let readRecipientsQuery = supabase
+    .from("document_read_recipients" as any)
+    .update({ status: "overdue" })
+    .lt("due_at", new Date().toISOString())
+    .in("status", ["pending", "viewed"]);
 
-    if (documentIds && documentIds.length > 0) {
-      const { data: campaigns } = await supabase
-        .from("document_read_campaigns" as any)
-        .select("id")
-        .in("document_id", documentIds);
+  if (documentIds && documentIds.length > 0) {
+    const { data: campaigns } = await supabase
+      .from("document_read_campaigns" as any)
+      .select("id")
+      .in("document_id", documentIds);
 
-      const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
-      if (campaignIds.length > 0) {
-        readRecipientsQuery = readRecipientsQuery.in("campaign_id", campaignIds);
-      }
+    const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
+    if (campaignIds.length > 0) {
+      readRecipientsQuery = readRecipientsQuery.in("campaign_id", campaignIds);
     }
-
-    await readRecipientsQuery;
-
-    let requestsQuery = supabase
-      .from("document_requests" as any)
-      .update({ status: "overdue" })
-      .lt("due_at", new Date().toISOString())
-      .in("status", ["open", "in_progress"]);
-
-    if (documentIds && documentIds.length > 0) {
-      requestsQuery = requestsQuery.in("target_document_id", documentIds);
-    }
-
-    await requestsQuery;
-  } catch (err) {
-    console.warn("syncDerivedStatuses falhou (tabelas podem não existir):", err);
   }
+
+  await readRecipientsQuery;
+
+  let requestsQuery = supabase
+    .from("document_requests" as any)
+    .update({ status: "overdue" })
+    .lt("due_at", new Date().toISOString())
+    .in("status", ["open", "in_progress"]);
+
+  if (documentIds && documentIds.length > 0) {
+    requestsQuery = requestsQuery.in("target_document_id", documentIds);
+  }
+
+  await requestsQuery;
 }
 
 async function getPendingReadMap(documentIds: string[]): Promise<Record<string, number>> {
@@ -508,10 +553,6 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     .eq("status", "active");
 
   if (campaignError) {
-    if (campaignError.code === "PGRST205" || campaignError.code === "42P01") {
-      console.warn("document_read_campaigns não disponível:", campaignError.message);
-      return {};
-    }
     throw new Error(`Erro ao buscar campanhas de leitura: ${campaignError.message}`);
   }
 
@@ -527,9 +568,6 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
     .in("status", ["pending", "viewed", "overdue"]);
 
   if (recipientsError) {
-    if (recipientsError.code === "PGRST205" || recipientsError.code === "42P01") {
-      return {};
-    }
     throw new Error(`Erro ao buscar destinatários de leitura: ${recipientsError.message}`);
   }
 
@@ -560,10 +598,6 @@ async function getOpenRequestMap(documentIds: string[]): Promise<Record<string, 
     .in("status", ["open", "in_progress", "overdue"]);
 
   if (error) {
-    if (error.code === "PGRST205" || error.code === "42P01") {
-      console.warn("document_requests não disponível:", error.message);
-      return {};
-    }
     throw new Error(`Erro ao carregar solicitações: ${error.message}`);
   }
 
@@ -611,10 +645,6 @@ async function fetchDocumentRelations(documentId: string): Promise<{
     .or(`source_document_id.eq.${documentId},target_document_id.eq.${documentId}`);
 
   if (error) {
-    if (error.code === "PGRST205" || error.code === "42P01") {
-      console.warn("document_relations não disponível:", error.message);
-      return { outgoing: [], incoming: [] };
-    }
     throw new Error(`Erro ao carregar relações documentais: ${error.message}`);
   }
 
@@ -658,10 +688,6 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
     .order("created_at", { ascending: false });
 
   if (error) {
-    if (error.code === "PGRST205" || error.code === "42P01") {
-      console.warn("document_read_campaigns não disponível:", error.message);
-      return [];
-    }
     throw new Error(`Erro ao carregar campanhas de leitura: ${error.message}`);
   }
 
@@ -675,9 +701,6 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
     : { data: [], error: null };
 
   if (recipientsError) {
-    if (recipientsError.code === "PGRST205" || recipientsError.code === "42P01") {
-      return (campaigns || []).map((campaign: any) => ({ ...campaign, recipients: [] }));
-    }
     throw new Error(`Erro ao carregar destinatários das campanhas: ${recipientsError.message}`);
   }
 
@@ -704,10 +727,6 @@ async function fetchDocumentRequests(documentId: string): Promise<DocumentReques
     .order("created_at", { ascending: false });
 
   if (error) {
-    if (error.code === "PGRST205" || error.code === "42P01") {
-      console.warn("document_requests não disponível:", error.message);
-      return [];
-    }
     throw new Error(`Erro ao carregar solicitações do documento: ${error.message}`);
   }
 
@@ -738,16 +757,17 @@ export async function listDocumentRecords(filters: DocumentListFilters): Promise
   const rows = (data || []) as LegacyDocumentRow[];
   const documentIds = rows.map((row) => row.id);
 
-  const [controlProfiles, branchesMap, versionsMap, pendingReadMap, requestMap] = await Promise.all([
+  const [controlProfiles, branchesMap, versionsMap, extractionMap, pendingReadMap, requestMap] = await Promise.all([
     getControlProfiles(documentIds),
     getDocumentsBranchesMap(documentIds),
     getCurrentVersionsMap(documentIds),
+    getLatestExtractions(documentIds),
     getPendingReadMap(documentIds),
     getOpenRequestMap(documentIds),
   ]);
 
   const documents = rows.map((row) =>
-    mapDocumentRow(row, branchesMap, controlProfiles, versionsMap, pendingReadMap, requestMap),
+    mapDocumentRow(row, branchesMap, controlProfiles, versionsMap, extractionMap, pendingReadMap, requestMap),
   );
 
   return applyDocumentCenterFilters(documents, filters);
@@ -765,11 +785,12 @@ export async function getDocumentRecord(documentId: string): Promise<DocumentDet
   }
 
   const row = data as LegacyDocumentRow;
-  const [controlProfiles, branchesMap, versions, campaigns, requests, relations, auditTrail, changeLog, previewUrl] =
+  const [controlProfiles, branchesMap, versions, extractionMap, campaigns, requests, relations, auditTrail, changeLog, previewUrl] =
     await Promise.all([
       getControlProfiles([documentId]),
       getDocumentsBranchesMap([documentId]),
       documentVersionsService.getVersions(documentId) as Promise<DocumentVersionSummary[]>,
+      getLatestExtractions([documentId]),
       fetchReadCampaigns(documentId),
       fetchDocumentRequests(documentId),
       fetchDocumentRelations(documentId),
@@ -781,8 +802,7 @@ export async function getDocumentRecord(documentId: string): Promise<DocumentDet
       }),
       supabase.from("document_change_log" as any).select("*").eq("document_id", documentId).order("created_at", { ascending: false }).then(({ data: changeData, error: changeError }) => {
         if (changeError) {
-          console.warn("Falha ao carregar timeline documental:", changeError.message);
-          return [];
+          throw new Error(`Erro ao carregar timeline documental: ${changeError.message}`);
         }
         return changeData || [];
       }),
@@ -794,6 +814,7 @@ export async function getDocumentRecord(documentId: string): Promise<DocumentDet
     branchesMap,
     controlProfiles,
     { [documentId]: versions.find((version) => version.is_current)?.version_number || 1 },
+    extractionMap,
     {
       [documentId]: campaigns.reduce((acc, campaign) => {
         return acc + campaign.recipients.filter((recipient) => ["pending", "viewed", "overdue"].includes(recipient.status)).length;
@@ -890,7 +911,7 @@ export async function createDocumentRecord(payload: CreateDocumentPayload): Prom
     }
   }
 
-  
+  processDocumentWithAI(created.id).catch(() => undefined);
 
   return getDocumentRecord(created.id);
 }
@@ -979,7 +1000,7 @@ export async function replaceDocumentFile(documentId: string, file: File): Promi
     throw new Error(`Erro ao atualizar arquivo do documento: ${updateError.message}`);
   }
 
-  
+  processDocumentWithAI(documentId).catch(() => undefined);
 }
 
 export async function createReadCampaign(input: {
@@ -1196,50 +1217,4 @@ export async function deleteDocumentRelation(relationId: string): Promise<void> 
     targetDocumentId: (data as any).target_document_id,
     relationType: (data as any).relation_type,
   });
-}
-
-/**
- * Exclui um documento e todos os dados relacionados (perfil de controle,
- * campanhas de leitura, relações, solicitações, change log, versões).
- */
-export async function deleteDocumentRecord(documentId: string): Promise<void> {
-  const relatedTables = [
-    "document_control_profiles",
-    "document_read_recipients",
-    "document_read_campaigns",
-    "document_relations",
-    "document_requests",
-    "document_change_log",
-  ] as const;
-
-  for (const table of relatedTables) {
-    const column = table === "document_control_profiles" ? "document_id" : "document_id";
-    const { error } = await supabase.from(table as any).delete().eq(column, documentId);
-    // Ignore PGRST204 (no rows) and PGRST116 (table not found / relation does not exist)
-    if (error && !error.code?.startsWith("PGRST")) {
-      console.warn(`Falha ao limpar ${table}:`, error.message);
-    }
-  }
-
-  // Remover versões de documento
-  const { error: versionsError } = await supabase
-    .from("document_versions" as any)
-    .delete()
-    .eq("document_id", documentId);
-  if (versionsError && !versionsError.code?.startsWith("PGRST")) {
-    console.warn("Falha ao limpar versões:", versionsError.message);
-  }
-
-  // Remover vínculos de filiais
-  const { error: branchError } = await supabase
-    .from("document_branches" as any)
-    .delete()
-    .eq("document_id", documentId);
-  if (branchError && !branchError.code?.startsWith("PGRST")) {
-    console.warn("Falha ao limpar vínculos de filiais:", branchError.message);
-  }
-
-  // Finalmente, remover storage + registro principal
-  const { deleteDocument } = await import("@/services/documents");
-  await deleteDocument(documentId);
 }

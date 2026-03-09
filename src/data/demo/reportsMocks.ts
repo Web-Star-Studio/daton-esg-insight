@@ -1,8 +1,21 @@
 /**
- * Mock data for Reports modules (smart templates)
+ * Mock data for Reports and AI modules (smart templates, AI health)
  */
 
 export const reportsMockEntries = [
+  // AI health status — used by useAIHealth hook in ExtracoesDocumentos.tsx
+  {
+    queryKey: ['ai-health'],
+    data: {
+      status: 'healthy',
+      avgProcessingTime: 1.2,
+      errorRate: 0.2,
+      successRate: 99.8,
+      queueLength: 0,
+      lastProcessed: null,
+      issues: [],
+    },
+  },
   // Smart report templates — used by SmartTemplateSelector.tsx
   {
     queryKey: ['smart-templates'],
@@ -68,6 +81,29 @@ export const reportsMockEntries = [
         accuracy_score: 85,
       },
     ],
+  },
+  // AI extraction stats — AIExtractionStats.tsx (queryKey: ['ai-extraction-stats'])
+  // Without this, queryResolver returns {} (empty object). The !stats guard passes (truthy),
+  // but stats.avgConfidence is undefined, crashing .toFixed(1).
+  {
+    queryKey: ['ai-extraction-stats'],
+    data: {
+      totalJobs: 12,
+      completedJobs: 10,
+      errorJobs: 1,
+      avgConfidence: 91.2,
+      approvedCount: 8,
+      pendingCount: 2,
+      rejectedCount: 0,
+      approvalRate: 80.0,
+      successRate: 83.3,
+    },
+  },
+  // Document extraction approval previews — DocumentExtractionApproval.tsx (queryKey: ['extraction-previews'])
+  // Empty array: no pending approval items in demo mode
+  {
+    queryKey: ['extraction-previews'],
+    data: [],
   },
   // Intelligent reporting dashboard insights — IntelligentReportingDashboard.tsx (queryKey: ['dashboard-insights'])
   {

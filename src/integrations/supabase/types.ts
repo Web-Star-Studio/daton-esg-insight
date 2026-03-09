@@ -6008,125 +6008,6 @@ export type Database = {
           },
         ]
       }
-      document_change_log: {
-        Row: {
-          change_type: string
-          company_id: string | null
-          created_at: string
-          created_by_user_id: string | null
-          description: string | null
-          diff: Json | null
-          document_id: string
-          field_name: string | null
-          id: string
-          new_value: string | null
-          old_value: string | null
-          summary: string | null
-          user_id: string | null
-        }
-        Insert: {
-          change_type?: string
-          company_id?: string | null
-          created_at?: string
-          created_by_user_id?: string | null
-          description?: string | null
-          diff?: Json | null
-          document_id: string
-          field_name?: string | null
-          id?: string
-          new_value?: string | null
-          old_value?: string | null
-          summary?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          change_type?: string
-          company_id?: string | null
-          created_at?: string
-          created_by_user_id?: string | null
-          description?: string | null
-          diff?: Json | null
-          document_id?: string
-          field_name?: string | null
-          id?: string
-          new_value?: string | null
-          old_value?: string | null
-          summary?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_change_log_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_change_log_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      document_control_profiles: {
-        Row: {
-          code: string | null
-          confidentiality_level: string
-          controlled_copy: boolean
-          created_at: string
-          document_id: string
-          document_type_label: string
-          issuer_name: string | null
-          norm_reference: string | null
-          responsible_department: string | null
-          review_due_date: string | null
-          updated_at: string
-          validity_end_date: string | null
-          validity_start_date: string | null
-        }
-        Insert: {
-          code?: string | null
-          confidentiality_level?: string
-          controlled_copy?: boolean
-          created_at?: string
-          document_id: string
-          document_type_label?: string
-          issuer_name?: string | null
-          norm_reference?: string | null
-          responsible_department?: string | null
-          review_due_date?: string | null
-          updated_at?: string
-          validity_end_date?: string | null
-          validity_start_date?: string | null
-        }
-        Update: {
-          code?: string | null
-          confidentiality_level?: string
-          controlled_copy?: boolean
-          created_at?: string
-          document_id?: string
-          document_type_label?: string
-          issuer_name?: string | null
-          norm_reference?: string | null
-          responsible_department?: string | null
-          review_due_date?: string | null
-          updated_at?: string
-          validity_end_date?: string | null
-          validity_start_date?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_control_profiles_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: true
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       document_controlled_copies: {
         Row: {
           assigned_department: string | null
@@ -6170,97 +6051,6 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      document_external: {
-        Row: {
-          company_id: string
-          compliance_status: string | null
-          created_at: string | null
-          created_by_user_id: string | null
-          document_name: string
-          document_type: string
-          effective_date: string | null
-          expiration_date: string | null
-          file_path: string | null
-          id: string
-          is_active: boolean | null
-          issuing_authority: string | null
-          notes: string | null
-          origin: string | null
-          publication_date: string | null
-          reference_number: string | null
-          responsible_user_id: string | null
-          revalidation_date: string | null
-          revalidation_frequency: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          company_id: string
-          compliance_status?: string | null
-          created_at?: string | null
-          created_by_user_id?: string | null
-          document_name: string
-          document_type?: string
-          effective_date?: string | null
-          expiration_date?: string | null
-          file_path?: string | null
-          id?: string
-          is_active?: boolean | null
-          issuing_authority?: string | null
-          notes?: string | null
-          origin?: string | null
-          publication_date?: string | null
-          reference_number?: string | null
-          responsible_user_id?: string | null
-          revalidation_date?: string | null
-          revalidation_frequency?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          company_id?: string
-          compliance_status?: string | null
-          created_at?: string | null
-          created_by_user_id?: string | null
-          document_name?: string
-          document_type?: string
-          effective_date?: string | null
-          expiration_date?: string | null
-          file_path?: string | null
-          id?: string
-          is_active?: boolean | null
-          issuing_authority?: string | null
-          notes?: string | null
-          origin?: string | null
-          publication_date?: string | null
-          reference_number?: string | null
-          responsible_user_id?: string | null
-          revalidation_date?: string | null
-          revalidation_frequency?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_external_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_external_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_external_responsible_user_id_fkey"
-            columns: ["responsible_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -6591,241 +6381,6 @@ export type Database = {
           },
         ]
       }
-      document_read_campaigns: {
-        Row: {
-          company_id: string
-          created_at: string
-          created_by_user_id: string | null
-          document_id: string
-          due_at: string | null
-          id: string
-          message: string | null
-          status: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          created_by_user_id?: string | null
-          document_id: string
-          due_at?: string | null
-          id?: string
-          message?: string | null
-          status?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          created_by_user_id?: string | null
-          document_id?: string
-          due_at?: string | null
-          id?: string
-          message?: string | null
-          status?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_read_campaigns_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_read_campaigns_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      document_read_recipients: {
-        Row: {
-          campaign_id: string
-          confirmation_note: string | null
-          confirmed_at: string | null
-          created_at: string
-          due_at: string | null
-          id: string
-          last_reminder_at: string | null
-          sent_at: string
-          status: string
-          user_id: string
-          viewed_at: string | null
-        }
-        Insert: {
-          campaign_id: string
-          confirmation_note?: string | null
-          confirmed_at?: string | null
-          created_at?: string
-          due_at?: string | null
-          id?: string
-          last_reminder_at?: string | null
-          sent_at?: string
-          status?: string
-          user_id: string
-          viewed_at?: string | null
-        }
-        Update: {
-          campaign_id?: string
-          confirmation_note?: string | null
-          confirmed_at?: string | null
-          created_at?: string
-          due_at?: string | null
-          id?: string
-          last_reminder_at?: string | null
-          sent_at?: string
-          status?: string
-          user_id?: string
-          viewed_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_read_recipients_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "document_read_campaigns"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      document_relations: {
-        Row: {
-          company_id: string
-          created_at: string
-          created_by_user_id: string | null
-          id: string
-          notes: string | null
-          relation_type: string
-          source_document_id: string
-          target_document_id: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          created_by_user_id?: string | null
-          id?: string
-          notes?: string | null
-          relation_type?: string
-          source_document_id: string
-          target_document_id: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          created_by_user_id?: string | null
-          id?: string
-          notes?: string | null
-          relation_type?: string
-          source_document_id?: string
-          target_document_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_relations_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_relations_source_document_id_fkey"
-            columns: ["source_document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_relations_target_document_id_fkey"
-            columns: ["target_document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      document_requests: {
-        Row: {
-          company_id: string
-          created_at: string
-          description: string | null
-          due_at: string | null
-          fulfilled_document_id: string | null
-          fulfilled_version_id: string | null
-          id: string
-          priority: string
-          request_type: string
-          requested_from_user_id: string
-          requester_user_id: string
-          status: string
-          target_document_id: string | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          description?: string | null
-          due_at?: string | null
-          fulfilled_document_id?: string | null
-          fulfilled_version_id?: string | null
-          id?: string
-          priority?: string
-          request_type?: string
-          requested_from_user_id: string
-          requester_user_id: string
-          status?: string
-          target_document_id?: string | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          description?: string | null
-          due_at?: string | null
-          fulfilled_document_id?: string | null
-          fulfilled_version_id?: string | null
-          id?: string
-          priority?: string
-          request_type?: string
-          requested_from_user_id?: string
-          requester_user_id?: string
-          status?: string
-          target_document_id?: string | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_requests_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_requests_fulfilled_document_id_fkey"
-            columns: ["fulfilled_document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_requests_target_document_id_fkey"
-            columns: ["target_document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       document_versions: {
         Row: {
           changes_summary: string | null
@@ -6891,9 +6446,6 @@ export type Database = {
           company_id: string
           controlled_copy: boolean | null
           distribution_list: Json | null
-          document_level:
-            | Database["public"]["Enums"]["document_level_enum"]
-            | null
           document_type:
             | Database["public"]["Enums"]["document_type_enum"]
             | null
@@ -6929,9 +6481,6 @@ export type Database = {
           company_id: string
           controlled_copy?: boolean | null
           distribution_list?: Json | null
-          document_level?:
-            | Database["public"]["Enums"]["document_level_enum"]
-            | null
           document_type?:
             | Database["public"]["Enums"]["document_type_enum"]
             | null
@@ -6967,9 +6516,6 @@ export type Database = {
           company_id?: string
           controlled_copy?: boolean | null
           distribution_list?: Json | null
-          document_level?:
-            | Database["public"]["Enums"]["document_level_enum"]
-            | null
           document_type?:
             | Database["public"]["Enums"]["document_type_enum"]
             | null
@@ -25661,12 +25207,6 @@ export type Database = {
         | "Concluído"
         | "Em Atraso"
       credit_status_enum: "Disponível" | "Aposentado" | "Reservado"
-      document_level_enum:
-        | "nivel_1_msg"
-        | "nivel_2_psg"
-        | "nivel_3_it_pso"
-        | "nivel_4_rg"
-        | "nivel_5_fplan"
       document_type_enum: "interno" | "externo" | "registro" | "legal"
       emission_factor_type_enum: "system" | "custom"
       emission_source_status_enum: "Ativo" | "Inativo"
@@ -25900,13 +25440,6 @@ export const Constants = {
         "Em Atraso",
       ],
       credit_status_enum: ["Disponível", "Aposentado", "Reservado"],
-      document_level_enum: [
-        "nivel_1_msg",
-        "nivel_2_psg",
-        "nivel_3_it_pso",
-        "nivel_4_rg",
-        "nivel_5_fplan",
-      ],
       document_type_enum: ["interno", "externo", "registro", "legal"],
       emission_factor_type_enum: ["system", "custom"],
       emission_source_status_enum: ["Ativo", "Inativo"],

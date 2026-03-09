@@ -143,7 +143,7 @@ const GerenciamentoProjetos = lazy(() => import("./pages/GerenciamentoProjetos")
 const AcoesCorretivas = lazy(() => import("./pages/AcoesCorretivas"));
 const ControleDocumentos = lazy(() => import("./pages/ControleDocumentos"));
 const SGQDocumentDetail = lazy(() => import("./pages/SGQDocumentDetail"));
-
+const ExtracoesDocumentos = lazy(() => import("./pages/ExtracoesDocumentos"));
 
 // Phase 5-8: Novas páginas ESG
 const Fornecedores = lazy(() => import("./pages/Fornecedores"));
@@ -307,7 +307,7 @@ const AppContent = () => {
               <Route path="gestao-indicadores" element={<LazyPageWrapper><GestaoIndicadores /></LazyPageWrapper>} />
               <Route path="nao-conformidades" element={<LazyPageWrapper><NaoConformidades /></LazyPageWrapper>} />
               <Route path="acoes-corretivas" element={<LazyPageWrapper><AcoesCorretivas /></LazyPageWrapper>} />
-              <Route path="controle-documentos" element={<LazyPageWrapper><ControleDocumentos /></LazyPageWrapper>} />
+              <Route path="controle-documentos" element={<Navigate to="/documentos?document_kind=controlled" replace />} />
               <Route path="mapeamento-processos" element={<LazyPageWrapper><MapeamentoProcessos /></LazyPageWrapper>} />
               <Route path="planejamento-estrategico" element={<LazyPageWrapper><PlanejamentoEstrategico /></LazyPageWrapper>} />
               <Route path="licenciamento" element={<LazyPageWrapper><Licenciamento /></LazyPageWrapper>} />
@@ -569,7 +569,7 @@ const AppContent = () => {
             } />
 
             {/* Redirects antigos para o novo hub */}
-            <Route path="/extracoes-documentos" element={<Navigate to="/documentos" replace />} />
+            <Route path="/extracoes-documentos" element={<Navigate to="/documentos?tab=extracoes" replace />} />
             <Route path="/reconciliacao-documentos" element={<Navigate to="/documentos?tab=reconciliacao" replace />} />
 
             {/* Licenciamento */}
@@ -879,7 +879,7 @@ const AppContent = () => {
             <Route path="/matriz-partes-interessadas" element={<ProtectedLazyPageWrapper><MatrizPartesInteressadas /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-indicadores" element={<ProtectedLazyPageWrapper><GestaoIndicadores /></ProtectedLazyPageWrapper>} />
             <Route path="/indicador/:id" element={<ProtectedLazyPageWrapper><IndicadorDetalhes /></ProtectedLazyPageWrapper>} />
-            <Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
+            <Route path="/controle-documentos" element={<Navigate to="/documentos?document_kind=controlled" replace />} />
             <Route path="/controle-documentos/:id" element={<LegacyDocumentRedirect />} />
             <Route path="/gerenciamento-projetos" element={<ProtectedLazyPageWrapper><GerenciamentoProjetos /></ProtectedLazyPageWrapper>} />
             <Route path="/laia" element={<ProtectedLazyPageWrapper><LAIAUnidades /></ProtectedLazyPageWrapper>} />
