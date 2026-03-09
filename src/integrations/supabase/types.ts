@@ -21062,6 +21062,130 @@ export type Database = {
           },
         ]
       }
+      sgq_document_references: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          referenced_document_id: string
+          sgq_document_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          referenced_document_id: string
+          sgq_document_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          referenced_document_id?: string
+          sgq_document_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_document_references_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_references_referenced_document_id_fkey"
+            columns: ["referenced_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_references_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_document_versions: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          attachment_document_id: string | null
+          changes_summary: string | null
+          company_id: string
+          created_at: string
+          elaborated_by_user_id: string | null
+          id: string
+          sgq_document_id: string
+          version_number: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          attachment_document_id?: string | null
+          changes_summary?: string | null
+          company_id: string
+          created_at?: string
+          elaborated_by_user_id?: string | null
+          id?: string
+          sgq_document_id: string
+          version_number: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          attachment_document_id?: string | null
+          changes_summary?: string | null
+          company_id?: string
+          created_at?: string
+          elaborated_by_user_id?: string | null
+          id?: string
+          sgq_document_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_document_versions_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_versions_attachment_document_id_fkey"
+            columns: ["attachment_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_versions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_versions_elaborated_by_user_id_fkey"
+            columns: ["elaborated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_versions_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sgq_iso_document_settings: {
         Row: {
           company_id: string
@@ -21090,12 +21214,16 @@ export type Database = {
       }
       sgq_iso_documents: {
         Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
           branch_id: string | null
           company_id: string
           created_at: string
+          current_version_number: number
           document_identifier_other: string | null
           document_identifier_type: string
           document_number: string | null
+          elaborated_by_user_id: string | null
           expiration_date: string
           external_last_sync_at: string | null
           external_source_provider: string | null
@@ -21109,15 +21237,20 @@ export type Database = {
           renewal_alert_days: number | null
           renewal_required: boolean
           responsible_user_id: string | null
+          title: string
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
           branch_id?: string | null
           company_id: string
           created_at?: string
+          current_version_number?: number
           document_identifier_other?: string | null
           document_identifier_type?: string
           document_number?: string | null
+          elaborated_by_user_id?: string | null
           expiration_date: string
           external_last_sync_at?: string | null
           external_source_provider?: string | null
@@ -21131,15 +21264,20 @@ export type Database = {
           renewal_alert_days?: number | null
           renewal_required?: boolean
           responsible_user_id?: string | null
+          title?: string
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
           branch_id?: string | null
           company_id?: string
           created_at?: string
+          current_version_number?: number
           document_identifier_other?: string | null
           document_identifier_type?: string
           document_number?: string | null
+          elaborated_by_user_id?: string | null
           expiration_date?: string
           external_last_sync_at?: string | null
           external_source_provider?: string | null
@@ -21153,9 +21291,17 @@ export type Database = {
           renewal_alert_days?: number | null
           renewal_required?: boolean
           responsible_user_id?: string | null
+          title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sgq_iso_documents_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sgq_iso_documents_branch_id_fkey"
             columns: ["branch_id"]
@@ -21171,8 +21317,127 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sgq_iso_documents_elaborated_by_user_id_fkey"
+            columns: ["elaborated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sgq_iso_documents_responsible_user_id_fkey"
             columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_read_campaigns: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          due_at: string | null
+          id: string
+          message: string | null
+          sgq_document_id: string
+          status: string
+          title: string
+          version_number: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          due_at?: string | null
+          id?: string
+          message?: string | null
+          sgq_document_id: string
+          status?: string
+          title: string
+          version_number?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          due_at?: string | null
+          id?: string
+          message?: string | null
+          sgq_document_id?: string
+          status?: string
+          title?: string
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_read_campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_read_campaigns_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_read_campaigns_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sgq_read_recipients: {
+        Row: {
+          campaign_id: string
+          confirmation_note: string | null
+          confirmed_at: string | null
+          due_at: string | null
+          id: string
+          sent_at: string
+          status: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          confirmation_note?: string | null
+          confirmed_at?: string | null
+          due_at?: string | null
+          id?: string
+          sent_at?: string
+          status?: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          confirmation_note?: string | null
+          confirmed_at?: string | null
+          due_at?: string | null
+          id?: string
+          sent_at?: string
+          status?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_read_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_read_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_read_recipients_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
