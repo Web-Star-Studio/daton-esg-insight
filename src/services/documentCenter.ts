@@ -738,17 +738,16 @@ export async function listDocumentRecords(filters: DocumentListFilters): Promise
   const rows = (data || []) as LegacyDocumentRow[];
   const documentIds = rows.map((row) => row.id);
 
-  const [controlProfiles, branchesMap, versionsMap, extractionMap, pendingReadMap, requestMap] = await Promise.all([
+  const [controlProfiles, branchesMap, versionsMap, pendingReadMap, requestMap] = await Promise.all([
     getControlProfiles(documentIds),
     getDocumentsBranchesMap(documentIds),
     getCurrentVersionsMap(documentIds),
-    getLatestExtractions(documentIds),
     getPendingReadMap(documentIds),
     getOpenRequestMap(documentIds),
   ]);
 
   const documents = rows.map((row) =>
-    mapDocumentRow(row, branchesMap, controlProfiles, versionsMap, extractionMap, pendingReadMap, requestMap),
+    mapDocumentRow(row, branchesMap, controlProfiles, versionsMap, pendingReadMap, requestMap),
   );
 
   return applyDocumentCenterFilters(documents, filters);
