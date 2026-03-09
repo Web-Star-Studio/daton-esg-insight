@@ -301,9 +301,6 @@ const Index = () => {
         {/* Terceira Linha - Conteúdo Dinâmico */}
         <div className="space-y-8">
           <div className="w-full">
-            <AIProcessingStatusWidget />
-          </div>
-          <div className="w-full">
             <SGQDashboardWidget />
           </div>
           <div className="w-full">
