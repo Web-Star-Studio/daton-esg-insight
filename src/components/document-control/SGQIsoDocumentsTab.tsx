@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import { uploadDocument, downloadDocument } from "@/services/documents";
 import { confirmDocumentRead, getCurrentUserReadConfirmationMap } from "@/services/documentCompliance";
-import { processDocumentWithAI } from "@/services/documentAI";
+
 import { linkDocumentToBranches, getDocumentsBranchesMap } from "@/services/documentBranches";
 import { useBranches } from "@/services/branches";
 import { getBranchDisplayLabel } from "@/utils/branchDisplay";
