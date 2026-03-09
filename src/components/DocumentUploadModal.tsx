@@ -7,12 +7,10 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, X, File, Plus, Bot, Zap, FileText, Brain, CheckCircle, Settings } from 'lucide-react';
+import { Upload, X, File, Plus, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadDocument } from '@/services/documents';
-import { processDocumentWithAI } from '@/services/documentAI';
 import { logger } from '@/utils/logger';
-import { useAutoAIProcessing } from '@/hooks/useAutoAIProcessing';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
