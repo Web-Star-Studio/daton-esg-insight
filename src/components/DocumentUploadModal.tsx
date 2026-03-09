@@ -38,12 +38,6 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const [newTag, setNewTag] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [processWithAI, setProcessWithAI] = useState(true);
-  const [aiProcessingStatus, setAIProcessingStatus] = useState<string>('');
-  const [processingResults, setProcessingResults] = useState<ProcessingResult[]>([]);
-  
-  // Check if auto AI processing is enabled
-  const { data: autoProcessing } = useAutoAIProcessing();
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
