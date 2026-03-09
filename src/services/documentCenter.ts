@@ -487,15 +487,19 @@ async function getLatestExtractions(documentIds: string[]): Promise<Record<strin
 
   const { data: previews, error: previewsError } = await (supabase
     .from("extracted_data_preview" as any)
-    .select("id, job_id, validation_status, target_table, created_at, extracted_fields")
-    .in("job_id", jobIds) as any);
+    .select("id, extraction_job_id, validation_status, target_table, created_at, extracted_fields")
+    .in("extraction_job_id", jobIds) as any);
 
   if (previewsError) {
+    if (previewsError.code === "PGRST205" || previewsError.code === "42P01" || previewsError.code === "42703") {
+      console.warn("extracted_data_preview query failed, returning empty:", previewsError.message);
+      return {};
+    }
     throw new Error(`Erro ao buscar extrações: ${previewsError.message}`);
   }
 
   return Object.entries(latestJobIdsByDocument).reduce<Record<string, DocumentRecord["latest_extraction"]>>((acc, [documentId, jobId]) => {
-    const preview = ((previews || []) as any[]).find((item) => item.job_id === jobId);
+    const preview = ((previews || []) as any[]).find((item) => item.extraction_job_id === jobId);
     if (preview) {
       acc[documentId] = {
         id: preview.id,
