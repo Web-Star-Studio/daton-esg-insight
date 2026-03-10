@@ -104,7 +104,7 @@ export default function FluxoCaixa() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Fluxo de Caixa</h1>
           <p className="text-muted-foreground">Controle de entradas e saídas</p>
@@ -298,73 +298,75 @@ export default function FluxoCaixa() {
           {isLoading ? (
             <div>Carregando...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(Array.isArray(transactions) ? transactions : []).map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>{formatDateDisplay(transaction.transaction_date)}</TableCell>
-                    <TableCell>
-                      <Badge variant={transaction.type === 'entrada' ? 'default' : 'secondary'}>
-                        {transaction.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{transaction.category}</TableCell>
-                    <TableCell>{transaction.description || '-'}</TableCell>
-                    <TableCell className={transaction.type === 'entrada' ? 'text-success' : 'text-destructive'}>
-                      {Number(transaction.amount || 0).toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      })}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(transaction.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {transaction.status === 'previsto' && (
+            <div className="w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(Array.isArray(transactions) ? transactions : []).map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell>{formatDateDisplay(transaction.transaction_date)}</TableCell>
+                      <TableCell>
+                        <Badge variant={transaction.type === 'entrada' ? 'default' : 'secondary'}>
+                          {transaction.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{transaction.category}</TableCell>
+                      <TableCell>{transaction.description || '-'}</TableCell>
+                      <TableCell className={transaction.type === 'entrada' ? 'text-success' : 'text-destructive'}>
+                        {Number(transaction.amount || 0).toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        })}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(transaction.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {transaction.status === 'previsto' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => realizeMutation.mutate({
+                                id: transaction.id,
+                                date: new Date().toISOString().split('T')[0]
+                              })}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => realizeMutation.mutate({
-                              id: transaction.id,
-                              date: new Date().toISOString().split('T')[0]
-                            })}
+                            onClick={() => {
+                              setEditingTransaction(transaction);
+                              setDialogOpen(true);
+                            }}
                           >
-                            <Check className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingTransaction(transaction);
-                            setDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => deleteMutation.mutate(transaction.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteMutation.mutate(transaction.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

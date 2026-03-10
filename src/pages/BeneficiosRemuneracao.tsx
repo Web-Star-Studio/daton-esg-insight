@@ -150,7 +150,7 @@ export default function BeneficiosRemuneracao() {
 
   if (isLoading || benefitsLoading || statsLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="w-full overflow-hidden p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -164,15 +164,15 @@ export default function BeneficiosRemuneracao() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="w-full overflow-hidden p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Benefícios e Remuneração</h1>
           <p className="text-muted-foreground">
             Gestão de benefícios, salários e compensação dos funcionários
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={() => setReportsModalOpen(true)}>
             <FileText className="h-4 w-4 mr-2" />
             Relatórios
@@ -300,7 +300,7 @@ export default function BeneficiosRemuneracao() {
         </TabsContent>
 
         <TabsContent value="benefits" className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -394,14 +394,14 @@ export default function BeneficiosRemuneracao() {
                       </div>
 
                       <div className="pt-2 border-t">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                           <span className="text-sm text-muted-foreground">Custo mensal:</span>
                           <span className="font-medium text-lg">
                             R$ {benefit.monthlyCost.toLocaleString()}
                           </span>
                         </div>
                         {benefit.provider && (
-                          <div className="flex justify-between items-center mt-1">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-1">
                             <span className="text-xs text-muted-foreground">Fornecedor:</span>
                             <span className="text-xs">{benefit.provider}</span>
                           </div>
@@ -515,7 +515,7 @@ export default function BeneficiosRemuneracao() {
                   </div>
 
                   <div className="pt-4 border-t">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <span className="text-sm text-muted-foreground">Custo total mensal:</span>
                       <span className="font-medium">
                         R$ {(benefitsOverview.averageSalary * (employeeStats?.totalEmployees || 50)).toLocaleString()}
@@ -637,7 +637,7 @@ export default function BeneficiosRemuneracao() {
                   
                   <div className="space-y-3">
                     {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho'].map((month, index) => (
-                      <div key={month} className="flex justify-between items-center">
+                      <div key={month} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <span className="text-sm">{month}</span>
                         <div className="flex items-center gap-2">
                           <div className="w-16 bg-muted rounded-full h-2">

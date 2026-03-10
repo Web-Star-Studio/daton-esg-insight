@@ -374,7 +374,7 @@ export default function DemoDashboard() {
               </div>
 
               {/* Quick Actions */}
-              <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {QUICK_ACTIONS.map((action) => {
                   const Icon = action.icon;
                   return (
@@ -447,7 +447,7 @@ export default function DemoDashboard() {
                       return (
                         <div
                           key={activity.id}
-                          className="flex gap-2.5 p-2.5 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
+                          className="flex flex-wrap items-center gap-2 w-full sm:w-auto.5 p-2.5 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
                           onClick={showDemoToast}
                           onKeyDown={(event) => {
                             if (event.key === "Enter" || event.key === " ") {

@@ -143,7 +143,7 @@ export default function DescricaoCargos() {
   const hasActiveFilters = searchTerm || departmentFilter !== 'all' || educationFilter !== 'all' || levelFilter !== 'all';
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full overflow-hidden py-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
@@ -155,7 +155,7 @@ export default function DescricaoCargos() {
               Gerencie os cargos e funções da organização
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
               <Upload className="w-4 h-4 mr-2" />
               Importar

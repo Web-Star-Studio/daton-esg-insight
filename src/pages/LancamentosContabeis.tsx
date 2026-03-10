@@ -66,7 +66,7 @@ export default function LancamentosContabeis() {
       cell: ({ row }: any) => {
         if (row.original.status !== 'Provisório') return null;
         return (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               size="sm"
               variant="outline"
@@ -91,8 +91,8 @@ export default function LancamentosContabeis() {
   const confirmedEntries = entries.filter(e => e.status === 'Confirmado');
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="w-full overflow-hidden py-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Lançamentos Contábeis</h1>
           <p className="text-muted-foreground">Registro de operações contábeis</p>

@@ -210,16 +210,7 @@ export const governanceMockEntries = [
       whistleblower_cases_resolved: 100,
     }
   },
-  {
-    queryKey: ['governance-metrics', DEMO_COMPANY_ID],
-    data: {
-      board_independence: 60,
-      board_diversity: 40,
-      executive_compensation_link: true,
-      anti_corruption_training: 95,
-      whistleblower_cases_resolved: 100,
-    }
-  },
+
   // Employees
   {
     queryKey: ['employees'],
@@ -350,16 +341,7 @@ export const governanceMockEntries = [
     ]
   },
   // Governance dashboard
-  {
-    queryKey: ['governance-dashboard', DEMO_COMPANY_ID],
-    data: {
-      totalRisks: 8,
-      criticalRisks: 2,
-      complianceRate: 94.5,
-      pendingAudits: 1,
-      stakeholderEngagement: 72,
-    },
-  },
+
   // Governance dashboard (base)
   {
     queryKey: ['governance-dashboard'],
@@ -372,39 +354,24 @@ export const governanceMockEntries = [
     },
   },
   // ESG Risks — fields match ESGRisk interface used by ESGRisksMatrix.tsx
-  {
-    queryKey: ['esg-risks', DEMO_COMPANY_ID],
-    data: [
-      { id: '1', company_id: DEMO_COMPANY_ID, risk_title: 'Vazamento de Efluentes', risk_description: 'Risco de vazamento de efluentes industriais nos sistemas de tratamento.', esg_category: 'Ambiental', probability: 'Média', impact: 'Alto', inherent_risk_level: 'Alto', status: 'Ativo', owner_user_id: 'emp-2', treatment_plan: 'Manutenção preventiva dos sistemas de tratamento', next_review_date: '2026-04-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
-      { id: '2', company_id: DEMO_COMPANY_ID, risk_title: 'Descumprimento NR-12', risk_description: 'Não conformidade com norma de segurança em máquinas e equipamentos.', esg_category: 'Social', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'Médio', status: 'Ativo', owner_user_id: 'emp-4', treatment_plan: 'Programa de adequação de máquinas', next_review_date: '2026-03-15T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
-      { id: '3', company_id: DEMO_COMPANY_ID, risk_title: 'Fraude Contábil', risk_description: 'Risco de manipulação de registros financeiros e contábeis.', esg_category: 'Governança', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'Médio', status: 'Ativo', owner_user_id: 'emp-5', treatment_plan: 'Auditoria interna periódica', next_review_date: '2026-06-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
-      { id: '4', company_id: DEMO_COMPANY_ID, risk_title: 'Multas Ambientais', risk_description: 'Risco de aplicação de multas por descumprimento de condicionantes ambientais.', esg_category: 'Ambiental', probability: 'Alta', impact: 'Alto', inherent_risk_level: 'Crítico', status: 'Ativo', owner_user_id: 'emp-2', treatment_plan: 'Monitoramento contínuo de parâmetros', next_review_date: '2026-03-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
-      { id: '5', company_id: DEMO_COMPANY_ID, risk_title: 'Interrupção de Fornecimento', risk_description: 'Risco de paralisação da cadeia produtiva por falha em fornecedor crítico.', esg_category: 'Governança', probability: 'Média', impact: 'Médio', inherent_risk_level: 'Médio', status: 'Ativo', owner_user_id: 'emp-1', treatment_plan: 'Diversificação de fornecedores', next_review_date: '2026-05-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
-      { id: '6', company_id: DEMO_COMPANY_ID, risk_title: 'Violação LGPD', risk_description: 'Risco de incidente de segurança com dados pessoais de colaboradores ou clientes.', esg_category: 'Governança', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'Médio', status: 'Ativo', owner_user_id: 'emp-7', treatment_plan: 'Programa de adequação LGPD', next_review_date: '2026-06-15T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
-      { id: '7', company_id: DEMO_COMPANY_ID, risk_title: 'Acidente de Trabalho Fatal', risk_description: 'Risco de acidente grave envolvendo colaboradores nas operações industriais.', esg_category: 'Social', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'Crítico', status: 'Ativo', owner_user_id: 'emp-4', treatment_plan: 'Programa Zero Acidentes', next_review_date: '2026-03-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
-      { id: '8', company_id: DEMO_COMPANY_ID, risk_title: 'Escassez Hídrica', risk_description: 'Risco de restrição no uso de água por crise hídrica regional.', esg_category: 'Ambiental', probability: 'Média', impact: 'Médio', inherent_risk_level: 'Médio', status: 'Ativo', owner_user_id: 'emp-2', treatment_plan: 'Sistema de reuso de água', next_review_date: '2026-04-15T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
-    ],
-  },
-  // ESG Risks (base)
+  // A single comprehensive dataset is shared for both the scoped and unscoped query keys.
+
+  // ESG Risks (unscoped) — same comprehensive dataset as the scoped entry above
   {
     queryKey: ['esg-risks'],
     data: [
-      { id: '1', company_id: DEMO_COMPANY_ID, risk_title: 'Vazamento de Efluentes', risk_description: 'Risco de vazamento de efluentes industriais.', esg_category: 'Ambiental', probability: 'Média', impact: 'Alto', inherent_risk_level: 'Alto', status: 'Ativo', next_review_date: '2026-04-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
-      { id: '4', company_id: DEMO_COMPANY_ID, risk_title: 'Multas Ambientais', risk_description: 'Risco de aplicação de multas por descumprimento ambiental.', esg_category: 'Ambiental', probability: 'Alta', impact: 'Alto', inherent_risk_level: 'Crítico', status: 'Ativo', next_review_date: '2026-03-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
-      { id: '7', company_id: DEMO_COMPANY_ID, risk_title: 'Acidente de Trabalho Fatal', risk_description: 'Risco de acidente grave nas operações industriais.', esg_category: 'Social', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'Crítico', status: 'Ativo', next_review_date: '2026-03-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
+      { id: '1', company_id: DEMO_COMPANY_ID, risk_title: 'Vazamento de Efluentes', risk_description: 'Risco de vazamento de efluentes industriais nos sistemas de tratamento.', esg_category: 'Ambiental', probability: 'M\u00e9dia', impact: 'Alto', inherent_risk_level: 'Alto', status: 'Ativo', owner_user_id: 'emp-2', treatment_plan: 'Manutenção preventiva dos sistemas de tratamento', next_review_date: '2026-04-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
+      { id: '2', company_id: DEMO_COMPANY_ID, risk_title: 'Descumprimento NR-12', risk_description: 'Não conformidade com norma de segurança em máquinas e equipamentos.', esg_category: 'Social', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'M\u00e9dio', status: 'Ativo', owner_user_id: 'emp-4', treatment_plan: 'Programa de adequação de máquinas', next_review_date: '2026-03-15T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
+      { id: '3', company_id: DEMO_COMPANY_ID, risk_title: 'Fraude Cont\u00e1bil', risk_description: 'Risco de manipulação de registros financeiros e contábeis.', esg_category: 'Governança', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'M\u00e9dio', status: 'Ativo', owner_user_id: 'emp-5', treatment_plan: 'Auditoria interna periódica', next_review_date: '2026-06-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
+      { id: '4', company_id: DEMO_COMPANY_ID, risk_title: 'Multas Ambientais', risk_description: 'Risco de aplicação de multas por descumprimento de condicionantes ambientais.', esg_category: 'Ambiental', probability: 'Alta', impact: 'Alto', inherent_risk_level: 'Cr\u00edtico', status: 'Ativo', owner_user_id: 'emp-2', treatment_plan: 'Monitoramento contínuo de parâmetros', next_review_date: '2026-03-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
+      { id: '5', company_id: DEMO_COMPANY_ID, risk_title: 'Interrupção de Fornecimento', risk_description: 'Risco de paralisação da cadeia produtiva por falha em fornecedor crítico.', esg_category: 'Governança', probability: 'M\u00e9dia', impact: 'M\u00e9dio', inherent_risk_level: 'M\u00e9dio', status: 'Ativo', owner_user_id: 'emp-1', treatment_plan: 'Diversificação de fornecedores', next_review_date: '2026-05-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
+      { id: '6', company_id: DEMO_COMPANY_ID, risk_title: 'Violação LGPD', risk_description: 'Risco de incidente de segurança com dados pessoais de colaboradores ou clientes.', esg_category: 'Governança', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'M\u00e9dio', status: 'Ativo', owner_user_id: 'emp-7', treatment_plan: 'Programa de adequação LGPD', next_review_date: '2026-06-15T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
+      { id: '7', company_id: DEMO_COMPANY_ID, risk_title: 'Acidente de Trabalho Fatal', risk_description: 'Risco de acidente grave envolvendo colaboradores nas operações industriais.', esg_category: 'Social', probability: 'Baixa', impact: 'Alto', inherent_risk_level: 'Cr\u00edtico', status: 'Ativo', owner_user_id: 'emp-4', treatment_plan: 'Programa Zero Acidentes', next_review_date: '2026-03-01T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-02-01T10:00:00Z' },
+      { id: '8', company_id: DEMO_COMPANY_ID, risk_title: 'Escassez H\u00eddrica', risk_description: 'Risco de restrição no uso de água por crise hídrica regional.', esg_category: 'Ambiental', probability: 'M\u00e9dia', impact: 'M\u00e9dio', inherent_risk_level: 'M\u00e9dio', status: 'Ativo', owner_user_id: 'emp-2', treatment_plan: 'Sistema de reuso de água', next_review_date: '2026-04-15T00:00:00Z', created_at: '2025-06-01T09:00:00Z', updated_at: '2026-01-15T10:00:00Z' },
     ],
   },
   // Compliance
-  {
-    queryKey: ['compliance', DEMO_COMPANY_ID],
-    data: [
-      { id: '1', name: 'LGPD - Lei Geral de Proteção de Dados', category: 'Dados e Privacidade', status: 'Conforme', compliance_percentage: 92, last_review: '2026-01-15', next_review: '2026-07-15', company_id: DEMO_COMPANY_ID },
-      { id: '2', name: 'ISO 14001:2015', category: 'Ambiental', status: 'Conforme', compliance_percentage: 88, last_review: '2025-12-01', next_review: '2026-06-01', company_id: DEMO_COMPANY_ID },
-      { id: '3', name: 'NR-12 - Segurança em Máquinas', category: 'Segurança', status: 'Parcialmente Conforme', compliance_percentage: 78, last_review: '2026-01-20', next_review: '2026-04-20', company_id: DEMO_COMPANY_ID },
-      { id: '4', name: 'Política Anticorrupção', category: 'Governança', status: 'Conforme', compliance_percentage: 95, last_review: '2025-11-01', next_review: '2026-05-01', company_id: DEMO_COMPANY_ID },
-      { id: '5', name: 'CONAMA 430 - Efluentes', category: 'Ambiental', status: 'Conforme', compliance_percentage: 100, last_review: '2026-02-01', next_review: '2026-08-01', company_id: DEMO_COMPANY_ID },
-    ],
-  },
+
   // Compliance (base)
   {
     queryKey: ['compliance'],
@@ -414,14 +381,7 @@ export const governanceMockEntries = [
     ],
   },
   // Compliance tasks
-  {
-    queryKey: ['compliance-tasks', DEMO_COMPANY_ID],
-    data: [
-      { id: 'ct-1', title: 'Renovar Licença de Operação', requirement: 'Condicionantes Ambientais', category: 'Environmental', due_date: '2026-03-15', status: 'Em progresso', priority: 'high', assigned_to_user_id: 'emp-2', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-1' },
-      { id: 'ct-2', title: 'Treinamento LGPD Anual', requirement: 'Política de Privacidade', category: 'Data & Privacy', due_date: '2026-02-28', status: 'Atrasado', priority: 'medium', assigned_to_user_id: 'emp-7', is_template: false, is_recurring: true, recurrence_pattern: 'yearly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-2' },
-      { id: 'ct-3', title: 'Relatório Trimestral CIPA', requirement: 'NR-05', category: 'Health & Safety', due_date: '2026-03-30', status: 'Pendente', priority: 'medium', assigned_to_user_id: 'emp-4', is_template: false, is_recurring: true, recurrence_pattern: 'quarterly', company_id: DEMO_COMPANY_ID, requirement_id: 'req-3' }
-    ]
-  },
+
   {
     queryKey: ['compliance-tasks'],
     data: [
@@ -430,14 +390,7 @@ export const governanceMockEntries = [
     ]
   },
   // Licenses
-  {
-    queryKey: ['licenses', DEMO_COMPANY_ID],
-    data: [
-      { id: 'lic-1', name: 'Licença de Operação (LO)', issuing_body: 'CETESB', issue_date: '2021-03-15', expiration_date: '2026-03-15', status: 'Válida', company_id: DEMO_COMPANY_ID },
-      { id: 'lic-2', name: 'Alvará do Corpo de Bombeiros (AVCB)', issuing_body: 'Corpo de Bombeiros SP', issue_date: '2023-05-10', expiration_date: '2026-05-10', status: 'Válida', company_id: DEMO_COMPANY_ID },
-      { id: 'lic-3', name: 'Outorga de Uso de Água', issuing_body: 'DAEE', issue_date: '2019-11-20', expiration_date: '2024-11-20', status: 'Vencida', company_id: DEMO_COMPANY_ID },
-    ]
-  },
+
   {
     queryKey: ['licenses'],
     data: [
@@ -463,17 +416,17 @@ export const governanceMockEntries = [
   {
     queryKey: ['corporate-policies', DEMO_COMPANY_ID],
     data: [
-      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo', version: '3.0', approval_date: '2025-06-15', next_review: '2026-06-15' },
-      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo', version: '5.1', approval_date: '2025-01-01', next_review: '2026-01-01' },
-      { id: '3', title: 'Política Anticorrupção', category: 'Compliance', status: 'Ativo', version: '2.0', approval_date: '2024-12-01', next_review: '2025-12-01' },
+      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo', version: '3.0', description: 'Diretrizes para gestão sustentável das operações e cadeia de valor da empresa.', effective_date: '2025-07-01T00:00:00Z', approval_date: '2025-06-15T00:00:00Z', review_date: '2026-06-15T00:00:00Z', next_review: '2026-06-15' },
+      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo', version: '5.1', description: 'Princípios e valores que norteiam a conduta de todos os colaboradores e parceiros.', effective_date: '2025-01-15T00:00:00Z', approval_date: '2025-01-01T00:00:00Z', review_date: '2026-01-01T00:00:00Z', next_review: '2026-01-01' },
+      { id: '3', title: 'Política Anticorrupção', category: 'Compliance', status: 'Ativo', version: '2.0', description: 'Diretrizes para prevenção, detecção e combate à corrupção e suborno.', effective_date: '2024-12-15T00:00:00Z', approval_date: '2024-12-01T00:00:00Z', review_date: '2025-12-01T00:00:00Z', next_review: '2025-12-01' },
     ],
   },
   // Corporate policies (base)
   {
     queryKey: ['corporate-policies'],
     data: [
-      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo' },
-      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo' },
+      { id: '1', title: 'Política de Sustentabilidade', category: 'ESG', status: 'Ativo', version: '3.0', description: 'Diretrizes para gestão sustentável das operações.', effective_date: '2025-07-01T00:00:00Z', approval_date: '2025-06-15T00:00:00Z', review_date: '2026-06-15T00:00:00Z' },
+      { id: '2', title: 'Código de Ética', category: 'Governança', status: 'Ativo', version: '5.1', description: 'Princípios e valores que norteiam a conduta de todos.', effective_date: '2025-01-15T00:00:00Z', approval_date: '2025-01-01T00:00:00Z', review_date: '2026-01-01T00:00:00Z' },
     ],
   },
   // Audits
@@ -545,34 +498,60 @@ export const governanceMockEntries = [
   {
     queryKey: ['opportunities', DEMO_COMPANY_ID],
     data: [
-      { id: '1', title: 'Créditos de Carbono', category: 'Financeiro', status: 'Em Análise', potential_value: 500000 },
-      { id: '2', title: 'Certificação B Corp', category: 'Reputação', status: 'Identificada', potential_value: null },
+      { id: '1', title: 'Implementação de Painéis Solares', description: 'Redução de custos', category: 'Ambiental', probability: 'Alta', impact: 'Alto', status: 'Em Análise', potential_value: 150000, implementation_cost: 50000 },
+      { id: '2', title: 'Programa de Diversidade', description: 'Atração de talentos', category: 'Social', probability: 'Alta', impact: 'Médio', status: 'Em Implementação', potential_value: null },
+      { id: '3', title: 'Créditos de Carbono', description: 'Venda de créditos', category: 'Financeiro', probability: 'Média', impact: 'Alto', status: 'Em Análise', potential_value: 500000 }
     ],
   },
   // Opportunities (base)
   {
     queryKey: ['opportunities'],
     data: [
-      { id: '1', title: 'Créditos de Carbono', category: 'Financeiro', status: 'Em Análise', potential_value: 500000 },
+      { id: '1', title: 'Implementação de Painéis Solares', description: 'Redução de custos', category: 'Ambiental', probability: 'Alta', impact: 'Alto', status: 'Em Análise', potential_value: 150000, implementation_cost: 50000 },
+      { id: '2', title: 'Programa de Diversidade', description: 'Atração de talentos', category: 'Social', probability: 'Alta', impact: 'Médio', status: 'Em Implementação', potential_value: null },
+      { id: '3', title: 'Créditos de Carbono', description: 'Venda de créditos', category: 'Financeiro', probability: 'Média', impact: 'Alto', status: 'Em Análise', potential_value: 500000 }
     ],
   },
-  // Risk matrix
+  // Opportunity Matrix
+  {
+    queryKey: ['opportunity-matrix'],
+    data: {
+      'Alta': { 'Baixo': 0, 'Médio': 1, 'Alto': 1 },
+      'Média': { 'Baixo': 0, 'Médio': 0, 'Alto': 1 },
+      'Baixa': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 },
+    }
+  },
+  // SWOT Analyses
+  {
+    queryKey: ['swot-analyses'],
+    data: [
+      {
+        id: "demo-swot-1",
+        title: "Análise SWOT 2026",
+        description: "Análise estratégica anual de sustentabilidade e negócios.",
+        created_at: "2026-01-01T00:00:00.000Z"
+      }
+    ]
+  },
+  // SWOT Items
+  {
+    queryKey: ['swot-items', 'demo-swot-1'],
+    data: [
+      { id: "item-1", category: "strengths", item_text: "Marca Forte em Sustentabilidade", description: "Reconhecimento no mercado pelas práticas ESG.", impact_level: "high" },
+      { id: "item-2", category: "strengths", item_text: "Equipe Capacitada", description: "Baixa rotatividade e alta especialização técnica.", impact_level: "medium" },
+      { id: "item-3", category: "weaknesses", item_text: "Dependência de Fornecedores Externos", description: "Cadeia de suprimentos vulnerável a interrupções globais.", impact_level: "high" },
+      { id: "item-4", category: "opportunities", item_text: "Expansão para Mercados Verdes", description: "Novos produtos focados na economia circular.", impact_level: "high" },
+      { id: "item-5", category: "threats", item_text: "Novas Regulamentações Ambientais", description: "Maior rigor na legislação de emissões.", impact_level: "medium" }
+    ]
+  },
+  // Risk matrix — counts match the 8 active demo esg-risks above
+  // Baixa/Alto=4 (ids 2,3,6,7), Média/Alto=1 (id 1), Média/Médio=2 (ids 5,8), Alta/Alto=1 (id 4)
   {
     queryKey: ['risk-matrix'],
     data: {
-      rows: ['Baixa', 'Média', 'Alta'],
-      cols: ['Baixo', 'Médio', 'Alto'],
-      cells: [
-        { probability: 'Baixa', impact: 'Baixo', risks: 0, level: 'Baixo' },
-        { probability: 'Baixa', impact: 'Médio', risks: 0, level: 'Baixo' },
-        { probability: 'Baixa', impact: 'Alto', risks: 3, level: 'Médio' },
-        { probability: 'Média', impact: 'Baixo', risks: 0, level: 'Baixo' },
-        { probability: 'Média', impact: 'Médio', risks: 2, level: 'Médio' },
-        { probability: 'Média', impact: 'Alto', risks: 1, level: 'Alto' },
-        { probability: 'Alta', impact: 'Baixo', risks: 0, level: 'Baixo' },
-        { probability: 'Alta', impact: 'Médio', risks: 0, level: 'Médio' },
-        { probability: 'Alta', impact: 'Alto', risks: 2, level: 'Crítico' },
-      ],
+      'Baixa': { 'Baixo': 0, 'M\u00e9dio': 0, 'Alto': 4 },
+      'M\u00e9dia': { 'Baixo': 0, 'M\u00e9dio': 2, 'Alto': 1 },
+      'Alta': { 'Baixo': 0, 'M\u00e9dio': 0, 'Alto': 1 }
     },
   },
   // Audit programs

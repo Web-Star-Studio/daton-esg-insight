@@ -108,12 +108,12 @@ export default function LicenseMonitoring() {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Dashboard de Monitoramento</h1>
           <p className="text-muted-foreground">Visão completa de alertas e observações</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={() => exportReport('excel')}>
             <Download className="h-4 w-4 mr-2" />
             Exportar Excel

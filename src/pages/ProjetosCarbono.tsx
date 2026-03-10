@@ -155,7 +155,7 @@ export default function CompensacaoCarbono() {
               Gerencie atividades próprias de conservação, reflorestamento e recuperação ambiental para compensação de carbono.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button 
               variant="outline"
               onClick={() => {
@@ -189,7 +189,7 @@ export default function CompensacaoCarbono() {
         {/* Activities Table */}
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle>Atividades de Conservação</CardTitle>
               <Badge variant="outline">
                 {stats.activities_count} total • {stats.active_activities_count} ativas

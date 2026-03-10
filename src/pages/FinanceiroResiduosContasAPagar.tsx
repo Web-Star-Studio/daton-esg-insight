@@ -99,7 +99,7 @@ export default function FinanceiroResiduosContasAPagar() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Contas a Pagar - Resíduos</h1>
           <p className="text-muted-foreground mt-1">Gestão financeira de pagamentos de destinação de resíduos</p>
@@ -213,64 +213,66 @@ export default function FinanceiroResiduosContasAPagar() {
               <p>Nenhuma conta a pagar encontrada</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>MTR</TableHead>
-                  <TableHead>Data Coleta</TableHead>
-                  <TableHead>Resíduo</TableHead>
-                  <TableHead>Destinador</TableHead>
-                  <TableHead>Valor Total</TableHead>
-                  <TableHead>Pago</TableHead>
-                  <TableHead>Saldo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payables.map((waste) => {
-                  const balance = (waste.total_payable || 0) - (waste.amount_paid || 0);
-                  const daysOverdue = calculateDaysOverdue(waste.collection_date);
+            <div className="w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>MTR</TableHead>
+                    <TableHead>Data Coleta</TableHead>
+                    <TableHead>Resíduo</TableHead>
+                    <TableHead>Destinador</TableHead>
+                    <TableHead>Valor Total</TableHead>
+                    <TableHead>Pago</TableHead>
+                    <TableHead>Saldo</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payables.map((waste) => {
+                    const balance = (waste.total_payable || 0) - (waste.amount_paid || 0);
+                    const daysOverdue = calculateDaysOverdue(waste.collection_date);
 
-                  return (
-                    <TableRow key={waste.id}>
-                      <TableCell className="font-medium">{waste.mtr_number}</TableCell>
-                      <TableCell>{format(new Date(waste.collection_date), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{waste.waste_description}</TableCell>
-                      <TableCell>{waste.destination_name || '-'}</TableCell>
-                      <TableCell>{formatCurrency(waste.total_payable)}</TableCell>
-                      <TableCell className="text-green-600">{formatCurrency(waste.amount_paid)}</TableCell>
-                      <TableCell className="font-semibold">{formatCurrency(balance)}</TableCell>
-                      <TableCell>{getStatusBadge(waste.payment_status)}</TableCell>
-                      <TableCell>
-                        {daysOverdue > 0 ? (
-                          <span className="text-red-600 text-xs font-medium">
-                            {daysOverdue} dias em atraso
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">Dentro do prazo</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {waste.payment_status !== 'Quitado' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedWaste(waste);
-                              setPaymentAmount(balance);
-                            }}
-                          >
-                            Registrar Pagamento
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                    return (
+                      <TableRow key={waste.id}>
+                        <TableCell className="font-medium">{waste.mtr_number}</TableCell>
+                        <TableCell>{format(new Date(waste.collection_date), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{waste.waste_description}</TableCell>
+                        <TableCell>{waste.destination_name || '-'}</TableCell>
+                        <TableCell>{formatCurrency(waste.total_payable)}</TableCell>
+                        <TableCell className="text-green-600">{formatCurrency(waste.amount_paid)}</TableCell>
+                        <TableCell className="font-semibold">{formatCurrency(balance)}</TableCell>
+                        <TableCell>{getStatusBadge(waste.payment_status)}</TableCell>
+                        <TableCell>
+                          {daysOverdue > 0 ? (
+                            <span className="text-red-600 text-xs font-medium">
+                              {daysOverdue} dias em atraso
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Dentro do prazo</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {waste.payment_status !== 'Quitado' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedWaste(waste);
+                                setPaymentAmount(balance);
+                              }}
+                            >
+                              Registrar Pagamento
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

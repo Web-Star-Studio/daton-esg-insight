@@ -955,4 +955,10 @@ export const socialMockEntries = [
     queryKey: ['filtered-training-metrics'],
     data: DEMO_FILTERED_TRAINING_METRICS,
   },
+  // Employee form submissions — EmployeeFormsTab.tsx (queryKey: ['employee-form-submissions', employeeId])
+  // Prefix entry catches any ['employee-form-submissions', anyId]. Empty array = no forms in demo.
+  {
+    queryKey: ['employee-form-submissions'],
+    data: [],
+  },
 ];

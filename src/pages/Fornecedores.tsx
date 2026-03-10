@@ -108,7 +108,7 @@ export default function Fornecedores() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Gestão de Fornecedores</h1>
           <p className="text-muted-foreground">Gerencie fornecedores para cálculo de Escopo 3</p>

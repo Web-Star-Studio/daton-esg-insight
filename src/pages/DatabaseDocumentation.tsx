@@ -104,7 +104,7 @@ export default function DatabaseDocumentation() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-6">
+        <div className="w-full overflow-hidden px-4 py-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <Button 
@@ -122,7 +122,7 @@ export default function DatabaseDocumentation() {
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <Button 
                 variant="outline" 
                 onClick={handleExportMarkdown}
@@ -146,7 +146,7 @@ export default function DatabaseDocumentation() {
       
       {/* Search and Filters */}
       <div className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-6 space-y-4">
+        <div className="w-full overflow-hidden px-4 py-6 space-y-4">
           <DatabaseSearch 
             value={searchQuery} 
             onChange={setSearchQuery} 
@@ -188,7 +188,7 @@ export default function DatabaseDocumentation() {
       </div>
       
       {/* Tables List */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="w-full overflow-hidden px-4 py-8">
         {filteredTables.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

@@ -36,14 +36,19 @@ export function EmployeeDocumentsTab({ employeeId, employeeName }: EmployeeDocum
   });
 
   const filteredDocuments = documents.filter(doc =>
-    doc.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    doc.file_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    doc.tags?.some(tag => tag && tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleDownload = async (documentId: string, fileName: string) => {
     try {
       const url = await downloadEmployeeDocument(documentId);
-      
+
+      if (!url || url.trim() === '') {
+        unifiedToast.error('URL de download não disponível');
+        return;
+      }
+
       // Criar link temporário e fazer download
       const link = document.createElement('a');
       link.href = url;
@@ -51,7 +56,7 @@ export function EmployeeDocumentsTab({ employeeId, employeeName }: EmployeeDocum
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       unifiedToast.success('Download iniciado!');
     } catch (error) {
       console.error('Download error:', error);
@@ -158,47 +163,50 @@ export function EmployeeDocumentsTab({ employeeId, employeeName }: EmployeeDocum
               {/* Documents List */}
               {filteredDocuments.length > 0 ? (
                 <div className="space-y-3">
-                  {filteredDocuments.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="text-muted-foreground">
-                          {getFileIcon(doc.file_type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium truncate">{doc.file_name}</h4>
-                          <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                            {doc.tags && doc.tags.length > 0 && (
-                              <Badge variant="secondary" className="text-xs">
-                                {doc.tags[0]}
-                              </Badge>
-                            )}
-                            <span>{formatFileSize(doc.file_size)}</span>
-                            <span>•</span>
-                            <span>{new Date(doc.upload_date).toLocaleDateString('pt-BR')}</span>
+                  {filteredDocuments.map((doc) => {
+                    const displayName = doc.file_name?.trim() || 'Documento sem nome';
+                    return (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="text-muted-foreground">
+                            {getFileIcon(doc.file_type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium truncate">{displayName}</h4>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                              {doc.tags && doc.tags.length > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {doc.tags[0]}
+                                </Badge>
+                              )}
+                              <span>{formatFileSize(doc.file_size)}</span>
+                              <span>•</span>
+                              <span>{new Date(doc.upload_date).toLocaleDateString('pt-BR')}</span>
+                            </div>
                           </div>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownload(doc.id, displayName)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(doc.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDownload(doc.id, doc.file_name)}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteClick(doc.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">

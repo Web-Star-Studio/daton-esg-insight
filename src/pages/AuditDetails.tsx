@@ -83,7 +83,7 @@ export default function AuditDetails() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full overflow-hidden p-6 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Button

@@ -143,7 +143,7 @@ export default function DesenvolvimentoCarreira() {
 
   if (statsLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-8">
+      <div className="w-full overflow-hidden p-6 space-y-8">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -188,7 +188,7 @@ export default function DesenvolvimentoCarreira() {
   ];
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
+    <div className="w-full overflow-hidden p-6 space-y-8">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Desenvolvimento de Carreira</h1>
@@ -252,21 +252,21 @@ export default function DesenvolvimentoCarreira() {
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div>
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-1">
                       <span className="text-sm">Recursos Humanos</span>
                       <span className="text-sm font-medium">5 movimentações</span>
                     </div>
                     <Progress value={25} className="h-2" />
                   </div>
                   <div>
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-1">
                       <span className="text-sm">Tecnologia</span>
                       <span className="text-sm font-medium">8 movimentações</span>
                     </div>
                     <Progress value={40} className="h-2" />
                   </div>
                   <div>
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-1">
                       <span className="text-sm">Vendas</span>
                       <span className="text-sm font-medium">3 movimentações</span>
                     </div>
@@ -286,15 +286,15 @@ export default function DesenvolvimentoCarreira() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm">Liderança</span>
                     <Badge variant="default">34 funcionários</Badge>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm">Comunicação</span>
                     <Badge variant="default">28 funcionários</Badge>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm">Análise de Dados</span>
                     <Badge variant="default">22 funcionários</Badge>
                   </div>
@@ -374,7 +374,7 @@ export default function DesenvolvimentoCarreira() {
                       
                       <div className="space-y-3">
                         <div>
-                          <div className="flex justify-between items-center mb-1">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-1">
                             <span className="text-sm font-medium">Progresso</span>
                             <span className="text-sm font-medium">{plan.progress_percentage}%</span>
                           </div>
@@ -386,7 +386,7 @@ export default function DesenvolvimentoCarreira() {
                             <User className="w-4 h-4" />
                             <span>Mentor: {plan.mentor?.full_name || "Não definido"}</span>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                             <Button
                               variant="outline"
                               size="sm"
@@ -407,7 +407,7 @@ export default function DesenvolvimentoCarreira() {
         </TabsContent>
 
         <TabsContent value="sucessao" className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h3 className="text-lg font-semibold">Planejamento de Sucessão</h3>
               <p className="text-sm text-muted-foreground">
@@ -609,7 +609,7 @@ export default function DesenvolvimentoCarreira() {
         </TabsContent>
 
         <TabsContent value="vagas" className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h3 className="text-lg font-semibold">Vagas Internas</h3>
               <p className="text-sm text-muted-foreground">
@@ -770,7 +770,7 @@ export default function DesenvolvimentoCarreira() {
                           </Badge>
                         )}
                         
-                        <div className="flex gap-2 pt-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto pt-2">
                           <Button
                             variant="outline"
                             size="sm"
@@ -805,7 +805,7 @@ export default function DesenvolvimentoCarreira() {
         </TabsContent>
 
         <TabsContent value="mentoria" className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h3 className="text-lg font-semibold">Programa de Mentoria</h3>
               <p className="text-muted-foreground">Relacionamentos mentor-mentorado e acompanhamento</p>

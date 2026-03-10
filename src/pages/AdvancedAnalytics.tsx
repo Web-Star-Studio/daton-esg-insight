@@ -82,7 +82,7 @@ const AdvancedAnalytics = () => {
   const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe'];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full overflow-hidden p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Analytics Avançados</h1>
@@ -266,19 +266,19 @@ const AdvancedAnalytics = () => {
                 <CardTitle>Performance do Sistema</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <span className="text-sm">Tempo de Resposta</span>
                   <Badge variant="outline">
                     {formatValue(systemPerformanceData?.responseTime || 0, 0)}ms
                   </Badge>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <span className="text-sm">Uptime</span>
                   <Badge variant="outline">
                     {formatValue(systemPerformanceData?.uptime || 0, 2)}%
                   </Badge>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <span className="text-sm">Taxa de Erro</span>
                   <Badge variant="outline">
                     {formatValue(systemPerformanceData?.errorRate || 0, 3)}%
@@ -533,7 +533,7 @@ const AdvancedAnalytics = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
                   <span className="text-sm">CPU</span>
                   <span className="text-sm">{formatValue(systemPerformanceData?.resourceUsage.cpu || 0, 1)}%</span>
                 </div>
@@ -541,7 +541,7 @@ const AdvancedAnalytics = () => {
               </div>
               
               <div>
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
                   <span className="text-sm">Memória</span>
                   <span className="text-sm">{formatValue(systemPerformanceData?.resourceUsage.memory || 0, 1)}%</span>
                 </div>
@@ -549,7 +549,7 @@ const AdvancedAnalytics = () => {
               </div>
               
               <div>
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
                   <span className="text-sm">Armazenamento</span>
                   <span className="text-sm">{formatValue(systemPerformanceData?.resourceUsage.storage || 0, 1)}%</span>
                 </div>

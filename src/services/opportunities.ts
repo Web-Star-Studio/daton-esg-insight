@@ -40,8 +40,49 @@ export interface CreateOpportunityData {
     monitoring_indicators?: string;
 }
 
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
+const MOCK_OPPORTUNITIES: Opportunity[] = [
+    {
+        id: "opp-1",
+        company_id: "demo-company",
+        title: "Implementação de Painéis Solares",
+        description: "Redução de custos de energia e mitigação de emissões através de energia solar.",
+        category: "Ambiental",
+        probability: "Alta",
+        impact: "Alto",
+        opportunity_level: "Alta",
+        status: "Em Análise",
+        identification_date: new Date().toISOString(),
+        potential_value: 150000,
+        implementation_cost: 50000,
+        created_by_user_id: "demo",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    },
+    {
+        id: "opp-2",
+        company_id: "demo-company",
+        title: "Programa de Diversidade e Inclusão",
+        description: "Atração e retenção de talentos diversos, melhorando a inovação.",
+        category: "Social",
+        probability: "Alta",
+        impact: "Médio",
+        opportunity_level: "Média",
+        status: "Em Implementação",
+        identification_date: new Date().toISOString(),
+        created_by_user_id: "demo",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    }
+];
+
 class OpportunitiesService {
     async getOpportunities(): Promise<Opportunity[]> {
+        if (isDemoMode()) {
+            return MOCK_OPPORTUNITIES;
+        }
+
         const { data, error } = await supabase
             .from('opportunities')
             .select('*')
@@ -129,7 +170,7 @@ class OpportunitiesService {
 
     async getOpportunityMatrix(): Promise<any> {
         const opportunities = await this.getOpportunities();
-        
+
         const matrix: any = {};
         const probabilityLevels = ['Baixa', 'Média', 'Alta'];
         const impactLevels = ['Baixo', 'Médio', 'Alto'];
@@ -160,11 +201,11 @@ class OpportunitiesService {
             return acc;
         }, {} as Record<string, number>);
 
-        const totalPotentialValue = activeOpportunities.reduce((sum, op) => 
+        const totalPotentialValue = activeOpportunities.reduce((sum, op) =>
             sum + (op.potential_value || 0), 0
         );
 
-        const totalImplementationCost = activeOpportunities.reduce((sum, op) => 
+        const totalImplementationCost = activeOpportunities.reduce((sum, op) =>
             sum + (op.implementation_cost || 0), 0
         );
 
@@ -178,7 +219,7 @@ class OpportunitiesService {
             byLevel,
             totalPotentialValue,
             totalImplementationCost,
-            potentialROI: totalImplementationCost > 0 ? 
+            potentialROI: totalImplementationCost > 0 ?
                 ((totalPotentialValue - totalImplementationCost) / totalImplementationCost) * 100 : 0
         };
     }

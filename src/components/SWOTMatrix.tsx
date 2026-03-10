@@ -12,6 +12,7 @@ import {
   Clock3,
   Calendar,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ import {
   getSWOTReviewStatus,
   hasTraceabilityEvidence,
 } from "@/utils/swotCompliance";
+import { isDemoMode } from "@/utils/demoMode";
 
 interface SWOTMatrixProps {
   strategicMapId?: string;
@@ -104,18 +106,18 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
 
   const queryClient = useQueryClient();
 
-  const { data: analyses } = useQuery({
+  const { data: analyses, isSuccess: isSuccessAnalyses } = useQuery({
     queryKey: ["swot-analyses", strategicMapId],
     queryFn: () => getSWOTAnalyses(strategicMapId),
   });
 
-  const { data: items } = useQuery({
+  const { data: items, isLoading: isLoadingItems } = useQuery({
     queryKey: ["swot-items", selectedAnalysis],
     queryFn: () => getSWOTItems(selectedAnalysis as string),
     enabled: Boolean(selectedAnalysis),
   });
 
-  const { data: reviewHistory } = useQuery({
+  const { data: reviewHistory, isSuccess: isSuccessReviewHistory } = useQuery({
     queryKey: ["swot-review-history", selectedAnalysis],
     queryFn: () => getSWOTReviewHistory(selectedAnalysis as string),
     enabled: Boolean(selectedAnalysis),
@@ -136,8 +138,13 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   });
 
   useEffect(() => {
-    if (analyses?.length && !selectedAnalysis) {
-      setSelectedAnalysis(analyses[0].id);
+    if (analyses?.length) {
+      const isValid = analyses.some(a => a.id === selectedAnalysis);
+      if (!selectedAnalysis || !isValid) {
+        setSelectedAnalysis(analyses[0].id);
+      }
+    } else if (analyses && analyses.length === 0) {
+      setSelectedAnalysis(null);
     }
   }, [analyses, selectedAnalysis]);
 
@@ -169,13 +176,26 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
     );
   }, [items]);
 
+  const isDemo = isDemoMode();
+
   const createAnalysisMutation = useMutation({
-    mutationFn: () => createSWOTAnalysis({ ...newAnalysis, strategic_map_id: strategicMapId }),
+    mutationFn: async (): Promise<void> => {
+      if (isDemo) {
+        toast.success("Análise SWOT criada com sucesso!");
+        setIsCreateOpen(false);
+        setNewAnalysis({ title: "", description: "", review_frequency: "anual" });
+        queryClient.invalidateQueries({ queryKey: ["swot-analyses"] });
+        return;
+      }
+      await createSWOTAnalysis({ ...newAnalysis, strategic_map_id: strategicMapId });
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["swot-analyses", strategicMapId] });
-      toast.success("Análise SWOT criada com sucesso!");
-      setIsCreateOpen(false);
-      setNewAnalysis({ title: "", description: "", review_frequency: "anual" });
+      if (!isDemo) {
+        queryClient.invalidateQueries({ queryKey: ["swot-analyses", strategicMapId] });
+        toast.success("Análise SWOT criada com sucesso!");
+        setIsCreateOpen(false);
+        setNewAnalysis({ title: "", description: "", review_frequency: "anual" });
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao criar análise SWOT");
@@ -195,8 +215,13 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   });
 
   const saveItemMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedAnalysis) throw new Error("Nenhuma análise selecionada.");
+    mutationFn: async (analysisId: string) => {
+      if (!analysisId) throw new Error("Nenhuma análise selecionada.");
+      if (isDemo) {
+        queryClient.invalidateQueries({ queryKey: ["swot-items"] });
+        toast.success("Item SWOT salvo.");
+        return;
+      }
 
       if (
         itemForm.treatment_decision === "relevante_requer_acoes" &&
@@ -206,6 +231,8 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
         throw new Error("Itens relevantes exigem vínculo com ação (interna ou externa).");
       }
 
+      const isRelevante = itemForm.treatment_decision === "relevante_requer_acoes";
+
       const payload = {
         category: itemForm.category,
         item_text: itemForm.item_text,
@@ -213,8 +240,8 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
         impact_level: itemForm.impact_level,
         treatment_decision: itemForm.treatment_decision,
         linked_action_plan_item_id:
-          itemForm.linked_action_plan_item_id === "none" ? null : itemForm.linked_action_plan_item_id,
-        external_action_reference: itemForm.external_action_reference || null,
+          !isRelevante || itemForm.linked_action_plan_item_id === "none" ? null : itemForm.linked_action_plan_item_id,
+        external_action_reference: !isRelevante ? null : itemForm.external_action_reference || null,
       };
 
       if (editingItem) {
@@ -222,7 +249,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
       }
 
       return createSWOTItem({
-        swot_analysis_id: selectedAnalysis,
+        swot_analysis_id: analysisId,
         ...payload,
       });
     },
@@ -736,7 +763,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                       toast.error("Informe o item SWOT.");
                       return;
                     }
-                    saveItemMutation.mutate();
+                    saveItemMutation.mutate(selectedAnalysis as string);
                   }}
                   disabled={saveItemMutation.isPending}
                 >
@@ -751,7 +778,11 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
           </Dialog>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {CATEGORY_ORDER.map((category) => {
+            {isLoadingItems ? (
+              <div className="col-span-1 md:col-span-2 flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : CATEGORY_ORDER.map((category) => {
               const categoryInfo = getCategoryInfo(category);
               const categoryItems = groupedItems[category] || [];
               const Icon = categoryInfo.icon;
@@ -780,6 +811,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0"
+                              aria-label={`Editar item SWOT: ${item.item_text}`}
                               onClick={() => handleOpenEditItem(item)}
                             >
                               <Edit className="h-3 w-3" />
@@ -788,6 +820,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0"
+                              aria-label={`Remover item SWOT: ${item.item_text}`}
                               onClick={() => deleteItemMutation.mutate(item.id)}
                             >
                               <Trash2 className="h-3 w-3" />
@@ -805,7 +838,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                       </div>
                     ))}
 
-                    {categoryItems.length === 0 && (
+                    {!isLoadingItems && categoryItems.length === 0 && (
                       <p className="py-4 text-center text-sm text-muted-foreground">Nenhum item cadastrado</p>
                     )}
                   </CardContent>
@@ -822,7 +855,11 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {reviewHistory && reviewHistory.length > 0 ? (
+              {!isSuccessReviewHistory ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : reviewHistory && reviewHistory.length > 0 ? (
                 <div className="space-y-2">
                   {reviewHistory.map((review) => (
                     <div
@@ -845,7 +882,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
         </>
       )}
 
-      {!analyses?.length && (
+      {isSuccessAnalyses && (!analyses || analyses.length === 0) && (
         <Card>
           <CardContent className="py-8 text-center">
             <Target className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
