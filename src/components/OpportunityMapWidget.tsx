@@ -213,6 +213,7 @@ export function OpportunityMapWidget() {
                             className={`w-full text-xs p-1 rounded bg-background border truncate cursor-pointer hover:border-primary text-left`}
                             onClick={() => handleViewOpportunity(opp)}
                             title={opp.title}
+                            aria-label={`Visualizar oportunidade: ${opp.title}`}
                           >
                             <div className="flex justify-between items-center gap-1">
                               <span className="truncate">{opp.title}</span>

@@ -215,8 +215,10 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   });
 
   const saveItemMutation = useMutation({
-    mutationFn: async (analysisId: string) => {
-      if (!analysisId) throw new Error("Nenhuma análise selecionada.");
+    mutationFn: async (analysisId?: string) => {
+      const swotAnalysisId = analysisId ?? selectedAnalysis;
+      if (!swotAnalysisId) throw new Error("Nenhuma análise selecionada.");
+
       if (isDemo) {
         queryClient.invalidateQueries({ queryKey: ["swot-items"] });
         toast.success("Item SWOT salvo.");
@@ -249,12 +251,13 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
       }
 
       return createSWOTItem({
-        swot_analysis_id: analysisId,
+        swot_analysis_id: swotAnalysisId,
         ...payload,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["swot-items", selectedAnalysis] });
+    onSuccess: (_, variables) => {
+      const swotAnalysisId = variables ?? selectedAnalysis;
+      queryClient.invalidateQueries({ queryKey: ["swot-items", swotAnalysisId] });
       toast.success(editingItem ? "Item SWOT atualizado com sucesso!" : "Item SWOT adicionado com sucesso!");
       handleCloseItemDialog();
     },
@@ -763,7 +766,11 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
                       toast.error("Informe o item SWOT.");
                       return;
                     }
-                    saveItemMutation.mutate(selectedAnalysis as string);
+                    if (!selectedAnalysis) {
+                      toast.error("Nenhuma análise selecionada.");
+                      return;
+                    }
+                    saveItemMutation.mutate(selectedAnalysis);
                   }}
                   disabled={saveItemMutation.isPending}
                 >
