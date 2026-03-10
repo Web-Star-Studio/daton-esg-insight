@@ -14,8 +14,11 @@ import { test, expect, type Page, type Locator } from "@playwright/test";
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const AUTH_EMAIL = "joaopedrobatista010@gmail.com";
-const AUTH_PASSWORD = "ZPTCgPsuWQ#Yv?6o";
+const AUTH_EMAIL = process.env.AUTH_EMAIL;
+const AUTH_PASSWORD = process.env.AUTH_PASSWORD;
+if (!AUTH_EMAIL || !AUTH_PASSWORD) {
+  throw new Error("Missing AUTH_EMAIL or AUTH_PASSWORD env vars — set them before running E2E tests.");
+}
 const WAIT_AFTER_NAV = 2_000;
 const WAIT_AFTER_INTERACTION = 1_200;
 const NAV_TIMEOUT = 60_000;

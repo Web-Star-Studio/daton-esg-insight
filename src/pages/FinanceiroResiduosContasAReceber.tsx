@@ -38,7 +38,7 @@ export default function FinanceiroResiduosContasAReceber() {
           { id: 'rw-5', mtr_number: 'MTR-2025-0198', waste_description: 'Vidro', collection_date: '2025-12-15T00:00:00Z', quantity: 650.0, unit: 'kg', destination_name: 'Vidrolar', revenue_per_unit: 0.15, revenue_total: 97.50, final_treatment_type: 'Reciclagem' },
         ];
 
-        const filteredReceivables = allReceivables.filter(r => r.collection_date.startsWith(selectedYear));
+        const filteredReceivables = allReceivables.filter(r => r.collection_date.startsWith(String(selectedYear)));
         const totalRevenueYear = filteredReceivables.reduce((sum, item) => sum + (item.revenue_total || 0), 0);
 
         // Sum revenue by material for demo

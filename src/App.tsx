@@ -312,6 +312,11 @@ const AppContent = () => {
               <Route path="planejamento-estrategico" element={<LazyPageWrapper><PlanejamentoEstrategico /></LazyPageWrapper>} />
               <Route path="licenciamento" element={<LazyPageWrapper><Licenciamento /></LazyPageWrapper>} />
               <Route path="licenciamento/legislacoes" element={<LazyPageWrapper><LegislationsHub /></LazyPageWrapper>} />
+              <Route path="licenciamento/legislacoes/nova" element={<LazyPageWrapper><LegislationForm /></LazyPageWrapper>} />
+              <Route path="licenciamento/legislacoes/:id" element={<LazyPageWrapper><LegislationDetail /></LazyPageWrapper>} />
+              <Route path="licenciamento/legislacoes/:id/editar" element={<LazyPageWrapper><LegislationForm /></LazyPageWrapper>} />
+              <Route path="licenciamento/legislacoes/relatorios" element={<LazyPageWrapper><LegislationReports /></LazyPageWrapper>} />
+              <Route path="licenciamento/legislacoes/compliance" element={<LazyPageWrapper><LegislationComplianceProfiles /></LazyPageWrapper>} />
               <Route path="laia" element={<LazyPageWrapper><LAIAUnidades /></LazyPageWrapper>} />
               <Route path="fornecedores/dashboard" element={<LazyPageWrapper><SupplierManagementDashboard /></LazyPageWrapper>} />
               <Route path="fornecedores/cadastro" element={<LazyPageWrapper><SupplierRegistration /></LazyPageWrapper>} />
