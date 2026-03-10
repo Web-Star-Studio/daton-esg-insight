@@ -42,10 +42,10 @@ export const LegislationKPIs: React.FC<LegislationKPIsProps> = ({ onKpiClick }) 
   }
 
   const total = stats?.total || 0;
-  const realCount = stats?.byApplicability.real || 0;
-  const conformeCount = stats?.byStatus.conforme || 0;
-  const adequacaoCount = stats?.byStatus.adequacao || 0;
-  const planoAcaoCount = stats?.byStatus.plano_acao || 0;
+  const realCount = stats?.byApplicability?.real || 0;
+  const conformeCount = stats?.byStatus?.conforme || 0;
+  const adequacaoCount = stats?.byStatus?.adequacao || 0;
+  const planoAcaoCount = stats?.byStatus?.plano_acao || 0;
   const pendingCount = stats?.pendingTotal || 0;
   const alertsCount = stats?.alerts || 0;
   

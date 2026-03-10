@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertCircle, CheckCircle2, Clock, DollarSign, FileText, Calendar } from "lucide-react";
 import { getPayableWastes, getPayablesStats, registerPayment, type PayableWaste } from "@/services/wasteFinance";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -24,10 +24,11 @@ export default function FinanceiroResiduosContasAPagar() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: payables = [], isLoading: loadingPayables } = useQuery({
+  const { data: rawPayables = [], isLoading: loadingPayables } = useQuery({
     queryKey: ['payable-wastes', statusFilter],
     queryFn: () => getPayableWastes({ status: statusFilter }),
   });
+  const payables = Array.isArray(rawPayables) ? rawPayables : [];
 
   const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ['payables-stats'],
@@ -237,7 +238,7 @@ export default function FinanceiroResiduosContasAPagar() {
                     return (
                       <TableRow key={waste.id}>
                         <TableCell className="font-medium">{waste.mtr_number}</TableCell>
-                        <TableCell>{format(new Date(waste.collection_date), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                        <TableCell>{isValid(new Date(waste.collection_date)) ? format(new Date(waste.collection_date), "dd/MM/yyyy", { locale: ptBR }) : '—'}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{waste.waste_description}</TableCell>
                         <TableCell>{waste.destination_name || '-'}</TableCell>
                         <TableCell>{formatCurrency(waste.total_payable)}</TableCell>

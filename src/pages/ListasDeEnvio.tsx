@@ -41,7 +41,7 @@ import { ImportContactsModal } from '@/components/mailing/ImportContactsModal';
 import { MailingListDetailsModal } from '@/components/mailing/MailingListDetailsModal';
 import { SendCampaignModal } from '@/components/mailing/SendCampaignModal';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function ListasDeEnvio() {
@@ -57,10 +57,11 @@ export default function ListasDeEnvio() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [listToDelete, setListToDelete] = useState<string | null>(null);
 
-  const { data: mailingLists = [], isLoading } = useQuery({
+  const { data: rawMailingLists = [], isLoading } = useQuery({
     queryKey: ['mailing-lists'],
     queryFn: () => mailingService.getMailingLists()
   });
+  const mailingLists = Array.isArray(rawMailingLists) ? rawMailingLists : [];
 
   const deleteMutation = useMutation({
     mutationFn: (listId: string) => mailingService.deleteMailingList(listId),
@@ -252,7 +253,7 @@ export default function ListasDeEnvio() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    Criado em {format(new Date(list.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    Criado em {isValid(new Date(list.created_at)) ? format(new Date(list.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : '—'}
                   </p>
                 </CardContent>
               </Card>

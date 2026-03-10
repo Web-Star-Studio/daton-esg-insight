@@ -31,9 +31,6 @@ export interface ESGRisk {
   updated_at: string;
 }
 
-<<<<<<< Updated upstream
-export const getESGRisks = async () => {
-=======
 const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
 
 const MOCK_ESG_RISKS: ESGRisk[] = [
@@ -90,14 +87,13 @@ export const getESGRisks = async (): Promise<ESGRisk[]> => {
     return MOCK_ESG_RISKS.map(r => ({ ...r }));
   }
 
->>>>>>> Stashed changes
   const { data, error } = await supabase
     .from('esg_risks')
     .select('*')
     .order('inherent_risk_level', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return data as ESGRisk[];
 };
 
 export const getESGRisk = async (id: string) => {
@@ -176,28 +172,21 @@ export const getRiskMatrix = async () => {
 
   if (error) throw error;
 
+  const typedRisks = risks as ESGRisk[];
+
   const matrix = {
     'Baixa': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 },
     'Média': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 },
     'Alta': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 }
   };
 
-<<<<<<< Updated upstream
-  risks.forEach(risk => {
-    const row = matrix[risk.probability as keyof typeof matrix];
-    if (!row) return;
-    const impact = risk.impact as keyof typeof matrix['Baixa'];
-    if (!(impact in row)) return;
-    row[impact]++;
-=======
-  risks.forEach((risk: ESGRisk) => {
+  typedRisks.forEach((risk: ESGRisk) => {
     const prob = risk.probability as keyof typeof matrix;
     const imp = risk.impact as keyof typeof matrix['Baixa'];
     if (Object.prototype.hasOwnProperty.call(matrix, prob) &&
       Object.prototype.hasOwnProperty.call(matrix['Baixa'], imp)) {
       matrix[prob][imp]++;
     }
->>>>>>> Stashed changes
   });
 
   return matrix;

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { mailingService, MailingList } from '@/services/mailingService';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AddContactModal } from './AddContactModal';
 
@@ -40,11 +40,13 @@ export function MailingListDetailsModal({
   const { toast } = useToast();
   const [addContactOpen, setAddContactOpen] = useState(false);
 
-  const { data: list, isLoading } = useQuery({
+  const { data: rawList, isLoading } = useQuery({
     queryKey: ['mailing-list-details', mailingListId],
     queryFn: () => mailingService.getMailingList(mailingListId!),
     enabled: open && !!mailingListId
   });
+  // Guard against demo fallback returning an array instead of an object
+  const list = rawList && !Array.isArray(rawList) && typeof rawList === 'object' && 'id' in rawList ? rawList : undefined;
 
   const deleteContactMutation = useMutation({
     mutationFn: (contactId: string) => mailingService.deleteContact(contactId),
@@ -95,7 +97,7 @@ export function MailingListDetailsModal({
                   <p className="text-muted-foreground mt-1">{list.description}</p>
                 )}
                 <p className="text-sm text-muted-foreground mt-2">
-                  Criado em {format(new Date(list.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                  Criado em {isValid(new Date(list.created_at)) ? format(new Date(list.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : '—'}
                 </p>
               </div>
 

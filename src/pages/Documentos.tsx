@@ -159,10 +159,11 @@ export default function Documentos() {
     [searchParams],
   );
 
-  const { data: documents = [], isLoading } = useQuery({
+  const { data: rawDocuments = [], isLoading } = useQuery({
     queryKey: ["document-center", filters],
     queryFn: () => listDocumentRecords(filters),
   });
+  const documents = Array.isArray(rawDocuments) ? rawDocuments : [];
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
@@ -764,7 +765,7 @@ export default function Documentos() {
                     </TableCell>
                     <TableCell>
                       <div className="flex max-w-48 flex-wrap gap-1">
-                        {document.branches.length === 0 ? (
+                        {!document.branches?.length ? (
                           <span className="text-sm text-muted-foreground">—</span>
                         ) : (
                           document.branches.map((branch) => (

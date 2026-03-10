@@ -145,7 +145,8 @@ const formatDateTime = (value?: string | null) => {
 export const RegulatoryDocumentsTab = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data: branches = [] } = useBranches();
+  const { data: rawBranches = [] } = useBranches();
+  const branches = Array.isArray(rawBranches) ? rawBranches : [];
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const hasAutoSyncedAlertsRef = useRef(false);
@@ -171,12 +172,13 @@ export const RegulatoryDocumentsTab = () => {
   });
 
 
-  const { data: users = [] } = useQuery({
+  const { data: rawUsers = [] } = useQuery({
     queryKey: ["regulatory-documents", "responsibles"],
     queryFn: getResponsibleUsers,
   });
+  const users = Array.isArray(rawUsers) ? rawUsers : [];
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data: rawItems = [], isLoading } = useQuery({
     queryKey: ["regulatory-documents", filters],
     queryFn: () =>
       getRegulatoryDocuments({
@@ -189,12 +191,14 @@ export const RegulatoryDocumentsTab = () => {
           filters.renewal_status === "all" ? undefined : (filters.renewal_status as RenewalStatus),
       }),
   });
+  const items = Array.isArray(rawItems) ? rawItems : [];
 
-  const { data: versions = [], isLoading: isLoadingVersions } = useQuery({
+  const { data: rawVersions = [], isLoading: isLoadingVersions } = useQuery({
     queryKey: ["regulatory-documents", "versions", selectedVersionsLicenseId],
     queryFn: () => getRegulatoryDocumentVersions(selectedVersionsLicenseId as string),
     enabled: isVersionsOpen && !!selectedVersionsLicenseId,
   });
+  const versions = Array.isArray(rawVersions) ? rawVersions : [];
 
 
   const persistMutation = useMutation({

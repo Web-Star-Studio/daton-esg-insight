@@ -1325,4 +1325,15 @@ export const environmentalMockEntries = [
     queryKey: ['energy-monitoring-esg'],
     data: DEMO_ENERGY_MONITORING_DATA,
   },
+  // Assets formatted as dropdown options
+  {
+    queryKey: ['assets-options'],
+    data: [
+      { id: 'asset-root-1', name: 'Unidade Industrial SP', asset_type: 'Unidade Industrial', location: 'São Paulo - SP' },
+      { id: 'asset-boiler-1', name: 'Caldeira 01', asset_type: 'Fonte Fixa de Combustão', location: 'Bloco A' },
+      { id: 'asset-stack-1', name: 'Chaminé Norte', asset_type: 'Chaminé/Stack', location: 'Bloco A' },
+      { id: 'asset-root-2', name: 'Centro de Distribuição RJ', asset_type: 'Infraestrutura Auxiliar', location: 'Rio de Janeiro - RJ' },
+      { id: 'asset-vehicle-1', name: 'Caminhão Baú 14T', asset_type: 'Fonte Móvel', location: 'Pátio RJ' },
+    ],
+  },
 ];

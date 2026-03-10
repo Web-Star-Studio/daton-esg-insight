@@ -17,6 +17,7 @@ import { organizationMockEntries } from './organizationMocks';
 import { indicatorMockEntries } from './indicatorMocks';
 import { dataCollectionMockEntries } from './dataCollectionMocks';
 import { reportsMockEntries } from './reportsMocks';
+import { mailingMockEntries } from './mailingMocks';
 
 export interface MockEntry {
   queryKey: readonly unknown[];
@@ -42,5 +43,6 @@ export function getAllDemoMockData(): MockEntry[] {
     ...indicatorMockEntries,
     ...dataCollectionMockEntries,
     ...reportsMockEntries,
+    ...mailingMockEntries,
   ] as MockEntry[];
 }

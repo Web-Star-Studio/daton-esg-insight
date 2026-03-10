@@ -144,7 +144,7 @@ export function IndicatorCard({ indicator, onSelect }: IndicatorCardProps) {
               </p>
             </div>
           )}
-          {currentMonthData?.deviation_percentage !== undefined && currentMonthData.deviation_percentage !== 0 && (
+          {currentMonthData?.deviation_percentage != null && currentMonthData.deviation_percentage !== 0 && (
             <div>
               <p className="text-xs text-muted-foreground">Desvio</p>
               <p className={cn(

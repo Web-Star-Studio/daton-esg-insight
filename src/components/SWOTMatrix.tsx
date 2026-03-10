@@ -44,7 +44,7 @@ import {
   getSWOTReviewStatus,
   hasTraceabilityEvidence,
 } from "@/utils/swotCompliance";
-import { isDemoMode } from "@/utils/demoMode";
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
 
 interface SWOTMatrixProps {
   strategicMapId?: string;
