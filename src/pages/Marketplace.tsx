@@ -178,7 +178,7 @@ export default function Marketplace() {
             />
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Ordenar por" />
@@ -228,7 +228,7 @@ export default function Marketplace() {
                       <div className="h-4 bg-muted rounded mb-2"></div>
                       <div className="h-3 bg-muted rounded mb-4 w-2/3"></div>
                       <div className="h-20 bg-muted rounded mb-4"></div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                         <div className="h-6 bg-muted rounded w-16"></div>
                         <div className="h-6 bg-muted rounded w-20"></div>
                       </div>
@@ -298,7 +298,7 @@ export default function Marketplace() {
                       <div className="h-4 bg-muted rounded mb-2"></div>
                       <div className="h-3 bg-muted rounded mb-4 w-2/3"></div>
                       <div className="h-20 bg-muted rounded mb-4"></div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                         <div className="h-6 bg-muted rounded w-16"></div>
                         <div className="h-6 bg-muted rounded w-20"></div>
                       </div>

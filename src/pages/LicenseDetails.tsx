@@ -214,7 +214,7 @@ const LicenseDetails = () => {
                 : 'Ocorreu um erro ao carregar os detalhes da licença.'
               }
             </p>
-            <div className="flex gap-2 justify-center mt-4">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-center mt-4">
               <Button variant="outline" onClick={() => navigate('/licenciamento')}>
                 Voltar ao Licenciamento
               </Button>

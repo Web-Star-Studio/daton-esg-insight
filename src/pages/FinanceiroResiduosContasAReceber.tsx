@@ -28,6 +28,45 @@ export default function FinanceiroResiduosContasAReceber() {
   async function loadData() {
     try {
       setLoading(true);
+
+      if ((window as any).__DATON_DEMO_MODE__ === true) {
+        const allReceivables = [
+          { id: 'rw-1', mtr_number: 'MTR-2026-0045', waste_description: 'Papel e Papelão', collection_date: '2026-02-15T00:00:00Z', quantity: 1250.5, unit: 'kg', destination_name: 'Recicla Brasil Ltda', revenue_per_unit: 0.45, revenue_total: 562.73, final_treatment_type: 'Reciclagem' },
+          { id: 'rw-2', mtr_number: 'MTR-2026-0046', waste_description: 'Plástico PET', collection_date: '2026-02-10T00:00:00Z', quantity: 780.0, unit: 'kg', destination_name: 'Ecopack Reciclagem', revenue_per_unit: 1.20, revenue_total: 936.00, final_treatment_type: 'Reciclagem' },
+          { id: 'rw-3', mtr_number: 'MTR-2026-0038', waste_description: 'Metal Ferroso', collection_date: '2026-01-28T00:00:00Z', quantity: 2100.0, unit: 'kg', destination_name: 'Sucatec Metais', revenue_per_unit: 0.60, revenue_total: 1260.00, final_treatment_type: 'Reciclagem' },
+          { id: 'rw-4', mtr_number: 'MTR-2026-0031', waste_description: 'Alumínio', collection_date: '2026-01-20T00:00:00Z', quantity: 320.0, unit: 'kg', destination_name: 'Sucatec Metais', revenue_per_unit: 4.80, revenue_total: 1536.00, final_treatment_type: 'Reciclagem' },
+          { id: 'rw-5', mtr_number: 'MTR-2025-0198', waste_description: 'Vidro', collection_date: '2025-12-15T00:00:00Z', quantity: 650.0, unit: 'kg', destination_name: 'Vidrolar', revenue_per_unit: 0.15, revenue_total: 97.50, final_treatment_type: 'Reciclagem' },
+        ];
+
+        const filteredReceivables = allReceivables.filter(r => r.collection_date.startsWith(String(selectedYear)));
+        const totalRevenueYear = filteredReceivables.reduce((sum, item) => sum + (item.revenue_total || 0), 0);
+
+        // Sum revenue by material for demo
+        const revenueByMaterial = filteredReceivables.reduce((acc, curr) => {
+          if (curr.waste_description && curr.revenue_total) {
+            acc[curr.waste_description] = (acc[curr.waste_description] || 0) + curr.revenue_total;
+          }
+          return acc;
+        }, {} as Record<string, number>);
+
+        const totalQuantity = filteredReceivables.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const avgPricePerTon = totalQuantity > 0 ? (totalRevenueYear / totalQuantity) * 1000 : 0;
+
+        setReceivables(filteredReceivables);
+        setStats({
+          total_revenue_year: totalRevenueYear || 8450.30,
+          avg_price_per_ton: avgPricePerTon || 380.00,
+          revenue_by_material: Object.keys(revenueByMaterial).length > 0 ? revenueByMaterial : { 'Papel e Papelão': 2340.50, 'Plástico PET': 1850.20, 'Metal Ferroso': 2200.00, 'Alumínio': 1560.80, 'Vidro': 498.80 },
+          monthly_comparison: [
+            { month: 'Set', revenue: 1200.50 }, { month: 'Out', revenue: 1350.20 },
+            { month: 'Nov', revenue: 1450.80 }, { month: 'Dez', revenue: 1680.40 },
+            { month: 'Jan', revenue: 1420.60 }, { month: 'Fev', revenue: 1347.80 },
+          ],
+        });
+        setLoading(false);
+        return;
+      }
+
       const [receivablesData, statsData] = await Promise.all([
         getReceivableWastes(selectedYear),
         getReceivablesStats(selectedYear)
@@ -102,7 +141,7 @@ export default function FinanceiroResiduosContasAReceber() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="w-full overflow-hidden py-8">
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Carregando...</p>
         </div>
@@ -111,7 +150,7 @@ export default function FinanceiroResiduosContasAReceber() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="w-full overflow-hidden py-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -120,7 +159,7 @@ export default function FinanceiroResiduosContasAReceber() {
             Receitas com venda de materiais recicláveis
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
             <SelectTrigger className="w-[140px]">
               <SelectValue />
@@ -204,7 +243,7 @@ export default function FinanceiroResiduosContasAReceber() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip 
+                <Tooltip
                   formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                 />
                 <Bar dataKey="revenue" fill="hsl(var(--primary))" />
@@ -236,7 +275,7 @@ export default function FinanceiroResiduosContasAReceber() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                 />
                 <Legend />

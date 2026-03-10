@@ -214,7 +214,7 @@ export default function SupplierSurveys() {
                             )}
                           </div>
                           
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                             {status === 'Pendente' && (
                               <Button 
                                 onClick={() => handleStart(survey)}

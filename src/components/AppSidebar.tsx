@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { Star, StarOff, ChevronRight, Search, X, Home } from "lucide-react"
 import * as icons from "lucide-react"
@@ -45,7 +45,7 @@ import {
   Users2, UserCheck, UserCog, GraduationCap, Briefcase, Calendar,
   FileBarChart, FileCheck, BookOpen, TrendingDown, CheckCircle, ShieldCheck,
   Settings, Bell, Clock, Building2, MapPin,
-  Brain, ShoppingCart, Zap, Truck, BarChart, FlaskConical, Sparkles, Package, Flag, 
+  Brain, ShoppingCart, Zap, Truck, BarChart, FlaskConical, Sparkles, Package, Flag,
   Recycle, Gavel, Trash2, CloudUpload, Wand2, Workflow, BookMarked, Handshake,
   FolderKanban, DollarSign, HelpCircle, Droplets, Cloud, Crown, FolderTree, Mail
 } from "lucide-react"
@@ -79,7 +79,7 @@ const menuSections: MenuSection[] = [
     defaultOpen: false,
     items: [
       { id: "esg-management", title: "Painel de Gestão ESG", icon: Leaf, path: "/gestao-esg", description: "Central de gestão ESG" },
-      
+
       // CATEGORIA: AMBIENTAL (E)
       {
         id: "environmental-category",
@@ -124,11 +124,11 @@ const menuSections: MenuSection[] = [
               { id: "waste-logs", title: "Registros de Resíduos", icon: Trash2, path: "/residuos", description: "Controle e destinação de resíduos" }
             ]
           },
-          
+
           { id: "sustainability-targets", title: "Metas de Sustentabilidade", icon: Target, path: "/metas-sustentabilidade", description: "Definição e acompanhamento de metas" }
         ]
       },
-      
+
       // CATEGORIA: SOCIAL (S)
       {
         id: "social-category",
@@ -147,7 +147,7 @@ const menuSections: MenuSection[] = [
           { id: "career-development", title: "Desenvolvimento de Carreira", icon: TrendingUp, path: "/desenvolvimento-carreira", description: "PDIs, mentoria e crescimento profissional" }
         ]
       },
-      
+
       // CATEGORIA: GOVERNANÇA (G)
       {
         id: "governance-category",
@@ -173,103 +173,103 @@ const menuSections: MenuSection[] = [
     isCollapsible: true,
     defaultOpen: false,
     items: [
-      { 
-        id: "financial-dashboard", 
-        title: "Dashboard Financeiro", 
-        icon: icons.DollarSign, 
-        path: "/financeiro/dashboard", 
-        description: "Visão consolidada das finanças" 
+      {
+        id: "financial-dashboard",
+        title: "Dashboard Financeiro",
+        icon: icons.DollarSign,
+        path: "/financeiro/dashboard",
+        description: "Visão consolidada das finanças"
       },
-      { 
-        id: "chart-of-accounts", 
-        title: "Plano de Contas", 
-        icon: icons.DollarSign, 
-        path: "/financeiro/plano-contas", 
-        description: "Estrutura contábil da empresa" 
+      {
+        id: "chart-of-accounts",
+        title: "Plano de Contas",
+        icon: icons.DollarSign,
+        path: "/financeiro/plano-contas",
+        description: "Estrutura contábil da empresa"
       },
-      { 
-        id: "accounting-entries", 
-        title: "Lançamentos Contábeis", 
-        icon: icons.DollarSign, 
-        path: "/financeiro/lancamentos-contabeis", 
-        description: "Registro de operações contábeis" 
+      {
+        id: "accounting-entries",
+        title: "Lançamentos Contábeis",
+        icon: icons.DollarSign,
+        path: "/financeiro/lancamentos-contabeis",
+        description: "Registro de operações contábeis"
       },
-      { 
-        id: "accounts-payable", 
-        title: "Contas a Pagar", 
-        icon: icons.DollarSign, 
-        path: "/financeiro/contas-pagar", 
-        description: "Gestão de obrigações financeiras" 
+      {
+        id: "accounts-payable",
+        title: "Contas a Pagar",
+        icon: icons.DollarSign,
+        path: "/financeiro/contas-pagar",
+        description: "Gestão de obrigações financeiras"
       },
-      { 
-        id: "accounts-receivable", 
-        title: "Contas a Receber", 
-        icon: TrendingUp, 
-        path: "/financeiro/contas-receber", 
-        description: "Gestão de recebíveis" 
+      {
+        id: "accounts-receivable",
+        title: "Contas a Receber",
+        icon: TrendingUp,
+        path: "/financeiro/contas-receber",
+        description: "Gestão de recebíveis"
       },
-      { 
-        id: "financial-approvals", 
-        title: "Aprovações", 
-        icon: icons.CheckCircle, 
-        path: "/financeiro/aprovacoes", 
-        description: "Aprovações financeiras pendentes" 
+      {
+        id: "financial-approvals",
+        title: "Aprovações",
+        icon: icons.CheckCircle,
+        path: "/financeiro/aprovacoes",
+        description: "Aprovações financeiras pendentes"
       },
-      { 
-        id: "esg-financial-dashboard", 
-        title: "Dashboard ESG", 
-        icon: icons.Activity, 
-        path: "/financeiro/esg-dashboard", 
-        description: "Integração Financeiro-ESG" 
+      {
+        id: "esg-financial-dashboard",
+        title: "Dashboard ESG",
+        icon: icons.Activity,
+        path: "/financeiro/esg-dashboard",
+        description: "Integração Financeiro-ESG"
       },
-      { 
+      {
         id: "budget-management",
-        title: "Gestão de Orçamento", 
-        icon: TrendingUp, 
-        path: "/financeiro/orcamento", 
-        description: "Planejamento e controle orçamentário" 
+        title: "Gestão de Orçamento",
+        icon: TrendingUp,
+        path: "/financeiro/orcamento",
+        description: "Planejamento e controle orçamentário"
       },
-      { 
-        id: "cash-flow", 
-        title: "Fluxo de Caixa", 
-        icon: icons.DollarSign, 
-        path: "/financeiro/fluxo-caixa", 
-        description: "Controle de entradas e saídas" 
+      {
+        id: "cash-flow",
+        title: "Fluxo de Caixa",
+        icon: icons.DollarSign,
+        path: "/financeiro/fluxo-caixa",
+        description: "Controle de entradas e saídas"
       },
-      { 
-        id: "cost-centers", 
-        title: "Centros de Custo", 
-        icon: Building2, 
-        path: "/financeiro/centros-custo", 
-        description: "Alocação de despesas por departamento" 
+      {
+        id: "cost-centers",
+        title: "Centros de Custo",
+        icon: Building2,
+        path: "/financeiro/centros-custo",
+        description: "Alocação de despesas por departamento"
       },
-      { 
-        id: "financial-reports", 
-        title: "Relatórios Financeiros", 
-        icon: icons.DollarSign, 
-        path: "/financeiro/relatorios", 
-        description: "DRE e análises gerenciais" 
+      {
+        id: "financial-reports",
+        title: "Relatórios Financeiros",
+        icon: icons.DollarSign,
+        path: "/financeiro/relatorios",
+        description: "DRE e análises gerenciais"
       },
-      { 
-        id: "profitability-analysis", 
-        title: "Análise de Rentabilidade", 
-        icon: TrendingUp, 
-        path: "/financeiro/rentabilidade", 
-        description: "ROI de projetos e categorias" 
+      {
+        id: "profitability-analysis",
+        title: "Análise de Rentabilidade",
+        icon: TrendingUp,
+        path: "/financeiro/rentabilidade",
+        description: "ROI de projetos e categorias"
       },
-      { 
-        id: "waste-payables", 
-        title: "Contas a Pagar - Resíduos", 
-        icon: icons.DollarSign, 
-        path: "/financeiro/residuos/contas-a-pagar", 
-        description: "Gestão financeira de pagamentos de resíduos" 
+      {
+        id: "waste-payables",
+        title: "Contas a Pagar - Resíduos",
+        icon: icons.DollarSign,
+        path: "/financeiro/residuos/contas-a-pagar",
+        description: "Gestão financeira de pagamentos de resíduos"
       },
-      { 
-        id: "waste-receivables", 
-        title: "Contas a Receber - Resíduos", 
-        icon: TrendingUp, 
-        path: "/financeiro/residuos/contas-a-receber", 
-        description: "Receitas com venda de recicláveis" 
+      {
+        id: "waste-receivables",
+        title: "Contas a Receber - Resíduos",
+        icon: TrendingUp,
+        path: "/financeiro/residuos/contas-a-receber",
+        description: "Receitas com venda de recicláveis"
       }
     ]
   },
@@ -290,10 +290,10 @@ const menuSections: MenuSection[] = [
       { id: "document-control", title: "Controle de Documentos", icon: FileText, path: "/controle-documentos", description: "Versionamento e controle documental" },
       { id: "laia", title: "LAIA", icon: Leaf, path: "/laia", description: "Levantamento e Avaliação de Aspectos e Impactos Ambientais" },
       {
-        id: "licensing", 
-        title: "Licenciamento", 
-        icon: Gavel, 
-        path: "/licenciamento", 
+        id: "licensing",
+        title: "Licenciamento",
+        icon: Gavel,
+        path: "/licenciamento",
         description: "Gestão de licenças e autorizações",
         subItems: [
           { id: "licensing-dashboard", title: "Dashboard", icon: BarChart3, path: "/licenciamento", description: "Visão geral de licenciamento" },
@@ -311,11 +311,11 @@ const menuSections: MenuSection[] = [
     items: [
       { id: "supplier-dashboard", title: "Dashboard de Fornecedores", icon: LayoutDashboard, path: "/fornecedores/dashboard", description: "Visão geral da gestão de fornecedores" },
       { id: "supplier-registration", title: "Cadastro de Fornecedores", icon: Users2, path: "/fornecedores/cadastro", description: "Registro e gestão de fornecedores" },
-      { 
-        id: "supplier-records", 
-        title: "Registros", 
-        icon: Database, 
-        path: "#", 
+      {
+        id: "supplier-records",
+        title: "Registros",
+        icon: Database,
+        path: "#",
         description: "Configurações de tipos e documentação",
         subItems: [
           { id: "required-documents", title: "Documentação Obrigatória", icon: FileText, path: "/fornecedores/documentacao", description: "Documentos exigidos por tipo" },
@@ -383,14 +383,14 @@ const menuSections: MenuSection[] = [
 export function AppSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { state, isMobile } = useSidebar()
+  const { state, isMobile, setOpenMobile } = useSidebar()
   const collapsed = state === "collapsed"
   const { isDemo } = useDemo()
   const { user, restartOnboarding } = useAuth()
   const { toast } = useToast()
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
   const isPlatformAdmin = useHasRole('platform_admin')
-  
+
   // Demo prefix for all navigation paths
   const demoPrefix = isDemo ? '/demo' : ''
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -402,17 +402,17 @@ export function AppSidebar() {
   const [isHovering, setIsHovering] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const { data: notificationCounts } = useNotificationCounts()
-  
+
   const currentPath = location.pathname
   const isActive = (path: string) => currentPath === path || currentPath === `${demoPrefix}${path}`
   const prefixPath = (path: string) => path === '#' ? '#' : `${demoPrefix}${path}`
-  
+
   // Auto-expand category if active page belongs to it
-  useState(() => {
+  useEffect(() => {
     const environmentalPaths = ['/monitoramento-esg', '/monitoramento-agua', '/monitoramento-energia', '/monitoramento-emissoes', '/monitoramento-residuos', '/inventario-gee', '/dashboard-ghg', '/projetos-carbono', '/residuos', '/financeiro/residuos', '/licenciamento', '/metas-sustentabilidade']
     const socialPaths = ['/social-esg', '/gestao-funcionarios', '/seguranca-trabalho', '/gestao-treinamentos', '/desenvolvimento-carreira']
     const governancePaths = ['/governanca-esg', '/gestao-riscos', '/compliance', '/auditoria', '/gestao-stakeholders', '/analise-materialidade']
-    
+
     if (environmentalPaths.some(p => currentPath.startsWith(p))) {
       setExpandedSections(prev => ({ ...prev, 'environmental-category': true }))
     } else if (socialPaths.some(p => currentPath.startsWith(p))) {
@@ -420,7 +420,7 @@ export function AppSidebar() {
     } else if (governancePaths.some(p => currentPath.startsWith(p))) {
       setExpandedSections(prev => ({ ...prev, 'governance-category': true }))
     }
-  })
+  }, [currentPath])
 
   const handleFavoriteToggle = (item: MenuItem, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -442,29 +442,29 @@ export function AppSidebar() {
   // Get notification count for specific menu item
   const getNotificationCount = (itemId: string): number => {
     if (!notificationCounts) return 0;
-    
+
     const countMap: Record<string, number> = {
       'environmental-licensing': notificationCounts.licenses_expiring,
       'audits': notificationCounts.pending_audits,
       'non-conformities': notificationCounts.open_non_conformities,
       'training-management': notificationCounts.pending_trainings,
     };
-    
+
     return countMap[itemId] || 0;
   }
 
   // Get status indicator for specific menu item
   const getStatusIndicator = (itemId: string): 'active' | 'warning' | 'expired' | null => {
     const count = getNotificationCount(itemId);
-    
+
     if (itemId === 'environmental-licensing' && count > 0) {
       return count > 5 ? 'expired' : 'warning';
     }
-    
+
     if (itemId === 'non-conformities' && count > 0) {
       return 'warning';
     }
-    
+
     return null;
   }
 
@@ -483,7 +483,10 @@ export function AppSidebar() {
     return (
       <SidebarMenuSubItem key={item.id}>
         <SidebarMenuSubButton
-          onClick={() => navigate(prefixPath(item.path))}
+          onClick={() => {
+            navigate(prefixPath(item.path));
+            if (isMobile) setOpenMobile(false);
+          }}
           className={cn(
             "group h-8 rounded-[11px] px-2.5 py-1.5 transition-all duration-200",
             active
@@ -507,7 +510,7 @@ export function AppSidebar() {
               )}
             </div>
           </NavigationTooltip>
-          
+
           {!collapsed && (
             <button
               type="button"
@@ -546,10 +549,10 @@ export function AppSidebar() {
               <SidebarMenuButton
                 className={cn(
                   "group h-9 rounded-[12px] px-2.5 transition-all duration-200",
-                  isCategory 
+                  isCategory
                     ? "h-8 font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground/85 hover:bg-background/50 hover:text-foreground"
-                    : active || hasActiveSubItem 
-                      ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm" 
+                    : active || hasActiveSubItem
+                      ? "border border-border/60 bg-background/80 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm"
                       : "border border-transparent hover:border-border/45 hover:bg-background/55 hover:backdrop-blur-sm"
                 )}
               >
@@ -563,8 +566,8 @@ export function AppSidebar() {
                       <div className={getIconContainerClass(active || hasActiveSubItem)}>
                         <item.icon className="h-[15px] w-[15px] flex-shrink-0 text-sidebar-foreground/85" />
                         {statusIndicator && (
-                          <StatusIndicator 
-                            status={statusIndicator} 
+                          <StatusIndicator
+                            status={statusIndicator}
                             pulse={statusIndicator === 'warning'}
                             className="absolute -top-0.5 -right-0.5"
                           />
@@ -578,10 +581,10 @@ export function AppSidebar() {
                     )}
                   </div>
                 </NavigationTooltip>
-                
+
                 <div className="flex items-center gap-1.5">
                   {!collapsed && notificationCount > 0 && (
-                    <BadgeNotification 
+                    <BadgeNotification
                       count={notificationCount}
                       variant={notificationCount > 5 ? 'destructive' : 'warning'}
                       className="mr-0.5"
@@ -606,8 +609,8 @@ export function AppSidebar() {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <SidebarMenuSub className={isCategory ? "ml-2 border-l border-sidebar-border/65 pl-2" : ""}>
-                {item.subItems?.map(subItem => 
-                  subItem.subItems && subItem.subItems.length > 0 
+                {item.subItems?.map(subItem =>
+                  subItem.subItems && subItem.subItems.length > 0
                     ? renderMenuItem(subItem, hideIcon)
                     : renderSubMenuItem(subItem, active || hasActiveSubItem)
                 )}
@@ -621,7 +624,10 @@ export function AppSidebar() {
     return (
       <SidebarMenuItem key={item.id}>
         <SidebarMenuButton
-          onClick={() => navigate(prefixPath(item.path))}
+          onClick={() => {
+            navigate(prefixPath(item.path));
+            if (isMobile) setOpenMobile(false);
+          }}
           aria-current={active ? "page" : undefined}
           className={cn(
             "group h-9 rounded-[12px] px-2.5 transition-all duration-200",
@@ -640,8 +646,8 @@ export function AppSidebar() {
                 <div className={getIconContainerClass(active)}>
                   <item.icon className="h-[15px] w-[15px] flex-shrink-0 text-sidebar-foreground/85" />
                   {statusIndicator && (
-                    <StatusIndicator 
-                      status={statusIndicator} 
+                    <StatusIndicator
+                      status={statusIndicator}
                       pulse={statusIndicator === 'warning'}
                       className="absolute -top-0.5 -right-0.5"
                     />
@@ -655,15 +661,15 @@ export function AppSidebar() {
               )}
             </div>
           </NavigationTooltip>
-          
+
           {!isHomeItem && !collapsed && notificationCount > 0 && (
-            <BadgeNotification 
+            <BadgeNotification
               count={notificationCount}
               variant={notificationCount > 5 ? 'destructive' : 'warning'}
               className="mr-0.5"
             />
           )}
-          
+
           {!isHomeItem && !collapsed && (
             <button
               type="button"
@@ -683,21 +689,21 @@ export function AppSidebar() {
   // Filter menu items based on search
   const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
     if (!searchQuery.trim()) return items
-    
+
     return items.filter(item => {
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           item.description.toLowerCase().includes(searchQuery.toLowerCase())
-      
+        item.description.toLowerCase().includes(searchQuery.toLowerCase())
+
       if (matchesSearch) return true
-      
+
       // Check subitems
       if (item.subItems) {
-        return item.subItems.some(subItem => 
+        return item.subItems.some(subItem =>
           subItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           subItem.description.toLowerCase().includes(searchQuery.toLowerCase())
         )
       }
-      
+
       return false
     })
   }
@@ -718,20 +724,20 @@ export function AppSidebar() {
         return section
       })
       .filter(section => section.items.length > 0)
-  }, [isSectionVisible, isEsgCategoryVisible, menuSections])
+  }, [isSectionVisible, isEsgCategoryVisible])
 
-  const filteredSections = searchQuery.trim() 
+  const filteredSections = searchQuery.trim()
     ? modulesFilteredSections
-        .filter(section => isPlatformAdmin || section.id !== 'platform-admin')
-        .map(section => ({
-          ...section,
-          items: filterMenuItems(section.items)
-        }))
-        .filter(section => section.items.length > 0)
+      .filter(section => isPlatformAdmin || section.id !== 'platform-admin')
+      .map(section => ({
+        ...section,
+        items: filterMenuItems(section.items)
+      }))
+      .filter(section => section.items.length > 0)
     : modulesFilteredSections.filter(section => isPlatformAdmin || section.id !== 'platform-admin')
 
   return (
-    <Sidebar 
+    <Sidebar
       variant="floating"
       className="transition-all duration-300"
       onMouseEnter={() => setIsHovering(true)}
@@ -801,10 +807,10 @@ export function AppSidebar() {
                 {favorites.slice(0, 5).map((fav) => {
                   // Renderizar ícone original do módulo (não estrela)
                   const IconComponent = icons[fav.icon as keyof typeof icons] as React.ComponentType<{ className?: string }> || FileText
-                  
+
                   return (
                     <SidebarMenuItem key={`fav-${fav.id}`} className="animate-fade-in">
-                      <SidebarMenuButton 
+                      <SidebarMenuButton
                         onClick={() => navigate(prefixPath(fav.path))}
                         className="group h-9 rounded-[12px] border border-transparent px-2.5 hover:border-border/45 hover:bg-background/55"
                       >
@@ -872,9 +878,9 @@ export function AppSidebar() {
             {section.hasDivider && !searchQuery && (
               <div className="mx-5 my-3 border-t border-sidebar-border/45"></div>
             )}
-            
+
             {section.isCollapsible && !searchQuery ? (
-              <Collapsible 
+              <Collapsible
                 defaultOpen={section.defaultOpen || searchQuery.length > 0}
                 open={searchQuery.length > 0 ? true : expandedSections[section.id]}
                 onOpenChange={(open) => setExpandedSections(prev => ({ ...prev, [section.id]: open }))}
@@ -913,7 +919,7 @@ export function AppSidebar() {
               </SidebarGroup>
             )}
           </div>
-      ))}
+        ))}
       </SidebarContent>
     </Sidebar>
   )

@@ -86,10 +86,11 @@ export default function SupplierEvaluations() {
     queryFn: () => getDocumentSubmissions(),
   });
 
-  const { data: businessUnits = [] } = useQuery({
+  const { data: rawBusinessUnits = [] } = useQuery({
     queryKey: ['business-units'],
     queryFn: getBusinessUnits,
   });
+  const businessUnits = Array.isArray(rawBusinessUnits) ? rawBusinessUnits : [];
 
   const { data: categories = [] } = useQuery({
     queryKey: ['supplier-categories'],

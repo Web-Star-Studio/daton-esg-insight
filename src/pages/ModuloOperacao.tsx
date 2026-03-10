@@ -132,7 +132,7 @@ export default function ModuloOperacao() {
           </TabsList>
 
           <TabsContent value="maintenance" className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-2xl font-bold">Controle de Manutenção</h2>
                 <p className="text-muted-foreground">Gerencie cronogramas e registros de manutenção</p>
@@ -207,7 +207,7 @@ export default function ModuloOperacao() {
           </TabsContent>
 
           <TabsContent value="calibration" className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-2xl font-bold">Controle de Calibração</h2>
                 <p className="text-muted-foreground">Gerencie cronogramas e certificados de calibração</p>
@@ -284,12 +284,12 @@ export default function ModuloOperacao() {
           </TabsContent>
 
           <TabsContent value="valuechain" className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-2xl font-bold">Cadeia Cliente-Fornecedor</h2>
                 <p className="text-muted-foreground">Mapeie processos e avalie relacionamentos internos</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 <Button onClick={() => setValueChainModalOpen(true)} variant="outline">
                   <Network className="h-4 w-4 mr-2" />
                   Mapear Processo
@@ -398,7 +398,7 @@ export default function ModuloOperacao() {
           </TabsContent>
 
           <TabsContent value="ownership" className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-2xl font-bold">Gestão de Propriedade</h2>
                 <p className="text-muted-foreground">Controle de propriedade e acordos de empréstimo</p>

@@ -140,7 +140,8 @@ const DEFAULT_REVIEW_FORM: ReviewFormState = {
 export const SGQIsoDocumentsTab = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data: branches = [] } = useBranches();
+  const { data: rawBranches = [] } = useBranches();
+  const branches = Array.isArray(rawBranches) ? rawBranches : [];
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -169,12 +170,13 @@ export const SGQIsoDocumentsTab = () => {
   const [recipientsDocId, setRecipientsDocId] = useState<string | null>(null);
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
 
-  const { data: users = [] } = useQuery({
+  const { data: rawUsers = [] } = useQuery({
     queryKey: ["sgq-documents", "responsibles"],
     queryFn: getSgqResponsibleUsers,
   });
+  const users = Array.isArray(rawUsers) ? rawUsers : [];
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data: rawItems = [], isLoading } = useQuery({
     queryKey: ["sgq-documents", filters],
     queryFn: () => getSgqDocuments({
       search: filters.search || undefined,
@@ -183,30 +185,35 @@ export const SGQIsoDocumentsTab = () => {
       status: filters.status === "all" ? undefined : (filters.status as DocumentStatus),
     }),
   });
+  const items = Array.isArray(rawItems) ? rawItems : [];
 
-  const { data: systemDocs = [] } = useQuery({
+  const { data: rawSystemDocs = [] } = useQuery({
     queryKey: ["sgq-documents", "system-docs"],
     queryFn: getSystemDocumentsForReference,
     enabled: isCreateOpen,
   });
+  const systemDocs = Array.isArray(rawSystemDocs) ? rawSystemDocs : [];
 
-  const { data: versions = [], isLoading: isLoadingVersions } = useQuery({
+  const { data: rawVersions = [], isLoading: isLoadingVersions } = useQuery({
     queryKey: ["sgq-documents", "versions", versionsDocId],
     queryFn: () => getSgqDocumentVersions(versionsDocId!),
     enabled: isVersionsOpen && !!versionsDocId,
   });
+  const versions = Array.isArray(rawVersions) ? rawVersions : [];
 
-  const { data: campaigns = [], isLoading: isLoadingCampaigns } = useQuery({
+  const { data: rawCampaigns = [], isLoading: isLoadingCampaigns } = useQuery({
     queryKey: ["sgq-documents", "campaigns", recipientsDocId],
     queryFn: () => getSgqReadCampaigns(recipientsDocId!),
     enabled: isRecipientsOpen && !!recipientsDocId,
   });
+  const campaigns = Array.isArray(rawCampaigns) ? rawCampaigns : [];
 
-  const { data: pendingReviews = [], isLoading: isLoadingReviews } = useQuery({
+  const { data: rawPendingReviews = [], isLoading: isLoadingReviews } = useQuery({
     queryKey: ["sgq-documents", "reviews", reviewsDocId],
     queryFn: () => getPendingReviewRequests(reviewsDocId || undefined),
     enabled: isReviewsOpen,
   });
+  const pendingReviews = Array.isArray(rawPendingReviews) ? rawPendingReviews : [];
 
   const collaborators = useMemo(() => users.map((u) => ({ id: u.id, full_name: u.full_name })), [users]);
 
@@ -815,7 +822,7 @@ export const SGQIsoDocumentsTab = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {campaign.recipients.map((r) => (
+                      {(campaign.recipients ?? []).map((r) => (
                         <TableRow key={r.id}>
                           <TableCell>{r.user_name}</TableCell>
                           <TableCell>

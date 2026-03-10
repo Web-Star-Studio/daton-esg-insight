@@ -942,18 +942,46 @@ export const environmentalMockEntries = [
     queryKey: ['unified-quality-dashboard'],
     data: {
       metrics: {
-        totalNCs: 24,
-        openNCs: 5,
-        actionPlans: 12,
-        overdueActions: 2,
+        totalNCs: 142,
+        openNCs: 18,
+        resolvedNCs: 124,
+        totalRisks: 45,
+        criticalRisks: 3,
+        actionPlans: 28,
+        overdueActions: 4,
+        qualityScore: 92,
+        avgResolutionTime: 5,
+        trendDirection: 'up'
       },
       recentNCs: [
-        { id: 'nc-1', title: 'Vazamento de óleo', nc_number: 'NC-2026-001', severity: 'Alta', status: 'Aberta' },
-        { id: 'nc-2', title: 'Falta de EPI', nc_number: 'NC-2026-002', severity: 'Média', status: 'Em Tratamento' },
+        { id: 'nc-1', nc_number: 'NC-2024-001', title: 'Falha no processo de solda', severity: 'Alta', status: 'Aberta', created_at: new Date().toISOString() },
+        { id: 'nc-2', nc_number: 'NC-2024-002', title: 'Documentação desatualizada', severity: 'Baixa', status: 'Em Análise', created_at: new Date(Date.now() - 86400000).toISOString() },
+        { id: 'nc-3', nc_number: 'NC-2024-003', title: 'Calibração de equipamento vencida', severity: 'Média', status: 'Aberta', created_at: new Date(Date.now() - 172800000).toISOString() }
       ],
       plansProgress: [
-        { id: 'plan-1', title: 'Adequação NR-12', status: 'Em andamento', avgProgress: 65, completedItems: 13, totalItems: 20, overdueItems: 1 },
-        { id: 'plan-2', title: 'Plano de Redução de Resíduos', status: 'Atrasado', avgProgress: 40, completedItems: 4, totalItems: 10, overdueItems: 2 },
+        { id: 'plan-1', title: 'Adequação ISO 9001', status: 'Em Andamento', avgProgress: 84, completedItems: 38, totalItems: 45, overdueItems: 1 },
+        { id: 'plan-2', title: 'Treinamento CIPA', status: 'Em Andamento', avgProgress: 50, completedItems: 6, totalItems: 12, overdueItems: 0 },
+        { id: 'plan-3', title: 'Revisão de POPs', status: 'Atrasado', avgProgress: 75, completedItems: 90, totalItems: 120, overdueItems: 15 }
+      ],
+      insights: [
+        {
+          id: 'ins-1',
+          type: 'success',
+          title: 'Melhoria no Tempo de Resolução',
+          description: 'O tempo médio de resolução de NCs reduziu em 14% este mês.',
+          metric: '14%',
+          actionLabel: 'Ver Detalhes',
+          actionUrl: '/demo/nao-conformidades',
+        },
+        {
+          id: 'ins-2',
+          type: 'warning',
+          title: 'Planos de Ação Atrasados',
+          description: 'Você possui 4 planos de ação com prazo vencido esta semana.',
+          metric: '4 Plano(s)',
+          actionLabel: 'Ver Planos',
+          actionUrl: '/demo/acoes-corretivas',
+        },
       ]
     },
   },
@@ -961,8 +989,11 @@ export const environmentalMockEntries = [
   {
     queryKey: ['quality-indicators-metrics'],
     data: {
-      resolutionRate: { percentage: 85.4 },
+      ncTrend: { current: 18, previous: 25, change: -28 },
+      resolutionRate: { percentage: 87.3, resolved: 124, total: 142 },
+      overdueActions: 4,
       qualityScore: 92,
+      hasRealIndicators: true
     },
   },
   // Emission sources
@@ -1293,5 +1324,16 @@ export const environmentalMockEntries = [
   {
     queryKey: ['energy-monitoring-esg'],
     data: DEMO_ENERGY_MONITORING_DATA,
+  },
+  // Assets formatted as dropdown options
+  {
+    queryKey: ['assets-options'],
+    data: [
+      { id: 'asset-root-1', name: 'Unidade Industrial SP', asset_type: 'Unidade Industrial', location: 'São Paulo - SP' },
+      { id: 'asset-boiler-1', name: 'Caldeira 01', asset_type: 'Fonte Fixa de Combustão', location: 'Bloco A' },
+      { id: 'asset-stack-1', name: 'Chaminé Norte', asset_type: 'Chaminé/Stack', location: 'Bloco A' },
+      { id: 'asset-root-2', name: 'Centro de Distribuição RJ', asset_type: 'Infraestrutura Auxiliar', location: 'Rio de Janeiro - RJ' },
+      { id: 'asset-vehicle-1', name: 'Caminhão Baú 14T', asset_type: 'Fonte Móvel', location: 'Pátio RJ' },
+    ],
   },
 ];

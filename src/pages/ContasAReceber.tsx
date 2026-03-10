@@ -21,22 +21,22 @@ export default function ContasAReceber() {
     { accessorKey: 'invoice_number', header: 'Nº Nota' },
     { accessorKey: 'customer_name', header: 'Cliente' },
     { accessorKey: 'category', header: 'Categoria' },
-    { 
-      accessorKey: 'original_amount', 
+    {
+      accessorKey: 'original_amount',
       header: 'Valor',
       cell: ({ row }: any) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.original.original_amount)
     },
     { accessorKey: 'due_date', header: 'Vencimento' },
-    { 
-      accessorKey: 'status', 
+    {
+      accessorKey: 'status',
       header: 'Status',
       cell: ({ row }: any) => <Badge variant={row.original.status === 'Recebido' ? 'default' : 'secondary'}>{row.original.status}</Badge>
     },
   ];
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="w-full py-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Contas a Receber</h1>
           <p className="text-muted-foreground">Gestão de recebíveis</p>
@@ -87,7 +87,9 @@ export default function ContasAReceber() {
           <CardTitle>Lista de Contas a Receber</CardTitle>
         </CardHeader>
         <CardContent>
-          <DataTable columns={columns} data={receivables} />
+          <div className="overflow-x-auto">
+            <DataTable columns={columns} data={receivables} />
+          </div>
         </CardContent>
       </Card>
     </div>

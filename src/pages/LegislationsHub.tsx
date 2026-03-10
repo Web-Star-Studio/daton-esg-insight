@@ -46,7 +46,7 @@ const LegislationsHub: React.FC = () => {
     if (filter.type === "all") {
       handleClearFilters();
     } else if (filter.type === "alerts") {
-      navigate('/licenciamento/legislacoes/alertas');
+      setFilters(prev => ({ ...prev, applicability: "", status: "vencida" }));
       return;
     } else if (filter.type === "pending") {
       setFilters(prev => ({

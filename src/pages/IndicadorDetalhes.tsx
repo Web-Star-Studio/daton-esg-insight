@@ -167,7 +167,7 @@ export default function IndicadorDetalhes() {
   const criticalMonths = indicator.period_data?.filter(pd => pd.status === 'critical') || [];
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full overflow-hidden py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -185,7 +185,7 @@ export default function IndicadorDetalhes() {
             <p className="text-muted-foreground">{indicator.description}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={() => setShowExportModal(true)}>
             <FileDown className="h-4 w-4 mr-2" /> Exportar
           </Button>

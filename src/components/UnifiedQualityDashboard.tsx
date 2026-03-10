@@ -5,15 +5,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  TrendingUp, 
-  Users, 
-  FileText, 
-  Target, 
-  Zap, 
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  Users,
+  FileText,
+  Target,
+  Zap,
   Brain,
   BarChart3,
   Grid3X3,
@@ -38,26 +38,27 @@ export const UnifiedQualityDashboard: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const navigate = useNavigate();
 
-  const { data: dashboardData, isLoading, error } = useQuery({
-    queryKey: ['unified-quality-dashboard'],
-    queryFn: async () => {
-      const data = await unifiedQualityService.getQualityDashboard();
-      console.warn('Dashboard data received:', {
-        hasPlansProgress: !!data?.plansProgress,
-        plansCount: data?.plansProgress?.length || 0,
-        plans: data?.plansProgress
-      });
-      return data;
-    }
+  const isDemo = typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
+  const { data: dashboardData, isLoading: isLoadingDashboard, error: dashboardError } = useQuery({
+    queryKey: ['unified-quality-dashboard', isDemo],
+    queryFn: () => unifiedQualityService.getQualityDashboard(isDemo)
   });
 
-  const { data: indicators } = useQuery({
-    queryKey: ['quality-indicators-metrics'],
-    queryFn: () => unifiedQualityService.getQualityIndicators()
+  const { data: indicators, isLoading: isLoadingIndicators, error: indicatorsError } = useQuery({
+    queryKey: ['quality-indicators-metrics', isDemo],
+    queryFn: () => unifiedQualityService.getQualityIndicators(isDemo)
   });
+
+  const isLoading = isLoadingDashboard || isLoadingIndicators;
+  const error = dashboardError ?? indicatorsError;
 
   if (error) {
     console.error('Error loading dashboard:', error);
+  }
+
+  // Avoid turning refetch failures into a full-screen outage if we already have data
+  if (error && !dashboardData && !indicators) {
     return (
       <div className="space-y-6">
         <Card>
@@ -159,7 +160,7 @@ export const UnifiedQualityDashboard: React.FC = () => {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Card 
+            <Card
               className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
               onClick={() => navigate(ROUTE_PATHS.QUALITY.NON_CONFORMITIES)}
               role="button"
@@ -183,7 +184,7 @@ export const UnifiedQualityDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card 
+            <Card
               className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
               onClick={() => navigate(ROUTE_PATHS.QUALITY.NON_CONFORMITIES + '?status=Aberta')}
               role="button"
@@ -207,7 +208,7 @@ export const UnifiedQualityDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card 
+            <Card
               className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
               onClick={() => navigate('/plano-acao-5w2h')}
               role="button"
@@ -231,7 +232,7 @@ export const UnifiedQualityDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card 
+            <Card
               className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
               onClick={() => setSelectedTab('indicators')}
               role="button"
@@ -255,7 +256,7 @@ export const UnifiedQualityDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card 
+            <Card
               className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
               onClick={() => setSelectedTab('indicators')}
               role="button"
@@ -293,56 +294,56 @@ export const UnifiedQualityDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-20 flex-col gap-2"
                   onClick={() => navigate('/relatorios-integrados')}
                 >
                   <FileText className="h-6 w-6" />
                   <span className="text-xs">Ver Relatórios</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-20 flex-col gap-2"
                   onClick={() => navigate('/gestao-funcionarios')}
                 >
                   <Users className="h-6 w-6" />
                   <span className="text-xs">Equipe</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-20 flex-col gap-2"
                   onClick={() => setSelectedTab('insights')}
                 >
                   <Brain className="h-6 w-6" />
                   <span className="text-xs">IA Insights</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-20 flex-col gap-2"
                   onClick={() => setSelectedTab('indicators')}
                 >
                   <TrendingUp className="h-6 w-6" />
                   <span className="text-xs">Métricas</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-20 flex-col gap-2"
                   onClick={() => navigate('/nao-conformidades')}
                 >
                   <ListTodo className="h-6 w-6" />
                   <span className="text-xs">Não Conformidades</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-20 flex-col gap-2"
                   onClick={() => navigate('/plano-acao-5w2h')}
                 >
                   <ClipboardList className="h-6 w-6" />
                   <span className="text-xs">Planos de Ação</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-20 flex-col gap-2"
                   onClick={() => navigate('/laia')}
                 >
@@ -419,8 +420,8 @@ export const UnifiedQualityDashboard: React.FC = () => {
                   <CardTitle>Planos de Ação</CardTitle>
                   <CardDescription>Acompanhe o progresso dos planos de ação</CardDescription>
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => navigate('/acoes-corretivas')}
                 >

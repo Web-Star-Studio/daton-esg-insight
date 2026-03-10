@@ -16,7 +16,7 @@ export default function IntelligenceCenter() {
   const [activeTab, setActiveTab] = useState('analyze');
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full overflow-hidden p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-3">

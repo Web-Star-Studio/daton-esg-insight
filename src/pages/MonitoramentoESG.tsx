@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Activity, Calendar, TrendingUp, TrendingDown, 
+import {
+  Activity, Calendar, TrendingUp, TrendingDown,
   Droplets, Zap, Cloud, Trash2, AlertCircle, CheckCircle,
   ArrowRight, Info
 } from "lucide-react";
@@ -80,7 +80,7 @@ export default function MonitoramentoESG() {
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <Input
@@ -134,7 +134,7 @@ export default function MonitoramentoESG() {
       {/* KPIs Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Card Água */}
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/monitoramento-agua')}
         >
@@ -156,22 +156,24 @@ export default function MonitoramentoESG() {
             {hasWaterData ? (
               <>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Captação Total</span>
                     <span className="font-semibold">
                       {waterData.total_withdrawal_m3.toLocaleString('pt-BR')} m³
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Consumo</span>
                     <span className="font-semibold">
                       {waterData.total_consumption_m3.toLocaleString('pt-BR')} m³
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">% Reutilização</span>
                     <span className="font-semibold text-green-600">
-                      {((waterData.by_source.reuse / waterData.total_consumption_m3) * 100).toFixed(1)}%
+                      {waterData.total_consumption_m3 > 0
+                        ? `${((waterData.by_source.reuse / waterData.total_consumption_m3) * 100).toFixed(1)}%`
+                        : "0.0%"}
                     </span>
                   </div>
                 </div>
@@ -191,7 +193,7 @@ export default function MonitoramentoESG() {
         </Card>
 
         {/* Card Energia */}
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/monitoramento-energia')}
         >
@@ -213,19 +215,19 @@ export default function MonitoramentoESG() {
             {hasEnergyData ? (
               <>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Consumo Total</span>
                     <span className="font-semibold">
                       {energyData.total_consumption_gj.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} GJ
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Em MWh</span>
                     <span className="font-semibold">
                       {(energyData.total_consumption_kwh / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} MWh
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">% Renovável</span>
                     <span className={`font-semibold ${energyData.renewable_percentage >= 50 ? 'text-green-600' : 'text-amber-600'}`}>
                       {energyData.renewable_percentage.toFixed(1)}%
@@ -248,7 +250,7 @@ export default function MonitoramentoESG() {
         </Card>
 
         {/* Card Emissões */}
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/monitoramento-emissoes')}
         >
@@ -270,19 +272,19 @@ export default function MonitoramentoESG() {
             {hasEmissionsData ? (
               <>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Emissões Totais</span>
                     <span className="font-semibold">
                       {emissionsData.grand_total.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} tCO₂e
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Escopo 1</span>
                     <span className="font-semibold">
                       {emissionsData.scope_1.total.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} tCO₂e
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Escopo 2</span>
                     <span className="font-semibold">
                       {emissionsData.scope_2.total.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} tCO₂e
@@ -305,7 +307,7 @@ export default function MonitoramentoESG() {
         </Card>
 
         {/* Card Resíduos */}
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/monitoramento-residuos')}
         >
@@ -327,19 +329,19 @@ export default function MonitoramentoESG() {
             {hasWasteData ? (
               <>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Total Gerado</span>
                     <span className="font-semibold">
                       {wasteData.total_generated_tonnes.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} t
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Reciclagem</span>
                     <span className="font-semibold">
                       {wasteData.by_treatment.recycling.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} t
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <span className="text-sm text-muted-foreground">Aterro</span>
                     <span className="font-semibold text-amber-600">
                       {wasteData.by_treatment.landfill.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} t
@@ -372,8 +374,8 @@ export default function MonitoramentoESG() {
         </CardHeader>
         <CardContent className="space-y-3">
           {!hasWaterData && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={() => navigate('/monitoramento-agua')}
             >
@@ -382,8 +384,8 @@ export default function MonitoramentoESG() {
             </Button>
           )}
           {!hasEnergyData && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={() => navigate('/monitoramento-energia')}
             >
@@ -392,8 +394,8 @@ export default function MonitoramentoESG() {
             </Button>
           )}
           {!hasEmissionsData && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={() => navigate('/monitoramento-emissoes')}
             >
@@ -402,8 +404,8 @@ export default function MonitoramentoESG() {
             </Button>
           )}
           {!hasWasteData && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={() => navigate('/monitoramento-residuos')}
             >
@@ -429,7 +431,7 @@ export default function MonitoramentoESG() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           Todos os dados visualizados aqui são automaticamente consolidados e disponibilizados no{" "}
-          <strong>Wizard GRI</strong> para geração de relatórios de sustentabilidade. 
+          <strong>Wizard GRI</strong> para geração de relatórios de sustentabilidade.
           Não é necessário duplicar entrada de dados entre os módulos de monitoramento e o wizard de relatórios.
         </CardContent>
       </Card>

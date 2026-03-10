@@ -55,10 +55,10 @@ export function OpportunityMapWidget() {
 
   const filteredOpportunities = opportunities?.filter(opp => {
     const matchesSearch = opp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (opp.description || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !filterCategory || opp.category === filterCategory;
-    const matchesStatus = !filterStatus || opp.status === filterStatus;
-    
+      (opp.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !filterCategory || filterCategory === 'all' || opp.category === filterCategory;
+    const matchesStatus = !filterStatus || filterStatus === 'all' || opp.status === filterStatus;
+
     return matchesSearch && matchesCategory && matchesStatus;
   }) || [];
 
@@ -110,7 +110,7 @@ export function OpportunityMapWidget() {
             Mapa de Oportunidades
           </h2>
           <p className="text-muted-foreground">
-            {metrics?.total || 0} oportunidades identificadas • 
+            {metrics?.total || 0} oportunidades identificadas •
             ROI potencial: {Math.round(metrics?.potentialROI || 0)}%
           </p>
         </div>
@@ -192,18 +192,43 @@ export function OpportunityMapWidget() {
             <div className="font-semibold text-sm">Baixo</div>
             <div className="font-semibold text-sm">Médio</div>
             <div className="font-semibold text-sm">Alto</div>
-            
+
             {['Alta', 'Média', 'Baixa'].map((probability) => (
               <React.Fragment key={probability}>
                 <div className="font-semibold text-sm py-4">{probability}</div>
-                {['Baixo', 'Médio', 'Alto'].map((impact) => (
-                  <div
-                    key={`${probability}-${impact}`}
-                    className="h-16 border-2 border-dashed border-muted rounded-lg flex items-center justify-center text-lg font-bold bg-muted/20"
-                  >
-                    {opportunityMatrix?.[probability]?.[impact] || 0}
-                  </div>
-                ))}
+                {['Baixo', 'Médio', 'Alto'].map((impact) => {
+                  const cellOpps = filteredOpportunities.filter(
+                    o => o.probability === probability && o.impact === impact
+                  );
+                  return (
+                    <div
+                      key={`${probability}-${impact}`}
+                      className="min-h-[4rem] p-2 border-2 border-dashed border-muted rounded-lg flex flex-col gap-1 items-stretch justify-start bg-muted/20"
+                    >
+                      {cellOpps.length > 0 ? (
+                        cellOpps.map(opp => (
+                          <button
+                            key={opp.id}
+                            type="button"
+                            className={`w-full text-xs p-1 rounded bg-background border truncate cursor-pointer hover:border-primary text-left`}
+                            onClick={() => handleViewOpportunity(opp)}
+                            title={opp.title}
+                            aria-label={`Visualizar oportunidade: ${opp.title}`}
+                          >
+                            <div className="flex justify-between items-center gap-1">
+                              <span className="truncate">{opp.title}</span>
+                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getOpportunityLevelColor(opp.opportunity_level).replace('text-', 'bg-').replace('border-', '')}`} />
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="flex-1 flex items-center justify-center text-xl font-bold opacity-30">
+                          0
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </React.Fragment>
             ))}
           </div>
@@ -221,13 +246,13 @@ export function OpportunityMapWidget() {
               <div className="text-center py-8">
                 <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">
-                  {opportunities?.length === 0 
+                  {opportunities?.length === 0
                     ? "Nenhuma oportunidade cadastrada ainda."
                     : "Nenhuma oportunidade encontrada com os filtros aplicados."
                   }
                 </p>
-                <Button 
-                  onClick={handleCreateOpportunity} 
+                <Button
+                  onClick={handleCreateOpportunity}
                   className="mt-4"
                   variant="outline"
                 >
@@ -252,11 +277,11 @@ export function OpportunityMapWidget() {
                           {opportunity.status}
                         </Badge>
                       </div>
-                      
+
                       <p className="text-sm text-muted-foreground mb-2">
                         {opportunity.description}
                       </p>
-                      
+
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span>Categoria: {opportunity.category}</span>
                         <span>Probabilidade: {opportunity.probability}</span>
@@ -269,11 +294,12 @@ export function OpportunityMapWidget() {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         variant="outline"
+                        aria-label={`Visualizar oportunidade ${opportunity.title}`}
                         onClick={() => handleViewOpportunity(opportunity)}
                       >
                         <Eye className="h-4 w-4" />
@@ -281,6 +307,7 @@ export function OpportunityMapWidget() {
                       <Button
                         size="sm"
                         variant="outline"
+                        aria-label={`Editar oportunidade ${opportunity.title}`}
                         onClick={() => handleEditOpportunity(opportunity)}
                       >
                         <Edit className="h-4 w-4" />

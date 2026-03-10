@@ -20,15 +20,15 @@ import { ImportHistoryTable } from '@/components/ImportHistoryTable';
 import { RecurringTaskModal } from '@/components/RecurringTaskModal';
 import { ChatAssistant } from '@/components/tools/ChatAssistant';
 
-import { 
-  ClipboardList, 
-  Upload, 
-  Settings, 
-  TrendingUp, 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle, 
-  FileText, 
+import {
+  ClipboardList,
+  Upload,
+  Settings,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  FileText,
   Download,
   Bell,
   Filter,
@@ -91,7 +91,7 @@ export default function ColetaDados() {
   // Filter tasks based on search and filter
   const filteredTasks = tasks.filter((task: DataCollectionTask) => {
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      task.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = taskFilter === 'all' || task.status === taskFilter;
     return matchesSearch && matchesFilter;
   });
@@ -180,7 +180,7 @@ export default function ColetaDados() {
       energy: 'template_energia.xlsx',
       water: 'template_agua.xlsx'
     };
-    
+
     toast({
       title: "Template baixado",
       description: `Template ${templates[type as keyof typeof templates]} foi baixado com sucesso.`,
@@ -188,7 +188,7 @@ export default function ColetaDados() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="w-full overflow-hidden px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Central de Coleta de Dados</h1>
@@ -323,7 +323,7 @@ export default function ColetaDados() {
                       <Progress value={tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0} />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-4 border rounded-lg">
@@ -352,8 +352,8 @@ export default function ColetaDados() {
                     Acompanhe prazos e status importantes
                   </CardDescription>
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowNotificationSettings(true)}
                 >
@@ -375,7 +375,7 @@ export default function ColetaDados() {
                       <Badge variant="destructive">{overdueTasks.length}</Badge>
                     </div>
                   )}
-                  
+
                   {dueSoon > 0 && (
                     <div className="flex items-center gap-3 p-3 border border-warning/20 bg-warning/5 rounded-lg">
                       <Calendar className="h-5 w-5 text-warning" />
@@ -388,7 +388,7 @@ export default function ColetaDados() {
                       <Badge variant="secondary">{dueSoon}</Badge>
                     </div>
                   )}
-                  
+
                   {completedToday > 0 && (
                     <div className="flex items-center gap-3 p-3 border border-success/20 bg-success/5 rounded-lg">
                       <CheckCircle className="h-5 w-5 text-success" />
@@ -401,7 +401,7 @@ export default function ColetaDados() {
                       <Badge variant="secondary">{completedToday}</Badge>
                     </div>
                   )}
-                  
+
                   {overdueTasks.length === 0 && dueSoon === 0 && completedToday === 0 && (
                     <div className="text-center py-8">
                       <CheckCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -442,8 +442,8 @@ export default function ColetaDados() {
                     <SelectItem value="Concluído">Concluídas</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     setSearchTerm('');
@@ -456,8 +456,8 @@ export default function ColetaDados() {
               </div>
             </CardContent>
           </Card>
-          
-          <TaskKanbanBoard 
+
+          <TaskKanbanBoard
             tasks={filteredTasks}
             isLoading={tasksLoading}
             onTaskComplete={refetchTasks}
@@ -485,8 +485,8 @@ export default function ColetaDados() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="flex flex-col items-center gap-2 h-auto py-4"
                     onClick={() => downloadTemplate('emissions')}
                   >
@@ -494,8 +494,8 @@ export default function ColetaDados() {
                     <span className="text-sm font-medium">Emissões GEE</span>
                     <span className="text-xs text-muted-foreground">Dados de emissões</span>
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="flex flex-col items-center gap-2 h-auto py-4"
                     onClick={() => downloadTemplate('waste')}
                   >
@@ -503,8 +503,8 @@ export default function ColetaDados() {
                     <span className="text-sm font-medium">Resíduos</span>
                     <span className="text-xs text-muted-foreground">Logs de resíduos</span>
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="flex flex-col items-center gap-2 h-auto py-4"
                     onClick={() => downloadTemplate('energy')}
                   >
@@ -512,8 +512,8 @@ export default function ColetaDados() {
                     <span className="text-sm font-medium">Energia</span>
                     <span className="text-xs text-muted-foreground">Consumo energético</span>
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="flex flex-col items-center gap-2 h-auto py-4"
                     onClick={() => downloadTemplate('water')}
                   >
@@ -532,7 +532,7 @@ export default function ColetaDados() {
 
         <TabsContent value="approval" className="space-y-6">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <CheckSquare className="h-5 w-5" />
@@ -542,10 +542,10 @@ export default function ColetaDados() {
                   Revise e aprove dados coletados antes da consolidação
                 </CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 {selectedTasks.length > 0 && (
                   <>
-                    <Button 
+                    <Button
                       onClick={handleBulkApproval}
                       className="bg-success hover:bg-success/90"
                       disabled={approveMutations.isPending}
@@ -553,7 +553,7 @@ export default function ColetaDados() {
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Aprovar ({selectedTasks.length})
                     </Button>
-                    <Button 
+                    <Button
                       variant="destructive"
                       onClick={handleBulkRejection}
                       disabled={rejectMutations.isPending}
@@ -569,7 +569,7 @@ export default function ColetaDados() {
               <div className="space-y-4">
                 {/* Tasks pending approval */}
                 {filteredTasks.filter(task => task.status === 'Pendente').map((task) => (
-                  <div key={task.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                  <div key={task.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border rounded-lg">
                     <Checkbox
                       checked={selectedTasks.includes(task.id)}
                       onCheckedChange={(checked) => {
@@ -592,21 +592,21 @@ export default function ColetaDados() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                       <Button size="sm" variant="outline">
                         <Eye className="h-4 w-4 mr-2" />
                         Revisar
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="bg-success hover:bg-success/90"
                         onClick={() => approveMutations.mutate([task.id])}
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
                         Aprovar
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="destructive"
                         onClick={() => rejectMutations.mutate([task.id])}
                       >
@@ -616,7 +616,7 @@ export default function ColetaDados() {
                     </div>
                   </div>
                 ))}
-                
+
                 {filteredTasks.filter(task => task.status === 'Pendente').length === 0 && (
                   <div className="text-center py-8">
                     <CheckCircle className="mx-auto h-12 w-12 text-success mb-4" />
@@ -652,11 +652,11 @@ export default function ColetaDados() {
                       Configuração de Tarefas Recorrentes
                     </h3>
                     <p className="text-muted-foreground mb-4">
-                      Configure tarefas automáticas para coleta regular de dados como faturas de energia, 
+                      Configure tarefas automáticas para coleta regular de dados como faturas de energia,
                       registros de resíduos e renovações de licenças.
                     </p>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => setShowCreateTaskModal(true)}
                     >
                       Criar Primeira Tarefa
@@ -816,7 +816,7 @@ export default function ColetaDados() {
               </div>
               <Checkbox
                 checked={notificationSettings.dueTasks}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setNotificationSettings(prev => ({ ...prev, dueTasks: !!checked }))
                 }
               />
@@ -828,7 +828,7 @@ export default function ColetaDados() {
               </div>
               <Checkbox
                 checked={notificationSettings.overdueTasks}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setNotificationSettings(prev => ({ ...prev, overdueTasks: !!checked }))
                 }
               />
@@ -840,7 +840,7 @@ export default function ColetaDados() {
               </div>
               <Checkbox
                 checked={notificationSettings.completedTasks}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setNotificationSettings(prev => ({ ...prev, completedTasks: !!checked }))
                 }
               />
@@ -852,7 +852,7 @@ export default function ColetaDados() {
               </div>
               <Checkbox
                 checked={notificationSettings.importResults}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setNotificationSettings(prev => ({ ...prev, importResults: !!checked }))
                 }
               />
@@ -871,6 +871,6 @@ export default function ColetaDados() {
 
       {/* Chat IA Assistant - Contexto de Coleta de Dados */}
       <ChatAssistant embedded={false} />
-      </div>
+    </div>
   );
 }

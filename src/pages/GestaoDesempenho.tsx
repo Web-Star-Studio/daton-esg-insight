@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  getPerformanceStats, 
-  getPerformanceEvaluations, 
+import {
+  getPerformanceStats,
+  getPerformanceEvaluations,
   getEmployeeGoals,
-  initializeDefaultCriteria 
+  initializeDefaultCriteria
 } from "@/services/employeePerformance";
 import { getCompetencyMatrix, getEmployeeCompetencyAssessments, getCompetencyGapAnalysis } from "@/services/competencyService";
 import { generatePerformanceReport, generateCompetencyGapReport, generateGoalsReport, exportToCSV } from "@/services/reportService";
@@ -36,7 +36,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Component de fallback para erros específicos de dados
 const PerformanceErrorFallback = ({ error, retry }: { error?: Error; retry: () => void }) => (
-  <DataErrorFallback 
+  <DataErrorFallback
     error={error}
     retry={retry}
     title="Problema no Módulo de Desempenho"
@@ -64,7 +64,7 @@ export default function GestaoDesempenho() {
         console.error('Erro ao inicializar critérios padrão:', error);
       }
     };
-    
+
     initDefaults();
   }, []);
 
@@ -190,7 +190,7 @@ export default function GestaoDesempenho() {
   const handleExportReport = async (type: 'performance' | 'competencies' | 'goals') => {
     try {
       let data, filename;
-      
+
       switch (type) {
         case 'performance':
           data = await generatePerformanceReport();
@@ -205,7 +205,7 @@ export default function GestaoDesempenho() {
           filename = 'acompanhamento_metas';
           break;
       }
-      
+
       exportToCSV(data, filename);
       toast({
         title: "Sucesso",
@@ -227,11 +227,11 @@ export default function GestaoDesempenho() {
         generateCompetencyGapReport(),
         generateGoalsReport()
       ]);
-      
+
       exportToCSV(performance, 'relatorio_completo_avaliacoes');
       exportToCSV(competencies, 'relatorio_completo_competencias');
       exportToCSV(goals, 'relatorio_completo_metas');
-      
+
       toast({
         title: "Sucesso",
         description: "Todos os relatórios foram exportados!",
@@ -270,473 +270,476 @@ export default function GestaoDesempenho() {
   return (
     <ErrorBoundary>
       <div className="space-y-6">
-      <div className="flex items-center justify-between" data-tour="performance-header">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestão de Desempenho</h1>
-          <p className="text-muted-foreground">
-            Gerencie avaliações, metas e desenvolvimento dos funcionários
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsCycleModalOpen(true)}>
-            <Calendar className="h-4 w-4 mr-2" />
-            Ciclo de Avaliação
-          </Button>
-          <Button onClick={() => setIsEvaluationModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Avaliação
-          </Button>
-        </div>
-      </div>
-
-      <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="evaluations">Avaliações</TabsTrigger>
-          <TabsTrigger value="goals">Metas e Objetivos</TabsTrigger>
-          <TabsTrigger value="competencies">Competências</TabsTrigger>
-          <TabsTrigger value="reports">Relatórios</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="dashboard" className="space-y-6">
-          {statsLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader className="pb-2">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
-                    <div className="h-3 bg-muted rounded w-full"></div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : statsError ? (
-            <Card className="border-red-200 bg-red-50">
-              <CardContent className="pt-6">
-                <p className="text-red-600 text-center">
-                  Erro ao carregar estatísticas de desempenho. Tente recarregar a página.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <PerformanceStatsCards stats={statsCards} />
-          )}
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <PerformanceDistributionCard />
-            <GoalsProgressCard />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" data-tour="performance-header">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Gestão de Desempenho</h1>
+            <p className="text-muted-foreground">
+              Gerencie avaliações, metas e desenvolvimento dos funcionários
+            </p>
           </div>
-        </TabsContent>
-
-        <TabsContent value="evaluations" className="space-y-6">
-          <div className="flex items-center justify-between" data-tour="evaluation-cycles">
-            <h2 className="text-2xl font-bold">Avaliações de Desempenho</h2>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsCycleModalOpen(true)}>
+              <Calendar className="h-4 w-4 mr-2" />
+              Ciclo de Avaliação
+            </Button>
             <Button onClick={() => setIsEvaluationModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Avaliação
             </Button>
           </div>
+        </div>
 
-          {evaluationsLoading ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Lista de Avaliações</CardTitle>
-                <CardDescription>Carregando avaliações...</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="animate-pulse p-4 border rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-2">
-                          <div className="h-4 bg-muted rounded w-32"></div>
-                          <div className="h-3 bg-muted rounded w-24"></div>
-                        </div>
-                        <div className="h-8 bg-muted rounded w-20"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ) : evaluationsError ? (
-            <Card className="border-red-200 bg-red-50">
-              <CardContent className="pt-6">
-                <p className="text-red-600 text-center">
-                  Erro ao carregar avaliações de desempenho. Tente recarregar a página.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (evaluationsList as any[])?.length === 0 ? (
-            <EmptyState
-              icon={Target}
-              title="Nenhuma avaliação encontrada"
-              description="Comece criando sua primeira avaliação de desempenho para acompanhar o desenvolvimento da equipe."
-              actionLabel="Criar Primeira Avaliação"
-              onAction={() => setIsEvaluationModalOpen(true)}
-            />
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Lista de Avaliações</CardTitle>
-                <CardDescription>
-                  Acompanhe o status das avaliações de desempenho
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {(evaluationsList as any[])?.map((evaluation: any) => (
-                    <div key={evaluation.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4">
-                          <div>
-                            <p className="font-medium">{evaluation.employee?.full_name || 'N/A'}</p>
-                            <p className="text-sm text-muted-foreground">{evaluation.employee?.position || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm">{format(new Date(evaluation.period_start), "dd/MM/yyyy", { locale: ptBR })} - {format(new Date(evaluation.period_end), "dd/MM/yyyy", { locale: ptBR })}</p>
-                            <p className="text-sm text-muted-foreground">Avaliador: {evaluation.evaluator?.full_name || 'N/A'}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        {evaluation.overall_score && (
-                          <div className="text-center">
-                            <p className="text-2xl font-bold text-blue-600">{evaluation.overall_score}</p>
-                            <p className="text-xs text-muted-foreground">Nota</p>
-                          </div>
-                        )}
-                        <Badge className={getStatusColor(evaluation.status)}>
-                          {evaluation.status}
-                        </Badge>
-                        <Button variant="outline" size="sm">
-                          Ver Detalhes
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+        <Tabs defaultValue="dashboard" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="evaluations">Avaliações</TabsTrigger>
+            <TabsTrigger value="goals">Metas e Objetivos</TabsTrigger>
+            <TabsTrigger value="competencies">Competências</TabsTrigger>
+            <TabsTrigger value="reports">Relatórios</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="goals" className="space-y-6">
-          <div className="flex items-center justify-between" data-tour="goals-section">
-            <h2 className="text-2xl font-bold">Metas e Objetivos</h2>
-            <Button onClick={() => {
-              setSelectedGoalId(null);
-              setIsGoalModalOpen(true);
-            }}>
-              <Target className="h-4 w-4 mr-2" />
-              Nova Meta
-            </Button>
-          </div>
+          <TabsContent value="dashboard" className="space-y-6">
+            {statsLoading ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader className="pb-2">
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-full"></div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : statsError ? (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="pt-6">
+                  <p className="text-red-600 text-center">
+                    Erro ao carregar estatísticas de desempenho. Tente recarregar a página.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <PerformanceStatsCards stats={statsCards} />
+            )}
 
-          {goalsLoading ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Acompanhamento de Metas</CardTitle>
-                <CardDescription>Carregando metas...</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="animate-pulse p-4 border rounded-lg">
-                      <div className="space-y-2">
-                        <div className="h-4 bg-muted rounded w-48"></div>
-                        <div className="h-3 bg-muted rounded w-32"></div>
-                        <div className="h-2 bg-muted rounded w-full mt-4"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ) : goalsError ? (
-            <Card className="border-red-200 bg-red-50">
-              <CardContent className="pt-6">
-                <p className="text-red-600 text-center">
-                  Erro ao carregar metas. Tente recarregar a página.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (goalsList as any[])?.length === 0 ? (
-            <EmptyState
-              icon={Target}
-              title="Nenhuma meta encontrada"
-              description="Comece definindo metas e objetivos para acompanhar o progresso da equipe e da organização."
-              actionLabel="Criar Primeira Meta"
-              onAction={() => {
-                setSelectedGoalId(null);
-                setIsGoalModalOpen(true);
-              }}
-            />
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Acompanhamento de Metas</CardTitle>
-                <CardDescription>
-                  Progresso das metas individuais dos funcionários
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {(goalsList as any[])?.map((goal: any) => {
-                    const progress = calculateProgress(goal);
-                    return (
-                      <div key={goal.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <p className="font-medium">{goal.name}</p>
-                            <p className="text-sm text-muted-foreground">{goal.description}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className={getGoalStatusColor(goal.status)}>
-                              {goal.status}
-                            </Badge>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                setSelectedGoalId(goal.id);
-                                setIsGoalModalOpen(true);
-                              }}
-                            >
-                              Editar
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm">Progresso</span>
-                              <span className="text-sm font-medium">{Math.round(progress)}%</span>
-                            </div>
-                            <Progress value={progress} />
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {goal.deadline_date && (
-                              <span>Prazo: {format(new Date(goal.deadline_date), "dd/MM/yyyy", { locale: ptBR })}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+            <div className="grid gap-6 md:grid-cols-2">
+              <PerformanceDistributionCard />
+              <GoalsProgressCard />
+            </div>
+          </TabsContent>
 
-        <TabsContent value="competencies" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Gestão de Competências</h2>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setIsCompetencyAssessmentModalOpen(true)}>
-                <Target className="h-4 w-4 mr-2" />
-                Avaliar Competência
-              </Button>
-              <Button onClick={() => setIsCompetencyModalOpen(true)}>
-                <Award className="h-4 w-4 mr-2" />
-                Nova Competência
+          <TabsContent value="evaluations" className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" data-tour="evaluation-cycles">
+              <h2 className="text-2xl font-bold">Avaliações de Desempenho</h2>
+              <Button onClick={() => setIsEvaluationModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Avaliação
               </Button>
             </div>
-          </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Matriz de Competências</CardTitle>
-                <CardDescription>
-                  Competências definidas para a organização
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{competencies.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Competências cadastradas
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Avaliações Realizadas</CardTitle>
-                <CardDescription>
-                  Total de avaliações de competência
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{assessments.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Avaliações concluídas
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Lacunas Críticas</CardTitle>
-                <CardDescription>
-                  Gaps de competência identificados
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{(gaps as any[])?.length || 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  Requerem atenção
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Tabs defaultValue="matrix" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="matrix">Matriz de Competências</TabsTrigger>
-              <TabsTrigger value="assessments">Avaliações</TabsTrigger>
-              <TabsTrigger value="gaps">Análise de Gaps</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="matrix" className="space-y-4">
-              <CompetencyTable 
-                competencies={competencies}
-                onEdit={(competency) => {
-                  setSelectedCompetency(competency);
-                  setIsCompetencyModalOpen(true);
-                }}
-              />
-            </TabsContent>
-            
-            <TabsContent value="assessments" className="space-y-4">
+            {evaluationsLoading ? (
               <Card>
                 <CardHeader>
-                  <CardTitle>Histórico de Avaliações</CardTitle>
-                  <CardDescription>
-                    Todas as avaliações de competência realizadas
-                  </CardDescription>
+                  <CardTitle>Lista de Avaliações</CardTitle>
+                  <CardDescription>Carregando avaliações...</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {assessments.map((assessment: any) => (
-                      <div key={assessment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{assessment.competency?.competency_name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Funcionário ID: {assessment.employee_id}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-center">
-                            <p className="text-sm font-medium">Atual: {assessment.current_level}</p>
-                            <p className="text-sm text-muted-foreground">Meta: {assessment.target_level}</p>
+                  <div className="space-y-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="animate-pulse p-4 border rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-2">
+                            <div className="h-4 bg-muted rounded w-32"></div>
+                            <div className="h-3 bg-muted rounded w-24"></div>
                           </div>
-                          <Badge variant={assessment.target_level - assessment.current_level >= 2 ? "destructive" : "secondary"}>
-                            Gap: {assessment.target_level - assessment.current_level}
-                          </Badge>
+                          <div className="h-8 bg-muted rounded w-20"></div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-            
-            <TabsContent value="gaps" className="space-y-4">
-              <CompetencyGapChart data={gaps as any} />
-            </TabsContent>
-          </Tabs>
-        </TabsContent>
+            ) : evaluationsError ? (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="pt-6">
+                  <p className="text-red-600 text-center">
+                    Erro ao carregar avaliações de desempenho. Tente recarregar a página.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (evaluationsList as any[])?.length === 0 ? (
+              <EmptyState
+                icon={Target}
+                title="Nenhuma avaliação encontrada"
+                description="Comece criando sua primeira avaliação de desempenho para acompanhar o desenvolvimento da equipe."
+                actionLabel="Criar Primeira Avaliação"
+                onAction={() => setIsEvaluationModalOpen(true)}
+              />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lista de Avaliações</CardTitle>
+                  <CardDescription>
+                    Acompanhe o status das avaliações de desempenho
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {(evaluationsList as any[])?.map((evaluation: any) => (
+                      <div key={evaluation.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <p className="font-medium">{evaluation.employee?.full_name || 'N/A'}</p>
+                              <p className="text-sm text-muted-foreground">{evaluation.employee?.position || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm">{format(new Date(evaluation.period_start), "dd/MM/yyyy", { locale: ptBR })} - {format(new Date(evaluation.period_end), "dd/MM/yyyy", { locale: ptBR })}</p>
+                              <p className="text-sm text-muted-foreground">Avaliador: {evaluation.evaluator?.full_name || 'N/A'}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          {evaluation.overall_score && (
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-blue-600">{evaluation.overall_score}</p>
+                              <p className="text-xs text-muted-foreground">Nota</p>
+                            </div>
+                          )}
+                          <Badge className={getStatusColor(evaluation.status)}>
+                            {evaluation.status}
+                          </Badge>
+                          <Button variant="outline" size="sm">
+                            Ver Detalhes
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
-        <TabsContent value="reports" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Relatórios de Desempenho</h2>
-            <Button onClick={handleGenerateReports}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar Relatórios
-            </Button>
-          </div>
+          <TabsContent value="goals" className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" data-tour="goals-section">
+              <h2 className="text-2xl font-bold">Metas e Objetivos</h2>
+              <Button onClick={() => {
+                setSelectedGoalId(null);
+                setIsGoalModalOpen(true);
+              }}>
+                <Target className="h-4 w-4 mr-2" />
+                Nova Meta
+              </Button>
+            </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Relatório de Avaliações</CardTitle>
-                <CardDescription>
-                  Compilado das avaliações por período
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full" onClick={() => handleExportReport('performance')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Gerar Relatório
+            {goalsLoading ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Acompanhamento de Metas</CardTitle>
+                  <CardDescription>Carregando metas...</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="animate-pulse p-4 border rounded-lg">
+                        <div className="space-y-2">
+                          <div className="h-4 bg-muted rounded w-48"></div>
+                          <div className="h-3 bg-muted rounded w-32"></div>
+                          <div className="h-2 bg-muted rounded w-full mt-4"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : goalsError ? (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="pt-6">
+                  <p className="text-red-600 text-center">
+                    Erro ao carregar metas. Tente recarregar a página.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (goalsList as any[])?.length === 0 ? (
+              <EmptyState
+                icon={Target}
+                title="Nenhuma meta encontrada"
+                description="Comece definindo metas e objetivos para acompanhar o progresso da equipe e da organização."
+                actionLabel="Criar Primeira Meta"
+                onAction={() => {
+                  setSelectedGoalId(null);
+                  setIsGoalModalOpen(true);
+                }}
+              />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Acompanhamento de Metas</CardTitle>
+                  <CardDescription>
+                    Progresso das metas individuais dos funcionários
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {(goalsList as any[])?.map((goal: any) => {
+                      const progress = calculateProgress(goal);
+                      return (
+                        <div key={goal.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="font-medium">{goal.name}</p>
+                              <p className="text-sm text-muted-foreground">{goal.description}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className={getGoalStatusColor(goal.status)}>
+                                {goal.status}
+                              </Badge>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedGoalId(goal.id);
+                                  setIsGoalModalOpen(true);
+                                }}
+                              >
+                                Editar
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-sm">Progresso</span>
+                                <span className="text-sm font-medium">{Math.round(progress)}%</span>
+                              </div>
+                              <Progress value={progress} />
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {goal.deadline_date && (
+                                <span>Prazo: {format(new Date(goal.deadline_date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="competencies" className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h2 className="text-2xl font-bold">Gestão de Competências</h2>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsCompetencyAssessmentModalOpen(true)}>
+                  <Target className="h-4 w-4 mr-2" />
+                  Avaliar Competência
                 </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Análise de Competências</CardTitle>
-                <CardDescription>
-                  Gaps e necessidades de desenvolvimento
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full" onClick={() => handleExportReport('competencies')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Gerar Relatório
+                <Button onClick={() => {
+                  setSelectedCompetency(null);
+                  setIsCompetencyModalOpen(true);
+                }}>
+                  <Award className="h-4 w-4 mr-2" />
+                  Nova Competência
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Acompanhamento de Metas</CardTitle>
-                <CardDescription>
-                  Progresso e conclusão das metas
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full" onClick={() => handleExportReport('goals')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Gerar Relatório
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Matriz de Competências</CardTitle>
+                  <CardDescription>
+                    Competências definidas para a organização
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{competencies.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Competências cadastradas
+                  </p>
+                </CardContent>
+              </Card>
 
-      {/* Modals */}
-      <PerformanceEvaluationModal
-        open={isEvaluationModalOpen}
-        onOpenChange={setIsEvaluationModalOpen}
-      />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Avaliações Realizadas</CardTitle>
+                  <CardDescription>
+                    Total de avaliações de competência
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{assessments.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Avaliações concluídas
+                  </p>
+                </CardContent>
+              </Card>
 
-      <EvaluationCycleModal
-        open={isCycleModalOpen}
-        onOpenChange={setIsCycleModalOpen}
-      />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lacunas Críticas</CardTitle>
+                  <CardDescription>
+                    Gaps de competência identificados
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{(gaps as any[])?.length || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Requerem atenção
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
 
-      <EditGoalModal
-        open={isGoalModalOpen}
-        onOpenChange={setIsGoalModalOpen}
-        goalId={selectedGoalId}
-      />
+            <Tabs defaultValue="matrix" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="matrix">Matriz de Competências</TabsTrigger>
+                <TabsTrigger value="assessments">Avaliações</TabsTrigger>
+                <TabsTrigger value="gaps">Análise de Gaps</TabsTrigger>
+              </TabsList>
 
-      <CompetencyModal
-        open={isCompetencyModalOpen}
-        onOpenChange={setIsCompetencyModalOpen}
-        competency={selectedCompetency}
-      />
+              <TabsContent value="matrix" className="space-y-4">
+                <CompetencyTable
+                  competencies={competencies}
+                  onEdit={(competency) => {
+                    setSelectedCompetency(competency);
+                    setIsCompetencyModalOpen(true);
+                  }}
+                />
+              </TabsContent>
 
-      <CompetencyAssessmentModal
-        open={isCompetencyAssessmentModalOpen}
-        onOpenChange={setIsCompetencyAssessmentModalOpen}
-      />
+              <TabsContent value="assessments" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Histórico de Avaliações</CardTitle>
+                    <CardDescription>
+                      Todas as avaliações de competência realizadas
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {assessments.map((assessment: any) => (
+                        <div key={assessment.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div>
+                            <p className="font-medium">{assessment.competency?.competency_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Funcionário ID: {assessment.employee_id}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-center">
+                              <p className="text-sm font-medium">Atual: {assessment.current_level}</p>
+                              <p className="text-sm text-muted-foreground">Meta: {assessment.target_level}</p>
+                            </div>
+                            <Badge variant={assessment.target_level - assessment.current_level >= 2 ? "destructive" : "secondary"}>
+                              Gap: {assessment.target_level - assessment.current_level}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="gaps" className="space-y-4">
+                <CompetencyGapChart data={gaps as any} />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h2 className="text-2xl font-bold">Relatórios de Desempenho</h2>
+              <Button onClick={handleGenerateReports}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Relatórios
+              </Button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Relatório de Avaliações</CardTitle>
+                  <CardDescription>
+                    Compilado das avaliações por período
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full" onClick={() => handleExportReport('performance')}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Gerar Relatório
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Análise de Competências</CardTitle>
+                  <CardDescription>
+                    Gaps e necessidades de desenvolvimento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full" onClick={() => handleExportReport('competencies')}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Gerar Relatório
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Acompanhamento de Metas</CardTitle>
+                  <CardDescription>
+                    Progresso e conclusão das metas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full" onClick={() => handleExportReport('goals')}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Gerar Relatório
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Modals */}
+        <PerformanceEvaluationModal
+          open={isEvaluationModalOpen}
+          onOpenChange={setIsEvaluationModalOpen}
+        />
+
+        <EvaluationCycleModal
+          open={isCycleModalOpen}
+          onOpenChange={setIsCycleModalOpen}
+        />
+
+        <EditGoalModal
+          open={isGoalModalOpen}
+          onOpenChange={setIsGoalModalOpen}
+          goalId={selectedGoalId}
+        />
+
+        <CompetencyModal
+          open={isCompetencyModalOpen}
+          onOpenChange={setIsCompetencyModalOpen}
+          competency={selectedCompetency}
+        />
+
+        <CompetencyAssessmentModal
+          open={isCompetencyAssessmentModalOpen}
+          onOpenChange={setIsCompetencyAssessmentModalOpen}
+        />
       </div>
     </ErrorBoundary>
   );

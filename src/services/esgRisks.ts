@@ -31,14 +31,69 @@ export interface ESGRisk {
   updated_at: string;
 }
 
-export const getESGRisks = async () => {
+const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__ === true;
+
+const MOCK_ESG_RISKS: ESGRisk[] = [
+  {
+    id: "risk-1",
+    company_id: "demo-company",
+    risk_title: "Vazamento de Efluentes Industriais",
+    risk_description: "Risco de contaminação do solo e lençol freático devido a falhas no sistema de tratamento.",
+    esg_category: "Ambiental",
+    probability: "Média",
+    impact: "Alto",
+    inherent_risk_level: "Alto",
+    mitigation_actions: "Manutenção preventiva trimestral e instalação de sensores de vazamento.",
+    control_measures: "Monitoramento contínuo",
+    residual_risk_level: "Médio",
+    status: "Ativo",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "risk-2",
+    company_id: "demo-company",
+    risk_title: "Acidente de Trabalho Fatal",
+    risk_description: "Risco de fatalidade nas operações de içamento de carga.",
+    esg_category: "Social",
+    probability: "Baixa",
+    impact: "Alto",
+    inherent_risk_level: "Alto",
+    mitigation_actions: "Treinamento obrigatório de NR-35 e NR-11.",
+    control_measures: "Equipamentos de proteção individual",
+    status: "Ativo",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "risk-3",
+    company_id: "demo-company",
+    risk_title: "Violação de Dados (LGPD)",
+    risk_description: "Risco de vazamento de dados pessoais de clientes e colaboradores.",
+    esg_category: "Governança",
+    probability: "Média",
+    impact: "Alto",
+    inherent_risk_level: "Crítico",
+    mitigation_actions: "Implementação de MFA e auditoria de sistemas.",
+    control_measures: "Firewall e criptografia",
+    status: "Ativo",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+export const getESGRisks = async (): Promise<ESGRisk[]> => {
+  if (isDemoMode()) {
+    return MOCK_ESG_RISKS.map(r => ({ ...r }));
+  }
+
   const { data, error } = await supabase
     .from('esg_risks')
     .select('*')
     .order('inherent_risk_level', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return data as ESGRisk[];
 };
 
 export const getESGRisk = async (id: string) => {
@@ -54,6 +109,17 @@ export const getESGRisk = async (id: string) => {
 };
 
 export const createESGRisk = async (risk: Omit<ESGRisk, 'id' | 'inherent_risk_level' | 'created_at' | 'updated_at'>) => {
+  if (isDemoMode()) {
+    const created: ESGRisk = {
+      ...(risk as ESGRisk),
+      id: `risk-${Date.now()}`,
+      inherent_risk_level: (risk as any).inherent_risk_level ?? 'Médio',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    MOCK_ESG_RISKS.unshift(created);
+    return created;
+  }
   const { data, error } = await supabase
     .from('esg_risks')
     .insert(risk)
@@ -66,6 +132,12 @@ export const createESGRisk = async (risk: Omit<ESGRisk, 'id' | 'inherent_risk_le
 };
 
 export const updateESGRisk = async (id: string, updates: Partial<ESGRisk>) => {
+  if (isDemoMode()) {
+    const index = MOCK_ESG_RISKS.findIndex((r) => r.id === id);
+    if (index < 0) throw new Error('Risco não encontrado');
+    MOCK_ESG_RISKS[index] = { ...MOCK_ESG_RISKS[index], ...updates, updated_at: new Date().toISOString() };
+    return MOCK_ESG_RISKS[index];
+  }
   const { data, error } = await supabase
     .from('esg_risks')
     .update(updates)
@@ -79,6 +151,11 @@ export const updateESGRisk = async (id: string, updates: Partial<ESGRisk>) => {
 };
 
 export const deleteESGRisk = async (id: string) => {
+  if (isDemoMode()) {
+    const index = MOCK_ESG_RISKS.findIndex((r) => r.id === id);
+    if (index >= 0) MOCK_ESG_RISKS.splice(index, 1);
+    return;
+  }
   const { error } = await supabase
     .from('esg_risks')
     .delete()
@@ -95,14 +172,21 @@ export const getRiskMatrix = async () => {
 
   if (error) throw error;
 
+  const typedRisks = risks as ESGRisk[];
+
   const matrix = {
     'Baixa': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 },
     'Média': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 },
     'Alta': { 'Baixo': 0, 'Médio': 0, 'Alto': 0 }
   };
 
-  risks.forEach(risk => {
-    matrix[risk.probability as keyof typeof matrix][risk.impact as keyof typeof matrix['Baixa']]++;
+  typedRisks.forEach((risk: ESGRisk) => {
+    const prob = risk.probability as keyof typeof matrix;
+    const imp = risk.impact as keyof typeof matrix['Baixa'];
+    if (Object.prototype.hasOwnProperty.call(matrix, prob) &&
+      Object.prototype.hasOwnProperty.call(matrix['Baixa'], imp)) {
+      matrix[prob][imp]++;
+    }
   });
 
   return matrix;
@@ -131,7 +215,7 @@ export const getRiskMetrics = async () => {
   const criticalRisks = risks.filter(r => r.inherent_risk_level === 'Crítico').length;
   const highRisks = risks.filter(r => r.inherent_risk_level === 'Alto').length;
 
-  const risksNeedingReview = risks.filter(r => 
+  const risksNeedingReview = risks.filter(r =>
     r.next_review_date && new Date(r.next_review_date) <= new Date()
   ).length;
 
@@ -155,8 +239,8 @@ const calculateRiskTrend = (risks: any[]) => {
       year: date.getFullYear(),
       risks: risks.filter(risk => {
         const riskDate = new Date(risk.created_at);
-        return riskDate.getMonth() === date.getMonth() && 
-               riskDate.getFullYear() === date.getFullYear();
+        return riskDate.getMonth() === date.getMonth() &&
+          riskDate.getFullYear() === date.getFullYear();
       }).length
     };
   }).reverse();

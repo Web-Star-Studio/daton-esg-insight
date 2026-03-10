@@ -90,7 +90,7 @@ export default function GestaoOrcamento() {
           <h1 className="text-3xl font-bold text-foreground">Gestão de Orçamento</h1>
           <p className="text-muted-foreground">Planejamento e controle orçamentário</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
             <SelectTrigger className="w-32">
               <SelectValue />
@@ -258,7 +258,7 @@ export default function GestaoOrcamento() {
                         <Badge variant="outline">{budget.scenario}</Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                           <Button
                             size="sm"
                             variant="outline"

@@ -113,7 +113,7 @@ export default function IndicadoresRecomendados() {
 
   if (loading && categories.length === 0) {
     return (
-      <div className="container mx-auto py-8 space-y-6">
+      <div className="w-full overflow-hidden py-8 space-y-6">
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-64 w-full" />
         <Skeleton className="h-64 w-full" />
@@ -126,7 +126,7 @@ export default function IndicadoresRecomendados() {
     : 0;
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="w-full overflow-hidden py-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

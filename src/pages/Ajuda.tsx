@@ -58,7 +58,7 @@ export default function Ajuda() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card">
-        <div className="container mx-auto px-6 py-4">
+        <div className="w-full overflow-hidden px-6 py-4">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -75,7 +75,7 @@ export default function Ajuda() {
 
       {/* Hero Section */}
       <div className="border-b bg-gradient-to-b from-muted/50 to-background">
-        <div className="container mx-auto px-6 py-12">
+        <div className="w-full overflow-hidden px-6 py-12">
           <div className="max-w-3xl mx-auto text-center">
             <HelpCircle className="h-12 w-12 mx-auto text-primary mb-4" />
             <h1 className="text-4xl font-bold mb-4">Central de Ajuda</h1>
@@ -94,7 +94,7 @@ export default function Ajuda() {
       </div>
 
       {/* Quick Access Cards */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="w-full overflow-hidden px-6 py-8">
         <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
@@ -147,7 +147,7 @@ export default function Ajuda() {
 
         {/* FAQ Content */}
         <div className="flex-1">
-          <div className="container mx-auto px-6 py-8 max-w-4xl">
+          <div className="w-full overflow-hidden px-6 py-8 max-w-4xl">
             <h2 className="text-2xl font-bold mb-6">Perguntas Frequentes</h2>
             
             {displayedCategories.length === 0 ? (

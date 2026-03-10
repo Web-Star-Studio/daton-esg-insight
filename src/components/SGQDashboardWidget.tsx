@@ -5,10 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
   TrendingUp,
   Activity,
   FileText,
@@ -16,21 +16,25 @@ import {
 } from 'lucide-react';
 import { unifiedQualityService } from '@/services/unifiedQualityService';
 
+import { useDemo } from '@/contexts/DemoContext';
+
 interface SGQDashboardWidgetProps {
   inDashboardView?: boolean;
 }
 
 const SGQDashboardWidget: React.FC<SGQDashboardWidgetProps> = ({ inDashboardView = false }) => {
+  const { isDemo } = useDemo();
+
   const { data: dashboard, isLoading: isDashboardLoading, error: dashboardError } = useQuery({
-    queryKey: ['sgq-dashboard-widget'],
-    queryFn: () => unifiedQualityService.getQualityDashboard(),
+    queryKey: ['sgq-dashboard-widget', isDemo],
+    queryFn: () => unifiedQualityService.getQualityDashboard(isDemo),
     refetchInterval: 30000,
     retry: 1,
   });
 
   const { data: indicators, isLoading: isIndicatorsLoading, error: indicatorsError } = useQuery({
-    queryKey: ['quality-indicators-metrics'],
-    queryFn: () => unifiedQualityService.getQualityIndicators(),
+    queryKey: ['quality-indicators-metrics', isDemo],
+    queryFn: () => unifiedQualityService.getQualityIndicators(isDemo),
     refetchInterval: 30000,
     retry: 1,
   });
@@ -120,8 +124,8 @@ const SGQDashboardWidget: React.FC<SGQDashboardWidgetProps> = ({ inDashboardView
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Índice de Qualidade</span>
             <div className="flex items-center space-x-2">
-              <Badge variant={qualityScore >= 80 ? 'default' : 
-                            qualityScore >= 60 ? 'secondary' : 'destructive'}>
+              <Badge variant={qualityScore >= 80 ? 'default' :
+                qualityScore >= 60 ? 'secondary' : 'destructive'}>
                 {qualityScore}%
               </Badge>
               {qualityScore >= 80 ? (
@@ -158,9 +162,9 @@ const SGQDashboardWidget: React.FC<SGQDashboardWidgetProps> = ({ inDashboardView
               {data.recentNCs.slice(0, 2).map((nc) => (
                 <div key={nc.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-xs">
                   <span className="truncate flex-1">{nc.title}</span>
-                  <Badge 
-                    variant={nc.severity === 'Alta' ? 'destructive' : 
-                            nc.severity === 'Média' ? 'default' : 'secondary'}
+                  <Badge
+                    variant={nc.severity === 'Alta' ? 'destructive' :
+                      nc.severity === 'Média' ? 'default' : 'secondary'}
                     className="ml-2"
                   >
                     {nc.severity}
