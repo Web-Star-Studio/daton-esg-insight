@@ -546,6 +546,7 @@ export function mapUnitValue(value: string): UnitEvaluation | null {
 export interface ParseLegislationResult {
   legislations: ParsedLegislation[];
   detectedUnitColumns: string[];
+  hasExplicitNormTypeColumn: boolean;
 }
 
 export async function parseLegislationExcel(file: File): Promise<ParsedLegislation[]> {
