@@ -930,6 +930,13 @@ export async function importLegislations(
           existingLegislation = existingMap.get(titleKey) || null;
         }
         
+        // Terceira tentativa: match por summary (para formatos simplificados onde
+        // "RESUMO E TÍTULO" contém o texto do summary da legislação no DB)
+        if (!existingLegislation && leg.title) {
+          const summaryKey = `summary:${leg.title.toLowerCase().substring(0, 150)}`;
+          existingLegislation = existingMap.get(summaryKey) || null;
+        }
+        
         // Se encontrou legislação existente, adicionar evidência e unit compliance
         if (existingLegislation) {
           let evidenceMessage = '';
