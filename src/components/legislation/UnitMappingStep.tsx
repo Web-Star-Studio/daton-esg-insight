@@ -67,6 +67,7 @@ export function UnitMappingStep({
   branches,
   mappings,
   onMappingsChange,
+  onRedetect,
 }: UnitMappingStepProps) {
   const activeBranches = useMemo(() => 
     branches.filter(b => b.status === 'Ativa' || b.status === 'Ativo'),
