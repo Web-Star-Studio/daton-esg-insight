@@ -190,21 +190,21 @@ function findHeaderRow(worksheet: XLSX.WorkSheet): number {
       const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
       const cell = worksheet[cellAddress];
       if (cell && cell.v) {
-        cellValues.push(String(cell.v).toUpperCase().trim());
+        cellValues.push(String(cell.v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim());
       }
     }
     
-    // Original patterns
+    // Original patterns (accent-normalized)
     const hasTipoNorma = cellValues.some(v => v.includes('TIPO') && v.includes('NORMA'));
-    const hasTitulo = cellValues.some(v => v.includes('TÍTULO') || v.includes('TITULO') || v.includes('EMENTA'));
+    const hasTitulo = cellValues.some(v => v.includes('TITULO') || v.includes('EMENTA'));
     const hasJurisdicao = cellValues.some(v => v.includes('JURISD'));
     
-    // NEW: Gabardo FPLAN format patterns
+    // Gabardo FPLAN format patterns (accent-normalized)
     const hasTipoSimples = cellValues.some(v => v === 'TIPO');
-    const hasNumero = cellValues.some(v => v === 'Nº' || v === 'N°' || v === 'NUMERO' || v === 'NÚMERO');
-    const hasTematica = cellValues.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
-    const hasResumoTitulo = cellValues.some(v => v.includes('RESUMO E TÍTULO') || v.includes('RESUMO'));
-    const hasDataPublicacao = cellValues.some(v => v.includes('DATA') && v.includes('PUBLICAÇÃO'));
+    const hasNumero = cellValues.some(v => v === 'N' || v === 'N°' || v === 'NUMERO');
+    const hasTematica = cellValues.some(v => v.includes('TEMATICA'));
+    const hasResumoTitulo = cellValues.some(v => v.includes('RESUMO E TITULO') || v.includes('RESUMO'));
+    const hasDataPublicacao = cellValues.some(v => v.includes('DATA') && v.includes('PUBLICACAO'));
     const hasAplicabilidade = cellValues.some(v => v.includes('APLICABILIDADE'));
     
     // Expanded condition
