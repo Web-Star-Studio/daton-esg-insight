@@ -197,10 +197,11 @@ export function LegislationImportDialog({
       setStage('result');
 
       if (result.success) {
-        const unitMsg = result.unitCompliancesCreated > 0 
-          ? ` e ${result.unitCompliancesCreated} avaliações por unidade`
-          : '';
-        toast.success(`${result.imported} legislações importadas${unitMsg}!`);
+        const parts: string[] = [];
+        if (result.imported > 0) parts.push(`${result.imported} legislações importadas`);
+        if (result.updated > 0) parts.push(`${result.updated} atualizadas`);
+        if (result.unitCompliancesCreated > 0) parts.push(`${result.unitCompliancesCreated} avaliações por unidade`);
+        toast.success(parts.join(', ') || 'Importação concluída');
         onImportComplete?.();
       } else {
         toast.warning(`Importação concluída com ${result.errors} erro(s)`);
