@@ -836,6 +836,7 @@ export async function importLegislations(
       subthemes: [],
     },
     unitsByBranch: {},
+    unmatchedRows: [],
   };
   
   try {
