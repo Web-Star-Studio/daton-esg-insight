@@ -80,6 +80,17 @@ export function LegislationImportDialog({
   const [skipExisting, setSkipExisting] = useState(true);
   const [createMissingThemes, setCreateMissingThemes] = useState(true);
 
+  // Re-run auto-matching when branches load after mapping stage is already active
+  useEffect(() => {
+    if (stage === 'mapping' && branches.length > 0 && detectedUnitColumns.length > 0) {
+      const hasMapped = unitMappings.some(m => m.branchId);
+      if (!hasMapped) {
+        const remapped = createInitialMappings(detectedUnitColumns, branches);
+        setUnitMappings(remapped);
+      }
+    }
+  }, [branches, stage]);
+
   const resetState = () => {
     setStage('upload');
     setParsedData([]);

@@ -25,6 +25,7 @@ interface UnitMappingStepProps {
   branches: Branch[];
   mappings: UnitMapping[];
   onMappingsChange: (mappings: UnitMapping[]) => void;
+  onRedetect?: () => void;
 }
 
 // Find best matching branch for a unit code
