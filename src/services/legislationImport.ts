@@ -142,6 +142,33 @@ export const COMMON_ISSUING_BODIES = [
 
 // ============= Helpers =============
 
+function extractNormTypeFromTitle(title: string): string {
+  const patterns: [RegExp, string][] = [
+    [/^Lei Complementar/i, 'Lei Complementar'],
+    [/^Lei Federal/i, 'Lei'],
+    [/^Lei Ordinária/i, 'Lei Ordinária'],
+    [/^Lei\s/i, 'Lei'],
+    [/^Decreto-Lei/i, 'Decreto-Lei'],
+    [/^Decreto\s/i, 'Decreto'],
+    [/^Resolução CONAMA/i, 'Resolução CONAMA'],
+    [/^Resolução\s/i, 'Resolução'],
+    [/^Portaria\s/i, 'Portaria'],
+    [/^Instrução Normativa/i, 'Instrução Normativa'],
+    [/^Norma Regulamentadora/i, 'Norma Regulamentadora'],
+    [/^NR\s/i, 'NR'],
+    [/^NBR\s/i, 'NBR'],
+    [/^Constituição/i, 'Constituição Federal'],
+    [/^Art\.?\s/i, 'Outros'],
+    [/^Deliberação/i, 'Deliberação'],
+    [/^Medida Provisória/i, 'Medida Provisória'],
+    [/^Emenda Constitucional/i, 'Emenda Constitucional'],
+  ];
+  for (const [regex, type] of patterns) {
+    if (regex.test(title)) return type;
+  }
+  return 'Outros';
+}
+
 // Find the sheet containing legislations (for multi-sheet files like FPLAN)
 function findLegislationsSheet(workbook: XLSX.WorkBook): string {
   // Try to find sheet that contains legislation headers
@@ -646,16 +673,25 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
           // NEW: Get status from multiple possible column names including Gabardo format
           const statusFromAtendimento = getColumnValue(row, 'ATENDIMENTO', 'Atendimento');
           const finalStatus = statusRaw || statusFromAtendimento;
+
+          // Auto-extract norm_type from title if not found in columns
+          let normType = getColumnValue(row, 'Tipo de Norma', 'Tipo', 'TIPO DE NORMA', 'TIPO');
+          if (!normType && title) {
+            normType = extractNormTypeFromTitle(title);
+          }
+
+          // Default jurisdiction to 'federal' if not found
+          const jurisdictionFinal = jurisdiction || 'federal';
           
           return {
             rowNumber: headerRow + index + 2,
-            norm_type: getColumnValue(row, 'Tipo de Norma', 'Tipo', 'TIPO DE NORMA', 'TIPO'),
+            norm_type: normType,
             norm_number: normNumber,
             title,
             summary: cleanHtmlFromText(getColumnValue(row, 'Resumo', 'RESUMO', 'Descrição', 'DESCRIÇÃO')),
             issuing_body: getColumnValue(row, 'Órgão Emissor', 'Orgão Emissor', 'Órgão', 'ÓRGÃO EMISSOR', 'ÓRGÃO'),
             publication_date: publicationDate,
-            jurisdiction,
+            jurisdiction: jurisdictionFinal,
             state,
             municipality,
             theme_name: themeName,
