@@ -906,15 +906,30 @@ export async function importLegislations(
       
       try {
         // Validate required fields
-        if (!leg.norm_type || !leg.title || !leg.jurisdiction) {
-          result.errors++;
-          result.details.push({
-            rowNumber: leg.rowNumber,
-            title: leg.title || '(sem título)',
-            status: 'error',
-            message: 'Campos obrigatórios faltando: Tipo, Título ou Jurisdição',
-          });
-          continue;
+        if (options.isSimplifiedFormat) {
+          // Simplified format only needs title (used as summary key for matching)
+          if (!leg.title) {
+            result.warnings++;
+            result.details.push({
+              rowNumber: leg.rowNumber,
+              title: '(sem texto)',
+              status: 'warning',
+              message: 'Linha sem texto para identificação - ignorada',
+            });
+            continue;
+          }
+        } else {
+          // Full format requires norm_type, title and jurisdiction
+          if (!leg.norm_type || !leg.title || !leg.jurisdiction) {
+            result.errors++;
+            result.details.push({
+              rowNumber: leg.rowNumber,
+              title: leg.title || '(sem título)',
+              status: 'error',
+              message: 'Campos obrigatórios faltando: Tipo, Título ou Jurisdição',
+            });
+            continue;
+          }
         }
         
         // Check for existing legislation (conciliação)
