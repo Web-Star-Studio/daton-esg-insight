@@ -76,6 +76,7 @@ export interface LegislationImportResult {
     subthemes: string[];
   };
   unitsByBranch: Record<string, number>;  // NEW: count by branch name
+  unmatchedRows: ParsedLegislation[];     // Rows not found in DB (simplified format)
 }
 
 export interface LegislationImportProgress {
@@ -816,6 +817,7 @@ export async function importLegislations(
     skipExisting: boolean;
     createMissingThemes: boolean;
     isSimplifiedFormat?: boolean;  // When true, skip INSERT for unmatched rows
+    forceCreate?: boolean;         // When true, force INSERT even in simplified format
     unitMappings?: UnitMapping[];  // NEW: mappings for unit columns
     onProgress?: (progress: LegislationImportProgress) => void;
   } = { skipExisting: true, createMissingThemes: true }
@@ -834,6 +836,7 @@ export async function importLegislations(
       subthemes: [],
     },
     unitsByBranch: {},
+    unmatchedRows: [],
   };
   
   try {
@@ -1067,8 +1070,10 @@ export async function importLegislations(
         
         // Para formato simplificado (sem coluna Tipo de Norma explícita),
         // não tenta INSERT de novas legislações — apenas atualiza existentes
-        if (options.isSimplifiedFormat) {
+        // A menos que forceCreate esteja ativo
+        if (options.isSimplifiedFormat && !options.forceCreate) {
           result.warnings++;
+          result.unmatchedRows.push(leg);
           result.details.push({
             rowNumber: leg.rowNumber,
             title: leg.title?.substring(0, 60) || '(sem título)',
@@ -1076,6 +1081,11 @@ export async function importLegislations(
             message: 'Legislação não encontrada no banco de dados - importação ignorada',
           });
           continue;
+        }
+        
+        // Se forceCreate e sem norm_type, usar 'Outro' como fallback
+        if (options.forceCreate && (!leg.norm_type || leg.norm_type === '')) {
+          leg.norm_type = 'Outro';
         }
         
         // Handle theme
