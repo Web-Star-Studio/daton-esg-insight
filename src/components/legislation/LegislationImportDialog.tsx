@@ -188,6 +188,7 @@ export function LegislationImportDialog({
       const result = await importLegislations(validLegislations, {
         skipExisting,
         createMissingThemes,
+        isSimplifiedFormat,
         unitMappings: unitMappings.filter(m => m.branchId), // Only mapped units
         onProgress: setProgress,
       });
