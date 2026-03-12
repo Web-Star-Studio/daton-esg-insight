@@ -960,14 +960,14 @@ export async function importLegislations(
           
           // Adicionar evidência se houver
           if (leg.evidence_text && leg.evidence_text.trim()) {
-            const { error: evidenceError } = await supabase
+              const { error: evidenceError } = await supabase
               .from('legislation_evidences')
               .insert({
                 legislation_id: existingLegislation.id,
                 company_id: companyId,
                 title: 'Evidência importada via planilha',
                 description: leg.evidence_text.trim(),
-                type: 'documento',
+                evidence_type: 'documento',
                 uploaded_by: profile.id
               });
             
@@ -1006,9 +1006,6 @@ export async function importLegislations(
                   evaluated_at: new Date().toISOString(),
                   evaluated_by: profile.id,
                 });
-                
-                const branchName = mapping.branchName || mapping.excelCode;
-                result.unitsByBranch[branchName] = (result.unitsByBranch[branchName] || 0) + 1;
               }
             }
             
@@ -1020,8 +1017,22 @@ export async function importLegislations(
               if (!complianceError) {
                 result.unitCompliancesCreated += complianceRecords.length;
                 unitComplianceMessage = ` + ${complianceRecords.length} avaliação(ões) por unidade`;
+                // Only count branch stats after successful upsert
+                for (const rec of complianceRecords) {
+                  const mapping = options.unitMappings!.find(m => m.branchId === rec.branch_id);
+                  const branchName = mapping?.branchName || mapping?.excelCode || rec.branch_id;
+                  result.unitsByBranch[branchName] = (result.unitsByBranch[branchName] || 0) + 1;
+                }
               } else {
                 console.error('Erro ao atualizar unit compliance:', complianceError);
+                result.errors++;
+                result.details.push({
+                  rowNumber: leg.rowNumber,
+                  title: leg.title,
+                  status: 'error',
+                  message: `Erro ao salvar compliance: ${complianceError.message}`,
+                });
+                continue;
               }
             }
           }
@@ -1184,7 +1195,7 @@ export async function importLegislations(
                 company_id: companyId,
                 title: 'Evidência importada via planilha',
                 description: leg.evidence_text.trim(),
-                type: 'documento',
+                evidence_type: 'documento',
                 uploaded_by: profile.id
               });
             
