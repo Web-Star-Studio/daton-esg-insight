@@ -817,6 +817,7 @@ export async function importLegislations(
     skipExisting: boolean;
     createMissingThemes: boolean;
     isSimplifiedFormat?: boolean;  // When true, skip INSERT for unmatched rows
+    forceCreate?: boolean;         // When true, force INSERT even in simplified format
     unitMappings?: UnitMapping[];  // NEW: mappings for unit columns
     onProgress?: (progress: LegislationImportProgress) => void;
   } = { skipExisting: true, createMissingThemes: true }
