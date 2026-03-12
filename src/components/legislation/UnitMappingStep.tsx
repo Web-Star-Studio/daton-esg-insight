@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -10,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Building2, MapPin, AlertTriangle, Check, X } from "lucide-react";
+import { Building2, MapPin, AlertTriangle, Check, X, RefreshCw } from "lucide-react";
 import { Branch } from "@/services/branches";
 
 export interface UnitMapping {
@@ -25,6 +26,7 @@ interface UnitMappingStepProps {
   branches: Branch[];
   mappings: UnitMapping[];
   onMappingsChange: (mappings: UnitMapping[]) => void;
+  onRedetect?: () => void;
 }
 
 // Find best matching branch for a unit code
@@ -66,6 +68,7 @@ export function UnitMappingStep({
   branches,
   mappings,
   onMappingsChange,
+  onRedetect,
 }: UnitMappingStepProps) {
   const activeBranches = useMemo(() => 
     branches.filter(b => b.status === 'Ativa' || b.status === 'Ativo'),
@@ -123,6 +126,12 @@ export function UnitMappingStep({
             <AlertTriangle className="h-3 w-3 mr-1" />
             {detectedUnits.length - mappedCount} não mapeadas
           </Badge>
+        )}
+        {onRedetect && (
+          <Button variant="outline" size="sm" onClick={onRedetect}>
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Re-detectar
+          </Button>
         )}
       </div>
 

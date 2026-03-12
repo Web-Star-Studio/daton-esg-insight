@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   Dialog,
@@ -79,6 +79,17 @@ export function LegislationImportDialog({
   // Import options
   const [skipExisting, setSkipExisting] = useState(true);
   const [createMissingThemes, setCreateMissingThemes] = useState(true);
+
+  // Re-run auto-matching when branches load after mapping stage is already active
+  useEffect(() => {
+    if (stage === 'mapping' && branches.length > 0 && detectedUnitColumns.length > 0) {
+      const hasMapped = unitMappings.some(m => m.branchId);
+      if (!hasMapped) {
+        const remapped = createInitialMappings(detectedUnitColumns, branches);
+        setUnitMappings(remapped);
+      }
+    }
+  }, [branches, stage]);
 
   const resetState = () => {
     setStage('upload');
@@ -289,6 +300,10 @@ export function LegislationImportDialog({
               branches={branches}
               mappings={unitMappings}
               onMappingsChange={setUnitMappings}
+              onRedetect={() => {
+                const remapped = createInitialMappings(detectedUnitColumns, branches);
+                setUnitMappings(remapped);
+              }}
             />
           )}
 

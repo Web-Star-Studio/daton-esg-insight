@@ -1,31 +1,12 @@
 
+# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
-## Problem
+## Problema
+Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
 
-`createInitialMappings(detectedUnitColumns, branches)` is called immediately after file parsing. If the `useBranches()` query hasn't resolved yet (or is still `[]`), all mappings get `branchId: null` and show "Ignorar esta coluna".
+## Solução
+Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
 
-The branches dropdown works fine later because by that time the query has resolved, but the initial auto-matching already ran with empty data.
+## Alteração
 
-## Fix
-
-**File: `src/components/legislation/LegislationImportDialog.tsx`**
-
-Add a `useEffect` that re-runs `createInitialMappings` when `branches` data loads/changes while on the mapping stage with unmapped columns:
-
-```typescript
-useEffect(() => {
-  if (stage === 'mapping' && branches.length > 0 && detectedUnitColumns.length > 0) {
-    const hasMapped = unitMappings.some(m => m.branchId);
-    if (!hasMapped) {
-      // Re-run auto-matching now that branches are available
-      const remapped = createInitialMappings(detectedUnitColumns, branches);
-      setUnitMappings(remapped);
-    }
-  }
-}, [branches, stage]);
-```
-
-This ensures that if the user reaches the mapping step before branches load, the auto-matching retries once branches become available. It only re-runs if zero mappings were made (avoids overwriting user's manual selections).
-
-Additionally, add a "Re-detectar" button in `UnitMappingStep.tsx` so users can manually trigger re-matching if needed.
-
+**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.
