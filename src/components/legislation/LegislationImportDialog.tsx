@@ -79,6 +79,8 @@ export function LegislationImportDialog({
   // Import options
   const [skipExisting, setSkipExisting] = useState(true);
   const [createMissingThemes, setCreateMissingThemes] = useState(true);
+  const [forceCreateUnmatched, setForceCreateUnmatched] = useState(false);
+  const [isCreatingUnmatched, setIsCreatingUnmatched] = useState(false);
 
   // Re-run auto-matching when branches load after mapping stage is already active
   useEffect(() => {
