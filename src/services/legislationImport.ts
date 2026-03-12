@@ -165,9 +165,10 @@ function findLegislationsSheet(workbook: XLSX.WorkBook): string {
       const hasTematica = values.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
       const hasResumo = values.some(v => v.includes('RESUMO') || v.includes('TÍTULO'));
       const hasData = values.some(v => v.includes('DATA') && v.includes('PUBLICAÇÃO'));
+      const hasAplicabilidade = values.some(v => v.includes('APLICABILIDADE'));
       
       // If we find key columns, this is the correct sheet
-      if ((hasTipo && hasNumero) || (hasTematica && hasResumo) || (hasTipo && hasData)) {
+      if ((hasTipo && hasNumero) || (hasTematica && hasResumo) || (hasTipo && hasData) || (hasResumo && hasAplicabilidade)) {
         logger.debug(`Found legislation sheet: "${sheetName}" at row ${row}`, 'import');
         return sheetName;
       }
