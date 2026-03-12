@@ -142,6 +142,33 @@ export const COMMON_ISSUING_BODIES = [
 
 // ============= Helpers =============
 
+function extractNormTypeFromTitle(title: string): string {
+  const patterns: [RegExp, string][] = [
+    [/^Lei Complementar/i, 'Lei Complementar'],
+    [/^Lei Federal/i, 'Lei'],
+    [/^Lei Ordinária/i, 'Lei Ordinária'],
+    [/^Lei\s/i, 'Lei'],
+    [/^Decreto-Lei/i, 'Decreto-Lei'],
+    [/^Decreto\s/i, 'Decreto'],
+    [/^Resolução CONAMA/i, 'Resolução CONAMA'],
+    [/^Resolução\s/i, 'Resolução'],
+    [/^Portaria\s/i, 'Portaria'],
+    [/^Instrução Normativa/i, 'Instrução Normativa'],
+    [/^Norma Regulamentadora/i, 'Norma Regulamentadora'],
+    [/^NR\s/i, 'NR'],
+    [/^NBR\s/i, 'NBR'],
+    [/^Constituição/i, 'Constituição Federal'],
+    [/^Art\.?\s/i, 'Outros'],
+    [/^Deliberação/i, 'Deliberação'],
+    [/^Medida Provisória/i, 'Medida Provisória'],
+    [/^Emenda Constitucional/i, 'Emenda Constitucional'],
+  ];
+  for (const [regex, type] of patterns) {
+    if (regex.test(title)) return type;
+  }
+  return 'Outros';
+}
+
 // Find the sheet containing legislations (for multi-sheet files like FPLAN)
 function findLegislationsSheet(workbook: XLSX.WorkBook): string {
   // Try to find sheet that contains legislation headers
