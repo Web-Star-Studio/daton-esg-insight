@@ -1006,9 +1006,6 @@ export async function importLegislations(
                   evaluated_at: new Date().toISOString(),
                   evaluated_by: profile.id,
                 });
-                
-                const branchName = mapping.branchName || mapping.excelCode;
-                result.unitsByBranch[branchName] = (result.unitsByBranch[branchName] || 0) + 1;
               }
             }
             
