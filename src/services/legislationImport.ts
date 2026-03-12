@@ -1195,7 +1195,7 @@ export async function importLegislations(
                 company_id: companyId,
                 title: 'Evidência importada via planilha',
                 description: leg.evidence_text.trim(),
-                type: 'documento',
+                evidence_type: 'documento',
                 uploaded_by: profile.id
               });
             
