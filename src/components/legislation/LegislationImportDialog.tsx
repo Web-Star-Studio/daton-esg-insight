@@ -69,6 +69,7 @@ export function LegislationImportDialog({
   const [stage, setStage] = useState<ImportStage>('upload');
   const [parsedData, setParsedData] = useState<ParsedLegislation[]>([]);
   const [detectedUnitColumns, setDetectedUnitColumns] = useState<string[]>([]);
+  const [isSimplifiedFormat, setIsSimplifiedFormat] = useState(false);
   const [unitMappings, setUnitMappings] = useState<UnitMapping[]>([]);
   const [validations, setValidations] = useState<LegislationValidation[]>([]);
   const [importResult, setImportResult] = useState<LegislationImportResult | null>(null);
@@ -83,6 +84,7 @@ export function LegislationImportDialog({
     setStage('upload');
     setParsedData([]);
     setDetectedUnitColumns([]);
+    setIsSimplifiedFormat(false);
     setUnitMappings([]);
     setValidations([]);
     setImportResult(null);
@@ -116,6 +118,7 @@ export function LegislationImportDialog({
 
       setParsedData(result.legislations);
       setDetectedUnitColumns(result.detectedUnitColumns);
+      setIsSimplifiedFormat(!result.hasExplicitNormTypeColumn);
 
       // If unit columns detected, go to mapping step
       if (result.detectedUnitColumns.length > 0) {
@@ -185,6 +188,7 @@ export function LegislationImportDialog({
       const result = await importLegislations(validLegislations, {
         skipExisting,
         createMissingThemes,
+        isSimplifiedFormat,
         unitMappings: unitMappings.filter(m => m.branchId), // Only mapped units
         onProgress: setProgress,
       });

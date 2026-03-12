@@ -546,6 +546,7 @@ export function mapUnitValue(value: string): UnitEvaluation | null {
 export interface ParseLegislationResult {
   legislations: ParsedLegislation[];
   detectedUnitColumns: string[];
+  hasExplicitNormTypeColumn: boolean;
 }
 
 export async function parseLegislationExcel(file: File): Promise<ParsedLegislation[]> {
@@ -583,6 +584,12 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
         const headers = firstRow ? Object.keys(firstRow) : [];
         logger.debug(`Headers: ${headers.slice(0, 15).join(', ')}`, 'import');
         const detectedUnitColumns = detectUnitColumns(headers);
+        
+        // Detect if spreadsheet has an explicit norm_type column
+        const headersNormalized = headers.map(h => h.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim());
+        const hasExplicitNormTypeColumn = headersNormalized.some(h => 
+          h === 'TIPO' || h === 'TIPO DE NORMA' || h.includes('TIPO DE NORMA')
+        );
         
         const legislations: ParsedLegislation[] = jsonData.map((row: any, index) => {
           const jurisdictionRaw = getColumnValue(row, 'Jurisdição', 'Jurisdicao', 'JURISDIÇÃO', 'JURISDICAO');
@@ -715,7 +722,7 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
         // Filter out completely empty rows
         const filtered = legislations.filter(leg => leg.title || leg.norm_type || leg.norm_number);
         
-        resolve({ legislations: filtered, detectedUnitColumns });
+        resolve({ legislations: filtered, detectedUnitColumns, hasExplicitNormTypeColumn });
       } catch (error) {
         reject(new Error('Erro ao processar arquivo Excel: ' + (error as Error).message));
       }
@@ -808,6 +815,7 @@ export async function importLegislations(
   options: {
     skipExisting: boolean;
     createMissingThemes: boolean;
+    isSimplifiedFormat?: boolean;  // When true, skip INSERT for unmatched rows
     unitMappings?: UnitMapping[];  // NEW: mappings for unit columns
     onProgress?: (progress: LegislationImportProgress) => void;
   } = { skipExisting: true, createMissingThemes: true }
@@ -843,7 +851,7 @@ export async function importLegislations(
     // Get existing legislations for duplicate check (incluindo ID para conciliação)
     const { data: existingLegislations } = await supabase
       .from('legislations')
-      .select('id, title, norm_type, norm_number')
+      .select('id, title, norm_type, norm_number, summary')
       .eq('company_id', companyId);
     
     // Map para encontrar legislações existentes por chave
@@ -859,6 +867,14 @@ export async function importLegislations(
         const titleKey = `title:${l.title.toLowerCase()}`;
         if (!existingMap.has(titleKey)) {
           existingMap.set(titleKey, { id: l.id, title: l.title });
+        }
+      }
+      // Chave terciária: summary (para formatos simplificados onde
+      // "RESUMO E TÍTULO" mapeia para o campo summary no DB)
+      if (l.summary) {
+        const summaryKey = `summary:${l.summary.toLowerCase().substring(0, 150)}`;
+        if (!existingMap.has(summaryKey)) {
+          existingMap.set(summaryKey, { id: l.id, title: l.title });
         }
       }
     });
@@ -913,6 +929,13 @@ export async function importLegislations(
         if (!existingLegislation && leg.title) {
           const titleKey = `title:${leg.title.toLowerCase()}`;
           existingLegislation = existingMap.get(titleKey) || null;
+        }
+        
+        // Terceira tentativa: match por summary (para formatos simplificados onde
+        // "RESUMO E TÍTULO" contém o texto do summary da legislação no DB)
+        if (!existingLegislation && leg.title) {
+          const summaryKey = `summary:${leg.title.toLowerCase().substring(0, 150)}`;
+          existingLegislation = existingMap.get(summaryKey) || null;
         }
         
         // Se encontrou legislação existente, adicionar evidência e unit compliance
@@ -1006,6 +1029,19 @@ export async function importLegislations(
               message: 'Legislação já existe - sem dados para atualizar',
             });
           }
+          continue;
+        }
+        
+        // Para formato simplificado (sem coluna Tipo de Norma explícita),
+        // não tenta INSERT de novas legislações — apenas atualiza existentes
+        if (options.isSimplifiedFormat) {
+          result.warnings++;
+          result.details.push({
+            rowNumber: leg.rowNumber,
+            title: leg.title?.substring(0, 60) || '(sem título)',
+            status: 'warning',
+            message: 'Legislação não encontrada no banco de dados - importação ignorada',
+          });
           continue;
         }
         
