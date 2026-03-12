@@ -508,6 +508,72 @@ export function LegislationImportDialog({
                 </div>
               )}
 
+              {/* Unmatched rows - offer creation */}
+              {importResult.unmatchedRows.length > 0 && (
+                <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-900/20">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <span className="text-sm">
+                      <strong>{importResult.unmatchedRows.length}</strong> legislação(ões) não encontrada(s) no banco de dados.
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isCreatingUnmatched}
+                      onClick={async () => {
+                        if (!user?.company?.id) return;
+                        setIsCreatingUnmatched(true);
+                        try {
+                          const createResult = await importLegislations(
+                            importResult.unmatchedRows.map(r => ({
+                              ...r,
+                              norm_type: r.norm_type || 'Outro',
+                            })),
+                            {
+                              skipExisting: false,
+                              createMissingThemes: true,
+                              isSimplifiedFormat: true,
+                              forceCreate: true,
+                              unitMappings: unitMappings.filter(m => m.branchId),
+                              onProgress: setProgress,
+                            }
+                          );
+                          // Merge results
+                          setImportResult(prev => prev ? {
+                            ...prev,
+                            imported: prev.imported + createResult.imported,
+                            errors: prev.errors + createResult.errors,
+                            unmatchedRows: [],
+                            details: [
+                              ...prev.details,
+                              ...createResult.details,
+                            ],
+                          } : prev);
+                          if (createResult.imported > 0) {
+                            toast.success(`${createResult.imported} legislações criadas com sucesso`);
+                            onImportComplete?.();
+                          }
+                          if (createResult.errors > 0) {
+                            toast.warning(`${createResult.errors} erro(s) ao criar legislações`);
+                          }
+                        } catch (error) {
+                          toast.error(`Erro ao criar legislações: ${(error as Error).message}`);
+                        } finally {
+                          setIsCreatingUnmatched(false);
+                        }
+                      }}
+                    >
+                      {isCreatingUnmatched ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4 mr-2" />
+                      )}
+                      Criar {importResult.unmatchedRows.length} legislações
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Details */}
               <ScrollArea className="h-[250px] border rounded-lg">
                 <Table>
