@@ -646,16 +646,25 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
           // NEW: Get status from multiple possible column names including Gabardo format
           const statusFromAtendimento = getColumnValue(row, 'ATENDIMENTO', 'Atendimento');
           const finalStatus = statusRaw || statusFromAtendimento;
+
+          // Auto-extract norm_type from title if not found in columns
+          let normType = getColumnValue(row, 'Tipo de Norma', 'Tipo', 'TIPO DE NORMA', 'TIPO');
+          if (!normType && title) {
+            normType = extractNormTypeFromTitle(title);
+          }
+
+          // Default jurisdiction to 'federal' if not found
+          const jurisdictionFinal = jurisdiction || 'federal';
           
           return {
             rowNumber: headerRow + index + 2,
-            norm_type: getColumnValue(row, 'Tipo de Norma', 'Tipo', 'TIPO DE NORMA', 'TIPO'),
+            norm_type: normType,
             norm_number: normNumber,
             title,
             summary: cleanHtmlFromText(getColumnValue(row, 'Resumo', 'RESUMO', 'Descrição', 'DESCRIÇÃO')),
             issuing_body: getColumnValue(row, 'Órgão Emissor', 'Orgão Emissor', 'Órgão', 'ÓRGÃO EMISSOR', 'ÓRGÃO'),
             publication_date: publicationDate,
-            jurisdiction,
+            jurisdiction: jurisdictionFinal,
             state,
             municipality,
             theme_name: themeName,
