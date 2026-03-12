@@ -722,7 +722,7 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
         // Filter out completely empty rows
         const filtered = legislations.filter(leg => leg.title || leg.norm_type || leg.norm_number);
         
-        resolve({ legislations: filtered, detectedUnitColumns });
+        resolve({ legislations: filtered, detectedUnitColumns, hasExplicitNormTypeColumn });
       } catch (error) {
         reject(new Error('Erro ao processar arquivo Excel: ' + (error as Error).message));
       }
