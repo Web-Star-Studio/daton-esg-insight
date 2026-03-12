@@ -69,6 +69,7 @@ export function LegislationImportDialog({
   const [stage, setStage] = useState<ImportStage>('upload');
   const [parsedData, setParsedData] = useState<ParsedLegislation[]>([]);
   const [detectedUnitColumns, setDetectedUnitColumns] = useState<string[]>([]);
+  const [isSimplifiedFormat, setIsSimplifiedFormat] = useState(false);
   const [unitMappings, setUnitMappings] = useState<UnitMapping[]>([]);
   const [validations, setValidations] = useState<LegislationValidation[]>([]);
   const [importResult, setImportResult] = useState<LegislationImportResult | null>(null);
