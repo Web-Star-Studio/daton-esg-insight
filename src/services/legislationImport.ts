@@ -850,7 +850,7 @@ export async function importLegislations(
     // Get existing legislations for duplicate check (incluindo ID para conciliação)
     const { data: existingLegislations } = await supabase
       .from('legislations')
-      .select('id, title, norm_type, norm_number')
+      .select('id, title, norm_type, norm_number, summary')
       .eq('company_id', companyId);
     
     // Map para encontrar legislações existentes por chave
@@ -866,6 +866,14 @@ export async function importLegislations(
         const titleKey = `title:${l.title.toLowerCase()}`;
         if (!existingMap.has(titleKey)) {
           existingMap.set(titleKey, { id: l.id, title: l.title });
+        }
+      }
+      // Chave terciária: summary (para formatos simplificados onde
+      // "RESUMO E TÍTULO" mapeia para o campo summary no DB)
+      if (l.summary) {
+        const summaryKey = `summary:${l.summary.toLowerCase().substring(0, 150)}`;
+        if (!existingMap.has(summaryKey)) {
+          existingMap.set(summaryKey, { id: l.id, title: l.title });
         }
       }
     });
