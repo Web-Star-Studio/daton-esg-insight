@@ -344,7 +344,7 @@ export function LegislationImportDialog({
               </div>
 
               {/* Options */}
-              <div className="flex gap-6 p-4 bg-muted/50 rounded-lg">
+              <div className="flex gap-6 flex-wrap p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="skipExisting"
@@ -361,6 +361,18 @@ export function LegislationImportDialog({
                   />
                   <Label htmlFor="createThemes">Criar temas/subtemas faltantes</Label>
                 </div>
+                {isSimplifiedFormat && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="forceCreate"
+                      checked={forceCreateUnmatched}
+                      onCheckedChange={(checked) => setForceCreateUnmatched(checked as boolean)}
+                    />
+                    <Label htmlFor="forceCreate" className="text-sm">
+                      Criar legislações que não existem no banco
+                    </Label>
+                  </div>
+                )}
               </div>
 
               {/* Preview Table */}
