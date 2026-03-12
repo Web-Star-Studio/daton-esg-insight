@@ -76,6 +76,7 @@ export interface LegislationImportResult {
     subthemes: string[];
   };
   unitsByBranch: Record<string, number>;  // NEW: count by branch name
+  unmatchedRows: ParsedLegislation[];     // Rows not found in DB (simplified format)
 }
 
 export interface LegislationImportProgress {
