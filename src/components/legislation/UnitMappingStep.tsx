@@ -127,6 +127,12 @@ export function UnitMappingStep({
             {detectedUnits.length - mappedCount} não mapeadas
           </Badge>
         )}
+        {onRedetect && (
+          <Button variant="outline" size="sm" onClick={onRedetect}>
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Re-detectar
+          </Button>
+        )}
       </div>
 
       {/* Mapping table */}
