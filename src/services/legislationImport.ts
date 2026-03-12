@@ -165,9 +165,10 @@ function findLegislationsSheet(workbook: XLSX.WorkBook): string {
       const hasTematica = values.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
       const hasResumo = values.some(v => v.includes('RESUMO') || v.includes('TÍTULO'));
       const hasData = values.some(v => v.includes('DATA') && v.includes('PUBLICAÇÃO'));
+      const hasAplicabilidade = values.some(v => v.includes('APLICABILIDADE'));
       
       // If we find key columns, this is the correct sheet
-      if ((hasTipo && hasNumero) || (hasTematica && hasResumo) || (hasTipo && hasData)) {
+      if ((hasTipo && hasNumero) || (hasTematica && hasResumo) || (hasTipo && hasData) || (hasResumo && hasAplicabilidade)) {
         logger.debug(`Found legislation sheet: "${sheetName}" at row ${row}`, 'import');
         return sheetName;
       }
@@ -204,12 +205,14 @@ function findHeaderRow(worksheet: XLSX.WorkSheet): number {
     const hasTematica = cellValues.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
     const hasResumoTitulo = cellValues.some(v => v.includes('RESUMO E TÍTULO') || v.includes('RESUMO'));
     const hasDataPublicacao = cellValues.some(v => v.includes('DATA') && v.includes('PUBLICAÇÃO'));
+    const hasAplicabilidade = cellValues.some(v => v.includes('APLICABILIDADE'));
     
     // Expanded condition
     const hasOriginalPattern = (hasTipoNorma || hasTitulo) && (hasTitulo || hasJurisdicao);
     const hasGabardoPattern = (hasTipoSimples && hasNumero && hasTematica) || 
                               (hasTematica && hasResumoTitulo) ||
-                              (hasTipoSimples && hasDataPublicacao);
+                              (hasTipoSimples && hasDataPublicacao) ||
+                              (hasResumoTitulo && hasAplicabilidade);
     
     if (hasOriginalPattern || hasGabardoPattern) {
       logger.debug(`Found header at row ${row}, columns: ${cellValues.slice(0, 10).join(', ')}`, 'import');
@@ -439,31 +442,31 @@ export function mapUnitValue(value: string): UnitEvaluation | null {
   
   switch (normalized) {
     case '1':
-      // Real (Aplicável) - status de conformidade será avaliado separadamente
+      // Potencial, não aplicado
       return { 
         unitCode: '', 
         value: '1', 
-        applicability: 'real', 
-        complianceStatus: 'pending' 
-      };
-    case '2':
-      // Potencial (Provável)
-      return { 
-        unitCode: '', 
-        value: '2', 
         applicability: 'potential', 
         complianceStatus: 'pending' 
       };
+    case '2':
+      // OK, Conforme
+      return { 
+        unitCode: '', 
+        value: '2', 
+        applicability: 'real', 
+        complianceStatus: 'conforme' 
+      };
     case '3':
-      // Pendente (Não avaliada)
+      // Não conforme
       return { 
         unitCode: '', 
         value: '3', 
-        applicability: 'pending', 
-        complianceStatus: 'pending' 
+        applicability: 'real', 
+        complianceStatus: 'adequacao' 
       };
     case 'x':
-      // S/AV (Sem Avaliação) - também pendente
+      // Sem avaliação alguma
       return { 
         unitCode: '', 
         value: 'x', 
@@ -471,8 +474,13 @@ export function mapUnitValue(value: string): UnitEvaluation | null {
         complianceStatus: 'pending' 
       };
     case 'z':
-      // n/p (Não Presente) - ignore
-      return null;
+      // Não pertinente à unidade
+      return { 
+        unitCode: '', 
+        value: 'z', 
+        applicability: 'na', 
+        complianceStatus: 'na' 
+      };
     default:
       // Unknown value - ignore
       return null;
