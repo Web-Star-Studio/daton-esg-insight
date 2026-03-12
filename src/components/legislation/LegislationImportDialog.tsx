@@ -300,6 +300,10 @@ export function LegislationImportDialog({
               branches={branches}
               mappings={unitMappings}
               onMappingsChange={setUnitMappings}
+              onRedetect={() => {
+                const remapped = createInitialMappings(detectedUnitColumns, branches);
+                setUnitMappings(remapped);
+              }}
             />
           )}
 
