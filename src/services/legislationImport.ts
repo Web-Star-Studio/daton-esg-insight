@@ -439,31 +439,31 @@ export function mapUnitValue(value: string): UnitEvaluation | null {
   
   switch (normalized) {
     case '1':
-      // Real (Aplicável) - status de conformidade será avaliado separadamente
+      // Potencial, não aplicado
       return { 
         unitCode: '', 
         value: '1', 
-        applicability: 'real', 
-        complianceStatus: 'pending' 
-      };
-    case '2':
-      // Potencial (Provável)
-      return { 
-        unitCode: '', 
-        value: '2', 
         applicability: 'potential', 
         complianceStatus: 'pending' 
       };
+    case '2':
+      // OK, Conforme
+      return { 
+        unitCode: '', 
+        value: '2', 
+        applicability: 'real', 
+        complianceStatus: 'conforme' 
+      };
     case '3':
-      // Pendente (Não avaliada)
+      // Não conforme
       return { 
         unitCode: '', 
         value: '3', 
-        applicability: 'pending', 
-        complianceStatus: 'pending' 
+        applicability: 'real', 
+        complianceStatus: 'adequacao' 
       };
     case 'x':
-      // S/AV (Sem Avaliação) - também pendente
+      // Sem avaliação alguma
       return { 
         unitCode: '', 
         value: 'x', 
@@ -471,8 +471,13 @@ export function mapUnitValue(value: string): UnitEvaluation | null {
         complianceStatus: 'pending' 
       };
     case 'z':
-      // n/p (Não Presente) - ignore
-      return null;
+      // Não pertinente à unidade
+      return { 
+        unitCode: '', 
+        value: 'z', 
+        applicability: 'na', 
+        complianceStatus: 'na' 
+      };
     default:
       // Unknown value - ignore
       return null;
