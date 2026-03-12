@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -10,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Building2, MapPin, AlertTriangle, Check, X } from "lucide-react";
+import { Building2, MapPin, AlertTriangle, Check, X, RefreshCw } from "lucide-react";
 import { Branch } from "@/services/branches";
 
 export interface UnitMapping {
