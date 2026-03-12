@@ -960,14 +960,14 @@ export async function importLegislations(
           
           // Adicionar evidência se houver
           if (leg.evidence_text && leg.evidence_text.trim()) {
-            const { error: evidenceError } = await supabase
+              const { error: evidenceError } = await supabase
               .from('legislation_evidences')
               .insert({
                 legislation_id: existingLegislation.id,
                 company_id: companyId,
                 title: 'Evidência importada via planilha',
                 description: leg.evidence_text.trim(),
-                type: 'documento',
+                evidence_type: 'documento',
                 uploaded_by: profile.id
               });
             
