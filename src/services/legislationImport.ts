@@ -205,12 +205,14 @@ function findHeaderRow(worksheet: XLSX.WorkSheet): number {
     const hasTematica = cellValues.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
     const hasResumoTitulo = cellValues.some(v => v.includes('RESUMO E TÍTULO') || v.includes('RESUMO'));
     const hasDataPublicacao = cellValues.some(v => v.includes('DATA') && v.includes('PUBLICAÇÃO'));
+    const hasAplicabilidade = cellValues.some(v => v.includes('APLICABILIDADE'));
     
     // Expanded condition
     const hasOriginalPattern = (hasTipoNorma || hasTitulo) && (hasTitulo || hasJurisdicao);
     const hasGabardoPattern = (hasTipoSimples && hasNumero && hasTematica) || 
                               (hasTematica && hasResumoTitulo) ||
-                              (hasTipoSimples && hasDataPublicacao);
+                              (hasTipoSimples && hasDataPublicacao) ||
+                              (hasResumoTitulo && hasAplicabilidade);
     
     if (hasOriginalPattern || hasGabardoPattern) {
       logger.debug(`Found header at row ${row}, columns: ${cellValues.slice(0, 10).join(', ')}`, 'import');
