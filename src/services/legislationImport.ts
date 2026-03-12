@@ -156,15 +156,15 @@ function findLegislationsSheet(workbook: XLSX.WorkBook): string {
       const values: string[] = [];
       for (let col = range.s.c; col <= Math.min(range.e.c, 30); col++) {
         const cell = worksheet[XLSX.utils.encode_cell({ r: row, c: col })];
-        if (cell?.v) values.push(String(cell.v).toUpperCase().trim());
+        if (cell?.v) values.push(String(cell.v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim());
       }
       
-      // Check for Gabardo FPLAN format patterns
+      // Check for Gabardo FPLAN format patterns (accent-normalized)
       const hasTipo = values.some(v => v === 'TIPO' || v.includes('TIPO DE NORMA'));
-      const hasNumero = values.some(v => v === 'Nº' || v === 'N°' || v === 'NÚMERO' || v === 'NUMERO');
-      const hasTematica = values.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
-      const hasResumo = values.some(v => v.includes('RESUMO') || v.includes('TÍTULO'));
-      const hasData = values.some(v => v.includes('DATA') && v.includes('PUBLICAÇÃO'));
+      const hasNumero = values.some(v => v === 'N' || v === 'N°' || v === 'NUMERO');
+      const hasTematica = values.some(v => v.includes('TEMATICA'));
+      const hasResumo = values.some(v => v.includes('RESUMO') || v.includes('TITULO'));
+      const hasData = values.some(v => v.includes('DATA') && v.includes('PUBLICACAO'));
       const hasAplicabilidade = values.some(v => v.includes('APLICABILIDADE'));
       
       // If we find key columns, this is the correct sheet
@@ -190,21 +190,21 @@ function findHeaderRow(worksheet: XLSX.WorkSheet): number {
       const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
       const cell = worksheet[cellAddress];
       if (cell && cell.v) {
-        cellValues.push(String(cell.v).toUpperCase().trim());
+        cellValues.push(String(cell.v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim());
       }
     }
     
-    // Original patterns
+    // Original patterns (accent-normalized)
     const hasTipoNorma = cellValues.some(v => v.includes('TIPO') && v.includes('NORMA'));
-    const hasTitulo = cellValues.some(v => v.includes('TÍTULO') || v.includes('TITULO') || v.includes('EMENTA'));
+    const hasTitulo = cellValues.some(v => v.includes('TITULO') || v.includes('EMENTA'));
     const hasJurisdicao = cellValues.some(v => v.includes('JURISD'));
     
-    // NEW: Gabardo FPLAN format patterns
+    // Gabardo FPLAN format patterns (accent-normalized)
     const hasTipoSimples = cellValues.some(v => v === 'TIPO');
-    const hasNumero = cellValues.some(v => v === 'Nº' || v === 'N°' || v === 'NUMERO' || v === 'NÚMERO');
-    const hasTematica = cellValues.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
-    const hasResumoTitulo = cellValues.some(v => v.includes('RESUMO E TÍTULO') || v.includes('RESUMO'));
-    const hasDataPublicacao = cellValues.some(v => v.includes('DATA') && v.includes('PUBLICAÇÃO'));
+    const hasNumero = cellValues.some(v => v === 'N' || v === 'N°' || v === 'NUMERO');
+    const hasTematica = cellValues.some(v => v.includes('TEMATICA'));
+    const hasResumoTitulo = cellValues.some(v => v.includes('RESUMO E TITULO') || v.includes('RESUMO'));
+    const hasDataPublicacao = cellValues.some(v => v.includes('DATA') && v.includes('PUBLICACAO'));
     const hasAplicabilidade = cellValues.some(v => v.includes('APLICABILIDADE'));
     
     // Expanded condition
@@ -408,10 +408,35 @@ function parseState(stateValue: string): { state: string; statesList: string; is
   return { state: stateValue.trim(), statesList: '', isInternational: false };
 }
 
+// Normalize string for accent-insensitive, case-insensitive matching
+function normalizeKey(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 function getColumnValue(row: any, ...possibleNames: string[]): string {
+  // Fast path: exact match
   for (const name of possibleNames) {
     if (row[name] !== undefined && row[name] !== null) {
       return String(row[name]).trim();
+    }
+  }
+  // Fallback: normalized matching (handles Unicode accent differences)
+  const rowKeys = Object.keys(row);
+  for (const name of possibleNames) {
+    const normalizedName = normalizeKey(name);
+    const matchingKey = rowKeys.find(k => normalizeKey(k) === normalizedName);
+    if (matchingKey && row[matchingKey] !== undefined && row[matchingKey] !== null) {
+      return String(row[matchingKey]).trim();
+    }
+  }
+  // Last resort: partial/contains matching
+  for (const name of possibleNames) {
+    const normalizedName = normalizeKey(name);
+    const matchingKey = rowKeys.find(k =>
+      normalizeKey(k).includes(normalizedName) || normalizedName.includes(normalizeKey(k))
+    );
+    if (matchingKey && row[matchingKey] !== undefined && row[matchingKey] !== null) {
+      return String(row[matchingKey]).trim();
     }
   }
   return '';
@@ -424,12 +449,14 @@ const KNOWN_UNIT_CODES = ['POA', 'PIR', 'GO', 'PREAL', 'SBC', 'SJP', 'DUC', 'IRA
 
 // Detect unit columns from headers
 export function detectUnitColumns(headers: string[]): string[] {
+  const normalizedCodes = KNOWN_UNIT_CODES.map(c => normalizeKey(c));
+  const excludedCodes = ['uf', 'id', 'url', 'ok', 'na', 'nr', 'nbr'];
   return headers.filter(h => {
-    const normalized = h.toUpperCase().trim();
-    // Match known codes or short uppercase codes
-    return KNOWN_UNIT_CODES.includes(normalized) || 
-           (normalized.length <= 6 && /^[A-Z]{2,6}$/.test(normalized) && 
-            !['UF', 'ID', 'URL', 'OK', 'NA', 'NR', 'NBR'].includes(normalized));
+    const nk = normalizeKey(h);
+    const upper = nk.toUpperCase();
+    return normalizedCodes.includes(nk) || 
+           (upper.length <= 6 && /^[A-Z]{2,6}$/.test(upper) && 
+            !excludedCodes.includes(nk));
   });
 }
 
