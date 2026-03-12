@@ -118,6 +118,7 @@ export function LegislationImportDialog({
 
       setParsedData(result.legislations);
       setDetectedUnitColumns(result.detectedUnitColumns);
+      setIsSimplifiedFormat(!result.hasExplicitNormTypeColumn);
 
       // If unit columns detected, go to mapping step
       if (result.detectedUnitColumns.length > 0) {
