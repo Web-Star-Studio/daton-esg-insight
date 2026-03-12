@@ -1017,8 +1017,22 @@ export async function importLegislations(
               if (!complianceError) {
                 result.unitCompliancesCreated += complianceRecords.length;
                 unitComplianceMessage = ` + ${complianceRecords.length} avaliação(ões) por unidade`;
+                // Only count branch stats after successful upsert
+                for (const rec of complianceRecords) {
+                  const mapping = options.unitMappings!.find(m => m.branchId === rec.branch_id);
+                  const branchName = mapping?.branchName || mapping?.excelCode || rec.branch_id;
+                  result.unitsByBranch[branchName] = (result.unitsByBranch[branchName] || 0) + 1;
+                }
               } else {
                 console.error('Erro ao atualizar unit compliance:', complianceError);
+                result.errors++;
+                result.details.push({
+                  rowNumber: leg.rowNumber,
+                  title: leg.title,
+                  status: 'error',
+                  message: `Erro ao salvar compliance: ${complianceError.message}`,
+                });
+                continue;
               }
             }
           }
