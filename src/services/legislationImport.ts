@@ -449,12 +449,14 @@ const KNOWN_UNIT_CODES = ['POA', 'PIR', 'GO', 'PREAL', 'SBC', 'SJP', 'DUC', 'IRA
 
 // Detect unit columns from headers
 export function detectUnitColumns(headers: string[]): string[] {
+  const normalizedCodes = KNOWN_UNIT_CODES.map(c => normalizeKey(c));
+  const excludedCodes = ['uf', 'id', 'url', 'ok', 'na', 'nr', 'nbr'];
   return headers.filter(h => {
-    const normalized = h.toUpperCase().trim();
-    // Match known codes or short uppercase codes
-    return KNOWN_UNIT_CODES.includes(normalized) || 
-           (normalized.length <= 6 && /^[A-Z]{2,6}$/.test(normalized) && 
-            !['UF', 'ID', 'URL', 'OK', 'NA', 'NR', 'NBR'].includes(normalized));
+    const nk = normalizeKey(h);
+    const upper = nk.toUpperCase();
+    return normalizedCodes.includes(nk) || 
+           (upper.length <= 6 && /^[A-Z]{2,6}$/.test(upper) && 
+            !excludedCodes.includes(nk));
   });
 }
 
