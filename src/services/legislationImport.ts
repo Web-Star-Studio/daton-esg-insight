@@ -156,15 +156,15 @@ function findLegislationsSheet(workbook: XLSX.WorkBook): string {
       const values: string[] = [];
       for (let col = range.s.c; col <= Math.min(range.e.c, 30); col++) {
         const cell = worksheet[XLSX.utils.encode_cell({ r: row, c: col })];
-        if (cell?.v) values.push(String(cell.v).toUpperCase().trim());
+        if (cell?.v) values.push(String(cell.v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim());
       }
       
-      // Check for Gabardo FPLAN format patterns
+      // Check for Gabardo FPLAN format patterns (accent-normalized)
       const hasTipo = values.some(v => v === 'TIPO' || v.includes('TIPO DE NORMA'));
-      const hasNumero = values.some(v => v === 'Nº' || v === 'N°' || v === 'NÚMERO' || v === 'NUMERO');
-      const hasTematica = values.some(v => v.includes('TEMÁTICA') || v.includes('TEMATICA'));
-      const hasResumo = values.some(v => v.includes('RESUMO') || v.includes('TÍTULO'));
-      const hasData = values.some(v => v.includes('DATA') && v.includes('PUBLICAÇÃO'));
+      const hasNumero = values.some(v => v === 'N' || v === 'N°' || v === 'NUMERO');
+      const hasTematica = values.some(v => v.includes('TEMATICA'));
+      const hasResumo = values.some(v => v.includes('RESUMO') || v.includes('TITULO'));
+      const hasData = values.some(v => v.includes('DATA') && v.includes('PUBLICACAO'));
       const hasAplicabilidade = values.some(v => v.includes('APLICABILIDADE'));
       
       // If we find key columns, this is the correct sheet
