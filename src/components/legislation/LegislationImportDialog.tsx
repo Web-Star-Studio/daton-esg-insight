@@ -84,6 +84,7 @@ export function LegislationImportDialog({
     setStage('upload');
     setParsedData([]);
     setDetectedUnitColumns([]);
+    setIsSimplifiedFormat(false);
     setUnitMappings([]);
     setValidations([]);
     setImportResult(null);
