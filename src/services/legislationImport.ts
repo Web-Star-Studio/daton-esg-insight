@@ -408,10 +408,35 @@ function parseState(stateValue: string): { state: string; statesList: string; is
   return { state: stateValue.trim(), statesList: '', isInternational: false };
 }
 
+// Normalize string for accent-insensitive, case-insensitive matching
+function normalizeKey(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 function getColumnValue(row: any, ...possibleNames: string[]): string {
+  // Fast path: exact match
   for (const name of possibleNames) {
     if (row[name] !== undefined && row[name] !== null) {
       return String(row[name]).trim();
+    }
+  }
+  // Fallback: normalized matching (handles Unicode accent differences)
+  const rowKeys = Object.keys(row);
+  for (const name of possibleNames) {
+    const normalizedName = normalizeKey(name);
+    const matchingKey = rowKeys.find(k => normalizeKey(k) === normalizedName);
+    if (matchingKey && row[matchingKey] !== undefined && row[matchingKey] !== null) {
+      return String(row[matchingKey]).trim();
+    }
+  }
+  // Last resort: partial/contains matching
+  for (const name of possibleNames) {
+    const normalizedName = normalizeKey(name);
+    const matchingKey = rowKeys.find(k =>
+      normalizeKey(k).includes(normalizedName) || normalizedName.includes(normalizeKey(k))
+    );
+    if (matchingKey && row[matchingKey] !== undefined && row[matchingKey] !== null) {
+      return String(row[matchingKey]).trim();
     }
   }
   return '';
