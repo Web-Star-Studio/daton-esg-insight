@@ -1252,9 +1252,16 @@ export async function importLegislations(
             
             // Batch insert compliance records
             if (complianceRecords.length > 0) {
+              // Deduplicate by (legislation_id, branch_id) — last row wins
+              const uniqueMap = new Map<string, typeof complianceRecords[0]>();
+              for (const rec of complianceRecords) {
+                uniqueMap.set(`${rec.legislation_id}:${rec.branch_id}`, rec);
+              }
+              const dedupedRecords = Array.from(uniqueMap.values());
+
               const { error: complianceError } = await supabase
                 .from('legislation_unit_compliance')
-                .upsert(complianceRecords, { onConflict: 'legislation_id,branch_id' });
+                .upsert(dedupedRecords, { onConflict: 'legislation_id,branch_id' });
               
               if (!complianceError) {
                 result.unitCompliancesCreated += complianceRecords.length;
