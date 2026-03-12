@@ -202,6 +202,7 @@ export function LegislationImportDialog({
         skipExisting,
         createMissingThemes,
         isSimplifiedFormat,
+        forceCreate: forceCreateUnmatched,
         unitMappings: unitMappings.filter(m => m.branchId), // Only mapped units
         onProgress: setProgress,
       });
