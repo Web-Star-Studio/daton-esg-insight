@@ -585,6 +585,12 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
         logger.debug(`Headers: ${headers.slice(0, 15).join(', ')}`, 'import');
         const detectedUnitColumns = detectUnitColumns(headers);
         
+        // Detect if spreadsheet has an explicit norm_type column
+        const headersNormalized = headers.map(h => h.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim());
+        const hasExplicitNormTypeColumn = headersNormalized.some(h => 
+          h === 'TIPO' || h === 'TIPO DE NORMA' || h.includes('TIPO DE NORMA')
+        );
+        
         const legislations: ParsedLegislation[] = jsonData.map((row: any, index) => {
           const jurisdictionRaw = getColumnValue(row, 'Jurisdição', 'Jurisdicao', 'JURISDIÇÃO', 'JURISDICAO');
           const applicabilityRaw = getColumnValue(row, 'Aplicabilidade', 'APLICABILIDADE');
