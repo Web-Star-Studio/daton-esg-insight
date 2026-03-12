@@ -33,8 +33,8 @@ import {
   Loader2,
   Building2,
   ArrowRight,
+  Plus,
 } from "lucide-react";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranches } from "@/services/branches";
