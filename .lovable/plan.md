@@ -1,25 +1,12 @@
 
+# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
-## Problem
+## Problema
+Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
 
-Multiple spreadsheet rows resolve to the **same existing legislation** (via summary matching). Each row generates a compliance record for the same branch. When these are batched into a single `upsert()` call, Postgres rejects it because the same `(legislation_id, branch_id)` key appears more than once in the same INSERT statement.
+## Solução
+Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
 
-## Fix
+## Alteração
 
-**File: `src/services/legislationImport.ts`** — Deduplicate `complianceRecords` before upserting.
-
-After building the `complianceRecords` array (around lines 1010-1012 and 1245-1247), deduplicate by `legislation_id + branch_id`, keeping the **last** entry (most recent row wins):
-
-```typescript
-// Deduplicate by (legislation_id, branch_id) — last row wins
-const uniqueMap = new Map<string, typeof complianceRecords[0]>();
-for (const rec of complianceRecords) {
-  uniqueMap.set(`${rec.legislation_id}:${rec.branch_id}`, rec);
-}
-const dedupedRecords = Array.from(uniqueMap.values());
-```
-
-Then use `dedupedRecords` in the `.upsert()` call instead of `complianceRecords`.
-
-This change applies to **both** upsert blocks (existing legislation ~line 1012, and new legislation ~line 1247).
-
+**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.
