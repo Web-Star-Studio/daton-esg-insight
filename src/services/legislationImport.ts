@@ -1032,6 +1032,19 @@ export async function importLegislations(
           continue;
         }
         
+        // Para formato simplificado (sem coluna Tipo de Norma explícita),
+        // não tenta INSERT de novas legislações — apenas atualiza existentes
+        if (options.isSimplifiedFormat) {
+          result.warnings++;
+          result.details.push({
+            rowNumber: leg.rowNumber,
+            title: leg.title?.substring(0, 60) || '(sem título)',
+            status: 'warning',
+            message: 'Legislação não encontrada no banco de dados - importação ignorada',
+          });
+          continue;
+        }
+        
         // Handle theme
         let themeId: string | null = null;
         if (leg.theme_name && options.createMissingThemes) {
