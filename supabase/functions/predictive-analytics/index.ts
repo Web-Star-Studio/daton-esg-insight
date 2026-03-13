@@ -418,9 +418,9 @@ serve(async (req) => {
         try {
           predictions = await predictEmissions(supabaseClient, profile.company_id, months || 3);
         } catch (error) {
-          console.warn('⚠️ Could not generate emission predictions:', error.message);
+          console.warn('⚠️ Could not generate emission predictions:', (error as Error).message);
           // Return empty prediction structure if no data
-          if (error.message?.includes('Dados insuficientes')) {
+          if ((error as Error).message?.includes('Dados insuficientes')) {
             predictions = {
               predictions: [],
               trend: 'stable' as const,
