@@ -39,6 +39,8 @@ import { BranchSelect } from "@/components/BranchSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { parseDateSafe, formatDateForDB } from "@/utils/dateUtils";
+import { DateInputWithCalendarForm } from "@/components/DateInputWithCalendarForm";
+import { TRAINING_MODALITY } from "@/types/enums";
 
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -68,6 +70,7 @@ const trainingProgramSchema = z.object({
   status: z.string().min(1, "Status é obrigatório"),
   branch_id: z.string().optional().nullable(),
   responsible_name: z.string().optional(),
+  modality: z.string().optional().nullable(),
   // Campos para avaliação de eficácia
   requires_efficacy_evaluation: z.boolean().default(false),
   efficacy_evaluation_deadline: z.date().optional().nullable(),
@@ -96,6 +99,7 @@ const getTrainingProgramFormValues = (program?: TrainingProgram | null) => {
       status: "Ativo",
       branch_id: "",
       responsible_name: "",
+      modality: null,
       requires_efficacy_evaluation: false,
       efficacy_evaluation_deadline: null,
       notify_responsible_email: false,
@@ -118,6 +122,7 @@ const getTrainingProgramFormValues = (program?: TrainingProgram | null) => {
     status: program.status,
     branch_id: program.branch_id || "",
     responsible_name: program.responsible_name || "",
+    modality: (program as any).modality || null,
     requires_efficacy_evaluation: !!program.efficacy_evaluation_deadline,
     efficacy_evaluation_deadline: parseDateSafe(program.efficacy_evaluation_deadline),
     notify_responsible_email: program.notify_responsible_email || false,
@@ -384,11 +389,11 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
         status: values.status,
         branch_id: values.branch_id || null,
         responsible_name: values.responsible_name?.trim() || null,
+        modality: values.modality || null,
         efficacy_evaluation_deadline: values.requires_efficacy_evaluation 
           ? formatDateForDB(values.efficacy_evaluation_deadline) 
           : null,
         notify_responsible_email: values.requires_efficacy_evaluation && values.notify_responsible_email,
-        // Usar o ID do colaborador responsável pela avaliação
         efficacy_evaluator_employee_id: values.requires_efficacy_evaluation 
           ? values.efficacy_evaluator_employee_id || null
           : null,
@@ -707,7 +712,7 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="branch_id"
@@ -734,6 +739,31 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
                       <FormControl>
                         <Input placeholder="Nome do instrutor/responsável" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="modality"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Modalidade</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a modalidade" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {TRAINING_MODALITY.map((mod) => (
+                            <SelectItem key={mod} value={mod}>
+                              {mod}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -778,33 +808,13 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Data Inicial</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value || undefined}
-                            onSelect={field.onChange}
-                            locale={ptBR}
-                            initialFocus
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <FormControl>
+                        <DateInputWithCalendarForm
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="DD/MM/AAAA"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -816,33 +826,13 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Data Final</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value || undefined}
-                            onSelect={field.onChange}
-                            locale={ptBR}
-                            initialFocus
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <FormControl>
+                        <DateInputWithCalendarForm
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="DD/MM/AAAA"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1030,33 +1020,13 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
                           <FormLabel>Prazo para Avaliação de Eficácia</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data limite"}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value || undefined}
-                                onSelect={field.onChange}
-                                locale={ptBR}
-                                initialFocus
-                                className="pointer-events-auto"
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <FormControl>
+                            <DateInputWithCalendarForm
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="DD/MM/AAAA"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

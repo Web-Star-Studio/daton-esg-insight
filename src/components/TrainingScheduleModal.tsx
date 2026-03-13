@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { DateInputWithCalendarForm } from "@/components/DateInputWithCalendarForm";
 import * as z from "zod";
 import {
   Dialog,
@@ -349,47 +350,13 @@ export function TrainingScheduleModal({
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Data de Início</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "dd/MM/yyyy", { locale: ptBR })
-                                ) : (
-                                  <span>Selecione a data</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              locale={ptBR}
-                              initialFocus
-                              className="pointer-events-auto"
-                              disabled={(date) => {
-                                const selectedProgram = programs.find(p => p.id === selectedProgramId);
-                                if (!selectedProgram?.start_date) return false;
-                                
-                                const programStart = new Date(selectedProgram.start_date + 'T00:00:00');
-                                const programEnd = selectedProgram.end_date 
-                                  ? new Date(selectedProgram.end_date + 'T23:59:59')
-                                  : new Date(selectedProgram.start_date + 'T23:59:59');
-                                
-                                return date < programStart || date > programEnd;
-                              }}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <DateInputWithCalendarForm
+                            value={field.value}
+                            onChange={(d) => field.onChange(d || new Date())}
+                            placeholder="DD/MM/AAAA"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -401,47 +368,13 @@ export function TrainingScheduleModal({
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Data de Término</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "dd/MM/yyyy", { locale: ptBR })
-                                ) : (
-                                  <span>Selecione a data</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              locale={ptBR}
-                              initialFocus
-                              className="pointer-events-auto"
-                              disabled={(date) => {
-                                const selectedProgram = programs.find(p => p.id === selectedProgramId);
-                                if (!selectedProgram?.start_date) return false;
-                                
-                                const programStart = new Date(selectedProgram.start_date + 'T00:00:00');
-                                const programEnd = selectedProgram.end_date 
-                                  ? new Date(selectedProgram.end_date + 'T23:59:59')
-                                  : new Date(selectedProgram.start_date + 'T23:59:59');
-                                
-                                return date < programStart || date > programEnd;
-                              }}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <DateInputWithCalendarForm
+                            value={field.value}
+                            onChange={(d) => field.onChange(d || new Date())}
+                            placeholder="DD/MM/AAAA"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
