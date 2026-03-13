@@ -1060,33 +1060,13 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
                           <FormLabel>Prazo para Avaliação de Eficácia</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data limite"}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value || undefined}
-                                onSelect={field.onChange}
-                                locale={ptBR}
-                                initialFocus
-                                className="pointer-events-auto"
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <FormControl>
+                            <DateInputWithCalendarForm
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="DD/MM/AAAA"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
