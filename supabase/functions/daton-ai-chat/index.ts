@@ -2008,7 +2008,7 @@ ${attachmentContext}`;
     const insights = await generateProactiveInsights(
       companyId, 
       userContext?.currentRoute || currentPage, 
-      supabaseClient
+      supabaseClient as any
     );
     
     // Check for pending extracted data after attachment processing

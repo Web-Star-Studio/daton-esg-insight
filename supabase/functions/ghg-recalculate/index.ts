@@ -137,7 +137,7 @@ serve(async (req) => {
           .limit(5)
 
         if (!factors || factors.length === 0) {
-          console.warn(`No emission factors found for category: ${activity.emission_sources.category}, activity: ${activity.id}`)
+          console.warn(`No emission factors found for category: ${(activity.emission_sources as any).category}, activity: ${activity.id}`)
           continue
         }
 

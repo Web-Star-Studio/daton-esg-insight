@@ -231,7 +231,7 @@ async function fetchCompanyData(supabaseClient: any, companyId: string, year?: n
     },
     safety: {
       incidents: safetyIncidents?.length || 0,
-      daysLost: safetyIncidents?.reduce((sum, i) => sum + (i.days_lost || 0), 0) || 0,
+      daysLost: safetyIncidents?.reduce((sum: number, i: any) => sum + (i.days_lost || 0), 0) || 0,
     },
     training: {
       programs: trainingPrograms?.length || 0,
