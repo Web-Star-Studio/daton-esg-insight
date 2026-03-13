@@ -462,7 +462,7 @@ serve(async (req) => {
     }
     
     return new Response(
-      JSON.stringify({ error: error.message || 'Erro ao processar análise preditiva' }),
+      JSON.stringify({ error: (error as Error).message || 'Erro ao processar análise preditiva' }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

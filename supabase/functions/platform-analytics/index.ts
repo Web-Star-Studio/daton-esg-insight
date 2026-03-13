@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in platform-analytics:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Erro ao gerar analytics' 
+      error: (error as Error).message || 'Erro ao gerar analytics' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
