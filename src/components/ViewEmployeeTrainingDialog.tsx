@@ -122,52 +122,6 @@ export function ViewEmployeeTrainingDialog({
     'Pendente': '⚪ Pendente',
   };
 
-  // Fetch participants
-  const { data: participants = [], isLoading: loadingParticipants } = useQuery({
-    queryKey: ['training-participants', programId],
-    queryFn: () => getTrainingProgramParticipants(programId!),
-    enabled: !!programId && isOpen,
-  });
-
-  // Fetch efficacy evaluations for this program
-  const { data: evaluations = [], isLoading: loadingEvaluations } = useQuery({
-    queryKey: ['efficacy-evaluations', programId],
-    queryFn: () => getEfficacyEvaluations(programId!),
-    enabled: !!programId && isOpen,
-  });
-
-  // Find evaluation for this specific employee_training
-  const existingEvaluation = evaluations.find(
-    (e: TrainingEfficacyEvaluation) => e.employee_training_id === training.id
-  );
-
-  const hasEfficacyDeadline = !!program?.efficacy_evaluation_deadline;
-
-  // Create efficacy evaluation mutation
-  const createEvalMutation = useMutation({
-    mutationFn: async () => {
-      if (isEffective === null) throw new Error('Selecione se o treinamento foi eficaz ou não');
-      return createEfficacyEvaluation({
-        company_id: '',
-        employee_training_id: training.id,
-        training_program_id: programId!,
-        evaluation_date: new Date().toISOString().split('T')[0],
-        is_effective: isEffective,
-        comments: efficacyComments || undefined,
-        status: 'Concluída',
-      });
-    },
-    onSuccess: () => {
-      toast.success('Avaliação de eficácia registrada com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['efficacy-evaluations', programId] });
-      queryClient.invalidateQueries({ queryKey: ['employee-trainings'] });
-      setIsEffective(null);
-      setEfficacyComments('');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erro ao registrar avaliação de eficácia');
-    },
-  });
 
   const participantStatusColor = (status: string) => {
     switch (status) {
