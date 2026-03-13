@@ -1,4 +1,6 @@
+// deno-lint-ignore-file no-explicit-any
 // Use 'any' for supabase client to avoid cross-file version conflicts
+type SupabaseClient = any;
 
 export interface IntelligentSuggestion {
   insights: string[];
