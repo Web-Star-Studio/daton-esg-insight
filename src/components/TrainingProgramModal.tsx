@@ -120,6 +120,7 @@ const getTrainingProgramFormValues = (program?: TrainingProgram | null) => {
     status: program.status,
     branch_id: program.branch_id || "",
     responsible_name: program.responsible_name || "",
+    modality: (program as any).modality || null,
     requires_efficacy_evaluation: !!program.efficacy_evaluation_deadline,
     efficacy_evaluation_deadline: parseDateSafe(program.efficacy_evaluation_deadline),
     notify_responsible_email: program.notify_responsible_email || false,
