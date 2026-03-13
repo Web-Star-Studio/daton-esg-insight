@@ -135,11 +135,11 @@ export function DepartmentImportDialog({ open, onOpenChange, onImportComplete }:
             <div className="space-y-2">
               <p className="text-sm font-medium">Baixar template de exemplo</p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={downloadTemplateCSV}>
+                <Button type="button" variant="outline" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); downloadTemplateCSV(); }}>
                   <Download className="w-4 h-4 mr-2" />
                   Template CSV
                 </Button>
-                <Button variant="outline" size="sm" onClick={downloadTemplateXLSX}>
+                <Button type="button" variant="outline" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); downloadTemplateXLSX(); }}>
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
                   Template XLSX
                 </Button>
