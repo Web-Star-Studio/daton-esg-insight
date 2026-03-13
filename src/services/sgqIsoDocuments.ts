@@ -692,6 +692,13 @@ export const rejectReviewRequest = async (requestId: string, reviewerNotes: stri
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário não autenticado");
 
+  // Get request details for notification
+  const { data: request } = await (supabase as any)
+    .from("sgq_review_requests")
+    .select("requested_by_user_id, sgq_document_id, document:sgq_document_id ( title )")
+    .eq("id", requestId)
+    .maybeSingle();
+
   const { error } = await (supabase as any)
     .from("sgq_review_requests")
     .update({
@@ -702,6 +709,16 @@ export const rejectReviewRequest = async (requestId: string, reviewerNotes: stri
     .eq("id", requestId);
 
   if (error) throw new Error(`Erro ao rejeitar: ${error.message}`);
+
+  // Notify requester
+  if (request?.requested_by_user_id) {
+    notifyReviewRejected(
+      request.requested_by_user_id,
+      request.document?.title || "Documento SGQ",
+      request.sgq_document_id,
+      reviewerNotes
+    ).catch(() => {});
+  }
 };
 
 // ── Versions ──
