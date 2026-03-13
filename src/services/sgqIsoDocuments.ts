@@ -57,6 +57,7 @@ export interface SgqDocumentItem {
   notes: string | null;
   responsible_department: string | null;
   is_approved: boolean;
+  created_by_user_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -257,14 +258,14 @@ export const getSgqResponsibleUsers = async (): Promise<Array<{ id: string; full
 // ── List Documents ──
 
 export const getSgqDocuments = async (filters?: { search?: string; branch_id?: string; document_identifier_type?: string; status?: DocumentStatus }): Promise<SgqDocumentItem[]> => {
-  const { companyId } = await getCurrentUserAndCompany();
+  const { user, companyId } = await getCurrentUserAndCompany();
   const settings = await getSgqSettings();
 
   let query = (supabase as any)
     .from("sgq_iso_documents")
     .select(`
       id, title, document_identifier_type, document_identifier_other,
-      branch_id, elaborated_by_user_id, approved_by_user_id,
+      branch_id, elaborated_by_user_id, approved_by_user_id, created_by_user_id,
       expiration_date, current_version_number, notes, norm_reference, responsible_department,
       is_approved, created_at, updated_at,
       branches:branch_id ( name ),
@@ -354,6 +355,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
       notes: doc.notes,
       responsible_department: doc.responsible_department || null,
       is_approved: !!doc.is_approved,
+      created_by_user_id: doc.created_by_user_id || null,
       created_at: doc.created_at,
       updated_at: doc.updated_at,
     };
@@ -362,6 +364,9 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
   const normalizedSearch = filters?.search?.trim().toLowerCase();
 
   return mapped.filter((item) => {
+    if (!item.is_approved) {
+      if (item.created_by_user_id !== user.id && item.approved_by_user_id !== user.id) return false;
+    }
     if (filters?.status && filters.status !== item.status) return false;
     if (filters?.branch_id && !item.branch_ids.includes(filters.branch_id)) return false;
     if (!normalizedSearch) return true;
@@ -402,6 +407,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
       branch_id: payload.branch_ids?.[0] || null,
       elaborated_by_user_id: payload.elaborated_by_user_id,
       approved_by_user_id: payload.approved_by_user_id,
+      created_by_user_id: user.id,
       is_approved: false,
       expiration_date: ensureDateOnly(payload.expiration_date),
       current_version_number: 1,
