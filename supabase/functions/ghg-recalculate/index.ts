@@ -132,7 +132,7 @@ serve(async (req) => {
         const { data: factors } = await supabaseClient
           .from('emission_factors')
           .select('*')
-          .eq('category', activity.emission_sources.category)
+          .eq('category', (activity.emission_sources as any).category)
           .eq('type', 'system')
           .limit(5)
 
