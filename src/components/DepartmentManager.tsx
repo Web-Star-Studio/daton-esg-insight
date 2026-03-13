@@ -97,6 +97,7 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState<string | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const openDeleteDialog = (id: string) => {
     setDepartmentToDelete(id);
