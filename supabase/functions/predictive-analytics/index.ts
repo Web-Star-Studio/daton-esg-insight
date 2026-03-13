@@ -451,9 +451,9 @@ serve(async (req) => {
     console.error('❌ Error in predictive-analytics:', error);
     
     // Check if it's an insufficient data error
-    if (error.message && error.message.includes('Dados insuficientes')) {
+    if ((error as Error).message && (error as Error).message.includes('Dados insuficientes')) {
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: (error as Error).message }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
