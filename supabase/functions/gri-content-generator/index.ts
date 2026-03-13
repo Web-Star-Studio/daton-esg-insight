@@ -200,8 +200,8 @@ async function fetchCompanyData(supabaseClient: any, companyId: string, year?: n
   const totalEmissions = emissions?.reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0) || 0;
   const employeeCount = employees?.length || 0;
   const goalsCount = goals?.length || 0;
-  const activeGoals = goals?.filter(g => g.status === 'Em Andamento')?.length || 0;
-  const completedGoals = goals?.filter(g => g.status === 'Concluída')?.length || 0;
+  const activeGoals = goals?.filter((g: any) => g.status === 'Em Andamento')?.length || 0;
+  const completedGoals = goals?.filter((g: any) => g.status === 'Concluída')?.length || 0;
   
   return {
     emissions: {
