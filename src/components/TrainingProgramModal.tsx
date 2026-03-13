@@ -712,7 +712,7 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="branch_id"
@@ -739,6 +739,31 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
                       <FormControl>
                         <Input placeholder="Nome do instrutor/responsável" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="modality"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Modalidade</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a modalidade" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {TRAINING_MODALITY.map((mod) => (
+                            <SelectItem key={mod} value={mod}>
+                              {mod}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
