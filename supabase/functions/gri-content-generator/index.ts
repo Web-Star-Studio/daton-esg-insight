@@ -206,9 +206,9 @@ async function fetchCompanyData(supabaseClient: any, companyId: string, year?: n
   return {
     emissions: {
       total: totalEmissions,
-      scope1: emissions?.filter(e => e.activity_data?.emission_sources?.scope === 1).reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0,
-      scope2: emissions?.filter(e => e.activity_data?.emission_sources?.scope === 2).reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0,
-      scope3: emissions?.filter(e => e.activity_data?.emission_sources?.scope === 3).reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0,
+      scope1: emissions?.filter((e: any) => e.activity_data?.emission_sources?.scope === 1).reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0) || 0,
+      scope2: emissions?.filter((e: any) => e.activity_data?.emission_sources?.scope === 2).reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0) || 0,
+      scope3: emissions?.filter((e: any) => e.activity_data?.emission_sources?.scope === 3).reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0) || 0,
     },
     employees: {
       total: employeeCount,
