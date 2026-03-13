@@ -194,7 +194,7 @@ const handler = async (req: Request): Promise<Response> => {
       const newPassword = generateRandomPassword();
       
       // Update user password
-      const { error: updatePassError } = await supabaseAdmin.auth.admin.updateUser(user_id, {
+      const { error: updatePassError } = await (supabaseAdmin.auth.admin as any).updateUserById(user_id, {
         password: newPassword,
       });
 
