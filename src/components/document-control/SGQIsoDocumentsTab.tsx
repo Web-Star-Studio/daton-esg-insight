@@ -737,13 +737,18 @@ export const SGQIsoDocumentsTab = () => {
                       <TableCell>
                         {item.branch_ids.length === 0 ? (
                           "-"
+                        ) : item.branch_ids.length === 1 ? (
+                          <Badge variant="secondary">
+                            {branchLabelById.get(item.branch_ids[0]) || "-"}
+                          </Badge>
                         ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {item.branch_ids.map((branchId) => (
-                              <Badge key={branchId} variant="secondary">
-                                {branchLabelById.get(branchId) || "-"}
-                              </Badge>
-                            ))}
+                          <div className="flex items-center gap-1">
+                            <Badge variant="secondary">
+                              {branchLabelById.get(item.branch_ids[0]) || "-"}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs text-muted-foreground">
+                              +{item.branch_ids.length - 1}
+                            </Badge>
                           </div>
                         )}
                       </TableCell>
