@@ -140,8 +140,8 @@ Deno.serve(async (req) => {
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Internal server error',
-        details: error.toString()
+        error: (error as Error).message || 'Internal server error',
+        details: (error as Error).toString()
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
