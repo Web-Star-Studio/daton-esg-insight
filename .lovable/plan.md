@@ -1,34 +1,12 @@
 
-
-# Deduplicar lista de treinamentos no "Copiar de treinamento existente"
+# Corrigir Popover (datas, combobox, listas) não abrindo dentro de Dialogs
 
 ## Problema
-O dropdown "Copiar de treinamento existente" lista todos os programas de treinamento, incluindo duplicatas de nome (ex: "FORMAÇÃO DE MOTORISTA CEGONHEIRO" aparece várias vezes).
+Mesmo problema do Select corrigido anteriormente: o `PopoverContent` usa `z-[200]`, mas o Dialog usa `z-[1200]`/`z-[1201]`. Todos os componentes que usam Popover (DatePicker, Combobox de categorias, seletor de filiais) ficam escondidos atrás do modal.
 
 ## Solução
-Filtrar `existingPrograms` para mostrar apenas **um programa por nome único** (o mais recente). Isso é feito com um simples dedupe antes do `.map()`.
+Aumentar o `z-index` do `PopoverContent` em `src/components/ui/popover.tsx` de `z-[200]` para `z-[1300]`.
 
 ## Alteração
 
-**Arquivo: `src/components/TrainingProgramModal.tsx`** (~linha 575)
-
-Substituir a iteração direta `existingPrograms.map(...)` por uma versão deduplicada por nome:
-
-```tsx
-{(() => {
-  const seen = new Set<string>();
-  return existingPrograms.filter((prog) => {
-    const key = prog.name.trim().toUpperCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-})().map((prog) => (
-  <SelectItem key={prog.id} value={prog.id}>
-    {prog.name}
-  </SelectItem>
-))}
-```
-
-Isso garante que cada título aparece apenas uma vez, mantendo o primeiro da lista (que já vem ordenado do banco). Uma mudança de ~5 linhas, sem impacto em nenhuma outra funcionalidade.
-
+**Arquivo:** `src/components/ui/popover.tsx` — trocar `z-[200]` por `z-[1300]` na classe do `PopoverContent`.

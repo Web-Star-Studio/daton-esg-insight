@@ -572,7 +572,15 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
                     <SelectValue placeholder="Copiar de treinamento existente (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {existingPrograms.map((prog) => (
+                    {(() => {
+                      const seen = new Set<string>();
+                      return existingPrograms.filter((prog) => {
+                        const key = prog.name.trim().toUpperCase();
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                      });
+                    })().map((prog) => (
                       <SelectItem key={prog.id} value={prog.id}>
                         {prog.name}
                       </SelectItem>
