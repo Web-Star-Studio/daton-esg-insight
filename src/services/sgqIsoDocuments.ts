@@ -421,6 +421,14 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
     throw new Error(`Erro ao finalizar criação do documento: ${err?.message || "desconhecido"}. Cadastro desfeito.`);
   }
 
+  // Fire notifications (non-blocking)
+  if (payload.approved_by_user_id) {
+    notifyDocumentCreated(payload.approved_by_user_id, payload.title.trim(), doc.id).catch(() => {});
+  }
+  if (payload.recipient_user_ids?.length > 0) {
+    notifyReadCampaignCreated(payload.recipient_user_ids, payload.title.trim(), doc.id, 1).catch(() => {});
+  }
+
   return doc;
 };
 
