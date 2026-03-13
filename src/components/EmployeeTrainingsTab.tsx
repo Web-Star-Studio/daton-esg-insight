@@ -62,7 +62,11 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
             valid_for_months,
             start_date,
             end_date,
-            efficacy_evaluation_deadline
+            efficacy_evaluation_deadline,
+            description,
+            responsible_name,
+            responsible_email,
+            modality
           )
         `)
         .eq('employee_id', employeeId)
