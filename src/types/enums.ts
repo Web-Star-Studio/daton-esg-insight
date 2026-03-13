@@ -132,6 +132,18 @@ export type ActionStatus = typeof ACTION_STATUS[number];
 export const ACTION_STATUS_DEFAULT: ActionStatus = 'Planejada';
 
 // ============================================
+// MODALIDADE DE TREINAMENTO
+// ============================================
+
+export const TRAINING_MODALITY = [
+  'Presencial',
+  'Online',
+  'Híbrido'
+] as const;
+export type TrainingModality = typeof TRAINING_MODALITY[number];
+export const TRAINING_MODALITY_DEFAULT: TrainingModality = 'Presencial';
+
+// ============================================
 // NÍVEIS E CATEGORIAS
 // ============================================
 
