@@ -527,6 +527,19 @@ export const createReviewRequest = async (payload: CreateReviewRequestPayload): 
     });
 
   if (error) throw new Error(`Erro ao enviar para revisão: ${error.message}`);
+
+  // Get doc title for notification
+  const { data: docData } = await (supabase as any)
+    .from("sgq_iso_documents")
+    .select("title")
+    .eq("id", payload.sgq_document_id)
+    .maybeSingle();
+
+  notifyReviewRequested(
+    payload.reviewer_user_id,
+    docData?.title || "Documento SGQ",
+    payload.sgq_document_id
+  ).catch(() => {});
 };
 
 export const getPendingReviewRequests = async (docId?: string): Promise<SgqReviewRequestItem[]> => {
