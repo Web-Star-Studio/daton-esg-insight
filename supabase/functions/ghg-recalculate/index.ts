@@ -126,7 +126,7 @@ serve(async (req) => {
     for (const activity of activityData || []) {
       try {
         processedRecords++
-        console.warn(`Processing activity ${activity.id} - ${activity.emission_sources.name}`)
+        console.warn(`Processing activity ${activity.id} - ${(activity.emission_sources as any).name}`)
 
         // Get compatible emission factors
         const { data: factors } = await supabaseClient
