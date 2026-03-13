@@ -451,6 +451,15 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DepartmentImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImportComplete={() => {
+          loadData();
+          onRefresh?.();
+        }}
+      />
     </div>
   );
 }
