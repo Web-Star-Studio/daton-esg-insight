@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { notificationTriggers } from '@/services/notificationTriggers';
+import { syncSgqExpirationAlerts } from '@/services/sgqDocumentNotifications';
 import { useQuery } from '@tanstack/react-query';
 
 export const useNotificationTriggers = () => {
@@ -33,6 +34,14 @@ export const useNotificationTriggers = () => {
   const { data: trainingEfficacyCheck } = useQuery({
     queryKey: ['training-efficacy-check'],
     queryFn: () => notificationTriggers.checkTrainingEfficacyDeadlines(),
+    refetchInterval: 24 * 60 * 60 * 1000,
+    staleTime: 23 * 60 * 60 * 1000,
+  });
+
+  // Verificação diária de vencimento de documentos SGQ/ISO
+  const { data: sgqExpirationCheck } = useQuery({
+    queryKey: ['sgq-document-expiration-check'],
+    queryFn: () => syncSgqExpirationAlerts(),
     refetchInterval: 24 * 60 * 60 * 1000, // Verificar diariamente
     staleTime: 23 * 60 * 60 * 1000, // 23 horas
   });
@@ -84,5 +93,6 @@ export const useNotificationTriggers = () => {
     // Status
     isMonitoringActive: true,
     trainingEfficacyCheck,
+    sgqExpirationCheck,
   };
 };

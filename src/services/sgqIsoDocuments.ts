@@ -1,5 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadDocument, type Document } from "@/services/documents";
+import {
+  notifyDocumentCreated,
+  notifyReadCampaignCreated,
+  notifyReviewRequested,
+  notifyReviewApproved,
+  notifyReviewRejected,
+} from "@/services/sgqDocumentNotifications";
 
 export const SGQ_DOCUMENT_IDENTIFIER_OPTIONS = [
   "Manual",
@@ -414,6 +421,14 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
     throw new Error(`Erro ao finalizar criação do documento: ${err?.message || "desconhecido"}. Cadastro desfeito.`);
   }
 
+  // Fire notifications (non-blocking)
+  if (payload.approved_by_user_id) {
+    notifyDocumentCreated(payload.approved_by_user_id, payload.title.trim(), doc.id).catch(() => {});
+  }
+  if (payload.recipient_user_ids?.length > 0) {
+    notifyReadCampaignCreated(payload.recipient_user_ids, payload.title.trim(), doc.id, 1).catch(() => {});
+  }
+
   return doc;
 };
 
@@ -512,6 +527,19 @@ export const createReviewRequest = async (payload: CreateReviewRequestPayload): 
     });
 
   if (error) throw new Error(`Erro ao enviar para revisão: ${error.message}`);
+
+  // Get doc title for notification
+  const { data: docData } = await (supabase as any)
+    .from("sgq_iso_documents")
+    .select("title")
+    .eq("id", payload.sgq_document_id)
+    .maybeSingle();
+
+  notifyReviewRequested(
+    payload.reviewer_user_id,
+    docData?.title || "Documento SGQ",
+    payload.sgq_document_id
+  ).catch(() => {});
 };
 
 export const getPendingReviewRequests = async (docId?: string): Promise<SgqReviewRequestItem[]> => {
@@ -609,6 +637,8 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
     .eq("id", request.sgq_document_id);
 
   // 4. Create read campaign for existing active campaign recipients
+  let campaignRecipientIds: string[] = [];
+
   const { data: existingCampaigns } = await (supabase as any)
     .from("sgq_read_campaigns")
     .select("id")
@@ -623,9 +653,9 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
       .select("user_id")
       .eq("campaign_id", existingCampaigns[0].id);
 
-    const recipientIds = (existingRecipients || []).map((r: any) => r.user_id);
+    campaignRecipientIds = (existingRecipients || []).map((r: any) => r.user_id);
 
-    if (recipientIds.length > 0) {
+    if (campaignRecipientIds.length > 0) {
       const { data: campaign } = await (supabase as any)
         .from("sgq_read_campaigns")
         .insert({
@@ -640,7 +670,7 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
         .maybeSingle();
 
       if (campaign) {
-        const recipients = recipientIds.map((uid: string) => ({
+        const recipients = campaignRecipientIds.map((uid: string) => ({
           campaign_id: campaign.id,
           user_id: uid,
           status: "pending",
@@ -649,11 +679,25 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
       }
     }
   }
+
+  // Notify requester of approval and recipients of read campaign
+  const docTitle = request.document?.title || "Documento SGQ";
+  notifyReviewApproved(request.requested_by_user_id, docTitle, request.sgq_document_id, newVersion).catch(() => {});
+  if (campaignRecipientIds.length > 0) {
+    notifyReadCampaignCreated(campaignRecipientIds, docTitle, request.sgq_document_id, newVersion).catch(() => {});
+  }
 };
 
 export const rejectReviewRequest = async (requestId: string, reviewerNotes: string): Promise<void> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário não autenticado");
+
+  // Get request details for notification
+  const { data: request } = await (supabase as any)
+    .from("sgq_review_requests")
+    .select("requested_by_user_id, sgq_document_id, document:sgq_document_id ( title )")
+    .eq("id", requestId)
+    .maybeSingle();
 
   const { error } = await (supabase as any)
     .from("sgq_review_requests")
@@ -665,6 +709,16 @@ export const rejectReviewRequest = async (requestId: string, reviewerNotes: stri
     .eq("id", requestId);
 
   if (error) throw new Error(`Erro ao rejeitar: ${error.message}`);
+
+  // Notify requester
+  if (request?.requested_by_user_id) {
+    notifyReviewRejected(
+      request.requested_by_user_id,
+      request.document?.title || "Documento SGQ",
+      request.sgq_document_id,
+      reviewerNotes
+    ).catch(() => {});
+  }
 };
 
 // ── Versions ──

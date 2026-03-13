@@ -6,7 +6,8 @@ import { logger } from '@/utils/logger';
 export interface BusinessEvent {
   type: 'emission_data_added' | 'goal_updated' | 'license_expiring' | 'audit_finding_created' | 
         'compliance_task_overdue' | 'document_uploaded' | 'quality_issue_detected' | 
-        'gri_indicator_updated' | 'risk_assessment_completed' | 'training_efficacy_pending';
+        'gri_indicator_updated' | 'risk_assessment_completed' | 'training_efficacy_pending' |
+        'document_sgq_expiring';
   entityId: string;
   entityType: string;
   entityName: string;
