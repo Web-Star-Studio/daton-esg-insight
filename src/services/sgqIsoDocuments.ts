@@ -677,6 +677,13 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
       }
     }
   }
+
+  // Notify requester of approval and recipients of read campaign
+  const docTitle = request.document?.title || "Documento SGQ";
+  notifyReviewApproved(request.requested_by_user_id, docTitle, request.sgq_document_id, newVersion).catch(() => {});
+  if (recipientIds && recipientIds.length > 0) {
+    notifyReadCampaignCreated(recipientIds, docTitle, request.sgq_document_id, newVersion).catch(() => {});
+  }
 };
 
 export const rejectReviewRequest = async (requestId: string, reviewerNotes: string): Promise<void> => {
