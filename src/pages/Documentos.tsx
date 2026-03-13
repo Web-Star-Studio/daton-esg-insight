@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Check,
   Brain,
   Building2,
   CalendarRange,
+  ChevronsUpDown,
   Eye,
   FilePlus2,
   FileText,
@@ -31,6 +33,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -47,12 +54,15 @@ import {
 } from "@/components/ui/table";
 import { useBranches } from "@/services/branches";
 import { getBranchDisplayLabel } from "@/utils/branchDisplay";
+import { cn } from "@/lib/utils";
 import {
   createDocumentRecord,
   listDocumentRecords,
   type DocumentListFilters,
   type DocumentRecord,
 } from "@/services/documentCenter";
+import { useEmployeesAsOptions } from "@/services/employees";
+import { getDepartments } from "@/services/organizationalStructure";
 import { formatFileSize } from "@/services/documents";
 
 const DOCUMENT_KIND_OPTIONS = [
@@ -97,6 +107,15 @@ const CONTROL_TYPE_OPTIONS = [
   "Relatorio",
 ];
 
+const ISO_OPTIONS = [
+  "ISO 9001:2015",
+  "ISO 14001:2015",
+  "ISO 45001:2018",
+  "ISO 27001:2022",
+  "ISO 39001:2012",
+  "ISO 50001:2018",
+];
+
 function getStatusBadgeVariant(status: DocumentRecord["status"]) {
   switch (status) {
     case "active":
@@ -122,9 +141,20 @@ export default function Documentos() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: branches = [] } = useBranches();
+  const { data: employeeOptions = [] } = useEmployeesAsOptions();
+  const { data: departments = [] } = useQuery({
+    queryKey: ["organizational-structure", "departments"],
+    queryFn: getDepartments,
+  });
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isIssuerOpen, setIsIssuerOpen] = useState(false);
+  const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
+  const [issuerSearch, setIssuerSearch] = useState("");
+  const [departmentSearch, setDepartmentSearch] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const issuerListRef = useRef<HTMLDivElement | null>(null);
+  const departmentListRef = useRef<HTMLDivElement | null>(null);
   const [uploadForm, setUploadForm] = useState({
     title: "",
     summary: "",
@@ -134,7 +164,7 @@ export default function Documentos() {
     branchIds: [] as string[],
     code: "",
     documentTypeLabel: "Procedimento",
-    normReference: "",
+    normReferences: [] as string[],
     issuerName: "",
     confidentialityLevel: "public",
     validityStartDate: "",
@@ -187,7 +217,7 @@ export default function Documentos() {
             ? {
                 code: uploadForm.code || null,
                 document_type_label: uploadForm.documentTypeLabel,
-                norm_reference: uploadForm.normReference || null,
+                norm_reference: uploadForm.normReferences.length > 0 ? uploadForm.normReferences.join(", ") : null,
                 issuer_name: uploadForm.issuerName || null,
                 confidentiality_level: uploadForm.confidentialityLevel,
                 validity_start_date: uploadForm.validityStartDate || null,
@@ -212,7 +242,7 @@ export default function Documentos() {
         branchIds: [],
         code: "",
         documentTypeLabel: "Procedimento",
-        normReference: "",
+        normReferences: [],
         issuerName: "",
         confidentialityLevel: "public",
         validityStartDate: "",
@@ -233,6 +263,24 @@ export default function Documentos() {
     const values = Array.from(new Set(documents.map((document) => document.document_domain))).sort();
     return values;
   }, [documents]);
+
+  const allBranchIds = useMemo(() => branches.map((branch) => branch.id), [branches]);
+  const departmentOptions = useMemo(
+    () => departments.map((department) => department.name).filter(Boolean),
+    [departments],
+  );
+  const filteredEmployeeOptions = useMemo(() => {
+    const normalizedSearch = issuerSearch.trim().toLowerCase();
+    if (!normalizedSearch) return employeeOptions;
+    return employeeOptions.filter((option) => option.label.toLowerCase().includes(normalizedSearch));
+  }, [employeeOptions, issuerSearch]);
+  const filteredDepartmentOptions = useMemo(() => {
+    const normalizedSearch = departmentSearch.trim().toLowerCase();
+    if (!normalizedSearch) return departmentOptions;
+    return departmentOptions.filter((option) => option.toLowerCase().includes(normalizedSearch));
+  }, [departmentOptions, departmentSearch]);
+  const allBranchesSelected = allBranchIds.length > 0 && uploadForm.branchIds.length === allBranchIds.length;
+  const someBranchesSelected = uploadForm.branchIds.length > 0 && !allBranchesSelected;
 
   const stats = useMemo(
     () => ({
@@ -262,6 +310,42 @@ export default function Documentos() {
         : [...current.branchIds, branchId],
     }));
   };
+
+  const toggleAllBranches = () => {
+    setUploadForm((current) => ({
+      ...current,
+      branchIds: current.branchIds.length === allBranchIds.length ? [] : allBranchIds,
+    }));
+  };
+
+  const toggleNormReference = (normReference: string) => {
+    setUploadForm((current) => ({
+      ...current,
+      normReferences: current.normReferences.includes(normReference)
+        ? current.normReferences.filter((item) => item !== normReference)
+        : [...current.normReferences, normReference],
+    }));
+  };
+
+  useEffect(() => {
+    issuerListRef.current?.scrollTo({ top: 0 });
+  }, [issuerSearch, isIssuerOpen]);
+
+  useEffect(() => {
+    departmentListRef.current?.scrollTo({ top: 0 });
+  }, [departmentSearch, isDepartmentOpen]);
+
+  useEffect(() => {
+    if (!isIssuerOpen) {
+      setIssuerSearch("");
+    }
+  }, [isIssuerOpen]);
+
+  useEffect(() => {
+    if (!isDepartmentOpen) {
+      setDepartmentSearch("");
+    }
+  }, [isDepartmentOpen]);
 
   return (
     <div className="space-y-6">
@@ -377,6 +461,15 @@ export default function Documentos() {
                   Filiais vinculadas
                 </Label>
                 <div className="grid max-h-48 gap-2 overflow-y-auto rounded-md border p-3">
+                  {branches.length > 0 && (
+                    <label className="flex items-center gap-3 border-b pb-2 text-sm font-medium">
+                      <Checkbox
+                        checked={allBranchesSelected ? true : someBranchesSelected ? "indeterminate" : false}
+                        onCheckedChange={toggleAllBranches}
+                      />
+                      <span>Selecionar todas</span>
+                    </label>
+                  )}
                   {branches.map((branch) => (
                     <label key={branch.id} className="flex items-center gap-3 text-sm">
                       <Checkbox
@@ -430,21 +523,96 @@ export default function Documentos() {
                       </Select>
                     </div>
 
-                    <div className="grid gap-2">
-                      <Label>Norma</Label>
-                      <Input
-                        value={uploadForm.normReference}
-                        onChange={(event) => setUploadForm((current) => ({ ...current, normReference: event.target.value }))}
-                        placeholder="ISO 9001 / ISO 14001"
-                      />
+                    <div className="grid gap-2 md:col-span-2">
+                      <Label>Normas aplicaveis</Label>
+                      <div className="grid gap-2 rounded-md border p-3 md:grid-cols-2">
+                        {ISO_OPTIONS.map((isoOption) => (
+                          <label key={isoOption} className="flex items-center gap-3 text-sm">
+                            <Checkbox
+                              checked={uploadForm.normReferences.includes(isoOption)}
+                              onCheckedChange={() => toggleNormReference(isoOption)}
+                            />
+                            <span>{isoOption}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Selecione uma ou mais normas ISO que se aplicam a este documento controlado.
+                      </p>
                     </div>
                     <div className="grid gap-2">
                       <Label>Emitente</Label>
-                      <Input
-                        value={uploadForm.issuerName}
-                        onChange={(event) => setUploadForm((current) => ({ ...current, issuerName: event.target.value }))}
-                        placeholder="Area emissora"
-                      />
+                      <Popover open={isIssuerOpen} onOpenChange={setIsIssuerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={isIssuerOpen}
+                            className="w-full justify-between font-normal"
+                          >
+                            <span className={cn("truncate", !uploadForm.issuerName && "text-muted-foreground")}>
+                              {uploadForm.issuerName || "Selecione o emitente"}
+                            </span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" side="bottom">
+                          <div className="border-b p-3">
+                            <Input
+                              placeholder="Buscar emitente..."
+                              value={issuerSearch}
+                              onChange={(event) => setIssuerSearch(event.target.value)}
+                            />
+                          </div>
+                          <div
+                            key={`issuer-list-${issuerSearch || "default"}`}
+                            ref={issuerListRef}
+                            className="h-[240px] overflow-y-auto overscroll-contain p-1"
+                            onWheel={(event) => event.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                              onClick={() => {
+                                setUploadForm((current) => ({ ...current, issuerName: "" }));
+                                setIsIssuerOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", !uploadForm.issuerName ? "opacity-100" : "opacity-0")} />
+                              Nenhum
+                            </button>
+                            {filteredEmployeeOptions.length === 0 ? (
+                              <p className="py-6 text-center text-sm">Nenhum colaborador encontrado.</p>
+                            ) : (
+                              filteredEmployeeOptions.map((option) => (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => {
+                                    setUploadForm((current) => ({ ...current, issuerName: option.label }));
+                                    setIsIssuerOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      uploadForm.issuerName === option.label ? "opacity-100" : "opacity-0",
+                                    )}
+                                  />
+                                  {option.label}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      {employeeOptions.length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Nenhum colaborador foi encontrado para preencher o emitente.
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid gap-2">
@@ -467,13 +635,82 @@ export default function Documentos() {
                     </div>
                     <div className="grid gap-2">
                       <Label>Departamento responsavel</Label>
-                      <Input
-                        value={uploadForm.responsibleDepartment}
-                        onChange={(event) =>
-                          setUploadForm((current) => ({ ...current, responsibleDepartment: event.target.value }))
-                        }
-                        placeholder="Qualidade / RH / Frota"
-                      />
+                      <Popover open={isDepartmentOpen} onOpenChange={setIsDepartmentOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={isDepartmentOpen}
+                            className="w-full justify-between font-normal"
+                          >
+                            <span className={cn("truncate", !uploadForm.responsibleDepartment && "text-muted-foreground")}>
+                              {uploadForm.responsibleDepartment || "Selecione o departamento responsavel"}
+                            </span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" side="bottom">
+                          <div className="border-b p-3">
+                            <Input
+                              placeholder="Buscar departamento..."
+                              value={departmentSearch}
+                              onChange={(event) => setDepartmentSearch(event.target.value)}
+                            />
+                          </div>
+                          <div
+                            key={`department-list-${departmentSearch || "default"}`}
+                            ref={departmentListRef}
+                            className="h-[240px] overflow-y-auto overscroll-contain p-1"
+                            onWheel={(event) => event.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                              onClick={() => {
+                                setUploadForm((current) => ({ ...current, responsibleDepartment: "" }));
+                                setIsDepartmentOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  !uploadForm.responsibleDepartment ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              Nenhum
+                            </button>
+                            {filteredDepartmentOptions.length === 0 ? (
+                              <p className="py-6 text-center text-sm">Nenhum departamento encontrado.</p>
+                            ) : (
+                              filteredDepartmentOptions.map((option) => (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => {
+                                    setUploadForm((current) => ({ ...current, responsibleDepartment: option }));
+                                    setIsDepartmentOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      uploadForm.responsibleDepartment === option ? "opacity-100" : "opacity-0",
+                                    )}
+                                  />
+                                  {option}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      {departmentOptions.length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Nenhum departamento cadastrado foi encontrado. Cadastre departamentos para habilitar esta lista.
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid gap-2">

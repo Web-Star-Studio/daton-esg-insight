@@ -41,6 +41,8 @@ export interface SgqDocumentItem {
   document_identifier_other: string | null;
   branch_id: string | null;
   branch_name: string | null;
+  branch_ids: string[];
+  branch_names: string[];
   elaborated_by_user_id: string | null;
   elaborated_by_name: string | null;
   approved_by_user_id: string | null;
@@ -51,7 +53,9 @@ export interface SgqDocumentItem {
   current_version_number: number;
   pending_recipients: number;
   pending_reviews: number;
+  norm_reference: string | null;
   notes: string | null;
+  responsible_department: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -109,11 +113,13 @@ export interface CreateSgqDocumentPayload {
   title: string;
   document_identifier_type: string;
   document_identifier_other?: string;
-  branch_id?: string;
+  branch_ids?: string[];
   elaborated_by_user_id: string;
   approved_by_user_id: string;
   expiration_date: string;
+  norm_reference?: string | null;
   notes?: string;
+  responsible_department?: string | null;
   initial_attachment: File;
   recipient_user_ids: string[];
   referenced_document_ids?: string[];
@@ -166,6 +172,28 @@ const resolveDocumentStatus = (daysRemaining: number, threshold: number): Docume
   if (daysRemaining < 0) return "Vencido";
   if (daysRemaining <= threshold) return "A Vencer";
   return "Vigente";
+};
+
+const getSgqDocumentBranchesMap = async (
+  documentIds: string[],
+): Promise<Record<string, Array<{ branch_id: string; name: string | null }>>> => {
+  if (documentIds.length === 0) return {};
+
+  const { data, error } = await (supabase as any)
+    .from("sgq_document_branches")
+    .select("sgq_document_id, branch_id, branches:branch_id(name)")
+    .in("sgq_document_id", documentIds);
+
+  if (error) throw new Error(`Erro ao buscar filiais SGQ: ${error.message}`);
+
+  return (data || []).reduce<Record<string, Array<{ branch_id: string; name: string | null }>>>((acc, row: any) => {
+    if (!acc[row.sgq_document_id]) acc[row.sgq_document_id] = [];
+    acc[row.sgq_document_id].push({
+      branch_id: row.branch_id,
+      name: row.branches?.name || null,
+    });
+    return acc;
+  }, {});
 };
 
 // ── Settings ──
@@ -235,7 +263,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
     .select(`
       id, title, document_identifier_type, document_identifier_other,
       branch_id, elaborated_by_user_id, approved_by_user_id,
-      expiration_date, current_version_number, notes,
+      expiration_date, current_version_number, notes, norm_reference, responsible_department,
       created_at, updated_at,
       branches:branch_id ( name ),
       elaborator:elaborated_by_user_id ( full_name ),
@@ -244,7 +272,6 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
     .eq("company_id", companyId)
     .order("expiration_date", { ascending: true });
 
-  if (filters?.branch_id) query = query.eq("branch_id", filters.branch_id);
   if (filters?.document_identifier_type) query = query.eq("document_identifier_type", filters.document_identifier_type);
 
   const { data: docs, error } = await query;
@@ -254,6 +281,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
   if (documents.length === 0) return [];
 
   const docIds = documents.map((d: any) => d.id);
+  const branchesMap = await getSgqDocumentBranchesMap(docIds);
 
   // Count pending recipients per document
   const { data: campaignsData } = await (supabase as any)
@@ -297,13 +325,19 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
 
   const mapped = documents.map<SgqDocumentItem>((doc: any) => {
     const daysRemaining = calculateDaysRemaining(doc.expiration_date);
+    const linkedBranches = branchesMap[doc.id] || [];
+    const branchIds = linkedBranches.map((branch) => branch.branch_id);
+    const branchNames = linkedBranches.map((branch) => branch.name).filter(Boolean);
+
     return {
       id: doc.id,
       title: doc.title || "",
       document_identifier_type: doc.document_identifier_type,
       document_identifier_other: doc.document_identifier_other,
-      branch_id: doc.branch_id,
-      branch_name: doc.branches?.name || null,
+      branch_id: doc.branch_id || branchIds[0] || null,
+      branch_name: doc.branches?.name || branchNames[0] || null,
+      branch_ids: branchIds,
+      branch_names: branchNames,
       elaborated_by_user_id: doc.elaborated_by_user_id,
       elaborated_by_name: doc.elaborator?.full_name || null,
       approved_by_user_id: doc.approved_by_user_id,
@@ -314,7 +348,9 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
       current_version_number: doc.current_version_number || 1,
       pending_recipients: pendingByDoc.get(doc.id) || 0,
       pending_reviews: pendingReviewsByDoc.get(doc.id) || 0,
+      norm_reference: doc.norm_reference || null,
       notes: doc.notes,
+      responsible_department: doc.responsible_department || null,
       created_at: doc.created_at,
       updated_at: doc.updated_at,
     };
@@ -324,8 +360,20 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
 
   return mapped.filter((item) => {
     if (filters?.status && filters.status !== item.status) return false;
+    if (filters?.branch_id && !item.branch_ids.includes(filters.branch_id)) return false;
     if (!normalizedSearch) return true;
-    return [item.title, item.document_identifier_type, item.document_identifier_other, item.branch_name, item.elaborated_by_name, item.approved_by_name, item.notes]
+    return [
+      item.title,
+      item.document_identifier_type,
+      item.document_identifier_other,
+      item.branch_name,
+      ...item.branch_names,
+      item.elaborated_by_name,
+      item.approved_by_name,
+      item.norm_reference,
+      item.responsible_department,
+      item.notes,
+    ]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(normalizedSearch));
   });
@@ -348,14 +396,16 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
       title: payload.title.trim(),
       document_identifier_type: payload.document_identifier_type,
       document_identifier_other: payload.document_identifier_type === "Outro" ? payload.document_identifier_other : null,
-      branch_id: payload.branch_id || null,
+      branch_id: payload.branch_ids?.[0] || null,
       elaborated_by_user_id: payload.elaborated_by_user_id,
       approved_by_user_id: payload.approved_by_user_id,
       approved_at: new Date().toISOString(),
       expiration_date: ensureDateOnly(payload.expiration_date),
       current_version_number: 1,
+      norm_reference: payload.norm_reference || null,
       notes: payload.notes || null,
       issuing_body: "",
+      responsible_department: payload.responsible_department || null,
     })
     .select("id")
     .maybeSingle();
@@ -369,6 +419,15 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
       related_id: doc.id,
       tags: ["sgq-document"],
     });
+
+    if (payload.branch_ids && payload.branch_ids.length > 0) {
+      await (supabase as any).from("sgq_document_branches").insert(
+        payload.branch_ids.map((branchId) => ({
+          sgq_document_id: doc.id,
+          branch_id: branchId,
+        })),
+      );
+    }
 
     // 3. Create version 1
     await (supabase as any)

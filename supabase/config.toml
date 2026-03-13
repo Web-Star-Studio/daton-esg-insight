@@ -8,7 +8,6 @@ extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
-enabled = true
 port = 54322
 shadow_port = 54320
 major_version = 15
@@ -22,8 +21,7 @@ max_client_conn = 100
 
 [realtime]
 enabled = true
-ip_version = "ipv4"
-port = 54323
+ip_version = "IPv4"
 
 [studio]
 enabled = true
@@ -33,30 +31,19 @@ api_url = "http://127.0.0.1:54321"
 [inbucket]
 enabled = true
 port = 54325
-api_port = 54324
 smtp_port = 54326
 
 [storage]
 enabled = true
-port = 54327
-image_transformation_enabled = true
 
 [auth]
 enabled = true
-port = 54328
 site_url = "http://127.0.0.1:3000"
 additional_redirect_urls = ["https://127.0.0.1:3000"]
 jwt_expiry = 1800
-refresh_token_rotation_enabled = true
-security_update_password_require_reauthentication = true
 
 [edge_runtime]
 enabled = true
-port = 54329
-
-[[edge_runtime.inspector]]
-enabled = true
-port = 54330
 
 [functions.ai-insights-engine]
 verify_jwt = true

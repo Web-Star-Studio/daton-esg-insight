@@ -5,9 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -20,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useBranches } from "@/services/branches";
 import { downloadDocument } from "@/services/documents";
 import { CollaboratorMultiSelect } from "@/components/document-center/CollaboratorMultiSelect";
+import { getDepartments } from "@/services/organizationalStructure";
 import {
   createSgqDocument,
   getSgqDocuments, getSgqDocumentVersions, getSgqReadCampaigns,
@@ -31,8 +36,9 @@ import {
   type DocumentStatus, type SgqDocumentItem,
 } from "@/services/sgqIsoDocuments";
 import { getBranchDisplayLabel } from "@/utils/branchDisplay";
+import { cn } from "@/lib/utils";
 import {
-  BookOpen, Check, Clock, Download, Eye, FileText, History,
+  BookOpen, Check, ChevronDown, Clock, Download, Eye, FileText, History,
   Link2, Pencil, Plus, Save, Search, Send, Upload, Users, XCircle, ClipboardCheck,
 } from "lucide-react";
 
@@ -93,17 +99,28 @@ const reviewStatusBadge = (status: string) => {
   }
 };
 
+const ISO_OPTIONS = [
+  "ISO 9001:2015",
+  "ISO 14001:2015",
+  "ISO 45001:2018",
+  "ISO 27001:2022",
+  "ISO 39001:2012",
+  "ISO 50001:2018",
+];
+
 // ── Types ──
 
 type CreateFormState = {
   title: string;
   document_identifier_type: string;
   document_identifier_other: string;
-  branch_id: string;
+  branch_ids: string[];
   elaborated_by_user_id: string;
   approved_by_user_id: string;
   expiration_date: string;
+  norm_references: string[];
   notes: string;
+  responsible_department: string;
   initial_attachment: File | null;
   recipient_user_ids: string[];
   referenced_document_ids: string[];
@@ -113,11 +130,13 @@ const DEFAULT_CREATE_FORM: CreateFormState = {
   title: "",
   document_identifier_type: SGQ_DOCUMENT_IDENTIFIER_OPTIONS[0],
   document_identifier_other: "",
-  branch_id: "",
+  branch_ids: [],
   elaborated_by_user_id: "",
   approved_by_user_id: "",
   expiration_date: "",
+  norm_references: [],
   notes: "",
+  responsible_department: "",
   initial_attachment: null,
   recipient_user_ids: [],
   referenced_document_ids: [],
@@ -142,16 +161,27 @@ export const SGQIsoDocumentsTab = () => {
   const { toast } = useToast();
   const { data: rawBranches = [] } = useBranches();
   const branches = Array.isArray(rawBranches) ? rawBranches : [];
+  const { data: departments = [] } = useQuery({
+    queryKey: ["sgq-documents", "departments"],
+    queryFn: getDepartments,
+  });
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [filters, setFilters] = useState({ search: "", branch_id: "all", document_identifier_type: "all", status: "all" });
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
+  const [departmentSearch, setDepartmentSearch] = useState("");
+  const [createForm, setCreateForm] = useState<CreateFormState>(DEFAULT_CREATE_FORM);
 
   useEffect(() => {
     getCurrentUserId().then(setCurrentUserId);
   }, []);
 
-  const [filters, setFilters] = useState({ search: "", branch_id: "all", document_identifier_type: "all", status: "all" });
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<CreateFormState>(DEFAULT_CREATE_FORM);
+  useEffect(() => {
+    if (!isDepartmentOpen) {
+      setDepartmentSearch("");
+    }
+  }, [isDepartmentOpen]);
 
   const [versionsDocId, setVersionsDocId] = useState<string | null>(null);
   const [isVersionsOpen, setIsVersionsOpen] = useState(false);
@@ -216,11 +246,48 @@ export const SGQIsoDocumentsTab = () => {
   const pendingReviews = Array.isArray(rawPendingReviews) ? rawPendingReviews : [];
 
   const collaborators = useMemo(() => users.map((u) => ({ id: u.id, full_name: u.full_name })), [users]);
+  const departmentOptions = useMemo(
+    () => departments.map((department) => department.name).filter(Boolean),
+    [departments],
+  );
+  const filteredDepartmentOptions = useMemo(() => {
+    const normalizedSearch = departmentSearch.trim().toLowerCase();
+    if (!normalizedSearch) return departmentOptions;
+    return departmentOptions.filter((option) => option.toLowerCase().includes(normalizedSearch));
+  }, [departmentOptions, departmentSearch]);
+  const allBranchIds = useMemo(() => branches.map((branch) => branch.id), [branches]);
+  const allBranchesSelected = allBranchIds.length > 0 && createForm.branch_ids.length === allBranchIds.length;
+  const someBranchesSelected = createForm.branch_ids.length > 0 && !allBranchesSelected;
 
   const branchLabelById = useMemo(
     () => new Map(branches.map((b) => [b.id, getBranchDisplayLabel(b)])),
     [branches],
   );
+
+  const toggleBranch = (branchId: string) => {
+    setCreateForm((current) => ({
+      ...current,
+      branch_ids: current.branch_ids.includes(branchId)
+        ? current.branch_ids.filter((id) => id !== branchId)
+        : [...current.branch_ids, branchId],
+    }));
+  };
+
+  const toggleAllBranches = () => {
+    setCreateForm((current) => ({
+      ...current,
+      branch_ids: current.branch_ids.length === allBranchIds.length ? [] : allBranchIds,
+    }));
+  };
+
+  const toggleNormReference = (normReference: string) => {
+    setCreateForm((current) => ({
+      ...current,
+      norm_references: current.norm_references.includes(normReference)
+        ? current.norm_references.filter((item) => item !== normReference)
+        : [...current.norm_references, normReference],
+    }));
+  };
 
   // ── Mutations ──
 
@@ -231,11 +298,13 @@ export const SGQIsoDocumentsTab = () => {
         title: form.title,
         document_identifier_type: form.document_identifier_type,
         document_identifier_other: form.document_identifier_other,
-        branch_id: form.branch_id || undefined,
+        branch_ids: form.branch_ids,
         elaborated_by_user_id: form.elaborated_by_user_id,
         approved_by_user_id: form.approved_by_user_id,
         expiration_date: form.expiration_date,
+        norm_reference: form.norm_references.length > 0 ? form.norm_references.join(", ") : null,
         notes: form.notes,
+        responsible_department: form.responsible_department || null,
         initial_attachment: form.initial_attachment,
         recipient_user_ids: form.recipient_user_ids,
         referenced_document_ids: form.referenced_document_ids.length > 0 ? form.referenced_document_ids : undefined,
@@ -244,6 +313,7 @@ export const SGQIsoDocumentsTab = () => {
     onSuccess: () => {
       toast({ title: "Sucesso", description: "Documento SGQ criado com sucesso." });
       setIsCreateOpen(false);
+      setDepartmentSearch("");
       setCreateForm(DEFAULT_CREATE_FORM);
       queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
     },
@@ -385,16 +455,28 @@ export const SGQIsoDocumentsTab = () => {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label>Filial</Label>
-                  <Select value={createForm.branch_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, branch_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {branches.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>{getBranchDisplayLabel(b)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="md:col-span-2 space-y-2">
+                  <Label>Filiais vinculadas</Label>
+                  <div className="grid max-h-48 gap-2 overflow-y-auto rounded-md border p-3">
+                    {branches.length > 0 && (
+                      <label className="flex items-center gap-3 border-b pb-2 text-sm font-medium">
+                        <Checkbox
+                          checked={allBranchesSelected ? true : someBranchesSelected ? "indeterminate" : false}
+                          onCheckedChange={toggleAllBranches}
+                        />
+                        <span>Selecionar todas</span>
+                      </label>
+                    )}
+                    {branches.map((branch) => (
+                      <label key={branch.id} className="flex items-center gap-3 text-sm">
+                        <Checkbox
+                          checked={createForm.branch_ids.includes(branch.id)}
+                          onCheckedChange={() => toggleBranch(branch.id)}
+                        />
+                        <span>{getBranchDisplayLabel(branch)}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -424,6 +506,97 @@ export const SGQIsoDocumentsTab = () => {
                 <div className="space-y-2">
                   <Label>Data de Validade *</Label>
                   <Input type="date" value={createForm.expiration_date} onChange={(e) => setCreateForm((c) => ({ ...c, expiration_date: e.target.value }))} />
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <Label>Normas aplicáveis</Label>
+                  <div className="grid gap-2 rounded-md border p-3 md:grid-cols-2">
+                    {ISO_OPTIONS.map((isoOption) => (
+                      <label key={isoOption} className="flex items-center gap-3 text-sm">
+                        <Checkbox
+                          checked={createForm.norm_references.includes(isoOption)}
+                          onCheckedChange={() => toggleNormReference(isoOption)}
+                        />
+                        <span>{isoOption}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione uma ou mais normas ISO que se aplicam a este documento SGQ.
+                  </p>
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <Label>Departamento responsável</Label>
+                  <Popover open={isDepartmentOpen} onOpenChange={setIsDepartmentOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-between font-normal"
+                      >
+                        <span className={cn("truncate", !createForm.responsible_department && "text-muted-foreground")}>
+                          {createForm.responsible_department || "Selecione o departamento responsável"}
+                        </span>
+                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" side="bottom">
+                      <div className="border-b p-3">
+                        <Input
+                          placeholder="Buscar departamento..."
+                          value={departmentSearch}
+                          onChange={(event) => setDepartmentSearch(event.target.value)}
+                        />
+                      </div>
+                      <div className="h-[240px] overflow-y-auto overscroll-contain p-1">
+                        <button
+                          type="button"
+                          className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                          onClick={() => {
+                            setCreateForm((current) => ({ ...current, responsible_department: "" }));
+                            setIsDepartmentOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              !createForm.responsible_department ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                          Nenhum
+                        </button>
+                        {filteredDepartmentOptions.length === 0 ? (
+                          <p className="py-6 text-center text-sm">Nenhum departamento encontrado.</p>
+                        ) : (
+                          filteredDepartmentOptions.map((option) => (
+                            <button
+                              key={option}
+                              type="button"
+                              className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                              onClick={() => {
+                                setCreateForm((current) => ({ ...current, responsible_department: option }));
+                                setIsDepartmentOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  createForm.responsible_department === option ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              {option}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  {departmentOptions.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Nenhum departamento cadastrado foi encontrado. Cadastre departamentos para habilitar esta lista.
+                    </p>
+                  )}
                 </div>
 
                 <div className="md:col-span-2 space-y-2">
@@ -549,7 +722,19 @@ export const SGQIsoDocumentsTab = () => {
                         {item.document_identifier_type}
                         {item.document_identifier_type === "Outro" && item.document_identifier_other ? ` (${item.document_identifier_other})` : ""}
                       </TableCell>
-                      <TableCell>{item.branch_id ? branchLabelById.get(item.branch_id) || item.branch_name || "-" : "-"}</TableCell>
+                      <TableCell>
+                        {item.branch_ids.length === 0 ? (
+                          "-"
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {item.branch_ids.map((branchId) => (
+                              <Badge key={branchId} variant="secondary">
+                                {branchLabelById.get(branchId) || "-"}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>{item.elaborated_by_name || "-"}</TableCell>
                       <TableCell>{item.approved_by_name || "-"}</TableCell>
                       <TableCell>{formatDate(item.expiration_date)}</TableCell>
