@@ -243,7 +243,7 @@ async function calculateComplianceRisk(supabase: any, companyId: string): Promis
 
   let goalsAtRisk = 0;
   if (goals && goals.length > 0) {
-    const goalIds = goals.map(g => g.id);
+    const goalIds = goals.map((g: any) => g.id);
     
     // Fetch progress updates for these goals
     const { data: updates } = await supabase
