@@ -9,7 +9,8 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Building2, Edit, Trash2, Users, DollarSign, Hash } from 'lucide-react';
+import { Plus, Building2, Edit, Trash2, Users, DollarSign, Hash, Upload } from 'lucide-react';
+import { DepartmentImportDialog } from './departments/DepartmentImportDialog';
 import { 
   getDepartments, 
   createDepartment, 
@@ -96,6 +97,7 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState<string | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const openDeleteDialog = (id: string) => {
     setDepartmentToDelete(id);
@@ -285,13 +287,18 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
               <Building2 className="w-5 h-5" />
               <span>Gestão de Departamentos</span>
             </CardTitle>
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => { resetForm(); setEditingDepartment(null); }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Departamento
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+                <Upload className="w-4 h-4 mr-2" />
+                Importar
+              </Button>
+              <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => { resetForm(); setEditingDepartment(null); }}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Novo Departamento
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>
@@ -402,6 +409,7 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -443,6 +451,15 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DepartmentImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImportComplete={() => {
+          loadData();
+          onRefresh?.();
+        }}
+      />
     </div>
   );
 }
