@@ -97,6 +97,7 @@ const getTrainingProgramFormValues = (program?: TrainingProgram | null) => {
       status: "Ativo",
       branch_id: "",
       responsible_name: "",
+      modality: null,
       requires_efficacy_evaluation: false,
       efficacy_evaluation_deadline: null,
       notify_responsible_email: false,
