@@ -197,7 +197,7 @@ async function fetchCompanyData(supabaseClient: any, companyId: string, year?: n
     .eq('status', 'Ativo');
 
   // Calculate aggregated metrics
-  const totalEmissions = emissions?.reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0;
+  const totalEmissions = emissions?.reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0) || 0;
   const employeeCount = employees?.length || 0;
   const goalsCount = goals?.length || 0;
   const activeGoals = goals?.filter(g => g.status === 'Em Andamento')?.length || 0;
