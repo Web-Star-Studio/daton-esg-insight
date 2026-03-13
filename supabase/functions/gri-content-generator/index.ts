@@ -140,8 +140,8 @@ Deno.serve(async (req) => {
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Internal server error',
-        details: error.toString()
+        error: (error as Error).message || 'Internal server error',
+        details: (error as Error).toString()
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -197,27 +197,27 @@ async function fetchCompanyData(supabaseClient: any, companyId: string, year?: n
     .eq('status', 'Ativo');
 
   // Calculate aggregated metrics
-  const totalEmissions = emissions?.reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0;
+  const totalEmissions = emissions?.reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0) || 0;
   const employeeCount = employees?.length || 0;
   const goalsCount = goals?.length || 0;
-  const activeGoals = goals?.filter(g => g.status === 'Em Andamento')?.length || 0;
-  const completedGoals = goals?.filter(g => g.status === 'Concluída')?.length || 0;
+  const activeGoals = goals?.filter((g: any) => g.status === 'Em Andamento')?.length || 0;
+  const completedGoals = goals?.filter((g: any) => g.status === 'Concluída')?.length || 0;
   
   return {
     emissions: {
       total: totalEmissions,
-      scope1: emissions?.filter(e => e.activity_data?.emission_sources?.scope === 1).reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0,
-      scope2: emissions?.filter(e => e.activity_data?.emission_sources?.scope === 2).reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0,
-      scope3: emissions?.filter(e => e.activity_data?.emission_sources?.scope === 3).reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0,
+      scope1: emissions?.filter((e: any) => e.activity_data?.emission_sources?.scope === 1).reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0) || 0,
+      scope2: emissions?.filter((e: any) => e.activity_data?.emission_sources?.scope === 2).reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0) || 0,
+      scope3: emissions?.filter((e: any) => e.activity_data?.emission_sources?.scope === 3).reduce((sum: number, e: any) => sum + (e.total_co2e || 0), 0) || 0,
     },
     employees: {
       total: employeeCount,
-      byGender: employees?.reduce((acc, e) => {
+      byGender: employees?.reduce((acc: Record<string, number>, e: any) => {
         const gender = e.gender || 'Não informado';
         acc[gender] = (acc[gender] || 0) + 1;
         return acc;
       }, {} as Record<string, number>) || {},
-      byDepartment: employees?.reduce((acc, e) => {
+      byDepartment: employees?.reduce((acc: Record<string, number>, e: any) => {
         const dept = e.department || 'Não informado';
         acc[dept] = (acc[dept] || 0) + 1;
         return acc;
@@ -231,7 +231,7 @@ async function fetchCompanyData(supabaseClient: any, companyId: string, year?: n
     },
     safety: {
       incidents: safetyIncidents?.length || 0,
-      daysLost: safetyIncidents?.reduce((sum, i) => sum + (i.days_lost || 0), 0) || 0,
+      daysLost: safetyIncidents?.reduce((sum: number, i: any) => sum + (i.days_lost || 0), 0) || 0,
     },
     training: {
       programs: trainingPrograms?.length || 0,

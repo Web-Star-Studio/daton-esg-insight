@@ -1493,7 +1493,7 @@ serve(async (req) => {
 
     case 'analyze_reporting_standards_data': {
       const { handleAnalyzeReportingStandardsData } = await import('./reporting-standards-handler.ts');
-      return await handleAnalyzeReportingStandardsData(supabaseClient, body);
+      return await handleAnalyzeReportingStandardsData(supabaseClient, await req.json());
     }
       
       case 'analyze_economic_data': {
@@ -1527,7 +1527,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[GRI AI Configurator] Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

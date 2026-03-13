@@ -1,4 +1,6 @@
+// deno-lint-ignore-file no-explicit-any
 // Use 'any' for supabase client to avoid cross-file version conflicts
+type SupabaseClient = any;
 
 export interface IntelligentSuggestion {
   insights: string[];
@@ -90,7 +92,7 @@ async function generateWasteSuggestions(
     .eq('company_id', companyContext.company_id)
     .gte('log_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
-  const totalRecent = recentWaste?.reduce((sum, w) => sum + (w.quantity || 0), 0) || 0;
+  const totalRecent = recentWaste?.reduce((sum: number, w: any) => sum + (w.quantity || 0), 0) || 0;
   const quantity = extractedData.structured_data?.quantity || 0;
 
   // Generate insights

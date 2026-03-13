@@ -1175,7 +1175,7 @@ serve(async (req) => {
     let pageContextInfo = '';
     try {
       console.warn('🔍 Building page context for:', currentPage);
-      pageContextInfo = await buildPageContext(currentPage, companyId, supabaseClient);
+      pageContextInfo = await buildPageContext(currentPage, companyId, supabaseClient as any);
       console.warn('✅ Page context built successfully');
     } catch (e) {
       console.warn('⚠️ Could not build page context:', e);
@@ -1940,7 +1940,7 @@ ${attachmentContext}`;
       const insights = await generateProactiveInsights(
         companyId, 
         userContext?.currentRoute || currentPage, 
-        supabaseClient
+        supabaseClient as any
       );
       
       // Generate visualizations based on tool results
@@ -2008,7 +2008,7 @@ ${attachmentContext}`;
     const insights = await generateProactiveInsights(
       companyId, 
       userContext?.currentRoute || currentPage, 
-      supabaseClient
+      supabaseClient as any
     );
     
     // Check for pending extracted data after attachment processing

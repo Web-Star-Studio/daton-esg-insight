@@ -126,18 +126,18 @@ serve(async (req) => {
     for (const activity of activityData || []) {
       try {
         processedRecords++
-        console.warn(`Processing activity ${activity.id} - ${activity.emission_sources.name}`)
+        console.warn(`Processing activity ${activity.id} - ${(activity.emission_sources as any).name}`)
 
         // Get compatible emission factors
         const { data: factors } = await supabaseClient
           .from('emission_factors')
           .select('*')
-          .eq('category', activity.emission_sources.category)
+          .eq('category', (activity.emission_sources as any).category)
           .eq('type', 'system')
           .limit(5)
 
         if (!factors || factors.length === 0) {
-          console.warn(`No emission factors found for category: ${activity.emission_sources.category}, activity: ${activity.id}`)
+          console.warn(`No emission factors found for category: ${(activity.emission_sources as any).category}, activity: ${activity.id}`)
           continue
         }
 

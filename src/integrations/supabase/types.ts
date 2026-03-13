@@ -21062,6 +21062,42 @@ export type Database = {
           },
         ]
       }
+      sgq_document_branches: {
+        Row: {
+          branch_id: string
+          created_at: string
+          id: string
+          sgq_document_id: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          id?: string
+          sgq_document_id: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          id?: string
+          sgq_document_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgq_document_branches_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_document_branches_sgq_document_id_fkey"
+            columns: ["sgq_document_id"]
+            isOneToOne: false
+            referencedRelation: "sgq_iso_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sgq_document_references: {
         Row: {
           company_id: string
@@ -21104,42 +21140,6 @@ export type Database = {
           },
           {
             foreignKeyName: "sgq_document_references_sgq_document_id_fkey"
-            columns: ["sgq_document_id"]
-            isOneToOne: false
-            referencedRelation: "sgq_iso_documents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sgq_document_branches: {
-        Row: {
-          branch_id: string
-          created_at: string
-          id: string
-          sgq_document_id: string
-        }
-        Insert: {
-          branch_id: string
-          created_at?: string
-          id?: string
-          sgq_document_id: string
-        }
-        Update: {
-          branch_id?: string
-          created_at?: string
-          id?: string
-          sgq_document_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sgq_document_branches_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "branches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sgq_document_branches_sgq_document_id_fkey"
             columns: ["sgq_document_id"]
             isOneToOne: false
             referencedRelation: "sgq_iso_documents"
@@ -21271,9 +21271,9 @@ export type Database = {
           norm_reference: string | null
           notes: string | null
           process_number: string | null
-          responsible_department: string | null
           renewal_alert_days: number | null
           renewal_required: boolean
+          responsible_department: string | null
           responsible_user_id: string | null
           title: string
           updated_at: string
@@ -21300,9 +21300,9 @@ export type Database = {
           norm_reference?: string | null
           notes?: string | null
           process_number?: string | null
-          responsible_department?: string | null
           renewal_alert_days?: number | null
           renewal_required?: boolean
+          responsible_department?: string | null
           responsible_user_id?: string | null
           title?: string
           updated_at?: string
@@ -21329,9 +21329,9 @@ export type Database = {
           norm_reference?: string | null
           notes?: string | null
           process_number?: string | null
-          responsible_department?: string | null
           renewal_alert_days?: number | null
           renewal_required?: boolean
+          responsible_department?: string | null
           responsible_user_id?: string | null
           title?: string
           updated_at?: string

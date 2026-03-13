@@ -186,7 +186,7 @@ const getSgqDocumentBranchesMap = async (
 
   if (error) throw new Error(`Erro ao buscar filiais SGQ: ${error.message}`);
 
-  return (data || []).reduce<Record<string, Array<{ branch_id: string; name: string | null }>>>((acc, row: any) => {
+  return (data || []).reduce((acc: Record<string, Array<{ branch_id: string; name: string | null }>>, row: any) => {
     if (!acc[row.sgq_document_id]) acc[row.sgq_document_id] = [];
     acc[row.sgq_document_id].push({
       branch_id: row.branch_id,
