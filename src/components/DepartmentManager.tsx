@@ -287,13 +287,18 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
               <Building2 className="w-5 h-5" />
               <span>Gestão de Departamentos</span>
             </CardTitle>
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => { resetForm(); setEditingDepartment(null); }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Departamento
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+                <Upload className="w-4 h-4 mr-2" />
+                Importar
+              </Button>
+              <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => { resetForm(); setEditingDepartment(null); }}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Novo Departamento
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>
