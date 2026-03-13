@@ -212,7 +212,7 @@ async function fetchCompanyData(supabaseClient: any, companyId: string, year?: n
     },
     employees: {
       total: employeeCount,
-      byGender: employees?.reduce((acc, e) => {
+      byGender: employees?.reduce((acc: Record<string, number>, e: any) => {
         const gender = e.gender || 'Não informado';
         acc[gender] = (acc[gender] || 0) + 1;
         return acc;
