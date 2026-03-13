@@ -1,5 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadDocument, type Document } from "@/services/documents";
+import {
+  notifyDocumentCreated,
+  notifyReadCampaignCreated,
+  notifyReviewRequested,
+  notifyReviewApproved,
+  notifyReviewRejected,
+} from "@/services/sgqDocumentNotifications";
 
 export const SGQ_DOCUMENT_IDENTIFIER_OPTIONS = [
   "Manual",
