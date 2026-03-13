@@ -68,6 +68,7 @@ const trainingProgramSchema = z.object({
   status: z.string().min(1, "Status é obrigatório"),
   branch_id: z.string().optional().nullable(),
   responsible_name: z.string().optional(),
+  modality: z.string().optional().nullable(),
   // Campos para avaliação de eficácia
   requires_efficacy_evaluation: z.boolean().default(false),
   efficacy_evaluation_deadline: z.date().optional().nullable(),
