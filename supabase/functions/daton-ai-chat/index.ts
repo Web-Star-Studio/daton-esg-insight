@@ -1940,7 +1940,7 @@ ${attachmentContext}`;
       const insights = await generateProactiveInsights(
         companyId, 
         userContext?.currentRoute || currentPage, 
-        supabaseClient
+        supabaseClient as any
       );
       
       // Generate visualizations based on tool results
