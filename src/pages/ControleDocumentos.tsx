@@ -1,9 +1,16 @@
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RegulatoryDocumentsTab } from "@/components/document-control/RegulatoryDocumentsTab";
 import { SGQIsoDocumentsTab } from "@/components/document-control/SGQIsoDocumentsTab";
 import { DocumentSettingsTab } from "@/components/document-control/DocumentSettingsTab";
 
+const VALID_TABS = ["regulatorio", "sgq-iso", "configuracoes"];
+
 const ControleDocumentos = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab = VALID_TABS.includes(tabParam ?? "") ? tabParam! : "regulatorio";
+
   return (
     <div className="space-y-6">
       <div>
@@ -13,7 +20,7 @@ const ControleDocumentos = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="regulatorio" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="space-y-6">
         <TabsList className="grid w-full max-w-[560px] grid-cols-3">
           <TabsTrigger value="regulatorio">Documentos Regulatórios</TabsTrigger>
           <TabsTrigger value="sgq-iso">SGQ/ISO</TabsTrigger>
