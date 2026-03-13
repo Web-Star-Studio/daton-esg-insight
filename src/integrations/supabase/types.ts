@@ -21266,6 +21266,7 @@ export type Database = {
           external_source_reference: string | null
           external_source_url: string | null
           id: string
+          is_approved: boolean
           issue_date: string | null
           issuing_body: string
           norm_reference: string | null
@@ -21295,6 +21296,7 @@ export type Database = {
           external_source_reference?: string | null
           external_source_url?: string | null
           id?: string
+          is_approved?: boolean
           issue_date?: string | null
           issuing_body?: string
           norm_reference?: string | null
@@ -21324,6 +21326,7 @@ export type Database = {
           external_source_reference?: string | null
           external_source_url?: string | null
           id?: string
+          is_approved?: boolean
           issue_date?: string | null
           issuing_body?: string
           norm_reference?: string | null
