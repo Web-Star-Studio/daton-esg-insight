@@ -9,7 +9,8 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Building2, Edit, Trash2, Users, DollarSign, Hash } from 'lucide-react';
+import { Plus, Building2, Edit, Trash2, Users, DollarSign, Hash, Upload } from 'lucide-react';
+import { DepartmentImportDialog } from './departments/DepartmentImportDialog';
 import { 
   getDepartments, 
   createDepartment, 
