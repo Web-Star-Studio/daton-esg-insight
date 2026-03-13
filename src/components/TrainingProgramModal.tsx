@@ -387,11 +387,11 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
         status: values.status,
         branch_id: values.branch_id || null,
         responsible_name: values.responsible_name?.trim() || null,
+        modality: values.modality || null,
         efficacy_evaluation_deadline: values.requires_efficacy_evaluation 
           ? formatDateForDB(values.efficacy_evaluation_deadline) 
           : null,
         notify_responsible_email: values.requires_efficacy_evaluation && values.notify_responsible_email,
-        // Usar o ID do colaborador responsável pela avaliação
         efficacy_evaluator_employee_id: values.requires_efficacy_evaluation 
           ? values.efficacy_evaluator_employee_id || null
           : null,
