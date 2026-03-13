@@ -243,7 +243,7 @@ async function calculateComplianceRisk(supabase: any, companyId: string): Promis
 
   let goalsAtRisk = 0;
   if (goals && goals.length > 0) {
-    const goalIds = goals.map(g => g.id);
+    const goalIds = goals.map((g: any) => g.id);
     
     // Fetch progress updates for these goals
     const { data: updates } = await supabase
@@ -418,16 +418,16 @@ serve(async (req) => {
         try {
           predictions = await predictEmissions(supabaseClient, profile.company_id, months || 3);
         } catch (error) {
-          console.warn('⚠️ Could not generate emission predictions:', error.message);
+          console.warn('⚠️ Could not generate emission predictions:', (error as Error).message);
           // Return empty prediction structure if no data
-          if (error.message?.includes('Dados insuficientes')) {
+          if ((error as Error).message?.includes('Dados insuficientes')) {
             predictions = {
               predictions: [],
               trend: 'stable' as const,
               trend_percentage: 0,
               anomalies: [],
               forecast_accuracy: 0,
-              error: error.message
+              error: (error as Error).message
             };
           } else {
             throw error; // Re-throw if it's not a data issue
@@ -451,9 +451,9 @@ serve(async (req) => {
     console.error('❌ Error in predictive-analytics:', error);
     
     // Check if it's an insufficient data error
-    if (error.message && error.message.includes('Dados insuficientes')) {
+    if ((error as Error).message && (error as Error).message.includes('Dados insuficientes')) {
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: (error as Error).message }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -462,7 +462,7 @@ serve(async (req) => {
     }
     
     return new Response(
-      JSON.stringify({ error: error.message || 'Erro ao processar análise preditiva' }),
+      JSON.stringify({ error: (error as Error).message || 'Erro ao processar análise preditiva' }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

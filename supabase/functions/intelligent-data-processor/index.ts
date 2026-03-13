@@ -198,7 +198,11 @@ Responda usando a ferramenta fornecida.`;
     const executionPlan = JSON.parse(toolCall.function.arguments);
     console.warn('Execution plan:', JSON.stringify(executionPlan, null, 2));
 
-    const results = {
+    const results: {
+      successful_operations: any[];
+      failed_operations: any[];
+      total_operations: number;
+    } = {
       successful_operations: [],
       failed_operations: [],
       total_operations: executionPlan.operations.length,

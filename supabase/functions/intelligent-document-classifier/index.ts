@@ -72,6 +72,7 @@ serve(async (req) => {
     // SECURITY: Validate JWT token for authenticated requests
     const authHeader = req.headers.get('Authorization');
     if (authHeader?.startsWith('Bearer ')) {
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
