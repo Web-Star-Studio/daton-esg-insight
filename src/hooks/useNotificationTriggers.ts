@@ -93,5 +93,6 @@ export const useNotificationTriggers = () => {
     // Status
     isMonitoringActive: true,
     trainingEfficacyCheck,
+    sgqExpirationCheck,
   };
 };
