@@ -39,10 +39,56 @@ export function ViewEmployeeTrainingDialog({
   const [efficacyComments, setEfficacyComments] = useState('');
   const queryClient = useQueryClient();
 
-  if (!training) return null;
-
-  const program = training.training_program;
+  const program = training?.training_program;
   const programId = program?.id;
+  const hasEfficacyDeadline = !!program?.efficacy_evaluation_deadline;
+
+  // Fetch participants
+  const { data: participants = [], isLoading: loadingParticipants } = useQuery({
+    queryKey: ['training-participants', programId],
+    queryFn: () => getTrainingProgramParticipants(programId!),
+    enabled: !!programId && isOpen,
+  });
+
+  // Fetch efficacy evaluations for this program
+  const { data: evaluations = [], isLoading: loadingEvaluations } = useQuery({
+    queryKey: ['efficacy-evaluations', programId],
+    queryFn: () => getEfficacyEvaluations(programId!),
+    enabled: !!programId && isOpen && hasEfficacyDeadline,
+  });
+
+  // Find evaluation for this specific employee_training
+  const existingEvaluation = evaluations.find(
+    (e: TrainingEfficacyEvaluation) => e.employee_training_id === training?.id
+  );
+
+  // Create efficacy evaluation mutation
+  const createEvalMutation = useMutation({
+    mutationFn: async () => {
+      if (isEffective === null) throw new Error('Selecione se o treinamento foi eficaz ou não');
+      return createEfficacyEvaluation({
+        company_id: '',
+        employee_training_id: training!.id,
+        training_program_id: programId!,
+        evaluation_date: new Date().toISOString().split('T')[0],
+        is_effective: isEffective,
+        comments: efficacyComments || undefined,
+        status: 'Concluída',
+      });
+    },
+    onSuccess: () => {
+      toast.success('Avaliação de eficácia registrada com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['efficacy-evaluations', programId] });
+      queryClient.invalidateQueries({ queryKey: ['employee-trainings'] });
+      setIsEffective(null);
+      setEfficacyComments('');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erro ao registrar avaliação de eficácia');
+    },
+  });
+
+  if (!training) return null;
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
