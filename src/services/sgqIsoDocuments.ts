@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadDocument, type Document } from "@/services/documents";
 import {
-  notifyDocumentCreated,
+  notifyApprovalRequired,
   notifyReadCampaignCreated,
   notifyReviewRequested,
   notifyReviewApproved,
@@ -24,7 +24,7 @@ export const SGQ_DOCUMENT_IDENTIFIER_OPTIONS = [
 
 export type SgqDocumentIdentifierType = (typeof SGQ_DOCUMENT_IDENTIFIER_OPTIONS)[number];
 
-export type DocumentStatus = "Vigente" | "A Vencer" | "Vencido";
+export type DocumentStatus = "Vigente" | "A Vencer" | "Vencido" | "Em Aprovação";
 
 // ── Interfaces ──
 
@@ -56,6 +56,7 @@ export interface SgqDocumentItem {
   norm_reference: string | null;
   notes: string | null;
   responsible_department: string | null;
+  is_approved: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -168,7 +169,8 @@ const calculateDaysRemaining = (expirationDate: string): number => {
   return Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 };
 
-const resolveDocumentStatus = (daysRemaining: number, threshold: number): DocumentStatus => {
+const resolveDocumentStatus = (daysRemaining: number, threshold: number, isApproved: boolean): DocumentStatus => {
+  if (!isApproved) return "Em Aprovação";
   if (daysRemaining < 0) return "Vencido";
   if (daysRemaining <= threshold) return "A Vencer";
   return "Vigente";
@@ -264,7 +266,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
       id, title, document_identifier_type, document_identifier_other,
       branch_id, elaborated_by_user_id, approved_by_user_id,
       expiration_date, current_version_number, notes, norm_reference, responsible_department,
-      created_at, updated_at,
+      is_approved, created_at, updated_at,
       branches:branch_id ( name ),
       elaborator:elaborated_by_user_id ( full_name ),
       approver:approved_by_user_id ( full_name )
@@ -344,13 +346,14 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
       approved_by_name: doc.approver?.full_name || null,
       expiration_date: doc.expiration_date,
       days_remaining: daysRemaining,
-      status: resolveDocumentStatus(daysRemaining, threshold),
+      status: resolveDocumentStatus(daysRemaining, threshold, !!doc.is_approved),
       current_version_number: doc.current_version_number || 1,
       pending_recipients: pendingByDoc.get(doc.id) || 0,
       pending_reviews: pendingReviewsByDoc.get(doc.id) || 0,
       norm_reference: doc.norm_reference || null,
       notes: doc.notes,
       responsible_department: doc.responsible_department || null,
+      is_approved: !!doc.is_approved,
       created_at: doc.created_at,
       updated_at: doc.updated_at,
     };
@@ -399,7 +402,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
       branch_id: payload.branch_ids?.[0] || null,
       elaborated_by_user_id: payload.elaborated_by_user_id,
       approved_by_user_id: payload.approved_by_user_id,
-      approved_at: new Date().toISOString(),
+      is_approved: false,
       expiration_date: ensureDateOnly(payload.expiration_date),
       current_version_number: 1,
       norm_reference: payload.norm_reference || null,
@@ -443,7 +446,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
         attachment_document_id: attachment.id,
       });
 
-    // 4. Create read campaign
+    // 4. Create read campaign (inactive until approver explicitly approves)
     const { data: campaign } = await (supabase as any)
       .from("sgq_read_campaigns")
       .insert({
@@ -452,7 +455,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
         version_number: 1,
         title: `Recebimento: ${payload.title.trim()} - v1`,
         created_by_user_id: user.id,
-        status: "active",
+        status: "inactive",
       })
       .select("id")
       .maybeSingle();
@@ -480,13 +483,11 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
     throw new Error(`Erro ao finalizar criação do documento: ${err?.message || "desconhecido"}. Cadastro desfeito.`);
   }
 
-  // Fire notifications (non-blocking)
+  // Notify approver that the document needs their approval (non-blocking)
   if (payload.approved_by_user_id) {
-    notifyDocumentCreated(payload.approved_by_user_id, payload.title.trim(), doc.id).catch(() => {});
+    notifyApprovalRequired(payload.approved_by_user_id, payload.title.trim(), doc.id).catch(() => {});
   }
-  if (payload.recipient_user_ids?.length > 0) {
-    notifyReadCampaignCreated(payload.recipient_user_ids, payload.title.trim(), doc.id, 1).catch(() => {});
-  }
+  // Recipients are NOT notified yet — only after approver approves
 
   return doc;
 };
@@ -557,6 +558,52 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
         status: "pending",
       }));
       await (supabase as any).from("sgq_read_recipients").insert(recipients);
+    }
+  }
+};
+
+// ── Initial Approval ──
+
+export const approveInitialDocument = async (docId: string): Promise<void> => {
+  const { user, companyId } = await getCurrentUserAndCompany();
+
+  const { data: doc, error: fetchErr } = await (supabase as any)
+    .from("sgq_iso_documents")
+    .select("id, title, approved_by_user_id, is_approved")
+    .eq("id", docId)
+    .maybeSingle();
+
+  if (fetchErr || !doc) throw new Error("Documento não encontrado");
+  if (doc.is_approved) throw new Error("Este documento já foi aprovado");
+  if (doc.approved_by_user_id !== user.id) throw new Error("Apenas o aprovador designado pode aprovar este documento");
+
+  // 1. Mark document as approved
+  const { error: updateErr } = await (supabase as any)
+    .from("sgq_iso_documents")
+    .update({ is_approved: true, approved_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq("id", docId);
+
+  if (updateErr) throw new Error(`Erro ao aprovar documento: ${updateErr.message}`);
+
+  // 2. Activate the pending read campaign
+  const { data: campaigns } = await (supabase as any)
+    .from("sgq_read_campaigns")
+    .update({ status: "active" })
+    .eq("sgq_document_id", docId)
+    .eq("status", "inactive")
+    .select("id");
+
+  // 3. Notify recipients
+  if (campaigns && campaigns.length > 0) {
+    const campaignIds = campaigns.map((c: any) => c.id);
+    const { data: recipientsData } = await (supabase as any)
+      .from("sgq_read_recipients")
+      .select("user_id")
+      .in("campaign_id", campaignIds);
+
+    const recipientIds = (recipientsData || []).map((r: any) => r.user_id);
+    if (recipientIds.length > 0) {
+      notifyReadCampaignCreated(recipientIds, doc.title, docId, 1).catch(() => {});
     }
   }
 };

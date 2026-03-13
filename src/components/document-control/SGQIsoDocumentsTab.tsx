@@ -26,7 +26,7 @@ import { downloadDocument } from "@/services/documents";
 import { CollaboratorMultiSelect } from "@/components/document-center/CollaboratorMultiSelect";
 import { getDepartments } from "@/services/organizationalStructure";
 import {
-  createSgqDocument,
+  createSgqDocument, approveInitialDocument,
   getSgqDocuments, getSgqDocumentVersions, getSgqReadCampaigns,
   getSgqResponsibleUsers, getSystemDocumentsForReference,
   confirmSgqRead, getCurrentUserId,
@@ -38,7 +38,7 @@ import {
 import { getBranchDisplayLabel } from "@/utils/branchDisplay";
 import { cn } from "@/lib/utils";
 import {
-  BookOpen, Check, ChevronDown, Clock, Download, Eye, FileText, History,
+  BookOpen, Check, CheckCircle, ChevronDown, Clock, Download, Eye, FileText, History,
   Link2, Pencil, Plus, Save, Search, Send, Upload, Users, XCircle, ClipboardCheck,
 } from "lucide-react";
 
@@ -49,6 +49,7 @@ const getStatusBadgeClass = (status: DocumentStatus) => {
     case "Vigente": return "bg-green-100 text-green-700 border-green-200";
     case "A Vencer": return "bg-yellow-100 text-yellow-700 border-yellow-200";
     case "Vencido": return "bg-red-100 text-red-700 border-red-200";
+    case "Em Aprovação": return "bg-blue-100 text-blue-700 border-blue-200";
     default: return "";
   }
 };
@@ -368,6 +369,17 @@ export const SGQIsoDocumentsTab = () => {
     },
     onError: (error: Error) => {
       toast({ title: "Erro ao rejeitar", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const approveInitialMutation = useMutation({
+    mutationFn: (docId: string) => approveInitialDocument(docId),
+    onSuccess: () => {
+      toast({ title: "Documento aprovado", description: "O documento foi aprovado e os destinatários foram notificados." });
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao aprovar", description: error.message, variant: "destructive" });
     },
   });
 
@@ -768,9 +780,22 @@ export const SGQIsoDocumentsTab = () => {
                         </Button>
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => openSendReview(item.id)} title="Enviar para Revisão">
-                          <Send className="h-4 w-4" />
-                        </Button>
+                        {!item.is_approved && item.approved_by_user_id === currentUserId ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => approveInitialMutation.mutate(item.id)}
+                            disabled={approveInitialMutation.isPending}
+                            title="Aprovar documento"
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                        ) : item.is_approved ? (
+                          <Button variant="ghost" size="icon" onClick={() => openSendReview(item.id)} title="Enviar para Revisão">
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   ))}

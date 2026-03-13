@@ -116,6 +116,31 @@ export const notifyDocumentCreated = async (
   }
 };
 
+export const notifyApprovalRequired = async (
+  approverUserId: string,
+  docTitle: string,
+  docId: string
+): Promise<void> => {
+  try {
+    const alertKey = `approval_required_${docId}_${approverUserId}`;
+    if (await alertExists(alertKey)) return;
+
+    await createNotificationForUser(
+      approverUserId,
+      "📋 Aprovação Pendente",
+      `O documento "${docTitle}" aguarda sua aprovação para ser publicado.`,
+      "warning",
+      ACTION_URL,
+      "Aprovar Documento",
+      CATEGORY,
+      "high",
+      { alert_key: alertKey, docId, type: "approval_required" }
+    );
+  } catch (error) {
+    logger.error("Error notifying approval required", error, "notification");
+  }
+};
+
 export const notifyReadCampaignCreated = async (
   recipientUserIds: string[],
   docTitle: string,
