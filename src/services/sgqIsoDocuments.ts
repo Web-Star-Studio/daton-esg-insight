@@ -637,6 +637,8 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
     .eq("id", request.sgq_document_id);
 
   // 4. Create read campaign for existing active campaign recipients
+  let campaignRecipientIds: string[] = [];
+
   const { data: existingCampaigns } = await (supabase as any)
     .from("sgq_read_campaigns")
     .select("id")
@@ -651,9 +653,9 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
       .select("user_id")
       .eq("campaign_id", existingCampaigns[0].id);
 
-    const recipientIds = (existingRecipients || []).map((r: any) => r.user_id);
+    campaignRecipientIds = (existingRecipients || []).map((r: any) => r.user_id);
 
-    if (recipientIds.length > 0) {
+    if (campaignRecipientIds.length > 0) {
       const { data: campaign } = await (supabase as any)
         .from("sgq_read_campaigns")
         .insert({
@@ -668,7 +670,7 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
         .maybeSingle();
 
       if (campaign) {
-        const recipients = recipientIds.map((uid: string) => ({
+        const recipients = campaignRecipientIds.map((uid: string) => ({
           campaign_id: campaign.id,
           user_id: uid,
           status: "pending",
@@ -681,8 +683,8 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
   // Notify requester of approval and recipients of read campaign
   const docTitle = request.document?.title || "Documento SGQ";
   notifyReviewApproved(request.requested_by_user_id, docTitle, request.sgq_document_id, newVersion).catch(() => {});
-  if (recipientIds && recipientIds.length > 0) {
-    notifyReadCampaignCreated(recipientIds, docTitle, request.sgq_document_id, newVersion).catch(() => {});
+  if (campaignRecipientIds.length > 0) {
+    notifyReadCampaignCreated(campaignRecipientIds, docTitle, request.sgq_document_id, newVersion).catch(() => {});
   }
 };
 
