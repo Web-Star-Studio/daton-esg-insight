@@ -21255,6 +21255,7 @@ export type Database = {
           branch_id: string | null
           company_id: string
           created_at: string
+          created_by_user_id: string | null
           current_version_number: number
           document_identifier_other: string | null
           document_identifier_type: string
@@ -21285,6 +21286,7 @@ export type Database = {
           branch_id?: string | null
           company_id: string
           created_at?: string
+          created_by_user_id?: string | null
           current_version_number?: number
           document_identifier_other?: string | null
           document_identifier_type?: string
@@ -21315,6 +21317,7 @@ export type Database = {
           branch_id?: string | null
           company_id?: string
           created_at?: string
+          created_by_user_id?: string | null
           current_version_number?: number
           document_identifier_other?: string | null
           document_identifier_type?: string
@@ -21359,6 +21362,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sgq_iso_documents_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
