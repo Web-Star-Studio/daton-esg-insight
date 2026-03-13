@@ -39,6 +39,8 @@ import { BranchSelect } from "@/components/BranchSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { parseDateSafe, formatDateForDB } from "@/utils/dateUtils";
+import { DateInputWithCalendarForm } from "@/components/DateInputWithCalendarForm";
+import { TRAINING_MODALITY } from "@/types/enums";
 
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
