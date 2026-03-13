@@ -427,7 +427,7 @@ serve(async (req) => {
               trend_percentage: 0,
               anomalies: [],
               forecast_accuracy: 0,
-              error: error.message
+              error: (error as Error).message
             };
           } else {
             throw error; // Re-throw if it's not a data issue
