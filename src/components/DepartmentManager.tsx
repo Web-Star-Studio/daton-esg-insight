@@ -409,6 +409,7 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </CardHeader>
       </Card>
