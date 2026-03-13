@@ -24706,6 +24706,7 @@ export type Database = {
           end_date: string | null
           id: string
           is_mandatory: boolean | null
+          modality: string | null
           name: string
           notify_responsible_email: boolean | null
           responsible_email: string | null
@@ -24730,6 +24731,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_mandatory?: boolean | null
+          modality?: string | null
           name: string
           notify_responsible_email?: boolean | null
           responsible_email?: string | null
@@ -24754,6 +24756,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_mandatory?: boolean | null
+          modality?: string | null
           name?: string
           notify_responsible_email?: boolean | null
           responsible_email?: string | null
