@@ -40,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CalendarIcon, Search, Users, CheckCircle2, AlertCircle, Check, AlertTriangle } from "lucide-react";
+import { DateInputWithCalendarForm } from "@/components/DateInputWithCalendarForm";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
