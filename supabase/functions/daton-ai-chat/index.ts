@@ -1175,7 +1175,7 @@ serve(async (req) => {
     let pageContextInfo = '';
     try {
       console.warn('🔍 Building page context for:', currentPage);
-      pageContextInfo = await buildPageContext(currentPage, companyId, supabaseClient);
+      pageContextInfo = await buildPageContext(currentPage, companyId, supabaseClient as any);
       console.warn('✅ Page context built successfully');
     } catch (e) {
       console.warn('⚠️ Could not build page context:', e);
