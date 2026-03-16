@@ -40,6 +40,9 @@ import {
 import { useEmployeesPaginated, useDepartments, getEmployeesStats, bulkUpdateEmployeeStatus } from "@/services/employees";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { exportToCSV } from "@/services/reportService";
+import { formatDateDisplay } from "@/utils/dateUtils";
 
 interface EmployeesListProps {
   onEditEmployee: (employee: any) => void;
