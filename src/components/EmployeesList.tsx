@@ -34,7 +34,8 @@ import {
   ChevronRight,
   UserCheck,
   UserX,
-  X
+  X,
+  Download
 } from "lucide-react";
 import { useEmployeesPaginated, useDepartments, getEmployeesStats, bulkUpdateEmployeeStatus } from "@/services/employees";
 import { useQueryClient } from "@tanstack/react-query";
