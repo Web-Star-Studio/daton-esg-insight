@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { formatDateDisplay } from '@/utils/dateUtils';
+
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
