@@ -331,10 +331,16 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
                 Gerencie informações dos colaboradores da organização
               </CardDescription>
             </div>
-            <Button onClick={onCreateEmployee} className="w-full sm:w-auto">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Novo Funcionário
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={handleExportCSV} disabled={isExporting} className="flex-1 sm:flex-none">
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? 'Exportando...' : 'Exportar CSV'}
+              </Button>
+              <Button onClick={onCreateEmployee} className="flex-1 sm:flex-none">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Novo Funcionário
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
