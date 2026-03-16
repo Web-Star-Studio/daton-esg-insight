@@ -463,6 +463,18 @@ export const getWasteLogDocuments = async (wasteLogId: string) => {
   return data || [];
 };
 
+// DELETE waste log
+export const deleteWasteLog = async (id: string) => {
+  const { error } = await supabase
+    .from('waste_logs')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throw new Error('Erro ao excluir registro de resíduo');
+  }
+};
+
 // DELETE document
 export const deleteWasteDocument = async (documentId: string) => {
   const { data: doc, error: fetchError } = await supabase

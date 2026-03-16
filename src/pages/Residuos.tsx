@@ -7,10 +7,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { 
-  Scale, 
-  Recycle, 
-  Trash2, 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  Scale,
+  Recycle,
+  Trash2,
   DollarSign,
   Download,
   ChevronDown,
@@ -21,8 +31,8 @@ import {
   BarChart3
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
-import { getWasteLogs, getWasteDashboard, type WasteLogListItem } from "@/services/waste"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { getWasteLogs, getWasteDashboard, deleteWasteLog, type WasteLogListItem } from "@/services/waste"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import PGRSStatusCard from "@/components/PGRSStatusCard"
@@ -132,10 +142,26 @@ type WasteExportRow = {
 
 const Residuos = () => {
   const navigate = useNavigate()
-  
+  const queryClient = useQueryClient()
+
   const [selectedBranchId, setSelectedBranchId] = useState<string>("all")
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const { toast } = useToast()
   const { data: branches = [] } = useBranches()
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteWasteLog,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['waste-logs'] })
+      queryClient.invalidateQueries({ queryKey: ['waste-dashboard'] })
+      toast({ title: "Registro excluído com sucesso." })
+      setDeleteTargetId(null)
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Erro ao excluir registro." })
+      setDeleteTargetId(null)
+    },
+  })
   const branchLabelById = new Map(branches.map((branch) => [branch.id, getBranchDisplayLabel(branch)]))
 
   // Fetch waste logs
@@ -601,6 +627,15 @@ const Residuos = () => {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          title="Excluir"
+                          onClick={() => setDeleteTargetId(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -613,6 +648,25 @@ const Residuos = () => {
           </CardContent>
         </Card>
 
+      <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => { if (!open) setDeleteTargetId(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir registro de resíduo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O registro será removido permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (deleteTargetId) deleteMutation.mutate(deleteTargetId) }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
   )
 }
