@@ -134,6 +134,76 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
     }
   }, [selectedIds, queryClient]);
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCSV = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const BATCH = 1000;
+      let allData: any[] = [];
+      let from = 0;
+
+      while (true) {
+        let query = supabase
+          .from('employees')
+          .select('*, branches:branch_id(name)');
+
+        if (debouncedSearch) {
+          const term = `%${debouncedSearch.trim()}%`;
+          query = query.or(`full_name.ilike.${term},cpf.ilike.${term},position.ilike.${term}`);
+        }
+        if (filters.status !== 'all') {
+          query = query.eq('status', filters.status);
+        }
+        if (filters.department !== 'all') {
+          query = query.eq('department', filters.department);
+        }
+
+        const { data, error } = await query
+          .order('full_name')
+          .range(from, from + BATCH - 1);
+
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < BATCH) break;
+        from += BATCH;
+      }
+
+      if (allData.length === 0) {
+        toast.error('Nenhum funcionário encontrado para exportar.');
+        return;
+      }
+
+      const mapped = allData.map((emp: any) => ({
+        'CPF': emp.cpf || '',
+        'Nome Completo': emp.full_name || '',
+        'E-mail': emp.email || '',
+        'Telefone': emp.phone || '',
+        'Departamento': emp.department || '',
+        'Cargo': emp.position || '',
+        'Data de Contratação': formatDateDisplay(emp.hire_date),
+        'Data de Demissão': formatDateDisplay(emp.termination_date),
+        'Data de Nascimento': formatDateDisplay(emp.birth_date),
+        'Escolaridade': emp.education_level || '',
+        'Gênero': emp.gender || '',
+        'Tipo de Contrato': emp.employment_type || '',
+        'Status': emp.status || '',
+        'Filial': emp.branches?.name || '',
+        'Localização Adicional': emp.location || '',
+        'Informações Adicionais': emp.notes || '',
+      }));
+
+      exportToCSV(mapped, 'funcionarios');
+      toast.success(`${mapped.length} funcionário(s) exportado(s) com sucesso.`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Erro ao exportar funcionários.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [debouncedSearch, filters.status, filters.department]);
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
