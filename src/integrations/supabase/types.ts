@@ -16214,6 +16214,7 @@ export type Database = {
           ai_processing_status: string | null
           asset_id: string | null
           branch_id: string | null
+          branch_ids: string[] | null
           company_id: string
           compliance_score: number | null
           conditions: string | null
@@ -16246,6 +16247,7 @@ export type Database = {
           ai_processing_status?: string | null
           asset_id?: string | null
           branch_id?: string | null
+          branch_ids?: string[] | null
           company_id: string
           compliance_score?: number | null
           conditions?: string | null
@@ -16278,6 +16280,7 @@ export type Database = {
           ai_processing_status?: string | null
           asset_id?: string | null
           branch_id?: string | null
+          branch_ids?: string[] | null
           company_id?: string
           compliance_score?: number | null
           conditions?: string | null
@@ -16323,13 +16326,6 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "licenses_responsible_user_id_fkey"
-            columns: ["responsible_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -21344,13 +21340,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sgq_iso_documents_approved_by_user_id_fkey"
-            columns: ["approved_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "sgq_iso_documents_branch_id_fkey"
             columns: ["branch_id"]
             isOneToOne: false
@@ -21367,13 +21356,6 @@ export type Database = {
           {
             foreignKeyName: "sgq_iso_documents_created_by_user_id_fkey"
             columns: ["created_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sgq_iso_documents_elaborated_by_user_id_fkey"
-            columns: ["elaborated_by_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
