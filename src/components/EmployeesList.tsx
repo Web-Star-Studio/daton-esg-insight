@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { formatDateDisplay } from '@/utils/dateUtils';
+
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,11 +34,15 @@ import {
   ChevronRight,
   UserCheck,
   UserX,
-  X
+  X,
+  Download
 } from "lucide-react";
 import { useEmployeesPaginated, useDepartments, getEmployeesStats, bulkUpdateEmployeeStatus } from "@/services/employees";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { exportToCSV } from "@/services/reportService";
+import { formatDateDisplay } from "@/utils/dateUtils";
 
 interface EmployeesListProps {
   onEditEmployee: (employee: any) => void;
@@ -129,6 +133,76 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
       setIsProcessing(false);
     }
   }, [selectedIds, queryClient]);
+
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCSV = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const BATCH = 1000;
+      let allData: any[] = [];
+      let from = 0;
+
+      while (true) {
+        let query = supabase
+          .from('employees')
+          .select('*, branches:branch_id(name)');
+
+        if (debouncedSearch) {
+          const term = `%${debouncedSearch.trim()}%`;
+          query = query.or(`full_name.ilike.${term},cpf.ilike.${term},position.ilike.${term}`);
+        }
+        if (filters.status !== 'all') {
+          query = query.eq('status', filters.status);
+        }
+        if (filters.department !== 'all') {
+          query = query.eq('department', filters.department);
+        }
+
+        const { data, error } = await query
+          .order('full_name')
+          .range(from, from + BATCH - 1);
+
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < BATCH) break;
+        from += BATCH;
+      }
+
+      if (allData.length === 0) {
+        toast.error('Nenhum funcionário encontrado para exportar.');
+        return;
+      }
+
+      const mapped = allData.map((emp: any) => ({
+        'CPF': emp.cpf || '',
+        'Nome Completo': emp.full_name || '',
+        'E-mail': emp.email || '',
+        'Telefone': emp.phone || '',
+        'Departamento': emp.department || '',
+        'Cargo': emp.position || '',
+        'Data de Contratação': formatDateDisplay(emp.hire_date),
+        'Data de Demissão': formatDateDisplay(emp.termination_date),
+        'Data de Nascimento': formatDateDisplay(emp.birth_date),
+        'Escolaridade': emp.education_level || '',
+        'Gênero': emp.gender || '',
+        'Tipo de Contrato': emp.employment_type || '',
+        'Status': emp.status || '',
+        'Filial': emp.branches?.name || '',
+        'Localização Adicional': emp.location || '',
+        'Informações Adicionais': emp.notes || '',
+      }));
+
+      exportToCSV(mapped, 'funcionarios');
+      toast.success(`${mapped.length} funcionário(s) exportado(s) com sucesso.`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Erro ao exportar funcionários.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [debouncedSearch, filters.status, filters.department]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -257,10 +331,16 @@ function useEmployeesListComponent({ onEditEmployee, onCreateEmployee, onViewEmp
                 Gerencie informações dos colaboradores da organização
               </CardDescription>
             </div>
-            <Button onClick={onCreateEmployee} className="w-full sm:w-auto">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Novo Funcionário
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={handleExportCSV} disabled={isExporting} className="flex-1 sm:flex-none">
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? 'Exportando...' : 'Exportar CSV'}
+              </Button>
+              <Button onClick={onCreateEmployee} className="flex-1 sm:flex-none">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Novo Funcionário
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
