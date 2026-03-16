@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadDocument, type Document } from "@/services/documents";
+import { getEmployeesAsOptions } from "@/services/employees";
 import {
   notifyApprovalRequired,
   notifyReadCampaignCreated,
@@ -243,16 +244,8 @@ export const updateSgqSettings = async (defaultExpiringDays: number): Promise<Sg
 // ── Users ──
 
 export const getSgqResponsibleUsers = async (): Promise<Array<{ id: string; full_name: string }>> => {
-  const { companyId } = await getCurrentUserAndCompany();
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .eq("company_id", companyId)
-    .order("full_name", { ascending: true });
-
-  if (error) throw new Error(`Erro ao carregar responsáveis: ${error.message}`);
-  return (data || []).map((p) => ({ id: p.id, full_name: p.full_name || "Sem nome" }));
+  const options = await getEmployeesAsOptions();
+  return options.map((o) => ({ id: o.value, full_name: o.label }));
 };
 
 // ── List Documents ──
@@ -268,9 +261,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
       branch_id, elaborated_by_user_id, approved_by_user_id, created_by_user_id,
       expiration_date, current_version_number, notes, norm_reference, responsible_department,
       is_approved, created_at, updated_at,
-      branches:branch_id ( name ),
-      elaborator:elaborated_by_user_id ( full_name ),
-      approver:approved_by_user_id ( full_name )
+      branches:branch_id ( name )
     `)
     .eq("company_id", companyId)
     .order("expiration_date", { ascending: true });
@@ -285,6 +276,24 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
 
   const docIds = documents.map((d: any) => d.id);
   const branchesMap = await getSgqDocumentBranchesMap(docIds);
+
+  // Fetch employee names for elaborated_by and approved_by
+  const userIds = [
+    ...new Set([
+      ...documents.map((d: any) => d.elaborated_by_user_id),
+      ...documents.map((d: any) => d.approved_by_user_id),
+    ].filter(Boolean) as string[]),
+  ];
+  const employeeNameMap = new Map<string, string>();
+  if (userIds.length > 0) {
+    const { data: empData } = await supabase
+      .from("employees")
+      .select("id, full_name")
+      .in("id", userIds);
+    for (const emp of empData || []) {
+      employeeNameMap.set(emp.id, emp.full_name || "Sem nome");
+    }
+  }
 
   // Count pending recipients per document
   const { data: campaignsData } = await (supabase as any)
@@ -342,9 +351,9 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
       branch_ids: branchIds,
       branch_names: branchNames,
       elaborated_by_user_id: doc.elaborated_by_user_id,
-      elaborated_by_name: doc.elaborator?.full_name || null,
+      elaborated_by_name: doc.elaborated_by_user_id ? (employeeNameMap.get(doc.elaborated_by_user_id) || null) : null,
       approved_by_user_id: doc.approved_by_user_id,
-      approved_by_name: doc.approver?.full_name || null,
+      approved_by_name: doc.approved_by_user_id ? (employeeNameMap.get(doc.approved_by_user_id) || null) : null,
       expiration_date: doc.expiration_date,
       days_remaining: daysRemaining,
       status: resolveDocumentStatus(daysRemaining, threshold, !!doc.is_approved),
@@ -966,4 +975,33 @@ export const getSystemDocumentsForReference = async (): Promise<Array<{ id: stri
 export const getCurrentUserId = async (): Promise<string | null> => {
   const { data: { user } } = await supabase.auth.getUser();
   return user?.id || null;
+};
+
+// ── Sub-documents ──
+
+export interface SgqSubDocument {
+  id: string;
+  file_name: string;
+  file_path: string;
+  upload_date: string;
+  file_size: number | null;
+}
+
+export const getSgqSubDocuments = async (docId: string): Promise<SgqSubDocument[]> => {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("id, file_name, file_path, upload_date, file_size")
+    .eq("related_model", "sgq_subdocument")
+    .eq("related_id", docId)
+    .order("upload_date", { ascending: false });
+
+  if (error) throw new Error(`Erro ao buscar sub-documentos: ${error.message}`);
+  return (data || []) as SgqSubDocument[];
+};
+
+export const uploadSgqSubDocument = async (docId: string, file: File): Promise<void> => {
+  await uploadDocument(file, {
+    related_model: "sgq_subdocument",
+    related_id: docId,
+  });
 };

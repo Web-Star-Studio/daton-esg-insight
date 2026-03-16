@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SearchableUserSelect } from "@/components/ui/searchable-user-select";
 import {
   Dialog,
   DialogContent,
@@ -83,6 +85,7 @@ type FormState = {
   external_source_reference: string;
   external_source_url: string;
   branch_id: string;
+  branch_ids: string[];
   responsible_user_id: string;
   issue_date: string;
   expiration_date: string;
@@ -106,6 +109,7 @@ const DEFAULT_FORM: FormState = {
   external_source_reference: "",
   external_source_url: "",
   branch_id: "",
+  branch_ids: [],
   responsible_user_id: "",
   issue_date: "",
   expiration_date: "",
@@ -212,7 +216,8 @@ export const RegulatoryDocumentsTab = () => {
         external_source_provider: payload.external_source_provider || null,
         external_source_reference: payload.external_source_reference || null,
         external_source_url: payload.external_source_url || null,
-        branch_id: payload.branch_id,
+        branch_id: payload.branch_ids[0] || payload.branch_id || "",
+        branch_ids: payload.branch_ids,
         responsible_user_id: payload.responsible_user_id,
         issue_date: payload.issue_date || undefined,
         expiration_date: payload.expiration_date,
@@ -301,6 +306,26 @@ export const RegulatoryDocumentsTab = () => {
     [branches],
   );
 
+  const allBranchIds = useMemo(() => branches.map((b) => b.id), [branches]);
+  const allBranchesSelected = form.branch_ids.length === allBranchIds.length && allBranchIds.length > 0;
+  const someBranchesSelected = form.branch_ids.length > 0 && !allBranchesSelected;
+
+  const toggleBranch = (id: string) => {
+    setForm((f) => ({
+      ...f,
+      branch_ids: f.branch_ids.includes(id)
+        ? f.branch_ids.filter((b) => b !== id)
+        : [...f.branch_ids, id],
+    }));
+  };
+
+  const toggleAllBranches = () => {
+    setForm((f) => ({
+      ...f,
+      branch_ids: allBranchesSelected ? [] : allBranchIds,
+    }));
+  };
+
   const openCreate = () => {
     setForm(DEFAULT_FORM);
     setIsFormOpen(true);
@@ -318,6 +343,7 @@ export const RegulatoryDocumentsTab = () => {
       external_source_reference: item.external_source_reference || "",
       external_source_url: item.external_source_url || "",
       branch_id: item.branch_id || "",
+      branch_ids: item.branch_ids?.length ? item.branch_ids : (item.branch_id ? [item.branch_id] : []),
       responsible_user_id: item.responsible_user_id || "",
       issue_date: item.issue_date || "",
       expiration_date: item.expiration_date || "",
@@ -488,44 +514,38 @@ export const RegulatoryDocumentsTab = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Filial</Label>
-                  <Select
-                    value={form.branch_id}
-                    onValueChange={(value) => setForm((current) => ({ ...current, branch_id: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a filial" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {getBranchDisplayLabel(branch)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="md:col-span-2 space-y-2">
+                  <Label>Filiais vinculadas</Label>
+                  <div className="grid max-h-48 gap-2 overflow-y-auto rounded-md border p-3">
+                    {branches.length > 0 && (
+                      <label className="flex items-center gap-3 border-b pb-2 text-sm font-medium">
+                        <Checkbox
+                          checked={allBranchesSelected ? true : someBranchesSelected ? "indeterminate" : false}
+                          onCheckedChange={toggleAllBranches}
+                        />
+                        <span>Selecionar todas</span>
+                      </label>
+                    )}
+                    {branches.map((branch) => (
+                      <label key={branch.id} className="flex items-center gap-3 text-sm">
+                        <Checkbox
+                          checked={form.branch_ids.includes(branch.id)}
+                          onCheckedChange={() => toggleBranch(branch.id)}
+                        />
+                        <span>{getBranchDisplayLabel(branch)}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Responsável pelo Documento</Label>
-                  <Select
+                  <SearchableUserSelect
+                    users={users}
                     value={form.responsible_user_id}
-                    onValueChange={(value) =>
-                      setForm((current) => ({ ...current, responsible_user_id: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o responsável" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(value) => setForm((current) => ({ ...current, responsible_user_id: value }))}
+                    placeholder="Selecione o responsável"
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -824,7 +844,22 @@ export const RegulatoryDocumentsTab = () => {
                       <TableCell>{item.issuing_body || "-"}</TableCell>
                       <TableCell>{item.process_number || "-"}</TableCell>
                       <TableCell>
-                        {item.branch_id ? branchLabelById.get(item.branch_id) || item.branch_name || "-" : "-"}
+                        {item.branch_ids.length === 0 ? (
+                          "-"
+                        ) : item.branch_ids.length === 1 ? (
+                          <Badge variant="secondary">
+                            {branchLabelById.get(item.branch_ids[0]) || item.branch_name || "-"}
+                          </Badge>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <Badge variant="secondary">
+                              {branchLabelById.get(item.branch_ids[0]) || "-"}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs text-muted-foreground">
+                              +{item.branch_ids.length - 1}
+                            </Badge>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>{item.responsible_name || "-"}</TableCell>
                       <TableCell>{formatDate(item.issue_date)}</TableCell>

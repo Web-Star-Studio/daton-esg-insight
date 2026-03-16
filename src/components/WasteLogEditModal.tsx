@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getWasteLogById, updateWasteLog } from "@/services/waste";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { formatDateForDB, parseDateSafe } from "@/utils/dateUtils";
 
 // Helper functions for CNPJ formatting
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
@@ -90,7 +91,7 @@ export function WasteLogEditModal({ open, onOpenChange, wasteLogId, onSuccess }:
     if (wasteLog) {
       form.reset({
         mtr: wasteLog.mtr_number,
-        dataColeta: new Date(wasteLog.collection_date),
+        dataColeta: parseDateSafe(wasteLog.collection_date) ?? new Date(),
         descricaoResiduo: wasteLog.waste_description,
         classe: wasteLog.waste_class || "",
         quantidade: wasteLog.quantity,
@@ -114,7 +115,7 @@ export function WasteLogEditModal({ open, onOpenChange, wasteLogId, onSuccess }:
         mtr_number: data.mtr,
         waste_description: data.descricaoResiduo,
         waste_class: data.classe as "Classe I - Perigoso" | "Classe II A - Não Inerte" | "Classe II B - Inerte",
-        collection_date: data.dataColeta.toISOString().split('T')[0],
+        collection_date: formatDateForDB(data.dataColeta) ?? "",
         quantity: data.quantidade,
         unit: data.unidade,
         transporter_name: data.transportador || undefined,

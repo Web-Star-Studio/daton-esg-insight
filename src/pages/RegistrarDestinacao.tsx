@@ -26,6 +26,7 @@ import { MTROCRModal } from "@/components/MTROCRModal"
 import { supabase } from "@/integrations/supabase/client"
 import { useBranches } from "@/services/branches"
 import { getBranchDisplayLabel } from "@/utils/branchDisplay"
+import { formatDateForDB, parseDateSafe } from "@/utils/dateUtils"
 
 // Helper functions for CNPJ formatting
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
@@ -246,7 +247,7 @@ const RegistrarDestinacao = () => {
   const handleOCRDataExtracted = (extractedData: any) => {
     // Auto-fill form with OCR data
     if (extractedData.mtr_number) form.setValue("mtr", extractedData.mtr_number)
-    if (extractedData.collection_date) form.setValue("dataColeta", new Date(extractedData.collection_date))
+    if (extractedData.collection_date) form.setValue("dataColeta", parseDateSafe(extractedData.collection_date) ?? new Date())
     if (extractedData.waste_description) form.setValue("descricaoResiduo", extractedData.waste_description)
     if (extractedData.waste_class) form.setValue("classe", extractedData.waste_class)
     if (extractedData.quantity) form.setValue("quantidade", extractedData.quantity)
@@ -273,7 +274,7 @@ const RegistrarDestinacao = () => {
       branch_id: values.branchId,
       waste_description: values.descricaoResiduo,
       waste_class: values.classe as "Classe I - Perigoso" | "Classe II A - Não Inerte" | "Classe II B - Inerte",
-      collection_date: values.dataColeta.toISOString().split('T')[0],
+      collection_date: formatDateForDB(values.dataColeta) ?? "",
       quantity: values.quantidade,
       unit: values.unidade,
       transporter_name: values.transportador || undefined,

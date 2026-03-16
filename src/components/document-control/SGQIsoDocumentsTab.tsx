@@ -15,6 +15,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { SearchableUserSelect } from "@/components/ui/searchable-user-select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -32,6 +33,7 @@ import {
   confirmSgqRead, getCurrentUserId,
   createReviewRequest, getPendingReviewRequests,
   approveReviewRequest, rejectReviewRequest,
+  getSgqSubDocuments, uploadSgqSubDocument,
   SGQ_DOCUMENT_IDENTIFIER_OPTIONS,
   type DocumentStatus, type SgqDocumentItem,
 } from "@/services/sgqIsoDocuments";
@@ -201,6 +203,11 @@ export const SGQIsoDocumentsTab = () => {
   const [recipientsDocId, setRecipientsDocId] = useState<string | null>(null);
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
 
+  const [subDocsDocId, setSubDocsDocId] = useState<string | null>(null);
+  const [subDocsDocTitle, setSubDocsDocTitle] = useState<string>("");
+  const [isSubDocsOpen, setIsSubDocsOpen] = useState(false);
+  const [subDocFiles, setSubDocFiles] = useState<File[]>([]);
+
   const { data: rawUsers = [] } = useQuery({
     queryKey: ["sgq-documents", "responsibles"],
     queryFn: getSgqResponsibleUsers,
@@ -245,6 +252,28 @@ export const SGQIsoDocumentsTab = () => {
     enabled: isReviewsOpen,
   });
   const pendingReviews = Array.isArray(rawPendingReviews) ? rawPendingReviews : [];
+
+  const { data: rawSubDocs = [], isLoading: isLoadingSubDocs } = useQuery({
+    queryKey: ["sgq-documents", "subdocs", subDocsDocId],
+    queryFn: () => getSgqSubDocuments(subDocsDocId!),
+    enabled: isSubDocsOpen && !!subDocsDocId,
+  });
+  const subDocs = Array.isArray(rawSubDocs) ? rawSubDocs : [];
+
+  const uploadSubDocMutation = useMutation({
+    mutationFn: async (files: File[]) => {
+      for (const file of files) {
+        await uploadSgqSubDocument(subDocsDocId!, file);
+      }
+      return files.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents", "subdocs", subDocsDocId] });
+      setSubDocFiles([]);
+      toast({ title: `${count > 1 ? `${count} sub-documentos adicionados` : "Sub-documento adicionado"} com sucesso.` });
+    },
+    onError: (err: Error) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+  });
 
   const collaborators = useMemo(() => users.map((u) => ({ id: u.id, full_name: u.full_name })), [users]);
   const departmentOptions = useMemo(
@@ -493,26 +522,22 @@ export const SGQIsoDocumentsTab = () => {
 
                 <div className="space-y-2">
                   <Label>Elaborado por *</Label>
-                  <Select value={createForm.elaborated_by_user_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, elaborated_by_user_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {users.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableUserSelect
+                    users={users}
+                    value={createForm.elaborated_by_user_id}
+                    onChange={(v) => setCreateForm((c) => ({ ...c, elaborated_by_user_id: v }))}
+                    placeholder="Selecione"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Aprovado por *</Label>
-                  <Select value={createForm.approved_by_user_id} onValueChange={(v) => setCreateForm((c) => ({ ...c, approved_by_user_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {users.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableUserSelect
+                    users={users}
+                    value={createForm.approved_by_user_id}
+                    onChange={(v) => setCreateForm((c) => ({ ...c, approved_by_user_id: v }))}
+                    placeholder="Selecione"
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -561,7 +586,7 @@ export const SGQIsoDocumentsTab = () => {
                           onChange={(event) => setDepartmentSearch(event.target.value)}
                         />
                       </div>
-                      <div className="h-[240px] overflow-y-auto overscroll-contain p-1">
+                      <div className="h-[240px] overflow-y-auto overscroll-contain p-1" onWheel={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
@@ -729,7 +754,15 @@ export const SGQIsoDocumentsTab = () => {
                 <TableBody>
                   {items.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium max-w-[200px] truncate" title={item.title}>{item.title || "-"}</TableCell>
+                      <TableCell className="max-w-[200px]">
+                        <button
+                          type="button"
+                          className="font-medium break-words whitespace-normal text-left hover:underline cursor-pointer"
+                          onClick={() => { setSubDocsDocId(item.id); setSubDocsDocTitle(item.title || ""); setIsSubDocsOpen(true); }}
+                        >
+                          {item.title || "-"}
+                        </button>
+                      </TableCell>
                       <TableCell>
                         {item.document_identifier_type}
                         {item.document_identifier_type === "Outro" && item.document_identifier_other ? ` (${item.document_identifier_other})` : ""}
@@ -777,7 +810,9 @@ export const SGQIsoDocumentsTab = () => {
                       <TableCell>
                         <Button variant="ghost" size="sm" onClick={() => openRecipients(item.id)} className="gap-1">
                           <Users className="h-4 w-4" />
-                          {item.pending_recipients > 0 ? (
+                          {!item.is_approved ? (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          ) : item.pending_recipients > 0 ? (
                             <Badge variant="outline" className="bg-yellow-100 text-yellow-700 border-yellow-200">{item.pending_recipients}</Badge>
                           ) : (
                             <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">OK</Badge>
@@ -851,6 +886,78 @@ export const SGQIsoDocumentsTab = () => {
               ))}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Sub-documents Dialog */}
+      <Dialog open={isSubDocsOpen} onOpenChange={(o) => { setIsSubDocsOpen(o); if (!o) setSubDocFiles([]); }}>
+        <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Sub-documentos</DialogTitle>
+            <DialogDescription>{subDocsDocTitle}</DialogDescription>
+          </DialogHeader>
+
+          {isLoadingSubDocs ? (
+            <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+          ) : subDocs.length === 0 ? (
+            <p className="text-center py-6 text-sm text-muted-foreground">Nenhum sub-documento adicionado ainda.</p>
+          ) : (
+            <div className="space-y-2">
+              {subDocs.map((sd) => (
+                <div key={sd.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <span className="truncate">{sd.file_name}</span>
+                  <Button variant="ghost" size="sm" className="gap-1 shrink-0" onClick={() => handleDownload(sd.id)}>
+                    <Download className="h-4 w-4" /> Baixar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="border-t pt-4 space-y-3">
+            <Label>Adicionar sub-documentos</Label>
+            <Input
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+              onChange={(e) => {
+                const picked = Array.from(e.target.files ?? []);
+                setSubDocFiles((prev) => {
+                  const existingNames = new Set(prev.map((f) => f.name));
+                  return [...prev, ...picked.filter((f) => !existingNames.has(f.name))];
+                });
+                e.target.value = "";
+              }}
+            />
+            {subDocFiles.length > 0 && (
+              <div className="space-y-1">
+                {subDocFiles.map((f, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-muted/40">
+                    <span className="truncate flex-1 mr-2">{f.name}</span>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-destructive shrink-0"
+                      onClick={() => setSubDocFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button
+              className="w-full gap-2"
+              disabled={subDocFiles.length === 0 || uploadSubDocMutation.isPending}
+              onClick={() => uploadSubDocMutation.mutate(subDocFiles)}
+            >
+              <Upload className="h-4 w-4" />
+              {uploadSubDocMutation.isPending
+                ? "Enviando..."
+                : subDocFiles.length > 1
+                  ? `Enviar ${subDocFiles.length} arquivos`
+                  : "Enviar"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -131,7 +131,7 @@ const convertToTons = (quantity: number, unit: string): number => {
 
 // Format dates for display
 const formatDate = (date: string): string => {
-  return new Date(date).toLocaleDateString('pt-BR');
+  return new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR');
 };
 
 // GET /api/v1/waste-logs

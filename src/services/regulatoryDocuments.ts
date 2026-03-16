@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadDocument, type Document } from "@/services/documents";
 import type { Database } from "@/integrations/supabase/types";
+import { getEmployeesAsOptions } from "@/services/employees";
 
 export type RenewalStatus = Database["public"]["Enums"]["license_renewal_status_enum"];
 
@@ -44,6 +45,8 @@ export interface RegulatoryDocumentItem {
   process_number: string | null;
   branch_id: string | null;
   branch_name: string | null;
+  branch_ids: string[];
+  branch_names: string[];
   responsible_user_id: string | null;
   responsible_name: string | null;
   issue_date: string | null;
@@ -80,6 +83,7 @@ export interface CreateRegulatoryDocumentPayload {
   issuing_body: string;
   process_number?: string;
   branch_id: string;
+  branch_ids?: string[];
   responsible_user_id: string;
   issue_date?: string;
   expiration_date: string;
@@ -100,6 +104,7 @@ export interface UpdateRegulatoryDocumentPayload {
   issuing_body?: string;
   process_number?: string;
   branch_id?: string;
+  branch_ids?: string[];
   responsible_user_id?: string;
   issue_date?: string | null;
   expiration_date?: string;
@@ -233,22 +238,8 @@ export const updateRegulatorySettings = async (
 };
 
 export const getResponsibleUsers = async (): Promise<Array<{ id: string; full_name: string }>> => {
-  const { companyId } = await getCurrentUserAndCompany();
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .eq("company_id", companyId)
-    .order("full_name", { ascending: true });
-
-  if (error) {
-    throw new Error(`Erro ao carregar responsáveis: ${error.message}`);
-  }
-
-  return (data || []).map((profile) => ({
-    id: profile.id,
-    full_name: profile.full_name || "Sem nome",
-  }));
+  const options = await getEmployeesAsOptions();
+  return options.map((o) => ({ id: o.value, full_name: o.label }));
 };
 
 export const getRegulatoryDocuments = async (
@@ -280,9 +271,6 @@ export const getRegulatoryDocuments = async (
       updated_at,
       branches:branch_id (
         name
-      ),
-      responsible:responsible_user_id (
-        full_name
       )
     `)
     .eq("company_id", companyId)
@@ -306,6 +294,31 @@ export const getRegulatoryDocuments = async (
   if (licenses.length === 0) return [];
 
   const licenseIds = licenses.map((item) => item.id);
+
+  // Fetch employee names for responsible_user_id (FK dropped, query employees table)
+  const responsibleIds = [...new Set(
+    licenses.map((l: any) => l.responsible_user_id).filter(Boolean) as string[]
+  )];
+  const employeeNameMap = new Map<string, string>();
+  if (responsibleIds.length > 0) {
+    const { data: empData } = await supabase
+      .from("employees")
+      .select("id, full_name")
+      .in("id", responsibleIds);
+    for (const emp of empData || []) {
+      employeeNameMap.set(emp.id, emp.full_name || "Sem nome");
+    }
+  }
+
+  // Fetch branch_ids arrays for each license
+  const { data: branchIdsData } = await (supabase as any)
+    .from("licenses")
+    .select("id, branch_ids")
+    .in("id", licenseIds);
+  const branchIdsMap = new Map<string, string[]>();
+  for (const row of branchIdsData || []) {
+    branchIdsMap.set(row.id, row.branch_ids || []);
+  }
 
   const { data: schedulesData, error: schedulesError } = await supabase
     .from("license_renewal_schedules")
@@ -372,8 +385,10 @@ export const getRegulatoryDocuments = async (
       process_number: license.process_number,
       branch_id: license.branch_id,
       branch_name: (license.branches as { name?: string } | null)?.name || null,
+      branch_ids: branchIdsMap.get(license.id) || (license.branch_id ? [license.branch_id] : []),
+      branch_names: [],
       responsible_user_id: license.responsible_user_id,
-      responsible_name: (license.responsible as { full_name?: string } | null)?.full_name || null,
+      responsible_name: license.responsible_user_id ? (employeeNameMap.get(license.responsible_user_id) || null) : null,
       issue_date: license.issue_date,
       expiration_date: license.expiration_date,
       days_remaining: daysRemaining,
@@ -424,8 +439,9 @@ export const createRegulatoryDocument = async (
 ): Promise<{ id: string }> => {
   const { companyId } = await getCurrentUserAndCompany();
 
-  if (!payload.branch_id) {
-    throw new Error("Filial é obrigatória para cadastro de documento regulatório");
+  const hasBranch = (payload.branch_ids && payload.branch_ids.length > 0) || !!payload.branch_id;
+  if (!hasBranch) {
+    throw new Error("Selecione ao menos uma filial para o documento regulatório");
   }
 
   if (!payload.responsible_user_id) {
@@ -444,7 +460,8 @@ export const createRegulatoryDocument = async (
       document_number: payload.document_number || null,
       document_identifier_type: payload.document_identifier_type,
       document_identifier_other: payload.document_identifier_other || null,
-      branch_id: payload.branch_id,
+      branch_id: payload.branch_ids?.[0] || payload.branch_id || null,
+      branch_ids: payload.branch_ids || (payload.branch_id ? [payload.branch_id] : []),
       responsible_user_id: payload.responsible_user_id,
       issue_date: payload.issue_date ? ensureDateOnly(payload.issue_date) : null,
       expiration_date: expirationDate,
@@ -497,7 +514,12 @@ export const updateRegulatoryDocument = async (
   if (payload.document_number !== undefined) updatePayload.document_number = payload.document_number;
   if (payload.issuing_body !== undefined) updatePayload.issuing_body = payload.issuing_body;
   if (payload.process_number !== undefined) updatePayload.process_number = payload.process_number;
-  if (payload.branch_id !== undefined) updatePayload.branch_id = payload.branch_id;
+  if (payload.branch_ids !== undefined) {
+    updatePayload.branch_ids = payload.branch_ids;
+    updatePayload.branch_id = payload.branch_ids[0] || null;
+  } else if (payload.branch_id !== undefined) {
+    updatePayload.branch_id = payload.branch_id;
+  }
   if (payload.responsible_user_id !== undefined) updatePayload.responsible_user_id = payload.responsible_user_id;
   if (payload.issue_date !== undefined) updatePayload.issue_date = payload.issue_date ? ensureDateOnly(payload.issue_date) : null;
   if (payload.expiration_date !== undefined) {
