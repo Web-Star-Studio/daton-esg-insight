@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadDocument, type Document } from "@/services/documents";
 import type { Database } from "@/integrations/supabase/types";
-import { getEmployeesAsOptions } from "@/services/employees";
 
 export type RenewalStatus = Database["public"]["Enums"]["license_renewal_status_enum"];
 
@@ -238,8 +237,16 @@ export const updateRegulatorySettings = async (
 };
 
 export const getResponsibleUsers = async (): Promise<Array<{ id: string; full_name: string }>> => {
-  const options = await getEmployeesAsOptions();
-  return options.map((o) => ({ id: o.value, full_name: o.label }));
+  const { companyId } = await getCurrentUserAndCompany();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .eq("company_id", companyId)
+    .order("full_name");
+
+  if (error) throw new Error("Erro ao buscar usuários");
+  return (data || []).filter((u) => u.full_name) as Array<{ id: string; full_name: string }>;
 };
 
 export const getRegulatoryDocuments = async (

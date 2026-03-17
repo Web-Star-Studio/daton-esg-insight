@@ -27,9 +27,9 @@ import { downloadDocument } from "@/services/documents";
 import { CollaboratorMultiSelect } from "@/components/document-center/CollaboratorMultiSelect";
 import { getDepartments } from "@/services/organizationalStructure";
 import {
-  createSgqDocument, approveInitialDocument,
+  createSgqDocument, approveInitialDocument, deleteSgqDocument,
   getSgqDocuments, getSgqDocumentVersions, getSgqReadCampaigns,
-  getSgqResponsibleUsers, getSystemDocumentsForReference,
+  getSgqResponsibleUsers, getSgqElaboratedByUsers, getSystemDocumentsForReference,
   confirmSgqRead, getCurrentUserId,
   createReviewRequest, getPendingReviewRequests,
   approveReviewRequest, rejectReviewRequest,
@@ -37,11 +37,15 @@ import {
   SGQ_DOCUMENT_IDENTIFIER_OPTIONS,
   type DocumentStatus, type SgqDocumentItem,
 } from "@/services/sgqIsoDocuments";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getBranchDisplayLabel } from "@/utils/branchDisplay";
 import { cn } from "@/lib/utils";
 import {
   BookOpen, Check, CheckCircle, ChevronDown, Clock, Download, Eye, FileText, History,
-  Link2, Pencil, Plus, Save, Search, Send, Upload, Users, XCircle, ClipboardCheck,
+  Link2, Pencil, Plus, Save, Search, Send, Trash2, Upload, Users, XCircle, ClipboardCheck,
 } from "lucide-react";
 
 // ── Helpers ──
@@ -170,6 +174,7 @@ export const SGQIsoDocumentsTab = () => {
   });
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [filters, setFilters] = useState({ search: "", branch_id: "all", document_identifier_type: "all", status: "all" });
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
@@ -213,6 +218,12 @@ export const SGQIsoDocumentsTab = () => {
     queryFn: getSgqResponsibleUsers,
   });
   const users = Array.isArray(rawUsers) ? rawUsers : [];
+
+  const { data: rawElaboratedByUsers = [] } = useQuery({
+    queryKey: ["sgq-documents", "elaborated-by-users"],
+    queryFn: getSgqElaboratedByUsers,
+  });
+  const elaboratedByUsers = Array.isArray(rawElaboratedByUsers) ? rawElaboratedByUsers : [];
 
   const { data: rawItems = [], isLoading } = useQuery({
     queryKey: ["sgq-documents", filters],
@@ -412,6 +423,19 @@ export const SGQIsoDocumentsTab = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (docId: string) => deleteSgqDocument(docId),
+    onSuccess: () => {
+      toast({ title: "Documento excluído com sucesso." });
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+      setDeleteTargetId(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      setDeleteTargetId(null);
+    },
+  });
+
   const confirmReadMutation = useMutation({
     mutationFn: (recipientId: string) => confirmSgqRead(recipientId),
     onSuccess: () => {
@@ -523,7 +547,7 @@ export const SGQIsoDocumentsTab = () => {
                 <div className="space-y-2">
                   <Label>Elaborado por *</Label>
                   <SearchableUserSelect
-                    users={users}
+                    users={elaboratedByUsers}
                     value={createForm.elaborated_by_user_id}
                     onChange={(v) => setCreateForm((c) => ({ ...c, elaborated_by_user_id: v }))}
                     placeholder="Selecione"
@@ -820,22 +844,35 @@ export const SGQIsoDocumentsTab = () => {
                         </Button>
                       </TableCell>
                       <TableCell>
-                        {!item.is_approved && item.approved_by_user_id === currentUserId ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => approveInitialMutation.mutate(item.id)}
-                            disabled={approveInitialMutation.isPending}
-                            title="Aprovar documento"
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                        ) : item.is_approved ? (
-                          <Button variant="ghost" size="icon" onClick={() => openSendReview(item.id)} title="Enviar para Revisão">
-                            <Send className="h-4 w-4" />
-                          </Button>
-                        ) : null}
+                        <div className="flex items-center gap-1">
+                          {!item.is_approved && item.approved_by_user_id === currentUserId ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => approveInitialMutation.mutate(item.id)}
+                              disabled={approveInitialMutation.isPending}
+                              title="Aprovar documento"
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          ) : item.is_approved ? (
+                            <Button variant="ghost" size="icon" onClick={() => openSendReview(item.id)} title="Enviar para Revisão">
+                              <Send className="h-4 w-4" />
+                            </Button>
+                          ) : null}
+                          {item.created_by_user_id === currentUserId && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Excluir documento"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeleteTargetId(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1177,6 +1214,26 @@ export const SGQIsoDocumentsTab = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => { if (!open) setDeleteTargetId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir documento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O documento será removido permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (deleteTargetId) deleteMutation.mutate(deleteTargetId); }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadDocument, type Document } from "@/services/documents";
-import { getEmployeesAsOptions } from "@/services/employees";
 import {
   notifyApprovalRequired,
   notifyReadCampaignCreated,
@@ -243,9 +242,36 @@ export const updateSgqSettings = async (defaultExpiringDays: number): Promise<Sg
 
 // ── Users ──
 
+export const getSgqElaboratedByUsers = async (): Promise<Array<{ id: string; full_name: string }>> => {
+  const { companyId } = await getCurrentUserAndCompany();
+
+  const [{ data: employees }, { data: profiles }] = await Promise.all([
+    supabase.from("employees").select("id, full_name").eq("company_id", companyId).order("full_name"),
+    supabase.from("profiles").select("id, full_name").eq("company_id", companyId).order("full_name"),
+  ]);
+
+  const seen = new Set<string>();
+  const merged: Array<{ id: string; full_name: string }> = [];
+  for (const u of [...(employees || []), ...(profiles || [])]) {
+    if (u.full_name && !seen.has(u.id)) {
+      seen.add(u.id);
+      merged.push({ id: u.id, full_name: u.full_name });
+    }
+  }
+  return merged.sort((a, b) => a.full_name.localeCompare(b.full_name));
+};
+
 export const getSgqResponsibleUsers = async (): Promise<Array<{ id: string; full_name: string }>> => {
-  const options = await getEmployeesAsOptions();
-  return options.map((o) => ({ id: o.value, full_name: o.label }));
+  const { companyId } = await getCurrentUserAndCompany();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .eq("company_id", companyId)
+    .order("full_name");
+
+  if (error) throw new Error("Erro ao buscar usuários");
+  return (data || []).filter((u) => u.full_name) as Array<{ id: string; full_name: string }>;
 };
 
 // ── List Documents ──
@@ -286,12 +312,15 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
   ];
   const employeeNameMap = new Map<string, string>();
   if (userIds.length > 0) {
-    const { data: empData } = await supabase
-      .from("employees")
-      .select("id, full_name")
-      .in("id", userIds);
+    const [{ data: empData }, { data: profileData }] = await Promise.all([
+      supabase.from("employees").select("id, full_name").in("id", userIds),
+      supabase.from("profiles").select("id, full_name").in("id", userIds),
+    ]);
     for (const emp of empData || []) {
       employeeNameMap.set(emp.id, emp.full_name || "Sem nome");
+    }
+    for (const p of profileData || []) {
+      if (!employeeNameMap.has(p.id)) employeeNameMap.set(p.id, p.full_name || "Sem nome");
     }
   }
 
@@ -573,6 +602,7 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
         status: "pending",
       }));
       await (supabase as any).from("sgq_read_recipients").insert(recipients);
+      notifyReadCampaignCreated(payload.recipient_user_ids, doc.title, payload.sgq_document_id, newVersion).catch(() => {});
     }
   }
 };
@@ -1004,4 +1034,13 @@ export const uploadSgqSubDocument = async (docId: string, file: File): Promise<v
     related_model: "sgq_subdocument",
     related_id: docId,
   });
+};
+
+export const deleteSgqDocument = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("sgq_iso_documents")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw new Error("Erro ao excluir documento");
 };
