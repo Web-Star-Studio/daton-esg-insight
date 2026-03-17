@@ -20,6 +20,7 @@ interface CollaboratorMultiSelectProps {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
   placeholder?: string;
+  searchPlaceholder?: string;
 }
 
 export function CollaboratorMultiSelect({
@@ -27,6 +28,7 @@ export function CollaboratorMultiSelect({
   selectedIds,
   onChange,
   placeholder = "Selecionar colaboradores",
+  searchPlaceholder = "Buscar colaborador...",
 }: CollaboratorMultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -74,7 +76,7 @@ export function CollaboratorMultiSelect({
           <div className="flex flex-col">
             <div className="border-b p-2">
               <Input
-                placeholder="Buscar colaborador..."
+                placeholder={searchPlaceholder}
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="h-8 border-0 shadow-none focus-visible:ring-0 px-1"

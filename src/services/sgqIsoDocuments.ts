@@ -127,6 +127,19 @@ export interface CreateSgqDocumentPayload {
   referenced_document_ids?: string[];
 }
 
+export interface UpdateSgqDocumentPayload {
+  title: string;
+  document_identifier_type: string;
+  document_identifier_other?: string;
+  branch_ids?: string[];
+  elaborated_by_user_id: string;
+  approved_by_user_id: string;
+  expiration_date: string;
+  norm_reference?: string | null;
+  notes?: string;
+  responsible_department?: string | null;
+}
+
 export interface CreateSgqVersionPayload {
   sgq_document_id: string;
   changes_summary: string;
@@ -245,33 +258,28 @@ export const updateSgqSettings = async (defaultExpiringDays: number): Promise<Sg
 export const getSgqElaboratedByUsers = async (): Promise<Array<{ id: string; full_name: string }>> => {
   const { companyId } = await getCurrentUserAndCompany();
 
-  const [{ data: employees }, { data: profiles }] = await Promise.all([
-    supabase.from("employees").select("id, full_name").eq("company_id", companyId).order("full_name"),
-    supabase.from("profiles").select("id, full_name").eq("company_id", companyId).order("full_name"),
+  const PAGE = 1000;
+  const [p1, p2, p3] = await Promise.all([
+    supabase.from("employees").select("id, full_name").eq("company_id", companyId).order("full_name").range(0, PAGE - 1),
+    supabase.from("employees").select("id, full_name").eq("company_id", companyId).order("full_name").range(PAGE, PAGE * 2 - 1),
+    supabase.from("employees").select("id, full_name").eq("company_id", companyId).order("full_name").range(PAGE * 2, PAGE * 3 - 1),
   ]);
 
-  const seen = new Set<string>();
-  const merged: Array<{ id: string; full_name: string }> = [];
-  for (const u of [...(employees || []), ...(profiles || [])]) {
-    if (u.full_name && !seen.has(u.id)) {
-      seen.add(u.id);
-      merged.push({ id: u.id, full_name: u.full_name });
-    }
-  }
-  return merged.sort((a, b) => a.full_name.localeCompare(b.full_name));
+  return [...(p1.data || []), ...(p2.data || []), ...(p3.data || [])]
+    .filter((u) => u.full_name) as Array<{ id: string; full_name: string }>;
 };
 
 export const getSgqResponsibleUsers = async (): Promise<Array<{ id: string; full_name: string }>> => {
   const { companyId } = await getCurrentUserAndCompany();
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .eq("company_id", companyId)
-    .order("full_name");
+  const PAGE = 1000;
+  const [p1, p2] = await Promise.all([
+    supabase.from("profiles").select("id, full_name").eq("company_id", companyId).order("full_name").range(0, PAGE - 1),
+    supabase.from("profiles").select("id, full_name").eq("company_id", companyId).order("full_name").range(PAGE, PAGE * 2 - 1),
+  ]);
 
-  if (error) throw new Error("Erro ao buscar usuários");
-  return (data || []).filter((u) => u.full_name) as Array<{ id: string; full_name: string }>;
+  return [...(p1.data || []), ...(p2.data || [])]
+    .filter((u) => u.full_name) as Array<{ id: string; full_name: string }>;
 };
 
 // ── List Documents ──
@@ -1034,6 +1042,34 @@ export const uploadSgqSubDocument = async (docId: string, file: File): Promise<v
     related_model: "sgq_subdocument",
     related_id: docId,
   });
+};
+
+export const updateSgqDocument = async (id: string, payload: UpdateSgqDocumentPayload): Promise<void> => {
+  const { error } = await (supabase as any)
+    .from("sgq_iso_documents")
+    .update({
+      title: payload.title.trim(),
+      document_identifier_type: payload.document_identifier_type,
+      document_identifier_other: payload.document_identifier_type === "Outro" ? payload.document_identifier_other : null,
+      elaborated_by_user_id: payload.elaborated_by_user_id,
+      approved_by_user_id: payload.approved_by_user_id,
+      expiration_date: ensureDateOnly(payload.expiration_date),
+      norm_reference: payload.norm_reference || null,
+      notes: payload.notes || null,
+      responsible_department: payload.responsible_department || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(`Erro ao atualizar documento: ${error.message}`);
+
+  // Update branches: delete existing and reinsert
+  await (supabase as any).from("sgq_document_branches").delete().eq("sgq_document_id", id);
+  if (payload.branch_ids && payload.branch_ids.length > 0) {
+    await (supabase as any).from("sgq_document_branches").insert(
+      payload.branch_ids.map((branchId) => ({ sgq_document_id: id, branch_id: branchId })),
+    );
+  }
 };
 
 export const deleteSgqDocument = async (id: string): Promise<void> => {

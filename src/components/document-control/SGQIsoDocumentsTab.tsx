@@ -27,7 +27,7 @@ import { downloadDocument } from "@/services/documents";
 import { CollaboratorMultiSelect } from "@/components/document-center/CollaboratorMultiSelect";
 import { getDepartments } from "@/services/organizationalStructure";
 import {
-  createSgqDocument, approveInitialDocument, deleteSgqDocument,
+  createSgqDocument, approveInitialDocument, deleteSgqDocument, updateSgqDocument,
   getSgqDocuments, getSgqDocumentVersions, getSgqReadCampaigns,
   getSgqResponsibleUsers, getSgqElaboratedByUsers, getSystemDocumentsForReference,
   confirmSgqRead, getCurrentUserId,
@@ -37,6 +37,7 @@ import {
   SGQ_DOCUMENT_IDENTIFIER_OPTIONS,
   type DocumentStatus, type SgqDocumentItem,
 } from "@/services/sgqIsoDocuments";
+import { authService } from "@/services/auth";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -45,7 +46,7 @@ import { getBranchDisplayLabel } from "@/utils/branchDisplay";
 import { cn } from "@/lib/utils";
 import {
   BookOpen, Check, CheckCircle, ChevronDown, Clock, Download, Eye, FileText, History,
-  Link2, Pencil, Plus, Save, Search, Send, Trash2, Upload, Users, XCircle, ClipboardCheck,
+  Link2, Pencil, Plus, Save, Search, Send, Trash2, Upload, Users, XCircle, ClipboardCheck, Edit,
 } from "lucide-react";
 
 // ── Helpers ──
@@ -174,7 +175,13 @@ export const SGQIsoDocumentsTab = () => {
   });
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [editTargetId, setEditTargetId] = useState<string | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<CreateFormState>(DEFAULT_CREATE_FORM);
+  const [isEditDepartmentOpen, setIsEditDepartmentOpen] = useState(false);
+  const [editDepartmentSearch, setEditDepartmentSearch] = useState("");
   const [filters, setFilters] = useState({ search: "", branch_id: "all", document_identifier_type: "all", status: "all" });
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
@@ -183,6 +190,7 @@ export const SGQIsoDocumentsTab = () => {
 
   useEffect(() => {
     getCurrentUserId().then(setCurrentUserId);
+    authService.getCurrentUser().then((u) => setCurrentUserRole(u?.role ?? null));
   }, []);
 
   useEffect(() => {
@@ -296,7 +304,13 @@ export const SGQIsoDocumentsTab = () => {
     if (!normalizedSearch) return departmentOptions;
     return departmentOptions.filter((option) => option.toLowerCase().includes(normalizedSearch));
   }, [departmentOptions, departmentSearch]);
+  const filteredEditDepartmentOptions = useMemo(() => {
+    const s = editDepartmentSearch.trim().toLowerCase();
+    if (!s) return departmentOptions;
+    return departmentOptions.filter((o) => o.toLowerCase().includes(s));
+  }, [departmentOptions, editDepartmentSearch]);
   const allBranchIds = useMemo(() => branches.map((branch) => branch.id), [branches]);
+  const isAdminUser = ["admin", "super_admin", "platform_admin"].includes(currentUserRole ?? "");
   const allBranchesSelected = allBranchIds.length > 0 && createForm.branch_ids.length === allBranchIds.length;
   const someBranchesSelected = createForm.branch_ids.length > 0 && !allBranchesSelected;
 
@@ -436,6 +450,31 @@ export const SGQIsoDocumentsTab = () => {
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ id, form }: { id: string; form: CreateFormState }) =>
+      updateSgqDocument(id, {
+        title: form.title,
+        document_identifier_type: form.document_identifier_type,
+        document_identifier_other: form.document_identifier_other,
+        branch_ids: form.branch_ids,
+        elaborated_by_user_id: form.elaborated_by_user_id,
+        approved_by_user_id: form.approved_by_user_id,
+        expiration_date: form.expiration_date,
+        norm_reference: form.norm_references.length > 0 ? form.norm_references.join(", ") : null,
+        notes: form.notes,
+        responsible_department: form.responsible_department || null,
+      }),
+    onSuccess: () => {
+      toast({ title: "Documento atualizado com sucesso." });
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+      setIsEditOpen(false);
+      setEditTargetId(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+    },
+  });
+
   const confirmReadMutation = useMutation({
     mutationFn: (recipientId: string) => confirmSgqRead(recipientId),
     onSuccess: () => {
@@ -461,6 +500,26 @@ export const SGQIsoDocumentsTab = () => {
     } catch (error: any) {
       toast({ title: "Erro ao baixar", description: error?.message, variant: "destructive" });
     }
+  };
+
+  const openEdit = (item: SgqDocumentItem) => {
+    setEditTargetId(item.id);
+    setEditForm({
+      title: item.title,
+      document_identifier_type: item.document_identifier_type || SGQ_DOCUMENT_IDENTIFIER_OPTIONS[0],
+      document_identifier_other: item.document_identifier_other || "",
+      branch_ids: item.branch_ids,
+      elaborated_by_user_id: item.elaborated_by_user_id || "",
+      approved_by_user_id: item.approved_by_user_id || "",
+      expiration_date: item.expiration_date,
+      norm_references: item.norm_reference ? item.norm_reference.split(", ").filter(Boolean) : [],
+      notes: item.notes || "",
+      responsible_department: item.responsible_department || "",
+      initial_attachment: null,
+      recipient_user_ids: [],
+      referenced_document_ids: [],
+    });
+    setIsEditOpen(true);
   };
 
   const openVersions = (docId: string) => { setVersionsDocId(docId); setIsVersionsOpen(true); };
@@ -686,6 +745,7 @@ export const SGQIsoDocumentsTab = () => {
                     selectedIds={createForm.referenced_document_ids}
                     onChange={(ids) => setCreateForm((c) => ({ ...c, referenced_document_ids: ids }))}
                     placeholder="Selecionar documentos referenciados"
+                    searchPlaceholder="Buscar documento..."
                   />
                 </div>
 
@@ -861,7 +921,17 @@ export const SGQIsoDocumentsTab = () => {
                               <Send className="h-4 w-4" />
                             </Button>
                           ) : null}
-                          {item.created_by_user_id === currentUserId && (
+                          {(item.created_by_user_id === currentUserId || isAdminUser) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Editar documento"
+                              onClick={() => openEdit(item)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {(item.created_by_user_id === currentUserId || isAdminUser) && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1212,6 +1282,131 @@ export const SGQIsoDocumentsTab = () => {
               ))}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditOpen} onOpenChange={(o) => { setIsEditOpen(o); if (!o) { setEditTargetId(null); setEditDepartmentSearch(""); } }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Documento SGQ</DialogTitle>
+            <DialogDescription>Atualize os dados do documento. O anexo é gerenciado via novas versões.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+            <div className="md:col-span-2 space-y-2">
+              <Label>Título do Documento *</Label>
+              <Input value={editForm.title} onChange={(e) => setEditForm((c) => ({ ...c, title: e.target.value }))} placeholder="Ex.: Manual da Qualidade" />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select value={editForm.document_identifier_type} onValueChange={(v) => setEditForm((c) => ({ ...c, document_identifier_type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SGQ_DOCUMENT_IDENTIFIER_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {editForm.document_identifier_type === "Outro" && (
+              <div className="space-y-2">
+                <Label>Outro tipo</Label>
+                <Input value={editForm.document_identifier_other} onChange={(e) => setEditForm((c) => ({ ...c, document_identifier_other: e.target.value }))} />
+              </div>
+            )}
+            <div className="md:col-span-2 space-y-2">
+              <Label>Filiais vinculadas</Label>
+              <div className="grid max-h-48 gap-2 overflow-y-auto rounded-md border p-3">
+                {branches.map((branch) => (
+                  <label key={branch.id} className="flex items-center gap-3 text-sm">
+                    <Checkbox
+                      checked={editForm.branch_ids.includes(branch.id)}
+                      onCheckedChange={() => setEditForm((c) => ({
+                        ...c,
+                        branch_ids: c.branch_ids.includes(branch.id)
+                          ? c.branch_ids.filter((id) => id !== branch.id)
+                          : [...c.branch_ids, branch.id],
+                      }))}
+                    />
+                    <span>{getBranchDisplayLabel(branch)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Elaborado por *</Label>
+              <SearchableUserSelect users={elaboratedByUsers} value={editForm.elaborated_by_user_id} onChange={(v) => setEditForm((c) => ({ ...c, elaborated_by_user_id: v }))} placeholder="Selecione" />
+            </div>
+            <div className="space-y-2">
+              <Label>Aprovado por *</Label>
+              <SearchableUserSelect users={users} value={editForm.approved_by_user_id} onChange={(v) => setEditForm((c) => ({ ...c, approved_by_user_id: v }))} placeholder="Selecione" />
+            </div>
+            <div className="space-y-2">
+              <Label>Data de Validade *</Label>
+              <Input type="date" value={editForm.expiration_date} onChange={(e) => setEditForm((c) => ({ ...c, expiration_date: e.target.value }))} />
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              <Label>Normas aplicáveis</Label>
+              <div className="grid gap-2 rounded-md border p-3 md:grid-cols-2">
+                {ISO_OPTIONS.map((isoOption) => (
+                  <label key={isoOption} className="flex items-center gap-3 text-sm">
+                    <Checkbox
+                      checked={editForm.norm_references.includes(isoOption)}
+                      onCheckedChange={() => setEditForm((c) => ({
+                        ...c,
+                        norm_references: c.norm_references.includes(isoOption)
+                          ? c.norm_references.filter((n) => n !== isoOption)
+                          : [...c.norm_references, isoOption],
+                      }))}
+                    />
+                    <span>{isoOption}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              <Label>Departamento responsável</Label>
+              <Popover open={isEditDepartmentOpen} onOpenChange={setIsEditDepartmentOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="outline" className="w-full justify-between font-normal">
+                    <span className={cn("truncate", !editForm.responsible_department && "text-muted-foreground")}>
+                      {editForm.responsible_department || "Selecione o departamento responsável"}
+                    </span>
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" side="bottom">
+                  <div className="border-b p-3">
+                    <Input placeholder="Buscar departamento..." value={editDepartmentSearch} onChange={(e) => setEditDepartmentSearch(e.target.value)} />
+                  </div>
+                  <div className="h-[240px] overflow-y-auto overscroll-contain p-1" onWheel={(e) => e.stopPropagation()}>
+                    <button type="button" className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent" onClick={() => { setEditForm((c) => ({ ...c, responsible_department: "" })); setIsEditDepartmentOpen(false); }}>
+                      <Check className={cn("mr-2 h-4 w-4", !editForm.responsible_department ? "opacity-100" : "opacity-0")} />
+                      Nenhum
+                    </button>
+                    {filteredEditDepartmentOptions.map((option) => (
+                      <button key={option} type="button" className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent" onClick={() => { setEditForm((c) => ({ ...c, responsible_department: option })); setIsEditDepartmentOpen(false); }}>
+                        <Check className={cn("mr-2 h-4 w-4", editForm.responsible_department === option ? "opacity-100" : "opacity-0")} />
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              <Label>Observações</Label>
+              <Textarea value={editForm.notes} onChange={(e) => setEditForm((c) => ({ ...c, notes: e.target.value }))} rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => { if (editTargetId) editMutation.mutate({ id: editTargetId, form: editForm }); }}
+              disabled={editMutation.isPending || !editForm.title || !editForm.elaborated_by_user_id || !editForm.approved_by_user_id || !editForm.expiration_date}
+            >
+              {editMutation.isPending ? "Salvando..." : "Salvar alterações"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
