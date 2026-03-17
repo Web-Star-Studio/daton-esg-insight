@@ -1,0 +1,1 @@
+UPDATE public.sgq_iso_documents SET is_approved = true WHERE is_approved = false AND created_at < '2026-03-13T00:00:00Z';
