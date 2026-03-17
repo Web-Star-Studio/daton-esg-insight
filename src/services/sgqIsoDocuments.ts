@@ -373,7 +373,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
   const normalizedSearch = filters?.search?.trim().toLowerCase();
 
   return mapped.filter((item) => {
-    if (!item.is_approved) {
+    if (!item.is_approved && item.created_by_user_id !== null) {
       if (item.created_by_user_id !== user.id && item.approved_by_user_id !== user.id) return false;
     }
     if (filters?.status && filters.status !== item.status) return false;
