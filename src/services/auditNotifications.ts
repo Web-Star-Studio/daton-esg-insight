@@ -28,7 +28,7 @@ export class AuditNotificationService {
       scheduled_for?: string;
     }
   ) {
-    const { data: notification, error } = await supabase
+    const { error } = await supabase
       .from('audit_notifications')
       .insert({
         user_id: userId,
@@ -41,12 +41,9 @@ export class AuditNotificationService {
         action_url: data.action_url,
         scheduled_for: data.scheduled_for,
         sent_at: data.scheduled_for ? null : new Date().toISOString(),
-      })
-      .select()
-      .single();
+      });
 
     if (error) throw error;
-    return notification;
   }
 
   static async getUnreadNotifications(userId: string, companyId: string) {
