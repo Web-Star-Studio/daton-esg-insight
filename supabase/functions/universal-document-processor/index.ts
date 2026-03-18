@@ -114,7 +114,7 @@ serve(async (req) => {
     });
 
     // Build comprehensive company context
-    const context = await buildCompanyContext(supabaseClient, document.company_id);
+    const context = await buildCompanyContext(supabaseClient as any, document.company_id);
     
     console.warn('Company context built:', {
       company: context.company.name,

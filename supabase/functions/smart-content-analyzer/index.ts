@@ -280,7 +280,7 @@ ${content.substring(0, 20000)}`,
       document_type: classification.document_type,
       entities_count: classification.extracted_entities?.length || 0,
       target_mappings_count: classification.target_mappings?.length || 0,
-      mappings_detail: classification.target_mappings?.map(m => ({
+      mappings_detail: classification.target_mappings?.map((m: any) => ({
         table: m.table_name,
         field_count: Object.keys(m.field_mappings || {}).length,
         fields: Object.keys(m.field_mappings || {}).slice(0, 5)
