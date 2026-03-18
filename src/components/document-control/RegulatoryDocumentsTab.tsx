@@ -844,22 +844,25 @@ export const RegulatoryDocumentsTab = () => {
                       <TableCell>{item.issuing_body || "-"}</TableCell>
                       <TableCell>{item.process_number || "-"}</TableCell>
                       <TableCell>
-                        {item.branch_ids.length === 0 ? (
-                          "-"
-                        ) : item.branch_ids.length === 1 ? (
-                          <Badge variant="secondary">
-                            {branchLabelById.get(item.branch_ids[0]) || item.branch_name || "-"}
-                          </Badge>
-                        ) : (
-                          <div className="flex items-center gap-1">
+                        {(() => {
+                          const ids = item.branch_ids ?? [];
+                          if (ids.length === 0) return "-";
+                          if (ids.length === 1) return (
                             <Badge variant="secondary">
-                              {branchLabelById.get(item.branch_ids[0]) || "-"}
+                              {branchLabelById.get(ids[0]) || item.branch_name || "-"}
                             </Badge>
-                            <Badge variant="outline" className="text-xs text-muted-foreground">
-                              +{item.branch_ids.length - 1}
-                            </Badge>
-                          </div>
-                        )}
+                          );
+                          return (
+                            <div className="flex items-center gap-1">
+                              <Badge variant="secondary">
+                                {branchLabelById.get(ids[0]) || "-"}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs text-muted-foreground">
+                                +{ids.length - 1}
+                              </Badge>
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>{item.responsible_name || "-"}</TableCell>
                       <TableCell>{formatDate(item.issue_date)}</TableCell>
