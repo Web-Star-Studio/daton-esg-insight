@@ -508,7 +508,7 @@ export const SGQIsoDocumentsTab = () => {
       title: item.title,
       document_identifier_type: item.document_identifier_type || SGQ_DOCUMENT_IDENTIFIER_OPTIONS[0],
       document_identifier_other: item.document_identifier_other || "",
-      branch_ids: item.branch_ids,
+      branch_ids: item.branch_ids ?? [],
       elaborated_by_user_id: item.elaborated_by_user_id || "",
       approved_by_user_id: item.approved_by_user_id || "",
       expiration_date: item.expiration_date,
@@ -852,22 +852,25 @@ export const SGQIsoDocumentsTab = () => {
                         {item.document_identifier_type === "Outro" && item.document_identifier_other ? ` (${item.document_identifier_other})` : ""}
                       </TableCell>
                       <TableCell>
-                        {item.branch_ids.length === 0 ? (
-                          "-"
-                        ) : item.branch_ids.length === 1 ? (
-                          <Badge variant="secondary">
-                            {branchLabelById.get(item.branch_ids[0]) || "-"}
-                          </Badge>
-                        ) : (
-                          <div className="flex items-center gap-1">
+                        {(() => {
+                          const ids = item.branch_ids ?? [];
+                          if (ids.length === 0) return "-";
+                          if (ids.length === 1) return (
                             <Badge variant="secondary">
-                              {branchLabelById.get(item.branch_ids[0]) || "-"}
+                              {branchLabelById.get(ids[0]) || "-"}
                             </Badge>
-                            <Badge variant="outline" className="text-xs text-muted-foreground">
-                              +{item.branch_ids.length - 1}
-                            </Badge>
-                          </div>
-                        )}
+                          );
+                          return (
+                            <div className="flex items-center gap-1">
+                              <Badge variant="secondary">
+                                {branchLabelById.get(ids[0]) || "-"}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs text-muted-foreground">
+                                +{ids.length - 1}
+                              </Badge>
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>{item.elaborated_by_name || "-"}</TableCell>
                       <TableCell>{item.approved_by_name || "-"}</TableCell>

@@ -142,10 +142,11 @@ export default function Documentos() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: branches = [] } = useBranches();
   const { data: employeeOptions = [] } = useEmployeesAsOptions();
-  const { data: departments = [] } = useQuery({
+  const { data: rawDepartments = [] } = useQuery({
     queryKey: ["organizational-structure", "departments"],
     queryFn: getDepartments,
   });
+  const departments = Array.isArray(rawDepartments) ? rawDepartments : [];
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isIssuerOpen, setIsIssuerOpen] = useState(false);

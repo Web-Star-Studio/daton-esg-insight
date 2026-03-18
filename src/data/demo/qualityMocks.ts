@@ -207,9 +207,11 @@ export const qualityMockEntries = [
   {
     queryKey: ['non-conformities'],
     data: [
-      { id: '1', nc_number: 'NC-2026-001', title: 'Desvio de temperatura na câmara fria', category: 'Processo', severity: 'Maior', status: 'Em Tratamento' },
-      { id: '2', nc_number: 'NC-2026-002', title: 'Documento desatualizado', category: 'Documentação', severity: 'Menor', status: 'Aberta' },
-      { id: '3', nc_number: 'NC-2026-003', title: 'Falha na calibração', category: 'Equipamento', severity: 'Crítica', status: 'Em Análise' },
+      { id: '1', nc_number: 'NC-2026-001', title: 'Desvio de temperatura na câmara fria', category: 'Processo', severity: 'Maior', status: 'Em Tratamento', current_stage: 3, due_date: '2026-03-01', completion_date: null, created_at: '2026-01-05T08:30:00Z' },
+      { id: '2', nc_number: 'NC-2026-002', title: 'Documento desatualizado', category: 'Documentação', severity: 'Menor', status: 'Aberta', current_stage: 1, due_date: '2026-03-20', completion_date: null, created_at: '2026-01-12T11:00:00Z' },
+      { id: '3', nc_number: 'NC-2026-003', title: 'Falha na calibração', category: 'Equipamento', severity: 'Crítica', status: 'Em Análise', current_stage: 2, due_date: '2026-02-20', completion_date: null, created_at: '2026-01-20T14:10:00Z' },
+      { id: '4', nc_number: 'NC-2026-004', title: 'EPI fora do prazo de validade', category: 'SST', severity: 'Maior', status: 'Em Tratamento', current_stage: 4, due_date: '2026-03-10', completion_date: null, created_at: '2026-01-25T10:00:00Z' },
+      { id: '5', nc_number: 'NC-2025-018', title: 'Resíduo descartado incorretamente', category: 'Ambiental', severity: 'Menor', status: 'Fechada', current_stage: 6, due_date: '2026-01-15', completion_date: '2026-01-14T16:00:00Z', created_at: '2025-12-10T09:00:00Z' },
     ],
   },
   // Non-conformity details and lifecycle data
@@ -599,6 +601,27 @@ export const qualityMockEntries = [
     ],
   },
 
+  // Elaboradores disponíveis para seleção (apenas colaboradores)
+  {
+    queryKey: ['sgq-documents', 'elaborated-by-users'],
+    data: [
+      { id: 'emp-1', full_name: 'Ana Silva' },
+      { id: 'emp-6', full_name: 'Pedro Almeida' },
+      { id: 'emp-8', full_name: 'Lucas Mendes' },
+    ],
+  },
+
+  // Departamentos disponíveis no formulário SGQ
+  {
+    queryKey: ['sgq-documents', 'departments'],
+    data: [
+      { id: 'dept-7', name: 'Qualidade' },
+      { id: 'dept-2', name: 'Operações' },
+      { id: 'dept-9', name: 'Produção' },
+      { id: 'dept-4', name: 'Recursos Humanos' },
+    ],
+  },
+
   // Lista de documentos SGQ (prefixo — cobre qualquer combinação de filtros)
   {
     queryKey: ['sgq-documents'],
@@ -610,7 +633,11 @@ export const qualityMockEntries = [
         document_identifier_other: null,
         branch_id: 'branch-1',
         branch_name: 'Unidade Industrial SP',
+        branch_ids: ['branch-1'],
+        branch_names: ['Unidade Industrial SP'],
+        elaborated_by_user_id: 'emp-6',
         elaborated_by_name: 'Pedro Almeida',
+        approved_by_user_id: 'emp-1',
         approved_by_name: 'Ana Silva',
         expiration_date: '2026-12-01',
         days_remaining: 266,
@@ -618,7 +645,10 @@ export const qualityMockEntries = [
         current_version_number: '6.0',
         pending_recipients: 0,
         pending_reviews: 0,
+        norm_reference: 'ISO 9001:2015',
+        responsible_department: 'Qualidade',
         notes: 'Manual atualizado conforme ISO 9001:2015 revisão 2025.',
+        is_approved: true,
       },
       {
         id: 'sgq-doc-2',
@@ -627,7 +657,11 @@ export const qualityMockEntries = [
         document_identifier_other: null,
         branch_id: 'branch-1',
         branch_name: 'Unidade Industrial SP',
+        branch_ids: ['branch-1'],
+        branch_names: ['Unidade Industrial SP'],
+        elaborated_by_user_id: 'emp-6',
         elaborated_by_name: 'Pedro Almeida',
+        approved_by_user_id: 'demo-user-002',
         approved_by_name: 'Mariana Lopes',
         expiration_date: '2026-04-15',
         days_remaining: 36,
@@ -635,7 +669,10 @@ export const qualityMockEntries = [
         current_version_number: '4.1',
         pending_recipients: 3,
         pending_reviews: 1,
+        norm_reference: null,
+        responsible_department: 'Qualidade',
         notes: 'Revisão programada para março de 2026.',
+        is_approved: true,
       },
       {
         id: 'sgq-doc-3',
@@ -644,7 +681,11 @@ export const qualityMockEntries = [
         document_identifier_other: null,
         branch_id: 'branch-1',
         branch_name: 'Unidade Industrial SP',
+        branch_ids: ['branch-1'],
+        branch_names: ['Unidade Industrial SP'],
+        elaborated_by_user_id: 'emp-8',
         elaborated_by_name: 'Lucas Mendes',
+        approved_by_user_id: 'emp-6',
         approved_by_name: 'Pedro Almeida',
         expiration_date: '2026-02-01',
         days_remaining: -37,
@@ -652,7 +693,10 @@ export const qualityMockEntries = [
         current_version_number: '2.3',
         pending_recipients: 5,
         pending_reviews: 2,
+        norm_reference: null,
+        responsible_department: 'Produção',
         notes: 'Instrução vencida — aguardando revisão e aprovação.',
+        is_approved: true,
       },
       {
         id: 'sgq-doc-4',
@@ -661,7 +705,11 @@ export const qualityMockEntries = [
         document_identifier_other: null,
         branch_id: 'branch-1',
         branch_name: 'Unidade Industrial SP',
+        branch_ids: ['branch-1'],
+        branch_names: ['Unidade Industrial SP'],
+        elaborated_by_user_id: 'demo-user-002',
         elaborated_by_name: 'Mariana Lopes',
+        approved_by_user_id: 'emp-1',
         approved_by_name: 'Ana Silva',
         expiration_date: '2027-01-10',
         days_remaining: 306,
@@ -669,7 +717,10 @@ export const qualityMockEntries = [
         current_version_number: '3.2',
         pending_recipients: 0,
         pending_reviews: 0,
+        norm_reference: 'ISO 9001:2015, ISO 19011:2018',
+        responsible_department: 'Qualidade',
         notes: 'Procedimento alinhado ao programa de auditorias internas anuais.',
+        is_approved: true,
       },
     ],
   },
