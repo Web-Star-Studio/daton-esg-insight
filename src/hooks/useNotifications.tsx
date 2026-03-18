@@ -119,7 +119,7 @@ export function useNotifications() {
       const regularIds = unread.filter(n => n._source === 'notifications').map(n => n.id);
       const auditIds = unread.filter(n => n._source === 'audit_notifications').map(n => n.id);
 
-      const promises: Promise<any>[] = [];
+      const promises: PromiseLike<any>[] = [];
 
       if (regularIds.length > 0) {
         promises.push(
