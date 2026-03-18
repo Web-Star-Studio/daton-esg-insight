@@ -127,6 +127,7 @@ export function useNotifications() {
             .from('notifications' as any)
             .update({ is_read: true, read_at: new Date().toISOString() })
             .in('id', regularIds)
+            .then()
         );
       }
 
@@ -136,6 +137,7 @@ export function useNotifications() {
             .from('audit_notifications')
             .update({ read_at: new Date().toISOString() })
             .in('id', auditIds)
+            .then()
         );
       }
 
