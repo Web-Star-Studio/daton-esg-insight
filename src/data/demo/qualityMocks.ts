@@ -588,39 +588,9 @@ export const qualityMockEntries = [
 
   // ──────────────────────────────────────────────────────────
   // SGQ Documents module
+  // IMPORTANT: ['sgq-documents'] must come FIRST so its prefix wins in the
+  // resolver and all ['sgq-documents', filters] queries return the doc list.
   // ──────────────────────────────────────────────────────────
-
-  // Responsáveis disponíveis para seleção
-  {
-    queryKey: ['sgq-documents', 'responsibles'],
-    data: [
-      { id: 'emp-1', full_name: 'Ana Silva' },
-      { id: 'emp-6', full_name: 'Pedro Almeida' },
-      { id: 'demo-user-002', full_name: 'Mariana Lopes' },
-      { id: 'emp-8', full_name: 'Lucas Mendes' },
-    ],
-  },
-
-  // Elaboradores disponíveis para seleção (apenas colaboradores)
-  {
-    queryKey: ['sgq-documents', 'elaborated-by-users'],
-    data: [
-      { id: 'emp-1', full_name: 'Ana Silva' },
-      { id: 'emp-6', full_name: 'Pedro Almeida' },
-      { id: 'emp-8', full_name: 'Lucas Mendes' },
-    ],
-  },
-
-  // Departamentos disponíveis no formulário SGQ
-  {
-    queryKey: ['sgq-documents', 'departments'],
-    data: [
-      { id: 'dept-7', name: 'Qualidade' },
-      { id: 'dept-2', name: 'Operações' },
-      { id: 'dept-9', name: 'Produção' },
-      { id: 'dept-4', name: 'Recursos Humanos' },
-    ],
-  },
 
   // Lista de documentos SGQ (prefixo — cobre qualquer combinação de filtros)
   {
@@ -722,6 +692,38 @@ export const qualityMockEntries = [
         notes: 'Procedimento alinhado ao programa de auditorias internas anuais.',
         is_approved: true,
       },
+    ],
+  },
+
+  // Responsáveis disponíveis para seleção
+  {
+    queryKey: ['sgq-documents', 'responsibles'],
+    data: [
+      { id: 'emp-1', full_name: 'Ana Silva' },
+      { id: 'emp-6', full_name: 'Pedro Almeida' },
+      { id: 'demo-user-002', full_name: 'Mariana Lopes' },
+      { id: 'emp-8', full_name: 'Lucas Mendes' },
+    ],
+  },
+
+  // Elaboradores disponíveis para seleção (apenas colaboradores)
+  {
+    queryKey: ['sgq-documents', 'elaborated-by-users'],
+    data: [
+      { id: 'emp-1', full_name: 'Ana Silva' },
+      { id: 'emp-6', full_name: 'Pedro Almeida' },
+      { id: 'emp-8', full_name: 'Lucas Mendes' },
+    ],
+  },
+
+  // Departamentos disponíveis no formulário SGQ
+  {
+    queryKey: ['sgq-documents', 'departments'],
+    data: [
+      { id: 'dept-7', name: 'Qualidade' },
+      { id: 'dept-2', name: 'Operações' },
+      { id: 'dept-9', name: 'Produção' },
+      { id: 'dept-4', name: 'Recursos Humanos' },
     ],
   },
 
@@ -989,27 +991,8 @@ export const qualityMockEntries = [
   },
 
   // ── Regulatory Documents ──────────────────────────────────────────
-
-  // Settings
-  {
-    queryKey: ['regulatory-documents', 'settings'],
-    data: { default_expiring_days: 30 },
-  },
-  {
-    queryKey: ['sgq-documents', 'settings'],
-    data: { default_expiring_days: 30 },
-  },
-
-  // Responsible users for regulatory docs
-  {
-    queryKey: ['regulatory-documents', 'responsibles'],
-    data: [
-      { id: 'emp-1', full_name: 'Ana Silva' },
-      { id: 'emp-2', full_name: 'Carlos Santos' },
-      { id: 'emp-6', full_name: 'Pedro Almeida' },
-      { id: 'demo-user-002', full_name: 'Mariana Lopes' },
-    ],
-  },
+  // IMPORTANT: ['regulatory-documents'] must come FIRST so the prefix resolver
+  // returns the doc list for ['regulatory-documents', filters] queries.
 
   // Regulatory document list (prefix match for any filter combo)
   {
@@ -1102,6 +1085,27 @@ export const qualityMockEntries = [
         external_source_url: null,
         created_at: '2025-01-10T11:00:00Z',
       },
+    ],
+  },
+
+  // Settings
+  {
+    queryKey: ['regulatory-documents', 'settings'],
+    data: { default_expiring_days: 30 },
+  },
+  {
+    queryKey: ['sgq-documents', 'settings'],
+    data: { default_expiring_days: 30 },
+  },
+
+  // Responsible users for regulatory docs
+  {
+    queryKey: ['regulatory-documents', 'responsibles'],
+    data: [
+      { id: 'emp-1', full_name: 'Ana Silva' },
+      { id: 'emp-2', full_name: 'Carlos Santos' },
+      { id: 'emp-6', full_name: 'Pedro Almeida' },
+      { id: 'demo-user-002', full_name: 'Mariana Lopes' },
     ],
   },
 
