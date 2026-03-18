@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
@@ -9,8 +9,8 @@ export interface Notification {
   user_id: string;
   title: string;
   message: string;
-  notification_type: 'info' | 'warning' | 'critical' | 'success';
-  category: 'emissoes' | 'metas' | 'licencas' | 'tarefas' | 'riscos' | 'nao_conformidades' | 'sistema';
+  notification_type: string;
+  category: string;
   related_entity_type?: string | null;
   related_entity_id?: string | null;
   action_url?: string | null;
@@ -18,7 +18,26 @@ export interface Notification {
   read_at?: string | null;
   metadata?: Record<string, unknown>;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+  _source: 'notifications' | 'audit_notifications';
+}
+
+/** Map audit_notifications row into the unified Notification shape */
+function mapAuditNotification(row: any): Notification {
+  return {
+    id: row.id,
+    company_id: row.company_id,
+    user_id: row.user_id,
+    title: row.title,
+    message: row.message,
+    notification_type: row.priority === 'urgent' || row.priority === 'high' ? 'warning' : 'info',
+    category: row.notification_type?.startsWith('sgq_') ? 'tarefas' : 'sistema',
+    action_url: row.action_url,
+    is_read: !!row.read_at,
+    read_at: row.read_at,
+    created_at: row.created_at,
+    _source: 'audit_notifications',
+  };
 }
 
 export function useNotifications() {
@@ -27,39 +46,63 @@ export function useNotifications() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('notifications' as any)
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      // Fetch from both tables in parallel
+      const [notifResult, auditResult] = await Promise.all([
+        supabase
+          .from('notifications' as any)
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabase
+          .from('audit_notifications')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ]);
 
-      if (error) throw error;
+      const regularNotifs: Notification[] = ((notifResult.data || []) as any[]).map(n => ({
+        ...n,
+        _source: 'notifications' as const,
+      }));
 
-      const notificationsList = (data || []) as unknown as Notification[];
-      setNotifications(notificationsList);
-      setUnreadCount(notificationsList.filter((n) => !n.is_read).length);
+      const auditNotifs: Notification[] = ((auditResult.data || []) as any[]).map(mapAuditNotification);
+
+      // Merge and sort by created_at desc
+      const merged = [...regularNotifs, ...auditNotifs].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ).slice(0, 50);
+
+      setNotifications(merged);
+      setUnreadCount(merged.filter((n) => !n.is_read).length);
     } catch (error) {
       logger.error('Error fetching notifications', error, 'notification');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications' as any)
-        .update({ 
-          is_read: true, 
-          read_at: new Date().toISOString() 
-        })
-        .eq('id', notificationId);
+      const notification = notifications.find(n => n.id === notificationId);
+      if (!notification) return;
 
-      if (error) throw error;
+      if (notification._source === 'audit_notifications') {
+        const { error } = await supabase
+          .from('audit_notifications')
+          .update({ read_at: new Date().toISOString() })
+          .eq('id', notificationId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('notifications' as any)
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .eq('id', notificationId);
+        if (error) throw error;
+      }
 
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, is_read: true, read_at: new Date().toISOString() } : n)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
@@ -70,60 +113,76 @@ export function useNotifications() {
 
   const markAllAsRead = async () => {
     try {
-      const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
-      
-      if (unreadIds.length === 0) return;
+      const unread = notifications.filter(n => !n.is_read);
+      if (unread.length === 0) return;
 
-      const { error } = await supabase
-        .from('notifications' as any)
-        .update({ 
-          is_read: true, 
-          read_at: new Date().toISOString() 
-        })
-        .in('id', unreadIds);
+      const regularIds = unread.filter(n => n._source === 'notifications').map(n => n.id);
+      const auditIds = unread.filter(n => n._source === 'audit_notifications').map(n => n.id);
 
-      if (error) throw error;
+      const promises: Promise<any>[] = [];
 
-      setNotifications(prev => 
+      if (regularIds.length > 0) {
+        promises.push(
+          supabase
+            .from('notifications' as any)
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .in('id', regularIds)
+        );
+      }
+
+      if (auditIds.length > 0) {
+        promises.push(
+          supabase
+            .from('audit_notifications')
+            .update({ read_at: new Date().toISOString() })
+            .in('id', auditIds)
+        );
+      }
+
+      await Promise.all(promises);
+
+      setNotifications(prev =>
         prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
       );
       setUnreadCount(0);
 
-      toast({
-        title: "Todas as notificações foram marcadas como lidas",
-      });
+      toast({ title: "Todas as notificações foram marcadas como lidas" });
     } catch (error) {
       logger.error('Error marking all as read', error, 'notification');
-      toast({
-        title: "Erro ao marcar notificações",
-        variant: "destructive",
-      });
+      toast({ title: "Erro ao marcar notificações", variant: "destructive" });
     }
   };
 
   useEffect(() => {
     fetchNotifications();
 
-    // Subscribe to new notifications
+    // Subscribe to both tables
     const channel = supabase
-      .channel('notifications-changes')
+      .channel('all-notifications-changes')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications'
-        },
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
+          const n = { ...payload.new, _source: 'notifications' } as Notification;
+          setNotifications(prev => [n, ...prev].slice(0, 50));
           setUnreadCount(prev => prev + 1);
-
-          // Show toast for new notification
           toast({
-            title: newNotification.title,
-            description: newNotification.message,
-            variant: newNotification.notification_type === 'critical' ? 'destructive' : 'default',
+            title: n.title,
+            description: n.message,
+            variant: n.notification_type === 'critical' ? 'destructive' : 'default',
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'audit_notifications' },
+        (payload) => {
+          const n = mapAuditNotification(payload.new);
+          setNotifications(prev => [n, ...prev].slice(0, 50));
+          setUnreadCount(prev => prev + 1);
+          toast({
+            title: n.title,
+            description: (payload.new as any).message,
           });
         }
       )
@@ -132,7 +191,7 @@ export function useNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [toast, fetchNotifications]);
 
   return {
     notifications,
