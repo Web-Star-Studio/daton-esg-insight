@@ -537,7 +537,9 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
 
   // Notify approver that the document needs their approval (non-blocking)
   if (payload.approved_by_user_id) {
-    notifyApprovalRequired(payload.approved_by_user_id, payload.title.trim(), doc.id).catch(() => {});
+    notifyApprovalRequired(payload.approved_by_user_id, payload.title.trim(), doc.id).catch((err) => {
+      console.error("[SGQ] Failed to notify approver:", err);
+    });
   }
   // Recipients are NOT notified yet — only after approver approves
 

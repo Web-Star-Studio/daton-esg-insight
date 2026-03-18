@@ -30,7 +30,12 @@ export const notifyApprovalRequired = async (
 ): Promise<void> => {
   try {
     const companyId = await getCompanyId(approverUserId);
-    if (!companyId) return;
+    if (!companyId) {
+      logger.error("notifyApprovalRequired: could not resolve companyId for user", approverUserId, "notification");
+      return;
+    }
+
+    logger.debug(`notifyApprovalRequired: creating notification for user=${approverUserId}, company=${companyId}, doc="${docTitle}"`, "notification");
 
     await AuditNotificationService.createNotification(approverUserId, companyId, {
       title: "📋 Aprovação Pendente",
@@ -39,6 +44,8 @@ export const notifyApprovalRequired = async (
       priority: "high",
       action_url: ACTION_URL_SGQ,
     });
+
+    logger.debug("notifyApprovalRequired: notification created successfully", "notification");
   } catch (error) {
     logger.error("Error notifying approval required", error, "notification");
   }
