@@ -16,7 +16,7 @@ SELECT
   COALESCE(d.approved_at, d.created_at),
   (SELECT doc.id FROM public.documents doc
    WHERE doc.related_model = 'sgq_iso_document' AND doc.related_id = d.id
-   ORDER BY doc.created_at ASC LIMIT 1)
+   ORDER BY doc.upload_date ASC LIMIT 1)
 FROM public.sgq_iso_documents d
 WHERE NOT EXISTS (
   SELECT 1 FROM public.sgq_document_versions v
