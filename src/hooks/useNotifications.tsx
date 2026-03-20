@@ -158,41 +158,50 @@ export function useNotifications() {
   };
 
   useEffect(() => {
-    fetchNotifications();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    const channel = supabase
-      .channel('all-notifications-changes')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications' },
-        (payload) => {
-          const n = { ...payload.new, _source: 'notifications' } as Notification;
-          setNotifications(prev => [n, ...prev].slice(0, 50));
-          setUnreadCount(prev => prev + 1);
-          toastRef.current({
-            title: n.title,
-            description: n.message,
-            variant: n.notification_type === 'critical' ? 'destructive' : 'default',
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'audit_notifications' },
-        (payload) => {
-          const n = mapAuditNotification(payload.new);
-          setNotifications(prev => [n, ...prev].slice(0, 50));
-          setUnreadCount(prev => prev + 1);
-          toastRef.current({
-            title: n.title,
-            description: (payload.new as any).message,
-          });
-        }
-      )
-      .subscribe();
+    const setup = async () => {
+      await fetchNotifications();
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      channel = supabase
+        .channel(`notifications-${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+          (payload) => {
+            const n = { ...payload.new, _source: 'notifications' } as Notification;
+            setNotifications(prev => [n, ...prev].slice(0, 50));
+            setUnreadCount(prev => prev + 1);
+            toastRef.current({
+              title: n.title,
+              description: n.message,
+              variant: n.notification_type === 'critical' ? 'destructive' : 'default',
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'audit_notifications', filter: `user_id=eq.${user.id}` },
+          (payload) => {
+            const n = mapAuditNotification(payload.new);
+            setNotifications(prev => [n, ...prev].slice(0, 50));
+            setUnreadCount(prev => prev + 1);
+            toastRef.current({
+              title: n.title,
+              description: (payload.new as any).message,
+            });
+          }
+        )
+        .subscribe();
+    };
+
+    setup();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [fetchNotifications]);
 

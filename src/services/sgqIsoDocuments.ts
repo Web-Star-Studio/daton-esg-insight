@@ -700,6 +700,7 @@ export const createReviewRequest = async (payload: CreateReviewRequestPayload): 
     related_model: "sgq_iso_document",
     related_id: payload.sgq_document_id,
     tags: ["sgq-review"],
+    skipAutoProcessing: true,
   });
 
   const { error } = await (supabase as any)
