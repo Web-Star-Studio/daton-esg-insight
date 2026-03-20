@@ -21182,13 +21182,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sgq_document_versions_approved_by_user_id_fkey"
-            columns: ["approved_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "sgq_document_versions_attachment_document_id_fkey"
             columns: ["attachment_document_id"]
             isOneToOne: false
@@ -21200,13 +21193,6 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sgq_document_versions_elaborated_by_user_id_fkey"
-            columns: ["elaborated_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
