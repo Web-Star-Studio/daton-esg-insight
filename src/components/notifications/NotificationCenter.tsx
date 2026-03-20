@@ -1,4 +1,6 @@
-import { Bell, Check, CheckCheck, AlertTriangle, Info, AlertCircle, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, CheckCheck, AlertTriangle, Info, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -14,6 +16,16 @@ import { cn } from '@/lib/utils';
 
 export function NotificationCenter() {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
+  const handleClick = (notification: { id: string; is_read: boolean; action_url?: string | null }) => {
+    if (!notification.is_read) markAsRead(notification.id);
+    if (notification.action_url) {
+      setOpen(false);
+      navigate(notification.action_url);
+    }
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -42,7 +54,7 @@ export function NotificationCenter() {
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -98,7 +110,7 @@ export function NotificationCenter() {
                     "p-4 hover:bg-accent/50 transition-colors cursor-pointer",
                     !notification.is_read && "bg-accent/20"
                   )}
-                  onClick={() => !notification.is_read && markAsRead(notification.id)}
+                  onClick={() => handleClick(notification)}
                 >
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 mt-0.5">

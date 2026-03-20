@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -167,6 +168,9 @@ const DEFAULT_REVIEW_FORM: ReviewFormState = {
 export const SGQIsoDocumentsTab = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const highlightDocId = searchParams.get("docId");
+  const highlightRowRef = useRef<HTMLTableRowElement>(null);
   const { data: rawBranches = [] } = useBranches();
   const branches = Array.isArray(rawBranches) ? rawBranches : [];
   const { data: departments = [] } = useQuery({
@@ -192,6 +196,12 @@ export const SGQIsoDocumentsTab = () => {
     getCurrentUserId().then(setCurrentUserId);
     authService.getCurrentUser().then((u) => setCurrentUserRole(u?.role ?? null));
   }, []);
+
+  useEffect(() => {
+    if (highlightDocId && highlightRowRef.current) {
+      highlightRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightDocId, highlightRowRef.current]);
 
   useEffect(() => {
     if (!isDepartmentOpen) {
@@ -837,7 +847,11 @@ export const SGQIsoDocumentsTab = () => {
                 </TableHeader>
                 <TableBody>
                   {items.map((item) => (
-                    <TableRow key={item.id}>
+                    <TableRow
+                      key={item.id}
+                      ref={item.id === highlightDocId ? highlightRowRef : undefined}
+                      className={item.id === highlightDocId ? "ring-2 ring-primary ring-inset bg-primary/5" : undefined}
+                    >
                       <TableCell className="max-w-[200px]">
                         <button
                           type="button"

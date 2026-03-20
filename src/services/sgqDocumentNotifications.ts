@@ -3,7 +3,8 @@ import { AuditNotificationService } from "./auditNotifications";
 import { logger } from "@/utils/logger";
 
 const ACTION_URL = "/controle-documentos";
-const ACTION_URL_SGQ = "/controle-documentos?tab=sgq-iso";
+const sgqUrl = (docId?: string) =>
+  docId ? `/controle-documentos?tab=sgq-iso&docId=${docId}` : "/controle-documentos?tab=sgq-iso";
 
 /**
  * Resolve the company_id for a given user (needed by AuditNotificationService)
@@ -42,7 +43,7 @@ export const notifyApprovalRequired = async (
       message: `O documento "${docTitle}" aguarda sua aprovação para ser publicado.`,
       notification_type: "sgq_approval_required",
       priority: "high",
-      action_url: ACTION_URL_SGQ,
+      action_url: sgqUrl(docId),
     });
 
     logger.debug("notifyApprovalRequired: notification created successfully", "notification");
@@ -65,7 +66,7 @@ export const notifyReviewRequested = async (
       message: `O documento "${docTitle}" foi enviado para sua revisão e aprovação.`,
       notification_type: "sgq_review_requested",
       priority: "high",
-      action_url: ACTION_URL_SGQ,
+      action_url: sgqUrl(docId),
     });
   } catch (error) {
     logger.error("Error notifying review requested", error, "notification");
@@ -87,7 +88,7 @@ export const notifyReviewApproved = async (
       message: `A revisão do documento "${docTitle}" foi aprovada. Nova versão v${newVersion} criada.`,
       notification_type: "sgq_review_approved",
       priority: "normal",
-      action_url: ACTION_URL_SGQ,
+      action_url: sgqUrl(docId),
     });
   } catch (error) {
     logger.error("Error notifying review approved", error, "notification");
@@ -109,7 +110,7 @@ export const notifyReviewRejected = async (
       message: `A revisão do documento "${docTitle}" foi rejeitada. Motivo: ${reason || "Não informado"}`,
       notification_type: "sgq_review_rejected",
       priority: "high",
-      action_url: ACTION_URL_SGQ,
+      action_url: sgqUrl(docId),
     });
   } catch (error) {
     logger.error("Error notifying review rejected", error, "notification");
@@ -132,7 +133,7 @@ export const notifyReadCampaignCreated = async (
         message: `O documento "${docTitle}" (v${version}) requer sua confirmação de recebimento.`,
         notification_type: "sgq_read_campaign",
         priority: "high",
-        action_url: ACTION_URL_SGQ,
+        action_url: sgqUrl(docId),
       });
     });
     await Promise.allSettled(promises);
@@ -194,7 +195,7 @@ export const syncSgqExpirationAlerts = async (): Promise<void> => {
         message,
         notification_type: isExpired ? "sgq_expired" : "sgq_expiring",
         priority: isExpired ? "critical" : "high",
-        action_url: ACTION_URL_SGQ,
+        action_url: sgqUrl(doc.id),
       });
     }
 
