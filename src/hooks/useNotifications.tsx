@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
@@ -45,6 +45,8 @@ export function useNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  useEffect(() => { toastRef.current = toast; });
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -158,7 +160,6 @@ export function useNotifications() {
   useEffect(() => {
     fetchNotifications();
 
-    // Subscribe to both tables
     const channel = supabase
       .channel('all-notifications-changes')
       .on(
@@ -168,7 +169,7 @@ export function useNotifications() {
           const n = { ...payload.new, _source: 'notifications' } as Notification;
           setNotifications(prev => [n, ...prev].slice(0, 50));
           setUnreadCount(prev => prev + 1);
-          toast({
+          toastRef.current({
             title: n.title,
             description: n.message,
             variant: n.notification_type === 'critical' ? 'destructive' : 'default',
@@ -182,7 +183,7 @@ export function useNotifications() {
           const n = mapAuditNotification(payload.new);
           setNotifications(prev => [n, ...prev].slice(0, 50));
           setUnreadCount(prev => prev + 1);
-          toast({
+          toastRef.current({
             title: n.title,
             description: (payload.new as any).message,
           });
@@ -193,7 +194,7 @@ export function useNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast, fetchNotifications]);
+  }, [fetchNotifications]);
 
   return {
     notifications,
