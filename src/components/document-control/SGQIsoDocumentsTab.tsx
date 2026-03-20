@@ -168,7 +168,7 @@ const DEFAULT_REVIEW_FORM: ReviewFormState = {
 export const SGQIsoDocumentsTab = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const highlightDocId = searchParams.get("docId");
   const highlightRowRef = useRef<HTMLTableRowElement>(null);
   const { data: rawBranches = [] } = useBranches();
@@ -416,6 +416,7 @@ export const SGQIsoDocumentsTab = () => {
     onSuccess: () => {
       toast({ title: "Revisão aprovada", description: "Nova versão criada automaticamente." });
       queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+      clearHighlight();
     },
     onError: (error: Error) => {
       toast({ title: "Erro ao aprovar", description: error.message, variant: "destructive" });
@@ -436,11 +437,16 @@ export const SGQIsoDocumentsTab = () => {
     },
   });
 
+  const clearHighlight = () => {
+    setSearchParams((prev) => { prev.delete("docId"); return prev; }, { replace: true });
+  };
+
   const approveInitialMutation = useMutation({
     mutationFn: (docId: string) => approveInitialDocument(docId),
     onSuccess: () => {
       toast({ title: "Documento aprovado", description: "O documento foi aprovado e os destinatários foram notificados." });
       queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+      clearHighlight();
     },
     onError: (error: Error) => {
       toast({ title: "Erro ao aprovar", description: error.message, variant: "destructive" });
@@ -491,6 +497,7 @@ export const SGQIsoDocumentsTab = () => {
       toast({ title: "Leitura confirmada" });
       queryClient.invalidateQueries({ queryKey: ["sgq-documents", "campaigns", recipientsDocId] });
       queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+      clearHighlight();
     },
     onError: (error: Error) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
