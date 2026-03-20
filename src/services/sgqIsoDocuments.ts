@@ -485,7 +485,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
     }
 
     // 3. Create version 1
-    await (supabase as any)
+    const { error: versionError } = await (supabase as any)
       .from("sgq_document_versions")
       .insert({
         sgq_document_id: doc.id,
@@ -497,6 +497,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
         approved_at: new Date().toISOString(),
         attachment_document_id: attachment.id,
       });
+    if (versionError) throw new Error(`Erro ao criar versão inicial: ${versionError.message}`);
 
     // 4. Create read campaign (inactive until approver explicitly approves)
     const { data: campaign } = await (supabase as any)
@@ -889,9 +890,8 @@ export const getSgqDocumentVersions = async (docId: string): Promise<SgqVersionI
     .from("sgq_document_versions")
     .select(`
       id, version_number, changes_summary,
+      elaborated_by_user_id, approved_by_user_id,
       approved_at, attachment_document_id, created_at,
-      elaborator:elaborated_by_user_id ( full_name ),
-      approver:approved_by_user_id ( full_name ),
       attachment:attachment_document_id ( file_name )
     `)
     .eq("sgq_document_id", docId)
@@ -899,12 +899,28 @@ export const getSgqDocumentVersions = async (docId: string): Promise<SgqVersionI
 
   if (error) throw new Error(`Erro ao buscar versões: ${error.message}`);
 
-  return (data || []).map((v: any) => ({
+  const versions = data || [];
+
+  // Collect user IDs to look up names from both employees and profiles
+  const userIds = [...new Set(versions.flatMap((v: any) => [v.elaborated_by_user_id, v.approved_by_user_id].filter(Boolean)))] as string[];
+
+  const nameMap = new Map<string, string>();
+  if (userIds.length > 0) {
+    const [{ data: emps }, { data: profs }] = await Promise.all([
+      supabase.from("employees").select("id, full_name").in("id", userIds),
+      supabase.from("profiles").select("id, full_name").in("id", userIds),
+    ]);
+    for (const u of [...(emps || []), ...(profs || [])]) {
+      if (u.full_name) nameMap.set(u.id, u.full_name);
+    }
+  }
+
+  return versions.map((v: any) => ({
     id: v.id,
     version_number: v.version_number,
     changes_summary: v.changes_summary,
-    elaborated_by_name: v.elaborator?.full_name || null,
-    approved_by_name: v.approver?.full_name || null,
+    elaborated_by_name: v.elaborated_by_user_id ? (nameMap.get(v.elaborated_by_user_id) || null) : null,
+    approved_by_name: v.approved_by_user_id ? (nameMap.get(v.approved_by_user_id) || null) : null,
     approved_at: v.approved_at,
     attachment_document_id: v.attachment_document_id,
     attachment_file_name: v.attachment?.file_name || null,
