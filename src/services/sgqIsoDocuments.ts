@@ -1,5 +1,31 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadDocument, type Document } from "@/services/documents";
+
+/** Adiciona _vN ao nome do arquivo antes da extensão para evitar conflito de unique constraint */
+const versionedFile = (file: File, version: number): File => {
+  const lastDot = file.name.lastIndexOf(".");
+  const base = lastDot > 0 ? file.name.slice(0, lastDot) : file.name;
+  const ext = lastDot > 0 ? file.name.slice(lastDot) : "";
+  return new File([file], `${base}_v${version}${ext}`, { type: file.type });
+};
+
+/** Torna o nome único para uploads de proposta de revisão (ainda não tem número de versão) */
+const reviewDraftFile = (file: File): File => {
+  const lastDot = file.name.lastIndexOf(".");
+  const base = lastDot > 0 ? file.name.slice(0, lastDot) : file.name;
+  const ext = lastDot > 0 ? file.name.slice(lastDot) : "";
+  const shortId = Math.random().toString(36).slice(2, 8);
+  return new File([file], `${base}_rev_${shortId}${ext}`, { type: file.type });
+};
+
+/** Extrai o nome base de um arquivo de proposta (remove sufixo _rev_XXXXXX) e renomeia para _vN */
+const toVersionedName = (draftFileName: string, version: number): string => {
+  const lastDot = draftFileName.lastIndexOf(".");
+  const nameWithoutExt = lastDot > 0 ? draftFileName.slice(0, lastDot) : draftFileName;
+  const ext = lastDot > 0 ? draftFileName.slice(lastDot) : "";
+  const baseName = nameWithoutExt.replace(/_rev_[a-z0-9]+$/, "");
+  return `${baseName}_v${version}${ext}`;
+};
 import {
   notifyApprovalRequired,
   notifyReadCampaignCreated,
@@ -469,7 +495,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
 
   try {
     // 2. Upload attachment
-    const attachment = await uploadDocument(payload.initial_attachment, {
+    const attachment = await uploadDocument(versionedFile(payload.initial_attachment, 1), {
       related_model: "sgq_iso_document",
       related_id: doc.id,
       tags: ["sgq-document"],
@@ -562,7 +588,7 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
 
   const newVersion = (doc.current_version_number || 1) + 1;
 
-  const attachment = await uploadDocument(payload.attachment, {
+  const attachment = await uploadDocument(versionedFile(payload.attachment, newVersion), {
     related_model: "sgq_iso_document",
     related_id: payload.sgq_document_id,
     tags: ["sgq-document"],
@@ -669,8 +695,8 @@ export const approveInitialDocument = async (docId: string): Promise<void> => {
 export const createReviewRequest = async (payload: CreateReviewRequestPayload): Promise<void> => {
   const { user, companyId } = await getCurrentUserAndCompany();
 
-  // Upload attachment
-  const attachment = await uploadDocument(payload.attachment, {
+  // Upload attachment com sufixo único (número de versão ainda não é conhecido)
+  const attachment = await uploadDocument(reviewDraftFile(payload.attachment), {
     related_model: "sgq_iso_document",
     related_id: payload.sgq_document_id,
     tags: ["sgq-review"],
@@ -785,6 +811,21 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
       approved_at: new Date().toISOString(),
       attachment_document_id: request.attachment_document_id,
     });
+
+  // Renomeia o arquivo da proposta para o nome final com versão
+  if (request.attachment_document_id) {
+    const { data: attachDoc } = await supabase
+      .from("documents")
+      .select("file_name")
+      .eq("id", request.attachment_document_id)
+      .maybeSingle();
+    if (attachDoc?.file_name) {
+      await supabase
+        .from("documents")
+        .update({ file_name: toVersionedName(attachDoc.file_name, newVersion) })
+        .eq("id", request.attachment_document_id);
+    }
+  }
 
   // 3. Update main document
   await (supabase as any)
