@@ -1114,8 +1114,8 @@ export const SGQIsoDocumentsTab = () => {
             {latestVersion === null ? (
               <p className="text-sm text-muted-foreground">Nenhum anexo encontrado.</p>
             ) : originalVersion ? (
-              <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                <span className="truncate">{originalVersion.attachment_file_name || `Versão ${originalVersion.version_number}`}</span>
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <span className="truncate min-w-0 flex-1" title={originalVersion.attachment_file_name || undefined}>{originalVersion.attachment_file_name || `Versão ${originalVersion.version_number}`}</span>
                 {originalVersion.attachment_document_id && (
                   <Button variant="ghost" size="sm" className="gap-1 shrink-0" onClick={() => handleDownload(originalVersion.attachment_document_id!)}>
                     <Download className="h-4 w-4" /> Baixar
@@ -1124,8 +1124,8 @@ export const SGQIsoDocumentsTab = () => {
               </div>
             ) : (
               /* Só uma versão — ela é o anexo principal */
-              <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                <span className="truncate">{latestVersion.attachment_file_name || `Versão ${latestVersion.version_number}`}</span>
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <span className="truncate min-w-0 flex-1" title={latestVersion.attachment_file_name || undefined}>{latestVersion.attachment_file_name || `Versão ${latestVersion.version_number}`}</span>
                 {latestVersion.attachment_document_id && (
                   <Button variant="ghost" size="sm" className="gap-1 shrink-0" onClick={() => handleDownload(latestVersion.attachment_document_id!)}>
                     <Download className="h-4 w-4" /> Baixar
@@ -1141,8 +1141,8 @@ export const SGQIsoDocumentsTab = () => {
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Última Versão (v{latestVersion.version_number})
               </p>
-              <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                <span className="truncate">{latestVersion.attachment_file_name || `Versão ${latestVersion.version_number}`}</span>
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <span className="truncate min-w-0 flex-1" title={latestVersion.attachment_file_name || undefined}>{latestVersion.attachment_file_name || `Versão ${latestVersion.version_number}`}</span>
                 {latestVersion.attachment_document_id && (
                   <Button variant="ghost" size="sm" className="gap-1 shrink-0" onClick={() => handleDownload(latestVersion.attachment_document_id!)}>
                     <Download className="h-4 w-4" /> Baixar
@@ -1218,7 +1218,7 @@ export const SGQIsoDocumentsTab = () => {
                   </div>
                 )}
                 <Button
-                  className="w-full gap-2"
+                  className="w-full gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                   disabled={subDocFiles.length === 0 || uploadSubDocMutation.isPending}
                   onClick={() => uploadSubDocMutation.mutate(subDocFiles)}
                 >
