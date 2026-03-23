@@ -1194,6 +1194,11 @@ export const uploadSgqSubDocument = async (docId: string, file: File): Promise<v
   });
 };
 
+export const deleteSgqSubDocument = async (id: string): Promise<void> => {
+  const { error } = await supabase.from("documents").delete().eq("id", id);
+  if (error) throw new Error(`Erro ao excluir sub-documento: ${error.message}`);
+};
+
 export const updateSgqDocument = async (id: string, payload: UpdateSgqDocumentPayload): Promise<void> => {
   const baseUpdate = {
     title: payload.title.trim(),
