@@ -1102,135 +1102,143 @@ export const SGQIsoDocumentsTab = () => {
 
       {/* Attachments Dialog */}
       <Dialog open={isSubDocsOpen} onOpenChange={(o) => { setIsSubDocsOpen(o); if (!o) { setSubDocFiles([]); setSubDocsCreatorId(null); } }}>
-        <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-full max-w-lg max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
             <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Anexos</DialogTitle>
             <DialogDescription>{subDocsDocTitle}</DialogDescription>
           </DialogHeader>
 
-          {/* Versão original (v1) — criada junto com o documento */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Anexo Principal</p>
-            {latestVersion === null ? (
-              <p className="text-sm text-muted-foreground">Nenhum anexo encontrado.</p>
-            ) : originalVersion ? (
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <span className="truncate min-w-0 flex-1" title={originalVersion.attachment_file_name || undefined}>{originalVersion.attachment_file_name || `Versão ${originalVersion.version_number}`}</span>
-                {originalVersion.attachment_document_id && (
-                  <Button variant="ghost" size="sm" className="gap-1 shrink-0" onClick={() => handleDownload(originalVersion.attachment_document_id!)}>
-                    <Download className="h-4 w-4" /> Baixar
-                  </Button>
-                )}
-              </div>
-            ) : (
-              /* Só uma versão — ela é o anexo principal */
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <span className="truncate min-w-0 flex-1" title={latestVersion.attachment_file_name || undefined}>{latestVersion.attachment_file_name || `Versão ${latestVersion.version_number}`}</span>
-                {latestVersion.attachment_document_id && (
-                  <Button variant="ghost" size="sm" className="gap-1 shrink-0" onClick={() => handleDownload(latestVersion.attachment_document_id!)}>
-                    <Download className="h-4 w-4" /> Baixar
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Última versão — só exibe se existir revisão posterior à v1 */}
-          {originalVersion && latestVersion && (
+          <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-5 min-h-0">
+            {/* Anexo principal — v1 */}
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Última Versão (v{latestVersion.version_number})
-              </p>
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <span className="truncate min-w-0 flex-1" title={latestVersion.attachment_file_name || undefined}>{latestVersion.attachment_file_name || `Versão ${latestVersion.version_number}`}</span>
-                {latestVersion.attachment_document_id && (
-                  <Button variant="ghost" size="sm" className="gap-1 shrink-0" onClick={() => handleDownload(latestVersion.attachment_document_id!)}>
-                    <Download className="h-4 w-4" /> Baixar
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Sub-documentos */}
-          <div className="border-t pt-4 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sub-documentos</p>
-            {isLoadingSubDocs ? (
-              <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
-            ) : subDocs.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-2">Nenhum sub-documento adicionado ainda.</p>
-            ) : (
-              <div className="space-y-2">
-                {subDocs.map((sd) => (
-                  <div key={sd.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                    <span className="truncate flex-1 mr-2">{sd.file_name}</span>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="sm" className="gap-1" onClick={() => handleDownload(sd.id)}>
-                        <Download className="h-4 w-4" /> Baixar
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Anexo Principal</p>
+              {latestVersion === null ? (
+                <p className="text-sm text-muted-foreground">Nenhum anexo encontrado.</p>
+              ) : (() => {
+                const v = originalVersion ?? latestVersion;
+                return (
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm min-w-0 overflow-hidden">
+                    <span className="truncate min-w-0 flex-1 text-sm" title={v.attachment_file_name || undefined}>
+                      {v.attachment_file_name || `Versão ${v.version_number}`}
+                    </span>
+                    {v.attachment_document_id && (
+                      <Button variant="ghost" size="sm" className="gap-1 shrink-0 text-xs" onClick={() => handleDownload(v.attachment_document_id!)}>
+                        <Download className="h-3.5 w-3.5" /> Baixar
                       </Button>
-                      {subDocsCreatorId === currentUserId && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          disabled={deleteSubDocMutation.isPending}
-                          onClick={() => deleteSubDocMutation.mutate(sd.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                    )}
                   </div>
-                ))}
+                );
+              })()}
+            </div>
+
+            {/* Última versão — só quando há revisões após v1 */}
+            {originalVersion && latestVersion && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Última Versão (v{latestVersion.version_number})
+                </p>
+                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm min-w-0 overflow-hidden">
+                  <span className="truncate min-w-0 flex-1 text-sm" title={latestVersion.attachment_file_name || undefined}>
+                    {latestVersion.attachment_file_name || `Versão ${latestVersion.version_number}`}
+                  </span>
+                  {latestVersion.attachment_document_id && (
+                    <Button variant="ghost" size="sm" className="gap-1 shrink-0 text-xs" onClick={() => handleDownload(latestVersion.attachment_document_id!)}>
+                      <Download className="h-3.5 w-3.5" /> Baixar
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
-            {subDocsCreatorId === currentUserId && (
-              <div className="border-t pt-3 space-y-3">
-                <Label>Adicionar sub-documentos</Label>
-                <Input
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                  onChange={(e) => {
-                    const picked = Array.from(e.target.files ?? []);
-                    setSubDocFiles((prev) => {
-                      const existingNames = new Set(prev.map((f) => f.name));
-                      return [...prev, ...picked.filter((f) => !existingNames.has(f.name))];
-                    });
-                    e.target.value = "";
-                  }}
-                />
-                {subDocFiles.length > 0 && (
-                  <div className="space-y-1">
-                    {subDocFiles.map((f, i) => (
-                      <div key={i} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-muted/40">
-                        <span className="truncate flex-1 mr-2">{f.name}</span>
-                        <button
-                          type="button"
-                          className="text-muted-foreground hover:text-destructive shrink-0"
-                          onClick={() => setSubDocFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                        >
-                          ✕
-                        </button>
+            {/* Sub-documentos */}
+            <div className="border-t pt-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sub-documentos</p>
+              {isLoadingSubDocs ? (
+                <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+              ) : subDocs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum sub-documento adicionado ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {subDocs.map((sd) => (
+                    <div key={sd.id} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm min-w-0 overflow-hidden">
+                      <span className="truncate min-w-0 flex-1 text-sm">{sd.file_name}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => handleDownload(sd.id)}>
+                          <Download className="h-3.5 w-3.5" /> Baixar
+                        </Button>
+                        {subDocsCreatorId === currentUserId && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive h-8 w-8"
+                            disabled={deleteSubDocMutation.isPending}
+                            onClick={() => deleteSubDocMutation.mutate(sd.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
-                <Button
-                  className="w-full gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-                  disabled={subDocFiles.length === 0 || uploadSubDocMutation.isPending}
-                  onClick={() => uploadSubDocMutation.mutate(subDocFiles)}
-                >
-                  <Upload className="h-4 w-4" />
-                  {uploadSubDocMutation.isPending
-                    ? "Enviando..."
-                    : subDocFiles.length > 1
-                      ? `Enviar ${subDocFiles.length} arquivos`
-                      : "Enviar"}
-                </Button>
-              </div>
-            )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {subDocsCreatorId === currentUserId && (
+                <div className="border-t pt-3 space-y-3">
+                  <Label className="text-sm font-medium">Adicionar sub-documentos</Label>
+                  <label className="flex items-center gap-3 w-full cursor-pointer rounded-md border border-dashed px-3 py-3 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                    <Upload className="h-4 w-4 shrink-0" />
+                    <span className="truncate min-w-0 flex-1">
+                      {subDocFiles.length > 0
+                        ? `${subDocFiles.length} arquivo(s) selecionado(s)`
+                        : "Clique para escolher arquivos"}
+                    </span>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const picked = Array.from(e.target.files ?? []);
+                        setSubDocFiles((prev) => {
+                          const existingNames = new Set(prev.map((f) => f.name));
+                          return [...prev, ...picked.filter((f) => !existingNames.has(f.name))];
+                        });
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {subDocFiles.length > 0 && (
+                    <div className="space-y-1">
+                      {subDocFiles.map((f, i) => (
+                        <div key={i} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm bg-muted/40 min-w-0 overflow-hidden">
+                          <span className="truncate min-w-0 flex-1 text-sm">{f.name}</span>
+                          <button
+                            type="button"
+                            className="text-muted-foreground hover:text-destructive shrink-0 text-xs"
+                            onClick={() => setSubDocFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Button
+                    className="w-full gap-2"
+                    disabled={subDocFiles.length === 0 || uploadSubDocMutation.isPending}
+                    onClick={() => uploadSubDocMutation.mutate(subDocFiles)}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {uploadSubDocMutation.isPending
+                      ? "Enviando..."
+                      : subDocFiles.length > 1
+                        ? `Enviar ${subDocFiles.length} arquivos`
+                        : "Enviar"}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
