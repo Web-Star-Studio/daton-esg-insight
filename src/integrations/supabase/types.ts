@@ -21238,6 +21238,8 @@ export type Database = {
           company_id: string
           created_at: string
           created_by_user_id: string | null
+          critical_review_status: string | null
+          critical_reviewer_user_id: string | null
           current_version_number: number
           document_identifier_other: string | null
           document_identifier_type: string
@@ -21269,6 +21271,8 @@ export type Database = {
           company_id: string
           created_at?: string
           created_by_user_id?: string | null
+          critical_review_status?: string | null
+          critical_reviewer_user_id?: string | null
           current_version_number?: number
           document_identifier_other?: string | null
           document_identifier_type?: string
@@ -21300,6 +21304,8 @@ export type Database = {
           company_id?: string
           created_at?: string
           created_by_user_id?: string | null
+          critical_review_status?: string | null
+          critical_reviewer_user_id?: string | null
           current_version_number?: number
           document_identifier_other?: string | null
           document_identifier_type?: string
