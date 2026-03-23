@@ -28,7 +28,7 @@ import { downloadDocument } from "@/services/documents";
 import { CollaboratorMultiSelect } from "@/components/document-center/CollaboratorMultiSelect";
 import { getDepartments } from "@/services/organizationalStructure";
 import {
-  createSgqDocument, approveInitialDocument, deleteSgqDocument, updateSgqDocument,
+  createSgqDocument, approveInitialDocument, approveCriticalReview, deleteSgqDocument, updateSgqDocument,
   getSgqDocuments, getSgqDocumentVersions, getSgqReadCampaigns,
   getSgqResponsibleUsers, getSgqElaboratedByUsers, getSystemDocumentsForReference,
   confirmSgqRead, getCurrentUserId,
@@ -125,6 +125,7 @@ type CreateFormState = {
   document_identifier_other: string;
   branch_ids: string[];
   elaborated_by_user_id: string;
+  critical_reviewer_user_id: string;
   approved_by_user_id: string;
   expiration_date: string;
   norm_references: string[];
@@ -141,6 +142,7 @@ const DEFAULT_CREATE_FORM: CreateFormState = {
   document_identifier_other: "",
   branch_ids: [],
   elaborated_by_user_id: "",
+  critical_reviewer_user_id: "",
   approved_by_user_id: "",
   expiration_date: "",
   norm_references: [],
@@ -365,6 +367,7 @@ export const SGQIsoDocumentsTab = () => {
         document_identifier_other: form.document_identifier_other,
         branch_ids: form.branch_ids,
         elaborated_by_user_id: form.elaborated_by_user_id,
+        critical_reviewer_user_id: form.critical_reviewer_user_id || undefined,
         approved_by_user_id: form.approved_by_user_id,
         expiration_date: form.expiration_date,
         norm_reference: form.norm_references.length > 0 ? form.norm_references.join(", ") : null,
@@ -423,6 +426,18 @@ export const SGQIsoDocumentsTab = () => {
     },
   });
 
+  const approveCriticalMutation = useMutation({
+    mutationFn: (docId: string) => approveCriticalReview(docId),
+    onSuccess: () => {
+      toast({ title: "Análise crítica aprovada", description: "O aprovador foi notificado para prosseguir." });
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+      clearHighlight();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro na análise crítica", description: error.message, variant: "destructive" });
+    },
+  });
+
   const rejectMutation = useMutation({
     mutationFn: ({ requestId, notes }: { requestId: string; notes: string }) =>
       rejectReviewRequest(requestId, notes),
@@ -474,6 +489,7 @@ export const SGQIsoDocumentsTab = () => {
         document_identifier_other: form.document_identifier_other,
         branch_ids: form.branch_ids,
         elaborated_by_user_id: form.elaborated_by_user_id,
+        critical_reviewer_user_id: form.critical_reviewer_user_id || undefined,
         approved_by_user_id: form.approved_by_user_id,
         expiration_date: form.expiration_date,
         norm_reference: form.norm_references.length > 0 ? form.norm_references.join(", ") : null,
@@ -527,6 +543,7 @@ export const SGQIsoDocumentsTab = () => {
       document_identifier_other: item.document_identifier_other || "",
       branch_ids: item.branch_ids ?? [],
       elaborated_by_user_id: item.elaborated_by_user_id || "",
+      critical_reviewer_user_id: item.critical_reviewer_user_id || "",
       approved_by_user_id: item.approved_by_user_id || "",
       expiration_date: item.expiration_date,
       norm_references: item.norm_reference ? item.norm_reference.split(", ").filter(Boolean) : [],
@@ -627,6 +644,16 @@ export const SGQIsoDocumentsTab = () => {
                     value={createForm.elaborated_by_user_id}
                     onChange={(v) => setCreateForm((c) => ({ ...c, elaborated_by_user_id: v }))}
                     placeholder="Selecione"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Análise Crítica por <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+                  <SearchableUserSelect
+                    users={users}
+                    value={createForm.critical_reviewer_user_id}
+                    onChange={(v) => setCreateForm((c) => ({ ...c, critical_reviewer_user_id: v }))}
+                    placeholder="Selecione (opcional)"
                   />
                 </div>
 
@@ -842,6 +869,7 @@ export const SGQIsoDocumentsTab = () => {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Filial</TableHead>
                     <TableHead>Elaborador</TableHead>
+                    <TableHead>Análise Crítica</TableHead>
                     <TableHead>Aprovador</TableHead>
                     <TableHead>Validade</TableHead>
                     <TableHead>Dias Restantes</TableHead>
@@ -894,6 +922,24 @@ export const SGQIsoDocumentsTab = () => {
                         })()}
                       </TableCell>
                       <TableCell>{item.elaborated_by_name || "-"}</TableCell>
+                      <TableCell>
+                        {item.critical_reviewer_user_id ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm">{item.critical_reviewer_name || "-"}</span>
+                            {item.critical_review_status === "approved" && (
+                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 text-xs w-fit">Aprovado</Badge>
+                            )}
+                            {item.critical_review_status === "pending" && (
+                              <Badge variant="outline" className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs w-fit">Pendente</Badge>
+                            )}
+                            {item.critical_review_status === "rejected" && (
+                              <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200 text-xs w-fit">Rejeitado</Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>{item.approved_by_name || "-"}</TableCell>
                       <TableCell>{formatDate(item.expiration_date)}</TableCell>
                       <TableCell>{item.days_remaining}</TableCell>
@@ -929,7 +975,20 @@ export const SGQIsoDocumentsTab = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          {!item.is_approved && item.approved_by_user_id === currentUserId ? (
+                          {!item.is_approved && item.critical_reviewer_user_id === currentUserId && item.critical_review_status === "pending" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => approveCriticalMutation.mutate(item.id)}
+                              disabled={approveCriticalMutation.isPending}
+                              title="Aprovar análise crítica"
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {!item.is_approved && item.approved_by_user_id === currentUserId &&
+                           (!item.critical_reviewer_user_id || item.critical_review_status === "approved") ? (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1359,6 +1418,10 @@ export const SGQIsoDocumentsTab = () => {
             <div className="space-y-2">
               <Label>Elaborado por *</Label>
               <SearchableUserSelect users={elaboratedByUsers} value={editForm.elaborated_by_user_id} onChange={(v) => setEditForm((c) => ({ ...c, elaborated_by_user_id: v }))} placeholder="Selecione" />
+            </div>
+            <div className="space-y-2">
+              <Label>Análise Crítica por <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+              <SearchableUserSelect users={users} value={editForm.critical_reviewer_user_id} onChange={(v) => setEditForm((c) => ({ ...c, critical_reviewer_user_id: v }))} placeholder="Selecione (opcional)" />
             </div>
             <div className="space-y-2">
               <Label>Aprovado por *</Label>

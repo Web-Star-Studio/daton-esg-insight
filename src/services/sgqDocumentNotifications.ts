@@ -117,6 +117,30 @@ export const notifyReviewRejected = async (
   }
 };
 
+export const notifyCriticalReviewRequired = async (
+  criticalReviewerUserId: string,
+  docTitle: string,
+  docId: string
+): Promise<void> => {
+  try {
+    const companyId = await getCompanyId(criticalReviewerUserId);
+    if (!companyId) {
+      logger.error("notifyCriticalReviewRequired: could not resolve companyId for user", criticalReviewerUserId, "notification");
+      return;
+    }
+
+    await AuditNotificationService.createNotification(criticalReviewerUserId, companyId, {
+      title: "🔍 Análise Crítica Pendente",
+      message: `O documento "${docTitle}" aguarda sua análise crítica antes de seguir para aprovação.`,
+      notification_type: "sgq_critical_review_required",
+      priority: "high",
+      action_url: sgqUrl(docId),
+    });
+  } catch (error) {
+    logger.error("Error notifying critical review required", error, "notification");
+  }
+};
+
 export const notifyReadCampaignCreated = async (
   recipientUserIds: string[],
   docTitle: string,

@@ -1,5 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
-import { uploadDocument, type Document } from "@/services/documents";
+import { uploadDocument } from "@/services/documents";
+import {
+  notifyApprovalRequired,
+  notifyCriticalReviewRequired,
+  notifyReadCampaignCreated,
+  notifyReviewRequested,
+  notifyReviewApproved,
+  notifyReviewRejected,
+} from "@/services/sgqDocumentNotifications";
 
 /** Adiciona _vN ao nome do arquivo antes da extensão para evitar conflito de unique constraint */
 const versionedFile = (file: File, version: number): File => {
@@ -26,13 +34,6 @@ const toVersionedName = (draftFileName: string, version: number): string => {
   const baseName = nameWithoutExt.replace(/_rev_[a-z0-9]+$/, "");
   return `${baseName}_v${version}${ext}`;
 };
-import {
-  notifyApprovalRequired,
-  notifyReadCampaignCreated,
-  notifyReviewRequested,
-  notifyReviewApproved,
-  notifyReviewRejected,
-} from "@/services/sgqDocumentNotifications";
 
 export const SGQ_DOCUMENT_IDENTIFIER_OPTIONS = [
   "Manual",
@@ -73,6 +74,9 @@ export interface SgqDocumentItem {
   elaborated_by_name: string | null;
   approved_by_user_id: string | null;
   approved_by_name: string | null;
+  critical_reviewer_user_id: string | null;
+  critical_reviewer_name: string | null;
+  critical_review_status: string | null;
   expiration_date: string;
   days_remaining: number;
   status: DocumentStatus;
@@ -143,6 +147,7 @@ export interface CreateSgqDocumentPayload {
   document_identifier_other?: string;
   branch_ids?: string[];
   elaborated_by_user_id: string;
+  critical_reviewer_user_id?: string;
   approved_by_user_id: string;
   expiration_date: string;
   norm_reference?: string | null;
@@ -159,6 +164,7 @@ export interface UpdateSgqDocumentPayload {
   document_identifier_other?: string;
   branch_ids?: string[];
   elaborated_by_user_id: string;
+  critical_reviewer_user_id?: string;
   approved_by_user_id: string;
   expiration_date: string;
   norm_reference?: string | null;
@@ -314,22 +320,39 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
   const { user, companyId } = await getCurrentUserAndCompany();
   const settings = await getSgqSettings();
 
-  let query = (supabase as any)
-    .from("sgq_iso_documents")
-    .select(`
+  const baseSelect = `
       id, title, document_identifier_type, document_identifier_other,
       branch_id, elaborated_by_user_id, approved_by_user_id, created_by_user_id,
       expiration_date, current_version_number, notes, norm_reference, responsible_department,
       is_approved, created_at, updated_at,
       branches:branch_id ( name )
-    `)
-    .eq("company_id", companyId)
-    .order("expiration_date", { ascending: true });
+    `;
+  const extendedSelect = `
+      id, title, document_identifier_type, document_identifier_other,
+      branch_id, elaborated_by_user_id, approved_by_user_id, created_by_user_id,
+      critical_reviewer_user_id, critical_review_status,
+      expiration_date, current_version_number, notes, norm_reference, responsible_department,
+      is_approved, created_at, updated_at,
+      branches:branch_id ( name )
+    `;
 
-  if (filters?.document_identifier_type) query = query.eq("document_identifier_type", filters.document_identifier_type);
+  const buildQuery = (select: string) => {
+    let q = (supabase as any)
+      .from("sgq_iso_documents")
+      .select(select)
+      .eq("company_id", companyId)
+      .order("expiration_date", { ascending: true });
+    if (filters?.document_identifier_type) q = q.eq("document_identifier_type", filters.document_identifier_type);
+    return q;
+  };
 
-  const { data: docs, error } = await query;
-  if (error) throw new Error(`Erro ao buscar documentos SGQ: ${error.message}`);
+  let { data: docs, error } = await buildQuery(extendedSelect);
+  if (error) {
+    // Fallback: migration not yet applied, query without new columns
+    const fallback = await buildQuery(baseSelect);
+    if (fallback.error) throw new Error(`Erro ao buscar documentos SGQ: ${fallback.error.message}`);
+    docs = fallback.data;
+  }
 
   const documents = (docs || []) as any[];
   if (documents.length === 0) return [];
@@ -342,6 +365,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
     ...new Set([
       ...documents.map((d: any) => d.elaborated_by_user_id),
       ...documents.map((d: any) => d.approved_by_user_id),
+      ...documents.map((d: any) => d.critical_reviewer_user_id),
     ].filter(Boolean) as string[]),
   ];
   const employeeNameMap = new Map<string, string>();
@@ -415,6 +439,9 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
       branch_names: branchNames,
       elaborated_by_user_id: doc.elaborated_by_user_id,
       elaborated_by_name: doc.elaborated_by_user_id ? (employeeNameMap.get(doc.elaborated_by_user_id) || null) : null,
+      critical_reviewer_user_id: doc.critical_reviewer_user_id || null,
+      critical_reviewer_name: doc.critical_reviewer_user_id ? (employeeNameMap.get(doc.critical_reviewer_user_id) || null) : null,
+      critical_review_status: doc.critical_review_status || null,
       approved_by_user_id: doc.approved_by_user_id,
       approved_by_name: doc.approved_by_user_id ? (employeeNameMap.get(doc.approved_by_user_id) || null) : null,
       expiration_date: doc.expiration_date,
@@ -437,7 +464,11 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
 
   return mapped.filter((item) => {
     if (!item.is_approved && item.created_by_user_id !== null) {
-      if (item.created_by_user_id !== user.id && item.approved_by_user_id !== user.id) return false;
+      if (
+        item.created_by_user_id !== user.id &&
+        item.approved_by_user_id !== user.id &&
+        item.critical_reviewer_user_id !== user.id
+      ) return false;
     }
     if (filters?.status && filters.status !== item.status) return false;
     if (filters?.branch_id && !item.branch_ids.includes(filters.branch_id)) return false;
@@ -469,29 +500,45 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
   if (payload.recipient_user_ids.length === 0) throw new Error("Pelo menos um destinatário é obrigatório");
 
   // 1. Create main document
-  const { data: doc, error: docError } = await (supabase as any)
+  const baseInsert = {
+    company_id: companyId,
+    title: payload.title.trim(),
+    document_identifier_type: payload.document_identifier_type,
+    document_identifier_other: payload.document_identifier_type === "Outro" ? payload.document_identifier_other : null,
+    branch_id: payload.branch_ids?.[0] || null,
+    elaborated_by_user_id: payload.elaborated_by_user_id,
+    approved_by_user_id: payload.approved_by_user_id,
+    created_by_user_id: user.id,
+    is_approved: false,
+    expiration_date: ensureDateOnly(payload.expiration_date),
+    current_version_number: 1,
+    norm_reference: payload.norm_reference || null,
+    notes: payload.notes || null,
+    issuing_body: "",
+    responsible_department: payload.responsible_department || null,
+  };
+
+  let { data: doc, error: docError } = await (supabase as any)
     .from("sgq_iso_documents")
     .insert({
-      company_id: companyId,
-      title: payload.title.trim(),
-      document_identifier_type: payload.document_identifier_type,
-      document_identifier_other: payload.document_identifier_type === "Outro" ? payload.document_identifier_other : null,
-      branch_id: payload.branch_ids?.[0] || null,
-      elaborated_by_user_id: payload.elaborated_by_user_id,
-      approved_by_user_id: payload.approved_by_user_id,
-      created_by_user_id: user.id,
-      is_approved: false,
-      expiration_date: ensureDateOnly(payload.expiration_date),
-      current_version_number: 1,
-      norm_reference: payload.norm_reference || null,
-      notes: payload.notes || null,
-      issuing_body: "",
-      responsible_department: payload.responsible_department || null,
+      ...baseInsert,
+      critical_reviewer_user_id: payload.critical_reviewer_user_id || null,
+      critical_review_status: payload.critical_reviewer_user_id ? "pending" : null,
     })
     .select("id")
     .maybeSingle();
 
-  if (docError || !doc) throw new Error(`Erro ao criar documento SGQ: ${docError?.message || "desconhecido"}`);
+  if (docError) {
+    // Fallback: migration not yet applied, insert without new columns
+    const fallback = await (supabase as any)
+      .from("sgq_iso_documents")
+      .insert(baseInsert)
+      .select("id")
+      .maybeSingle();
+    if (fallback.error || !fallback.data) throw new Error(`Erro ao criar documento SGQ: ${fallback.error?.message || "desconhecido"}`);
+    doc = fallback.data;
+  }
+  if (!doc) throw new Error("Erro ao criar documento SGQ: resposta vazia");
 
   try {
     // 2. Upload attachment
@@ -562,8 +609,12 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
     throw new Error(`Erro ao finalizar criação do documento: ${err?.message || "desconhecido"}. Cadastro desfeito.`);
   }
 
-  // Notify approver that the document needs their approval (non-blocking)
-  if (payload.approved_by_user_id) {
+  // If a critical reviewer is set, notify them first; otherwise notify the approver directly
+  if (payload.critical_reviewer_user_id) {
+    notifyCriticalReviewRequired(payload.critical_reviewer_user_id, payload.title.trim(), doc.id).catch((err) => {
+      console.error("[SGQ] Failed to notify critical reviewer:", err);
+    });
+  } else if (payload.approved_by_user_id) {
     notifyApprovalRequired(payload.approved_by_user_id, payload.title.trim(), doc.id).catch((err) => {
       console.error("[SGQ] Failed to notify approver:", err);
     });
@@ -644,6 +695,36 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
   }
 };
 
+// ── Critical Review Approval ──
+
+export const approveCriticalReview = async (docId: string): Promise<void> => {
+  const { user } = await getCurrentUserAndCompany();
+
+  const { data: doc, error: fetchErr } = await (supabase as any)
+    .from("sgq_iso_documents")
+    .select("id, title, critical_reviewer_user_id, critical_review_status, approved_by_user_id, is_approved")
+    .eq("id", docId)
+    .maybeSingle();
+
+  if (fetchErr || !doc) throw new Error("Documento não encontrado");
+  if (doc.is_approved) throw new Error("Este documento já foi aprovado");
+  if (!doc.critical_reviewer_user_id) throw new Error("Este documento não possui analista crítico");
+  if (doc.critical_reviewer_user_id !== user.id) throw new Error("Apenas o analista crítico designado pode executar esta etapa");
+  if (doc.critical_review_status === "approved") throw new Error("A análise crítica já foi aprovada");
+
+  const { error: updateErr } = await (supabase as any)
+    .from("sgq_iso_documents")
+    .update({ critical_review_status: "approved", updated_at: new Date().toISOString() })
+    .eq("id", docId);
+
+  if (updateErr) throw new Error(`Erro ao aprovar análise crítica: ${updateErr.message}`);
+
+  // Now notify the approver to proceed with final approval
+  if (doc.approved_by_user_id) {
+    notifyApprovalRequired(doc.approved_by_user_id, doc.title, docId).catch(() => {});
+  }
+};
+
 // ── Initial Approval ──
 
 export const approveInitialDocument = async (docId: string): Promise<void> => {
@@ -651,13 +732,15 @@ export const approveInitialDocument = async (docId: string): Promise<void> => {
 
   const { data: doc, error: fetchErr } = await (supabase as any)
     .from("sgq_iso_documents")
-    .select("id, title, approved_by_user_id, is_approved")
+    .select("id, title, approved_by_user_id, critical_reviewer_user_id, critical_review_status, is_approved")
     .eq("id", docId)
     .maybeSingle();
 
   if (fetchErr || !doc) throw new Error("Documento não encontrado");
   if (doc.is_approved) throw new Error("Este documento já foi aprovado");
   if (doc.approved_by_user_id !== user.id) throw new Error("Apenas o aprovador designado pode aprovar este documento");
+  if (doc.critical_reviewer_user_id && doc.critical_review_status !== "approved")
+    throw new Error("A análise crítica ainda não foi concluída. Aguarde a aprovação do analista crítico antes de prosseguir");
 
   // 1. Mark document as approved
   const { error: updateErr } = await (supabase as any)
@@ -1105,23 +1188,29 @@ export const uploadSgqSubDocument = async (docId: string, file: File): Promise<v
 };
 
 export const updateSgqDocument = async (id: string, payload: UpdateSgqDocumentPayload): Promise<void> => {
-  const { error } = await (supabase as any)
+  const baseUpdate = {
+    title: payload.title.trim(),
+    document_identifier_type: payload.document_identifier_type,
+    document_identifier_other: payload.document_identifier_type === "Outro" ? payload.document_identifier_other : null,
+    elaborated_by_user_id: payload.elaborated_by_user_id,
+    approved_by_user_id: payload.approved_by_user_id,
+    expiration_date: ensureDateOnly(payload.expiration_date),
+    norm_reference: payload.norm_reference || null,
+    notes: payload.notes || null,
+    responsible_department: payload.responsible_department || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  let { error } = await (supabase as any)
     .from("sgq_iso_documents")
-    .update({
-      title: payload.title.trim(),
-      document_identifier_type: payload.document_identifier_type,
-      document_identifier_other: payload.document_identifier_type === "Outro" ? payload.document_identifier_other : null,
-      elaborated_by_user_id: payload.elaborated_by_user_id,
-      approved_by_user_id: payload.approved_by_user_id,
-      expiration_date: ensureDateOnly(payload.expiration_date),
-      norm_reference: payload.norm_reference || null,
-      notes: payload.notes || null,
-      responsible_department: payload.responsible_department || null,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ ...baseUpdate, critical_reviewer_user_id: payload.critical_reviewer_user_id || null })
     .eq("id", id);
 
-  if (error) throw new Error(`Erro ao atualizar documento: ${error.message}`);
+  if (error) {
+    // Fallback: migration not yet applied
+    const fallback = await (supabase as any).from("sgq_iso_documents").update(baseUpdate).eq("id", id);
+    if (fallback.error) throw new Error(`Erro ao atualizar documento: ${fallback.error.message}`);
+  }
 
   // Update branches: delete existing and reinsert
   await (supabase as any).from("sgq_document_branches").delete().eq("sgq_document_id", id);
