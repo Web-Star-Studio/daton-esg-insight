@@ -1265,7 +1265,8 @@ export const parseBulkVersionText = (text: string): BatchVersionEntry[] => {
   return entries;
 };
 
-/** Replaces all version history for a document with the provided batch entries. */
+/** Imports a batch of historical versions, preserving any existing versions by renumbering
+ *  them to come after the imported batch (e.g. batch ends at v10 → existing v1-v5 become v11-v15). */
 export const batchImportDocumentVersions = async (
   docId: string,
   entries: BatchVersionEntry[],
@@ -1274,11 +1275,23 @@ export const batchImportDocumentVersions = async (
 ): Promise<number> => {
   const { user, companyId } = await getCurrentUserAndCompany();
 
-  // Remove existing version records for this document
-  await (supabase as any).from("sgq_document_versions").delete().eq("sgq_document_id", docId);
+  // Fetch existing versions (raw) sorted oldest→newest so offset order is preserved
+  const { data: existingRaw } = await (supabase as any)
+    .from("sgq_document_versions")
+    .select("id, version_number, changes_summary, elaborated_by_user_id, approved_by_user_id, approved_at, attachment_document_id, created_at")
+    .eq("sgq_document_id", docId)
+    .order("version_number", { ascending: true });
 
-  // Insert all historical versions
-  const records = entries.map((e) => ({
+  const existing: any[] = existingRaw || [];
+  const maxBatch = Math.max(...entries.map((e) => e.version_number));
+
+  // Delete all existing versions (we will re-insert with new numbers)
+  if (existing.length > 0) {
+    await (supabase as any).from("sgq_document_versions").delete().eq("sgq_document_id", docId);
+  }
+
+  // Build batch records with original version numbers
+  const batchRecords = entries.map((e) => ({
     sgq_document_id: docId,
     company_id: companyId,
     version_number: e.version_number,
@@ -1289,13 +1302,27 @@ export const batchImportDocumentVersions = async (
     created_at: new Date(e.date + "T12:00:00.000Z").toISOString(),
   }));
 
-  const { error } = await (supabase as any).from("sgq_document_versions").insert(records);
+  // Re-number existing versions to come after the batch (maxBatch + 1, maxBatch + 2, ...)
+  const offsetRecords = existing.map((v, i) => ({
+    sgq_document_id: docId,
+    company_id: companyId,
+    version_number: maxBatch + 1 + i,
+    changes_summary: v.changes_summary,
+    elaborated_by_user_id: v.elaborated_by_user_id,
+    approved_by_user_id: v.approved_by_user_id,
+    approved_at: v.approved_at,
+    attachment_document_id: v.attachment_document_id,
+    created_at: v.created_at,
+  }));
+
+  const allRecords = [...batchRecords, ...offsetRecords];
+  const { error } = await (supabase as any).from("sgq_document_versions").insert(allRecords);
   if (error) throw new Error(`Erro ao importar versões: ${error.message}`);
 
-  const maxVersion = Math.max(...entries.map((e) => e.version_number));
+  const finalMax = maxBatch + existing.length;
   await (supabase as any)
     .from("sgq_iso_documents")
-    .update({ current_version_number: maxVersion, updated_at: new Date().toISOString() })
+    .update({ current_version_number: finalMax, updated_at: new Date().toISOString() })
     .eq("id", docId);
 
   return entries.length;

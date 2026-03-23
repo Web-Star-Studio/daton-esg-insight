@@ -1084,44 +1084,47 @@ export const SGQIsoDocumentsTab = () => {
 
       {/* Versions Dialog */}
       <Dialog open={isVersionsOpen} onOpenChange={setIsVersionsOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-full max-w-2xl max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
             <DialogTitle className="flex items-center gap-2"><History className="h-5 w-5" /> Histórico de Versões</DialogTitle>
             <DialogDescription>Todas as revisões do documento com detalhes de elaboração e aprovação.</DialogDescription>
           </DialogHeader>
 
-          {isLoadingVersions ? (
-            <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
-          ) : versions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Nenhuma versão encontrada.</div>
-          ) : (
-            <div className="space-y-3">
-              {versions.map((v) => (
-                <div key={v.id} className="rounded-lg border p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={v.version_number === versions[0]?.version_number ? "default" : "outline"}>
-                        v{v.version_number}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">{formatDateTime(v.created_at)}</span>
+          <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
+            {isLoadingVersions ? (
+              <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+            ) : versions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Nenhuma versão encontrada.</div>
+            ) : (
+              <div className="space-y-3">
+                {versions.map((v) => (
+                  <div key={v.id} className="rounded-lg border p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-3 min-w-0">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant={v.version_number === versions[0]?.version_number ? "default" : "outline"}>
+                          v{v.version_number}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">{formatDateTime(v.created_at)}</span>
+                      </div>
+                      {v.attachment_document_id && (
+                        <Button variant="outline" size="sm" className="gap-1 shrink-0 text-xs" onClick={() => handleDownload(v.attachment_document_id!)}>
+                          <Download className="h-3.5 w-3.5" />
+                          <span className="max-w-[180px] truncate">{v.attachment_file_name || "Baixar"}</span>
+                        </Button>
+                      )}
                     </div>
-                    {v.attachment_document_id && (
-                      <Button variant="outline" size="sm" className="gap-1" onClick={() => handleDownload(v.attachment_document_id!)}>
-                        <Download className="h-4 w-4" /> {v.attachment_file_name || "Baixar"}
-                      </Button>
+                    {v.changes_summary && (
+                      <p className="text-sm break-words"><span className="font-medium">O que mudou:</span> {v.changes_summary}</p>
                     )}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      <span><Pencil className="h-3.5 w-3.5 inline mr-1" />Elaborado por: {v.elaborated_by_name || "-"}</span>
+                      <span><Check className="h-3.5 w-3.5 inline mr-1" />Aprovado por: {v.approved_by_name || "-"}</span>
+                    </div>
                   </div>
-                  {v.changes_summary && (
-                    <p className="text-sm"><span className="font-medium">O que mudou:</span> {v.changes_summary}</p>
-                  )}
-                  <div className="flex gap-4 text-sm text-muted-foreground">
-                    <span><Pencil className="h-3.5 w-3.5 inline mr-1" />Elaborado por: {v.elaborated_by_name || "-"}</span>
-                    <span><Check className="h-3.5 w-3.5 inline mr-1" />Aprovado por: {v.approved_by_name || "-"}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1509,72 +1512,76 @@ export const SGQIsoDocumentsTab = () => {
 
       {/* Recipients / Read Campaigns Dialog */}
       <Dialog open={isRecipientsOpen} onOpenChange={setIsRecipientsOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-full max-w-2xl max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
             <DialogTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5" /> Protocolo de Recebimento</DialogTitle>
             <DialogDescription>Acompanhe quem recebeu e confirmou a leitura do documento.</DialogDescription>
           </DialogHeader>
 
-          {isLoadingCampaigns ? (
-            <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
-          ) : campaigns.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Nenhuma campanha de leitura encontrada.</div>
-          ) : (
-            <div className="space-y-4">
-              {campaigns.map((campaign) => (
-                <div key={campaign.id} className="rounded-lg border p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{campaign.title}</p>
-                      <p className="text-sm text-muted-foreground">{formatDateTime(campaign.created_at)}</p>
+          <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
+            {isLoadingCampaigns ? (
+              <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+            ) : campaigns.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Nenhuma campanha de leitura encontrada.</div>
+            ) : (
+              <div className="space-y-4">
+                {campaigns.map((campaign) => (
+                  <div key={campaign.id} className="rounded-lg border p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{campaign.title}</p>
+                        <p className="text-sm text-muted-foreground">{formatDateTime(campaign.created_at)}</p>
+                      </div>
+                      {campaign.version_number && (
+                        <Badge variant="outline" className="shrink-0">v{campaign.version_number}</Badge>
+                      )}
                     </div>
-                    {campaign.version_number && (
-                      <Badge variant="outline">v{campaign.version_number}</Badge>
-                    )}
-                  </div>
 
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Destinatário</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Enviado em</TableHead>
-                        <TableHead>Confirmado em</TableHead>
-                        <TableHead>Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(campaign.recipients ?? []).map((r) => (
-                        <TableRow key={r.id}>
-                          <TableCell>{r.user_name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={recipientStatusBadge(r.status)}>
-                              {recipientStatusLabel(r.status)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatDateTime(r.sent_at)}</TableCell>
-                          <TableCell>{r.confirmed_at ? formatDateTime(r.confirmed_at) : "-"}</TableCell>
-                          <TableCell>
-                            {r.status === "pending" && r.user_id === currentUserId && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1"
-                                onClick={() => confirmReadMutation.mutate(r.id)}
-                                disabled={confirmReadMutation.isPending}
-                              >
-                                <Eye className="h-3.5 w-3.5" /> Confirmar
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ))}
-            </div>
-          )}
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Destinatário</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="whitespace-nowrap">Enviado em</TableHead>
+                            <TableHead className="whitespace-nowrap">Confirmado em</TableHead>
+                            <TableHead>Ações</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(campaign.recipients ?? []).map((r) => (
+                            <TableRow key={r.id}>
+                              <TableCell className="whitespace-nowrap">{r.user_name}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className={recipientStatusBadge(r.status)}>
+                                  {recipientStatusLabel(r.status)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-sm">{formatDateTime(r.sent_at)}</TableCell>
+                              <TableCell className="whitespace-nowrap text-sm">{r.confirmed_at ? formatDateTime(r.confirmed_at) : "-"}</TableCell>
+                              <TableCell>
+                                {r.status === "pending" && r.user_id === currentUserId && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1"
+                                    onClick={() => confirmReadMutation.mutate(r.id)}
+                                    disabled={confirmReadMutation.isPending}
+                                  >
+                                    <Eye className="h-3.5 w-3.5" /> Confirmar
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
