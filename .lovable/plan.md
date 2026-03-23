@@ -1,40 +1,37 @@
 
 
-# Plano: PRD Backoffice - Modulo de Treinamentos (Visao do Gestor)
+# Plano: PRD Backoffice - Modulo de Nao Conformidades (Visao do Gestor)
 
 ## Resumo
 
-Gerar um PDF profissional focado no backoffice de gestao de treinamentos, sob a perspectiva do usuario "Gestor de Treinamentos". Baseado na analise completa de 12 arquivos de servico, utilitarios e dados do modulo.
+Gerar um PDF profissional focado no backoffice de gestao de nao conformidades, sob a perspectiva do usuario "Gestor da Qualidade". Baseado na analise completa do servico principal, 6 componentes de etapas, dashboard avancado, pagina de tarefas e utilitarios de status.
 
-## Estrutura do PRD (22 Secoes)
+## Estrutura do PRD (18 Secoes)
 
-1. **Visao Geral** - Escopo do modulo: planejamento, execucao, monitoramento e avaliacao de treinamentos. Tres visoes: Programas, Treinamentos, Calendario. Inclui LMS completo.
-2. **Persona: Gestor de Treinamentos** - Responsabilidades e fluxos operacionais do gestor.
-3. **Arquitetura Funcional** - 8 dominios: Programas, Participantes, Presenca, Eficacia, Agendamento, Documentos, LMS, Indicadores.
-4. **Programas de Treinamento** - Campos (name, category, duration_hours, is_mandatory, valid_for_months, start/end_date, branch_id, efficacy_evaluator_employee_id), regras de duplicacao, modalidades, bulk delete.
-5. **Participantes e Inscricoes** - 5 status (Inscrito, Em Andamento, Concluido, Cancelado, Reprovado), verificacao de duplicidade, estatisticas automaticas (taxa de conclusao, nota media).
-6. **Controle de Presenca** - Tres estados (Presente/Ausente/Nao Marcado), marcacao individual e em lote, auditoria (quem marcou e quando).
-7. **Ciclo de Status Automatico** - Planejado → Em Andamento → Pendente Avaliacao → Concluido. Regras baseadas em datas e eficacia. Compatibilidade com status legados (Ativo, Inativo, Suspenso, Arquivado). Recalculo em 3 momentos.
-8. **Avaliacao de Eficacia** - Resultado Efetivo/Nao Efetivo, score, comments. Recalculo automatico de status do programa. Privacidade por avaliador designado.
-9. **Dashboard de Eficacia do Avaliador** - Fluxo de identificacao (email → employee → filtro). Status: Pendente, Avaliado, Atrasado.
-10. **Agendamento de Sessoes** - Titulo, datas, horarios, local, instrutor, capacidade maxima. Gestao de participantes (add/remove/bulk/confirm/attendance).
-11. **Documentos de Treinamento** - Upload para Supabase Storage, rollback automatico, download e exclusao.
-12. **Categorias Customizaveis** - Unicidade por empresa (constraint 23505).
-13. **Status Customizaveis** - Nome + cor CSS, isolados por empresa.
-14. **LMS** - Cursos com modulos sequenciais, avaliacoes (quiz/prova), questoes com tipos variados, inscricoes com progresso percentual.
-15. **Metricas e Indicadores** - Taxa de conclusao, nota media, horas treinadas, compliance rate, vencimentos (30/60 dias), distribuicao por categoria/departamento, tendencia mensal, top performers, ranking departamental.
-16. **Analise GRI 404-1** - Horas por genero, departamento, cargo, categoria. Qualidade de dados (High/Medium/Low). Compliance automatico. Gaps (funcionarios sem treinamento, top/bottom 10).
-17. **Metricas SST** - Filtro por categorias e palavras-chave (NR-, CIPA, Brigada, EPI). Compliance SST, horas e expiracoes.
-18. **Benchmarks Setoriais** - 6 setores (Tecnologia, Financeiro, Saude, Manufatura, Varejo, Geral) com 4 niveis, fontes internacionais.
-19. **Exportacao de Dados** - 6 tipos de relatorio (total, filial, departamento, cargo, treinamento, detalhado). CSV com BOM UTF-8 e Excel .xlsx.
-20. **Regras de Exclusao** - Cascata obrigatoria em 5 etapas para evitar foreign key errors. Bulk delete.
-21. **Multi-tenancy e Seguranca** - RLS, company_id via RPC, isolamento de storage e categorias.
-22. **Glossario** - Termos do dominio.
+1. **Visao Geral do Modulo** - Escopo: gestao completa do ciclo de vida de NCs com 6 etapas sequenciais (Qualyteam workflow). 4 abas: Dashboard, Analytics, Lista, Minhas Tarefas.
+2. **Persona: Gestor da Qualidade** - Responsabilidades, fluxos operacionais, tomada de decisao.
+3. **Arquitetura Funcional** - 8 dominios: Registro, Acoes Imediatas, Analise de Causa, Planejamento 5W2H, Implementacao, Eficacia, Tarefas, Timeline.
+4. **Registro de NC (Etapa 1)** - Campos: titulo, descricao, categoria, severidade (4 niveis), fonte (7 tipos), data deteccao, dano, unidade organizacional, setor (14 opcoes fixas), responsavel, referencias ISO assistidas por IA. Numeracao automatica NC-YYYYMMDD-XXXX. Validacoes (titulo min 5 chars, descricao min 10).
+5. **Acao Imediata (Etapa 2)** - Multiplas acoes por NC, status (Pendente/Em Andamento/Concluida/Cancelada), responsavel (employee ou profile com fallback), prazo, evidencia, anexos, auditoria (created_by).
+6. **Analise de Causa (Etapa 3)** - 4 metodos: root_cause, ishikawa, 5_whys, other. 8 categorias de causa (6M + Sistema + Gestao): Mao de Obra, Maquina, Material, Metodo, Meio Ambiente, Medicao, Sistema/Tecnologia, Gestao/Planejamento. Diagrama de Ishikawa interativo. Analise 5 Porques. NCs similares vinculadas.
+7. **Planejamento 5W2H (Etapa 4)** - Plano de acao estruturado: What (acao), Why (razao), How (metodo), Where (local), Who (responsavel), When (prazo), How Much (custo). Status (Planejada/Em Execucao/Concluida/Cancelada). Ordenacao por order_index.
+8. **Implementacao (Etapa 5)** - Execucao dos planos de acao. Upload de evidencias para Supabase Storage (bucket nc-evidence). Acompanhamento de conclusao por plano individual.
+9. **Avaliacao de Eficacia (Etapa 6)** - Resultado Efetivo/Nao Efetivo. Dois modos: Avaliar ou Adiar. Se nao eficaz: reabrir NC para nova analise. Flags: requires_risk_update, requires_sgq_change (integracao com SGQ). Adiamento com data, motivo e responsavel. Revisoes versionadas (revision_number). Geracao de NC filha (generated_revision_nc_id).
+10. **Encerramento de NC** - Requer todas as 6 etapas completas. Status muda para "closed", registra completion_date. NCs podem ter parent_nc_id (hierarquia de revisoes).
+11. **Gestao de Tarefas** - 6 tipos (registration, immediate_action, cause_analysis, planning, implementation, effectiveness). 5 status (Pendente/Em Andamento/Concluida/Atrasada/Cancelada). 4 prioridades (Baixa/Normal/Alta/Urgente). Pagina dedicada /nc-tarefas com filtros por tipo, status e busca. Vinculo com NC e responsavel.
+12. **Timeline e Auditoria** - Tabela non_conformity_timeline com tipos: created, status_changed, approved, updated. Registro de old_values/new_values, usuario, anexos. Modal dedicado com visualizacao cronologica.
+13. **Normalizacao de Status** - Mapeamento bidirecional PT/EN (ncStatusUtils): open=Aberta, in_progress=Em Tratamento, closed=Encerrada, pending=Pendente, cancelled=Cancelada, approved=Aprovada. Cores para badges e graficos (HEX). Funcoes auxiliares: isNCClosed, isNCInProgress, isNCOpen.
+14. **Dashboard Avancado** - 4 KPIs: NCs Abertas, NCs Encerradas, Tarefas Atrasadas (% do total), Taxa de Resolucao (%). Graficos: distribuicao por etapa (donut), distribuicao por severidade (donut), tendencia mensal (linha), SLA por tipo de tarefa (barras). RPC get_nc_dashboard_stats.
+15. **Integracao com ISO** - Seletor assistido por IA (ISOAISearchModal + Gemini). Vinculo de norma + clausulas no registro. Armazenado em attachments.iso_references.
+16. **Integracao com Outros Modulos** - Auditorias (audit_findings geram NCs), Indicadores de Qualidade, Gestao de Riscos (flag requires_risk_update), SGQ (flag requires_sgq_change), ESG Score (penalizacao por NCs abertas/criticas).
+17. **Multi-tenancy e Seguranca** - Isolamento por company_id, RLS. Storage isolado (nc-evidence). Resolucao de responsavel via employees + profiles (fallback).
+18. **Glossario** - NC, 5W2H, Ishikawa, 6M, SLA, SGQ, RPC.
 
 ## Implementacao
 
-- Script Python com reportlab (ja preparado em /tmp/generate_training_prd.py)
-- Tabelas estilizadas com cores da marca, hierarquia visual
-- Saida: `/mnt/documents/PRD_Modulo_Treinamentos_Backoffice.pdf`
+- Script Python com reportlab
+- Foco em use cases e fluxos do Gestor (sem detalhes de implementacao)
+- Tabelas de regras de negocio e fluxos de status formatados
+- Saida: `/mnt/documents/PRD_Modulo_NaoConformidades_Backoffice.pdf`
 - QA visual obrigatorio apos geracao
 
