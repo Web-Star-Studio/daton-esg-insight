@@ -35,8 +35,9 @@ import {
   createReviewRequest, getPendingReviewRequests,
   approveReviewRequest, rejectReviewRequest,
   getSgqSubDocuments, uploadSgqSubDocument, deleteSgqSubDocument,
+  parseBulkVersionText, batchImportDocumentVersions,
   SGQ_DOCUMENT_IDENTIFIER_OPTIONS,
-  type DocumentStatus, type SgqDocumentItem,
+  type DocumentStatus, type SgqDocumentItem, type BatchVersionEntry,
 } from "@/services/sgqIsoDocuments";
 import { authService } from "@/services/auth";
 import {
@@ -216,8 +217,11 @@ export const SGQIsoDocumentsTab = () => {
 
   // Review request (replaces new version)
   const [reviewDocId, setReviewDocId] = useState<string | null>(null);
+  const [reviewDocItem, setReviewDocItem] = useState<SgqDocumentItem | null>(null);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [reviewForm, setReviewForm] = useState<ReviewFormState>(DEFAULT_REVIEW_FORM);
+  const [reviewMode, setReviewMode] = useState<"normal" | "batch">("normal");
+  const [batchText, setBatchText] = useState("");
 
   // Pending reviews dialog
   const [reviewsDocId, setReviewsDocId] = useState<string | null>(null);
@@ -434,6 +438,25 @@ export const SGQIsoDocumentsTab = () => {
     },
   });
 
+  const batchImportMutation = useMutation({
+    mutationFn: ({ docId, entries, elaboratedById, approvedById }: {
+      docId: string;
+      entries: BatchVersionEntry[];
+      elaboratedById: string;
+      approvedById: string;
+    }) => batchImportDocumentVersions(docId, entries, elaboratedById, approvedById),
+    onSuccess: (count) => {
+      toast({ title: "Histórico importado", description: `${count} versões importadas com sucesso.` });
+      queryClient.invalidateQueries({ queryKey: ["sgq-documents"] });
+      setIsReviewOpen(false);
+      setBatchText("");
+      setReviewMode("normal");
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao importar", description: error.message, variant: "destructive" });
+    },
+  });
+
   const approveMutation = useMutation({
     mutationFn: ({ requestId, notes }: { requestId: string; notes?: string }) =>
       approveReviewRequest(requestId, notes),
@@ -578,7 +601,7 @@ export const SGQIsoDocumentsTab = () => {
   };
 
   const openVersions = (docId: string) => { setVersionsDocId(docId); setIsVersionsOpen(true); };
-  const openSendReview = (docId: string) => { setReviewDocId(docId); setReviewForm(DEFAULT_REVIEW_FORM); setIsReviewOpen(true); };
+  const openSendReview = (item: SgqDocumentItem) => { setReviewDocId(item.id); setReviewDocItem(item); setReviewForm(DEFAULT_REVIEW_FORM); setReviewMode("normal"); setBatchText(""); setIsReviewOpen(true); };
   const openReviews = (docId: string) => { setReviewsDocId(docId); setIsReviewsOpen(true); };
   const openRecipients = (docId: string) => { setRecipientsDocId(docId); setIsRecipientsOpen(true); };
 
@@ -1015,7 +1038,7 @@ export const SGQIsoDocumentsTab = () => {
                               <CheckCircle className="h-4 w-4" />
                             </Button>
                           ) : item.is_approved ? (
-                            <Button variant="ghost" size="icon" onClick={() => openSendReview(item.id)} title="Enviar para Revisão">
+                            <Button variant="ghost" size="icon" onClick={() => openSendReview(item)} title="Enviar para Revisão">
                               <Send className="h-4 w-4" />
                             </Button>
                           ) : null}
@@ -1246,48 +1269,141 @@ export const SGQIsoDocumentsTab = () => {
       </Dialog>
 
       {/* Send for Review Dialog */}
-      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Send className="h-5 w-5" /> Enviar para Revisão</DialogTitle>
-            <DialogDescription>Anexe o novo arquivo e selecione quem deve revisar e aprovar as alterações. A nova versão será criada automaticamente após a aprovação.</DialogDescription>
+      <Dialog open={isReviewOpen} onOpenChange={(o) => { setIsReviewOpen(o); if (!o) { setReviewMode("normal"); setBatchText(""); } }}>
+        <DialogContent className="w-full max-w-xl max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-3 shrink-0">
+            <DialogTitle className="flex items-center gap-2"><Send className="h-5 w-5" /> Revisão de Documento</DialogTitle>
+            <DialogDescription>{reviewDocItem?.title}</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>O que mudou? *</Label>
-              <Textarea value={reviewForm.changes_summary} onChange={(e) => setReviewForm((c) => ({ ...c, changes_summary: e.target.value }))} rows={3} placeholder="Descreva as alterações realizadas..." />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Revisor / Aprovador *</Label>
-              <Select value={reviewForm.reviewer_user_id} onValueChange={(v) => setReviewForm((c) => ({ ...c, reviewer_user_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione quem vai revisar" /></SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Novo Anexo *</Label>
-              <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={(e) => setReviewForm((c) => ({ ...c, attachment: e.target.files?.[0] || null }))} />
+          {/* Mode toggle */}
+          <div className="px-6 pb-3 shrink-0">
+            <div className="flex gap-1 rounded-lg border p-1 w-fit text-sm">
+              <button
+                type="button"
+                className={cn("px-3 py-1.5 rounded-md transition-colors", reviewMode === "normal" ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+                onClick={() => setReviewMode("normal")}
+              >
+                Nova Revisão
+              </button>
+              <button
+                type="button"
+                className={cn("px-3 py-1.5 rounded-md transition-colors", reviewMode === "batch" ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+                onClick={() => setReviewMode("batch")}
+              >
+                Importar Histórico
+              </button>
             </div>
           </div>
 
-          <DialogFooter>
+          <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
+            {reviewMode === "normal" ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>O que mudou? *</Label>
+                  <Textarea value={reviewForm.changes_summary} onChange={(e) => setReviewForm((c) => ({ ...c, changes_summary: e.target.value }))} rows={3} placeholder="Descreva as alterações realizadas..." />
+                </div>
+                <div className="space-y-2">
+                  <Label>Revisor / Aprovador *</Label>
+                  <Select value={reviewForm.reviewer_user_id} onValueChange={(v) => setReviewForm((c) => ({ ...c, reviewer_user_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione quem vai revisar" /></SelectTrigger>
+                    <SelectContent>
+                      {users.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Novo Anexo *</Label>
+                  <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={(e) => setReviewForm((c) => ({ ...c, attachment: e.target.files?.[0] || null }))} />
+                </div>
+              </div>
+            ) : (() => {
+              const parsedEntries = batchText.trim() ? parseBulkVersionText(batchText) : [];
+              return (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Cole o histórico de revisões no formato: <code className="bg-muted px-1 rounded text-xs">N - DD/MM/AAAA - Descrição</code>
+                  </p>
+                  <Textarea
+                    value={batchText}
+                    onChange={(e) => setBatchText(e.target.value)}
+                    rows={8}
+                    placeholder={"0 - 02/03/2004 - Emissão Inicial\n1 - 15/04/2004 - Adequação dos critérios..."}
+                    className="font-mono text-xs"
+                  />
+                  {parsedEntries.length > 0 && (
+                    <div className="rounded-md border overflow-hidden">
+                      <div className="bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground">
+                        {parsedEntries.length} versões detectadas — v{parsedEntries[0].version_number} até v{parsedEntries[parsedEntries.length - 1].version_number}
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        <table className="w-full text-xs">
+                          <thead className="bg-muted/50 sticky top-0">
+                            <tr>
+                              <th className="text-left px-3 py-2 font-medium w-14">Versão</th>
+                              <th className="text-left px-3 py-2 font-medium w-24">Data</th>
+                              <th className="text-left px-3 py-2 font-medium">Descrição</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {parsedEntries.map((e, i) => (
+                              <tr key={i} className="border-t">
+                                <td className="px-3 py-1.5 font-mono text-muted-foreground">v{e.version_number}</td>
+                                <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">
+                                  {new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR")}
+                                </td>
+                                <td className="px-3 py-1.5 text-xs leading-relaxed">
+                                  {e.description.length > 90 ? e.description.slice(0, 90) + "…" : e.description}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                  {batchText.trim() && parsedEntries.length === 0 && (
+                    <p className="text-sm text-destructive">Nenhuma entrada reconhecida. Verifique o formato.</p>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="px-6 pb-6 pt-3 border-t shrink-0 flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsReviewOpen(false)}>Cancelar</Button>
-            <Button
-              onClick={() => reviewDocId && sendReviewMutation.mutate({ docId: reviewDocId, form: reviewForm })}
-              disabled={sendReviewMutation.isPending}
-              className="gap-2"
-            >
-              <Send className="h-4 w-4" />
-              {sendReviewMutation.isPending ? "Enviando..." : "Enviar para Revisão"}
-            </Button>
-          </DialogFooter>
+            {reviewMode === "normal" ? (
+              <Button
+                onClick={() => reviewDocId && sendReviewMutation.mutate({ docId: reviewDocId, form: reviewForm })}
+                disabled={sendReviewMutation.isPending}
+                className="gap-2"
+              >
+                <Send className="h-4 w-4" />
+                {sendReviewMutation.isPending ? "Enviando..." : "Enviar para Revisão"}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  if (!reviewDocId || !reviewDocItem) return;
+                  const entries = parseBulkVersionText(batchText);
+                  if (entries.length === 0) { toast({ title: "Nenhuma versão reconhecida", variant: "destructive" }); return; }
+                  batchImportMutation.mutate({
+                    docId: reviewDocId,
+                    entries,
+                    elaboratedById: reviewDocItem.elaborated_by_user_id || "",
+                    approvedById: reviewDocItem.approved_by_user_id || "",
+                  });
+                }}
+                disabled={batchImportMutation.isPending || !batchText.trim()}
+                className="gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                {batchImportMutation.isPending ? "Importando..." : "Importar Histórico"}
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

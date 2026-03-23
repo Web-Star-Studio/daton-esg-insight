@@ -1233,6 +1233,74 @@ export const updateSgqDocument = async (id: string, payload: UpdateSgqDocumentPa
   }
 };
 
+// ── Batch Version Import ──
+
+export interface BatchVersionEntry {
+  version_number: number;
+  date: string; // YYYY-MM-DD
+  description: string;
+}
+
+/** Parses bulk revision history text in the format: "N - DD/MM/YYYY - Description" */
+export const parseBulkVersionText = (text: string): BatchVersionEntry[] => {
+  const lines = text.split("\n");
+  const entryPattern = /^(\d+)\s*[-–]\s*(\d{2}\/\d{2}\/\d{4})\s*[-–]\s*(.+)$/;
+  const entries: BatchVersionEntry[] = [];
+  let current: BatchVersionEntry | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const match = trimmed.match(entryPattern);
+    if (match) {
+      if (current) entries.push(current);
+      const [, num, date, desc] = match;
+      const [d, m, y] = date.split("/");
+      current = { version_number: parseInt(num, 10), date: `${y}-${m}-${d}`, description: desc.trim() };
+    } else if (current) {
+      current.description += " " + trimmed;
+    }
+  }
+  if (current) entries.push(current);
+  return entries;
+};
+
+/** Replaces all version history for a document with the provided batch entries. */
+export const batchImportDocumentVersions = async (
+  docId: string,
+  entries: BatchVersionEntry[],
+  elaborated_by_user_id: string,
+  approved_by_user_id: string,
+): Promise<number> => {
+  const { user, companyId } = await getCurrentUserAndCompany();
+
+  // Remove existing version records for this document
+  await (supabase as any).from("sgq_document_versions").delete().eq("sgq_document_id", docId);
+
+  // Insert all historical versions
+  const records = entries.map((e) => ({
+    sgq_document_id: docId,
+    company_id: companyId,
+    version_number: e.version_number,
+    changes_summary: e.description,
+    elaborated_by_user_id: elaborated_by_user_id || user.id,
+    approved_by_user_id: approved_by_user_id || user.id,
+    approved_at: new Date(e.date + "T12:00:00.000Z").toISOString(),
+    created_at: new Date(e.date + "T12:00:00.000Z").toISOString(),
+  }));
+
+  const { error } = await (supabase as any).from("sgq_document_versions").insert(records);
+  if (error) throw new Error(`Erro ao importar versões: ${error.message}`);
+
+  const maxVersion = Math.max(...entries.map((e) => e.version_number));
+  await (supabase as any)
+    .from("sgq_iso_documents")
+    .update({ current_version_number: maxVersion, updated_at: new Date().toISOString() })
+    .eq("id", docId);
+
+  return entries.length;
+};
+
 export const deleteSgqDocument = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from("sgq_iso_documents")
