@@ -47,7 +47,7 @@ import { getBranchDisplayLabel } from "@/utils/branchDisplay";
 import { cn } from "@/lib/utils";
 import {
   BookOpen, Check, CheckCircle, ChevronDown, Clock, Download, Eye, FileText, History,
-  Link2, Pencil, Plus, Save, Search, Send, Trash2, Upload, Users, XCircle, ClipboardCheck, Edit,
+  Link2, Paperclip, Pencil, Plus, Save, Search, Send, Trash2, Upload, Users, XCircle, ClipboardCheck, Edit,
 } from "lucide-react";
 
 // ── Helpers ──
@@ -909,13 +909,7 @@ export const SGQIsoDocumentsTab = () => {
                       className={item.id === highlightDocId ? "ring-2 ring-primary ring-inset bg-primary/5" : undefined}
                     >
                       <TableCell className="max-w-[200px]">
-                        <button
-                          type="button"
-                          className="font-medium break-words whitespace-normal text-left hover:underline cursor-pointer"
-                          onClick={() => { setSubDocsDocId(item.id); setSubDocsDocTitle(item.title || ""); setSubDocsCreatorId(item.created_by_user_id); setIsSubDocsOpen(true); }}
-                        >
-                          {item.title || "-"}
-                        </button>
+                        <span className="font-medium break-words whitespace-normal">{item.title || "-"}</span>
                       </TableCell>
                       <TableCell>
                         {item.document_identifier_type}
@@ -1025,6 +1019,14 @@ export const SGQIsoDocumentsTab = () => {
                               <Send className="h-4 w-4" />
                             </Button>
                           ) : null}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Anexos"
+                            onClick={() => { setSubDocsDocId(item.id); setSubDocsDocTitle(item.title || ""); setSubDocsCreatorId(item.created_by_user_id); setIsSubDocsOpen(true); }}
+                          >
+                            <Paperclip className="h-4 w-4" />
+                          </Button>
                           {(item.created_by_user_id === currentUserId || isAdminUser) && (
                             <Button
                               variant="ghost"
