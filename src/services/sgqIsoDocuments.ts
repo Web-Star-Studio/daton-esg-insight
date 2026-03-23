@@ -464,9 +464,16 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
 
   return mapped.filter((item) => {
     if (!item.is_approved && item.created_by_user_id !== null) {
+      const criticalPending =
+        item.critical_reviewer_user_id !== null &&
+        item.critical_review_status !== "approved";
+
+      // Approver only sees the doc once critical review is done (or there is none)
+      const approverCanSee = item.approved_by_user_id === user.id && !criticalPending;
+
       if (
         item.created_by_user_id !== user.id &&
-        item.approved_by_user_id !== user.id &&
+        !approverCanSee &&
         item.critical_reviewer_user_id !== user.id
       ) return false;
     }
