@@ -28,7 +28,8 @@ import {
   Pencil,
   FileText,
   Users,
-  BarChart3
+  BarChart3,
+  ArrowLeft,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -140,11 +141,16 @@ type WasteExportRow = {
   "Campos Pendentes": string
 }
 
-const Residuos = () => {
+interface ResiduosProps {
+  lockedBranchId?: string
+}
+
+const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
   const [selectedBranchId, setSelectedBranchId] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<"pendentes" | "concluidos" | "all">("pendentes")
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const { toast } = useToast()
   const { data: branches = [] } = useBranches()
@@ -164,13 +170,20 @@ const Residuos = () => {
   })
   const branchLabelById = new Map(branches.map((branch) => [branch.id, getBranchDisplayLabel(branch)]))
 
+  const effectiveBranchId = lockedBranchId ?? (selectedBranchId === "all" ? undefined : selectedBranchId)
+
   // Fetch waste logs
   const { data: wasteLogs = [], isLoading: isLoadingLogs, error: logsError } = useQuery({
-    queryKey: ['waste-logs', selectedBranchId],
-    queryFn: () => getWasteLogs({
-      branch_id: selectedBranchId === "all" ? undefined : selectedBranchId
-    }),
+    queryKey: ['waste-logs', effectiveBranchId ?? "all"],
+    queryFn: () => getWasteLogs({ branch_id: effectiveBranchId }),
   })
+  const concluidosCount = useMemo(() => wasteLogs.filter((l) => l.status === "Destinação Finalizada").length, [wasteLogs])
+  const pendentesCount = useMemo(() => wasteLogs.filter((l) => l.status !== "Destinação Finalizada").length, [wasteLogs])
+  const filteredWasteLogs = useMemo(() => {
+    if (statusFilter === "concluidos") return wasteLogs.filter((l) => l.status === "Destinação Finalizada")
+    if (statusFilter === "pendentes") return wasteLogs.filter((l) => l.status !== "Destinação Finalizada")
+    return wasteLogs
+  }, [wasteLogs, statusFilter])
   const wasteLogIds = useMemo(() => wasteLogs.map((log) => log.id), [wasteLogs])
 
   const { data: documentCountByWasteLog = {} } = useQuery({
@@ -200,10 +213,8 @@ const Residuos = () => {
 
   // Fetch dashboard data
   const { data: dashboard, isLoading: isLoadingDashboard, error: dashboardError } = useQuery({
-    queryKey: ['waste-dashboard', selectedBranchId],
-    queryFn: () => getWasteDashboard({
-      branch_id: selectedBranchId === "all" ? undefined : selectedBranchId
-    }),
+    queryKey: ['waste-dashboard', effectiveBranchId ?? "all"],
+    queryFn: () => getWasteDashboard({ branch_id: effectiveBranchId }),
   })
 
   // Fetch PGRS status
@@ -386,9 +397,27 @@ const Residuos = () => {
         {/* Cabeçalho da página */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-bold text-foreground">Gestão de Resíduos Sólidos</h1>
+            {lockedBranchId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-fit -ml-2 text-muted-foreground"
+                onClick={() => navigate("/residuos")}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Todas as filiais
+              </Button>
+            )}
+            <h1 className="text-3xl font-bold text-foreground">
+              {lockedBranchId
+                ? (branchLabelById.get(lockedBranchId) ?? "Filial")
+                : "Gestão de Resíduos Sólidos"}
+            </h1>
+            {lockedBranchId && (
+              <p className="text-sm text-muted-foreground">Gestão de Resíduos Sólidos</p>
+            )}
           </div>
-          <Button className="w-fit" onClick={() => navigate("/residuos/novo")}>
+          <Button className="w-fit" onClick={() => navigate("/residuos/registrar-destinacao")}>
             + Registrar Destinação
           </Button>
         </div>
@@ -461,21 +490,47 @@ const Residuos = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <div className="w-full sm:w-[320px]">
-            <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrar por filial" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as filiais</SelectItem>
-                {branches.map((branch) => (
-                  <SelectItem key={branch.id} value={branch.id}>
-                    {getBranchDisplayLabel(branch)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-2 border rounded-md p-1">
+            <Button
+              size="sm"
+              variant={statusFilter === "pendentes" ? "default" : "ghost"}
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => setStatusFilter(statusFilter === "pendentes" ? "all" : "pendentes")}
+            >
+              Pendentes
+              <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px] leading-none">
+                {pendentesCount}
+              </Badge>
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "concluidos" ? "default" : "ghost"}
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => setStatusFilter(statusFilter === "concluidos" ? "all" : "concluidos")}
+            >
+              Concluídos
+              <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px] leading-none">
+                {concluidosCount}
+              </Badge>
+            </Button>
           </div>
+          {!lockedBranchId && (
+            <div className="w-full sm:w-[320px]">
+              <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por filial" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as filiais</SelectItem>
+                  {branches.map((branch) => (
+                    <SelectItem key={branch.id} value={branch.id}>
+                      {getBranchDisplayLabel(branch)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {/* Tabela de Movimentações de Resíduos (MTR) */}
@@ -519,21 +574,32 @@ const Residuos = () => {
                         <TableCell><Skeleton className="h-8 w-24" /></TableCell>
                       </TableRow>
                     ))
-                  ) : wasteLogs.length === 0 ? (
+                  ) : filteredWasteLogs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                        Nenhum registro de resíduo encontrado.
-                        <Button 
-                          variant="link" 
-                          onClick={() => navigate("/residuos/novo")}
-                          className="ml-2"
-                        >
-                          Registrar o primeiro
-                        </Button>
+                        {wasteLogs.length === 0 ? (
+                          <>
+                            Nenhum registro de resíduo encontrado.
+                            <Button
+                              variant="link"
+                              onClick={() => navigate("/residuos/novo")}
+                              className="ml-2"
+                            >
+                              Registrar o primeiro
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            Nenhum registro {statusFilter === "pendentes" ? "pendente" : "concluído"} encontrado.
+                            <Button variant="link" className="ml-2" onClick={() => setStatusFilter("all")}>
+                              Ver todos
+                            </Button>
+                          </>
+                        )}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    wasteLogs.map((item) => {
+                    filteredWasteLogs.map((item) => {
                       const statusVariant = getStatusVariant(item.status)
                       const progress = getWasteLogProgress(item)
                       return (

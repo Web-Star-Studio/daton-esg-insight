@@ -7,6 +7,8 @@ import { BadgeNotification, StatusIndicator } from "@/components/ui/badge-notifi
 import { useNotificationCounts } from "@/hooks/useNotificationCounts"
 import { useModuleSettings } from "@/hooks/useModuleSettings"
 import { useDemo } from "@/contexts/DemoContext"
+import { useBranches } from "@/services/branches"
+import { getBranchDisplayLabel } from "@/utils/branchDisplay"
 import {
   Sidebar,
   SidebarContent,
@@ -390,6 +392,7 @@ export function AppSidebar() {
   const { toast } = useToast()
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
   const isPlatformAdmin = useHasRole('platform_admin')
+  const { data: branches = [] } = useBranches()
 
   // Demo prefix for all navigation paths
   const demoPrefix = isDemo ? '/demo' : ''
@@ -409,7 +412,7 @@ export function AppSidebar() {
 
   // Auto-expand category if active page belongs to it
   useEffect(() => {
-    const environmentalPaths = ['/monitoramento-esg', '/monitoramento-agua', '/monitoramento-energia', '/monitoramento-emissoes', '/monitoramento-residuos', '/inventario-gee', '/dashboard-ghg', '/projetos-carbono', '/residuos', '/financeiro/residuos', '/licenciamento', '/metas-sustentabilidade']
+    const environmentalPaths = ['/monitoramento-esg', '/monitoramento-agua', '/monitoramento-energia', '/monitoramento-emissoes', '/monitoramento-residuos', '/inventario-gee', '/dashboard-ghg', '/projetos-carbono', '/residuos', '/residuos/filial', '/residuos/geral', '/financeiro/residuos', '/licenciamento', '/metas-sustentabilidade']
     const socialPaths = ['/social-esg', '/gestao-funcionarios', '/seguranca-trabalho', '/gestao-treinamentos', '/desenvolvimento-carreira']
     const governancePaths = ['/governanca-esg', '/gestao-riscos', '/compliance', '/auditoria', '/gestao-stakeholders', '/analise-materialidade']
 
@@ -718,13 +721,33 @@ export function AppSidebar() {
         if (section.id === 'esg') {
           return {
             ...section,
-            items: section.items.filter(item => isEsgCategoryVisible(item.id))
+            items: section.items
+              .filter(item => isEsgCategoryVisible(item.id))
+              .map(item => {
+                if (item.id === 'waste-management') {
+                  return {
+                    ...item,
+                    subItems: [
+                      { id: 'waste-overview', title: 'Visão por Filial', icon: Recycle, path: '/residuos', description: 'Cards resumidos por filial' },
+                      { id: 'waste-geral', title: 'Visão Consolidada', icon: Layers, path: '/residuos/geral', description: 'Todas as filiais consolidadas' },
+                      ...branches.map(branch => ({
+                        id: `branch-waste-${branch.id}`,
+                        title: getBranchDisplayLabel(branch),
+                        icon: Building2,
+                        path: `/residuos/filial/${branch.id}`,
+                        description: `Resíduos da filial ${branch.name}`,
+                      }))
+                    ]
+                  }
+                }
+                return item
+              })
           }
         }
         return section
       })
       .filter(section => section.items.length > 0)
-  }, [isSectionVisible, isEsgCategoryVisible])
+  }, [isSectionVisible, isEsgCategoryVisible, branches])
 
   const filteredSections = searchQuery.trim()
     ? modulesFilteredSections

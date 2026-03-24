@@ -62,7 +62,9 @@ const LegislationForm = lazy(() => import("./pages/LegislationForm"));
 const LegislationDetail = lazy(() => import("./pages/LegislationDetail"));
 const LegislationReports = lazy(() => import("./pages/LegislationReports"));
 const LegislationComplianceProfiles = lazy(() => import("./pages/LegislationComplianceProfiles"));
+const ResiduosFiliais = lazy(() => import("./pages/ResiduosFiliais"));
 const Residuos = lazy(() => import("./pages/Residuos"));
+const ResiduosFilial = lazy(() => import("./pages/ResiduosFilial"));
 const WasteLogDetails = lazy(() => import("./pages/WasteLogDetails"));
 const RegistrarDestinacao = lazy(() => import("./pages/RegistrarDestinacao"));
 const RelatoriosPGRS = lazy(() => import("./pages/RelatoriosPGRS"));
@@ -657,17 +659,27 @@ const AppContent = () => {
 
             <Route path="/residuos" element={
               <ProtectedLazyPageWrapper>
+                <ResiduosFiliais />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/residuos/geral" element={
+              <ProtectedLazyPageWrapper>
                 <Residuos />
               </ProtectedLazyPageWrapper>
             } />
-            <Route path="/residuos/:id" element={
+            <Route path="/residuos/filial/:branchId" element={
               <ProtectedLazyPageWrapper>
-                <WasteLogDetails />
+                <ResiduosFilial />
               </ProtectedLazyPageWrapper>
             } />
             <Route path="/residuos/registrar-destinacao" element={
               <ProtectedLazyPageWrapper>
                 <RegistrarDestinacao />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/residuos/:id" element={
+              <ProtectedLazyPageWrapper>
+                <WasteLogDetails />
               </ProtectedLazyPageWrapper>
             } />
 
