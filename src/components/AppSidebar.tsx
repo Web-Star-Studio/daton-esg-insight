@@ -732,7 +732,6 @@ export function AppSidebar() {
                         return {
                           ...subItem,
                           subItems: [
-                            { id: 'waste-overview', title: 'Visão por Filial', icon: Recycle, path: '/residuos', description: 'Cards resumidos por filial' },
                             { id: 'waste-geral', title: 'Visão Consolidada', icon: Layers, path: '/residuos/geral', description: 'Todas as filiais consolidadas' },
                             ...branches.map(branch => ({
                               id: `branch-waste-${branch.id}`,
