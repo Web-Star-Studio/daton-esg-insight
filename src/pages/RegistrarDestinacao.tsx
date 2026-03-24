@@ -13,7 +13,8 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarIcon, Upload, X, FileText, Eye, DollarSign } from "lucide-react"
+import { CalendarIcon, Upload, X, FileText, Eye, DollarSign, TrendingDown, TrendingUp } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query"
@@ -57,6 +58,7 @@ const formSchema = z.object({
   cnpjDestinador: z.string().optional().transform(v => (v ?? "").trim())
     .refine(v => v === "" || CNPJ_REGEX.test(v), { message: "CNPJ inválido" }),
   tipoDestinacao: z.string().min(1, "Tipo de destinação é obrigatório"),
+  tipoMovimentacao: z.enum(["pagando", "recebendo"]).default("pagando"),
   custo: z.number().min(0, "Custo deve ser positivo").optional(),
   pgrsSourceId: z.string().optional(),
   pgrsWasteTypeId: z.string().optional(),
@@ -157,6 +159,7 @@ const RegistrarDestinacao = () => {
       destinador: "",
       cnpjDestinador: "",
       tipoDestinacao: "",
+      tipoMovimentacao: "pagando" as const,
       custo: 0,
       pgrsSourceId: "",
       pgrsWasteTypeId: "",
@@ -209,6 +212,11 @@ const RegistrarDestinacao = () => {
       destinador: existingWasteLog.destination_name || "",
       cnpjDestinador: existingWasteLog.destination_cnpj ? formatCNPJ(existingWasteLog.destination_cnpj) : "",
       tipoDestinacao: existingWasteLog.final_treatment_type || "",
+      tipoMovimentacao: (
+        (existingWasteLog.revenue_total || 0) > 0 || (existingWasteLog.revenue_per_unit || 0) > 0
+          ? "recebendo"
+          : "pagando"
+      ) as "pagando" | "recebendo",
       custo: existingWasteLog.cost || 0,
       pgrsSourceId: "",
       pgrsWasteTypeId: "",
@@ -267,7 +275,13 @@ const RegistrarDestinacao = () => {
   const sanitizeCNPJ = (v?: string) => (v ? onlyDigits(v) : undefined);
 
   const buildWastePayload = (values: WasteFormValues) => {
-    const totalPayable = (values.destinationCostTotal || 0) + (values.transportCost || 0);
+    const isPagando = values.tipoMovimentacao === "pagando";
+    const destCostPerUnit = isPagando ? (values.destinationCostPerUnit || 0) : 0;
+    const destCostTotal   = isPagando ? (values.destinationCostTotal   || 0) : 0;
+    const transCost       = isPagando ? (values.transportCost          || 0) : 0;
+    const revPerUnit      = isPagando ? 0 : (values.revenuePerUnit     || 0);
+    const revTotal        = isPagando ? 0 : (values.revenueTotal       || 0);
+    const totalPayable    = isPagando ? (destCostTotal + transCost)         : 0;
 
     return {
       mtr_number: values.mtr,
@@ -284,11 +298,11 @@ const RegistrarDestinacao = () => {
       final_treatment_type: values.tipoDestinacao || undefined,
       cost: values.custo || undefined,
 
-      destination_cost_per_unit: values.destinationCostPerUnit || undefined,
-      destination_cost_total: values.destinationCostTotal || undefined,
-      transport_cost: values.transportCost || undefined,
-      revenue_per_unit: values.revenuePerUnit || undefined,
-      revenue_total: values.revenueTotal || undefined,
+      destination_cost_per_unit: destCostPerUnit || undefined,
+      destination_cost_total: destCostTotal || undefined,
+      transport_cost: transCost || undefined,
+      revenue_per_unit: revPerUnit || undefined,
+      revenue_total: revTotal || undefined,
       total_payable: totalPayable > 0 ? totalPayable : undefined,
       payment_status: totalPayable > 0 ? 'Pendente' : undefined,
 
@@ -336,7 +350,7 @@ const RegistrarDestinacao = () => {
     setUploadedFiles([])
     queryClient.invalidateQueries({ queryKey: ['waste-logs'] });
     queryClient.invalidateQueries({ queryKey: ['waste-dashboard'] });
-    navigate("/residuos");
+    navigate(-1);
   };
 
   const createWasteLogMutation = useMutation({
@@ -383,7 +397,7 @@ const RegistrarDestinacao = () => {
   };
 
   const handleCancel = () => {
-    navigate("/residuos")
+    navigate(-1)
   }
 
   const isSubmitting = createWasteLogMutation.isPending || updateWasteLogMutation.isPending
@@ -836,127 +850,164 @@ const RegistrarDestinacao = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
-                  Dados Financeiros Detalhados
+                  Dados Financeiros
                 </CardTitle>
-                <CardDescription>Custos de destinação, transporte e receitas (se aplicável)</CardDescription>
+                <CardDescription>Tipo de movimentação e valores envolvidos</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="destinationCostPerUnit"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Custo Unitário de Destinação (R$/ton)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            {...field}
-                            onChange={(e) => {
-                              const value = parseFloat(e.target.value) || 0;
-                              field.onChange(value);
-                              // Auto-calcular custo total
-                              const qty = form.getValues('quantidade') || 0;
-                              form.setValue('destinationCostTotal', value * qty);
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Seletor pagando / recebendo */}
+                <FormField
+                  control={form.control}
+                  name="tipoMovimentacao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de movimentação</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="flex gap-6"
+                        >
+                          <div className="flex items-center gap-2 cursor-pointer">
+                            <RadioGroupItem value="pagando" id="mov-pagando" />
+                            <Label htmlFor="mov-pagando" className="flex items-center gap-1 cursor-pointer">
+                              <TrendingDown className="h-4 w-4 text-red-500" />
+                              Pagando
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-2 cursor-pointer">
+                            <RadioGroupItem value="recebendo" id="mov-recebendo" />
+                            <Label htmlFor="mov-recebendo" className="flex items-center gap-1 cursor-pointer">
+                              <TrendingUp className="h-4 w-4 text-green-500" />
+                              Recebendo
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormField
-                    control={form.control}
-                    name="destinationCostTotal"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Custo Total de Destinação (R$)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Campos de custo — visíveis apenas quando "pagando" */}
+                {form.watch("tipoMovimentacao") === "pagando" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="destinationCostPerUnit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Custo Unitário de Destinação (R$/ton)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              {...field}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 0;
+                                field.onChange(value);
+                                const qty = form.getValues('quantidade') || 0;
+                                form.setValue('destinationCostTotal', value * qty);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="transportCost"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Custo de Transporte (R$)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="destinationCostTotal"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Custo Total de Destinação (R$)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200">
-                  <FormField
-                    control={form.control}
-                    name="revenuePerUnit"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Receita Unitária - Venda (R$/ton)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            {...field}
-                            onChange={(e) => {
-                              const value = parseFloat(e.target.value) || 0;
-                              field.onChange(value);
-                              // Auto-calcular receita total
-                              const qty = form.getValues('quantidade') || 0;
-                              form.setValue('revenueTotal', value * qty);
-                            }}
-                          />
-                        </FormControl>
-                        <p className="text-xs text-muted-foreground">Aplicável apenas para recicláveis vendidos</p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="transportCost"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Custo de Transporte (R$)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
 
-                  <FormField
-                    control={form.control}
-                    name="revenueTotal"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Receita Total - Venda (R$)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                {/* Campos de receita — visíveis apenas quando "recebendo" */}
+                {form.watch("tipoMovimentacao") === "recebendo" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="revenuePerUnit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Receita Unitária - Venda (R$/ton)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              {...field}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 0;
+                                field.onChange(value);
+                                const qty = form.getValues('quantidade') || 0;
+                                form.setValue('revenueTotal', value * qty);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="revenueTotal"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Receita Total - Venda (R$)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 

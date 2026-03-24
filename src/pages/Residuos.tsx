@@ -30,6 +30,8 @@ import {
   Users,
   BarChart3,
   ArrowLeft,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -552,6 +554,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
                     <TableHead className="w-[100px]">Documentos</TableHead>
                     <TableHead>Destinador</TableHead>
                     <TableHead className="w-[140px]">Status</TableHead>
+                    <TableHead className="w-[160px]">Financeiro</TableHead>
                     <TableHead className="min-w-[180px]">Progresso</TableHead>
                     <TableHead className="w-[100px]">Ações</TableHead>
                   </TableRow>
@@ -570,13 +573,14 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
                         <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                         <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-8 w-[160px]" /></TableCell>
                         <TableCell><Skeleton className="h-8 w-24" /></TableCell>
                       </TableRow>
                     ))
                   ) : filteredWasteLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
                         {wasteLogs.length === 0 ? (
                           <>
                             Nenhum registro de resíduo encontrado.
@@ -615,12 +619,46 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
                           <TableCell>{documentCountByWasteLog[item.id] || 0}</TableCell>
                           <TableCell>{item.destination_name || "-"}</TableCell>
                           <TableCell>
-                            <Badge 
+                            <Badge
                               variant={getBadgeVariant(statusVariant)}
                               className={getBadgeClassName(statusVariant)}
                             >
                               {item.status}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const rev = (item.revenue_total || 0) + (item.revenue_per_unit || 0);
+                              const cost = (item.destination_cost_total || 0) + (item.transport_cost || 0);
+                              if (rev > 0) {
+                                const val = item.revenue_total || item.revenue_per_unit || 0;
+                                return (
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400">
+                                      <TrendingUp className="h-3.5 w-3.5" />
+                                      Recebendo
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      R$ {val.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              if (cost > 0) {
+                                return (
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
+                                      <TrendingDown className="h-3.5 w-3.5" />
+                                      Pagando
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      R$ {cost.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              return <span className="text-xs text-muted-foreground">-</span>;
+                            })()}
                           </TableCell>
                           <TableCell>
                             <Tooltip>

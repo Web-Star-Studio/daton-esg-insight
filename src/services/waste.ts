@@ -334,7 +334,7 @@ export const getWasteDashboard = async (filters?: DashboardFilters): Promise<Was
 
   let query = supabase
     .from('waste_logs')
-    .select('quantity, unit, final_treatment_type, cost')
+    .select('quantity, unit, final_treatment_type, cost, destination_cost_total, transport_cost')
     .gte('collection_date', startDate)
     .lte('collection_date', endDate);
 
@@ -375,8 +375,11 @@ export const getWasteDashboard = async (filters?: DashboardFilters): Promise<Was
     .filter(log => log.final_treatment_type === 'Aterro Sanitário')
     .reduce((sum, log) => sum + convertToTons(log.quantity, log.unit), 0);
 
-  // Calculate total disposal cost
-  const totalCost = data.reduce((sum, log) => sum + (log.cost || 0), 0);
+  // Calculate total disposal cost (destination_cost_total + transport_cost for new records, cost for legacy records)
+  const totalCost = data.reduce((sum, log) => {
+    const detailed = (log.destination_cost_total || 0) + (log.transport_cost || 0);
+    return sum + (detailed > 0 ? detailed : (log.cost || 0));
+  }, 0);
 
   return {
     total_generated: { 
