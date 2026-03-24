@@ -724,20 +724,28 @@ export function AppSidebar() {
             items: section.items
               .filter(item => isEsgCategoryVisible(item.id))
               .map(item => {
-                if (item.id === 'waste-management') {
+                if (item.id === 'environmental-category') {
                   return {
                     ...item,
-                    subItems: [
-                      { id: 'waste-overview', title: 'Visão por Filial', icon: Recycle, path: '/residuos', description: 'Cards resumidos por filial' },
-                      { id: 'waste-geral', title: 'Visão Consolidada', icon: Layers, path: '/residuos/geral', description: 'Todas as filiais consolidadas' },
-                      ...branches.map(branch => ({
-                        id: `branch-waste-${branch.id}`,
-                        title: getBranchDisplayLabel(branch),
-                        icon: Building2,
-                        path: `/residuos/filial/${branch.id}`,
-                        description: `Resíduos da filial ${branch.name}`,
-                      }))
-                    ]
+                    subItems: item.subItems?.map(subItem => {
+                      if (subItem.id === 'waste-management') {
+                        return {
+                          ...subItem,
+                          subItems: [
+                            { id: 'waste-overview', title: 'Visão por Filial', icon: Recycle, path: '/residuos', description: 'Cards resumidos por filial' },
+                            { id: 'waste-geral', title: 'Visão Consolidada', icon: Layers, path: '/residuos/geral', description: 'Todas as filiais consolidadas' },
+                            ...branches.map(branch => ({
+                              id: `branch-waste-${branch.id}`,
+                              title: getBranchDisplayLabel(branch),
+                              icon: Building2,
+                              path: `/residuos/filial/${branch.id}`,
+                              description: `Resíduos da filial ${branch.name}`,
+                            }))
+                          ]
+                        }
+                      }
+                      return subItem
+                    })
                   }
                 }
                 return item
