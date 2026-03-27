@@ -425,24 +425,60 @@ export function UserFormModal({
             <div className="relative">
               <Input
                 id="username"
-                placeholder="joao.silva"
-                {...register('username')}
+                placeholder="joao_silva"
+                {...register('username', {
+                  onChange: (e) => handleUsernameChange(e.target.value)
+                })}
                 onBlur={handleUsernameBlur}
                 disabled={isLoading}
-                className="pr-8"
+                className={`pr-8 ${usernameIsEmail ? 'border-amber-500 focus-visible:ring-amber-500' : ''}`}
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 {getValidationIcon(usernameStatus)}
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Opcional. Apenas letras, números, _ e - (3-30 caracteres)
+              Opcional. Apenas letras, números, _ e - (3-30 caracteres). <strong>Não use seu email como username.</strong>
             </p>
             {errors.username && (
               <p className="text-sm text-destructive">{errors.username.message}</p>
             )}
             {usernameError && (
               <p className="text-sm text-destructive">{usernameError}</p>
+            )}
+
+            {/* Email detected warning + suggestions */}
+            {usernameIsEmail && (
+              <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    O campo <strong>username</strong> é diferente do email. Use um identificador curto, sem @.
+                  </p>
+                </div>
+                {isGeneratingSuggestions ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Gerando sugestões...</span>
+                  </div>
+                ) : usernameSuggestions.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">Sugestões disponíveis:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {usernameSuggestions.map((suggestion) => (
+                        <Badge
+                          key={suggestion}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs px-2 py-1"
+                          onClick={() => applySuggestion(suggestion)}
+                        >
+                          {suggestion}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             )}
           </div>
 
