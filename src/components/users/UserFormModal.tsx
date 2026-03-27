@@ -86,6 +86,9 @@ export function UserFormModal({
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameIsEmail, setUsernameIsEmail] = useState(false);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
 
   // Local module access state for new user invites
   const [inviteModuleAccess, setInviteModuleAccess] = useState<Record<string, boolean>>({});
