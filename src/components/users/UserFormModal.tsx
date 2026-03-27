@@ -183,10 +183,80 @@ export function UserFormModal({
     }
   };
 
+  // Generate username suggestions from email prefix
+  const generateSuggestions = useCallback(async (emailLike: string) => {
+    if (!checkUsernameUnique) return;
+    setIsGeneratingSuggestions(true);
+    
+    // Extract the part before @
+    const baseName = emailLike.includes('@') 
+      ? emailLike.split('@')[0].replace(/[^a-zA-Z0-9._-]/g, '') 
+      : emailLike.replace(/[^a-zA-Z0-9._-]/g, '');
+    
+    if (!baseName || baseName.length < 2) {
+      setIsGeneratingSuggestions(false);
+      return;
+    }
+
+    // Normalize: replace dots with underscores for username
+    const normalizedBase = baseName.replace(/\./g, '_');
+    
+    const candidates: string[] = [];
+    const suffix = () => Math.floor(1000 + Math.random() * 9000).toString();
+    
+    // Generate candidate list
+    const potentials = [
+      normalizedBase,
+      `${normalizedBase}${suffix()}`,
+      `${normalizedBase}_${suffix()}`,
+      `${normalizedBase}${Math.floor(10 + Math.random() * 90)}`,
+      `${normalizedBase}_${Math.floor(10 + Math.random() * 90)}`,
+    ];
+
+    for (const candidate of potentials) {
+      if (candidate.length < 3 || candidate.length > 30) continue;
+      try {
+        const isUnique = await checkUsernameUnique(candidate, user?.id);
+        if (isUnique) candidates.push(candidate);
+        if (candidates.length >= 3) break;
+      } catch {
+        // skip
+      }
+    }
+
+    setUsernameSuggestions(candidates);
+    setIsGeneratingSuggestions(false);
+  }, [checkUsernameUnique, user?.id]);
+
+  // Detect email typed in username field
+  const handleUsernameChange = useCallback((value: string) => {
+    const looksLikeEmail = /^[^\s]+@[^\s]+\.[^\s]+$/.test(value);
+    if (looksLikeEmail && !usernameIsEmail) {
+      setUsernameIsEmail(true);
+      setUsernameError(null);
+      generateSuggestions(value);
+    } else if (!looksLikeEmail && usernameIsEmail) {
+      setUsernameIsEmail(false);
+      setUsernameSuggestions([]);
+    }
+  }, [usernameIsEmail, generateSuggestions]);
+
   // Check username uniqueness on blur
   const handleUsernameBlur = async () => {
-    if (!checkUsernameUnique) return;
     const username = getValues('username');
+    
+    // If it looks like an email, don't validate as username — show the warning instead
+    if (username && /^[^\s]+@[^\s]+\.[^\s]+$/.test(username)) {
+      setUsernameIsEmail(true);
+      setUsernameStatus('invalid');
+      setUsernameError('Username não pode ser um email. Use uma das sugestões abaixo.');
+      if (usernameSuggestions.length === 0) {
+        generateSuggestions(username);
+      }
+      return;
+    }
+    
+    if (!checkUsernameUnique) return;
     if (!username) {
       setUsernameStatus('idle');
       return;
@@ -205,6 +275,15 @@ export function UserFormModal({
     } catch {
       setUsernameStatus('idle');
     }
+  };
+
+  // Apply a suggestion
+  const applySuggestion = (suggestion: string) => {
+    setValue('username', suggestion);
+    setUsernameIsEmail(false);
+    setUsernameSuggestions([]);
+    setUsernameError(null);
+    setUsernameStatus('valid');
   };
 
   const onSubmit = (data: UserFormData) => {
