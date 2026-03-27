@@ -127,6 +127,8 @@ export function UserFormModal({
       setUsernameStatus('idle');
       setEmailError(null);
       setUsernameError(null);
+      setUsernameIsEmail(false);
+      setUsernameSuggestions([]);
       
       if (user) {
         reset({
