@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserProfile } from "@/hooks/data/useUserManagement";
-import { Loader2, Mail, UserPlus, RefreshCw, AlertCircle, CheckCircle, Shield } from "lucide-react";
+import { Loader2, Mail, UserPlus, RefreshCw, AlertCircle, CheckCircle, Shield, Info } from "lucide-react";
 import { logFormSubmission, logFormValidation, createPerformanceLogger } from '@/utils/formLogging';
 import { useUserModuleAccess } from "@/hooks/useUserModuleAccess";
 import { useModuleSettings } from "@/hooks/useModuleSettings";
@@ -85,6 +86,9 @@ export function UserFormModal({
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameIsEmail, setUsernameIsEmail] = useState(false);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
 
   // Local module access state for new user invites
   const [inviteModuleAccess, setInviteModuleAccess] = useState<Record<string, boolean>>({});
@@ -123,6 +127,8 @@ export function UserFormModal({
       setUsernameStatus('idle');
       setEmailError(null);
       setUsernameError(null);
+      setUsernameIsEmail(false);
+      setUsernameSuggestions([]);
       
       if (user) {
         reset({
@@ -177,10 +183,80 @@ export function UserFormModal({
     }
   };
 
+  // Generate username suggestions from email prefix
+  const generateSuggestions = useCallback(async (emailLike: string) => {
+    if (!checkUsernameUnique) return;
+    setIsGeneratingSuggestions(true);
+    
+    // Extract the part before @
+    const baseName = emailLike.includes('@') 
+      ? emailLike.split('@')[0].replace(/[^a-zA-Z0-9._-]/g, '') 
+      : emailLike.replace(/[^a-zA-Z0-9._-]/g, '');
+    
+    if (!baseName || baseName.length < 2) {
+      setIsGeneratingSuggestions(false);
+      return;
+    }
+
+    // Normalize: replace dots with underscores for username
+    const normalizedBase = baseName.replace(/\./g, '_');
+    
+    const candidates: string[] = [];
+    const suffix = () => Math.floor(1000 + Math.random() * 9000).toString();
+    
+    // Generate candidate list
+    const potentials = [
+      normalizedBase,
+      `${normalizedBase}${suffix()}`,
+      `${normalizedBase}_${suffix()}`,
+      `${normalizedBase}${Math.floor(10 + Math.random() * 90)}`,
+      `${normalizedBase}_${Math.floor(10 + Math.random() * 90)}`,
+    ];
+
+    for (const candidate of potentials) {
+      if (candidate.length < 3 || candidate.length > 30) continue;
+      try {
+        const isUnique = await checkUsernameUnique(candidate, user?.id);
+        if (isUnique) candidates.push(candidate);
+        if (candidates.length >= 3) break;
+      } catch {
+        // skip
+      }
+    }
+
+    setUsernameSuggestions(candidates);
+    setIsGeneratingSuggestions(false);
+  }, [checkUsernameUnique, user?.id]);
+
+  // Detect email typed in username field
+  const handleUsernameChange = useCallback((value: string) => {
+    const looksLikeEmail = /^[^\s]+@[^\s]+\.[^\s]+$/.test(value);
+    if (looksLikeEmail && !usernameIsEmail) {
+      setUsernameIsEmail(true);
+      setUsernameError(null);
+      generateSuggestions(value);
+    } else if (!looksLikeEmail && usernameIsEmail) {
+      setUsernameIsEmail(false);
+      setUsernameSuggestions([]);
+    }
+  }, [usernameIsEmail, generateSuggestions]);
+
   // Check username uniqueness on blur
   const handleUsernameBlur = async () => {
-    if (!checkUsernameUnique) return;
     const username = getValues('username');
+    
+    // If it looks like an email, don't validate as username — show the warning instead
+    if (username && /^[^\s]+@[^\s]+\.[^\s]+$/.test(username)) {
+      setUsernameIsEmail(true);
+      setUsernameStatus('invalid');
+      setUsernameError('Username não pode ser um email. Use uma das sugestões abaixo.');
+      if (usernameSuggestions.length === 0) {
+        generateSuggestions(username);
+      }
+      return;
+    }
+    
+    if (!checkUsernameUnique) return;
     if (!username) {
       setUsernameStatus('idle');
       return;
@@ -199,6 +275,15 @@ export function UserFormModal({
     } catch {
       setUsernameStatus('idle');
     }
+  };
+
+  // Apply a suggestion
+  const applySuggestion = (suggestion: string) => {
+    setValue('username', suggestion);
+    setUsernameIsEmail(false);
+    setUsernameSuggestions([]);
+    setUsernameError(null);
+    setUsernameStatus('valid');
   };
 
   const onSubmit = (data: UserFormData) => {
@@ -340,24 +425,60 @@ export function UserFormModal({
             <div className="relative">
               <Input
                 id="username"
-                placeholder="joao.silva"
-                {...register('username')}
+                placeholder="joao_silva"
+                {...register('username', {
+                  onChange: (e) => handleUsernameChange(e.target.value)
+                })}
                 onBlur={handleUsernameBlur}
                 disabled={isLoading}
-                className="pr-8"
+                className={`pr-8 ${usernameIsEmail ? 'border-amber-500 focus-visible:ring-amber-500' : ''}`}
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 {getValidationIcon(usernameStatus)}
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Opcional. Apenas letras, números, _ e - (3-30 caracteres)
+              Opcional. Apenas letras, números, _ e - (3-30 caracteres). <strong>Não use seu email como username.</strong>
             </p>
             {errors.username && (
               <p className="text-sm text-destructive">{errors.username.message}</p>
             )}
             {usernameError && (
               <p className="text-sm text-destructive">{usernameError}</p>
+            )}
+
+            {/* Email detected warning + suggestions */}
+            {usernameIsEmail && (
+              <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    O campo <strong>username</strong> é diferente do email. Use um identificador curto, sem @.
+                  </p>
+                </div>
+                {isGeneratingSuggestions ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Gerando sugestões...</span>
+                  </div>
+                ) : usernameSuggestions.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">Sugestões disponíveis:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {usernameSuggestions.map((suggestion) => (
+                        <Badge
+                          key={suggestion}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs px-2 py-1"
+                          onClick={() => applySuggestion(suggestion)}
+                        >
+                          {suggestion}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             )}
           </div>
 
