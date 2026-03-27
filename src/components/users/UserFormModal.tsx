@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserProfile } from "@/hooks/data/useUserManagement";
-import { Loader2, Mail, UserPlus, RefreshCw, AlertCircle, CheckCircle, Shield } from "lucide-react";
+import { Loader2, Mail, UserPlus, RefreshCw, AlertCircle, CheckCircle, Shield, Info } from "lucide-react";
 import { logFormSubmission, logFormValidation, createPerformanceLogger } from '@/utils/formLogging';
 import { useUserModuleAccess } from "@/hooks/useUserModuleAccess";
 import { useModuleSettings } from "@/hooks/useModuleSettings";
