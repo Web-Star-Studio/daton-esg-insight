@@ -185,9 +185,18 @@ export function AssetFormModal({ open, onClose, onSuccess, editingAsset }: Asset
   const onSubmit = (data: AssetFormData) => {
     const perfLogger = createPerformanceLogger('AssetFormSubmission');
 
+    // Convert empty strings to undefined to avoid DB check constraint violations
+    const cleanOptional = (val: string | undefined) => val && val.trim() !== '' ? val : undefined;
+
     const formattedData = {
       ...data,
       parent_asset_id: sanitizeUUID(data.parent_asset_id),
+      operational_status: cleanOptional(data.operational_status),
+      pollution_potential: cleanOptional(data.pollution_potential),
+      monitoring_frequency: cleanOptional(data.monitoring_frequency),
+      capacity_unit: cleanOptional(data.capacity_unit),
+      cnae_code: cleanOptional(data.cnae_code),
+      monitoring_responsible: cleanOptional(data.monitoring_responsible),
       critical_parameters: data.critical_parameters 
         ? data.critical_parameters.split(',').map(param => param.trim()).filter(Boolean)
         : undefined,
