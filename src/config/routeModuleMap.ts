@@ -13,7 +13,7 @@ export const ROUTE_MODULE_MAP: Record<string, string> = {
   '/metas': 'esgEnvironmental',
   '/biblioteca-fatores': 'esgEnvironmental',
   '/licenciamento': 'esgEnvironmental',
-  '/ativos': 'esgEnvironmental',
+  '/ativos': 'settings',
 
   // === ESG Governança ===
   '/governanca-esg': 'esgGovernance',
