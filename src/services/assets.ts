@@ -108,6 +108,31 @@ export const OPERATIONAL_STATUS_OPTIONS = ['Ativo', 'Inativo', 'Manutenção'] a
 export const POLLUTION_POTENTIAL_OPTIONS = ['Alto', 'Médio', 'Baixo'] as const;
 export const MONITORING_FREQUENCY_OPTIONS = ['Diária', 'Semanal', 'Mensal', 'Trimestral', 'Anual'] as const;
 
+function buildHierarchy(assets: Asset[]): Asset[] {
+  const assetMap = new Map<string, Asset & { children: Asset[] }>();
+  const rootAssets: Asset[] = [];
+
+  for (const asset of assets) {
+    assetMap.set(asset.id, { ...asset, children: [] });
+  }
+
+  for (const asset of assets) {
+    const assetWithChildren = assetMap.get(asset.id)!;
+    if (asset.parent_asset_id) {
+      const parent = assetMap.get(asset.parent_asset_id);
+      if (parent) {
+        parent.children.push(assetWithChildren);
+      } else {
+        rootAssets.push(assetWithChildren);
+      }
+    } else {
+      rootAssets.push(assetWithChildren);
+    }
+  }
+
+  return rootAssets;
+}
+
 // Demo Mode Helper
 const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__;
 
