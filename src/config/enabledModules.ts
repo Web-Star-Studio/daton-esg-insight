@@ -94,7 +94,6 @@ export const DISABLED_ROUTES: { pattern: RegExp; moduleKey: ModuleKey }[] = [
   { pattern: /^\/relatorios-integrados/, moduleKey: 'dataReports' },
   { pattern: /^\/sdg-dashboard/, moduleKey: 'dataReports' },
   { pattern: /^\/indicadores-recomendados/, moduleKey: 'dataReports' },
-  { pattern: /^\/ativos/, moduleKey: 'dataReports' },
   
   // ESG Ambiental
   { pattern: /^\/inventario-gee/, moduleKey: 'esgEnvironmental' },

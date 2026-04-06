@@ -30,7 +30,8 @@ const VALID_ROUTES = [
   '/fornecedor/login', '/fornecedor/dashboard',
   '/fornecedor/treinamentos', '/fornecedor/treinamento',
   '/fornecedor/leituras', '/fornecedor/pesquisas',
-  '/fornecedor/alterar-senha'
+  '/fornecedor/alterar-senha',
+  '/production-monitoring'
 ];
 
 interface RouteValidatorProps {
