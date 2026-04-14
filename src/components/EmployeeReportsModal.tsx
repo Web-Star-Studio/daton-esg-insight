@@ -428,6 +428,7 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
                   <Label>Departamento</Label>
                   <Select
                     value={filters.department}
