@@ -188,7 +188,6 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
           emp.location || ''
         ];
       })
-      ])
     };
   };
 
