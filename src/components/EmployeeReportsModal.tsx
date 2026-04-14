@@ -40,8 +40,28 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
   const [filters, setFilters] = useState({
     department: 'all',
     status: 'all',
+    branch: 'all',
     startDate: undefined as Date | undefined,
     endDate: undefined as Date | undefined,
+  });
+
+  const { selectedCompany } = useCompany();
+
+  // Fetch branches
+  const { data: branches = [] } = useQuery({
+    queryKey: ['branches-for-reports', selectedCompany?.id],
+    queryFn: async () => {
+      if (!selectedCompany?.id) return [];
+      const { data, error } = await supabase
+        .from('branches')
+        .select('id, name, code')
+        .eq('company_id', selectedCompany.id)
+        .in('status', ['Ativo', 'Ativa'])
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isOpen && !!selectedCompany?.id,
   });
 
   // Set initial report type when modal opens
