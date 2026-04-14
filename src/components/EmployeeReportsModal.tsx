@@ -1,33 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Label } from './ui/label';
+import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Calendar } from './ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { 
-  FileText, 
-  Download, 
-  Users, 
-  TrendingUp, 
-  Building, 
-  CalendarIcon,
-  DollarSign,
-  Gift,
-  Filter,
-  BarChart3
+import {
+  FileText, Download, Users, Building, CalendarIcon,
+  Filter, Briefcase, UserCheck, GraduationCap, Clock,
+  UserPlus, User
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getEmployees, getEmployeesStats } from '@/services/employees';
-import { getBenefitStats } from '@/services/benefits';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import * as XLSX from 'xlsx';
 
 interface EmployeeReportsModalProps {
   isOpen: boolean;
@@ -35,19 +28,126 @@ interface EmployeeReportsModalProps {
   initialReportType?: string;
 }
 
-export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: EmployeeReportsModalProps) {
-  const [selectedReportType, setSelectedReportType] = useState('');
-  const [filters, setFilters] = useState({
-    department: 'all',
-    status: 'all',
-    branch: 'all',
-    startDate: undefined as Date | undefined,
-    endDate: undefined as Date | undefined,
-  });
+type ReportTypeId =
+  | 'employees_by_branch'
+  | 'employees_by_position'
+  | 'employees_active_inactive'
+  | 'trainings_by_period'
+  | 'trainings_by_title_hours'
+  | 'admissions_dismissals'
+  | 'individual_employee';
 
+type FilterField = 'branch' | 'position' | 'department' | 'employee' | 'trainingTitle' | 'workloadHours' | 'status' | 'period';
+
+interface ReportTypeDef {
+  id: ReportTypeId;
+  name: string;
+  description: string;
+  icon: React.ElementType;
+  color: string;
+  filters: FilterField[];
+}
+
+const REPORT_TYPES: ReportTypeDef[] = [
+  {
+    id: 'employees_by_branch',
+    name: 'Funcionários por Filial',
+    description: 'Lista de funcionários agrupados por filial',
+    icon: Building,
+    color: 'text-blue-500',
+    filters: ['branch', 'department', 'status'],
+  },
+  {
+    id: 'employees_by_position',
+    name: 'Funcionários por Cargo',
+    description: 'Lista de funcionários agrupados por cargo',
+    icon: Briefcase,
+    color: 'text-indigo-500',
+    filters: ['branch', 'position', 'department', 'status'],
+  },
+  {
+    id: 'employees_active_inactive',
+    name: 'Funcionários Ativos/Inativos',
+    description: 'Funcionários separados por status ativo ou inativo',
+    icon: UserCheck,
+    color: 'text-green-500',
+    filters: ['branch', 'department', 'status'],
+  },
+  {
+    id: 'trainings_by_period',
+    name: 'Treinamentos Realizados por Período',
+    description: 'Treinamentos concluídos dentro de um período',
+    icon: GraduationCap,
+    color: 'text-purple-500',
+    filters: ['branch', 'employee', 'trainingTitle', 'period'],
+  },
+  {
+    id: 'trainings_by_title_hours',
+    name: 'Treinamentos por Título e Carga Horária',
+    description: 'Relatório de treinamentos com título e carga horária',
+    icon: Clock,
+    color: 'text-orange-500',
+    filters: ['branch', 'trainingTitle', 'workloadHours'],
+  },
+  {
+    id: 'admissions_dismissals',
+    name: 'Admissões e Demissões por Período',
+    description: 'Admissões e demissões dentro de um período específico',
+    icon: UserPlus,
+    color: 'text-red-500',
+    filters: ['branch', 'department', 'period'],
+  },
+  {
+    id: 'individual_employee',
+    name: 'Relatório Individual por Funcionário',
+    description: 'Dados completos de um funcionário específico',
+    icon: User,
+    color: 'text-teal-500',
+    filters: ['employee'],
+  },
+];
+
+interface Filters {
+  branch: string;
+  position: string;
+  department: string;
+  employee: string;
+  trainingTitle: string;
+  workloadHours: string;
+  status: string;
+  startDate: Date | undefined;
+  endDate: Date | undefined;
+}
+
+const defaultFilters: Filters = {
+  branch: 'all',
+  position: 'all',
+  department: 'all',
+  employee: 'all',
+  trainingTitle: 'all',
+  workloadHours: '',
+  status: 'all',
+  startDate: undefined,
+  endDate: undefined,
+};
+
+export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: EmployeeReportsModalProps) {
+  const [selectedReportType, setSelectedReportType] = useState<ReportTypeId | ''>('');
+  const [filters, setFilters] = useState<Filters>({ ...defaultFilters });
   const { selectedCompany } = useCompany();
 
-  // Fetch branches
+  useEffect(() => {
+    if (isOpen && initialReportType) {
+      setSelectedReportType(initialReportType as ReportTypeId);
+    }
+  }, [isOpen, initialReportType]);
+
+  // Reset filters when report type changes
+  useEffect(() => {
+    setFilters({ ...defaultFilters });
+  }, [selectedReportType]);
+
+  // --- Data queries ---
   const { data: branches = [] } = useQuery({
     queryKey: ['branches-for-reports', selectedCompany?.id],
     queryFn: async () => {
@@ -64,275 +164,500 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
     enabled: isOpen && !!selectedCompany?.id,
   });
 
-  // Set initial report type when modal opens
-  useEffect(() => {
-    if (isOpen && initialReportType) {
-      setSelectedReportType(initialReportType);
-    }
-  }, [isOpen, initialReportType]);
-
-  // Fetch employees data
   const { data: employees = [] } = useQuery({
-    queryKey: ['employees'],
-    queryFn: getEmployees,
-    enabled: isOpen,
+    queryKey: ['employees-for-reports', selectedCompany?.id],
+    queryFn: async () => {
+      if (!selectedCompany?.id) return [];
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('company_id', selectedCompany.id)
+        .order('full_name');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isOpen && !!selectedCompany?.id,
   });
 
-  // Fetch employee stats
-  const { data: employeeStats } = useQuery({
-    queryKey: ['employee-stats'],
-    queryFn: getEmployeesStats,
-    enabled: isOpen,
+  const { data: trainingPrograms = [] } = useQuery({
+    queryKey: ['training-programs-for-reports', selectedCompany?.id],
+    queryFn: async () => {
+      if (!selectedCompany?.id) return [];
+      const { data, error } = await supabase
+        .from('training_programs')
+        .select('id, name, duration_hours, category, status')
+        .eq('company_id', selectedCompany.id)
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isOpen && !!selectedCompany?.id,
   });
 
-  // Fetch benefit stats
-  const { data: benefitStats } = useQuery({
-    queryKey: ['benefit-stats'],
-    queryFn: getBenefitStats,
-    enabled: isOpen,
+  const { data: employeeTrainings = [] } = useQuery({
+    queryKey: ['employee-trainings-for-reports', selectedCompany?.id],
+    queryFn: async () => {
+      if (!selectedCompany?.id) return [];
+      const { data, error } = await supabase
+        .from('employee_trainings')
+        .select('*')
+        .eq('company_id', selectedCompany.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isOpen && !!selectedCompany?.id,
   });
 
-  const departments = [...new Set(employees.map(e => e.department).filter(Boolean))];
+  // --- Derived filter options ---
+  const departments = useMemo(() =>
+    [...new Set(employees.map((e: any) => e.department).filter(Boolean))].sort() as string[],
+    [employees]
+  );
 
-  const generateReport = async () => {
-    if (!selectedReportType) {
-      toast.error('Selecione um tipo de relatório');
+  const positions = useMemo(() =>
+    [...new Set(employees.map((e: any) => e.position).filter(Boolean))].sort() as string[],
+    [employees]
+  );
+
+  const selectedReportDef = REPORT_TYPES.find(r => r.id === selectedReportType);
+  const activeFilters = selectedReportDef?.filters || [];
+
+  // --- Helpers ---
+  const getBranchLabel = (branchId: string | null) => {
+    if (!branchId) return '';
+    const b = branches.find((br: any) => br.id === branchId);
+    return b ? (b.code ? `${b.code} - ${b.name}` : b.name) : '';
+  };
+
+  const formatDate = (d: string | null) => {
+    if (!d) return '';
+    try { return format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }); } catch { return d; }
+  };
+
+  // --- Report generators ---
+  const generateReportData = (): { headers: string[]; rows: any[][]; sheetName: string } | null => {
+    if (!selectedReportType) return null;
+
+    const filteredEmployees = employees.filter((emp: any) => {
+      if (filters.branch !== 'all' && emp.branch_id !== filters.branch) return false;
+      if (filters.department !== 'all' && emp.department !== filters.department) return false;
+      if (filters.position !== 'all' && emp.position !== filters.position) return false;
+      if (filters.status !== 'all' && emp.status !== filters.status) return false;
+      if (filters.employee !== 'all' && emp.id !== filters.employee) return false;
+      return true;
+    });
+
+    switch (selectedReportType) {
+      case 'employees_by_branch': {
+        const sorted = [...filteredEmployees].sort((a: any, b: any) => {
+          const brA = getBranchLabel(a.branch_id); const brB = getBranchLabel(b.branch_id);
+          return brA.localeCompare(brB) || (a.department || '').localeCompare(b.department || '') || (a.position || '').localeCompare(b.position || '') || a.full_name.localeCompare(b.full_name);
+        });
+        return {
+          sheetName: 'Funcionários por Filial',
+          headers: ['Filial', 'CPF', 'Nome', 'E-mail', 'Telefone', 'Departamento', 'Cargo', 'Data Admissão', 'Status'],
+          rows: sorted.map((e: any) => [
+            getBranchLabel(e.branch_id), e.cpf || '', e.full_name, e.email || '', e.phone || '',
+            e.department || '', e.position || '', formatDate(e.hire_date), e.status || '',
+          ]),
+        };
+      }
+
+      case 'employees_by_position': {
+        const sorted = [...filteredEmployees].sort((a: any, b: any) =>
+          (a.position || '').localeCompare(b.position || '') || getBranchLabel(a.branch_id).localeCompare(getBranchLabel(b.branch_id)) || a.full_name.localeCompare(b.full_name)
+        );
+        return {
+          sheetName: 'Funcionários por Cargo',
+          headers: ['Cargo', 'Filial', 'CPF', 'Nome', 'E-mail', 'Telefone', 'Departamento', 'Data Admissão', 'Status'],
+          rows: sorted.map((e: any) => [
+            e.position || '', getBranchLabel(e.branch_id), e.cpf || '', e.full_name,
+            e.email || '', e.phone || '', e.department || '', formatDate(e.hire_date), e.status || '',
+          ]),
+        };
+      }
+
+      case 'employees_active_inactive': {
+        const sorted = [...filteredEmployees].sort((a: any, b: any) =>
+          (a.status || '').localeCompare(b.status || '') || getBranchLabel(a.branch_id).localeCompare(getBranchLabel(b.branch_id)) || a.full_name.localeCompare(b.full_name)
+        );
+        return {
+          sheetName: 'Ativos e Inativos',
+          headers: ['Status', 'Filial', 'CPF', 'Nome', 'E-mail', 'Telefone', 'Departamento', 'Cargo', 'Data Admissão', 'Data Demissão'],
+          rows: sorted.map((e: any) => [
+            e.status || '', getBranchLabel(e.branch_id), e.cpf || '', e.full_name,
+            e.email || '', e.phone || '', e.department || '', e.position || '',
+            formatDate(e.hire_date), formatDate(e.termination_date),
+          ]),
+        };
+      }
+
+      case 'trainings_by_period': {
+        let trainingRows = employeeTrainings.filter((t: any) => t.status === 'Concluído');
+        if (filters.startDate) {
+          trainingRows = trainingRows.filter((t: any) => t.completion_date && new Date(t.completion_date) >= filters.startDate!);
+        }
+        if (filters.endDate) {
+          trainingRows = trainingRows.filter((t: any) => t.completion_date && new Date(t.completion_date) <= filters.endDate!);
+        }
+        if (filters.trainingTitle !== 'all') {
+          trainingRows = trainingRows.filter((t: any) => t.training_program_id === filters.trainingTitle);
+        }
+        if (filters.employee !== 'all') {
+          trainingRows = trainingRows.filter((t: any) => t.employee_id === filters.employee);
+        }
+        if (filters.branch !== 'all') {
+          const branchEmpIds = new Set(employees.filter((e: any) => e.branch_id === filters.branch).map((e: any) => e.id));
+          trainingRows = trainingRows.filter((t: any) => branchEmpIds.has(t.employee_id));
+        }
+
+        const rows = trainingRows.map((t: any) => {
+          const emp = employees.find((e: any) => e.id === t.employee_id);
+          const prog = trainingPrograms.find((p: any) => p.id === t.training_program_id);
+          return {
+            title: prog?.name || '',
+            date: t.completion_date || '',
+            empName: emp?.full_name || '',
+            empCpf: emp?.cpf || '',
+            branch: getBranchLabel(emp?.branch_id),
+            hours: prog?.duration_hours || 0,
+            category: prog?.category || '',
+          };
+        }).sort((a, b) => a.title.localeCompare(b.title) || a.date.localeCompare(b.date) || a.empName.localeCompare(b.empName));
+
+        return {
+          sheetName: 'Treinamentos por Período',
+          headers: ['Treinamento', 'Categoria', 'Carga Horária', 'Data Conclusão', 'Funcionário', 'CPF', 'Filial'],
+          rows: rows.map(r => [r.title, r.category, r.hours, formatDate(r.date), r.empName, r.empCpf, r.branch]),
+        };
+      }
+
+      case 'trainings_by_title_hours': {
+        let progs = [...trainingPrograms];
+        if (filters.trainingTitle !== 'all') {
+          progs = progs.filter((p: any) => p.id === filters.trainingTitle);
+        }
+        if (filters.workloadHours) {
+          const minH = Number(filters.workloadHours);
+          if (!isNaN(minH)) progs = progs.filter((p: any) => (p.duration_hours || 0) >= minH);
+        }
+        if (filters.branch !== 'all') {
+          progs = progs.filter((p: any) => p.branch_id === filters.branch || !p.branch_id);
+        }
+
+        const rows = progs.map((p: any) => {
+          const count = employeeTrainings.filter((t: any) => t.training_program_id === p.id && t.status === 'Concluído').length;
+          return [p.name, p.category || '', p.duration_hours || 0, p.status || '', count];
+        }).sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+
+        return {
+          sheetName: 'Treinamentos Título e CH',
+          headers: ['Título do Treinamento', 'Categoria', 'Carga Horária (h)', 'Status', 'Participantes Concluídos'],
+          rows,
+        };
+      }
+
+      case 'admissions_dismissals': {
+        let emps = [...filteredEmployees];
+        const admissions = emps.filter((e: any) => {
+          if (!e.hire_date) return false;
+          const d = new Date(e.hire_date);
+          if (filters.startDate && d < filters.startDate) return false;
+          if (filters.endDate && d > filters.endDate) return false;
+          return true;
+        }).map((e: any) => ({ ...e, _type: 'Admissão', _date: e.hire_date }));
+
+        const dismissals = emps.filter((e: any) => {
+          if (!e.termination_date) return false;
+          const d = new Date(e.termination_date);
+          if (filters.startDate && d < filters.startDate) return false;
+          if (filters.endDate && d > filters.endDate) return false;
+          return true;
+        }).map((e: any) => ({ ...e, _type: 'Demissão', _date: e.termination_date }));
+
+        const combined = [...admissions, ...dismissals].sort((a, b) =>
+          getBranchLabel(a.branch_id).localeCompare(getBranchLabel(b.branch_id)) || a._date.localeCompare(b._date)
+        );
+
+        return {
+          sheetName: 'Admissões e Demissões',
+          headers: ['Tipo', 'Data', 'Filial', 'CPF', 'Nome', 'E-mail', 'Departamento', 'Cargo', 'Status'],
+          rows: combined.map((e: any) => [
+            e._type, formatDate(e._date), getBranchLabel(e.branch_id), e.cpf || '',
+            e.full_name, e.email || '', e.department || '', e.position || '', e.status || '',
+          ]),
+        };
+      }
+
+      case 'individual_employee': {
+        if (filters.employee === 'all') {
+          toast.error('Selecione um funcionário para gerar o relatório individual');
+          return null;
+        }
+        const emp = employees.find((e: any) => e.id === filters.employee);
+        if (!emp) return null;
+
+        const empTrainings = employeeTrainings
+          .filter((t: any) => t.employee_id === emp.id)
+          .map((t: any) => {
+            const prog = trainingPrograms.find((p: any) => p.id === t.training_program_id);
+            return { ...t, _progName: prog?.name || '', _hours: prog?.duration_hours || 0 };
+          });
+
+        const infoRows: any[][] = [
+          ['CPF', emp.cpf || ''],
+          ['Nome Completo', emp.full_name],
+          ['E-mail', emp.email || ''],
+          ['Telefone', emp.phone || ''],
+          ['Filial', getBranchLabel(emp.branch_id)],
+          ['Departamento', emp.department || ''],
+          ['Cargo', emp.position || ''],
+          ['Data Admissão', formatDate(emp.hire_date)],
+          ['Data Demissão', formatDate(emp.termination_date)],
+          ['Status', emp.status || ''],
+          ['Tipo Contrato', emp.employment_type || ''],
+          ['Gênero', emp.gender || ''],
+          ['Data Nascimento', formatDate(emp.birth_date)],
+          ['Escolaridade', emp.education_level || ''],
+          ['', ''],
+          ['--- TREINAMENTOS ---', ''],
+        ];
+
+        if (empTrainings.length > 0) {
+          infoRows.push(['Treinamento', 'Carga Horária', 'Status', 'Data Conclusão']);
+          empTrainings.forEach((t: any) => {
+            infoRows.push([t._progName, t._hours, t.status || '', formatDate(t.completion_date)]);
+          });
+        } else {
+          infoRows.push(['Nenhum treinamento registrado', '']);
+        }
+
+        return {
+          sheetName: 'Relatório Individual',
+          headers: ['Campo', 'Valor'],
+          rows: infoRows,
+        };
+      }
+
+      default:
+        return null;
+    }
+  };
+
+  // --- Export to Excel ---
+  const handleExport = () => {
+    const reportData = generateReportData();
+    if (!reportData) return;
+    if (reportData.rows.length === 0) {
+      toast.error('Nenhum dado encontrado com os filtros selecionados');
       return;
     }
 
-    try {
-      let reportData: any = {};
-      let fileName = '';
+    const wsData = [reportData.headers, ...reportData.rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-      switch (selectedReportType) {
-        case 'employees':
-          reportData = getEmployeeReport();
-          fileName = 'relatorio-funcionarios';
-          break;
-        case 'diversity':
-          reportData = getDiversityReport();
-          fileName = 'relatorio-diversidade';
-          break;
-        case 'departments':
-          reportData = getDepartmentReport();
-          fileName = 'relatorio-departamentos';
-          break;
-        case 'benefits':
-          reportData = getBenefitReport();
-          fileName = 'relatorio-beneficios';
-          break;
-        case 'salaries':
-          reportData = getSalaryReport();
-          fileName = 'relatorio-salarial';
-          break;
-        case 'turnover':
-          reportData = getTurnoverReport();
-          fileName = 'relatorio-turnover';
-          break;
-        default:
-          toast.error('Tipo de relatório não implementado');
-          return;
-      }
-
-      // Create CSV content
-      const csvContent = generateCSV(reportData);
-      
-      // Download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${fileName}-${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast.success('Relatório gerado com sucesso!');
-    } catch (error) {
-      console.error('Error generating report:', error);
-      toast.error('Erro ao gerar relatório');
-    }
-  };
-
-  const getFilteredEmployees = () => {
-    return employees.filter(emp => {
-      if (filters.department !== 'all' && emp.department !== filters.department) return false;
-      if (filters.status !== 'all' && emp.status !== filters.status) return false;
-      if (filters.branch !== 'all' && emp.branch_id !== filters.branch) return false;
-      return true;
-    });
-  };
-
-  const getEmployeeReport = () => {
-    const filteredEmployees = getFilteredEmployees();
-
-    return {
-      headers: [
-        'Código', 'Nome Completo', 'E-mail', 'Telefone', 'Filial', 'Departamento', 
-        'Cargo', 'Data Contratação', 'Status', 'Tipo Contrato', 'Localização'
-      ],
-      data: filteredEmployees.map(emp => {
-        const branch = branches.find(b => b.id === emp.branch_id);
-        return [
-          emp.employee_code,
-          emp.full_name,
-          emp.email || '',
-          emp.phone || '',
-          branch ? (branch.code ? `${branch.code} - ${branch.name}` : branch.name) : '',
-          emp.department || '',
-          emp.position || '',
-          emp.hire_date,
-          emp.status,
-          emp.employment_type,
-          emp.location || ''
-        ];
-      })
-    };
-  };
-
-  const getDiversityReport = () => {
-    const genderData = Object.entries(employeeStats?.genderDistribution || {}).map(([gender, count]) => [
-      gender,
-      count,
-      ((count as number) / employees.length * 100).toFixed(1) + '%'
-    ]);
-
-    return {
-      headers: ['Gênero', 'Quantidade', 'Percentual'],
-      data: genderData
-    };
-  };
-
-  const getDepartmentReport = () => {
-    const departmentData = departments.map(dept => {
-      const deptEmployees = employees.filter(emp => emp.department === dept);
-      return [
-        dept,
-        deptEmployees.length,
-        deptEmployees.filter(emp => emp.status === 'Ativo').length,
-        ((deptEmployees.length / employees.length) * 100).toFixed(1) + '%'
-      ];
-    });
-
-    return {
-      headers: ['Departamento', 'Total Funcionários', 'Funcionários Ativos', 'Percentual'],
-      data: departmentData
-    };
-  };
-
-  const getBenefitReport = () => {
-    return {
-      headers: ['Métrica', 'Valor'],
-      data: [
-        ['Custo Total Mensal de Benefícios', `R$ ${benefitStats?.totalBenefitsCost?.toLocaleString('pt-BR') || '0'}`],
-        ['Taxa de Participação', `${benefitStats?.benefitParticipation || 0}%`],
-        ['Total de Inscrições', benefitStats?.totalEnrollments || 0],
-        ['Total de Funcionários', benefitStats?.totalEmployees || 0]
-      ]
-    };
-  };
-
-  const getSalaryReport = () => {
-    const salaryData = employees
-      .filter(emp => emp.salary)
-      .map(emp => [
-        emp.employee_code,
-        emp.full_name,
-        emp.department || '',
-        emp.position || '',
-        `R$ ${emp.salary?.toLocaleString('pt-BR') || '0'}`
-      ]);
-
-    return {
-      headers: ['Código', 'Nome', 'Departamento', 'Cargo', 'Salário'],
-      data: salaryData
-    };
-  };
-
-  const getTurnoverReport = () => {
-    const currentYear = new Date().getFullYear();
-    const hiredThisYear = employees.filter(emp => 
-      new Date(emp.hire_date).getFullYear() === currentYear
-    ).length;
-    
-    const inactiveEmployees = employees.filter(emp => emp.status === 'Inativo').length;
-    const activeEmployees = employees.filter(emp => emp.status === 'Ativo').length;
-    
-    const turnoverRate = employees.length > 0 ? (inactiveEmployees / employees.length * 100).toFixed(1) : '0';
-    const retentionRate = employees.length > 0 ? (activeEmployees / employees.length * 100).toFixed(1) : '0';
-
-    return {
-      headers: ['Métrica', 'Valor'],
-      data: [
-        ['Contratações no Ano', hiredThisYear],
-        ['Funcionários Ativos', activeEmployees],
-        ['Funcionários Inativos', inactiveEmployees],
-        ['Taxa de Turnover', `${turnoverRate}%`],
-        ['Taxa de Retenção', `${retentionRate}%`]
-      ]
-    };
-  };
-
-  const generateCSV = (reportData: any) => {
-    const { headers, data } = reportData;
-    let csvContent = headers.join(',') + '\n';
-    
-    data.forEach((row: any[]) => {
-      const escapedRow = row.map(cell => {
-        const cellStr = String(cell || '');
-        return cellStr.includes(',') ? `"${cellStr}"` : cellStr;
+    // Auto-width columns
+    const colWidths = reportData.headers.map((h, i) => {
+      let maxLen = h.length;
+      reportData.rows.forEach(row => {
+        const cellLen = String(row[i] || '').length;
+        if (cellLen > maxLen) maxLen = cellLen;
       });
-      csvContent += escapedRow.join(',') + '\n';
+      return { wch: Math.min(maxLen + 2, 50) };
     });
-    
-    return csvContent;
+    ws['!cols'] = colWidths;
+
+    // Bold header row
+    reportData.headers.forEach((_, i) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: i });
+      if (ws[cellRef]) {
+        ws[cellRef].s = { font: { bold: true } };
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, reportData.sheetName.substring(0, 31));
+
+    const fileName = `${reportData.sheetName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    toast.success('Relatório Excel gerado com sucesso!');
   };
 
-  const reportTypes = [
-    {
-      id: 'employees',
-      name: 'Relatório de Funcionários',
-      description: 'Lista completa de funcionários com informações detalhadas',
-      icon: Users,
-      color: 'text-blue-500'
-    },
-    {
-      id: 'diversity',
-      name: 'Análise de Diversidade',
-      description: 'Distribuição por gênero, etnia e outros fatores',
-      icon: BarChart3,
-      color: 'text-purple-500'
-    },
-    {
-      id: 'departments',
-      name: 'Relatório por Departamento',
-      description: 'Análise de funcionários por departamento',
-      icon: Building,
-      color: 'text-green-500'
-    },
-    {
-      id: 'benefits',
-      name: 'Relatório de Benefícios',
-      description: 'Custos e participação em benefícios',
-      icon: Gift,
-      color: 'text-pink-500'
-    },
-    {
-      id: 'salaries',
-      name: 'Análise Salarial',
-      description: 'Informações salariais por cargo e departamento',
-      icon: DollarSign,
-      color: 'text-yellow-500'
-    },
-    {
-      id: 'turnover',
-      name: 'Relatório de Turnover',
-      description: 'Taxa de rotatividade e retenção de funcionários',
-      icon: TrendingUp,
-      color: 'text-red-500'
+  // --- Render filter fields dynamically ---
+  const renderFilters = () => {
+    if (!selectedReportDef) return null;
+
+    const filterComponents: React.ReactNode[] = [];
+
+    if (activeFilters.includes('branch')) {
+      filterComponents.push(
+        <div key="branch" className="space-y-2">
+          <Label>Filial</Label>
+          <Select value={filters.branch} onValueChange={v => setFilters(p => ({ ...p, branch: v }))}>
+            <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as filiais</SelectItem>
+              {branches.map((b: any) => (
+                <SelectItem key={b.id} value={b.id}>{b.code ? `${b.code} - ${b.name}` : b.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      );
     }
-  ];
+
+    if (activeFilters.includes('department')) {
+      filterComponents.push(
+        <div key="department" className="space-y-2">
+          <Label>Departamento</Label>
+          <Select value={filters.department} onValueChange={v => setFilters(p => ({ ...p, department: v }))}>
+            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os departamentos</SelectItem>
+              {departments.map(d => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    if (activeFilters.includes('position')) {
+      filterComponents.push(
+        <div key="position" className="space-y-2">
+          <Label>Cargo</Label>
+          <Select value={filters.position} onValueChange={v => setFilters(p => ({ ...p, position: v }))}>
+            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os cargos</SelectItem>
+              {positions.map(p => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    if (activeFilters.includes('employee')) {
+      filterComponents.push(
+        <div key="employee" className="space-y-2">
+          <Label>Funcionário</Label>
+          <Select value={filters.employee} onValueChange={v => setFilters(p => ({ ...p, employee: v }))}>
+            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+            <SelectContent>
+              {selectedReportType !== 'individual_employee' && <SelectItem value="all">Todos os funcionários</SelectItem>}
+              {employees.map((e: any) => (
+                <SelectItem key={e.id} value={e.id}>{e.full_name}{e.cpf ? ` (${e.cpf})` : ''}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    if (activeFilters.includes('trainingTitle')) {
+      filterComponents.push(
+        <div key="trainingTitle" className="space-y-2">
+          <Label>Título do Treinamento</Label>
+          <Select value={filters.trainingTitle} onValueChange={v => setFilters(p => ({ ...p, trainingTitle: v }))}>
+            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os treinamentos</SelectItem>
+              {trainingPrograms.map((t: any) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    if (activeFilters.includes('workloadHours')) {
+      filterComponents.push(
+        <div key="workloadHours" className="space-y-2">
+          <Label>Carga Horária Mínima (h)</Label>
+          <Input
+            type="number"
+            placeholder="Ex: 8"
+            value={filters.workloadHours}
+            onChange={e => setFilters(p => ({ ...p, workloadHours: e.target.value }))}
+          />
+        </div>
+      );
+    }
+
+    if (activeFilters.includes('status')) {
+      filterComponents.push(
+        <div key="status" className="space-y-2">
+          <Label>Status</Label>
+          <Select value={filters.status} onValueChange={v => setFilters(p => ({ ...p, status: v }))}>
+            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="Ativo">Ativo</SelectItem>
+              <SelectItem value="Inativo">Inativo</SelectItem>
+              <SelectItem value="Licença">Licença</SelectItem>
+              <SelectItem value="Férias">Férias</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    if (activeFilters.includes('period')) {
+      filterComponents.push(
+        <div key="startDate" className="space-y-2">
+          <Label>Data Inicial</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !filters.startDate && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {filters.startDate ? format(filters.startDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={filters.startDate} onSelect={d => setFilters(p => ({ ...p, startDate: d }))} initialFocus className="pointer-events-auto" />
+            </PopoverContent>
+          </Popover>
+        </div>,
+        <div key="endDate" className="space-y-2">
+          <Label>Data Final</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !filters.endDate && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {filters.endDate ? format(filters.endDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={filters.endDate} onSelect={d => setFilters(p => ({ ...p, endDate: d }))} initialFocus className="pointer-events-auto" />
+            </PopoverContent>
+          </Popover>
+        </div>
+      );
+    }
+
+    if (filterComponents.length === 0) return null;
+
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Filter className="h-4 w-4" />
+            Filtros — {selectedReportDef.name}
+          </CardTitle>
+          <CardDescription>Filtros específicos para este tipo de relatório</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filterComponents}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -340,229 +665,38 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Gerar Relatórios de RH
+            Relatórios de RH
           </DialogTitle>
           <DialogDescription>
-            Configure filtros e gere relatórios detalhados sobre funcionários, benefícios e estatísticas de RH
+            Selecione o tipo de relatório, configure os filtros e exporte em Excel (.xlsx)
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Statistics Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">Total Funcionários</p>
-                    <p className="text-2xl font-bold">{employeeStats?.totalEmployees || 0}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4 text-blue-500" />
-                  <div>
-                    <p className="text-sm font-medium">Departamentos</p>
-                    <p className="text-2xl font-bold">{departments.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Gift className="h-4 w-4 text-green-500" />
-                  <div>
-                    <p className="text-sm font-medium">Custo Benefícios</p>
-                    <p className="text-2xl font-bold">
-                      R$ {(benefitStats?.totalBenefitsCost || 0).toLocaleString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-purple-500" />
-                  <div>
-                    <p className="text-sm font-medium">Taxa Retenção</p>
-                    <p className="text-2xl font-bold">
-                      {employees.length > 0 
-                        ? Math.round((employees.filter(e => e.status === 'Ativo').length / employees.length) * 100)
-                        : 0}%
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Filters */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filtros
-              </CardTitle>
-              <CardDescription>
-                Configure filtros para personalizar o relatório
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="space-y-2">
-                  <Label>Filial</Label>
-                  <Select
-                    value={filters.branch}
-                    onValueChange={(value) => setFilters(prev => ({ ...prev, branch: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas as filiais" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as filiais</SelectItem>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.code ? `${branch.code} - ${branch.name}` : branch.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Departamento</Label>
-                  <Select
-                    value={filters.department}
-                    onValueChange={(value) => setFilters(prev => ({ ...prev, department: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos os departamentos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os departamentos</SelectItem>
-                      {departments.map((dept: string) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select
-                    value={filters.status}
-                    onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos os status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os status</SelectItem>
-                      <SelectItem value="Ativo">Ativo</SelectItem>
-                      <SelectItem value="Inativo">Inativo</SelectItem>
-                      <SelectItem value="Licença">Licença</SelectItem>
-                      <SelectItem value="Férias">Férias</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Data Inicial</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !filters.startDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {filters.startDate ? format(filters.startDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={filters.startDate}
-                        onSelect={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Data Final</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !filters.endDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {filters.endDate ? format(filters.endDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={filters.endDate}
-                        onSelect={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="space-y-4">
           {/* Report Types */}
           <Card>
-            <CardHeader>
-              <CardTitle>Tipos de Relatório</CardTitle>
-              <CardDescription>
-                Selecione o tipo de relatório que deseja gerar
-              </CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Tipos de Relatório</CardTitle>
+              <CardDescription>Selecione o relatório desejado — os filtros serão carregados automaticamente</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {reportTypes.map((report) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {REPORT_TYPES.map((report) => (
                   <div
                     key={report.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
                       selectedReportType === report.id ? 'border-primary bg-primary/5' : ''
                     }`}
                     onClick={() => setSelectedReportType(report.id)}
                   >
                     <div className="flex items-start gap-3">
                       <report.icon className={`h-5 w-5 mt-0.5 ${report.color}`} />
-                      <div className="flex-1">
-                        <h4 className="font-medium">{report.name}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {report.description}
-                        </p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm">{report.name}</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">{report.description}</p>
                       </div>
                       {selectedReportType === report.id && (
-                        <Badge variant="default" className="ml-2">
-                          Selecionado
-                        </Badge>
+                        <Badge variant="default" className="ml-1 shrink-0">Selecionado</Badge>
                       )}
                     </div>
                   </div>
@@ -571,13 +705,15 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
             </CardContent>
           </Card>
 
+          {/* Dynamic Filters */}
+          {selectedReportType && renderFilters()}
+
+          {/* Actions */}
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button onClick={generateReport} disabled={!selectedReportType}>
+            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button onClick={handleExport} disabled={!selectedReportType}>
               <Download className="h-4 w-4 mr-2" />
-              Gerar Relatório
+              Exportar Excel
             </Button>
           </div>
         </div>
