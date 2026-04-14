@@ -143,6 +143,7 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
     const filteredEmployees = employees.filter(emp => {
       if (filters.department !== 'all' && emp.department !== filters.department) return false;
       if (filters.status !== 'all' && emp.status !== filters.status) return false;
+      if (filters.branch_id !== 'all' && emp.branch_id !== filters.branch_id) return false;
       return true;
     });
 
