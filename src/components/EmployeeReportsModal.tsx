@@ -6,6 +6,8 @@ import { Badge } from './ui/badge';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Calendar } from './ui/calendar';
+import { supabase } from '@/integrations/supabase/client';
+import { useCompany } from '@/contexts/CompanyContext';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { 
   FileText, 
@@ -38,8 +40,28 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
   const [filters, setFilters] = useState({
     department: 'all',
     status: 'all',
+    branch: 'all',
     startDate: undefined as Date | undefined,
     endDate: undefined as Date | undefined,
+  });
+
+  const { selectedCompany } = useCompany();
+
+  // Fetch branches
+  const { data: branches = [] } = useQuery({
+    queryKey: ['branches-for-reports', selectedCompany?.id],
+    queryFn: async () => {
+      if (!selectedCompany?.id) return [];
+      const { data, error } = await supabase
+        .from('branches')
+        .select('id, name, code')
+        .eq('company_id', selectedCompany.id)
+        .in('status', ['Ativo', 'Ativa'])
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isOpen && !!selectedCompany?.id,
   });
 
   // Set initial report type when modal opens
@@ -133,30 +155,39 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
     }
   };
 
-  const getEmployeeReport = () => {
-    const filteredEmployees = employees.filter(emp => {
+  const getFilteredEmployees = () => {
+    return employees.filter(emp => {
       if (filters.department !== 'all' && emp.department !== filters.department) return false;
       if (filters.status !== 'all' && emp.status !== filters.status) return false;
+      if (filters.branch !== 'all' && emp.branch_id !== filters.branch) return false;
       return true;
     });
+  };
+
+  const getEmployeeReport = () => {
+    const filteredEmployees = getFilteredEmployees();
 
     return {
       headers: [
-        'Código', 'Nome Completo', 'E-mail', 'Telefone', 'Departamento', 
+        'Código', 'Nome Completo', 'E-mail', 'Telefone', 'Filial', 'Departamento', 
         'Cargo', 'Data Contratação', 'Status', 'Tipo Contrato', 'Localização'
       ],
-      data: filteredEmployees.map(emp => [
-        emp.employee_code,
-        emp.full_name,
-        emp.email || '',
-        emp.phone || '',
-        emp.department || '',
-        emp.position || '',
-        emp.hire_date,
-        emp.status,
-        emp.employment_type,
-        emp.location || ''
-      ])
+      data: filteredEmployees.map(emp => {
+        const branch = branches.find(b => b.id === emp.branch_id);
+        return [
+          emp.employee_code,
+          emp.full_name,
+          emp.email || '',
+          emp.phone || '',
+          branch ? (branch.code ? `${branch.code} - ${branch.name}` : branch.name) : '',
+          emp.department || '',
+          emp.position || '',
+          emp.hire_date,
+          emp.status,
+          emp.employment_type,
+          emp.location || ''
+        ];
+      })
     };
   };
 
@@ -386,7 +417,26 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="space-y-2">
+                  <Label>Filial</Label>
+                  <Select
+                    value={filters.branch}
+                    onValueChange={(value) => setFilters(prev => ({ ...prev, branch: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as filiais" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as filiais</SelectItem>
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.code ? `${branch.code} - ${branch.name}` : branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
                   <Label>Departamento</Label>
                   <Select
