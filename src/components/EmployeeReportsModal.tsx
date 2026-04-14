@@ -22,6 +22,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { getEmployees, getEmployeesStats } from '@/services/employees';
 import { getBenefitStats } from '@/services/benefits';
+import { useBranches } from '@/services/branches';
+import { getBranchDisplayLabel } from '@/utils/branchDisplay';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
