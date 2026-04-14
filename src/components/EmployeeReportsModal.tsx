@@ -155,12 +155,17 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
     }
   };
 
-  const getEmployeeReport = () => {
-    const filteredEmployees = employees.filter(emp => {
+  const getFilteredEmployees = () => {
+    return employees.filter(emp => {
       if (filters.department !== 'all' && emp.department !== filters.department) return false;
       if (filters.status !== 'all' && emp.status !== filters.status) return false;
+      if (filters.branch !== 'all' && emp.branch_id !== filters.branch) return false;
       return true;
     });
+  };
+
+  const getEmployeeReport = () => {
+    const filteredEmployees = getFilteredEmployees();
 
     return {
       headers: [
