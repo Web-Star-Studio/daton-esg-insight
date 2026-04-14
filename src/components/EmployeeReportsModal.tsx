@@ -73,6 +73,9 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
     enabled: isOpen,
   });
 
+  // Fetch branches
+  const { data: branches = [] } = useBranches();
+
   const departments = [...new Set(employees.map(e => e.department).filter(Boolean))];
 
   const generateReport = async () => {
