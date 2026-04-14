@@ -393,7 +393,26 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="space-y-2">
+                  <Label>Filial</Label>
+                  <Select
+                    value={filters.branch_id}
+                    onValueChange={(value) => setFilters(prev => ({ ...prev, branch_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as filiais" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as filiais</SelectItem>
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {getBranchDisplayLabel(branch)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
                   <Label>Departamento</Label>
                   <Select
