@@ -169,20 +169,25 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
 
     return {
       headers: [
-        'Código', 'Nome Completo', 'E-mail', 'Telefone', 'Departamento', 
+        'Código', 'Nome Completo', 'E-mail', 'Telefone', 'Filial', 'Departamento', 
         'Cargo', 'Data Contratação', 'Status', 'Tipo Contrato', 'Localização'
       ],
-      data: filteredEmployees.map(emp => [
-        emp.employee_code,
-        emp.full_name,
-        emp.email || '',
-        emp.phone || '',
-        emp.department || '',
-        emp.position || '',
-        emp.hire_date,
-        emp.status,
-        emp.employment_type,
-        emp.location || ''
+      data: filteredEmployees.map(emp => {
+        const branch = branches.find(b => b.id === emp.branch_id);
+        return [
+          emp.employee_code,
+          emp.full_name,
+          emp.email || '',
+          emp.phone || '',
+          branch ? (branch.code ? `${branch.code} - ${branch.name}` : branch.name) : '',
+          emp.department || '',
+          emp.position || '',
+          emp.hire_date,
+          emp.status,
+          emp.employment_type,
+          emp.location || ''
+        ];
+      })
       ])
     };
   };
