@@ -40,6 +40,7 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
   const [filters, setFilters] = useState({
     department: 'all',
     status: 'all',
+    branch_id: 'all',
     startDate: undefined as Date | undefined,
     endDate: undefined as Date | undefined,
   });
