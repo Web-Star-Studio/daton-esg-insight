@@ -22,8 +22,6 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { getEmployees, getEmployeesStats } from '@/services/employees';
 import { getBenefitStats } from '@/services/benefits';
-import { useBranches } from '@/services/branches';
-import { getBranchDisplayLabel } from '@/utils/branchDisplay';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -40,7 +38,6 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
   const [filters, setFilters] = useState({
     department: 'all',
     status: 'all',
-    branch_id: 'all',
     startDate: undefined as Date | undefined,
     endDate: undefined as Date | undefined,
   });
@@ -72,9 +69,6 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
     queryFn: getBenefitStats,
     enabled: isOpen,
   });
-
-  // Fetch branches
-  const { data: branches = [] } = useBranches();
 
   const departments = [...new Set(employees.map(e => e.department).filter(Boolean))];
 
@@ -143,7 +137,6 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
     const filteredEmployees = employees.filter(emp => {
       if (filters.department !== 'all' && emp.department !== filters.department) return false;
       if (filters.status !== 'all' && emp.status !== filters.status) return false;
-      if (filters.branch_id !== 'all' && emp.branch_id !== filters.branch_id) return false;
       return true;
     });
 
@@ -393,26 +386,7 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="space-y-2">
-                  <Label>Filial</Label>
-                  <Select
-                    value={filters.branch_id}
-                    onValueChange={(value) => setFilters(prev => ({ ...prev, branch_id: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas as filiais" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as filiais</SelectItem>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {getBranchDisplayLabel(branch)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label>Departamento</Label>
                   <Select

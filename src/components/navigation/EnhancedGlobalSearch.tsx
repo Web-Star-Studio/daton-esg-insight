@@ -57,9 +57,6 @@ const searchData: SearchResult[] = [
   { id: 'document-control', title: 'Controle de Documentos', path: '/controle-documentos', description: 'Versionamento e controle documental', category: 'SGQ', icon: 'FileText', keywords: ['controle', 'documentos', 'versionamento', 'documental'] },
   { id: 'supplier-evaluation', title: 'Avaliação de Fornecedores', path: '/avaliacao-fornecedores', description: 'Qualificação e monitoramento de fornecedores', category: 'SGQ', icon: 'Users', keywords: ['fornecedores', 'avaliacao', 'qualificacao', 'monitoramento'] },
 
-  // OPERAÇÃO
-  { id: 'production-monitoring', title: 'Módulo Operação', path: '/production-monitoring', description: 'Manutenção, calibração e controles operacionais', category: 'Operação', icon: 'Settings', keywords: ['operacao', 'manutencao', 'calibracao', 'infraestrutura', 'producao'] },
-
   // CENTRAL DE DADOS
   { id: 'data-collection', title: 'Coleta de Dados', path: '/coleta-dados', description: 'Importação e gestão de dados ESG', category: 'Central de Dados', icon: 'FileText', keywords: ['dados', 'coleta', 'importacao', 'gestao'] },
   { id: 'documents', title: 'Documentos', path: '/documentos', description: 'Biblioteca de documentos e arquivos', category: 'Central de Dados', icon: 'FileText', keywords: ['documentos', 'arquivos', 'biblioteca', 'central'] },

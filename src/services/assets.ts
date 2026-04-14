@@ -108,31 +108,6 @@ export const OPERATIONAL_STATUS_OPTIONS = ['Ativo', 'Inativo', 'Manutenção'] a
 export const POLLUTION_POTENTIAL_OPTIONS = ['Alto', 'Médio', 'Baixo'] as const;
 export const MONITORING_FREQUENCY_OPTIONS = ['Diária', 'Semanal', 'Mensal', 'Trimestral', 'Anual'] as const;
 
-function buildHierarchy(assets: Asset[]): Asset[] {
-  const assetMap = new Map<string, Asset & { children: Asset[] }>();
-  const rootAssets: Asset[] = [];
-
-  for (const asset of assets) {
-    assetMap.set(asset.id, { ...asset, children: [] });
-  }
-
-  for (const asset of assets) {
-    const assetWithChildren = assetMap.get(asset.id)!;
-    if (asset.parent_asset_id) {
-      const parent = assetMap.get(asset.parent_asset_id);
-      if (parent) {
-        parent.children.push(assetWithChildren);
-      } else {
-        rootAssets.push(assetWithChildren);
-      }
-    } else {
-      rootAssets.push(assetWithChildren);
-    }
-  }
-
-  return rootAssets;
-}
-
 // Demo Mode Helper
 const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__;
 
@@ -172,30 +147,19 @@ export async function getAssetsHierarchy(): Promise<Asset[]> {
       ];
     }
 
-    // Get company_id from user profile
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuário não autenticado');
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (!profile?.company_id) throw new Error('Perfil não encontrado');
-
-    const { data, error } = await supabase
-      .from('assets')
-      .select('*')
-      .eq('company_id', profile.company_id)
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.functions.invoke('assets-management');
 
     if (error) {
-      console.error('Error fetching assets:', error);
-      throw new Error(`Falha ao buscar ativos: ${error.message}`);
+      console.error('Error fetching assets hierarchy:', error);
+      throw new Error(`Failed to fetch assets: ${error.message || 'Unknown error'}`);
     }
 
-    return buildHierarchy(data || []);
+    if (!data || !data.assets) {
+      console.warn('No assets data returned from function');
+      return [];
+    }
+
+    return data.assets;
   } catch (err) {
     console.error('Exception in getAssetsHierarchy:', err);
     throw err;

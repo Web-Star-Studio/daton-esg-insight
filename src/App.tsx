@@ -427,6 +427,7 @@ const AppContent = () => {
                 <Route path="/relatorios-integrados" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/sdg-dashboard" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/indicadores-recomendados" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/ativos" element={<Navigate to="/dashboard" replace />} />
               </>
             )}
 

@@ -339,17 +339,6 @@ const menuSections: MenuSection[] = [
     ]
   },
   {
-    id: "operations",
-    title: "OPERAÇÃO",
-    icon: Monitor,
-    isCollapsible: true,
-    defaultOpen: false,
-    items: [
-      { id: "production-monitoring", title: "Módulo Operação", icon: Activity, path: "/production-monitoring", description: "Manutenção, calibração e controles operacionais" },
-      { id: "assets-operations", title: "Ativos", icon: Building2, path: "/ativos", description: "Inventário de ativos críticos e hierarquia" }
-    ]
-  },
-  {
     id: "data-reports",
     title: "DADOS E RELATÓRIOS",
     icon: Database,
