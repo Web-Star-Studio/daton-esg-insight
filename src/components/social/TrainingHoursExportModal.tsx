@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -7,13 +7,21 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Calendar as CalendarIcon, Building2, Users, Briefcase, GraduationCap, FileSpreadsheet, List } from "lucide-react";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { Download, Calendar as CalendarIcon, Building2, Users, Briefcase, GraduationCap, FileSpreadsheet, List, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getTrainingExportData, exportToCSV, exportToExcel, TrainingExportConfig, ExportData } from "@/services/trainingExportService";
+import {
+  getTrainingExportData,
+  getTrainingFilterOptions,
+  exportToCSV,
+  exportToExcel,
+  TrainingExportConfig,
+  TrainingExportFilters,
+} from "@/services/trainingExportService";
 
 interface TrainingHoursExportModalProps {
   open: boolean;
@@ -34,24 +42,56 @@ export function TrainingHoursExportModal({ open, onOpenChange }: TrainingHoursEx
   const [exportFormat, setExportFormat] = useState<'csv' | 'excel'>('excel');
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [filters, setFilters] = useState<TrainingExportFilters>({});
+
+  const { data: filterOptions, isLoading: loadingOptions } = useQuery({
+    queryKey: ['training-export-filter-options'],
+    queryFn: getTrainingFilterOptions,
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
 
   const { data: previewData, isLoading } = useQuery({
-    queryKey: ['training-export-preview', reportType, dateFrom?.toISOString(), dateTo?.toISOString()],
-    queryFn: () => getTrainingExportData({ type: reportType, format: 'csv', dateFrom, dateTo }),
-    enabled: open,
+    queryKey: ['training-export-preview', reportType, dateFrom?.toISOString(), dateTo?.toISOString(), filtersKey],
+    queryFn: () => getTrainingExportData(
+      { type: reportType, format: 'csv', dateFrom, dateTo, filters },
+      filterOptions
+    ),
+    enabled: open && !!filterOptions,
   });
+
+  const updateFilter = <K extends keyof TrainingExportFilters>(key: K, value: TrainingExportFilters[K]) => {
+    setFilters(prev => ({ ...prev, [key]: value && (value as any[]).length ? value : undefined }));
+  };
+
+  const clearAllFilters = () => {
+    setFilters({});
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
+
+  const activeFilterCount =
+    (filters.branchIds?.length || 0) +
+    (filters.departments?.length || 0) +
+    (filters.positions?.length || 0) +
+    (filters.employeeIds?.length || 0) +
+    (filters.trainingProgramIds?.length || 0) +
+    (dateFrom || dateTo ? 1 : 0);
 
   const handleExport = async () => {
     try {
-      const data = await getTrainingExportData({ type: reportType, format: exportFormat, dateFrom, dateTo });
+      const data = await getTrainingExportData(
+        { type: reportType, format: exportFormat, dateFrom, dateTo, filters },
+        filterOptions
+      );
       const filename = `horas-treinamento-${reportType}-${format(new Date(), 'yyyy-MM-dd')}`;
-      
       if (exportFormat === 'csv') {
         exportToCSV(data, filename);
       } else {
         exportToExcel(data, filename);
       }
-      
       toast.success('Relatório exportado com sucesso!');
       onOpenChange(false);
     } catch (error) {
@@ -62,14 +102,14 @@ export function TrainingHoursExportModal({ open, onOpenChange }: TrainingHoursEx
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
             Exportar Horas de Treinamento
           </DialogTitle>
           <DialogDescription>
-            Selecione o tipo de relatório e formato de exportação
+            Selecione o tipo de relatório, aplique filtros e escolha o formato de exportação
           </DialogDescription>
         </DialogHeader>
 
@@ -97,6 +137,86 @@ export function TrainingHoursExportModal({ open, onOpenChange }: TrainingHoursEx
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filtros
+                {activeFilterCount > 0 && (
+                  <span className="text-xs text-muted-foreground">({activeFilterCount} ativo{activeFilterCount > 1 ? 's' : ''})</span>
+                )}
+              </Label>
+              {activeFilterCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                  Limpar todos
+                </Button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Filial</Label>
+                <MultiSelect
+                  options={(filterOptions?.branches || []).map(b => ({ value: b.id, label: b.label }))}
+                  selected={filters.branchIds || []}
+                  onChange={(v) => updateFilter('branchIds', v)}
+                  placeholder={loadingOptions ? "Carregando..." : "Todas as filiais"}
+                  searchPlaceholder="Buscar filial..."
+                  disabled={loadingOptions}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Setor</Label>
+                <MultiSelect
+                  options={(filterOptions?.departments || []).map(d => ({ value: d, label: d }))}
+                  selected={filters.departments || []}
+                  onChange={(v) => updateFilter('departments', v)}
+                  placeholder={loadingOptions ? "Carregando..." : "Todos os setores"}
+                  searchPlaceholder="Buscar setor..."
+                  disabled={loadingOptions}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Função</Label>
+                <MultiSelect
+                  options={(filterOptions?.positions || []).map(p => ({ value: p, label: p }))}
+                  selected={filters.positions || []}
+                  onChange={(v) => updateFilter('positions', v)}
+                  placeholder={loadingOptions ? "Carregando..." : "Todas as funções"}
+                  searchPlaceholder="Buscar função..."
+                  disabled={loadingOptions}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Funcionário</Label>
+                <MultiSelect
+                  options={(filterOptions?.employees || []).map(e => ({ value: e.id, label: e.full_name }))}
+                  selected={filters.employeeIds || []}
+                  onChange={(v) => updateFilter('employeeIds', v)}
+                  placeholder={loadingOptions ? "Carregando..." : "Todos os funcionários"}
+                  searchPlaceholder="Buscar funcionário..."
+                  disabled={loadingOptions}
+                />
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <Label className="text-xs text-muted-foreground">Treinamento</Label>
+                <MultiSelect
+                  options={(filterOptions?.trainingPrograms || []).map(p => ({ value: p.id, label: p.name }))}
+                  selected={filters.trainingProgramIds || []}
+                  onChange={(v) => updateFilter('trainingProgramIds', v)}
+                  placeholder={loadingOptions ? "Carregando..." : "Todos os treinamentos"}
+                  searchPlaceholder="Buscar treinamento..."
+                  disabled={loadingOptions}
+                />
+              </div>
             </div>
           </div>
 
@@ -130,7 +250,7 @@ export function TrainingHoursExportModal({ open, onOpenChange }: TrainingHoursEx
 
               {(dateFrom || dateTo) && (
                 <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
-                  Limpar
+                  Limpar período
                 </Button>
               )}
             </div>
@@ -188,18 +308,23 @@ export function TrainingHoursExportModal({ open, onOpenChange }: TrainingHoursEx
                     {previewData.rows.length > 5 && (
                       <TableRow>
                         <TableCell colSpan={previewData.headers.length} className="text-center text-xs text-muted-foreground py-2">
-                          ... e mais {previewData.rows.length - 5} registros
+                          ... e mais {previewData.rows.length - 5} registros (total no arquivo exportado)
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
               ) : (
-                <div className="p-8 text-center text-muted-foreground">
-                  Nenhum dado encontrado para o período selecionado
+                <div className="p-8 text-center text-muted-foreground text-sm">
+                  Nenhum dado encontrado para os filtros selecionados
                 </div>
               )}
             </div>
+            {previewData?.criteria && previewData.criteria.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Critérios incluídos no arquivo exportado: {previewData.criteria.length} item{previewData.criteria.length > 1 ? 's' : ''}
+              </p>
+            )}
           </div>
         </div>
 
