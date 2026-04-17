@@ -1,8 +1,8 @@
 import { useLocation } from "react-router-dom";
-import { ArrowUpRight, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { getMigrationInfo, getV2Url } from "@/config/migratedModules";
+import { getMigrationInfo } from "@/config/migratedModules";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "daton.migrationNotice.dismissed";
@@ -42,7 +42,6 @@ export function MigrationNotice() {
   };
 
   const isDeprecated = info.status === "deprecated";
-  const v2Url = getV2Url(info);
 
   return (
     <div
@@ -79,12 +78,6 @@ export function MigrationNotice() {
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <Button asChild size="sm" variant={isDeprecated ? "destructive" : "outline"} className={isDeprecated ? "" : "border-warning/50 hover:bg-warning/10"}>
-          <a href={v2Url} target="_blank" rel="noopener noreferrer">
-            Abrir no novo Daton
-            <ArrowUpRight className="ml-1 h-4 w-4" />
-          </a>
-        </Button>
         <Button
           variant="ghost"
           size="icon"
