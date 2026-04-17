@@ -270,6 +270,8 @@ const queryClient = new QueryClient({
 const AppContent = () => {
   // Hook para notificações de processamento em tempo real
   useDocumentProcessingNotifications();
+  // Tracking de page views para análise de uso (inclui rotas com 0 acesso)
+  usePageTracking();
 
   return (
     <>
