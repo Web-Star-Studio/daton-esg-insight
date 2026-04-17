@@ -38,7 +38,7 @@ type Profile = { id: string; email: string | null; full_name: string | null };
 
 const ALL_COMPANIES = "__all__";
 const NO_COMPANY = "__none__";
-type Period = "7d" | "30d" | "90d";
+type Period = "24h" | "7d" | "30d" | "90d";
 
 const collectStaticPaths = (): string[] => {
   const paths = new Set<string>();
@@ -63,9 +63,13 @@ export const PageUsageTab = () => {
   useEffect(() => {
     void (async () => {
       setLoading(true);
-      const days = period === "7d" ? 7 : period === "30d" ? 30 : 90;
+      const hours =
+        period === "24h" ? 24
+        : period === "7d" ? 24 * 7
+        : period === "30d" ? 24 * 30
+        : 24 * 90;
       const fromDate = new Date(
-        Date.now() - days * 24 * 60 * 60 * 1000
+        Date.now() - hours * 60 * 60 * 1000
       ).toISOString();
 
       const [logsRes, companiesRes] = await Promise.all([
@@ -191,6 +195,7 @@ export const PageUsageTab = () => {
             <SelectValue placeholder="Período" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="24h">Últimas 24 horas</SelectItem>
             <SelectItem value="7d">Últimos 7 dias</SelectItem>
             <SelectItem value="30d">Últimos 30 dias</SelectItem>
             <SelectItem value="90d">Últimos 90 dias</SelectItem>

@@ -5,7 +5,6 @@ import { PlatformUsersTable } from "@/components/platform/PlatformUsersTable";
 import { usePlatformAnalytics } from "@/hooks/usePlatformAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ModuleSettingsPanel } from "@/components/platform/ModuleSettingsPanel";
 import { PageUsageTab } from "@/components/platform/PageUsageTab";
 
 export default function PlatformAdminDashboard() {
@@ -87,7 +86,6 @@ export default function PlatformAdminDashboard() {
         <TabsList>
           <TabsTrigger value="empresas">Empresas</TabsTrigger>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-          <TabsTrigger value="modulos">Módulos</TabsTrigger>
           <TabsTrigger value="uso">Uso de Páginas</TabsTrigger>
         </TabsList>
         <TabsContent value="empresas">
@@ -107,16 +105,6 @@ export default function PlatformAdminDashboard() {
             </CardHeader>
             <CardContent>
               <PlatformUsersTable />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="modulos">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configuração de Módulos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ModuleSettingsPanel />
             </CardContent>
           </Card>
         </TabsContent>
