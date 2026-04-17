@@ -28,7 +28,7 @@ export function MigratedBadge({ path, className }: MigratedBadgeProps) {
         "inline-flex items-center rounded-full border px-1.5 py-0 text-[9px] font-bold uppercase leading-[14px] tracking-wide",
         isDeprecated
           ? "border-destructive/40 bg-destructive/15 text-destructive"
-          : "border-yellow-500/40 bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+          : "border-warning/40 bg-warning/15 text-warning",
         className
       )}
       aria-label={isDeprecated ? "Descontinuado, migrou para v2" : "Migrado para v2"}
