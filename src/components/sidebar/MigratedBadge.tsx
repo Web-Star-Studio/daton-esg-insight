@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react";
 import { getMigrationInfo } from "@/config/migratedModules";
 import { cn } from "@/lib/utils";
 
@@ -7,8 +8,9 @@ interface MigratedBadgeProps {
 }
 
 /**
- * Pequeno badge "v2" exibido em itens do sidebar cuja funcionalidade
- * já foi migrada para o novo sistema Daton.
+ * Indicador de aviso exibido em itens do sidebar cuja funcionalidade
+ * será migrada/já foi migrada para o novo sistema Daton.
+ * Renderiza um pequeno triângulo de alerta amarelo (ou vermelho se descontinuado).
  */
 export function MigratedBadge({ path, className }: MigratedBadgeProps) {
   if (!path || path === "#") return null;
@@ -21,19 +23,21 @@ export function MigratedBadge({ path, className }: MigratedBadgeProps) {
     <span
       title={
         isDeprecated
-          ? `${info.v1Title} foi descontinuado — use o novo Daton`
-          : `${info.v1Title} migrou para o novo Daton`
+          ? `${info.v1Title} foi descontinuado — em breve indisponível nesta versão`
+          : `${info.v1Title} será migrado para o novo Daton em breve`
       }
       className={cn(
-        "inline-flex items-center rounded-full border px-1.5 py-0 text-[9px] font-bold uppercase leading-[14px] tracking-wide",
-        isDeprecated
-          ? "border-destructive/40 bg-destructive/15 text-destructive"
-          : "border-warning/40 bg-warning/15 text-warning",
+        "inline-flex items-center justify-center shrink-0",
+        isDeprecated ? "text-destructive" : "text-warning",
         className
       )}
-      aria-label={isDeprecated ? "Descontinuado, migrou para v2" : "Migrado para v2"}
+      aria-label={
+        isDeprecated
+          ? "Funcionalidade descontinuada"
+          : "Funcionalidade será migrada em breve"
+      }
     >
-      v2
+      <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
     </span>
   );
 }
