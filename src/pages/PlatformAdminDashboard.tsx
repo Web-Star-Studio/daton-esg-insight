@@ -120,6 +120,16 @@ export default function PlatformAdminDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="uso">
+          <Card>
+            <CardHeader>
+              <CardTitle>Uso de Páginas por Organização</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PageUsageTab />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
