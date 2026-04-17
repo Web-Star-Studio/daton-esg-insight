@@ -72,7 +72,7 @@ export function MigrationNotice() {
           <p className="text-sm text-muted-foreground">
             {isDeprecated
               ? "Acesse a nova versão para continuar usando este módulo."
-              : "Pode continuar usando esta versão normalmente — todos os seus dados serão migrados automaticamente para o novo sistema quando a transição for concluída."}
+              : "Em breve esta versão será descontinuada. Todos os seus dados serão migrados automaticamente para o novo sistema, sem necessidade de retrabalho."}
             {info.notes ? <span className="ml-1">{info.notes}</span> : null}
           </p>
         </div>
