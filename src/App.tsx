@@ -970,6 +970,20 @@ const AppContent = () => {
             {/* System Status - Production Readiness */}
             <Route path="/system-status" element={<ProtectedLazyPageWrapper><SystemStatus /></ProtectedLazyPageWrapper>} />
 
+            {/* Page Usage Analytics - Platform admins only */}
+            <Route
+              path="/admin/uso-rotas"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard requiredRole="platform_admin">
+                    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                      <PageUsageAnalytics />
+                    </Suspense>
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Platform Admin Dashboard - Only accessible to platform admins */}
             <Route
               path="/platform-admin"
