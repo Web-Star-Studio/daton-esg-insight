@@ -23,6 +23,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
 import { GlobalKeyboardShortcuts } from "@/components/GlobalKeyboardShortcuts";
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import { lazyImportWithRetry } from "@/utils/lazyImportWithRetry";
 
 import AuthErrorHandler from "@/components/AuthErrorHandler";
