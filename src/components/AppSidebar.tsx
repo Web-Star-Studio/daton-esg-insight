@@ -512,7 +512,6 @@ export function AppSidebar() {
                   {item.title}
                 </span>
               )}
-              {!collapsed && <MigratedBadge path={item.path} />}
             </div>
           </NavigationTooltip>
 
@@ -584,7 +583,6 @@ export function AppSidebar() {
                         {item.title}
                       </span>
                     )}
-                    {!collapsed && <MigratedBadge path={item.path} />}
                   </div>
                 </NavigationTooltip>
 
