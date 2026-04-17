@@ -37,7 +37,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useHasRole } from "@/middleware/roleGuard"
 import datonLogo from "@/assets/daton-logo-header.png"
 import { cn } from "@/lib/utils"
-import { MigratedBadge } from "@/components/sidebar/MigratedBadge"
+
 
 // Importações de ícones organizadas por categoria
 import {
@@ -512,7 +512,6 @@ export function AppSidebar() {
                   {item.title}
                 </span>
               )}
-              {!collapsed && <MigratedBadge path={item.path} />}
             </div>
           </NavigationTooltip>
 
@@ -584,7 +583,6 @@ export function AppSidebar() {
                         {item.title}
                       </span>
                     )}
-                    {!collapsed && <MigratedBadge path={item.path} />}
                   </div>
                 </NavigationTooltip>
 
@@ -665,7 +663,6 @@ export function AppSidebar() {
                   {item.title}
                 </span>
               )}
-              {!collapsed && <MigratedBadge path={item.path} />}
             </div>
           </NavigationTooltip>
 
