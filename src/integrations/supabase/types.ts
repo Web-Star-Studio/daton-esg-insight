@@ -25974,6 +25974,7 @@ export type Database = {
     Views: {
       page_view_stats_90d: {
         Row: {
+          company_id: string | null
           last_viewed_at: string | null
           pathname: string | null
           unique_users: number | null

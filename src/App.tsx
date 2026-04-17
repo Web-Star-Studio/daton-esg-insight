@@ -229,6 +229,7 @@ const LandingSelva = lazy(() => import("./pages/LandingSelva"));
 const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
 const SystemStatus = lazy(() => import("./pages/SystemStatus"));
 const PlatformAdminDashboard = lazy(() => import("./pages/PlatformAdminDashboard"));
+const PageUsageAnalytics = lazy(() => import("./pages/PageUsageAnalytics"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const DemoDashboard = lazy(() => import("./pages/DemoDashboard"));
 const DemoLayout = lazy(() => import("./components/DemoLayout").then(m => ({ default: m.DemoLayout })));
@@ -969,6 +970,20 @@ const AppContent = () => {
 
             {/* System Status - Production Readiness */}
             <Route path="/system-status" element={<ProtectedLazyPageWrapper><SystemStatus /></ProtectedLazyPageWrapper>} />
+
+            {/* Page Usage Analytics - Platform admins only */}
+            <Route
+              path="/admin/uso-rotas"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard requiredRole="platform_admin">
+                    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                      <PageUsageAnalytics />
+                    </Suspense>
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Platform Admin Dashboard - Only accessible to platform admins */}
             <Route
