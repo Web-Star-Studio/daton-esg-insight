@@ -6,6 +6,7 @@ import { usePlatformAnalytics } from "@/hooks/usePlatformAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ModuleSettingsPanel } from "@/components/platform/ModuleSettingsPanel";
+import { PageUsageTab } from "@/components/platform/PageUsageTab";
 
 export default function PlatformAdminDashboard() {
   const { data: analytics, isLoading } = usePlatformAnalytics('30d');
@@ -87,6 +88,7 @@ export default function PlatformAdminDashboard() {
           <TabsTrigger value="empresas">Empresas</TabsTrigger>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
           <TabsTrigger value="modulos">Módulos</TabsTrigger>
+          <TabsTrigger value="uso">Uso de Páginas</TabsTrigger>
         </TabsList>
         <TabsContent value="empresas">
           <Card>
@@ -115,6 +117,16 @@ export default function PlatformAdminDashboard() {
             </CardHeader>
             <CardContent>
               <ModuleSettingsPanel />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="uso">
+          <Card>
+            <CardHeader>
+              <CardTitle>Uso de Páginas por Organização</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PageUsageTab />
             </CardContent>
           </Card>
         </TabsContent>
