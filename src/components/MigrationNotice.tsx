@@ -47,10 +47,10 @@ export function MigrationNotice() {
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between",
+        "relative flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between mb-4",
         isDeprecated
           ? "border-destructive/40 bg-destructive/5"
-          : "border-primary/30 bg-primary/5"
+          : "border-warning/40 bg-warning/10"
       )}
       role="status"
       aria-live="polite"
@@ -59,7 +59,7 @@ export function MigrationNotice() {
         <div
           className={cn(
             "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-            isDeprecated ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary"
+            isDeprecated ? "bg-destructive/15 text-destructive" : "bg-warning/20 text-warning"
           )}
         >
           <Sparkles className="h-4 w-4" />
@@ -79,7 +79,7 @@ export function MigrationNotice() {
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <Button asChild size="sm" variant={isDeprecated ? "destructive" : "default"}>
+        <Button asChild size="sm" variant={isDeprecated ? "destructive" : "outline"} className={isDeprecated ? "" : "border-warning/50 hover:bg-warning/10"}>
           <a href={v2Url} target="_blank" rel="noopener noreferrer">
             Abrir no novo Daton
             <ArrowUpRight className="ml-1 h-4 w-4" />
