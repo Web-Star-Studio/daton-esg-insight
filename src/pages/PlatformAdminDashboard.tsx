@@ -88,6 +88,7 @@ export default function PlatformAdminDashboard() {
           <TabsTrigger value="empresas">Empresas</TabsTrigger>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
           <TabsTrigger value="modulos">Módulos</TabsTrigger>
+          <TabsTrigger value="uso">Uso de Páginas</TabsTrigger>
         </TabsList>
         <TabsContent value="empresas">
           <Card>
