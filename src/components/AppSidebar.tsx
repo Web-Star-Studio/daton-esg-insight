@@ -37,6 +37,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useHasRole } from "@/middleware/roleGuard"
 import datonLogo from "@/assets/daton-logo-header.png"
 import { cn } from "@/lib/utils"
+import { MigratedBadge } from "@/components/sidebar/MigratedBadge"
 
 // Importações de ícones organizadas por categoria
 import {
@@ -502,15 +503,16 @@ export function AppSidebar() {
             description={item.description}
             disabled={false}
           >
-            <div className="flex items-center flex-1 min-w-0 pl-1.5">
+            <div className="flex items-center flex-1 min-w-0 pl-1.5 gap-1.5">
               {!collapsed && (
                 <span className={cn(
-                  "truncate flex-1 min-w-0 text-[12.5px] tracking-[-0.01em]",
+                  "truncate min-w-0 text-[12.5px] tracking-[-0.01em]",
                   active ? "font-medium text-sidebar-foreground" : "text-sidebar-foreground/75",
                 )}>
                   {item.title}
                 </span>
               )}
+              {!collapsed && <MigratedBadge path={item.path} />}
             </div>
           </NavigationTooltip>
 
@@ -582,6 +584,7 @@ export function AppSidebar() {
                         {item.title}
                       </span>
                     )}
+                    {!collapsed && <MigratedBadge path={item.path} />}
                   </div>
                 </NavigationTooltip>
 
@@ -662,6 +665,7 @@ export function AppSidebar() {
                   {item.title}
                 </span>
               )}
+              {!collapsed && <MigratedBadge path={item.path} />}
             </div>
           </NavigationTooltip>
 
