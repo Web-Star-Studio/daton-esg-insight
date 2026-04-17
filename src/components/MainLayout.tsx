@@ -13,6 +13,7 @@ import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessin
 import { useAutoRetryProcessor } from "@/hooks/useAutoRetryProcessor"
 import { logger } from "@/utils/logger"
 import { SkipLinks } from "@/components/SkipLinks"
+import { MigrationNotice } from "@/components/MigrationNotice"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -78,6 +79,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   
                   <main id="main-content" className="flex-1 p-3 sm:p-4 md:p-6 bg-muted/10">
                     <Breadcrumbs />
+                    <MigrationNotice />
                     {children}
                   </main>
                   
