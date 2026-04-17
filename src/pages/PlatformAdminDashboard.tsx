@@ -6,6 +6,7 @@ import { usePlatformAnalytics } from "@/hooks/usePlatformAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ModuleSettingsPanel } from "@/components/platform/ModuleSettingsPanel";
+import { PageUsageTab } from "@/components/platform/PageUsageTab";
 
 export default function PlatformAdminDashboard() {
   const { data: analytics, isLoading } = usePlatformAnalytics('30d');
