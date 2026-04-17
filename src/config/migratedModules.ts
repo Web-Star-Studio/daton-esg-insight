@@ -10,7 +10,7 @@
  * - `notes` (opcional): observações para o usuário
  */
 
-export const V2_BASE_URL = "https://app.daton.com.br"; // ajustar quando o domínio da V2 estiver definido
+export const V2_BASE_URL = "https://daton-web.onrender.com";
 
 export type MigrationStatus = "migrated" | "deprecated";
 
