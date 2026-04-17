@@ -18162,6 +18162,39 @@ export type Database = {
           },
         ]
       }
+      page_view_logs: {
+        Row: {
+          company_id: string | null
+          id: string
+          pathname: string
+          referrer: string | null
+          search: string | null
+          user_agent: string | null
+          user_id: string | null
+          viewed_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          id?: string
+          pathname: string
+          referrer?: string | null
+          search?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          viewed_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          id?: string
+          pathname?: string
+          referrer?: string | null
+          search?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          viewed_at?: string
+        }
+        Relationships: []
+      }
       payment_history: {
         Row: {
           amount: number
@@ -25939,6 +25972,15 @@ export type Database = {
       }
     }
     Views: {
+      page_view_stats_90d: {
+        Row: {
+          last_viewed_at: string | null
+          pathname: string | null
+          unique_users: number | null
+          views: number | null
+        }
+        Relationships: []
+      }
       v_esg_financial_summary: {
         Row: {
           company_id: string | null

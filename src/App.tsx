@@ -23,6 +23,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
 import { GlobalKeyboardShortcuts } from "@/components/GlobalKeyboardShortcuts";
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import { lazyImportWithRetry } from "@/utils/lazyImportWithRetry";
 
 import AuthErrorHandler from "@/components/AuthErrorHandler";
@@ -270,6 +271,8 @@ const queryClient = new QueryClient({
 const AppContent = () => {
   // Hook para notificações de processamento em tempo real
   useDocumentProcessingNotifications();
+  // Tracking de page views para análise de uso (inclui rotas com 0 acesso)
+  usePageTracking();
 
   return (
     <>
