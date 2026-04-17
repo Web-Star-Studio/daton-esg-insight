@@ -229,6 +229,7 @@ const LandingSelva = lazy(() => import("./pages/LandingSelva"));
 const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
 const SystemStatus = lazy(() => import("./pages/SystemStatus"));
 const PlatformAdminDashboard = lazy(() => import("./pages/PlatformAdminDashboard"));
+const PageUsageAnalytics = lazy(() => import("./pages/PageUsageAnalytics"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const DemoDashboard = lazy(() => import("./pages/DemoDashboard"));
 const DemoLayout = lazy(() => import("./components/DemoLayout").then(m => ({ default: m.DemoLayout })));
