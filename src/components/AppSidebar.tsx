@@ -9,6 +9,7 @@ import { useModuleSettings } from "@/hooks/useModuleSettings"
 import { useDemo } from "@/contexts/DemoContext"
 import { useBranches } from "@/services/branches"
 import { getBranchDisplayLabel } from "@/utils/branchDisplay"
+import { MigratedBadge } from "@/components/sidebar/MigratedBadge"
 import {
   Sidebar,
   SidebarContent,
@@ -512,6 +513,7 @@ export function AppSidebar() {
                   {item.title}
                 </span>
               )}
+              {!collapsed && <MigratedBadge path={item.path} />}
             </div>
           </NavigationTooltip>
 
@@ -583,6 +585,7 @@ export function AppSidebar() {
                         {item.title}
                       </span>
                     )}
+                    {!collapsed && <MigratedBadge path={item.path} />}
                   </div>
                 </NavigationTooltip>
 
@@ -663,6 +666,7 @@ export function AppSidebar() {
                   {item.title}
                 </span>
               )}
+              {!collapsed && <MigratedBadge path={item.path} />}
             </div>
           </NavigationTooltip>
 
