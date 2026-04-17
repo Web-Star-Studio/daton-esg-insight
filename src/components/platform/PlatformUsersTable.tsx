@@ -298,7 +298,15 @@ export function PlatformUsersTable() {
                       />
                     </TableCell>
                     <TableCell className="font-medium">{user.full_name || "—"}</TableCell>
-                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      {user.email ? (
+                        user.email
+                      ) : (
+                        <span className="text-muted-foreground italic text-xs">
+                          Email não sincronizado
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>{companyName}</TableCell>
                     <TableCell>{user.job_title || "—"}</TableCell>
                     <TableCell>
