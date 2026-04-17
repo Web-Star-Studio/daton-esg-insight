@@ -67,12 +67,12 @@ export function MigrationNotice() {
           <p className="text-sm font-semibold text-foreground">
             {isDeprecated
               ? `${info.v1Title} foi descontinuado nesta versão`
-              : `${info.v1Title} migrou para o novo Daton`}
+              : `${info.v1Title} já está disponível no novo Daton`}
           </p>
           <p className="text-sm text-muted-foreground">
             {isDeprecated
               ? "Acesse a nova versão para continuar usando este módulo."
-              : "Em breve esta versão será descontinuada. Recomendamos usar o novo sistema."}
+              : "Pode continuar usando esta versão normalmente — todos os seus dados serão migrados automaticamente para o novo sistema quando a transição for concluída."}
             {info.notes ? <span className="ml-1">{info.notes}</span> : null}
           </p>
         </div>
