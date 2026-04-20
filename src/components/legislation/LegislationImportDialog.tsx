@@ -215,7 +215,7 @@ export function LegislationImportDialog({
         const parts: string[] = [];
         if (result.imported > 0) parts.push(`${result.imported} legislações importadas`);
         if (result.updated > 0) parts.push(`${result.updated} atualizadas`);
-        if (result.unitCompliancesCreated > 0) parts.push(`${result.unitCompliancesCreated} avaliações por unidade`);
+        if (result.unitCompliancesCreated > 0) parts.push(`${result.unitCompliancesCreated} avaliações de filiais no total`);
         toast.success(parts.join(', ') || 'Importação concluída');
         onImportComplete?.();
       } else {
@@ -481,7 +481,7 @@ export function LegislationImportDialog({
                   <span>
                     {importResult.imported > 0 && `${importResult.imported} legislações novas importadas`}
                     {importResult.updated > 0 && `${importResult.imported > 0 ? ', ' : ''}${importResult.updated} legislações existentes atualizadas`}
-                    {importResult.unitCompliancesCreated > 0 && `, ${importResult.unitCompliancesCreated} avaliações por unidade`}
+                    {importResult.unitCompliancesCreated > 0 && `, ${importResult.unitCompliancesCreated} avaliações de filiais no total`}
                     {importResult.imported === 0 && importResult.updated === 0 && 'Nenhuma legislação importada ou atualizada'}
                     {importResult.errors > 0 && `, ${importResult.errors} erros`}
                     {importResult.warnings > 0 && `, ${importResult.warnings} avisos`}

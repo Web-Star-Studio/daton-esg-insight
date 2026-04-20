@@ -1174,7 +1174,7 @@ export async function importLegislations(
 
               if (!complianceError) {
                 result.unitCompliancesCreated += dedupedRecords.length;
-                unitComplianceMessage = ` + ${dedupedRecords.length} avaliação(ões) por unidade`;
+                unitComplianceMessage = ` + ${dedupedRecords.length} avaliação(ões) de filiais`;
                 for (const rec of dedupedRecords) {
                   const branchLabel = branchLabelById.get(rec.branch_id) || rec.branch_id;
                   result.unitsByBranch[branchLabel] = (result.unitsByBranch[branchLabel] || 0) + 1;
