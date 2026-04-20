@@ -394,10 +394,17 @@ export function LegislationImportDialog({
                     {parsedData.slice(0, 50).map((leg, idx) => {
                       const validation = validations[idx];
                       const unitCount = leg.unitEvaluations?.length || 0;
+                      const messages = [
+                        ...(validation?.errors || []),
+                        ...(validation?.warnings || []),
+                      ].filter(Boolean);
+                      const messagesText = messages.join('; ');
+                      const statusTooltip = messagesText ||
+                        (validation?.isValid ? 'Válida — sem avisos' : 'Com erros');
                       return (
                         <TableRow key={idx} className={!validation?.isValid ? 'bg-destructive/10' : ''}>
                           <TableCell className="font-mono text-sm">{leg.rowNumber}</TableCell>
-                          <TableCell>
+                          <TableCell title={statusTooltip}>
                             {validation?.isValid ? (
                               validation.warnings.length > 0 ? (
                                 <AlertTriangle className="h-4 w-4 text-yellow-500" />
@@ -422,8 +429,11 @@ export function LegislationImportDialog({
                               <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {validation?.errors?.join('; ') || validation?.warnings?.join('; ')}
+                          <TableCell
+                            className="text-sm text-muted-foreground max-w-[360px] whitespace-normal break-words"
+                            title={messagesText}
+                          >
+                            {messagesText}
                           </TableCell>
                         </TableRow>
                       );

@@ -724,11 +724,19 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
             'DATA DA PUBLICAÇÃO', 'Data da Publicação', 'DATA DA PUBLICACAO'
           ));
           
-          // NEW: Get URL from multiple possible column names including Gabardo format
-          const fullTextUrl = getColumnValue(row, 
+          // NEW: Get URL from multiple possible column names including Gabardo format.
+          // Se veio um domínio solto (www.foo.br...), prefixa https:// para virar
+          // URL válida — comum quando o usuário cola só o domínio na planilha.
+          let fullTextUrl = getColumnValue(row,
             'URL Texto Integral', 'URL', 'Link', 'LINK',
             'FONTE', 'Fonte', 'URL TEXTO INTEGRAL'
           );
+          if (fullTextUrl) {
+            const trimmed = fullTextUrl.trim();
+            if (/^www\./i.test(trimmed) && !/^https?:\/\//i.test(trimmed)) {
+              fullTextUrl = 'https://' + trimmed;
+            }
+          }
           
           // NEW: Get evidence from multiple possible column names
           const evidenceText = getColumnValue(row, 
@@ -817,13 +825,14 @@ export async function validateLegislations(
     if (!leg.norm_type) {
       errors.push('Tipo de Norma é obrigatório');
     } else {
-      // Verificar se o tipo é reconhecido (busca flexível)
-      const normTypeNormalized = leg.norm_type.toLowerCase().trim();
-      const isRecognized = VALID_NORM_TYPES.some(t => 
-        t.toLowerCase() === normTypeNormalized || 
-        normTypeNormalized.includes(t.toLowerCase()) ||
-        t.toLowerCase().includes(normTypeNormalized)
-      );
+      // Busca flexível, agora também ignora acentos — captura variações comuns
+      // de digitação como "RESOLUÇAO CONTRAN" vs "Resolução CONTRAN".
+      const stripAccents = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const typed = stripAccents(leg.norm_type.toLowerCase().trim());
+      const isRecognized = VALID_NORM_TYPES.some(t => {
+        const valid = stripAccents(t.toLowerCase());
+        return valid === typed || typed.includes(valid) || valid.includes(typed);
+      });
       if (!isRecognized) {
         warnings.push(`Tipo de Norma "${leg.norm_type}" não padrão (será importado como está)`);
       }
