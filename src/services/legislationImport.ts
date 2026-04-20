@@ -286,18 +286,27 @@ function parseDate(dateStr: string): string {
     return dateStr.split('T')[0];
   }
 
+  // Valida mês/dia em faixas sãs — células com digitação quebrada
+  // (ex.: "23/0/2001") deixam de produzir dates tipo "2001-00-23".
+  const validMonth = (m: number) => m >= 1 && m <= 12;
+  const validDay = (d: number) => d >= 1 && d <= 31;
+
   // DD/MM/YYYY (formato brasileiro)
-  const brMatch = dateStr.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  const brMatch = dateStr.trim().match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (brMatch) {
     const [, day, month, year] = brMatch;
+    const d = parseInt(day), m = parseInt(month);
+    if (!validMonth(m) || !validDay(d)) return '';
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
   // MM/DD/YY (americano curto, ex.: 4/14/86).
   // Desambigua século comparando com ano atual: se 20XX > ano atual, usa 19XX.
-  const usShortMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+  const usShortMatch = dateStr.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
   if (usShortMatch) {
     const [, month, day, year] = usShortMatch;
+    const m = parseInt(month), d = parseInt(day);
+    if (!validMonth(m) || !validDay(d)) return '';
     const yearNum = parseInt(year);
     const currentYear = new Date().getUTCFullYear();
     const fullYear = (2000 + yearNum) > currentYear ? `19${year.padStart(2, '0')}` : `20${year.padStart(2, '0')}`;
