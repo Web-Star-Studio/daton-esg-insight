@@ -47,6 +47,20 @@ function activeBranchesIn(state: string, branches: Branch[]): Branch[] {
     .sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
 }
 
+function stripAccents(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+}
+
+// Verifica se `short` aparece como subsequência (não-contígua, mesma ordem) em `long`.
+// Útil para abreviações do tipo DUC ↔ DUQUE DE CAXIAS (D...U...C).
+function isSubsequence(short: string, long: string): boolean {
+  let si = 0;
+  for (let li = 0; li < long.length && si < short.length; li++) {
+    if (short[si] === long[li]) si++;
+  }
+  return si === short.length;
+}
+
 // Find best matching branch for a unit code.
 // Ordem: code exato → name exato → prefixo de 3+ letras (DUC→DUQUE) →
 // UF (pega primeira filial do estado alfabeticamente) → contains/city.
@@ -87,6 +101,15 @@ function findBestMatch(unitCode: string, branches: Branch[]): Branch | null {
     normalized.includes(b.city?.toUpperCase() || '')
   );
   if (containsMatch) return containsMatch;
+
+  // Subsequência contra a cidade da filial — captura abreviações não-prefixo
+  // como DUC ↔ "Duque de Caxias" (D-U-C). Só considera um único resultado
+  // único para evitar falsos positivos.
+  if (normalized.length >= 3 && normalized.length <= 6) {
+    const target = stripAccents(normalized);
+    const subMatches = active.filter(b => b.city && isSubsequence(target, stripAccents(b.city)));
+    if (subMatches.length === 1) return subMatches[0];
+  }
 
   return null;
 }
