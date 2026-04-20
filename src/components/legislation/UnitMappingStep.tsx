@@ -347,12 +347,12 @@ export function UnitMappingStep({
 }
 
 // Helper to create initial mappings from detected units.
-// Auto-match:
+// Auto-match (conservador — prefere single-branch a propagação):
 //   1) filial exata (code/name)
-//   2) filial por prefixo de sigla (DUC → DUQUE)
-//   3) se o code é sigla de UF e tem >1 filial naquele UF → propagação por UF
-//   4) se o code é sigla de UF e tem 1 filial → essa filial
-//   5) fallback: contains/city
+//   2) filial por prefixo de sigla
+//   3) se o code é sigla de UF → pega a primeira filial do UF (alfabética por code).
+//      Propagação para "todas as filiais do UF" fica como opção manual no select.
+//   4) fallback: contains/city
 export function createInitialMappings(detectedUnits: string[], branches: Branch[]): UnitMapping[] {
   const active = branches.filter(b => b.status === 'Ativa' || b.status === 'Ativo');
 
@@ -361,17 +361,7 @@ export function createInitialMappings(detectedUnits: string[], branches: Branch[
 
     if (UF_CODES.has(normalized)) {
       const inState = activeBranchesIn(normalized, active);
-      if (inState.length > 1) {
-        return {
-          excelCode: code,
-          branchId: null,
-          autoMatched: true,
-          propagateState: normalized,
-          propagateBranchIds: inState.map(b => b.id),
-          propagateBranchNames: inState.map(b => (b.code ? `${b.code} - ${b.name}` : b.name)),
-        };
-      }
-      if (inState.length === 1) {
+      if (inState.length >= 1) {
         const b = inState[0];
         return {
           excelCode: code,

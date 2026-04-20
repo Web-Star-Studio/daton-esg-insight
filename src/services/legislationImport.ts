@@ -510,16 +510,40 @@ function getColumnValue(row: any, ...possibleNames: string[]): string {
 // Known unit codes from Gabardo format
 const KNOWN_UNIT_CODES = ['POA', 'PIR', 'GO', 'PREAL', 'SBC', 'SJP', 'DUC', 'IRA', 'SC', 'ES', 'CE', 'CHUÍ', 'CHUI', 'BA', 'PE', 'RJ'];
 
-// Detect unit columns from headers
-export function detectUnitColumns(headers: string[]): string[] {
+// Detect unit columns. Primeiro filtra candidatos por header, depois (se houver
+// dados) valida que os valores da coluna são majoritariamente 1/2/3/x/z — isso
+// evita falsos positivos como TIPO, STATUS, FONTE que também têm header curto.
+export function detectUnitColumns(headers: string[], rows: Record<string, unknown>[] = []): string[] {
   const normalizedCodes = KNOWN_UNIT_CODES.map(c => normalizeKey(c));
-  const excludedCodes = ['uf', 'id', 'url', 'ok', 'na', 'nr', 'nbr'];
-  return headers.filter(h => {
+  const excludedCodes = [
+    'uf', 'id', 'url', 'ok', 'na', 'nr', 'nbr',
+    'tipo', 'status', 'fonte', 'data', 'tema', 'link', 'site',
+    'texto', 'resumo', 'titulo', 'ementa', 'numero', 'descricao',
+    'obs', 'notas', 'area', 'orgao',
+  ];
+
+  const candidates = headers.filter(h => {
     const nk = normalizeKey(h);
     const upper = nk.toUpperCase();
-    return normalizedCodes.includes(nk) || 
-           (upper.length <= 6 && /^[A-Z]{2,6}$/.test(upper) && 
-            !excludedCodes.includes(nk));
+    if (excludedCodes.includes(nk)) return false;
+    if (normalizedCodes.includes(nk)) return true;
+    return upper.length <= 6 && /^[A-Z]{2,6}$/.test(upper);
+  });
+
+  if (rows.length === 0) return candidates;
+
+  // Valida por amostra de dados: ≥70% dos valores não-vazios precisam ser unit-like.
+  return candidates.filter(col => {
+    let total = 0;
+    let unitLike = 0;
+    for (const row of rows) {
+      const v = row[col];
+      if (v === undefined || v === null || v === '') continue;
+      total++;
+      const s = String(v).trim().toLowerCase();
+      if (s === '1' || s === '2' || s === '3' || s === 'x' || s === 'z') unitLike++;
+    }
+    return total >= 3 && unitLike / total >= 0.7;
   });
 }
 
@@ -618,7 +642,7 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
         const firstRow = jsonData[0] as any;
         const headers = firstRow ? Object.keys(firstRow) : [];
         logger.debug(`Headers: ${headers.slice(0, 15).join(', ')}`, 'import');
-        const detectedUnitColumns = detectUnitColumns(headers);
+        const detectedUnitColumns = detectUnitColumns(headers, jsonData as Record<string, unknown>[]);
         
         // Detect if spreadsheet has an explicit norm_type column
         const headersNormalized = headers.map(h => h.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim());
