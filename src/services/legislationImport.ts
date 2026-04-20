@@ -261,14 +261,18 @@ function findHeaderRow(worksheet: XLSX.WorkSheet): number {
 }
 
 // Converte serial date do Excel (dias desde 1899-12-30) para ISO yyyy-mm-dd.
-// Faixa aceita ~ 1970-01-01 (25569) a 2099-12-31 (73050) para evitar
-// interpretar um número qualquer como data.
+// Serial 1 = 1900-01-01, 73050 ≈ 2099-12-31. Aceita leis antigas (ex.: 12610 = 1934).
+// Rejeita números 4-dígitos 1800..2100 que parecem "ano solto" (ex.: "1988"
+// digitado sozinho na célula não é serial válido, são milênios deslocados).
 function excelSerialToIso(serial: number): string {
-  if (!Number.isFinite(serial) || serial < 25569 || serial > 73050) return '';
+  if (!Number.isFinite(serial)) return '';
+  if (serial >= 1800 && serial <= 2100) return '';
+  if (serial < 1 || serial > 73050) return '';
   const ms = Date.UTC(1899, 11, 30) + Math.round(serial) * 86400000;
   const d = new Date(ms);
   if (isNaN(d.getTime())) return '';
   const y = d.getUTCFullYear();
+  if (y < 1800 || y > 2100) return '';
   const m = String(d.getUTCMonth() + 1).padStart(2, '0');
   const day = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
@@ -289,12 +293,14 @@ function parseDate(dateStr: string): string {
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
-  // MM/DD/YY (americano curto, ex.: 4/14/86)
+  // MM/DD/YY (americano curto, ex.: 4/14/86).
+  // Desambigua século comparando com ano atual: se 20XX > ano atual, usa 19XX.
   const usShortMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
   if (usShortMatch) {
     const [, month, day, year] = usShortMatch;
     const yearNum = parseInt(year);
-    const fullYear = yearNum > 50 ? `19${year.padStart(2, '0')}` : `20${year.padStart(2, '0')}`;
+    const currentYear = new Date().getUTCFullYear();
+    const fullYear = (2000 + yearNum) > currentYear ? `19${year.padStart(2, '0')}` : `20${year.padStart(2, '0')}`;
     return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
@@ -944,33 +950,65 @@ export async function importLegislations(
       .from('legislations')
       .select('id, title, norm_type, norm_number, summary')
       .eq('company_id', companyId);
-    
-    // Map para encontrar legislações existentes por chave
-    const existingMap = new Map<string, { id: string; title: string }>();
+
+    // Normaliza texto (lowercase, sem acentos, espaços colapsados) para
+    // comparação tolerante de título/tipo/número durante conciliação.
+    const normalizeText = (s: string | null | undefined) =>
+      (s || '').toString().toLowerCase().normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+    const titleHash = (s: string | null | undefined) => normalizeText(s).slice(0, 80);
+
+    type ExistingEntry = { id: string; title: string; titleHash: string; normTypeNorm: string };
+
+    // Map principal: norm_type|norm_number → lista de entries. Guardamos TODAS
+    // as entries com o mesmo par tipo+número (podem ser leis distintas com mesmo
+    // número, ex.: DECRETO 10088 Convenção 174 vs Convenção 170 da OIT).
+    const byTypeNum = new Map<string, ExistingEntry[]>();
+    // Maps secundários para fallback quando não há norm_number na planilha.
+    const byTitleExact = new Map<string, ExistingEntry>();
+    const bySummaryPrefix = new Map<string, ExistingEntry>();
+
     (existingLegislations || []).forEach(l => {
-      // Chave primária: norm_type + norm_number
+      const entry: ExistingEntry = {
+        id: l.id,
+        title: l.title || '',
+        titleHash: titleHash(l.title),
+        normTypeNorm: normalizeText(l.norm_type),
+      };
       if (l.norm_type && l.norm_number) {
         const key = `${l.norm_type.toLowerCase()}|${l.norm_number.toLowerCase()}`;
-        existingMap.set(key, { id: l.id, title: l.title });
+        const list = byTypeNum.get(key);
+        if (list) list.push(entry); else byTypeNum.set(key, [entry]);
       }
-      // Chave secundária: título (fallback)
-      if (l.title) {
-        const titleKey = `title:${l.title.toLowerCase()}`;
-        if (!existingMap.has(titleKey)) {
-          existingMap.set(titleKey, { id: l.id, title: l.title });
-        }
+      if (l.title && !byTitleExact.has(normalizeText(l.title))) {
+        byTitleExact.set(normalizeText(l.title), entry);
       }
-      // Chave terciária: summary (para formatos simplificados onde
-      // "RESUMO E TÍTULO" mapeia para o campo summary no DB)
       if (l.summary) {
-        const summaryKey = `summary:${l.summary.toLowerCase().substring(0, 150)}`;
-        if (!existingMap.has(summaryKey)) {
-          existingMap.set(summaryKey, { id: l.id, title: l.title });
-        }
+        const k = normalizeText(l.summary).slice(0, 150);
+        if (!bySummaryPrefix.has(k)) bySummaryPrefix.set(k, entry);
       }
     });
-    
-    // Nota: existingMap é utilizado para conciliação de legislações
+
+    // Encontra melhor candidato entre N entries com mesmo tipo+número.
+    // Prioridade: título idêntico → título genérico (igual ao tipo ou vazio)
+    // → null (nenhum match → criar nova entry como lei distinta).
+    const findBestCandidate = (
+      candidates: ExistingEntry[],
+      rowTitleHash: string,
+      rowTypeNorm: string,
+    ): ExistingEntry | null => {
+      if (candidates.length === 0) return null;
+      const exact = candidates.find(c => c.titleHash === rowTitleHash);
+      if (exact) return exact;
+      // Se o título da DB entry é "genérico" (vazio ou = norm_type), pode ser
+      // seed antigo. Aceita merge apenas se houver 1 candidato genérico — caso
+      // contrário não dá pra decidir e criamos nova entry.
+      const generic = candidates.filter(c => !c.titleHash || c.titleHash === rowTypeNorm);
+      if (generic.length === 1 && candidates.length === 1) return generic[0];
+      // Se o título da linha da planilha é genérico e só há 1 candidato, usa.
+      if (!rowTitleHash && candidates.length === 1) return candidates[0];
+      return null;
+    };
     
     // Subtheme map by theme_id
     const subthemeMap = new Map<string, Map<string, string>>();
@@ -1023,25 +1061,34 @@ export async function importLegislations(
           }
         }
         
-        // Check for existing legislation (conciliação)
-        // Primeiro tenta por norm_type + norm_number, depois por título
+        // Conciliação: quando há mais de uma entry com mesmo norm_type+norm_number
+        // (ex.: DECRETO 10088 aparece 2x na planilha com Convenção 174 e 170 da OIT),
+        // desempatamos pelo título. Assim leis distintas com número repetido viram
+        // entries separadas no DB em vez de colapsarem e sobrescreverem avaliações.
         let existingLegislation: { id: string; title: string } | null = null;
-        
+
         if (leg.norm_type && leg.norm_number) {
-          const typeNumberKey = `${leg.norm_type.toLowerCase()}|${leg.norm_number.toLowerCase()}`;
-          existingLegislation = existingMap.get(typeNumberKey) || null;
+          const key = `${leg.norm_type.toLowerCase()}|${leg.norm_number.toLowerCase()}`;
+          const candidates = byTypeNum.get(key) || [];
+          const best = findBestCandidate(
+            candidates,
+            titleHash(leg.title),
+            normalizeText(leg.norm_type),
+          );
+          if (best) existingLegislation = { id: best.id, title: best.title };
         }
-        
+
         if (!existingLegislation && leg.title) {
-          const titleKey = `title:${leg.title.toLowerCase()}`;
-          existingLegislation = existingMap.get(titleKey) || null;
+          const byTitle = byTitleExact.get(normalizeText(leg.title));
+          if (byTitle) existingLegislation = { id: byTitle.id, title: byTitle.title };
         }
-        
-        // Terceira tentativa: match por summary (para formatos simplificados onde
-        // "RESUMO E TÍTULO" contém o texto do summary da legislação no DB)
+
+        // Terceira tentativa: match por summary (formatos simplificados em que
+        // "RESUMO E TÍTULO" da planilha corresponde ao campo summary no DB).
         if (!existingLegislation && leg.title) {
-          const summaryKey = `summary:${leg.title.toLowerCase().substring(0, 150)}`;
-          existingLegislation = existingMap.get(summaryKey) || null;
+          const k = normalizeText(leg.title).slice(0, 150);
+          const bySum = bySummaryPrefix.get(k);
+          if (bySum) existingLegislation = { id: bySum.id, title: bySum.title };
         }
         
         // Se encontrou legislação existente, adicionar evidência e unit compliance
@@ -1270,14 +1317,8 @@ export async function importLegislations(
           throw insertError;
         }
         
-        // Adicionar ao mapa para evitar duplicatas no mesmo lote
-        if (leg.norm_type && leg.norm_number) {
-          const newKey = `${leg.norm_type.toLowerCase()}|${leg.norm_number.toLowerCase()}`;
-          existingMap.set(newKey, { id: 'new', title: leg.title });
-        }
-        
         result.imported++;
-        
+
         // Buscar ID da legislação recém criada (needed for evidence and unit compliance)
         const { data: newLeg } = await supabase
           .from('legislations')
@@ -1288,6 +1329,22 @@ export async function importLegislations(
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
+
+        // Adiciona ao mapa para que linhas subsequentes do mesmo lote que tenham
+        // tipo+número+título iguais a essa recém-inserida sejam reconciliadas.
+        // Leis distintas com mesmo número mas TÍTULO diferente não casam aqui,
+        // então cada uma vira sua própria entry — comportamento correto.
+        if (newLeg?.id && leg.norm_type && leg.norm_number) {
+          const key = `${leg.norm_type.toLowerCase()}|${leg.norm_number.toLowerCase()}`;
+          const entry: ExistingEntry = {
+            id: newLeg.id,
+            title: leg.title || '',
+            titleHash: titleHash(leg.title),
+            normTypeNorm: normalizeText(leg.norm_type),
+          };
+          const list = byTypeNum.get(key);
+          if (list) list.push(entry); else byTypeNum.set(key, [entry]);
+        }
         
         let evidenceMessage = '';
         let unitComplianceMessage = '';
