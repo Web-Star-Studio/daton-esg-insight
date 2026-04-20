@@ -62,6 +62,7 @@ const LegislationsHub = lazy(() => import("./pages/LegislationsHub"));
 const LegislationForm = lazy(() => import("./pages/LegislationForm"));
 const LegislationDetail = lazy(() => import("./pages/LegislationDetail"));
 const LegislationReports = lazy(() => import("./pages/LegislationReports"));
+const LegislationAnalytics = lazy(() => import("./pages/LegislationAnalytics"));
 const LegislationComplianceProfiles = lazy(() => import("./pages/LegislationComplianceProfiles"));
 const ResiduosFiliais = lazy(() => import("./pages/ResiduosFiliais"));
 const Residuos = lazy(() => import("./pages/Residuos"));
@@ -322,6 +323,7 @@ const AppContent = () => {
               <Route path="licenciamento/legislacoes/:id" element={<LazyPageWrapper><LegislationDetail /></LazyPageWrapper>} />
               <Route path="licenciamento/legislacoes/:id/editar" element={<LazyPageWrapper><LegislationForm /></LazyPageWrapper>} />
               <Route path="licenciamento/legislacoes/relatorios" element={<LazyPageWrapper><LegislationReports /></LazyPageWrapper>} />
+              <Route path="licenciamento/legislacoes/analitico" element={<LazyPageWrapper><LegislationAnalytics /></LazyPageWrapper>} />
               <Route path="licenciamento/legislacoes/compliance" element={<LazyPageWrapper><LegislationComplianceProfiles /></LazyPageWrapper>} />
               <Route path="laia" element={<LazyPageWrapper><LAIAUnidades /></LazyPageWrapper>} />
               <Route path="fornecedores/dashboard" element={<LazyPageWrapper><SupplierManagementDashboard /></LazyPageWrapper>} />
@@ -653,6 +655,11 @@ const AppContent = () => {
             <Route path="/licenciamento/legislacoes/relatorios" element={
               <ProtectedLazyPageWrapper>
                 <LegislationReports />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/licenciamento/legislacoes/analitico" element={
+              <ProtectedLazyPageWrapper>
+                <LegislationAnalytics />
               </ProtectedLazyPageWrapper>
             } />
             <Route path="/licenciamento/legislacoes/compliance" element={
