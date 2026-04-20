@@ -10,7 +10,7 @@ export interface UnitEvaluation {
   unitCode: string;      // POA, PIR, GO, etc.
   value: string;         // 1, 2, 3, x, z
   applicability: 'real' | 'potential' | 'na' | 'pending';
-  complianceStatus: 'conforme' | 'adequacao' | 'pending' | 'na';
+  complianceStatus: 'conforme' | 'adequacao' | 'plano_acao' | 'pending' | 'na';
 }
 
 export interface ParsedLegislation {
@@ -41,12 +41,21 @@ export interface ParsedLegislation {
   unitEvaluations: UnitEvaluation[];
 }
 
-// Unit mapping for import
+// Unit mapping for import.
+// Um mapping representa o destino de uma coluna da planilha.
+// - branchId definido → avaliação vai para uma única filial.
+// - propagateBranchIds definido → avaliação é replicada para todas as filiais
+//   do UF `propagateState` (útil para colunas como SC, ES, CE que representam
+//   estado inteiro quando há múltiplas filiais naquele UF).
+// - ambos nulos → coluna ignorada no import.
 export interface UnitMapping {
   excelCode: string;
   branchId: string | null;
   branchName?: string;
   autoMatched: boolean;
+  propagateState?: string;
+  propagateBranchIds?: string[];
+  propagateBranchNames?: string[];
 }
 
 export interface LegislationValidation {
@@ -251,41 +260,67 @@ function findHeaderRow(worksheet: XLSX.WorkSheet): number {
   return 0;
 }
 
+// Converte serial date do Excel (dias desde 1899-12-30) para ISO yyyy-mm-dd.
+// Faixa aceita ~ 1970-01-01 (25569) a 2099-12-31 (73050) para evitar
+// interpretar um número qualquer como data.
+function excelSerialToIso(serial: number): string {
+  if (!Number.isFinite(serial) || serial < 25569 || serial > 73050) return '';
+  const ms = Date.UTC(1899, 11, 30) + Math.round(serial) * 86400000;
+  const d = new Date(ms);
+  if (isNaN(d.getTime())) return '';
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function parseDate(dateStr: string): string {
   if (!dateStr) return '';
-  
-  // Already ISO format
+
+  // ISO yyyy-mm-dd (possivelmente com hora)
   if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
     return dateStr.split('T')[0];
   }
-  
-  // DD/MM/YYYY format (formato brasileiro)
+
+  // DD/MM/YYYY (formato brasileiro)
   const brMatch = dateStr.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (brMatch) {
     const [, day, month, year] = brMatch;
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
-  
-  // MM/DD/YY formato americano curto (ex: 4/14/86)
+
+  // MM/DD/YY (americano curto, ex.: 4/14/86)
   const usShortMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
   if (usShortMatch) {
     const [, month, day, year] = usShortMatch;
-    // Converter ano de 2 dígitos para 4 dígitos
     const yearNum = parseInt(year);
     const fullYear = yearNum > 50 ? `19${year.padStart(2, '0')}` : `20${year.padStart(2, '0')}`;
     return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
-  
-  // Try Date parsing
+
+  // Serial do Excel (ex.: "45572" = 2024-10-07). Alguns arquivos — sobretudo
+  // planilhas sem fórmula — mantêm a data como número cru.
+  if (/^\d+(\.\d+)?$/.test(dateStr.trim())) {
+    const asSerial = excelSerialToIso(parseFloat(dateStr));
+    if (asSerial) return asSerial;
+    // Número fora da faixa de serial (ex.: ano solto "1988") — não temos
+    // dia/mês, preferimos não inventar data a arriscar dado inválido.
+    return '';
+  }
+
+  // Fallback: tenta parser nativo, mas só aceita resultado em faixa plausível.
   try {
     const date = new Date(dateStr);
     if (!isNaN(date.getTime())) {
-      return date.toISOString().split('T')[0];
+      const y = date.getUTCFullYear();
+      if (y >= 1900 && y <= 2100) {
+        return date.toISOString().split('T')[0];
+      }
     }
   } catch {
     // ignore
   }
-  
+
   return '';
 }
 
@@ -488,56 +523,55 @@ export function detectUnitColumns(headers: string[]): string[] {
   });
 }
 
-// Map unit value (1, 2, 3, x, z) to applicability and status
-// 1 = Real (Aplicável), 2 = Potencial (Provável), 3 = Pendente (Não avaliada)
+// Map unit value (1, 2, 3, x, z) to applicability and status.
+// Semântica da planilha Gabardo:
+//   1 = Não Aplicável (N/A)
+//   2 = OK / Conforme
+//   3 = Precisa de Plano de Ação
+//   x = Sem Avaliação
+//   z = Não Pertinente à unidade
 export function mapUnitValue(value: string): UnitEvaluation | null {
   if (!value) return null;
-  
+
   const normalized = String(value).trim().toLowerCase();
-  
+
   switch (normalized) {
     case '1':
-      // Potencial, não aplicado
-      return { 
-        unitCode: '', 
-        value: '1', 
-        applicability: 'potential', 
-        complianceStatus: 'pending' 
+      return {
+        unitCode: '',
+        value: '1',
+        applicability: 'na',
+        complianceStatus: 'na',
       };
     case '2':
-      // OK, Conforme
-      return { 
-        unitCode: '', 
-        value: '2', 
-        applicability: 'real', 
-        complianceStatus: 'conforme' 
+      return {
+        unitCode: '',
+        value: '2',
+        applicability: 'real',
+        complianceStatus: 'conforme',
       };
     case '3':
-      // Não conforme
-      return { 
-        unitCode: '', 
-        value: '3', 
-        applicability: 'real', 
-        complianceStatus: 'adequacao' 
+      return {
+        unitCode: '',
+        value: '3',
+        applicability: 'real',
+        complianceStatus: 'plano_acao',
       };
     case 'x':
-      // Sem avaliação alguma
-      return { 
-        unitCode: '', 
-        value: 'x', 
-        applicability: 'pending', 
-        complianceStatus: 'pending' 
+      return {
+        unitCode: '',
+        value: 'x',
+        applicability: 'pending',
+        complianceStatus: 'pending',
       };
     case 'z':
-      // Não pertinente à unidade
-      return { 
-        unitCode: '', 
-        value: 'z', 
-        applicability: 'na', 
-        complianceStatus: 'na' 
+      return {
+        unitCode: '',
+        value: 'z',
+        applicability: 'na',
+        complianceStatus: 'na',
       };
     default:
-      // Unknown value - ignore
       return null;
   }
 }
@@ -682,11 +716,14 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
           const statusFromAtendimento = getColumnValue(row, 'ATENDIMENTO', 'Atendimento');
           const finalStatus = statusRaw || statusFromAtendimento;
 
-          // Auto-extract norm_type from title if not found in columns
+          // Auto-extract norm_type from title if not found in columns.
+          // Normaliza: primeira linha (células com CR/LF são comuns na planilha
+          // do Gabardo) e colapsa espaços. Limite alinhado ao DB (VARCHAR(100)).
           let normType = getColumnValue(row, 'Tipo de Norma', 'Tipo', 'TIPO DE NORMA', 'TIPO');
           if (!normType && title) {
             normType = extractNormTypeFromTitle(title);
           }
+          normType = normType.split(/[\r\n]+/)[0].replace(/\s+/g, ' ').trim().slice(0, 100);
 
           // Default jurisdiction to 'federal' if not found
           const jurisdictionFinal = jurisdiction || 'federal';
@@ -809,6 +846,24 @@ export async function validateLegislations(
       warnings,
     };
   });
+}
+
+// Expande um UnitMapping em 1..N destinos (branchId + rótulo para stats).
+// Propagação por UF produz múltiplos destinos; mapeamento simples produz um.
+function expandMappingTargets(mapping: UnitMapping): Array<{ branchId: string; displayName: string }> {
+  if (mapping.propagateBranchIds && mapping.propagateBranchIds.length > 0) {
+    return mapping.propagateBranchIds.map((id, idx) => ({
+      branchId: id,
+      displayName: mapping.propagateBranchNames?.[idx] || mapping.excelCode,
+    }));
+  }
+  if (mapping.branchId) {
+    return [{
+      branchId: mapping.branchId,
+      displayName: mapping.branchName || mapping.excelCode,
+    }];
+  }
+  return [];
 }
 
 export async function importLegislations(
@@ -982,7 +1037,7 @@ export async function importLegislations(
           
           // NOVO: Criar/atualizar unit compliance para legislação existente
           if (options.unitMappings && leg.unitEvaluations && leg.unitEvaluations.length > 0) {
-            const complianceRecords: Array<{
+            type ComplianceRecord = {
               legislation_id: string;
               branch_id: string;
               company_id: string;
@@ -991,17 +1046,21 @@ export async function importLegislations(
               evidence_notes: string | null;
               evaluated_at: string;
               evaluated_by: string;
-            }> = [];
-            
+            };
+            const complianceRecords: ComplianceRecord[] = [];
+            const branchLabelById = new Map<string, string>();
+
             for (const evaluation of leg.unitEvaluations) {
-              const mapping = options.unitMappings.find(m => 
+              const mapping = options.unitMappings.find(m =>
                 m.excelCode.toUpperCase() === evaluation.unitCode.toUpperCase()
               );
-              
-              if (mapping?.branchId) {
+              if (!mapping) continue;
+
+              for (const target of expandMappingTargets(mapping)) {
+                branchLabelById.set(target.branchId, target.displayName);
                 complianceRecords.push({
                   legislation_id: existingLegislation.id,
-                  branch_id: mapping.branchId,
+                  branch_id: target.branchId,
                   company_id: companyId,
                   applicability: evaluation.applicability,
                   compliance_status: evaluation.complianceStatus,
@@ -1011,10 +1070,10 @@ export async function importLegislations(
                 });
               }
             }
-            
+
             if (complianceRecords.length > 0) {
               // Deduplicate by (legislation_id, branch_id) — last row wins
-              const uniqueMap = new Map<string, typeof complianceRecords[0]>();
+              const uniqueMap = new Map<string, ComplianceRecord>();
               for (const rec of complianceRecords) {
                 uniqueMap.set(`${rec.legislation_id}:${rec.branch_id}`, rec);
               }
@@ -1023,15 +1082,13 @@ export async function importLegislations(
               const { error: complianceError } = await supabase
                 .from('legislation_unit_compliance')
                 .upsert(dedupedRecords, { onConflict: 'legislation_id,branch_id' });
-              
+
               if (!complianceError) {
-                result.unitCompliancesCreated += complianceRecords.length;
-                unitComplianceMessage = ` + ${complianceRecords.length} avaliação(ões) por unidade`;
-                // Only count branch stats after successful upsert
-                for (const rec of complianceRecords) {
-                  const mapping = options.unitMappings!.find(m => m.branchId === rec.branch_id);
-                  const branchName = mapping?.branchName || mapping?.excelCode || rec.branch_id;
-                  result.unitsByBranch[branchName] = (result.unitsByBranch[branchName] || 0) + 1;
+                result.unitCompliancesCreated += dedupedRecords.length;
+                unitComplianceMessage = ` + ${dedupedRecords.length} avaliação(ões) por unidade`;
+                for (const rec of dedupedRecords) {
+                  const branchLabel = branchLabelById.get(rec.branch_id) || rec.branch_id;
+                  result.unitsByBranch[branchLabel] = (result.unitsByBranch[branchLabel] || 0) + 1;
                 }
               } else {
                 console.error('Erro ao atualizar unit compliance:', complianceError);
@@ -1224,8 +1281,7 @@ export async function importLegislations(
           
           // Criar unit compliance para cada avaliação mapeada
           if (options.unitMappings && leg.unitEvaluations && leg.unitEvaluations.length > 0) {
-            let unitCount = 0;
-            const complianceRecords: Array<{
+            type ComplianceRecord = {
               legislation_id: string;
               branch_id: string;
               company_id: string;
@@ -1234,17 +1290,21 @@ export async function importLegislations(
               evidence_notes: string | null;
               evaluated_at: string;
               evaluated_by: string;
-            }> = [];
-            
+            };
+            const complianceRecords: ComplianceRecord[] = [];
+            const branchLabelById = new Map<string, string>();
+
             for (const evaluation of leg.unitEvaluations) {
-              const mapping = options.unitMappings.find(m => 
+              const mapping = options.unitMappings.find(m =>
                 m.excelCode.toUpperCase() === evaluation.unitCode.toUpperCase()
               );
-              
-              if (mapping?.branchId) {
+              if (!mapping) continue;
+
+              for (const target of expandMappingTargets(mapping)) {
+                branchLabelById.set(target.branchId, target.displayName);
                 complianceRecords.push({
                   legislation_id: newLeg.id,
-                  branch_id: mapping.branchId,
+                  branch_id: target.branchId,
                   company_id: companyId,
                   applicability: evaluation.applicability,
                   compliance_status: evaluation.complianceStatus,
@@ -1252,18 +1312,13 @@ export async function importLegislations(
                   evaluated_at: new Date().toISOString(),
                   evaluated_by: profile.id,
                 });
-                
-                // Track by branch name
-                const branchName = mapping.branchName || mapping.excelCode;
-                result.unitsByBranch[branchName] = (result.unitsByBranch[branchName] || 0) + 1;
-                unitCount++;
               }
             }
-            
+
             // Batch insert compliance records
             if (complianceRecords.length > 0) {
               // Deduplicate by (legislation_id, branch_id) — last row wins
-              const uniqueMap = new Map<string, typeof complianceRecords[0]>();
+              const uniqueMap = new Map<string, ComplianceRecord>();
               for (const rec of complianceRecords) {
                 uniqueMap.set(`${rec.legislation_id}:${rec.branch_id}`, rec);
               }
@@ -1272,10 +1327,14 @@ export async function importLegislations(
               const { error: complianceError } = await supabase
                 .from('legislation_unit_compliance')
                 .upsert(dedupedRecords, { onConflict: 'legislation_id,branch_id' });
-              
+
               if (!complianceError) {
-                result.unitCompliancesCreated += complianceRecords.length;
-                unitComplianceMessage = ` + ${unitCount} unidade(s)`;
+                result.unitCompliancesCreated += dedupedRecords.length;
+                unitComplianceMessage = ` + ${dedupedRecords.length} unidade(s)`;
+                for (const rec of dedupedRecords) {
+                  const branchLabel = branchLabelById.get(rec.branch_id) || rec.branch_id;
+                  result.unitsByBranch[branchLabel] = (result.unitsByBranch[branchLabel] || 0) + 1;
+                }
               }
             }
           }
@@ -1323,6 +1382,10 @@ export async function importLegislations(
 }
 
 export function downloadLegislationTemplate() {
+  // Colunas-exemplo de unidades. Cada coluna pode ser:
+  //   - código de filial (ex.: POA, SBC, SJP) → mapeia 1:1
+  //   - sigla de UF (ex.: SC, ES, CE) → pode propagar para todas as filiais do UF
+  // Valores: 1=N/A, 2=OK, 3=Plano de Ação, x=Sem Avaliação, z=Não Pertinente
   const templateData = [
     {
       'Tipo de Norma': 'Lei',
@@ -1336,6 +1399,8 @@ export function downloadLegislationTemplate() {
       'Município': '',
       'Macrotema': 'Meio Ambiente',
       'Subtema': 'Resíduos Sólidos',
+      'POA': '2', 'SBC': '2', 'SJP': '2', 'GO': '2',
+      'SC': '2', 'ES': '2', 'CE': '2',
       'Aplicabilidade': 'real',
       'Status': 'conforme',
       'URL Texto Integral': 'https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12305.htm',
@@ -1354,8 +1419,10 @@ export function downloadLegislationTemplate() {
       'Município': '',
       'Macrotema': 'Licenciamento',
       'Subtema': 'Procedimentos',
+      'POA': '3', 'SBC': '2', 'SJP': '3', 'GO': 'x',
+      'SC': '2', 'ES': '1', 'CE': 'z',
       'Aplicabilidade': 'real',
-      'Status': 'adequacao',
+      'Status': 'plano_acao',
       'URL Texto Integral': '',
       'Frequência Revisão (dias)': '180',
       'Evidências': 'Processo de adequação em andamento - prazo: 30/06/2026',
@@ -1372,6 +1439,8 @@ export function downloadLegislationTemplate() {
       'Município': '',
       'Macrotema': 'Meio Ambiente',
       'Subtema': 'Resíduos Sólidos',
+      'POA': 'x', 'SBC': 'x', 'SJP': 'x', 'GO': 'x',
+      'SC': 'x', 'ES': 'x', 'CE': 'x',
       'Aplicabilidade': 'potential',
       'Status': 'pending',
       'URL Texto Integral': '',
@@ -1379,7 +1448,7 @@ export function downloadLegislationTemplate() {
       'Evidências': '',
     },
   ];
-  
+
   const instructionSheet = [
     { 'Coluna': 'Tipo de Norma', 'Obrigatório': 'Sim', 'Valores Aceitos': VALID_NORM_TYPES.join(', ') },
     { 'Coluna': 'Número', 'Obrigatório': 'Não', 'Valores Aceitos': 'Texto livre (Ex: 12.305/2010)' },
@@ -1392,31 +1461,33 @@ export function downloadLegislationTemplate() {
     { 'Coluna': 'Município', 'Obrigatório': 'Condicional', 'Valores Aceitos': 'Nome - recomendado se municipal' },
     { 'Coluna': 'Macrotema', 'Obrigatório': 'Não', 'Valores Aceitos': 'Será criado automaticamente se não existir' },
     { 'Coluna': 'Subtema', 'Obrigatório': 'Não', 'Valores Aceitos': 'Será criado automaticamente se não existir' },
+    { 'Coluna': 'Colunas de Unidades (POA, SBC, GO, SC, ES, ...)', 'Obrigatório': 'Não', 'Valores Aceitos': '1=N/A, 2=OK/Conforme, 3=Precisa de Plano de Ação, x=Sem Avaliação, z=Não Pertinente. Use código de filial para mapeamento 1:1 ou sigla de UF (SC, ES, CE, ...) para replicar a avaliação em todas as filiais daquele estado.' },
     { 'Coluna': 'Aplicabilidade', 'Obrigatório': 'Não', 'Valores Aceitos': VALID_APPLICABILITIES.join(', ') + ' (padrão: pending)' },
     { 'Coluna': 'Status', 'Obrigatório': 'Não', 'Valores Aceitos': VALID_STATUSES.join(', ') + ' (padrão: pending)' },
     { 'Coluna': 'URL Texto Integral', 'Obrigatório': 'Não', 'Valores Aceitos': 'URL válida começando com http:// ou https://' },
     { 'Coluna': 'Frequência Revisão (dias)', 'Obrigatório': 'Não', 'Valores Aceitos': 'Número inteiro (padrão: 365)' },
     { 'Coluna': 'Evidências', 'Obrigatório': 'Não', 'Valores Aceitos': 'Texto com evidências de conformidade (será adicionado à seção de evidências da legislação)' },
   ];
-  
+
+  const legendSheet = [
+    { 'Valor': '1', 'Significado': 'N/A (Não Aplicável)' },
+    { 'Valor': '2', 'Significado': 'OK (Conforme)' },
+    { 'Valor': '3', 'Significado': 'Precisa de Plano de Ação' },
+    { 'Valor': 'x', 'Significado': 'Sem Avaliação' },
+    { 'Valor': 'z', 'Significado': 'Não Pertinente à unidade' },
+  ];
+
   const workbook = XLSX.utils.book_new();
-  
-  // Data sheet
+
   const dataSheet = XLSX.utils.json_to_sheet(templateData);
   XLSX.utils.book_append_sheet(workbook, dataSheet, 'Legislações');
-  
-  // Instructions sheet
+
   const instructSheet = XLSX.utils.json_to_sheet(instructionSheet);
   XLSX.utils.book_append_sheet(workbook, instructSheet, 'Instruções');
-  
-  // Adjust column widths
-  const colWidths = [
-    { wch: 18 }, { wch: 15 }, { wch: 45 }, { wch: 40 },
-    { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 5 },
-    { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 12 },
-    { wch: 15 }, { wch: 50 }, { wch: 20 }, { wch: 30 },
-  ];
-  dataSheet['!cols'] = colWidths;
-  
+
+  const legend = XLSX.utils.json_to_sheet(legendSheet);
+  legend['!cols'] = [{ wch: 8 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(workbook, legend, 'Legenda Unidades');
+
   XLSX.writeFile(workbook, 'template_importacao_legislacoes.xlsx');
 }

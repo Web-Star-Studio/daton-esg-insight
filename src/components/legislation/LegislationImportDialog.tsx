@@ -204,7 +204,7 @@ export function LegislationImportDialog({
         createMissingThemes,
         isSimplifiedFormat,
         forceCreate: forceCreateUnmatched,
-        unitMappings: unitMappings.filter(m => m.branchId), // Only mapped units
+        unitMappings: unitMappings.filter(m => m.branchId || (m.propagateBranchIds && m.propagateBranchIds.length > 0)),
         onProgress: setProgress,
       });
 
@@ -232,7 +232,7 @@ export function LegislationImportDialog({
   const validCount = validations.filter(v => v.isValid).length;
   const errorCount = validations.filter(v => !v.isValid).length;
   const warningCount = validations.filter(v => v.isValid && v.warnings.length > 0).length;
-  const mappedUnitsCount = unitMappings.filter(m => m.branchId).length;
+  const mappedUnitsCount = unitMappings.filter(m => m.branchId || (m.propagateBranchIds && m.propagateBranchIds.length > 0)).length;
 
   // Count total unit evaluations in parsed data
   const totalUnitEvaluations = useMemo(() => {
