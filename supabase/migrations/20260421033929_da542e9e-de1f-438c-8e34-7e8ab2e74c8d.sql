@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.gabardo_federal_json_chunk(int, int);
