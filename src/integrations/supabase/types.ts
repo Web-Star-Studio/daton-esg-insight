@@ -26119,6 +26119,10 @@ export type Database = {
       debug_auth_status: { Args: never; Returns: Json }
       exec_sql: { Args: { query: string }; Returns: Json }
       finalize_audit_planning: { Args: { p_audit_id: string }; Returns: Json }
+      gabardo_federal_csv_chunk: {
+        Args: { p_length: number; p_offset: number }
+        Returns: string
+      }
       get_conversion_factor:
         | {
             Args: { p_emission_source_id: string; p_unit: string }
