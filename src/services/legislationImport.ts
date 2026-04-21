@@ -967,6 +967,19 @@ export async function importLegislations(
         .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
     const titleHash = (s: string | null | undefined) => normalizeText(s).slice(0, 80);
 
+    // Normaliza número da norma para chave de conciliação — strip pontuação
+    // e ano-sufixo. Assim "10.088", "10088", "Lei 12.305/2010" vs "12305" e
+    // "2.163-41" vs "2163-41" viram a mesma chave e reconciliam leis que
+    // existem no DB em formato diferente do que vem na planilha.
+    const normalizeNumForKey = (n: string | null | undefined) => {
+      let s = (n || '').toString().toLowerCase().trim();
+      s = s.replace(/\/\d{4}$/, '');
+      s = s.replace(/[.,\s-]/g, '');
+      return s;
+    };
+    const matchKey = (normType: string | null | undefined, normNum: string | null | undefined) =>
+      `${(normType || '').toLowerCase().trim()}|${normalizeNumForKey(normNum)}`;
+
     type ExistingEntry = { id: string; title: string; titleHash: string; normTypeNorm: string };
 
     // Map principal: norm_type|norm_number → lista de entries. Guardamos TODAS
@@ -985,7 +998,7 @@ export async function importLegislations(
         normTypeNorm: normalizeText(l.norm_type),
       };
       if (l.norm_type && l.norm_number) {
-        const key = `${l.norm_type.toLowerCase()}|${l.norm_number.toLowerCase()}`;
+        const key = matchKey(l.norm_type, l.norm_number);
         const list = byTypeNum.get(key);
         if (list) list.push(entry); else byTypeNum.set(key, [entry]);
       }
@@ -1077,7 +1090,7 @@ export async function importLegislations(
         let existingLegislation: { id: string; title: string } | null = null;
 
         if (leg.norm_type && leg.norm_number) {
-          const key = `${leg.norm_type.toLowerCase()}|${leg.norm_number.toLowerCase()}`;
+          const key = matchKey(leg.norm_type, leg.norm_number);
           const candidates = byTypeNum.get(key) || [];
           const best = findBestCandidate(
             candidates,
@@ -1344,7 +1357,7 @@ export async function importLegislations(
         // Leis distintas com mesmo número mas TÍTULO diferente não casam aqui,
         // então cada uma vira sua própria entry — comportamento correto.
         if (newLeg?.id && leg.norm_type && leg.norm_number) {
-          const key = `${leg.norm_type.toLowerCase()}|${leg.norm_number.toLowerCase()}`;
+          const key = matchKey(leg.norm_type, leg.norm_number);
           const entry: ExistingEntry = {
             id: newLeg.id,
             title: leg.title || '',
