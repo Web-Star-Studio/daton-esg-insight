@@ -26228,6 +26228,12 @@ export type Database = {
           url: string
         }[]
       }
+      uc_code: {
+        Args: {
+          uc: Database["public"]["Tables"]["legislation_unit_compliance"]["Row"]
+        }
+        Returns: string
+      }
       update_nc_overdue_tasks: { Args: never; Returns: undefined }
       update_overdue_tasks: { Args: never; Returns: undefined }
       user_has_company_access: {
