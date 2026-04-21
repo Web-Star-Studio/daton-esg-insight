@@ -18,6 +18,7 @@ import { TopRiskLegislations } from "@/components/legislation/TopRiskLegislation
 import { ComplianceStatusDonut } from "@/components/legislation/ComplianceStatusDonut";
 import { NormTypeDistribution } from "@/components/legislation/NormTypeDistribution";
 import { DataQualityBanner } from "@/components/legislation/DataQualityBanner";
+import { BranchDrillDrawer } from "@/components/legislation/BranchDrillDrawer";
 
 const JURISDICTIONS: Array<{ value: string; label: string }> = [
   { value: "federal", label: "Federal" },
@@ -30,13 +31,15 @@ const JURISDICTIONS: Array<{ value: string; label: string }> = [
 const LegislationAnalytics: React.FC = () => {
   const navigate = useNavigate();
   const [jurisdiction, setJurisdiction] = useState<string>("federal");
+  const [drillBranchId, setDrillBranchId] = useState<string | null>(null);
   const { data, isLoading, error } = useBranchComplianceStats(jurisdiction);
 
-  const handleBranchClick = (branchId: string) => {
-    // Drill-down planejado: por enquanto navegamos para a página de relatórios
-    // pré-filtrada na filial. Quando o drawer chegar, abrir aqui.
-    navigate(`/licenciamento/legislacoes/relatorios?branchId=${branchId}`);
-  };
+  const handleBranchClick = (branchId: string) => setDrillBranchId(branchId);
+
+  const selectedBranch = drillBranchId
+    ? data?.branches.find(b => b.branchId === drillBranchId) ?? null
+    : null;
+  const selectedFocus = drillBranchId ? data?.branchFocus[drillBranchId] ?? null : null;
 
   return (
     <div className="space-y-6">
@@ -116,6 +119,15 @@ const LegislationAnalytics: React.FC = () => {
       </div>
 
       <NormTypeDistribution stats={data?.normTypeStats} isLoading={isLoading} />
+
+      <BranchDrillDrawer
+        branch={selectedBranch}
+        focus={selectedFocus}
+        open={drillBranchId !== null}
+        onOpenChange={o => {
+          if (!o) setDrillBranchId(null);
+        }}
+      />
     </div>
   );
 };

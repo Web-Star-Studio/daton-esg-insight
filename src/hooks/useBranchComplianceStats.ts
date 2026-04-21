@@ -52,6 +52,20 @@ export interface NormTypeStats {
   outros: number;
 }
 
+export interface BranchFocusItem {
+  id: string;
+  normType: string;
+  normNumber: string | null;
+  title: string;
+}
+
+export interface BranchFocus {
+  branchId: string;
+  planoAcao: BranchFocusItem[];
+  pending: BranchFocusItem[];
+  outros: BranchFocusItem[];
+}
+
 export interface DataQualityIssues {
   branchesWithoutEvaluations: Array<{
     branchId: string;
@@ -89,6 +103,7 @@ export interface ComplianceOverview {
   topRiskLegislations: RiskLegislation[];
   normTypeStats: NormTypeStats[];
   dataQuality: DataQualityIssues;
+  branchFocus: Record<string, BranchFocus>;
 }
 
 const RISK_THRESHOLD = 0.05;
@@ -193,6 +208,12 @@ const aggregate = (
     byType.get(t)!.legislations++;
   }
 
+  // Por filial: listas de plano_acao / pending / outros pra drill-down no drawer.
+  const branchFocus = new Map<string, BranchFocus>();
+  for (const b of branches) {
+    branchFocus.set(b.id, { branchId: b.id, planoAcao: [], pending: [], outros: [] });
+  }
+
   let totConforme = 0, totPlano = 0, totNa = 0, totPending = 0, totOutros = 0;
 
   for (const r of rows) {
@@ -207,6 +228,22 @@ const aggregate = (
     else if (bucket === 'na') totNa++;
     else if (bucket === 'pending') totPending++;
     else totOutros++;
+
+    if (bucket === 'plano_acao' || bucket === 'pending' || bucket === 'outros') {
+      const legStats = byLegislation.get(r.legislation_id);
+      const focus = branchFocus.get(r.branch_id);
+      if (legStats && focus) {
+        const item: BranchFocusItem = {
+          id: legStats.id,
+          normType: legStats.normType,
+          normNumber: legStats.normNumber,
+          title: legStats.title,
+        };
+        if (bucket === 'plano_acao') focus.planoAcao.push(item);
+        else if (bucket === 'pending') focus.pending.push(item);
+        else focus.outros.push(item);
+      }
+    }
 
     const legStats = byLegislation.get(r.legislation_id);
     if (legStats) {
@@ -343,6 +380,21 @@ const aggregate = (
     topRiskLegislations,
     normTypeStats,
     dataQuality,
+    branchFocus: Object.fromEntries(
+      Array.from(branchFocus.entries()).map(([id, focus]) => {
+        const sortItems = (items: BranchFocusItem[]) =>
+          items.sort((a, b) => (a.normType + (a.normNumber || '')).localeCompare(b.normType + (b.normNumber || '')));
+        return [
+          id,
+          {
+            ...focus,
+            planoAcao: sortItems(focus.planoAcao),
+            pending: sortItems(focus.pending),
+            outros: sortItems(focus.outros),
+          },
+        ];
+      })
+    ),
   };
 };
 
