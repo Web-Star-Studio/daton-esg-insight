@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      _export_csv_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string | null
+          export_key: string
+          id: string
+        }
+        Insert: {
+          chunk_index: number
+          content: string
+          created_at?: string | null
+          export_key: string
+          id?: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string | null
+          export_key?: string
+          id?: string
+        }
+        Relationships: []
+      }
       accounting_entries: {
         Row: {
           accounting_date: string
