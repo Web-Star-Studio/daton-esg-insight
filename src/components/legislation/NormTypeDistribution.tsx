@@ -110,10 +110,12 @@ export const NormTypeDistribution: React.FC<Props> = ({ stats, isLoading }) => {
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary" />
-          Distribuição por tipo normativo
+          Onde está concentrado o trabalho
         </CardTitle>
         <CardDescription>
-          Top 10 tipos de norma por volume de avaliações, com stack de status
+          Os 10 tipos de norma (LEI, PORTARIA, RESOLUÇÃO...) com mais avaliações
+          ativas — cada barra mostra o total segmentado pelo status das
+          avaliações. Útil pra ver onde focar revisão.
         </CardDescription>
       </CardHeader>
       <CardContent>

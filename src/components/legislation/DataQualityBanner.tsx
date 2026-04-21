@@ -19,18 +19,24 @@ const formatDate = (iso: string): string => {
   return `${d}/${m}/${y}`;
 };
 
-const issueCount = (i: DataQualityIssues) =>
-  i.branchesWithoutEvaluations.length +
-  (i.legislationsWithoutEvaluations > 0 ? 1 : 0) +
-  i.typeCasingDuplicates.length +
-  i.suspiciousDates.length;
+// Envolve em aspas e mostra espaços/quebras invisíveis como "·" pra ficar
+// óbvio o que diferencia variantes como "PORTARIA IBAMA" vs "PORTARIA  IBAMA".
+const renderWhitespace = (s: string): string => {
+  if (!s) return "(vazio)";
+  return `"${s.replace(/ /g, "·").replace(/\t/g, "→").replace(/\r?\n/g, "↵")}"`;
+};
 
 export const DataQualityBanner: React.FC<Props> = ({ issues }) => {
   const [open, setOpen] = useState(false);
 
   if (!issues || !issues.hasAny) return null;
 
-  const count = issueCount(issues);
+  const categoryCount = [
+    issues.branchesWithoutEvaluations.length,
+    issues.legislationsWithoutEvaluations,
+    issues.typeCasingDuplicates.length,
+    issues.suspiciousDates.length,
+  ].filter(n => n > 0).length;
 
   return (
     <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/60">
@@ -39,7 +45,9 @@ export const DataQualityBanner: React.FC<Props> = ({ issues }) => {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <AlertTitle className="text-amber-900 dark:text-amber-100">
-              {count} {count === 1 ? "ponto de atenção" : "pontos de atenção"} no dado
+              {categoryCount === 1
+                ? "Dado precisa de atenção em 1 ponto"
+                : `Dado precisa de atenção em ${categoryCount} pontos`}
             </AlertTitle>
             <AlertDescription className="text-amber-800 dark:text-amber-200 flex flex-wrap gap-2 mt-1">
               {issues.branchesWithoutEvaluations.length > 0 && (
@@ -49,17 +57,17 @@ export const DataQualityBanner: React.FC<Props> = ({ issues }) => {
               )}
               {issues.legislationsWithoutEvaluations > 0 && (
                 <Badge variant="outline" className="border-amber-400 text-amber-900 dark:text-amber-100">
-                  {issues.legislationsWithoutEvaluations} legislaç{issues.legislationsWithoutEvaluations !== 1 ? "ões" : "ão"} sem avaliação
+                  {issues.legislationsWithoutEvaluations} norma{issues.legislationsWithoutEvaluations !== 1 ? "s" : ""} nunca avaliada{issues.legislationsWithoutEvaluations !== 1 ? "s" : ""}
                 </Badge>
               )}
               {issues.typeCasingDuplicates.length > 0 && (
                 <Badge variant="outline" className="border-amber-400 text-amber-900 dark:text-amber-100">
-                  {issues.typeCasingDuplicates.length} tipo{issues.typeCasingDuplicates.length !== 1 ? "s" : ""} duplicado{issues.typeCasingDuplicates.length !== 1 ? "s" : ""} por formato
+                  {issues.typeCasingDuplicates.length} tipo{issues.typeCasingDuplicates.length !== 1 ? "s" : ""} com formatos diferentes
                 </Badge>
               )}
               {issues.suspiciousDates.length > 0 && (
                 <Badge variant="outline" className="border-amber-400 text-amber-900 dark:text-amber-100">
-                  {issues.suspiciousDates.length} data{issues.suspiciousDates.length !== 1 ? "s" : ""} suspeita{issues.suspiciousDates.length !== 1 ? "s" : ""}
+                  {issues.suspiciousDates.length} data{issues.suspiciousDates.length !== 1 ? "s" : ""} impossível{issues.suspiciousDates.length !== 1 ? "is" : ""}
                 </Badge>
               )}
             </AlertDescription>
@@ -104,46 +112,51 @@ export const DataQualityBanner: React.FC<Props> = ({ issues }) => {
 
             {issues.legislationsWithoutEvaluations > 0 && (
               <section>
-                <p className="font-medium mb-1">Legislações órfãs</p>
+                <p className="font-medium mb-1">Normas nunca avaliadas</p>
                 <p className="text-xs">
-                  <strong>{issues.legislationsWithoutEvaluations}</strong> legislação(ões) sem nenhuma avaliação por filial.
-                  Podem ser entries vindas de imports anteriores que ficaram sem conciliação.
+                  <strong>{issues.legislationsWithoutEvaluations}</strong> legislação(ões) ainda não tem nenhuma
+                  avaliação registrada em qualquer filial. Pode significar imports antigos sem mapeamento
+                  ou normas cadastradas manualmente que ainda não foram revisadas.
                 </p>
               </section>
             )}
 
             {issues.typeCasingDuplicates.length > 0 && (
               <section>
-                <p className="font-medium mb-1">Tipos de norma duplicados por formato</p>
+                <p className="font-medium mb-1">Tipos com formatos diferentes</p>
+                <p className="text-xs opacity-80 mb-1.5">
+                  O mesmo tipo aparece com grafias distintas (maiúscula/minúscula, espaço duplo, acento).
+                  Espaços invisíveis são marcados com <code>·</code>. Padronizar ajuda a agrupar corretamente.
+                </p>
                 <ul className="space-y-1">
                   {issues.typeCasingDuplicates.slice(0, 8).map(d => (
-                    <li key={d.canonical} className="text-xs">
-                      <span className="font-mono opacity-70">{d.canonical}:</span>{" "}
-                      {d.variants.map((v, i) => (
-                        <React.Fragment key={v}>
-                          <code className="px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 font-mono text-[11px]">
-                            {v || "(vazio)"}
-                          </code>
-                          {i < d.variants.length - 1 ? " vs " : ""}
-                        </React.Fragment>
+                    <li key={d.canonical} className="text-xs flex flex-wrap items-center gap-1.5">
+                      {d.variants.map(v => (
+                        <code
+                          key={v}
+                          className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 font-mono text-[11px]"
+                        >
+                          {renderWhitespace(v)}
+                        </code>
                       ))}
                     </li>
                   ))}
                 </ul>
                 {issues.typeCasingDuplicates.length > 8 && (
                   <p className="text-xs mt-1 opacity-70">
-                    ... e mais {issues.typeCasingDuplicates.length - 8} duplicata(s) similares.
+                    ... e mais {issues.typeCasingDuplicates.length - 8} grupo(s).
                   </p>
                 )}
-                <p className="text-xs mt-1 opacity-80">
-                  Recomendado unificar o formato (maiúsculas, espaço único, acento padrão).
-                </p>
               </section>
             )}
 
             {issues.suspiciousDates.length > 0 && (
               <section>
-                <p className="font-medium mb-1">Datas de publicação suspeitas</p>
+                <p className="font-medium mb-1">Datas de publicação impossíveis</p>
+                <p className="text-xs opacity-80 mb-1.5">
+                  Datas no futuro ou anteriores a 1900 — geralmente vêm de erros de digitação na planilha
+                  (ex.: ano &quot;34&quot; interpretado como 2034 em vez de 1934).
+                </p>
                 <ul className="space-y-1">
                   {issues.suspiciousDates.slice(0, 8).map(s => (
                     <li key={s.id} className="text-xs flex items-start gap-2">

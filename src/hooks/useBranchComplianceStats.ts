@@ -413,30 +413,52 @@ export const useBranchComplianceStats = (jurisdiction: string = 'federal') => {
         .eq('company_id', companyId!);
       if (branchErr) throw branchErr;
 
-      const { data: legislations, error: legErr } = await supabase
-        .from('legislations')
-        .select('id, norm_type, norm_number, title, publication_date')
-        .eq('company_id', companyId!)
-        .eq('jurisdiction', jurisdiction);
-      if (legErr) throw legErr;
-
-      const legRows = (legislations || []) as LegislationRow[];
+      // Pagina legislations também — empresas grandes podem ter > 1000 entries
+      // e o limite default do Supabase truncava silenciosamente.
+      const LEG_PAGE = 1000;
+      const legRows: LegislationRow[] = [];
+      for (let off = 0; ; off += LEG_PAGE) {
+        const { data: legislations, error: legErr } = await supabase
+          .from('legislations')
+          .select('id, norm_type, norm_number, title, publication_date')
+          .eq('company_id', companyId!)
+          .eq('jurisdiction', jurisdiction)
+          .range(off, off + LEG_PAGE - 1);
+        if (legErr) throw legErr;
+        if (!legislations || legislations.length === 0) break;
+        legRows.push(...(legislations as LegislationRow[]));
+        if (legislations.length < LEG_PAGE) break;
+      }
       const legIds = legRows.map(l => l.id);
       const activeBranches = (branches || []).filter(b => b.status === 'Ativa' || b.status === 'Ativo');
       if (legIds.length === 0) {
         return aggregate(activeBranches, [], []);
       }
 
-      const PAGE = 1000;
+      // IDs em chunks (supabase `.in()` é prático até ~500-1000 IDs) e dentro
+      // de cada chunk paginamos via `.range()` porque o Supabase tem soft-limit
+      // de 1000 rows por response. Sem isso, empresas com > 1000 avaliações
+      // tinham os cálculos do painel silenciosamente cortados.
+      const ID_CHUNK = 400;
+      const ROW_PAGE = 1000;
+      const MAX_ROWS = 200_000; // guarda contra OOM em bases patológicas
       const compliance: ComplianceRow[] = [];
-      for (let i = 0; i < legIds.length; i += PAGE) {
-        const slice = legIds.slice(i, i + PAGE);
-        const { data, error } = await supabase
-          .from('legislation_unit_compliance')
-          .select('legislation_id, branch_id, compliance_status, applicability')
-          .in('legislation_id', slice);
-        if (error) throw error;
-        if (data) compliance.push(...(data as ComplianceRow[]));
+      outer: for (let i = 0; i < legIds.length; i += ID_CHUNK) {
+        const slice = legIds.slice(i, i + ID_CHUNK);
+        let offset = 0;
+        while (true) {
+          const { data, error } = await supabase
+            .from('legislation_unit_compliance')
+            .select('legislation_id, branch_id, compliance_status, applicability')
+            .in('legislation_id', slice)
+            .range(offset, offset + ROW_PAGE - 1);
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          compliance.push(...(data as ComplianceRow[]));
+          if (compliance.length >= MAX_ROWS) break outer;
+          if (data.length < ROW_PAGE) break;
+          offset += ROW_PAGE;
+        }
       }
 
       return aggregate(activeBranches, compliance, legRows);
