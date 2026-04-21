@@ -1117,7 +1117,56 @@ export async function importLegislations(
         if (existingLegislation) {
           let evidenceMessage = '';
           let unitComplianceMessage = '';
-          
+
+          // Enriquecer entry rasa — título genérico (=norm_type), summary vazio,
+          // data ausente/impossível ou URL vazia indicam dado vindo de um seed/import
+          // antigo; usamos o que a planilha tem de melhor. Nunca sobrescreve dado
+          // manual (título completo, etc) — só preenche campo vazio ou claramente
+          // inválido.
+          const buildEnrichment = async (): Promise<{ changed: boolean; count: number }> => {
+            const { data: current, error: readErr } = await supabase
+              .from('legislations')
+              .select('title, summary, publication_date, full_text_url, norm_type')
+              .eq('id', existingLegislation!.id)
+              .maybeSingle();
+            if (readErr || !current) return { changed: false, count: 0 };
+            const today = new Date().toISOString().slice(0, 10);
+            const updates: Record<string, string> = {};
+            const curTitle = (current.title || '').trim();
+            const curTitleNorm = normalizeText(curTitle);
+            const curTypeNorm = normalizeText(current.norm_type);
+            const titleIsShallow = !curTitle || curTitleNorm === curTypeNorm;
+            if (titleIsShallow && leg.title && leg.title.trim().length >= 5) {
+              updates.title = leg.title.trim();
+            }
+            if ((!current.summary || !current.summary.trim()) && leg.summary && leg.summary.trim()) {
+              updates.summary = leg.summary.trim();
+            }
+            const curDate = (current.publication_date || '').slice(0, 10);
+            const dateIsBad = !curDate || curDate > today || curDate < '1900-01-01';
+            if (dateIsBad && leg.publication_date) {
+              updates.publication_date = leg.publication_date;
+            }
+            if (
+              (!current.full_text_url || !current.full_text_url.trim()) &&
+              leg.full_text_url && leg.full_text_url.trim()
+            ) {
+              updates.full_text_url = leg.full_text_url.trim();
+            }
+            const keys = Object.keys(updates);
+            if (keys.length === 0) return { changed: false, count: 0 };
+            const { error: upErr } = await supabase
+              .from('legislations')
+              .update(updates)
+              .eq('id', existingLegislation!.id);
+            if (upErr) return { changed: false, count: 0 };
+            return { changed: true, count: keys.length };
+          };
+          const enrichment = await buildEnrichment();
+          const enrichmentMessage = enrichment.changed
+            ? ` + ${enrichment.count} campo(s) enriquecido(s)`
+            : '';
+
           // Adicionar evidência se houver
           if (leg.evidence_text && leg.evidence_text.trim()) {
               const { error: evidenceError } = await supabase
@@ -1130,7 +1179,7 @@ export async function importLegislations(
                 evidence_type: 'documento',
                 uploaded_by: profile.id
               });
-            
+
             if (!evidenceError) {
               result.evidencesAdded++;
               evidenceMessage = ' + evidência adicionada';
@@ -1207,13 +1256,13 @@ export async function importLegislations(
           }
           
           // Registrar resultado
-          if (evidenceMessage || unitComplianceMessage) {
+          if (evidenceMessage || unitComplianceMessage || enrichmentMessage) {
             result.updated++;
             result.details.push({
               rowNumber: leg.rowNumber,
               title: leg.title,
               status: 'updated',
-              message: 'Legislação atualizada' + evidenceMessage + unitComplianceMessage,
+              message: 'Legislação atualizada' + evidenceMessage + unitComplianceMessage + enrichmentMessage,
             });
           } else {
             result.warnings++;
