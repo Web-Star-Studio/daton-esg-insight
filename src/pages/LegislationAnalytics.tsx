@@ -14,6 +14,9 @@ import { ArrowLeft, BarChart3, AlertTriangle } from "lucide-react";
 import { useBranchComplianceStats } from "@/hooks/useBranchComplianceStats";
 import { LegislationAnalyticsKPIs } from "@/components/legislation/LegislationAnalyticsKPIs";
 import { BranchComplianceRanking } from "@/components/legislation/BranchComplianceRanking";
+import { TopRiskLegislations } from "@/components/legislation/TopRiskLegislations";
+import { ComplianceStatusDonut } from "@/components/legislation/ComplianceStatusDonut";
+import { NormTypeDistribution } from "@/components/legislation/NormTypeDistribution";
 
 const JURISDICTIONS: Array<{ value: string; label: string }> = [
   { value: "federal", label: "Federal" },
@@ -99,6 +102,17 @@ const LegislationAnalytics: React.FC = () => {
         isLoading={isLoading}
         onBranchClick={handleBranchClick}
       />
+
+      <div className="grid gap-4 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <TopRiskLegislations legislations={data?.topRiskLegislations} isLoading={isLoading} />
+        </div>
+        <div className="lg:col-span-2">
+          <ComplianceStatusDonut totals={data?.totals} isLoading={isLoading} />
+        </div>
+      </div>
+
+      <NormTypeDistribution stats={data?.normTypeStats} isLoading={isLoading} />
     </div>
   );
 };

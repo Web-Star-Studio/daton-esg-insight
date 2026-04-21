@@ -19,6 +19,39 @@ export interface BranchComplianceStats {
   riskScore: number;
 }
 
+export type StatusBucket = "conforme" | "plano_acao" | "na" | "pending" | "outros";
+
+export interface RiskLegislation {
+  id: string;
+  normType: string;
+  normNumber: string | null;
+  title: string;
+  totalBranches: number;
+  conforme: number;
+  planoAcao: number;
+  pending: number;
+  na: number;
+  outros: number;
+  riskScore: number;
+  branchStatuses: Array<{
+    branchId: string;
+    code: string | null;
+    name: string;
+    status: StatusBucket | null;
+  }>;
+}
+
+export interface NormTypeStats {
+  type: string;
+  legislations: number;
+  evaluations: number;
+  conforme: number;
+  planoAcao: number;
+  na: number;
+  pending: number;
+  outros: number;
+}
+
 export interface ComplianceOverview {
   branches: BranchComplianceStats[];
   totals: {
@@ -33,11 +66,14 @@ export interface ComplianceOverview {
   globalComplianceRate: number;
   branchesAtRisk: number;
   evaluatedBranches: number;
+  topRiskLegislations: RiskLegislation[];
+  normTypeStats: NormTypeStats[];
 }
 
 const RISK_THRESHOLD = 0.05;
 
 type ComplianceRow = {
+  legislation_id: string;
   branch_id: string;
   compliance_status: string | null;
   applicability: string | null;
@@ -53,10 +89,27 @@ type BranchRow = {
   status: string | null;
 };
 
+type LegislationRow = {
+  id: string;
+  norm_type: string | null;
+  norm_number: string | null;
+  title: string | null;
+};
+
+const classify = (row: ComplianceRow): StatusBucket => {
+  const status = (row.compliance_status || '').toLowerCase();
+  const applicability = (row.applicability || '').toLowerCase();
+  if (applicability === 'na' || status === 'na') return 'na';
+  if (status === 'conforme') return 'conforme';
+  if (status === 'plano_acao') return 'plano_acao';
+  if (status === 'pending' || !status) return 'pending';
+  return 'outros';
+};
+
 const aggregate = (
   branches: BranchRow[],
   rows: ComplianceRow[],
-  legislationsCount: number,
+  legislations: LegislationRow[],
 ): ComplianceOverview => {
   const byBranch = new Map<string, BranchComplianceStats>();
   for (const b of branches) {
@@ -78,26 +131,77 @@ const aggregate = (
     });
   }
 
+  // Por legislação: contagens + mapa branch→status para dots na UI.
+  const byLegislation = new Map<string, RiskLegislation>();
+  for (const l of legislations) {
+    byLegislation.set(l.id, {
+      id: l.id,
+      normType: l.norm_type || '—',
+      normNumber: l.norm_number,
+      title: l.title || '(sem título)',
+      totalBranches: 0,
+      conforme: 0,
+      planoAcao: 0,
+      pending: 0,
+      na: 0,
+      outros: 0,
+      riskScore: 0,
+      branchStatuses: [],
+    });
+  }
+
+  // Por tipo de norma: contagens agregadas.
+  const byType = new Map<string, NormTypeStats>();
+  const legIdToType = new Map<string, string>();
+  for (const l of legislations) {
+    const t = (l.norm_type || '—').trim();
+    legIdToType.set(l.id, t);
+    if (!byType.has(t)) {
+      byType.set(t, {
+        type: t,
+        legislations: 0,
+        evaluations: 0,
+        conforme: 0,
+        planoAcao: 0,
+        na: 0,
+        pending: 0,
+        outros: 0,
+      });
+    }
+    byType.get(t)!.legislations++;
+  }
+
   let totConforme = 0, totPlano = 0, totNa = 0, totPending = 0, totOutros = 0;
 
   for (const r of rows) {
     const stats = byBranch.get(r.branch_id);
     if (!stats) continue;
+    const bucket = classify(r);
+
     stats.total++;
-    const status = (r.compliance_status || '').toLowerCase();
-    const applicability = (r.applicability || '').toLowerCase();
-    // 'na' pode chegar tanto via compliance_status='na' quanto applicability='na';
-    // priorizamos applicability porque ele determina se a norma se aplica.
-    if (applicability === 'na' || status === 'na') {
-      stats.na++; totNa++;
-    } else if (status === 'conforme') {
-      stats.conforme++; totConforme++;
-    } else if (status === 'plano_acao') {
-      stats.planoAcao++; totPlano++;
-    } else if (status === 'pending' || !status) {
-      stats.pending++; totPending++;
-    } else {
-      stats.outros++; totOutros++;
+    stats[bucket === 'plano_acao' ? 'planoAcao' : bucket]++;
+    if (bucket === 'conforme') totConforme++;
+    else if (bucket === 'plano_acao') totPlano++;
+    else if (bucket === 'na') totNa++;
+    else if (bucket === 'pending') totPending++;
+    else totOutros++;
+
+    const legStats = byLegislation.get(r.legislation_id);
+    if (legStats) {
+      legStats.totalBranches++;
+      legStats[bucket === 'plano_acao' ? 'planoAcao' : bucket]++;
+      legStats.branchStatuses.push({
+        branchId: stats.branchId,
+        code: stats.code,
+        name: stats.name,
+        status: bucket,
+      });
+    }
+
+    const typeStats = byType.get(legIdToType.get(r.legislation_id) || '—');
+    if (typeStats) {
+      typeStats.evaluations++;
+      typeStats[bucket === 'plano_acao' ? 'planoAcao' : bucket]++;
     }
   }
 
@@ -111,6 +215,28 @@ const aggregate = (
     if (b.riskScore > RISK_THRESHOLD) branchesAtRisk++;
   }
 
+  // Ordena filial-status das legislações seguindo a ordem alfabética do code.
+  for (const leg of byLegislation.values()) {
+    leg.riskScore = leg.totalBranches > 0
+      ? (leg.planoAcao + leg.pending * 0.5) / leg.totalBranches
+      : 0;
+    leg.branchStatuses.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
+  }
+
+  const topRiskLegislations = Array.from(byLegislation.values())
+    .filter(l => l.planoAcao > 0 || l.pending > 0)
+    .sort((a, b) => {
+      if (b.planoAcao !== a.planoAcao) return b.planoAcao - a.planoAcao;
+      if (b.pending !== a.pending) return b.pending - a.pending;
+      return b.riskScore - a.riskScore;
+    })
+    .slice(0, 10);
+
+  const normTypeStats = Array.from(byType.values())
+    .filter(t => t.evaluations > 0)
+    .sort((a, b) => b.evaluations - a.evaluations)
+    .slice(0, 10);
+
   const totalEvals = totConforme + totPlano + totNa + totPending + totOutros;
   const totalAplicaveis = totalEvals - totNa;
   const globalRate = totalAplicaveis > 0 ? totConforme / totalAplicaveis : 0;
@@ -118,7 +244,7 @@ const aggregate = (
   return {
     branches: Array.from(byBranch.values()).sort((a, b) => b.complianceRate - a.complianceRate),
     totals: {
-      legislations: legislationsCount,
+      legislations: legislations.length,
       evaluations: totalEvals,
       conforme: totConforme,
       planoAcao: totPlano,
@@ -129,6 +255,8 @@ const aggregate = (
     globalComplianceRate: globalRate,
     branchesAtRisk,
     evaluatedBranches,
+    topRiskLegislations,
+    normTypeStats,
   };
 };
 
@@ -149,14 +277,16 @@ export const useBranchComplianceStats = (jurisdiction: string = 'federal') => {
 
       const { data: legislations, error: legErr } = await supabase
         .from('legislations')
-        .select('id')
+        .select('id, norm_type, norm_number, title')
         .eq('company_id', companyId!)
         .eq('jurisdiction', jurisdiction);
       if (legErr) throw legErr;
 
-      const legIds = (legislations || []).map(l => l.id);
+      const legRows = (legislations || []) as LegislationRow[];
+      const legIds = legRows.map(l => l.id);
+      const activeBranches = (branches || []).filter(b => b.status === 'Ativa' || b.status === 'Ativo');
       if (legIds.length === 0) {
-        return aggregate(branches || [], [], 0);
+        return aggregate(activeBranches, [], []);
       }
 
       const PAGE = 1000;
@@ -165,17 +295,13 @@ export const useBranchComplianceStats = (jurisdiction: string = 'federal') => {
         const slice = legIds.slice(i, i + PAGE);
         const { data, error } = await supabase
           .from('legislation_unit_compliance')
-          .select('branch_id, compliance_status, applicability')
+          .select('legislation_id, branch_id, compliance_status, applicability')
           .in('legislation_id', slice);
         if (error) throw error;
         if (data) compliance.push(...(data as ComplianceRow[]));
       }
 
-      return aggregate(
-        (branches || []).filter(b => b.status === 'Ativa' || b.status === 'Ativo'),
-        compliance,
-        legIds.length,
-      );
+      return aggregate(activeBranches, compliance, legRows);
     },
   });
 };
