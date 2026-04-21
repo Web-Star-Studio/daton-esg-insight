@@ -17,6 +17,7 @@ import { BranchComplianceRanking } from "@/components/legislation/BranchComplian
 import { TopRiskLegislations } from "@/components/legislation/TopRiskLegislations";
 import { ComplianceStatusDonut } from "@/components/legislation/ComplianceStatusDonut";
 import { NormTypeDistribution } from "@/components/legislation/NormTypeDistribution";
+import { DataQualityBanner } from "@/components/legislation/DataQualityBanner";
 
 const JURISDICTIONS: Array<{ value: string; label: string }> = [
   { value: "federal", label: "Federal" },
@@ -94,6 +95,8 @@ const LegislationAnalytics: React.FC = () => {
           </AlertDescription>
         </Alert>
       )}
+
+      <DataQualityBanner issues={data?.dataQuality} />
 
       <LegislationAnalyticsKPIs data={data} isLoading={isLoading} />
 

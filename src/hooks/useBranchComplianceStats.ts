@@ -52,6 +52,26 @@ export interface NormTypeStats {
   outros: number;
 }
 
+export interface DataQualityIssues {
+  branchesWithoutEvaluations: Array<{
+    branchId: string;
+    code: string | null;
+    name: string;
+    state: string | null;
+  }>;
+  legislationsWithoutEvaluations: number;
+  typeCasingDuplicates: Array<{ canonical: string; variants: string[] }>;
+  suspiciousDates: Array<{
+    id: string;
+    normType: string;
+    normNumber: string | null;
+    title: string;
+    publicationDate: string;
+    reason: "future" | "too_old";
+  }>;
+  hasAny: boolean;
+}
+
 export interface ComplianceOverview {
   branches: BranchComplianceStats[];
   totals: {
@@ -68,6 +88,7 @@ export interface ComplianceOverview {
   evaluatedBranches: number;
   topRiskLegislations: RiskLegislation[];
   normTypeStats: NormTypeStats[];
+  dataQuality: DataQualityIssues;
 }
 
 const RISK_THRESHOLD = 0.05;
@@ -94,6 +115,7 @@ type LegislationRow = {
   norm_type: string | null;
   norm_number: string | null;
   title: string | null;
+  publication_date: string | null;
 };
 
 const classify = (row: ComplianceRow): StatusBucket => {
@@ -241,6 +263,69 @@ const aggregate = (
   const totalAplicaveis = totalEvals - totNa;
   const globalRate = totalAplicaveis > 0 ? totConforme / totalAplicaveis : 0;
 
+  // ================= Data quality =================
+  const branchesWithoutEvaluations = Array.from(byBranch.values())
+    .filter(b => b.total === 0)
+    .map(b => ({ branchId: b.branchId, code: b.code, name: b.name, state: b.state }));
+
+  const legislationsWithoutEvaluations = Array.from(byLegislation.values())
+    .filter(l => l.totalBranches === 0).length;
+
+  // Detecta tipos duplicados por casing/espaço/acento (ex.: "LEI" vs "Lei", "PORTARIA  IBAMA" com 2 espaços)
+  const typeCanonicalize = (t: string) =>
+    t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+  const typeVariants = new Map<string, Set<string>>();
+  for (const l of legislations) {
+    const raw = (l.norm_type || '').trim();
+    if (!raw) continue;
+    const canon = typeCanonicalize(raw);
+    if (!typeVariants.has(canon)) typeVariants.set(canon, new Set());
+    typeVariants.get(canon)!.add(raw);
+  }
+  const typeCasingDuplicates = Array.from(typeVariants.entries())
+    .filter(([, s]) => s.size > 1)
+    .map(([canonical, s]) => ({ canonical, variants: Array.from(s).sort() }))
+    .sort((a, b) => a.canonical.localeCompare(b.canonical));
+
+  // Datas suspeitas: futuro ou antes de 1900.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const suspiciousDates: DataQualityIssues["suspiciousDates"] = [];
+  for (const l of legislations) {
+    if (!l.publication_date) continue;
+    const d = l.publication_date.slice(0, 10);
+    if (d > todayIso) {
+      suspiciousDates.push({
+        id: l.id,
+        normType: l.norm_type || '—',
+        normNumber: l.norm_number,
+        title: l.title || '(sem título)',
+        publicationDate: d,
+        reason: 'future',
+      });
+    } else if (d < '1900-01-01') {
+      suspiciousDates.push({
+        id: l.id,
+        normType: l.norm_type || '—',
+        normNumber: l.norm_number,
+        title: l.title || '(sem título)',
+        publicationDate: d,
+        reason: 'too_old',
+      });
+    }
+  }
+
+  const dataQuality: DataQualityIssues = {
+    branchesWithoutEvaluations,
+    legislationsWithoutEvaluations,
+    typeCasingDuplicates,
+    suspiciousDates,
+    hasAny:
+      branchesWithoutEvaluations.length > 0 ||
+      legislationsWithoutEvaluations > 0 ||
+      typeCasingDuplicates.length > 0 ||
+      suspiciousDates.length > 0,
+  };
+
   return {
     branches: Array.from(byBranch.values()).sort((a, b) => b.complianceRate - a.complianceRate),
     totals: {
@@ -257,6 +342,7 @@ const aggregate = (
     evaluatedBranches,
     topRiskLegislations,
     normTypeStats,
+    dataQuality,
   };
 };
 
@@ -277,7 +363,7 @@ export const useBranchComplianceStats = (jurisdiction: string = 'federal') => {
 
       const { data: legislations, error: legErr } = await supabase
         .from('legislations')
-        .select('id, norm_type, norm_number, title')
+        .select('id, norm_type, norm_number, title, publication_date')
         .eq('company_id', companyId!)
         .eq('jurisdiction', jurisdiction);
       if (legErr) throw legErr;
