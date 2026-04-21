@@ -25972,6 +25972,41 @@ export type Database = {
       }
     }
     Views: {
+      gabardo_federal_export: {
+        Row: {
+          aplicabilidade_geral: string | null
+          camacari: string | null
+          cariacica: string | null
+          chui: string | null
+          data_pub: string | null
+          duque: string | null
+          eusebio: string | null
+          fonte: string | null
+          go_carreg: string | null
+          go_frota: string | null
+          ira: string | null
+          matriz: string | null
+          n_avaliacoes: number | null
+          numero: string | null
+          palhoca: string | null
+          pir: string | null
+          poa: string | null
+          preal: string | null
+          resumo: string | null
+          rn: number | null
+          sbc: string | null
+          sjp: string | null
+          status_geral: string | null
+          suape: string | null
+          subtema: string | null
+          tem_notes: string | null
+          tem_responsavel: string | null
+          tematica: string | null
+          tipo: string | null
+          titulo: string | null
+        }
+        Relationships: []
+      }
       page_view_stats_90d: {
         Row: {
           company_id: string | null
