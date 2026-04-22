@@ -1105,10 +1105,15 @@ export async function importLegislations(
       if (key && !themeMap.has(key)) themeMap.set(key, t.id);
     });
     
-    // Get existing legislations for duplicate check (incluindo ID para conciliação)
+    // Get existing legislations for duplicate check (incluindo ID para conciliação).
+    // Inclui jurisdiction para escopar o match — planilha internacional não pode
+    // reconciliar com entries federais (e vice-versa). Tipos como LEI e DECRETO
+    // aparecem em ambas as jurisdições e, sem filtro, uma linha internacional
+    // com DECRETO 99704 casaria com o DECRETO 99704 federal e viraria UPDATE
+    // disfarçado em vez de uma entry internacional nova.
     const { data: existingLegislations } = await supabase
       .from('legislations')
-      .select('id, title, norm_type, norm_number, summary')
+      .select('id, title, norm_type, norm_number, summary, jurisdiction')
       .eq('company_id', companyId);
 
     const titleHash = (s: string | null | undefined) => normalizeText(s).slice(0, 80);
@@ -1136,7 +1141,34 @@ export async function importLegislations(
     const matchKey = (normType: string | null | undefined, normNum: string | null | undefined) =>
       `${canonicalNormType(normType)}|${normalizeNumForKey(normNum)}`;
 
-    type ExistingEntry = { id: string; title: string; titleHash: string; normTypeNorm: string };
+    type ExistingEntry = {
+      id: string;
+      title: string;
+      titleHash: string;
+      normTypeNorm: string;
+      jurisdiction: string;
+    };
+
+    // Escopo de jurisdição permitido pro match — impede que planilhas de
+    // jurisdições diferentes colidam (ex.: DECRETO 99704 federal vs DECRETO
+    // 99704 internacional são normas distintas mesmo com tipo+número iguais).
+    //  - federal/estadual/municipal se reconciliam entre si (mesma família
+    //    "legal" nacional — uma planilha pode ter mix)
+    //  - nbr só com nbr
+    //  - internacional só com internacional
+    const jurisdictionFamily = (j: string): Set<string> => {
+      const lower = (j || '').toLowerCase();
+      if (['federal', 'estadual', 'municipal'].includes(lower)) {
+        return new Set(['federal', 'estadual', 'municipal']);
+      }
+      if (lower === 'nbr') return new Set(['nbr']);
+      if (lower === 'internacional') return new Set(['internacional']);
+      return new Set([lower]);
+    };
+    const canMatchJurisdiction = (
+      rowJurisdiction: string,
+      entryJurisdiction: string,
+    ): boolean => jurisdictionFamily(rowJurisdiction).has(entryJurisdiction.toLowerCase());
 
     // Map principal: norm_type|norm_number → lista de entries. Guardamos TODAS
     // as entries com o mesmo par tipo+número (podem ser leis distintas com mesmo
@@ -1152,6 +1184,7 @@ export async function importLegislations(
         title: l.title || '',
         titleHash: titleHash(l.title),
         normTypeNorm: normalizeText(l.norm_type),
+        jurisdiction: (l.jurisdiction || '').toLowerCase(),
       };
       if (l.norm_type && l.norm_number) {
         const key = matchKey(l.norm_type, l.norm_number);
@@ -1260,7 +1293,9 @@ export async function importLegislations(
 
         if (leg.norm_type && leg.norm_number) {
           const key = matchKey(leg.norm_type, leg.norm_number);
-          const candidates = (byTypeNum.get(key) || []).filter(c => !consumedIds.has(c.id));
+          const candidates = (byTypeNum.get(key) || [])
+            .filter(c => !consumedIds.has(c.id))
+            .filter(c => canMatchJurisdiction(leg.jurisdiction, c.jurisdiction));
           const best = findBestCandidate(
             candidates,
             titleHash(leg.title),
@@ -1271,7 +1306,9 @@ export async function importLegislations(
 
         if (!existingLegislation && leg.title) {
           const byTitle = byTitleExact.get(normalizeText(leg.title));
-          if (byTitle && !consumedIds.has(byTitle.id)) {
+          if (byTitle
+              && !consumedIds.has(byTitle.id)
+              && canMatchJurisdiction(leg.jurisdiction, byTitle.jurisdiction)) {
             existingLegislation = { id: byTitle.id, title: byTitle.title };
           }
         }
@@ -1281,7 +1318,9 @@ export async function importLegislations(
         if (!existingLegislation && leg.title) {
           const k = normalizeText(leg.title).slice(0, 150);
           const bySum = bySummaryPrefix.get(k);
-          if (bySum && !consumedIds.has(bySum.id)) {
+          if (bySum
+              && !consumedIds.has(bySum.id)
+              && canMatchJurisdiction(leg.jurisdiction, bySum.jurisdiction)) {
             existingLegislation = { id: bySum.id, title: bySum.title };
           }
         }
@@ -1626,6 +1665,7 @@ export async function importLegislations(
               title: leg.title || '',
               titleHash: titleHash(leg.title),
               normTypeNorm: normalizeText(leg.norm_type),
+              jurisdiction: (leg.jurisdiction || '').toLowerCase(),
             };
             const list = byTypeNum.get(key);
             if (list) list.push(entry); else byTypeNum.set(key, [entry]);
