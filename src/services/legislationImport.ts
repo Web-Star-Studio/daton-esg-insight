@@ -1347,22 +1347,35 @@ export async function importLegislations(
             ? ` + ${enrichment.count} campo(s) enriquecido(s)`
             : '';
 
-          // Adicionar evidência se houver
+          // Adicionar evidência se houver — idempotente: checa se já existe
+          // registro com mesmo legislation_id + description pra não duplicar
+          // em re-imports da mesma planilha.
           if (leg.evidence_text && leg.evidence_text.trim()) {
-              const { error: evidenceError } = await supabase
+            const evidenceDescription = leg.evidence_text.trim();
+            const { data: existingEvidence } = await supabase
               .from('legislation_evidences')
-              .insert({
-                legislation_id: existingLegislation.id,
-                company_id: companyId,
-                title: 'Evidência importada via planilha',
-                description: leg.evidence_text.trim(),
-                evidence_type: 'documento',
-                uploaded_by: profile.id
-              });
+              .select('id')
+              .eq('legislation_id', existingLegislation.id)
+              .eq('description', evidenceDescription)
+              .limit(1)
+              .maybeSingle();
 
-            if (!evidenceError) {
-              result.evidencesAdded++;
-              evidenceMessage = ' + evidência adicionada';
+            if (!existingEvidence) {
+              const { error: evidenceError } = await supabase
+                .from('legislation_evidences')
+                .insert({
+                  legislation_id: existingLegislation.id,
+                  company_id: companyId,
+                  title: 'Evidência importada via planilha',
+                  description: evidenceDescription,
+                  evidence_type: 'documento',
+                  uploaded_by: profile.id
+                });
+
+              if (!evidenceError) {
+                result.evidencesAdded++;
+                evidenceMessage = ' + evidência adicionada';
+              }
             }
           }
           
