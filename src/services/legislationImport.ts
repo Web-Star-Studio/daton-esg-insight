@@ -1070,14 +1070,28 @@ export async function importLegislations(
   try {
     const { profile } = await formErrorHandler.checkAuth();
     const companyId = profile.company_id;
-    
+
+    // Normaliza texto (lowercase, sem acentos, espaços colapsados) para
+    // comparação tolerante. Usado tanto em temas/subtemas quanto em matching
+    // de legislações. Declarado cedo porque temas usam antes.
+    const normalizeText = (s: string | null | undefined) =>
+      (s || '').toString().toLowerCase().normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+
     // Get existing themes and subthemes
     const { data: existingThemes } = await supabase
       .from('legislation_themes')
       .select('id, name')
       .eq('company_id', companyId);
-    
-    const themeMap = new Map((existingThemes || []).map(t => [t.name.toLowerCase(), t.id]));
+
+    // Tema é reconciliado por chave normalizada (sem acento, lowercase, trim)
+    // para evitar duplicatas tipo "Meio Ambiente" vs "MEIO AMBIENTE" vindas
+    // de imports em momentos diferentes.
+    const themeMap = new Map<string, string>();
+    (existingThemes || []).forEach(t => {
+      const key = normalizeText(t.name);
+      if (key && !themeMap.has(key)) themeMap.set(key, t.id);
+    });
     
     // Get existing legislations for duplicate check (incluindo ID para conciliação)
     const { data: existingLegislations } = await supabase
@@ -1085,11 +1099,6 @@ export async function importLegislations(
       .select('id, title, norm_type, norm_number, summary')
       .eq('company_id', companyId);
 
-    // Normaliza texto (lowercase, sem acentos, espaços colapsados) para
-    // comparação tolerante de título/tipo/número durante conciliação.
-    const normalizeText = (s: string | null | undefined) =>
-      (s || '').toString().toLowerCase().normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
     const titleHash = (s: string | null | undefined) => normalizeText(s).slice(0, 80);
 
     // Normaliza número da norma para chave de conciliação — strip pontuação
@@ -1102,8 +1111,18 @@ export async function importLegislations(
       s = s.replace(/[.,\s-]/g, '');
       return s;
     };
+    // Família ABNT: "NBR", "NBR ABNT", "ABNT NBR", "NBR ISO", "ABNT NBR ISO",
+    // "NBR NM", "ABNT PR", "ABNT NBR ISO/IEC" compartilham o mesmo espaço
+    // numérico — o número é identificador único dentro da família. Colapsar
+    // todos em "nbr" pra efeito de match permite reconciliar entries vindas
+    // de imports distintos (ex.: "NBR 10004/2004" com "NBR ABNT 10004").
+    const canonicalNormType = (t: string | null | undefined) => {
+      const norm = normalizeText(t);
+      if (/\b(nbr|abnt)\b/.test(norm)) return 'nbr';
+      return norm;
+    };
     const matchKey = (normType: string | null | undefined, normNum: string | null | undefined) =>
-      `${(normType || '').toLowerCase().trim()}|${normalizeNumForKey(normNum)}`;
+      `${canonicalNormType(normType)}|${normalizeNumForKey(normNum)}`;
 
     type ExistingEntry = { id: string; title: string; titleHash: string; normTypeNorm: string };
 
@@ -1159,7 +1178,17 @@ export async function importLegislations(
     
     // Subtheme map by theme_id
     const subthemeMap = new Map<string, Map<string, string>>();
-    
+
+    // IDs de legislações "consumidas" nesse lote — seja por match com uma
+    // entry pré-existente (UPDATE) ou por INSERT recém-feito. Impede que
+    // linhas duplicadas DENTRO da mesma planilha colapsem em um único registro.
+    // Cenário típico: a planilha Gabardo às vezes traz a mesma NBR em 2 linhas
+    // com avaliações/subtemas/datas distintas (versões, perspectivas, temáticas
+    // diferentes). Queremos preservar ambas como registros separados.
+    // Reconciliação com entries pré-existentes do banco segue funcionando
+    // normalmente — só blindamos contra match intra-lote.
+    const consumedIds = new Set<string>();
+
     options.onProgress?.({
       current: 0,
       total: legislations.length,
@@ -1212,11 +1241,14 @@ export async function importLegislations(
         // (ex.: DECRETO 10088 aparece 2x na planilha com Convenção 174 e 170 da OIT),
         // desempatamos pelo título. Assim leis distintas com número repetido viram
         // entries separadas no DB em vez de colapsarem e sobrescreverem avaliações.
+        // Entries já "consumidas" nesse lote são filtradas de todas as etapas de
+        // match — garante que cada linha da planilha encontre (no máximo) 1 alvo
+        // distinto, sem colapsar linhas repetidas da mesma planilha em 1 só registro.
         let existingLegislation: { id: string; title: string } | null = null;
 
         if (leg.norm_type && leg.norm_number) {
           const key = matchKey(leg.norm_type, leg.norm_number);
-          const candidates = byTypeNum.get(key) || [];
+          const candidates = (byTypeNum.get(key) || []).filter(c => !consumedIds.has(c.id));
           const best = findBestCandidate(
             candidates,
             titleHash(leg.title),
@@ -1227,7 +1259,9 @@ export async function importLegislations(
 
         if (!existingLegislation && leg.title) {
           const byTitle = byTitleExact.get(normalizeText(leg.title));
-          if (byTitle) existingLegislation = { id: byTitle.id, title: byTitle.title };
+          if (byTitle && !consumedIds.has(byTitle.id)) {
+            existingLegislation = { id: byTitle.id, title: byTitle.title };
+          }
         }
 
         // Terceira tentativa: match por summary (formatos simplificados em que
@@ -1235,7 +1269,16 @@ export async function importLegislations(
         if (!existingLegislation && leg.title) {
           const k = normalizeText(leg.title).slice(0, 150);
           const bySum = bySummaryPrefix.get(k);
-          if (bySum) existingLegislation = { id: bySum.id, title: bySum.title };
+          if (bySum && !consumedIds.has(bySum.id)) {
+            existingLegislation = { id: bySum.id, title: bySum.title };
+          }
+        }
+
+        // Marca como consumido imediatamente após qualquer match bem-sucedido
+        // — assim a próxima linha do lote com a mesma chave não reutiliza essa
+        // entry como alvo.
+        if (existingLegislation) {
+          consumedIds.add(existingLegislation.id);
         }
         
         // Se encontrou legislação existente, adicionar evidência e unit compliance
@@ -1251,11 +1294,12 @@ export async function importLegislations(
           const buildEnrichment = async (): Promise<{ changed: boolean; count: number }> => {
             const { data: current, error: readErr } = await supabase
               .from('legislations')
-              .select('title, summary, publication_date, full_text_url, norm_type')
+              .select('title, summary, publication_date, full_text_url, norm_type, issuing_body')
               .eq('id', existingLegislation!.id)
               .maybeSingle();
             if (readErr || !current) return { changed: false, count: 0 };
             const today = new Date().toISOString().slice(0, 10);
+            const urlPattern = /^(https?:\/\/|www\.)/i;
             const updates: Record<string, string> = {};
             const curTitle = (current.title || '').trim();
             const curTitleNorm = normalizeText(curTitle);
@@ -1272,11 +1316,22 @@ export async function importLegislations(
             if (dateIsBad && leg.publication_date) {
               updates.publication_date = leg.publication_date;
             }
-            if (
-              (!current.full_text_url || !current.full_text_url.trim()) &&
-              leg.full_text_url && leg.full_text_url.trim()
-            ) {
+            // Órgão emissor: se DB tem URL em issuing_body, é lixo de import
+            // antigo (antes do routing por formato). Trata como campo inválido
+            // e sobrescreve com o valor correto da planilha; também move a URL
+            // para full_text_url se esse campo estiver vazio.
+            const curIssuing = (current.issuing_body || '').trim();
+            const issuingIsBad = curIssuing && urlPattern.test(curIssuing);
+            if (issuingIsBad && leg.issuing_body && leg.issuing_body.trim()) {
+              updates.issuing_body = leg.issuing_body.trim();
+            }
+            // Full text URL: preenche se vazio; também recupera URL vazada em
+            // issuing_body quando a planilha não trouxe URL própria.
+            const curUrl = (current.full_text_url || '').trim();
+            if (!curUrl && leg.full_text_url && leg.full_text_url.trim()) {
               updates.full_text_url = leg.full_text_url.trim();
+            } else if (!curUrl && issuingIsBad) {
+              updates.full_text_url = curIssuing;
             }
             const keys = Object.keys(updates);
             if (keys.length === 0) return { changed: false, count: 0 };
@@ -1421,10 +1476,11 @@ export async function importLegislations(
           leg.norm_type = 'Outro';
         }
         
-        // Handle theme
+        // Handle theme — chave normalizada (sem acento, lowercase, trim) para
+        // evitar duplicatas "Meio Ambiente" vs "MEIO AMBIENTE" vs "meio ambiente".
         let themeId: string | null = null;
         if (leg.theme_name && options.createMissingThemes) {
-          const themeKey = leg.theme_name.toLowerCase();
+          const themeKey = normalizeText(leg.theme_name);
           if (!themeMap.has(themeKey)) {
             const { data: newTheme, error: themeError } = await supabase
               .from('legislation_themes')
@@ -1435,7 +1491,7 @@ export async function importLegislations(
               })
               .select('id')
               .single();
-            
+
             if (!themeError && newTheme) {
               themeMap.set(themeKey, newTheme.id);
               result.createdEntities.themes.push(leg.theme_name);
@@ -1443,10 +1499,10 @@ export async function importLegislations(
           }
           themeId = themeMap.get(themeKey) || null;
         } else if (leg.theme_name) {
-          themeId = themeMap.get(leg.theme_name.toLowerCase()) || null;
+          themeId = themeMap.get(normalizeText(leg.theme_name)) || null;
         }
-        
-        // Handle subtheme
+
+        // Handle subtheme — mesma estratégia de chave normalizada do tema.
         let subthemeId: string | null = null;
         if (leg.subtheme_name && themeId && options.createMissingThemes) {
           if (!subthemeMap.has(themeId)) {
@@ -1454,13 +1510,18 @@ export async function importLegislations(
               .from('legislation_subthemes')
               .select('id, name')
               .eq('theme_id', themeId);
-            
-            subthemeMap.set(themeId, new Map((existingSubthemes || []).map(s => [s.name.toLowerCase(), s.id])));
+
+            const subMap = new Map<string, string>();
+            (existingSubthemes || []).forEach(s => {
+              const k = normalizeText(s.name);
+              if (k && !subMap.has(k)) subMap.set(k, s.id);
+            });
+            subthemeMap.set(themeId, subMap);
           }
-          
+
           const themeSubthemes = subthemeMap.get(themeId)!;
-          const subthemeKey = leg.subtheme_name.toLowerCase();
-          
+          const subthemeKey = normalizeText(leg.subtheme_name);
+
           if (!themeSubthemes.has(subthemeKey)) {
             const { data: newSubtheme, error: subthemeError } = await supabase
               .from('legislation_subthemes')
@@ -1472,7 +1533,7 @@ export async function importLegislations(
               })
               .select('id')
               .single();
-            
+
             if (!subthemeError && newSubtheme) {
               themeSubthemes.set(subthemeKey, newSubtheme.id);
               result.createdEntities.subthemes.push(leg.subtheme_name);
@@ -1526,20 +1587,24 @@ export async function importLegislations(
           .limit(1)
           .maybeSingle();
 
-        // Adiciona ao mapa para que linhas subsequentes do mesmo lote que tenham
-        // tipo+número+título iguais a essa recém-inserida sejam reconciliadas.
-        // Leis distintas com mesmo número mas TÍTULO diferente não casam aqui,
-        // então cada uma vira sua própria entry — comportamento correto.
-        if (newLeg?.id && leg.norm_type && leg.norm_number) {
-          const key = matchKey(leg.norm_type, leg.norm_number);
-          const entry: ExistingEntry = {
-            id: newLeg.id,
-            title: leg.title || '',
-            titleHash: titleHash(leg.title),
-            normTypeNorm: normalizeText(leg.norm_type),
-          };
-          const list = byTypeNum.get(key);
-          if (list) list.push(entry); else byTypeNum.set(key, [entry]);
+        // Registra o ID da legislação recém-inserida como consumido no lote —
+        // assim, se a planilha tem outra linha com mesma chave canônica (mesmo
+        // tipo+número), ela NÃO vai reutilizar essa entry, virando um INSERT
+        // próprio. Também adiciona ao byTypeNum pra que uma re-importação (lote
+        // seguinte) consiga encontrar essa entry recém-criada.
+        if (newLeg?.id) {
+          consumedIds.add(newLeg.id);
+          if (leg.norm_type && leg.norm_number) {
+            const key = matchKey(leg.norm_type, leg.norm_number);
+            const entry: ExistingEntry = {
+              id: newLeg.id,
+              title: leg.title || '',
+              titleHash: titleHash(leg.title),
+              normTypeNorm: normalizeText(leg.norm_type),
+            };
+            const list = byTypeNum.get(key);
+            if (list) list.push(entry); else byTypeNum.set(key, [entry]);
+          }
         }
         
         let evidenceMessage = '';
