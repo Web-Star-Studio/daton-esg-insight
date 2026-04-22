@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Table,
   TableBody,
@@ -48,6 +49,8 @@ import {
   LegislationImportResult,
   LegislationImportProgress,
   UnitMapping,
+  ImportType,
+  IMPORT_TYPE_OPTIONS,
 } from "@/services/legislationImport";
 import { UnitMappingStep, createInitialMappings } from "./UnitMappingStep";
 
@@ -68,6 +71,7 @@ export function LegislationImportDialog({
   const { data: branches = [] } = useBranches();
   
   const [stage, setStage] = useState<ImportStage>('upload');
+  const [importType, setImportType] = useState<ImportType>('legal');
   const [parsedData, setParsedData] = useState<ParsedLegislation[]>([]);
   const [detectedUnitColumns, setDetectedUnitColumns] = useState<string[]>([]);
   const [isSimplifiedFormat, setIsSimplifiedFormat] = useState(false);
@@ -96,6 +100,7 @@ export function LegislationImportDialog({
 
   const resetState = () => {
     setStage('upload');
+    setImportType('legal');
     setParsedData([]);
     setDetectedUnitColumns([]);
     setIsSimplifiedFormat(false);
@@ -122,8 +127,8 @@ export function LegislationImportDialog({
 
     setIsProcessing(true);
     try {
-      const result = await parseLegislationExcelWithUnits(file);
-      
+      const result = await parseLegislationExcelWithUnits(file, importType);
+
       if (result.legislations.length === 0) {
         toast.error("Nenhuma legislação encontrada no arquivo");
         setIsProcessing(false);
@@ -154,7 +159,7 @@ export function LegislationImportDialog({
     } finally {
       setIsProcessing(false);
     }
-  }, [user?.company?.id, branches]);
+  }, [user?.company?.id, branches, importType]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -260,6 +265,35 @@ export function LegislationImportDialog({
           {/* Upload Stage */}
           {stage === 'upload' && (
             <div className="space-y-4">
+              {/* Seletor de tipo de planilha */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <Label className="text-sm font-medium">Tipo de planilha</Label>
+                <RadioGroup
+                  value={importType}
+                  onValueChange={(v) => setImportType(v as ImportType)}
+                  className="grid gap-2 sm:grid-cols-2"
+                  disabled={isProcessing}
+                >
+                  {IMPORT_TYPE_OPTIONS.map((opt) => (
+                    <Label
+                      key={opt.value}
+                      htmlFor={`import-type-${opt.value}`}
+                      className={`
+                        flex items-start gap-3 rounded-md border p-3 cursor-pointer
+                        transition-colors
+                        ${importType === opt.value ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}
+                      `}
+                    >
+                      <RadioGroupItem value={opt.value} id={`import-type-${opt.value}`} className="mt-1" />
+                      <div className="space-y-1">
+                        <p className="font-medium leading-none">{opt.label}</p>
+                        <p className="text-xs text-muted-foreground">{opt.description}</p>
+                      </div>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+
               <div
                 {...getRootProps()}
                 className={`

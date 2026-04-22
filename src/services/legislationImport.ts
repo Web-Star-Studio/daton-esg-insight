@@ -5,6 +5,28 @@ import { logger } from '@/utils/logger';
 
 // ============= Types =============
 
+// Tipo de planilha sendo importada. Controla defaults (jurisdição, parsing de data).
+// Extensível: futuros formatos (NR, CLT, etc.) entram como novas variantes aqui
+// sem duplicar o pipeline de import.
+export type ImportType = 'legal' | 'nbr';
+
+export const IMPORT_TYPE_OPTIONS: Array<{
+  value: ImportType;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'legal',
+    label: 'Legislações',
+    description: 'Federal, estadual ou municipal (formato Gabardo/FPLAN)',
+  },
+  {
+    value: 'nbr',
+    label: 'NBRs / ABNT',
+    description: 'Normas técnicas ABNT, NBR, ISO (data geralmente só com ano)',
+  },
+];
+
 // Unit evaluation from Excel column (POA, PIR, GO, etc.)
 export interface UnitEvaluation {
   unitCode: string;      // POA, PIR, GO, etc.
@@ -113,7 +135,7 @@ export const VALID_NORM_TYPES = [
   'Portaria MMA', 'Portaria DNIT', 'Portaria MTE', 'Portaria INMETRO',
   'Norma Regulamentadora', 'Anexo', 'Lei Ordinária', 'Súmula', 'Parecer Normativo',
   // Tipos do formato NBR/Internacional
-  'NBR ABNT', 'NBR ISO', 'NBR NM', 'ISO', 'ABNT NBR',
+  'NBR ABNT', 'NBR ISO', 'NBR NM', 'ISO', 'ABNT NBR', 'ABNT PR',
   'Decreto Supremo', 'Decreto Supremo MTC',
   'Deliberação CONTRAN', 'Resolução MERCOSUL', 'Decisão MERCOSUL',
   'Portaria COANA', 'Instrução Normativa RFB RF', 'Resolução SUSEP',
@@ -278,8 +300,21 @@ function excelSerialToIso(serial: number): string {
   return `${y}-${m}-${day}`;
 }
 
-function parseDate(dateStr: string): string {
+function parseDate(dateStr: string, opts?: { allowYearOnly?: boolean }): string {
   if (!dateStr) return '';
+
+  // Ano-solto (ex.: "2018", "2023") — usado por NBRs, que tipicamente só
+  // registram ano de publicação. Só aceita se importType autorizar, para
+  // evitar que "1988" digitado num campo de lei estadual vire 1988-01-01.
+  if (opts?.allowYearOnly) {
+    const yearMatch = dateStr.trim().match(/^(\d{4})$/);
+    if (yearMatch) {
+      const year = parseInt(yearMatch[1]);
+      if (year >= 1900 && year <= 2100) {
+        return `${year}-01-01`;
+      }
+    }
+  }
 
   // ISO yyyy-mm-dd (possivelmente com hora)
   if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
@@ -525,9 +560,17 @@ function getColumnValue(row: any, ...possibleNames: string[]): string {
 // Known unit codes from Gabardo format
 const KNOWN_UNIT_CODES = ['POA', 'PIR', 'GO', 'PREAL', 'SBC', 'SJP', 'DUC', 'IRA', 'SC', 'ES', 'CE', 'CHUÍ', 'CHUI', 'BA', 'PE', 'RJ'];
 
-// Detect unit columns. Primeiro filtra candidatos por header, depois (se houver
-// dados) valida que os valores da coluna são majoritariamente 1/2/3/x/z — isso
-// evita falsos positivos como TIPO, STATUS, FONTE que também têm header curto.
+// Detect unit columns. Primeiro filtra candidatos por header, depois valida que
+// os valores da coluna são majoritariamente 1/2/3/x/z — evita falsos positivos
+// como TIPO, STATUS, FONTE que também têm header curto.
+//
+// Regra de aceitação:
+//  - Headers que batem com um código conhecido (KNOWN_UNIT_CODES) passam direto
+//    sem exigir volume de dados. Uma norma pode não se aplicar a nenhuma filial
+//    e ainda assim a coluna precisa ser mapeada, senão perdemos a possibilidade
+//    de gravar avaliações futuras ou interpretar células "z" como "não pertinente".
+//  - Headers não conhecidos (sigla curta que casou o regex) ainda precisam passar
+//    na validação de conteúdo pra não capturarmos colunas aleatórias como unidade.
 export function detectUnitColumns(headers: string[], rows: Record<string, unknown>[] = []): string[] {
   const normalizedCodes = KNOWN_UNIT_CODES.map(c => normalizeKey(c));
   const excludedCodes = [
@@ -537,29 +580,36 @@ export function detectUnitColumns(headers: string[], rows: Record<string, unknow
     'obs', 'notas', 'area', 'orgao',
   ];
 
-  const candidates = headers.filter(h => {
+  type Candidate = { header: string; known: boolean };
+  const candidates: Candidate[] = [];
+  for (const h of headers) {
     const nk = normalizeKey(h);
     const upper = nk.toUpperCase();
-    if (excludedCodes.includes(nk)) return false;
-    if (normalizedCodes.includes(nk)) return true;
-    return upper.length <= 6 && /^[A-Z]{2,6}$/.test(upper);
-  });
-
-  if (rows.length === 0) return candidates;
-
-  // Valida por amostra de dados: ≥70% dos valores não-vazios precisam ser unit-like.
-  return candidates.filter(col => {
-    let total = 0;
-    let unitLike = 0;
-    for (const row of rows) {
-      const v = row[col];
-      if (v === undefined || v === null || v === '') continue;
-      total++;
-      const s = String(v).trim().toLowerCase();
-      if (s === '1' || s === '2' || s === '3' || s === 'x' || s === 'z') unitLike++;
+    if (excludedCodes.includes(nk)) continue;
+    if (normalizedCodes.includes(nk)) {
+      candidates.push({ header: h, known: true });
+    } else if (upper.length <= 6 && /^[A-Z]{2,6}$/.test(upper)) {
+      candidates.push({ header: h, known: false });
     }
-    return total >= 3 && unitLike / total >= 0.7;
-  });
+  }
+
+  if (rows.length === 0) return candidates.map(c => c.header);
+
+  return candidates
+    .filter(({ header, known }) => {
+      if (known) return true; // aceita sem exigir dados
+      let total = 0;
+      let unitLike = 0;
+      for (const row of rows) {
+        const v = row[header];
+        if (v === undefined || v === null || v === '') continue;
+        total++;
+        const s = String(v).trim().toLowerCase();
+        if (s === '1' || s === '2' || s === '3' || s === 'x' || s === 'z') unitLike++;
+      }
+      return total >= 3 && unitLike / total >= 0.7;
+    })
+    .map(c => c.header);
 }
 
 // Map unit value (1, 2, 3, x, z) to applicability and status.
@@ -628,7 +678,10 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
   return result.legislations;
 }
 
-export async function parseLegislationExcelWithUnits(file: File): Promise<ParseLegislationResult> {
+export async function parseLegislationExcelWithUnits(
+  file: File,
+  importType: ImportType = 'legal',
+): Promise<ParseLegislationResult> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -646,16 +699,36 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
         const headerRow = findHeaderRow(worksheet);
         logger.debug(`Header found at row: ${headerRow}`, 'import');
         
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
           raw: false,
           range: headerRow
         });
-        
+
         logger.debug(`Parsed ${jsonData.length} rows`, 'import');
-        
-        // Get headers from first data row to detect unit columns
-        const firstRow = jsonData[0] as any;
-        const headers = firstRow ? Object.keys(firstRow) : [];
+
+        // Coleta headers lendo diretamente a linha de cabeçalho da worksheet.
+        // Usar Object.keys(jsonData[0]) descarta colunas cuja primeira célula de
+        // dado é vazia — na planilha NBR, por exemplo, a linha 2 não tem POA/PIR/
+        // IRA, então essas colunas sumiriam mesmo estando no header.
+        const headers: string[] = [];
+        const wsRange = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
+        if (wsRange) {
+          for (let c = wsRange.s.c; c <= wsRange.e.c; c++) {
+            const cell = worksheet[XLSX.utils.encode_cell({ r: headerRow, c })];
+            if (cell?.v !== undefined && cell.v !== null && String(cell.v).trim() !== '') {
+              headers.push(String(cell.v));
+            }
+          }
+        }
+        // Fallback defensivo: se nada veio da worksheet (caso raro), une as chaves
+        // de todas as linhas de dados.
+        if (headers.length === 0) {
+          const unionKeys = new Set<string>();
+          for (const row of jsonData as Record<string, unknown>[]) {
+            Object.keys(row).forEach(k => unionKeys.add(k));
+          }
+          headers.push(...unionKeys);
+        }
         logger.debug(`Headers: ${headers.slice(0, 15).join(', ')}`, 'import');
         const detectedUnitColumns = detectUnitColumns(headers, jsonData as Record<string, unknown>[]);
         
@@ -721,8 +794,8 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
           }
           
           // NEW: Get title from multiple possible column names including Gabardo format
-          const title = getColumnValue(row, 
-            'Título/Ementa', 'Título', 'Titulo', 'Ementa', 
+          let title = getColumnValue(row,
+            'Título/Ementa', 'Título', 'Titulo', 'Ementa',
             'TÍTULO', 'TITULO', 'EMENTA',
             'RESUMO E TÍTULO', 'Resumo e Título', 'RESUMO E TITULO'
           );
@@ -733,19 +806,34 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
             'TEMÁTICA', 'Temática', 'TEMATICA', 'Tematica'
           );
           
-          // NEW: Get publication date from multiple possible column names
-          const publicationDate = parseDate(getColumnValue(row, 
-            'Data Publicação', 'Data de Publicação', 'Publicação', 'DATA PUBLICAÇÃO',
-            'DATA DA PUBLICAÇÃO', 'Data da Publicação', 'DATA DA PUBLICACAO'
-          ));
+          // NEW: Get publication date from multiple possible column names.
+          // NBR: permite ano-solto ("2018" → 2018-01-01), já que raramente tem
+          // dia/mês publicado.
+          const publicationDate = parseDate(
+            getColumnValue(row,
+              'Data Publicação', 'Data de Publicação', 'Publicação', 'DATA PUBLICAÇÃO',
+              'DATA DA PUBLICAÇÃO', 'Data da Publicação', 'DATA DA PUBLICACAO'
+            ),
+            { allowYearOnly: importType === 'nbr' }
+          );
           
           // NEW: Get URL from multiple possible column names including Gabardo format.
           // Se veio um domínio solto (www.foo.br...), prefixa https:// para virar
           // URL válida — comum quando o usuário cola só o domínio na planilha.
-          let fullTextUrl = getColumnValue(row,
-            'URL Texto Integral', 'URL', 'Link', 'LINK',
-            'FONTE', 'Fonte', 'URL TEXTO INTEGRAL'
-          );
+          // NBR: a coluna FONTE é ambígua — ora traz o órgão emissor ("ABNT"),
+          // ora traz uma URL. Tratamos abaixo ao montar issuing_body; aqui só
+          // a usamos como fallback de URL SE parecer URL.
+          const looksLikeUrl = (v: string) => /^(https?:\/\/|www\.)/i.test(v.trim());
+          const urlColumnNames = ['URL Texto Integral', 'URL', 'Link', 'LINK', 'URL TEXTO INTEGRAL'];
+          let fullTextUrl = getColumnValue(row, ...urlColumnNames);
+          if (!fullTextUrl) {
+            // Para formato legal, FONTE é tradicionalmente URL. Para NBR, só usa
+            // FONTE se o valor de fato se parece com URL.
+            const fonteRaw = getColumnValue(row, 'FONTE', 'Fonte');
+            if (fonteRaw && (importType !== 'nbr' || looksLikeUrl(fonteRaw))) {
+              fullTextUrl = fonteRaw;
+            }
+          }
           if (fullTextUrl) {
             const trimmed = fullTextUrl.trim();
             if (/^www\./i.test(trimmed) && !/^https?:\/\//i.test(trimmed)) {
@@ -772,16 +860,53 @@ export async function parseLegislationExcelWithUnits(file: File): Promise<ParseL
           }
           normType = normType.split(/[\r\n]+/)[0].replace(/\s+/g, ' ').trim().slice(0, 100);
 
-          // Default jurisdiction to 'federal' if not found
-          const jurisdictionFinal = jurisdiction || 'federal';
+          // NBR: quando a planilha não traz RESUMO E TÍTULO mas tem tipo+número,
+          // sintetiza título a partir do identificador (ex.: "ABNT PR 2030"). NBRs
+          // frequentemente são referenciadas apenas pelo código e preservar a
+          // linha importa — o usuário pode editar o título depois.
+          if (importType === 'nbr' && (!title || title.trim().length < 5) && normType && normNumber) {
+            title = `${normType} ${normNumber}`.trim();
+          }
+
+          // Default de jurisdição depende do tipo de import:
+          //  - 'legal' → federal (comportamento histórico; planilhas Gabardo
+          //    sem coluna Jurisdição são assumidas como federais)
+          //  - 'nbr'   → nbr (planilhas de normas técnicas não trazem coluna
+          //    Jurisdição; o próprio TIPO costuma ser "NBR ABNT"/"NBR ISO")
+          const defaultJurisdiction = importType === 'nbr' ? 'nbr' : 'federal';
+          const jurisdictionFinal = jurisdiction || defaultJurisdiction;
           
+          // NBR: FONTE é órgão emissor ("ABNT"), e se estiver vazio mas o TIPO
+          // começa com NBR/ABNT, default pra "ABNT" — preenchimento padrão da
+          // planilha técnica. Algumas linhas trazem URL em FONTE — nesse caso
+          // NÃO usamos como órgão (já foi para full_text_url acima) e caímos
+          // no default "ABNT" quando aplicável.
+          let issuingBody = getColumnValue(row, 'Órgão Emissor', 'Orgão Emissor', 'Órgão', 'ÓRGÃO EMISSOR', 'ÓRGÃO');
+          if (importType === 'nbr') {
+            if (!issuingBody) {
+              const fonteRaw = getColumnValue(row, 'FONTE', 'Fonte');
+              if (fonteRaw && !looksLikeUrl(fonteRaw)) {
+                issuingBody = fonteRaw;
+              }
+            }
+            const typeUpper = normType.toUpperCase();
+            if (!issuingBody && (typeUpper.includes('NBR') || typeUpper.includes('ABNT'))) {
+              issuingBody = 'ABNT';
+            }
+          }
+          // Hard cap VARCHAR(100) — evita estouro caso a planilha traga texto
+          // longo em "Órgão Emissor" ou FONTE que escapou do filtro de URL.
+          if (issuingBody.length > 100) {
+            issuingBody = issuingBody.slice(0, 100);
+          }
+
           return {
             rowNumber: headerRow + index + 2,
             norm_type: normType,
             norm_number: normNumber,
             title,
             summary: cleanHtmlFromText(getColumnValue(row, 'Resumo', 'RESUMO', 'Descrição', 'DESCRIÇÃO')),
-            issuing_body: getColumnValue(row, 'Órgão Emissor', 'Orgão Emissor', 'Órgão', 'ÓRGÃO EMISSOR', 'ÓRGÃO'),
+            issuing_body: issuingBody,
             publication_date: publicationDate,
             jurisdiction: jurisdictionFinal,
             state,
