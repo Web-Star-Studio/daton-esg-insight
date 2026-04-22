@@ -168,6 +168,21 @@ export const VALID_NORM_TYPES = [
 
 export const VALID_JURISDICTIONS = ['federal', 'estadual', 'municipal', 'nbr', 'internacional'];
 
+// Retorna a família de jurisdições consideradas equivalentes para efeito de
+// reconciliação/validação. Federal/estadual/municipal são tratados como uma
+// mesma família "legal" nacional (uma planilha Gabardo pode ter mix). NBR e
+// internacional são famílias isoladas — normas técnicas ou estrangeiras não
+// colidem com leis federais mesmo que TIPO+número coincidam.
+export function jurisdictionFamily(j: string | null | undefined): Set<string> {
+  const lower = (j || '').toLowerCase().trim();
+  if (['federal', 'estadual', 'municipal'].includes(lower)) {
+    return new Set(['federal', 'estadual', 'municipal']);
+  }
+  if (lower === 'nbr') return new Set(['nbr']);
+  if (lower === 'internacional') return new Set(['internacional']);
+  return new Set([lower]);
+}
+
 export const VALID_APPLICABILITIES = ['real', 'potential', 'na', 'revoked', 'pending'];
 
 export const VALID_STATUSES = ['conforme', 'para_conhecimento', 'adequacao', 'plano_acao', 'na', 'pending', 'parcial'];
@@ -959,14 +974,23 @@ export async function validateLegislations(
   legislations: ParsedLegislation[],
   companyId: string
 ): Promise<LegislationValidation[]> {
-  // Check existing legislations
+  // Busca legislações existentes pra detecção de duplicata. Inclui jurisdiction
+  // pra que o aviso de "já existe" respeite o escopo — evita warnings confusos
+  // quando a planilha internacional traz LEI/DECRETO cujo tipo+número coincide
+  // com uma federal no DB (normas distintas, não são duplicatas reais).
   const { data: existingLegislations } = await supabase
     .from('legislations')
-    .select('title, norm_number')
+    .select('title, norm_number, jurisdiction')
     .eq('company_id', companyId);
-  
+
+  // Chave de duplicata: família_jurisdição|título|número (lowercase).
+  const dupeKey = (j: string | null | undefined, t: string | null | undefined, n: string | null | undefined) => {
+    const family = [...jurisdictionFamily(j)].sort().join(',');
+    return `${family}|${(t || '').toLowerCase()}|${(n || '').toLowerCase()}`;
+  };
+
   const existingSet = new Set(
-    (existingLegislations || []).map(l => `${l.title?.toLowerCase()}|${l.norm_number?.toLowerCase()}`)
+    (existingLegislations || []).map(l => dupeKey(l.jurisdiction, l.title, l.norm_number))
   );
   
   return legislations.map(leg => {
@@ -1017,8 +1041,10 @@ export async function validateLegislations(
       warnings.push('URL do texto integral parece inválida');
     }
     
-    // Check duplicates
-    const key = `${leg.title?.toLowerCase()}|${leg.norm_number?.toLowerCase()}`;
+    // Check duplicates — escopado por família de jurisdição. Uma linha
+    // internacional com mesmo título+número de uma federal existente não
+    // dispara aviso, porque são normas distintas em jurisdições separadas.
+    const key = dupeKey(leg.jurisdiction, leg.title, leg.norm_number);
     if (existingSet.has(key)) {
       warnings.push('Legislação com mesmo título/número já existe');
     }
@@ -1149,22 +1175,10 @@ export async function importLegislations(
       jurisdiction: string;
     };
 
-    // Escopo de jurisdição permitido pro match — impede que planilhas de
-    // jurisdições diferentes colidam (ex.: DECRETO 99704 federal vs DECRETO
-    // 99704 internacional são normas distintas mesmo com tipo+número iguais).
-    //  - federal/estadual/municipal se reconciliam entre si (mesma família
-    //    "legal" nacional — uma planilha pode ter mix)
-    //  - nbr só com nbr
-    //  - internacional só com internacional
-    const jurisdictionFamily = (j: string): Set<string> => {
-      const lower = (j || '').toLowerCase();
-      if (['federal', 'estadual', 'municipal'].includes(lower)) {
-        return new Set(['federal', 'estadual', 'municipal']);
-      }
-      if (lower === 'nbr') return new Set(['nbr']);
-      if (lower === 'internacional') return new Set(['internacional']);
-      return new Set([lower]);
-    };
+    // Reusa a função `jurisdictionFamily` exportada no topo do módulo para
+    // decidir se uma entry do DB pode ser alvo de match para uma linha da
+    // planilha. Escopo: federal/estadual/municipal entre si; nbr isolado;
+    // internacional isolado.
     const canMatchJurisdiction = (
       rowJurisdiction: string,
       entryJurisdiction: string,
