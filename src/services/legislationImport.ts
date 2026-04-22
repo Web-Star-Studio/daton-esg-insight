@@ -8,7 +8,7 @@ import { logger } from '@/utils/logger';
 // Tipo de planilha sendo importada. Controla defaults (jurisdição, parsing de data).
 // Extensível: futuros formatos (NR, CLT, etc.) entram como novas variantes aqui
 // sem duplicar o pipeline de import.
-export type ImportType = 'legal' | 'nbr';
+export type ImportType = 'legal' | 'nbr' | 'internacional';
 
 export const IMPORT_TYPE_OPTIONS: Array<{
   value: ImportType;
@@ -24,6 +24,11 @@ export const IMPORT_TYPE_OPTIONS: Array<{
     value: 'nbr',
     label: 'NBRs / ABNT',
     description: 'Normas técnicas ABNT, NBR, ISO (data geralmente só com ano)',
+  },
+  {
+    value: 'internacional',
+    label: 'Internacionais',
+    description: 'MERCOSUL, UE, tratados e normas estrangeiras',
   },
 ];
 
@@ -807,30 +812,33 @@ export async function parseLegislationExcelWithUnits(
           );
           
           // NEW: Get publication date from multiple possible column names.
-          // NBR: permite ano-solto ("2018" → 2018-01-01), já que raramente tem
-          // dia/mês publicado.
+          // NBR e internacional: permitem ano-solto ("2018" → 2018-01-01), já
+          // que raramente têm dia/mês publicado — planilhas de normas técnicas
+          // e tratados/regulamentos estrangeiros costumam registrar só o ano.
+          const allowYearOnly = importType === 'nbr' || importType === 'internacional';
           const publicationDate = parseDate(
             getColumnValue(row,
               'Data Publicação', 'Data de Publicação', 'Publicação', 'DATA PUBLICAÇÃO',
               'DATA DA PUBLICAÇÃO', 'Data da Publicação', 'DATA DA PUBLICACAO'
             ),
-            { allowYearOnly: importType === 'nbr' }
+            { allowYearOnly }
           );
           
           // NEW: Get URL from multiple possible column names including Gabardo format.
           // Se veio um domínio solto (www.foo.br...), prefixa https:// para virar
           // URL válida — comum quando o usuário cola só o domínio na planilha.
-          // NBR: a coluna FONTE é ambígua — ora traz o órgão emissor ("ABNT"),
-          // ora traz uma URL. Tratamos abaixo ao montar issuing_body; aqui só
-          // a usamos como fallback de URL SE parecer URL.
+          // NBR/internacional: a coluna FONTE é ambígua — ora traz o órgão
+          // emissor ("ABNT"), ora uma URL. Tratamos abaixo ao montar
+          // issuing_body; aqui só a usamos como fallback de URL SE parecer URL.
           const looksLikeUrl = (v: string) => /^(https?:\/\/|www\.)/i.test(v.trim());
+          const routeFonteByFormat = importType === 'nbr' || importType === 'internacional';
           const urlColumnNames = ['URL Texto Integral', 'URL', 'Link', 'LINK', 'URL TEXTO INTEGRAL'];
           let fullTextUrl = getColumnValue(row, ...urlColumnNames);
           if (!fullTextUrl) {
-            // Para formato legal, FONTE é tradicionalmente URL. Para NBR, só usa
-            // FONTE se o valor de fato se parece com URL.
+            // Para formato legal, FONTE é tradicionalmente URL. Para NBR e
+            // internacional, só usa FONTE se o valor de fato se parece com URL.
             const fonteRaw = getColumnValue(row, 'FONTE', 'Fonte');
-            if (fonteRaw && (importType !== 'nbr' || looksLikeUrl(fonteRaw))) {
+            if (fonteRaw && (!routeFonteByFormat || looksLikeUrl(fonteRaw))) {
               fullTextUrl = fonteRaw;
             }
           }
@@ -873,7 +881,11 @@ export async function parseLegislationExcelWithUnits(
           //    sem coluna Jurisdição são assumidas como federais)
           //  - 'nbr'   → nbr (planilhas de normas técnicas não trazem coluna
           //    Jurisdição; o próprio TIPO costuma ser "NBR ABNT"/"NBR ISO")
-          const defaultJurisdiction = importType === 'nbr' ? 'nbr' : 'federal';
+          //  - 'internacional' → internacional (tratados, MERCOSUL, UE etc.)
+          const defaultJurisdiction =
+            importType === 'nbr' ? 'nbr' :
+            importType === 'internacional' ? 'internacional' :
+            'federal';
           const jurisdictionFinal = jurisdiction || defaultJurisdiction;
           
           // NBR: FONTE é órgão emissor ("ABNT"), e se estiver vazio mas o TIPO
