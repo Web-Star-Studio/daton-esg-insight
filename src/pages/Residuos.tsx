@@ -2,7 +2,6 @@ import { useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -43,6 +42,7 @@ import { PGRSGoalsProgressChart } from "@/components/PGRSGoalsProgressChart"
 import { useBranches } from "@/services/branches"
 import { getActivePGRSStatus, getActivePGRSPlan } from "@/services/pgrsReports"
 import { getBranchDisplayLabel } from "@/utils/branchDisplay"
+import { WasteFilters, INITIAL_WASTE_FILTERS, type WasteFilterState } from "@/components/waste/WasteFilters"
 import * as XLSX from "xlsx"
 
 const CRITICAL_PROGRESS_FIELDS = [
@@ -151,7 +151,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const [selectedBranchId, setSelectedBranchId] = useState<string>("all")
+  const [filters, setFilters] = useState<WasteFilterState>(INITIAL_WASTE_FILTERS)
   const [statusFilter, setStatusFilter] = useState<"pendentes" | "concluidos" | "all">("pendentes")
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const { toast } = useToast()
@@ -172,12 +172,24 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
   })
   const branchLabelById = new Map(branches.map((branch) => [branch.id, getBranchDisplayLabel(branch)]))
 
-  const effectiveBranchId = lockedBranchId ?? (selectedBranchId === "all" ? undefined : selectedBranchId)
+  const effectiveBranchId = lockedBranchId ?? (filters.branchId || undefined)
+
+  const wasteQueryFilters = {
+    branch_id: effectiveBranchId,
+    start_date: filters.startDate || undefined,
+    end_date: filters.endDate || undefined,
+    waste_description: filters.wasteDescription || undefined,
+    waste_class: filters.wasteClass || undefined,
+    destination_name: filters.destinationName || undefined,
+    transporter_name: filters.transporterName || undefined,
+    storage_type: filters.storageType || undefined,
+    search: filters.search.trim() || undefined,
+  }
 
   // Fetch waste logs
   const { data: wasteLogs = [], isLoading: isLoadingLogs, error: logsError } = useQuery({
-    queryKey: ['waste-logs', effectiveBranchId ?? "all"],
-    queryFn: () => getWasteLogs({ branch_id: effectiveBranchId }),
+    queryKey: ['waste-logs', wasteQueryFilters],
+    queryFn: () => getWasteLogs(wasteQueryFilters),
   })
   const concluidosCount = useMemo(() => wasteLogs.filter((l) => l.status === "Destinação Finalizada").length, [wasteLogs])
   const pendentesCount = useMemo(() => wasteLogs.filter((l) => l.status !== "Destinação Finalizada").length, [wasteLogs])
@@ -516,24 +528,15 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
               </Badge>
             </Button>
           </div>
-          {!lockedBranchId && (
-            <div className="w-full sm:w-[320px]">
-              <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filtrar por filial" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as filiais</SelectItem>
-                  {branches.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {getBranchDisplayLabel(branch)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
         </div>
+
+        {/* Filtros */}
+        <WasteFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          onClearFilters={() => setFilters(INITIAL_WASTE_FILTERS)}
+          lockedBranchId={lockedBranchId}
+        />
 
         {/* Tabela de Movimentações de Resíduos (MTR) */}
         <Card className="shadow-card">
