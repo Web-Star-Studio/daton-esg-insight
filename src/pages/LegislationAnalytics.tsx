@@ -21,6 +21,7 @@ import { DataQualityBanner } from "@/components/legislation/DataQualityBanner";
 import { BranchDrillDrawer } from "@/components/legislation/BranchDrillDrawer";
 
 const JURISDICTIONS: Array<{ value: string; label: string }> = [
+  { value: "corporativo", label: "Corporativo" },
   { value: "federal", label: "Federal" },
   { value: "estadual", label: "Estadual" },
   { value: "municipal", label: "Municipal" },
@@ -30,7 +31,7 @@ const JURISDICTIONS: Array<{ value: string; label: string }> = [
 
 const LegislationAnalytics: React.FC = () => {
   const navigate = useNavigate();
-  const [jurisdiction, setJurisdiction] = useState<string>("federal");
+  const [jurisdiction, setJurisdiction] = useState<string>("corporativo");
   const [drillBranchId, setDrillBranchId] = useState<string | null>(null);
   const { data, isLoading, error } = useBranchComplianceStats(jurisdiction);
 
@@ -73,9 +74,9 @@ const LegislationAnalytics: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Jurisdição:</span>
+          <span className="text-sm text-muted-foreground">Visão:</span>
           <Select value={jurisdiction} onValueChange={setJurisdiction}>
-            <SelectTrigger className="w-[170px]">
+            <SelectTrigger className="w-[200px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

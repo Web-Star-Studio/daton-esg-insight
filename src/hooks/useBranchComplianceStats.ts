@@ -398,7 +398,7 @@ const aggregate = (
   };
 };
 
-export const useBranchComplianceStats = (jurisdiction: string = 'federal') => {
+export const useBranchComplianceStats = (jurisdiction: string = 'corporativo') => {
   const { selectedCompany } = useCompany();
   const companyId = selectedCompany?.id;
 
@@ -413,17 +413,23 @@ export const useBranchComplianceStats = (jurisdiction: string = 'federal') => {
         .eq('company_id', companyId!);
       if (branchErr) throw branchErr;
 
+      // Modo "corporativo" agrega todas as jurisdições (visão geral da empresa)
+      const isCorporate = jurisdiction === 'corporativo';
+
       // Pagina legislations também — empresas grandes podem ter > 1000 entries
       // e o limite default do Supabase truncava silenciosamente.
       const LEG_PAGE = 1000;
       const legRows: LegislationRow[] = [];
       for (let off = 0; ; off += LEG_PAGE) {
-        const { data: legislations, error: legErr } = await supabase
+        let legQuery = supabase
           .from('legislations')
           .select('id, norm_type, norm_number, title, publication_date')
           .eq('company_id', companyId!)
-          .eq('jurisdiction', jurisdiction)
           .range(off, off + LEG_PAGE - 1);
+        if (!isCorporate) {
+          legQuery = legQuery.eq('jurisdiction', jurisdiction);
+        }
+        const { data: legislations, error: legErr } = await legQuery;
         if (legErr) throw legErr;
         if (!legislations || legislations.length === 0) break;
         legRows.push(...(legislations as LegislationRow[]));
