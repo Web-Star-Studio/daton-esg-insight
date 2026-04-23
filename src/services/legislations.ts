@@ -161,23 +161,35 @@ export const createLegislationSubtheme = async (subtheme: Partial<LegislationSub
 
 // Legislations CRUD
 export const fetchLegislations = async (
-  companyId: string, 
+  companyId: string,
   filters?: {
     jurisdiction?: string;
     themeId?: string;
     subthemeId?: string;
+    normType?: string;
+    branchId?: string;
+    publicationDateFrom?: string;
+    publicationDateTo?: string;
     applicability?: string;
     status?: string;
     search?: string;
+    responsibleUserId?: string;
   }
 ): Promise<Legislation[]> => {
+  // Base relation: inner-joins legislation_unit_compliance only when filtering by branch,
+  // so legislations without a compliance row keep appearing for the other filters.
+  const complianceRelation = filters?.branchId
+    ? 'legislation_unit_compliance!inner(branch_id, applicability)'
+    : '';
+
   let query = supabase
     .from('legislations')
     .select(`
       *,
       theme:legislation_themes(*),
       subtheme:legislation_subthemes(*),
-      responsible_user:profiles!legislations_responsible_user_id_fkey(id, full_name)
+      responsible_user:profiles!legislations_responsible_user_id_fkey(id, full_name)${complianceRelation ? `,
+      ${complianceRelation}` : ''}
     `)
     .eq('company_id', companyId)
     .eq('is_active', true);
@@ -191,11 +203,28 @@ export const fetchLegislations = async (
   if (filters?.subthemeId) {
     query = query.eq('subtheme_id', filters.subthemeId);
   }
+  if (filters?.normType) {
+    query = query.eq('norm_type', filters.normType);
+  }
+  if (filters?.publicationDateFrom) {
+    query = query.gte('publication_date', filters.publicationDateFrom);
+  }
+  if (filters?.publicationDateTo) {
+    query = query.lte('publication_date', filters.publicationDateTo);
+  }
+  if (filters?.branchId) {
+    query = query
+      .eq('legislation_unit_compliance.branch_id', filters.branchId)
+      .in('legislation_unit_compliance.applicability', ['real', 'potential']);
+  }
   if (filters?.applicability) {
     query = query.eq('overall_applicability', filters.applicability);
   }
   if (filters?.status) {
     query = query.eq('overall_status', filters.status);
+  }
+  if (filters?.responsibleUserId) {
+    query = query.eq('responsible_user_id', filters.responsibleUserId);
   }
   if (filters?.search) {
     query = query.or(`title.ilike.%${filters.search}%,norm_number.ilike.%${filters.search}%,summary.ilike.%${filters.search}%`);
@@ -205,6 +234,24 @@ export const fetchLegislations = async (
 
   if (error) throw error;
   return (data || []) as unknown as Legislation[];
+};
+
+export const fetchDistinctNormTypes = async (companyId: string): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('legislations')
+    .select('norm_type')
+    .eq('company_id', companyId)
+    .eq('is_active', true)
+    .not('norm_type', 'is', null);
+
+  if (error) throw error;
+
+  const set = new Set<string>();
+  (data || []).forEach((row: { norm_type: string | null }) => {
+    const value = row.norm_type?.trim();
+    if (value) set.add(value);
+  });
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 };
 
 export const fetchLegislationById = async (id: string): Promise<Legislation | null> => {

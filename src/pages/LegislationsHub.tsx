@@ -20,8 +20,14 @@ const LegislationsHub: React.FC = () => {
     search: "",
     jurisdiction: "",
     themeId: "",
+    subthemeId: "",
+    normType: "",
+    branchId: "",
+    publicationDateFrom: "",
+    publicationDateTo: "",
     applicability: "",
     status: "",
+    responsibleUserId: "",
   });
 
   // Combine tab filter with other filters
@@ -37,8 +43,14 @@ const LegislationsHub: React.FC = () => {
       search: "",
       jurisdiction: "",
       themeId: "",
+      subthemeId: "",
+      normType: "",
+      branchId: "",
+      publicationDateFrom: "",
+      publicationDateTo: "",
       applicability: "",
       status: "",
+      responsibleUserId: "",
     });
   };
 

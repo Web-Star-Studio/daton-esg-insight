@@ -18,6 +18,7 @@ import {
   createLegislationEvidence,
   deleteLegislationEvidence,
   fetchLegislationStats,
+  fetchDistinctNormTypes,
   Legislation,
   LegislationTheme,
   LegislationSubtheme,
@@ -29,9 +30,14 @@ export const useLegislations = (filters?: {
   jurisdiction?: string;
   themeId?: string;
   subthemeId?: string;
+  normType?: string;
+  branchId?: string;
+  publicationDateFrom?: string;
+  publicationDateTo?: string;
   applicability?: string;
   status?: string;
   search?: string;
+  responsibleUserId?: string;
 }) => {
   const { selectedCompany: currentCompany } = useCompany();
   const queryClient = useQueryClient();
@@ -264,4 +270,20 @@ export const useLegislationStats = () => {
     queryFn: () => fetchLegislationStats(currentCompany!.id),
     enabled: !!currentCompany?.id,
   });
+};
+
+export const useLegislationNormTypes = () => {
+  const { selectedCompany: currentCompany } = useCompany();
+
+  const query = useQuery({
+    queryKey: ['legislation-norm-types', currentCompany?.id],
+    queryFn: () => fetchDistinctNormTypes(currentCompany!.id),
+    enabled: !!currentCompany?.id,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  return {
+    normTypes: query.data || [],
+    isLoading: query.isLoading,
+  };
 };
