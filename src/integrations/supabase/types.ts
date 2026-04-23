@@ -15077,6 +15077,42 @@ export type Database = {
           },
         ]
       }
+      legislation_favorites: {
+        Row: {
+          company_id: string
+          created_at: string
+          legislation_id: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          legislation_id: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          legislation_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legislation_favorites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_favorites_legislation_id_fkey"
+            columns: ["legislation_id"]
+            isOneToOne: false
+            referencedRelation: "legislations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legislation_history: {
         Row: {
           action: string
