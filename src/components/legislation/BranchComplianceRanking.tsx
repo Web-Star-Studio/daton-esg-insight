@@ -63,6 +63,34 @@ interface TooltipPayloadEntry {
   payload: ChartDatum;
 }
 
+// Tick do YAxis que quebra labels com hífen em 2 linhas (ex.: "GO-CARREGAMENTO"
+// vira "GO" + "CARREGAMENTO") pra evitar que o tracinho "coma" o descendente do 'g'.
+const BranchYAxisTick = (props: any) => {
+  const { x, y, payload } = props;
+  const value = String(payload?.value ?? '');
+  const dashIdx = value.indexOf('-');
+  const color = "hsl(var(--muted-foreground))";
+  if (dashIdx === -1) {
+    return (
+      <text x={x} y={y} dy=".355em" textAnchor="end" fontSize={12} fill={color}>
+        {value}
+      </text>
+    );
+  }
+  const head = value.slice(0, dashIdx);
+  const tail = value.slice(dashIdx + 1);
+  return (
+    <g>
+      <text x={x} y={y} dy="-0.25em" textAnchor="end" fontSize={12} fontWeight={500} fill={color}>
+        {head}
+      </text>
+      <text x={x} y={y} dy="0.95em" textAnchor="end" fontSize={10.5} fill={color}>
+        {tail}
+      </text>
+    </g>
+  );
+};
+
 const CustomTooltip: React.FC<{ active?: boolean; payload?: TooltipPayloadEntry[] }> = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
@@ -178,7 +206,7 @@ export const BranchComplianceRanking: React.FC<Props> = ({
               <YAxis
                 type="category"
                 dataKey="label"
-                tick={{ fontSize: 12 }}
+                tick={<BranchYAxisTick />}
                 width={110}
                 stroke="hsl(var(--muted-foreground))"
               />
