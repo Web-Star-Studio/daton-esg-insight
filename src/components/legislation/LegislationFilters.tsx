@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Search, X, SlidersHorizontal, ChevronDown, Star } from "lucide-react";
 import {
   useLegislationThemes,
   useLegislationSubthemes,
@@ -29,6 +29,7 @@ interface LegislationFiltersProps {
     applicability: string;
     status: string;
     responsibleUserId?: string;
+    onlyFavorites?: boolean;
   };
   onFiltersChange: (filters: any) => void;
   onClearFilters: () => void;
@@ -83,7 +84,11 @@ export const LegislationFilters: React.FC<LegislationFiltersProps> = ({
     enabled: !!selectedCompany?.id,
   });
 
-  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 'all' && v !== undefined);
+  const hasActiveFilters = Object.values(filters).some(v => {
+    if (v === '' || v === 'all' || v === undefined || v === null) return false;
+    if (typeof v === 'boolean') return v === true;
+    return true;
+  });
   const advancedActiveCount = ADVANCED_KEYS.reduce((acc, key) => {
     const v = filters[key];
     return v && v !== 'all' ? acc + 1 : acc;
@@ -171,6 +176,20 @@ export const LegislationFilters: React.FC<LegislationFiltersProps> = ({
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Só favoritos */}
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs text-muted-foreground opacity-0 hidden sm:block">.</Label>
+          <Button
+            variant={filters.onlyFavorites ? "default" : "outline"}
+            className="h-10 gap-2"
+            onClick={() => onFiltersChange({ ...filters, onlyFavorites: !filters.onlyFavorites })}
+            aria-pressed={!!filters.onlyFavorites}
+          >
+            <Star className={`h-4 w-4 ${filters.onlyFavorites ? 'fill-current' : ''}`} />
+            Favoritos
+          </Button>
         </div>
 
         {/* Trigger do painel avançado */}

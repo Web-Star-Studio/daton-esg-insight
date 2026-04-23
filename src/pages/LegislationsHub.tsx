@@ -10,7 +10,7 @@ import { LegislationKPIs } from "@/components/legislation/LegislationKPIs";
 import { LegislationDashboardCharts } from "@/components/legislation/LegislationDashboardCharts";
 import { LegislationFilters } from "@/components/legislation/LegislationFilters";
 import { LegislationList } from "@/components/legislation/LegislationList";
-import { useLegislations } from "@/hooks/data/useLegislations";
+import { useLegislations, useLegislationFavorites } from "@/hooks/data/useLegislations";
 
 const LegislationsHub: React.FC = () => {
   const navigate = useNavigate();
@@ -28,15 +28,23 @@ const LegislationsHub: React.FC = () => {
     applicability: "",
     status: "",
     responsibleUserId: "",
+    onlyFavorites: false,
   });
 
   // Combine tab filter with other filters
+  // onlyFavorites é client-side — não entra na query do servidor
+  const { onlyFavorites, ...serverFilters } = filters;
   const effectiveFilters = {
-    ...filters,
-    jurisdiction: activeTab !== "all" ? activeTab : filters.jurisdiction,
+    ...serverFilters,
+    jurisdiction: activeTab !== "all" ? activeTab : serverFilters.jurisdiction,
   };
 
   const { legislations, isLoading, deleteLegislation, refetch } = useLegislations(effectiveFilters);
+  const { isFavorite } = useLegislationFavorites();
+
+  const displayedLegislations = onlyFavorites
+    ? legislations.filter((l) => isFavorite(l.id))
+    : legislations;
 
   const handleClearFilters = () => {
     setFilters({
@@ -51,6 +59,7 @@ const LegislationsHub: React.FC = () => {
       applicability: "",
       status: "",
       responsibleUserId: "",
+      onlyFavorites: false,
     });
   };
 
@@ -164,7 +173,7 @@ const LegislationsHub: React.FC = () => {
             {/* Content */}
             <TabsContent value={activeTab} className="mt-4">
               <LegislationList
-                legislations={legislations}
+                legislations={displayedLegislations}
                 isLoading={isLoading}
                 onDelete={deleteLegislation}
               />

@@ -9,13 +9,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { 
-  MoreHorizontal, 
-  Eye, 
-  Pencil, 
+import {
+  MoreHorizontal,
+  Eye,
+  Pencil,
   Trash2,
-  ExternalLink 
+  ExternalLink,
+  Star,
 } from "lucide-react";
+import { useLegislationFavorites } from "@/hooks/data/useLegislations";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +54,14 @@ export const LegislationList: React.FC<LegislationListProps> = ({
 }) => {
   const navigate = useNavigate();
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const { isFavorite, toggleFavorite } = useLegislationFavorites();
+
+  // Favoritos pinados no topo, preservando a ordem original dentro de cada grupo.
+  const sortedLegislations = React.useMemo(() => {
+    const favs = legislations.filter((l) => isFavorite(l.id));
+    const rest = legislations.filter((l) => !isFavorite(l.id));
+    return [...favs, ...rest];
+  }, [legislations, isFavorite]);
 
   if (isLoading) {
     return (
@@ -88,6 +98,7 @@ export const LegislationList: React.FC<LegislationListProps> = ({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[40px]"></TableHead>
               <TableHead className="w-[120px]">Tipo/Número</TableHead>
               <TableHead className="w-[100px]">Data</TableHead>
               <TableHead>Ementa</TableHead>
@@ -98,12 +109,28 @@ export const LegislationList: React.FC<LegislationListProps> = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {legislations.map((legislation) => (
-              <TableRow 
+            {sortedLegislations.map((legislation) => {
+              const favorite = isFavorite(legislation.id);
+              return (
+              <TableRow
                 key={legislation.id}
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => navigate(`/licenciamento/legislacoes/${legislation.id}`)}
               >
+                <TableCell onClick={(e) => e.stopPropagation()} className="pr-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => toggleFavorite(legislation.id)}
+                    aria-label={favorite ? "Remover dos favoritos" : "Marcar como favorito"}
+                    title={favorite ? "Remover dos favoritos" : "Marcar como favorito"}
+                  >
+                    <Star
+                      className={`h-4 w-4 ${favorite ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground'}`}
+                    />
+                  </Button>
+                </TableCell>
                 <TableCell className="font-medium">
                   <div className="text-sm">
                     {legislation.norm_type}
@@ -185,7 +212,8 @@ export const LegislationList: React.FC<LegislationListProps> = ({
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>

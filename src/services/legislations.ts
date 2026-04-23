@@ -439,6 +439,43 @@ export const fetchLegislationStats = async (companyId: string) => {
   return stats;
 };
 
+// Favoritos individuais (por usuário). Tabela ainda não aparece em
+// supabase/types.ts até o regen dos tipos, então usamos cast `as any` nas chamadas.
+export const fetchLegislationFavorites = async (userId: string): Promise<string[]> => {
+  const { data, error } = await (supabase as any)
+    .from('legislation_favorites')
+    .select('legislation_id')
+    .eq('user_id', userId);
+
+  if (error) throw error;
+  return (data || []).map((row: { legislation_id: string }) => row.legislation_id);
+};
+
+export const addLegislationFavorite = async (
+  userId: string,
+  legislationId: string,
+  companyId: string,
+): Promise<void> => {
+  const { error } = await (supabase as any)
+    .from('legislation_favorites')
+    .insert([{ user_id: userId, legislation_id: legislationId, company_id: companyId }]);
+
+  if (error && error.code !== '23505') throw error; // ignora duplicate
+};
+
+export const removeLegislationFavorite = async (
+  userId: string,
+  legislationId: string,
+): Promise<void> => {
+  const { error } = await (supabase as any)
+    .from('legislation_favorites')
+    .delete()
+    .eq('user_id', userId)
+    .eq('legislation_id', legislationId);
+
+  if (error) throw error;
+};
+
 // Default themes for new companies
 export const NORM_TYPES = [
   'Lei',

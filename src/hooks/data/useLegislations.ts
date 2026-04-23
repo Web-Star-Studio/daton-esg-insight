@@ -19,12 +19,16 @@ import {
   deleteLegislationEvidence,
   fetchLegislationStats,
   fetchDistinctNormTypes,
+  fetchLegislationFavorites,
+  addLegislationFavorite,
+  removeLegislationFavorite,
   Legislation,
   LegislationTheme,
   LegislationSubtheme,
   LegislationUnitCompliance,
   LegislationEvidence,
 } from "@/services/legislations";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useLegislations = (filters?: {
   jurisdiction?: string;
@@ -285,5 +289,60 @@ export const useLegislationNormTypes = () => {
   return {
     normTypes: query.data || [],
     isLoading: query.isLoading,
+  };
+};
+
+export const useLegislationFavorites = () => {
+  const { user } = useAuth();
+  const { selectedCompany } = useCompany();
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ['legislation-favorites', user?.id],
+    queryFn: () => fetchLegislationFavorites(user!.id),
+    enabled: !!user?.id,
+    staleTime: 1000 * 60,
+  });
+
+  const favoriteSet = new Set(query.data || []);
+
+  const toggleMutation = useMutation({
+    mutationFn: async (legislationId: string) => {
+      if (!user?.id || !selectedCompany?.id) {
+        throw new Error("Sem usuário ou empresa selecionada");
+      }
+      if (favoriteSet.has(legislationId)) {
+        await removeLegislationFavorite(user.id, legislationId);
+        return { legislationId, added: false };
+      }
+      await addLegislationFavorite(user.id, legislationId, selectedCompany.id);
+      return { legislationId, added: true };
+    },
+    // Otimístico: atualiza a lista local antes do round-trip voltar.
+    onMutate: async (legislationId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['legislation-favorites', user?.id] });
+      const prev = queryClient.getQueryData<string[]>(['legislation-favorites', user?.id]) || [];
+      const next = prev.includes(legislationId)
+        ? prev.filter((id) => id !== legislationId)
+        : [...prev, legislationId];
+      queryClient.setQueryData(['legislation-favorites', user?.id], next);
+      return { prev };
+    },
+    onError: (error: Error, _vars, context) => {
+      if (context?.prev) {
+        queryClient.setQueryData(['legislation-favorites', user?.id], context.prev);
+      }
+      toast.error("Não foi possível atualizar favorito: " + error.message);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['legislation-favorites', user?.id] });
+    },
+  });
+
+  return {
+    favoriteIds: query.data || [],
+    isFavorite: (legislationId: string) => favoriteSet.has(legislationId),
+    toggleFavorite: toggleMutation.mutate,
+    isToggling: toggleMutation.isPending,
   };
 };
