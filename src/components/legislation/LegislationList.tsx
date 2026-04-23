@@ -108,7 +108,7 @@ export const LegislationList: React.FC<LegislationListProps> = ({
                   <div className="text-sm">
                     {legislation.norm_type}
                     {legislation.norm_number && (
-                      <span className="block text-muted-foreground text-xs">
+                      <span className="block text-muted-foreground text-base">
                         nº {legislation.norm_number}
                       </span>
                     )}
