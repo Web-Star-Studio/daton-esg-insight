@@ -439,16 +439,15 @@ export const fetchLegislationStats = async (companyId: string) => {
   return stats;
 };
 
-// Favoritos individuais (por usuário). Tabela ainda não aparece em
-// supabase/types.ts até o regen dos tipos, então usamos cast `as any` nas chamadas.
+// Favoritos individuais (por usuário).
 export const fetchLegislationFavorites = async (userId: string): Promise<string[]> => {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('legislation_favorites')
     .select('legislation_id')
     .eq('user_id', userId);
 
   if (error) throw error;
-  return (data || []).map((row: { legislation_id: string }) => row.legislation_id);
+  return (data || []).map((row) => row.legislation_id);
 };
 
 export const addLegislationFavorite = async (
@@ -456,7 +455,7 @@ export const addLegislationFavorite = async (
   legislationId: string,
   companyId: string,
 ): Promise<void> => {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('legislation_favorites')
     .insert([{ user_id: userId, legislation_id: legislationId, company_id: companyId }]);
 
@@ -467,7 +466,7 @@ export const removeLegislationFavorite = async (
   userId: string,
   legislationId: string,
 ): Promise<void> => {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('legislation_favorites')
     .delete()
     .eq('user_id', userId)
