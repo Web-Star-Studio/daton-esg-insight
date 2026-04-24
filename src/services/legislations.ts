@@ -227,7 +227,31 @@ export const fetchLegislations = async (
     query = query.eq('responsible_user_id', filters.responsibleUserId);
   }
   if (filters?.search) {
-    query = query.or(`title.ilike.%${filters.search}%,norm_number.ilike.%${filters.search}%,summary.ilike.%${filters.search}%`);
+    // Remove chars que quebram a sintaxe do .or() do PostgREST (vírgula, parênteses, backslash).
+    const safeTerm = filters.search.replace(/[,()\\]/g, ' ').trim();
+    if (safeTerm) {
+      // Também procura no conteúdo das evidências: pega primeiro os legislation_id
+      // cuja description bata com o termo e adiciona um `id.in.(...)` ao OR.
+      const { data: evidenceMatches } = await supabase
+        .from('legislation_evidences')
+        .select('legislation_id')
+        .eq('company_id', companyId)
+        .ilike('description', `%${safeTerm}%`);
+
+      const evidenceLegislationIds = Array.from(
+        new Set((evidenceMatches || []).map((e) => e.legislation_id))
+      );
+
+      const orParts = [
+        `title.ilike.%${safeTerm}%`,
+        `norm_number.ilike.%${safeTerm}%`,
+        `summary.ilike.%${safeTerm}%`,
+      ];
+      if (evidenceLegislationIds.length > 0) {
+        orParts.push(`id.in.(${evidenceLegislationIds.join(',')})`);
+      }
+      query = query.or(orParts.join(','));
+    }
   }
 
   const { data, error } = await query.order('created_at', { ascending: false });
