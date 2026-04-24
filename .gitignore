@@ -26,10 +26,24 @@ playwright-report/
 test-results/
 blob-report/
 .env
+.env.*
+!.env.example
 
-#arquivos 
+#arquivos
 .claude
 /tmp
 .agent
+.agents/
 *.pdf
 *.Identifier
+
+# Guias PDF locais (reportlab + playwright) — geração offline, não vai pra prod
+docs/pdfs/
+
+# Exports de debug/validação — planilhas e CSVs/JSON de sessões de diagnóstico
+fike_*.csv
+fike_*.md
+gabardo_*.csv
+gabardo_*.json
+gabardo_*.md
+*.xlsx

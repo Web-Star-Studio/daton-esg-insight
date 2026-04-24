@@ -223,6 +223,9 @@ export function TrainingHoursExportModal({ open, onOpenChange }: TrainingHoursEx
           {/* Date Range */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Período (opcional)</Label>
+            <p className="text-xs text-muted-foreground">
+              Filtra pela <span className="font-medium">data de término do programa</span>. O cálculo considera participações em <span className="font-medium">programas marcados como Concluído</span>.
+            </p>
             <div className="flex flex-wrap gap-3">
               <Popover>
                 <PopoverTrigger asChild>
@@ -273,15 +276,25 @@ export function TrainingHoursExportModal({ open, onOpenChange }: TrainingHoursEx
 
           {/* Preview */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Preview</Label>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label className="text-sm font-medium">
+                Preview
+                {previewData && previewData.rows.length > 0 && (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    (mostrando {Math.min(previewData.rows.length, 10)} de {previewData.rows.length} linha{previewData.rows.length === 1 ? '' : 's'})
+                  </span>
+                )}
+              </Label>
               {previewData?.summary && (
                 <span className="text-xs text-muted-foreground">
                   {previewData.summary.totalHours}h totais • {previewData.summary.totalEmployees} funcionários • {previewData.summary.avgHours}h média
+                  {(dateFrom || dateTo) && (
+                    <> • Período: {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "início"}–{dateTo ? format(dateTo, "dd/MM/yyyy") : "hoje"}</>
+                  )}
                 </span>
               )}
             </div>
-            <div className="border rounded-lg overflow-hidden max-h-[200px] overflow-y-auto">
+            <div className="border rounded-lg overflow-hidden max-h-[280px] overflow-y-auto">
               {isLoading ? (
                 <div className="p-4 space-y-2">
                   <Skeleton className="h-8 w-full" />
@@ -298,17 +311,17 @@ export function TrainingHoursExportModal({ open, onOpenChange }: TrainingHoursEx
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {previewData.rows.slice(0, 5).map((row, i) => (
+                    {previewData.rows.slice(0, 10).map((row, i) => (
                       <TableRow key={i}>
                         {row.map((cell, j) => (
                           <TableCell key={j} className="text-xs py-2">{cell}</TableCell>
                         ))}
                       </TableRow>
                     ))}
-                    {previewData.rows.length > 5 && (
+                    {previewData.rows.length > 10 && (
                       <TableRow>
-                        <TableCell colSpan={previewData.headers.length} className="text-center text-xs text-muted-foreground py-2">
-                          ... e mais {previewData.rows.length - 5} registros (total no arquivo exportado)
+                        <TableCell colSpan={previewData.headers.length} className="text-center text-xs font-medium text-muted-foreground py-2 bg-muted/40">
+                          ... e mais {previewData.rows.length - 10} registro{previewData.rows.length - 10 === 1 ? '' : 's'} — o arquivo exportado contém todos os {previewData.rows.length}
                         </TableCell>
                       </TableRow>
                     )}
@@ -321,9 +334,14 @@ export function TrainingHoursExportModal({ open, onOpenChange }: TrainingHoursEx
               )}
             </div>
             {previewData?.criteria && previewData.criteria.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Critérios incluídos no arquivo exportado: {previewData.criteria.length} item{previewData.criteria.length > 1 ? 's' : ''}
-              </p>
+              <div className="rounded-md border bg-muted/30 p-3 space-y-1">
+                <p className="text-xs font-medium">Critérios aplicados neste cálculo</p>
+                <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-0.5">
+                  {previewData.criteria.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         </div>

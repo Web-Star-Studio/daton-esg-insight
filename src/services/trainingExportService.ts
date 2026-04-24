@@ -62,12 +62,18 @@ const normalizeExportData = (data: unknown): ExportData => {
 };
 
 export interface FilterOptions {
-  branches: { id: string; label: string }[];
+  branches: { id: string; label: string; isActive: boolean }[];
   departments: string[];
   positions: string[];
-  employees: { id: string; full_name: string }[];
+  employees: { id: string; full_name: string; isActive: boolean }[];
   trainingPrograms: { id: string; name: string }[];
 }
+
+const isActiveStatus = (status: string | null | undefined): boolean => {
+  if (!status) return true;
+  const normalized = status.trim().toLowerCase();
+  return normalized === 'ativo' || normalized === 'ativa';
+};
 
 export const getTrainingFilterOptions = async (): Promise<FilterOptions> => {
   if (isDemoRuntimeEnabled()) {
@@ -80,21 +86,20 @@ export const getTrainingFilterOptions = async (): Promise<FilterOptions> => {
     };
   }
 
-  const [branchesRes, employees, programs] = await Promise.all([
-    supabase.from('branches').select('id, name, code, status').order('name'),
-    fetchAll<{ id: string; full_name: string; department: string | null; position: string | null }>(
+  const [branches, employees, programs] = await Promise.all([
+    fetchAll<{ id: string; name: string; code: string | null; status: string | null }>(
+      () => supabase.from('branches').select('id, name, code, status').order('name')
+    ),
+    fetchAll<{ id: string; full_name: string; department: string | null; position: string | null; status: string | null }>(
       () => supabase
         .from('employees')
-        .select('id, full_name, department, position')
-        .eq('status', 'Ativo')
+        .select('id, full_name, department, position, status')
         .order('full_name')
     ),
     fetchAll<{ id: string; name: string }>(
       () => supabase.from('training_programs').select('id, name').order('name')
     ),
   ]);
-
-  if (branchesRes.error) throw branchesRes.error;
 
   const departments = Array.from(
     new Set(employees.map(e => e.department).filter((d): d is string => !!d && d.trim() !== ''))
@@ -104,13 +109,32 @@ export const getTrainingFilterOptions = async (): Promise<FilterOptions> => {
     new Set(employees.map(e => e.position).filter((p): p is string => !!p && p.trim() !== ''))
   ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
+  const branchOptions = branches.map(b => {
+    const active = isActiveStatus(b.status);
+    const base = b.code ? `${b.code} - ${b.name}` : b.name;
+    return { id: b.id, label: active ? base : `${base} (Inativa)`, isActive: active };
+  }).sort((a, b) => {
+    if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+    return a.label.localeCompare(b.label, 'pt-BR');
+  });
+
+  const employeeOptions = employees.map(e => {
+    const active = isActiveStatus(e.status);
+    return {
+      id: e.id,
+      full_name: active ? e.full_name : `${e.full_name} (Inativo)`,
+      isActive: active,
+    };
+  }).sort((a, b) => {
+    if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+    return a.full_name.localeCompare(b.full_name, 'pt-BR');
+  });
+
   return {
-    branches: (branchesRes.data || [])
-      .filter(b => b.status === 'Ativo' || b.status === 'Ativa')
-      .map(b => ({ id: b.id, label: b.code ? `${b.code} - ${b.name}` : b.name })),
+    branches: branchOptions,
     departments,
     positions,
-    employees: employees.map(e => ({ id: e.id, full_name: e.full_name })),
+    employees: employeeOptions,
     trainingPrograms: programs,
   };
 };
@@ -119,10 +143,13 @@ const buildCriteria = (config: TrainingExportConfig, options?: FilterOptions): s
   const criteria: string[] = [];
   const f = config.filters || {};
 
+  criteria.push('Base de cálculo: participações em programas com status "Concluído"');
+  criteria.push('Horas por treinamento: duração cadastrada no programa');
+
   if (config.dateFrom || config.dateTo) {
     const from = config.dateFrom ? config.dateFrom.toLocaleDateString('pt-BR') : 'início';
     const to = config.dateTo ? config.dateTo.toLocaleDateString('pt-BR') : 'hoje';
-    criteria.push(`Período: ${from} a ${to}`);
+    criteria.push(`Período (término do programa): ${from} a ${to}`);
   } else {
     criteria.push('Período: todos os registros');
   }
@@ -168,19 +195,20 @@ export const getTrainingExportData = async (
 
   const f = config.filters || {};
 
-  // Fetch employees with optional filters (use batched fetch to bypass 1000-row limit)
-  let employees = await fetchAll<{
+  // Fetch employees with optional filters (includes inactive so historical trainings count).
+  // Batched fetch bypasses the 1000-row limit.
+  const employees = await fetchAll<{
     id: string;
     full_name: string;
     location: string | null;
     department: string | null;
     position: string | null;
     branch_id: string | null;
+    status: string | null;
   }>(() => {
     let q = supabase
       .from('employees')
-      .select('id, full_name, location, department, position, branch_id')
-      .eq('status', 'Ativo')
+      .select('id, full_name, location, department, position, branch_id, status')
       .order('full_name');
     if (f.branchIds?.length) q = q.in('branch_id', f.branchIds);
     if (f.departments?.length) q = q.in('department', f.departments);
@@ -189,45 +217,86 @@ export const getTrainingExportData = async (
     return q;
   });
 
-  // Fetch trainings (batched)
-  const trainings = await fetchAll<{
+  // Fetch programs and branches (batched to bypass the 1000-row default limit).
+  // We need program.status and dates to filter by "programa concluído" on the client.
+  const [allPrograms, branchesList] = await Promise.all([
+    fetchAll<{
+      id: string;
+      name: string;
+      category: string | null;
+      duration_hours: number | string | null;
+      status: string | null;
+      end_date: string | null;
+      start_date: string | null;
+    }>(
+      () => supabase
+        .from('training_programs')
+        .select('id, name, category, duration_hours, status, end_date, start_date')
+        .order('id')
+    ),
+    fetchAll<{ id: string; name: string; code: string | null }>(
+      () => supabase.from('branches').select('id, name, code').order('id')
+    ),
+  ]);
+  const branchesMap = new Map(branchesList.map(b => [b.id, b.code ? `${b.code} - ${b.name}` : b.name]));
+
+  // Programs that count toward hours: status === 'Concluído' and within the optional date range
+  // (program.end_date, with fallback to start_date when end_date is null).
+  const dateFromStr = config.dateFrom ? config.dateFrom.toISOString().split('T')[0] : null;
+  const dateToStr = config.dateTo ? config.dateTo.toISOString().split('T')[0] : null;
+  const concludedPrograms = allPrograms.filter(p => {
+    if (p.status !== 'Concluído') return false;
+    const pDate = p.end_date || p.start_date;
+    if (dateFromStr && (!pDate || pDate < dateFromStr)) return false;
+    if (dateToStr && (!pDate || pDate > dateToStr)) return false;
+    return true;
+  });
+  const concludedProgramIds = new Set(concludedPrograms.map(p => p.id));
+  // User-selected program filter further narrows the set
+  const effectiveProgramIds = f.trainingProgramIds?.length
+    ? new Set(f.trainingProgramIds.filter(id => concludedProgramIds.has(id)))
+    : concludedProgramIds;
+
+  // Fetch employee_trainings for those concluded programs (batched).
+  // No .eq('status','Concluído') on the row — the signal of completion lives on the PROGRAM,
+  // and client marking of individual status is inconsistent in prod (see investigation).
+  // Use embed + !inner to filter by program side without shipping a huge .in() array.
+  const trainings = effectiveProgramIds.size === 0 ? [] : await fetchAll<{
     employee_id: string;
     training_program_id: string;
     completion_date: string | null;
   }>(() => {
     let q = supabase
       .from('employee_trainings')
-      .select('employee_id, training_program_id, completion_date')
-      .eq('status', 'Concluído');
-    if (config.dateFrom) q = q.gte('completion_date', config.dateFrom.toISOString().split('T')[0]);
-    if (config.dateTo) q = q.lte('completion_date', config.dateTo.toISOString().split('T')[0]);
+      .select('employee_id, training_program_id, completion_date, training_programs!inner(status, end_date, start_date)')
+      .eq('training_programs.status', 'Concluído')
+      .order('id');
+    if (dateFromStr) q = q.gte('training_programs.end_date', dateFromStr);
+    if (dateToStr) q = q.lte('training_programs.end_date', dateToStr);
     if (f.trainingProgramIds?.length) q = q.in('training_program_id', f.trainingProgramIds);
     return q;
   });
 
-  // Fetch programs and branches
-  const [programsRes, branchesRes] = await Promise.all([
-    supabase.from('training_programs').select('id, name, category, duration_hours'),
-    supabase.from('branches').select('id, name, code'),
-  ]);
-  if (programsRes.error) throw programsRes.error;
-  if (branchesRes.error) throw branchesRes.error;
-  const programs = programsRes.data || [];
-  const branchesMap = new Map((branchesRes.data || []).map(b => [b.id, b.code ? `${b.code} - ${b.name}` : b.name]));
+  // Narrow to only effectiveProgramIds (defensive — also covers programs with null end_date
+  // that were filtered client-side).
+  const trainingsScoped = trainings.filter(t => effectiveProgramIds.has(t.training_program_id));
+  // Program map keeps only concluded programs — used by downstream aggregations.
+  const programs = allPrograms.filter(p => concludedProgramIds.has(p.id));
 
   // Calculate hours per employee
   const employeeHours = employees.map(emp => {
-    const empTrainings = trainings.filter(t => t.employee_id === emp.id);
+    const empTrainings = trainingsScoped.filter(t => t.employee_id === emp.id);
     const totalHours = empTrainings.reduce((sum, t) => {
       const program = programs.find(p => p.id === t.training_program_id);
       return sum + (program?.duration_hours || 0);
     }, 0);
 
     const branchLabel = emp.branch_id ? branchesMap.get(emp.branch_id) : null;
+    const active = isActiveStatus(emp.status);
 
     return {
       id: emp.id,
-      name: emp.full_name,
+      name: active ? emp.full_name : `${emp.full_name} (Inativo)`,
       location: branchLabel || emp.location || 'Não especificado',
       department: emp.department || 'Não especificado',
       position: emp.position || 'Não especificado',
@@ -294,7 +363,7 @@ export const getTrainingExportData = async (
       const trainingStats = programs
         .filter(p => programIdSet.has(p.id))
         .map(program => {
-          const programTrainings = trainings.filter(
+          const programTrainings = trainingsScoped.filter(
             t => t.training_program_id === program.id && employeeIdSet.has(t.employee_id)
           );
           const completedCount = programTrainings.length;
