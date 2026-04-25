@@ -562,12 +562,14 @@ function getColumnValue(row: any, ...possibleNames: string[]): string {
       return String(row[matchingKey]).trim();
     }
   }
-  // Last resort: partial/contains matching
+  // Last resort: header da planilha contém a busca completa como substring.
+  // Não fazemos a direção inversa (busca contém header) porque colunas curtas
+  // como "ATENDIMENTO" estariam contidas em buscas maiores como
+  // "EVIDÊNCIA DE ATENDIMENTO" e roubariam o valor da coluna errada — bug que
+  // produziu evidências spurious "N.A"/"CONFORME"/"ADEQUAÇÃO" no histórico.
   for (const name of possibleNames) {
     const normalizedName = normalizeKey(name);
-    const matchingKey = rowKeys.find(k =>
-      normalizeKey(k).includes(normalizedName) || normalizedName.includes(normalizeKey(k))
-    );
+    const matchingKey = rowKeys.find(k => normalizeKey(k).includes(normalizedName));
     if (matchingKey && row[matchingKey] !== undefined && row[matchingKey] !== null) {
       return String(row[matchingKey]).trim();
     }
