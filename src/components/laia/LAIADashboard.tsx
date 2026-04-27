@@ -1,23 +1,70 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLAIADashboardStats } from "@/hooks/useLAIA";
+import { useLAIAAssessments, useLAIADashboardStats } from "@/hooks/useLAIA";
 import { 
   AlertTriangle, 
   CheckCircle2, 
   AlertCircle, 
-  Leaf
+  Eye,
+  Filter,
+  Leaf,
+  X
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import type { LAIAAssessment } from "@/types/laia";
 
 export interface LAIADashboardFilters {
   category?: string;
   significance?: string;
+  temporality?: string;
+  operational_situation?: string;
+  incidence?: string;
+  impact_class?: string;
 }
 
 interface LAIADashboardProps {
   branchId?: string;
   onCardClick?: (filter?: LAIADashboardFilters) => void;
+  onAssessmentClick?: (assessment: LAIAAssessment) => void;
 }
+
+type CharacterizationDimension = "temporality" | "operational_situation" | "incidence" | "impact_class";
+
+const CHARACTERIZATION_LABELS: Record<CharacterizationDimension, Record<string, string>> = {
+  temporality: {
+    passada: "Passada",
+    atual: "Atual",
+    futura: "Futura",
+  },
+  operational_situation: {
+    normal: "Normal",
+    anormal: "Anormal",
+    emergencia: "Emergência",
+  },
+  incidence: {
+    direto: "Direto",
+    indireto: "Indireto",
+  },
+  impact_class: {
+    benefico: "Benéfico",
+    adverso: "Adverso",
+  },
+};
+
+const CHARACTERIZATION_TITLES: Record<CharacterizationDimension, string> = {
+  temporality: "Temporalidade",
+  operational_situation: "Situação Operacional",
+  incidence: "Incidência",
+  impact_class: "Classe de Impacto",
+};
+
+const getCharacterizationLabel = (dimension: CharacterizationDimension, value: string) => {
+  return CHARACTERIZATION_LABELS[dimension][value] ?? value;
+};
 
 const CHART_COLORS = {
   temporality: ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'],
