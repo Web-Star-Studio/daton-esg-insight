@@ -1,29 +1,31 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useLAIAAssessments, useLAIADashboardStats } from "@/hooks/useLAIA";
-import { 
-  AlertTriangle, 
-  CheckCircle2, 
-  AlertCircle, 
-  Eye,
-  Filter,
+import {
+  AlertTriangle,
+  CheckCircle2,
+  AlertCircle,
   Leaf,
-  X
+  X,
+  ChevronRight,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import {
+  IMPACT_CLASS_OPTIONS,
+  INCIDENCE_OPTIONS,
+  OPERATIONAL_SITUATION_OPTIONS,
+  TEMPORALITY_OPTIONS,
+  getCategoryColor,
+  getSignificanceColor,
+} from "@/types/laia";
 import type { LAIAAssessment } from "@/types/laia";
 
 export interface LAIADashboardFilters {
   category?: string;
   significance?: string;
-  temporality?: string;
-  operational_situation?: string;
-  incidence?: string;
-  impact_class?: string;
 }
 
 interface LAIADashboardProps {
@@ -32,40 +34,6 @@ interface LAIADashboardProps {
   onAssessmentClick?: (assessment: LAIAAssessment) => void;
 }
 
-type CharacterizationDimension = "temporality" | "operational_situation" | "incidence" | "impact_class";
-
-const CHARACTERIZATION_LABELS: Record<CharacterizationDimension, Record<string, string>> = {
-  temporality: {
-    passada: "Passada",
-    atual: "Atual",
-    futura: "Futura",
-  },
-  operational_situation: {
-    normal: "Normal",
-    anormal: "Anormal",
-    emergencia: "Emergência",
-  },
-  incidence: {
-    direto: "Direto",
-    indireto: "Indireto",
-  },
-  impact_class: {
-    benefico: "Benéfico",
-    adverso: "Adverso",
-  },
-};
-
-const CHARACTERIZATION_TITLES: Record<CharacterizationDimension, string> = {
-  temporality: "Temporalidade",
-  operational_situation: "Situação Operacional",
-  incidence: "Incidência",
-  impact_class: "Classe de Impacto",
-};
-
-const getCharacterizationLabel = (dimension: CharacterizationDimension, value: string) => {
-  return CHARACTERIZATION_LABELS[dimension][value] ?? value;
-};
-
 const CHART_COLORS = {
   temporality: ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'],
   operational_situation: ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-4))'],
@@ -73,22 +41,51 @@ const CHART_COLORS = {
   impact_class: ['hsl(142, 71%, 45%)', 'hsl(0, 72%, 51%)'], // green / red
 };
 
-function CharacterizationChart({ 
-  title, 
-  dimension,
-  data, 
+type CharacterizationField = 'temporality' | 'operational_situation' | 'incidence' | 'impact_class';
+
+function buildLabelMap(options: ReadonlyArray<{ value: string; label: string }>): Record<string, string> {
+  return options.reduce<Record<string, string>>((acc, opt) => {
+    acc[opt.value] = opt.label;
+    return acc;
+  }, {});
+}
+
+const FIELD_LABELS: Record<CharacterizationField, Record<string, string>> = {
+  temporality: buildLabelMap(TEMPORALITY_OPTIONS),
+  operational_situation: buildLabelMap(OPERATIONAL_SITUATION_OPTIONS),
+  incidence: buildLabelMap(INCIDENCE_OPTIONS),
+  impact_class: buildLabelMap(IMPACT_CLASS_OPTIONS),
+};
+
+function CharacterizationChart({
+  title,
+  data,
   colors,
-  selectedValue,
-  onSelect,
-}: { 
-  title: string; 
-  dimension: CharacterizationDimension;
-  data: { name: string; value: number }[]; 
+  field,
+  assessments,
+  onItemClick,
+}: {
+  title: string;
+  data: { name: string; value: number }[];
   colors: string[];
-  selectedValue?: string;
-  onSelect: (dimension: CharacterizationDimension, value: string) => void;
+  field: CharacterizationField;
+  assessments: LAIAAssessment[];
+  onItemClick?: (assessment: LAIAAssessment) => void;
 }) {
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const total = data.reduce((sum, item) => sum + item.value, 0);
+  const labelMap = FIELD_LABELS[field];
+
+  const filteredItems = useMemo(() => {
+    if (!selectedKey) return [];
+    return assessments.filter(a => String(a[field] ?? '') === selectedKey);
+  }, [selectedKey, assessments, field]);
+
+  const handleSliceClick = (entry: any) => {
+    const key = entry?.name ?? entry?.value;
+    if (typeof key !== 'string' || !key) return;
+    setSelectedKey(prev => (prev === key ? null : key));
+  };
 
   if (data.length === 0) {
     return (
@@ -118,6 +115,18 @@ function CharacterizationChart({
     );
   };
 
+  const tooltipFormatter = (value: number, _name: string, payload: any) => {
+    const rawName = payload?.payload?.name ?? '';
+    const niceName = labelMap[rawName] ?? rawName;
+    return [`${value} (${((value / total) * 100).toFixed(1)}%)`, niceName];
+  };
+
+  const legendFormatter = (value: string) => (
+    <span className="text-xs text-muted-foreground">{labelMap[value] ?? value}</span>
+  );
+
+  const selectedLabel = selectedKey ? (labelMap[selectedKey] ?? selectedKey) : null;
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
@@ -137,18 +146,23 @@ function CharacterizationChart({
                 innerRadius={30}
                 paddingAngle={2}
                 dataKey="value"
-                onClick={(entry) => onSelect(dimension, entry.name)}
-                className="cursor-pointer outline-none"
+                onClick={handleSliceClick}
+                style={{ cursor: 'pointer' }}
               >
-                {data.map((item, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={colors[index % colors.length]}
-                    opacity={!selectedValue || selectedValue === item.name ? 1 : 0.35}
-                    stroke={selectedValue === item.name ? "hsl(var(--foreground))" : "hsl(var(--background))"}
-                    strokeWidth={selectedValue === item.name ? 3 : 2}
-                  />
-                ))}
+                {data.map((entry, index) => {
+                  const isSelected = selectedKey === entry.name;
+                  const isDimmed = selectedKey !== null && !isSelected;
+                  return (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={colors[index % colors.length]}
+                      stroke="hsl(var(--background))"
+                      strokeWidth={isSelected ? 3 : 2}
+                      opacity={isDimmed ? 0.35 : 1}
+                      style={{ cursor: 'pointer', outline: 'none' }}
+                    />
+                  );
+                })}
               </Pie>
               <Tooltip
                 contentStyle={{
@@ -157,82 +171,92 @@ function CharacterizationChart({
                   borderRadius: '8px',
                   color: 'hsl(var(--popover-foreground))',
                 }}
-                formatter={(value: number) => [
-                  `${value} (${((value / total) * 100).toFixed(1)}%)`,
-                  'Avaliações'
-                ]}
+                formatter={tooltipFormatter}
               />
-              <Legend 
-                verticalAlign="bottom" 
+              <Legend
+                verticalAlign="bottom"
                 height={36}
-                formatter={(value) => (
-                  <span className="text-xs text-muted-foreground">{getCharacterizationLabel(dimension, String(value))}</span>
-                )}
+                onClick={handleSliceClick as any}
+                formatter={legendFormatter}
+                wrapperStyle={{ cursor: 'pointer' }}
               />
             </PieChart>
           </ResponsiveContainer>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
 
-function DrillDownList({
-  selected,
-  assessments,
-  onClear,
-  onAssessmentClick,
-}: {
-  selected: { dimension: CharacterizationDimension; value: string };
-  assessments: LAIAAssessment[];
-  onClear: () => void;
-  onAssessmentClick?: (assessment: LAIAAssessment) => void;
-}) {
-  const dimensionLabel = CHARACTERIZATION_TITLES[selected.dimension];
-  const valueLabel = getCharacterizationLabel(selected.dimension, selected.value);
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            {dimensionLabel}: {valueLabel}
-          </CardTitle>
-          <CardDescription>
-            {assessments.length} avaliação(ões) compondo o recorte selecionado
-          </CardDescription>
-        </div>
-        <Button variant="ghost" size="icon" onClick={onClear} aria-label="Limpar seleção">
-          <X className="h-4 w-4" />
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="max-h-[420px] pr-3">
-          <div className="space-y-2">
-            {assessments.map((assessment) => (
-              <button
-                key={assessment.id}
-                type="button"
-                onClick={() => onAssessmentClick?.(assessment)}
-                className="w-full rounded-md border bg-card p-3 text-left transition-colors hover:bg-muted/60"
+        {selectedKey && (
+          <div className="mt-3 border-t pt-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-medium">{selectedLabel}</span>
+                <Badge variant="secondary" className="font-normal">
+                  {filteredItems.length} {filteredItems.length === 1 ? 'avaliação' : 'avaliações'}
+                </Badge>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={() => setSelectedKey(null)}
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline">{assessment.aspect_code}</Badge>
-                      {assessment.sector?.name && <Badge variant="secondary">{assessment.sector.name}</Badge>}
-                    </div>
-                    <p className="font-medium text-foreground">{assessment.environmental_aspect}</p>
-                    <p className="text-sm text-muted-foreground">{assessment.environmental_impact}</p>
-                    <p className="text-xs text-muted-foreground">{assessment.activity_operation}</p>
-                  </div>
-                  <Eye className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </div>
-              </button>
-            ))}
+                <X className="h-3 w-3 mr-1" />
+                Limpar
+              </Button>
+            </div>
+
+            {filteredItems.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">
+                Nenhuma avaliação encontrada para esta categoria.
+              </p>
+            ) : (
+              <ul className="max-h-[260px] overflow-y-auto space-y-1 pr-1">
+                {filteredItems.map(item => (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => onItemClick?.(item)}
+                      className="w-full text-left rounded-md border border-border/50 px-2 py-1.5 text-xs transition-colors hover:bg-accent hover:border-border focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                              {item.aspect_code}
+                            </span>
+                            {item.sector?.code && (
+                              <span className="text-[10px] text-muted-foreground truncate">
+                                · {item.sector.code}
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-medium truncate">{item.environmental_aspect}</p>
+                          <p className="text-muted-foreground truncate">
+                            {item.activity_operation}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] px-1.5 py-0 ${getSignificanceColor(item.significance)}`}
+                          >
+                            {item.significance === 'significativo' ? 'Sig.' : 'Não sig.'}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] px-1.5 py-0 ${getCategoryColor(item.category)}`}
+                          >
+                            {item.category}
+                          </Badge>
+                        </div>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0 mt-1" />
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        </ScrollArea>
+        )}
       </CardContent>
     </Card>
   );
@@ -240,19 +264,8 @@ function DrillDownList({
 
 export function LAIADashboard({ branchId, onCardClick, onAssessmentClick }: LAIADashboardProps) {
   const { data: stats, isLoading, error } = useLAIADashboardStats(branchId);
-  const { data: assessments = [] } = useLAIAAssessments({ branch_id: branchId, status: "ativo" });
-  const [selectedDrillDown, setSelectedDrillDown] = useState<{ dimension: CharacterizationDimension; value: string } | null>(null);
-
-  const drillDownAssessments = useMemo(() => {
-    if (!selectedDrillDown) return [];
-    return assessments.filter((assessment) => assessment[selectedDrillDown.dimension] === selectedDrillDown.value);
-  }, [assessments, selectedDrillDown]);
-
-  const handleChartSelect = (dimension: CharacterizationDimension, value: string) => {
-    setSelectedDrillDown((current) => (
-      current?.dimension === dimension && current.value === value ? null : { dimension, value }
-    ));
-  };
+  const { data: assessments } = useLAIAAssessments(branchId ? { branch_id: branchId } : undefined);
+  const assessmentList = assessments ?? [];
 
   if (isLoading) {
     return (
@@ -348,49 +361,40 @@ export function LAIADashboard({ branchId, onCardClick, onAssessmentClick }: LAIA
       </div>
 
       {/* Characterization Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <CharacterizationChart 
-          title="Temporalidade" 
-          dimension="temporality"
-          data={stats.by_temporality} 
-          colors={CHART_COLORS.temporality} 
-          selectedValue={selectedDrillDown?.dimension === "temporality" ? selectedDrillDown.value : undefined}
-          onSelect={handleChartSelect}
+      <div className="grid gap-4 md:grid-cols-2 items-start">
+        <CharacterizationChart
+          title="Temporalidade"
+          data={stats.by_temporality}
+          colors={CHART_COLORS.temporality}
+          field="temporality"
+          assessments={assessmentList}
+          onItemClick={onAssessmentClick}
         />
-        <CharacterizationChart 
-          title="Situação Operacional" 
-          dimension="operational_situation"
-          data={stats.by_operational_situation} 
-          colors={CHART_COLORS.operational_situation} 
-          selectedValue={selectedDrillDown?.dimension === "operational_situation" ? selectedDrillDown.value : undefined}
-          onSelect={handleChartSelect}
+        <CharacterizationChart
+          title="Situação Operacional"
+          data={stats.by_operational_situation}
+          colors={CHART_COLORS.operational_situation}
+          field="operational_situation"
+          assessments={assessmentList}
+          onItemClick={onAssessmentClick}
         />
-        <CharacterizationChart 
-          title="Incidência" 
-          dimension="incidence"
-          data={stats.by_incidence} 
-          colors={CHART_COLORS.incidence} 
-          selectedValue={selectedDrillDown?.dimension === "incidence" ? selectedDrillDown.value : undefined}
-          onSelect={handleChartSelect}
+        <CharacterizationChart
+          title="Incidência"
+          data={stats.by_incidence}
+          colors={CHART_COLORS.incidence}
+          field="incidence"
+          assessments={assessmentList}
+          onItemClick={onAssessmentClick}
         />
-        <CharacterizationChart 
-          title="Classe de Impacto" 
-          dimension="impact_class"
-          data={stats.by_impact_class} 
-          colors={CHART_COLORS.impact_class} 
-          selectedValue={selectedDrillDown?.dimension === "impact_class" ? selectedDrillDown.value : undefined}
-          onSelect={handleChartSelect}
+        <CharacterizationChart
+          title="Classe de Impacto"
+          data={stats.by_impact_class}
+          colors={CHART_COLORS.impact_class}
+          field="impact_class"
+          assessments={assessmentList}
+          onItemClick={onAssessmentClick}
         />
       </div>
-
-      {selectedDrillDown && (
-        <DrillDownList
-          selected={selectedDrillDown}
-          assessments={drillDownAssessments}
-          onClear={() => setSelectedDrillDown(null)}
-          onAssessmentClick={onAssessmentClick}
-        />
-      )}
     </div>
   );
 }

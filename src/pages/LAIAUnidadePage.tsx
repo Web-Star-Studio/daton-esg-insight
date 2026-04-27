@@ -187,7 +187,11 @@ export default function LAIAUnidadePage() {
             </TabsList>
 
             <TabsContent value="dashboard" className="mt-6">
-              <LAIADashboard branchId={branchId} onCardClick={handleCardClick} onAssessmentClick={handleView} />
+              <LAIADashboard
+                branchId={branchId}
+                onCardClick={handleCardClick}
+                onAssessmentClick={handleView}
+              />
             </TabsContent>
 
             <TabsContent value="assessments" className="mt-6">
