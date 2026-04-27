@@ -48,11 +48,24 @@ import {
   LegislationValidation,
   LegislationImportResult,
   LegislationImportProgress,
+  UnitEvaluation,
   UnitMapping,
   ImportType,
   IMPORT_TYPE_OPTIONS,
+  resolveInstanciaGeo,
+  deriveDominantState,
+  UnresolvedInstanciaHint,
 } from "@/services/legislationImport";
-import { UnitMappingStep, createInitialMappings } from "./UnitMappingStep";
+import {
+  UnitMappingStep,
+  createInitialMappings,
+  findBranchForInstanciaHint,
+} from "./UnitMappingStep";
+import {
+  SingleBranchMappingStep,
+  SingleBranchTarget,
+  autoMatchSingleBranch,
+} from "./SingleBranchMappingStep";
 
 interface LegislationImportDialogProps {
   open: boolean;
@@ -60,7 +73,7 @@ interface LegislationImportDialogProps {
   onImportComplete?: () => void;
 }
 
-type ImportStage = 'upload' | 'mapping' | 'preview' | 'importing' | 'result';
+type ImportStage = 'upload' | 'mapping' | 'single-branch-mapping' | 'preview' | 'importing' | 'result';
 
 export function LegislationImportDialog({
   open,
@@ -72,10 +85,13 @@ export function LegislationImportDialog({
   
   const [stage, setStage] = useState<ImportStage>('upload');
   const [importType, setImportType] = useState<ImportType>('legal');
+  const [uploadedFileName, setUploadedFileName] = useState<string>('');
   const [parsedData, setParsedData] = useState<ParsedLegislation[]>([]);
   const [detectedUnitColumns, setDetectedUnitColumns] = useState<string[]>([]);
   const [isSimplifiedFormat, setIsSimplifiedFormat] = useState(false);
   const [unitMappings, setUnitMappings] = useState<UnitMapping[]>([]);
+  const [singleBranchTarget, setSingleBranchTarget] = useState<SingleBranchTarget | null>(null);
+  const [unresolvedHints, setUnresolvedHints] = useState<UnresolvedInstanciaHint[]>([]);
   const [validations, setValidations] = useState<LegislationValidation[]>([]);
   const [importResult, setImportResult] = useState<LegislationImportResult | null>(null);
   const [progress, setProgress] = useState<LegislationImportProgress | null>(null);
@@ -101,10 +117,13 @@ export function LegislationImportDialog({
   const resetState = () => {
     setStage('upload');
     setImportType('legal');
+    setUploadedFileName('');
     setParsedData([]);
     setDetectedUnitColumns([]);
     setIsSimplifiedFormat(false);
     setUnitMappings([]);
+    setSingleBranchTarget(null);
+    setUnresolvedHints([]);
     setValidations([]);
     setImportResult(null);
     setProgress(null);
@@ -126,6 +145,7 @@ export function LegislationImportDialog({
     }
 
     setIsProcessing(true);
+    setUploadedFileName(file.name);
     try {
       const result = await parseLegislationExcelWithUnits(file, importType);
 
@@ -138,6 +158,27 @@ export function LegislationImportDialog({
       setParsedData(result.legislations);
       setDetectedUnitColumns(result.detectedUnitColumns);
       setIsSimplifiedFormat(!result.hasExplicitNormTypeColumn);
+
+      // Estaduais/Municipais sem colunas de unidade → fluxo single-branch.
+      // Toda a planilha vai pra uma única filial (auto-detectada pelo nome do arquivo).
+      if (importType === 'estadual_municipal' && result.detectedUnitColumns.length === 0) {
+        const autoBranch = autoMatchSingleBranch(file.name, branches);
+        if (autoBranch) {
+          setSingleBranchTarget({
+            branchId: autoBranch.id,
+            branchName: autoBranch.code ? `${autoBranch.code} - ${autoBranch.name}` : autoBranch.name,
+            branchCode: autoBranch.code,
+            state: autoBranch.state,
+            city: autoBranch.city,
+            autoMatched: true,
+          });
+        } else {
+          setSingleBranchTarget(null);
+        }
+        setStage('single-branch-mapping');
+        toast.success(`${result.legislations.length} legislações encontradas — mapeando para uma única filial`);
+        return;
+      }
 
       // If unit columns detected, go to mapping step
       if (result.detectedUnitColumns.length > 0) {
@@ -171,11 +212,104 @@ export function LegislationImportDialog({
     disabled: isProcessing,
   });
 
+  // Sintetiza 1 UnitEvaluation por linha a partir dos campos overall_*, e
+  // aplica na filial-alvo. Usado pelo fluxo single-branch (Formato B).
+  const buildSingleBranchData = (
+    legs: ParsedLegislation[],
+    target: SingleBranchTarget,
+  ): { legs: ParsedLegislation[]; mapping: UnitMapping } => {
+    const syntheticCode = (target.branchCode || target.branchId).toUpperCase();
+    const enriched = legs.map(leg => {
+      const evaluation: UnitEvaluation = {
+        unitCode: syntheticCode,
+        value: '',
+        applicability: (leg.overall_applicability || 'pending') as UnitEvaluation['applicability'],
+        complianceStatus: (leg.overall_status || 'pending') as UnitEvaluation['complianceStatus'],
+      };
+      return {
+        ...leg,
+        unitEvaluations: [evaluation],
+      };
+    });
+    const mapping: UnitMapping = {
+      excelCode: syntheticCode,
+      branchId: target.branchId,
+      branchName: target.branchName,
+      autoMatched: target.autoMatched,
+    };
+    return { legs: enriched, mapping };
+  };
+
+  // Aplica resolução geo nas linhas: se vier do importType estadual_municipal,
+  // usa hint + filiais mapeadas pra preencher state/municipality. Mantém o
+  // resto inalterado.
+  const resolveGeoForLegs = (
+    legs: ParsedLegislation[],
+    activeMappings: UnitMapping[],
+    target: SingleBranchTarget | null,
+  ): { resolved: ParsedLegislation[]; unresolvedHints: UnresolvedInstanciaHint[] } => {
+    if (importType !== 'estadual_municipal') {
+      return { resolved: legs, unresolvedHints: [] };
+    }
+    const branchIds = target
+      ? [target.branchId]
+      : activeMappings.flatMap(m => m.propagateBranchIds || (m.branchId ? [m.branchId] : []));
+    const dominantState = deriveDominantState(branchIds, branches);
+
+    return resolveInstanciaGeo(legs, {
+      branches,
+      findBranchForHint: (hint) => findBranchForInstanciaHint(hint, branches),
+      dominantState,
+      singleBranchState: target?.state || undefined,
+      singleBranchCity: target?.city || undefined,
+    });
+  };
+
   const handleContinueFromMapping = async () => {
     setIsProcessing(true);
     try {
+      const activeMappings = unitMappings.filter(
+        m => m.branchId || (m.propagateBranchIds && m.propagateBranchIds.length > 0)
+      );
+      const { resolved, unresolvedHints: hints } = resolveGeoForLegs(
+        parsedData,
+        activeMappings,
+        null,
+      );
+      setParsedData(resolved);
+      setUnresolvedHints(hints);
+
       if (user?.company?.id) {
-        const validationResults = await validateLegislations(parsedData, user.company.id);
+        const validationResults = await validateLegislations(resolved, user.company.id);
+        setValidations(validationResults);
+      }
+      setStage('preview');
+    } catch (error) {
+      toast.error(`Erro ao validar: ${(error as Error).message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleContinueFromSingleBranch = async () => {
+    if (!singleBranchTarget) {
+      toast.error('Selecione uma filial para continuar');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const { legs: enriched, mapping } = buildSingleBranchData(parsedData, singleBranchTarget);
+      const { resolved, unresolvedHints: hints } = resolveGeoForLegs(
+        enriched,
+        [mapping],
+        singleBranchTarget,
+      );
+      setParsedData(resolved);
+      setUnitMappings([mapping]);
+      setUnresolvedHints(hints);
+
+      if (user?.company?.id) {
+        const validationResults = await validateLegislations(resolved, user.company.id);
         setValidations(validationResults);
       }
       setStage('preview');
@@ -255,6 +389,7 @@ export function LegislationImportDialog({
           <DialogDescription>
             {stage === 'upload' && "Faça upload de um arquivo Excel com as legislações a importar"}
             {stage === 'mapping' && "Mapeie as colunas de unidades para as filiais do sistema"}
+            {stage === 'single-branch-mapping' && "Selecione a filial onde essas legislações serão aplicadas"}
             {stage === 'preview' && "Revise os dados antes de confirmar a importação"}
             {stage === 'importing' && "Importando legislações..."}
             {stage === 'result' && "Resultado da importação"}
@@ -342,6 +477,17 @@ export function LegislationImportDialog({
                 const remapped = createInitialMappings(detectedUnitColumns, branches);
                 setUnitMappings(remapped);
               }}
+            />
+          )}
+
+          {/* Single-branch Mapping Stage (Formato B) */}
+          {stage === 'single-branch-mapping' && (
+            <SingleBranchMappingStep
+              fileName={uploadedFileName}
+              rowCount={parsedData.length}
+              branches={branches}
+              target={singleBranchTarget}
+              onTargetChange={setSingleBranchTarget}
             />
           )}
 
@@ -688,11 +834,32 @@ export function LegislationImportDialog({
             </>
           )}
 
+          {stage === 'single-branch-mapping' && (
+            <>
+              <Button variant="outline" onClick={resetState}>
+                Voltar
+              </Button>
+              <Button
+                onClick={handleContinueFromSingleBranch}
+                disabled={isProcessing || !singleBranchTarget}
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                )}
+                Continuar
+              </Button>
+            </>
+          )}
+
           {stage === 'preview' && (
             <>
               <Button variant="outline" onClick={() => {
                 if (detectedUnitColumns.length > 0) {
                   setStage('mapping');
+                } else if (importType === 'estadual_municipal' && singleBranchTarget) {
+                  setStage('single-branch-mapping');
                 } else {
                   resetState();
                 }

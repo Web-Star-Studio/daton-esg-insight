@@ -8,7 +8,7 @@ import { logger } from '@/utils/logger';
 // Tipo de planilha sendo importada. Controla defaults (jurisdição, parsing de data).
 // Extensível: futuros formatos (NR, CLT, etc.) entram como novas variantes aqui
 // sem duplicar o pipeline de import.
-export type ImportType = 'legal' | 'nbr' | 'internacional';
+export type ImportType = 'legal' | 'nbr' | 'internacional' | 'estadual_municipal';
 
 export const IMPORT_TYPE_OPTIONS: Array<{
   value: ImportType;
@@ -29,6 +29,11 @@ export const IMPORT_TYPE_OPTIONS: Array<{
     value: 'internacional',
     label: 'Internacionais',
     description: 'MERCOSUL, UE, tratados e normas estrangeiras',
+  },
+  {
+    value: 'estadual_municipal',
+    label: 'Estaduais e Municipais',
+    description: 'Planilhas regionais (formato Gabardo) com coluna INSTÂNCIA',
   },
 ];
 
@@ -64,6 +69,10 @@ export interface ParsedLegislation {
   general_notes: string;           // "Observações gerais, envios datas e responsáveis"
   states_list: string;             // UFs múltiplos
   municipalities_list: string;     // Municípios múltiplos (formato SP)
+  // Hint extraído de INSTÂNCIA (ex.: "DUQUE DE CAXIAS", "POA", "PORTO REAL").
+  // Resolvido pra (state, municipality) via filiais antes da validação.
+  // Vazio quando INSTÂNCIA = ESTADUAL/OUTROS ou MUNICIPAL puro.
+  municipality_hint: string;
   // Avaliações por unidade
   unitEvaluations: UnitEvaluation[];
 }
@@ -166,13 +175,14 @@ export const VALID_NORM_TYPES = [
   'Resolução CONSEMA RS', 'Portaria SEMA RS'
 ];
 
-export const VALID_JURISDICTIONS = ['federal', 'estadual', 'municipal', 'nbr', 'internacional'];
+export const VALID_JURISDICTIONS = ['federal', 'estadual', 'municipal', 'nbr', 'internacional', 'outros'];
 
 // Retorna a família de jurisdições consideradas equivalentes para efeito de
 // reconciliação/validação. Federal/estadual/municipal são tratados como uma
-// mesma família "legal" nacional (uma planilha Gabardo pode ter mix). NBR e
-// internacional são famílias isoladas — normas técnicas ou estrangeiras não
-// colidem com leis federais mesmo que TIPO+número coincidam.
+// mesma família "legal" nacional (uma planilha Gabardo pode ter mix). NBR,
+// internacional e outros são famílias isoladas — não colidem com leis nacionais
+// mesmo que TIPO+número coincidam (ex.: alvarás/licenças soltas em "OUTROS"
+// não devem ser confundidas com normas legais reais).
 export function jurisdictionFamily(j: string | null | undefined): Set<string> {
   const lower = (j || '').toLowerCase().trim();
   if (['federal', 'estadual', 'municipal'].includes(lower)) {
@@ -180,6 +190,7 @@ export function jurisdictionFamily(j: string | null | undefined): Set<string> {
   }
   if (lower === 'nbr') return new Set(['nbr']);
   if (lower === 'internacional') return new Set(['internacional']);
+  if (lower === 'outros') return new Set(['outros']);
   return new Set([lower]);
 }
 
@@ -396,14 +407,16 @@ function parseDate(dateStr: string, opts?: { allowYearOnly?: boolean }): string 
 
 function normalizeJurisdiction(value: string, uf?: string): string {
   const normalized = value.toLowerCase().trim();
-  
+
   // Variações de federal (incluindo "FEDERAIS" do formato Gabardo)
   if (normalized.includes('federal') || normalized === 'federais') return 'federal';
   if (normalized.includes('estadual')) return 'estadual';
   if (normalized.includes('municipal')) return 'municipal';
   if (normalized.includes('nbr') || normalized.includes('abnt')) return 'nbr';
   if (normalized.includes('internac')) return 'internacional';
-  
+  // INSTÂNCIA = "OUTROS" em planilhas regionais (alvarás, licenças, doc soltos)
+  if (normalized === 'outros' || normalized === 'outro') return 'outros';
+
   // Detectar internacional pelo UF (MERCOSUL, países, etc.)
   if (uf) {
     const ufNorm = uf.toLowerCase();
@@ -411,8 +424,45 @@ function normalizeJurisdiction(value: string, uf?: string): string {
       return 'internacional';
     }
   }
-  
+
   return normalized;
+}
+
+// Parse INSTÂNCIA column from regional spreadsheets (sp/RJ/RS/pr/Gocarr/ES).
+// Returns the jurisdiction and an optional municipality hint when the header
+// includes a city name (ex.: "MUNICIPAL DUQUE DE CAXIAS").
+//
+// Examples:
+//   "ESTADUAL"                  → { jurisdiction: 'estadual',  municipalityHint: '' }
+//   "MUNICIPAL"                 → { jurisdiction: 'municipal', municipalityHint: '' }
+//   "MUNICIPAL DUQUE DE CAXIAS" → { jurisdiction: 'municipal', municipalityHint: 'DUQUE DE CAXIAS' }
+//   "MUNICIPAL POA"             → { jurisdiction: 'municipal', municipalityHint: 'POA' }
+//   "OUTROS"                    → { jurisdiction: 'outros',    municipalityHint: '' }
+export function parseInstancia(value: string): { jurisdiction: string; municipalityHint: string } {
+  if (!value) return { jurisdiction: '', municipalityHint: '' };
+
+  const normalized = value.trim().normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+
+  if (normalized === 'ESTADUAL' || normalized.startsWith('ESTADUAL ')) {
+    return { jurisdiction: 'estadual', municipalityHint: '' };
+  }
+  if (normalized === 'OUTROS' || normalized === 'OUTRO') {
+    return { jurisdiction: 'outros', municipalityHint: '' };
+  }
+  if (normalized === 'FEDERAL' || normalized === 'FEDERAIS') {
+    return { jurisdiction: 'federal', municipalityHint: '' };
+  }
+  if (normalized === 'MUNICIPAL') {
+    return { jurisdiction: 'municipal', municipalityHint: '' };
+  }
+  if (normalized.startsWith('MUNICIPAL ')) {
+    // Suffix vira hint pra resolver via filial (PIR→Piracicaba, DUC→Duque de Caxias).
+    // Compacta espaços múltiplos ("MUNICIPAL  POA" → "POA").
+    const hint = normalized.slice('MUNICIPAL '.length).replace(/\s+/g, ' ').trim();
+    return { jurisdiction: 'municipal', municipalityHint: hint };
+  }
+
+  return { jurisdiction: '', municipalityHint: '' };
 }
 
 function normalizeApplicability(value: string): string {
@@ -695,6 +745,127 @@ export interface ParseLegislationResult {
   hasExplicitNormTypeColumn: boolean;
 }
 
+// Hint genérico {label, branchSuggestion?} que o Dialog mostra quando uma linha
+// tem `municipality_hint` que não casou com nenhuma filial. O usuário escolhe
+// UF + município manualmente, e a aplicação preenche todas as linhas com esse hint.
+export interface UnresolvedInstanciaHint {
+  hint: string;
+  rowCount: number;
+  state: string;       // selecionado pelo usuário (ou auto se 1 UF dominante)
+  municipality: string; // editável; default = título-case do hint
+}
+
+// Resolve state + municipality em cada linha do parsedData baseado em:
+//  - municipality_hint (do INSTÂNCIA) casado contra branches
+//  - dominantState: UF derivado do conjunto de mappings ativos (ou da
+//    filial-alvo single-branch). Usado como UF default pra linhas ESTADUAL
+//    e fallback pra MUNICIPAL sem hint.
+//  - manualOverrides: mapa hint→{state,municipality} preenchido pelo usuário
+//    no painel de fallback.
+//
+// Retorna { resolvedLegs, unresolvedHints } — unresolvedHints é a lista de
+// hints que precisam de input manual (município reconhecível mas sem filial,
+// ou município novo).
+export function resolveInstanciaGeo(
+  legislations: ParsedLegislation[],
+  options: {
+    branches: Array<{ id: string; code?: string | null; name: string; state?: string | null; city?: string | null; status: string }>;
+    findBranchForHint: (hint: string) => { id: string; state?: string | null; city?: string | null } | null;
+    dominantState?: string;
+    singleBranchState?: string;
+    singleBranchCity?: string;
+    manualOverrides?: Map<string, { state: string; municipality: string }>;
+  }
+): { resolved: ParsedLegislation[]; unresolvedHints: UnresolvedInstanciaHint[] } {
+  const { findBranchForHint, dominantState, singleBranchState, singleBranchCity, manualOverrides } = options;
+  const unresolvedMap = new Map<string, number>();
+
+  const resolved = legislations.map(leg => {
+    // Já tem state preenchido (ex.: o usuário escreveu manualmente em outra coluna)
+    if (leg.state) return leg;
+
+    const next: ParsedLegislation = { ...leg };
+
+    if (leg.jurisdiction === 'estadual') {
+      // ESTADUAL: UF vem do single-branch ou da UF dominante das filiais mapeadas.
+      next.state = singleBranchState || dominantState || '';
+      // Município não se aplica a estadual.
+      next.municipality = '';
+      return next;
+    }
+
+    if (leg.jurisdiction === 'municipal') {
+      const hint = leg.municipality_hint?.trim() || '';
+
+      if (hint) {
+        // Tentar resolver via filial existente
+        const branch = findBranchForHint(hint);
+        if (branch) {
+          next.state = branch.state || dominantState || '';
+          next.municipality = branch.city || titleCase(hint);
+          return next;
+        }
+        // Tentar override manual fornecido pelo usuário
+        const override = manualOverrides?.get(hint.toUpperCase());
+        if (override) {
+          next.state = override.state;
+          next.municipality = override.municipality;
+          return next;
+        }
+        // Sem resolução: registrar pra mostrar painel de fallback
+        unresolvedMap.set(hint, (unresolvedMap.get(hint) || 0) + 1);
+        // Manter parcial: state da UF dominante; municipality continua como hint
+        // (depois o painel manual pode reescrever).
+        next.state = dominantState || '';
+        next.municipality = titleCase(hint);
+        return next;
+      }
+
+      // MUNICIPAL sem hint (ex.: ES.xlsx) → usar dados da filial-alvo single-branch.
+      next.state = singleBranchState || dominantState || '';
+      next.municipality = singleBranchCity || '';
+      return next;
+    }
+
+    // OUTROS / federal / nbr / internacional: sem inferência geográfica.
+    return next;
+  });
+
+  const unresolvedHints: UnresolvedInstanciaHint[] = Array.from(unresolvedMap.entries())
+    .map(([hint, rowCount]) => ({
+      hint,
+      rowCount,
+      state: dominantState || '',
+      municipality: titleCase(hint),
+    }))
+    .sort((a, b) => b.rowCount - a.rowCount);
+
+  return { resolved, unresolvedHints };
+}
+
+function titleCase(s: string): string {
+  return s.toLowerCase().split(/\s+/).map(w =>
+    w.length > 0 ? w[0].toUpperCase() + w.slice(1) : w
+  ).join(' ');
+}
+
+// Deriva a UF dominante a partir de uma lista de filiais "alvo" (branchIds).
+// Útil para inferir state pra linhas ESTADUAL quando a planilha não traz UF.
+export function deriveDominantState(
+  branchIds: string[],
+  branches: Array<{ id: string; state?: string | null }>
+): string {
+  if (branchIds.length === 0) return '';
+  const stateCount = new Map<string, number>();
+  for (const id of branchIds) {
+    const b = branches.find(x => x.id === id);
+    const uf = b?.state?.toUpperCase().trim();
+    if (uf) stateCount.set(uf, (stateCount.get(uf) || 0) + 1);
+  }
+  if (stateCount.size === 0) return '';
+  return Array.from(stateCount.entries()).sort((a, b) => b[1] - a[1])[0][0];
+}
+
 export async function parseLegislationExcel(file: File): Promise<ParsedLegislation[]> {
   const result = await parseLegislationExcelWithUnits(file);
   return result.legislations;
@@ -761,6 +932,14 @@ export async function parseLegislationExcelWithUnits(
         );
         
         const legislations: ParsedLegislation[] = jsonData.map((row: any, index) => {
+          // INSTÂNCIA é a coluna padrão das planilhas regionais (sp/RJ/RS/pr/Gocarr/ES).
+          // Lemos primeiro porque tem precedência sobre Jurisdição quando o tipo é
+          // estadual_municipal — e porque queremos extrair o hint de cidade dela.
+          // Para outros tipos, ainda lemos como fallback caso o usuário tenha
+          // selecionado o tipo errado: evita que sp.xlsx vá silenciosamente como federal.
+          const instanciaRaw = getColumnValue(row, 'INSTÂNCIA', 'Instância', 'INSTANCIA', 'Instancia');
+          const { jurisdiction: instanciaJurisdiction, municipalityHint } = parseInstancia(instanciaRaw);
+
           const jurisdictionRaw = getColumnValue(row, 'Jurisdição', 'Jurisdicao', 'JURISDIÇÃO', 'JURISDICAO');
           const applicabilityRaw = getColumnValue(row, 'Aplicabilidade', 'APLICABILIDADE');
           // Suporta duas colunas de status do formato Gabardo
@@ -783,8 +962,11 @@ export async function parseLegislationExcelWithUnits(
           const stateRaw = getColumnValue(row, 'UF', 'Estado', 'ESTADO');
           const { state, statesList, isInternational } = parseState(stateRaw);
           
-          // Determinar jurisdição (passando UF para detectar internacional)
-          let jurisdiction = normalizeJurisdiction(jurisdictionRaw, stateRaw);
+          // Determinar jurisdição (passando UF para detectar internacional).
+          // INSTÂNCIA tem precedência: se a planilha trouxer essa coluna, ela é
+          // a fonte autoritativa do tipo da linha (estadual/municipal/outros).
+          // Fallback: coluna Jurisdição (formato federal Gabardo).
+          let jurisdiction = instanciaJurisdiction || normalizeJurisdiction(jurisdictionRaw, stateRaw);
           if (isInternational && !jurisdiction.includes('internacional')) {
             jurisdiction = 'internacional';
           }
@@ -899,9 +1081,13 @@ export async function parseLegislationExcelWithUnits(
           //  - 'nbr'   → nbr (planilhas de normas técnicas não trazem coluna
           //    Jurisdição; o próprio TIPO costuma ser "NBR ABNT"/"NBR ISO")
           //  - 'internacional' → internacional (tratados, MERCOSUL, UE etc.)
+          //  - 'estadual_municipal' → estadual (default seguro; INSTÂNCIA
+          //    deveria estar preenchida em todas as linhas reais — se faltar,
+          //    a linha vai cair no warning de UF e o usuário corrige)
           const defaultJurisdiction =
             importType === 'nbr' ? 'nbr' :
             importType === 'internacional' ? 'internacional' :
+            importType === 'estadual_municipal' ? 'estadual' :
             'federal';
           const jurisdictionFinal = jurisdiction || defaultJurisdiction;
           
@@ -953,6 +1139,7 @@ export async function parseLegislationExcelWithUnits(
             general_notes: generalNotes,
             states_list: statesList,
             municipalities_list: municipalitiesList,
+            municipality_hint: municipalityHint,
             // Avaliações por unidade
             unitEvaluations,
           };
@@ -985,10 +1172,11 @@ export async function validateLegislations(
     .select('title, norm_number, jurisdiction')
     .eq('company_id', companyId);
 
-  // Chave de duplicata: família_jurisdição|título|número (lowercase).
+  // Chave de duplicata: jurisdição|título|número (lowercase). Match EXATO por
+  // jurisdição — federal e estadual com mesmo número são leis distintas e não
+  // devem disparar warning de "já existe" entre si.
   const dupeKey = (j: string | null | undefined, t: string | null | undefined, n: string | null | undefined) => {
-    const family = [...jurisdictionFamily(j)].sort().join(',');
-    return `${family}|${(t || '').toLowerCase()}|${(n || '').toLowerCase()}`;
+    return `${(j || '').toLowerCase()}|${(t || '').toLowerCase()}|${(n || '').toLowerCase()}`;
   };
 
   const existingSet = new Set(
@@ -1032,11 +1220,15 @@ export async function validateLegislations(
     if ((leg.jurisdiction === 'estadual' || leg.jurisdiction === 'municipal') && !leg.state && !leg.states_list) {
       errors.push('UF é obrigatório para legislações estaduais/municipais');
     }
-    
+
     // Conditional: municipality for municipal
     if (leg.jurisdiction === 'municipal' && !leg.municipality) {
       warnings.push('Município recomendado para legislações municipais');
     }
+
+    // 'outros' (alvarás, licenças soltas) não tem UF/município previsível —
+    // não exigimos nada além do título/tipo. Alinhado com a planilha regional
+    // onde INSTÂNCIA="OUTROS" representa documentos avulsos.
     
     // Validate URL format
     if (leg.full_text_url && !leg.full_text_url.match(/^https?:\/\/.+/)) {
@@ -1177,14 +1369,20 @@ export async function importLegislations(
       jurisdiction: string;
     };
 
-    // Reusa a função `jurisdictionFamily` exportada no topo do módulo para
-    // decidir se uma entry do DB pode ser alvo de match para uma linha da
-    // planilha. Escopo: federal/estadual/municipal entre si; nbr isolado;
-    // internacional isolado.
+    // Decide se uma entry existente do DB pode ser alvo de match para uma
+    // linha da planilha. Match EXATO por jurisdição: federal/estadual/municipal/
+    // nbr/internacional/outros são níveis distintos — uma "LEI 6938 federal" e
+    // uma "LEI 6938 estadual" são leis diferentes mesmo com tipo+número idênticos.
+    // O comportamento legacy de fundir federal/estadual/municipal numa família
+    // "legal" foi removido depois de incidente onde planilha regional do RS
+    // sequestrou 4 legislações federais (DECRETO 38356, LEI 6938, CONAMA 499,
+    // LEI 6590) só por compartilharem título/número.
     const canMatchJurisdiction = (
       rowJurisdiction: string,
       entryJurisdiction: string,
-    ): boolean => jurisdictionFamily(rowJurisdiction).has(entryJurisdiction.toLowerCase());
+    ): boolean => {
+      return (rowJurisdiction || '').toLowerCase() === (entryJurisdiction || '').toLowerCase();
+    };
 
     // Map principal: norm_type|norm_number → lista de entries. Guardamos TODAS
     // as entries com o mesmo par tipo+número (podem ser leis distintas com mesmo

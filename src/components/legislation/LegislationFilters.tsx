@@ -129,6 +129,7 @@ export const LegislationFilters: React.FC<LegislationFiltersProps> = ({
               <SelectItem value="municipal">Municipal</SelectItem>
               <SelectItem value="nbr">NBR</SelectItem>
               <SelectItem value="internacional">Internacional</SelectItem>
+              <SelectItem value="outros">Outros</SelectItem>
             </SelectContent>
           </Select>
         </div>

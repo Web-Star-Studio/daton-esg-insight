@@ -64,7 +64,7 @@ function isSubsequence(short: string, long: string): boolean {
 // Find best matching branch for a unit code.
 // Ordem: code exato → name exato → prefixo de 3+ letras (DUC→DUQUE) →
 // UF (pega primeira filial do estado alfabeticamente) → contains/city.
-function findBestMatch(unitCode: string, branches: Branch[]): Branch | null {
+export function findBestMatch(unitCode: string, branches: Branch[]): Branch | null {
   const normalized = unitCode.toUpperCase().trim();
   const active = branches.filter(b => b.status === 'Ativa' || b.status === 'Ativo');
 
@@ -110,6 +110,52 @@ function findBestMatch(unitCode: string, branches: Branch[]): Branch | null {
     const subMatches = active.filter(b => b.city && isSubsequence(target, stripAccents(b.city)));
     if (subMatches.length === 1) return subMatches[0];
   }
+
+  return null;
+}
+
+// Resolve um hint extraído da coluna INSTÂNCIA (ex.: "POA", "DUQUE DE CAXIAS",
+// "PORTO REAL") para uma filial específica. Estratégia em camadas porque o
+// hint pode vir como abreviação ("POA"), nome completo ("DUQUE DE CAXIAS") ou
+// múltiplas palavras que casam com código compacto ("PORTO REAL" → "PREAL").
+//
+// Tenta, em ordem:
+//   1) findBestMatch(hint) — cobre code exato, prefixo, UF, contains/city, subseq.
+//   2) findBestMatch(hint sem espaços) — "PORTOREAL" não casa "PREAL" mas captura
+//      casos onde branch.code/city colapsa espaços ("São Bernardo" → "SBC")
+//   3) findBestMatch(iniciais das palavras) — "PORTO REAL" → "PR" (cai pra UF
+//      se PR é sigla, mas se houver branch.code "PR" exato, casa primeiro)
+//   4) Match contains da versão sem espaços do hint contra branch.code curto:
+//      caso PORTOREAL ⊃ PREAL (substring match) — cobre "PORTO REAL" → PREAL.
+export function findBranchForInstanciaHint(hint: string, branches: Branch[]): Branch | null {
+  if (!hint) return null;
+  const normalized = hint.toUpperCase().trim();
+  if (!normalized) return null;
+
+  const direct = findBestMatch(normalized, branches);
+  if (direct) return direct;
+
+  const compact = normalized.replace(/\s+/g, '');
+  if (compact !== normalized) {
+    const compactMatch = findBestMatch(compact, branches);
+    if (compactMatch) return compactMatch;
+  }
+
+  const initials = normalized.split(/\s+/).filter(Boolean).map(w => w[0]).join('');
+  if (initials.length >= 2 && initials !== normalized) {
+    const initialsMatch = findBestMatch(initials, branches);
+    if (initialsMatch) return initialsMatch;
+  }
+
+  // Substring match contra branch.code curto: cobre "PORTOREAL" ⊃ "PREAL".
+  // Exige code de pelo menos 3 chars pra evitar matches casuais (ex.: "RJ" em
+  // qualquer hint que tenha duas iniciais que coincidam).
+  const active = branches.filter(b => b.status === 'Ativa' || b.status === 'Ativo');
+  const codeContainsMatch = active.find(b => {
+    const code = b.code?.toUpperCase().trim() || '';
+    return code.length >= 3 && compact.includes(code);
+  });
+  if (codeContainsMatch) return codeContainsMatch;
 
   return null;
 }
@@ -276,7 +322,7 @@ export function UnitMappingStep({
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Selecionar destino..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
+                    <SelectContent className="bg-background">
                       <SelectItem value="ignore">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <X className="h-4 w-4" />
