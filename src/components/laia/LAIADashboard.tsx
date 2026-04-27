@@ -75,12 +75,18 @@ const CHART_COLORS = {
 
 function CharacterizationChart({ 
   title, 
+  dimension,
   data, 
-  colors 
+  colors,
+  selectedValue,
+  onSelect,
 }: { 
   title: string; 
+  dimension: CharacterizationDimension;
   data: { name: string; value: number }[]; 
   colors: string[];
+  selectedValue?: string;
+  onSelect: (dimension: CharacterizationDimension, value: string) => void;
 }) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
@@ -131,13 +137,16 @@ function CharacterizationChart({
                 innerRadius={30}
                 paddingAngle={2}
                 dataKey="value"
+                onClick={(entry) => onSelect(dimension, entry.name)}
+                className="cursor-pointer outline-none"
               >
-                {data.map((_, index) => (
+                {data.map((item, index) => (
                   <Cell 
                     key={`cell-${index}`} 
                     fill={colors[index % colors.length]}
-                    stroke="hsl(var(--background))"
-                    strokeWidth={2}
+                    opacity={!selectedValue || selectedValue === item.name ? 1 : 0.35}
+                    stroke={selectedValue === item.name ? "hsl(var(--foreground))" : "hsl(var(--background))"}
+                    strokeWidth={selectedValue === item.name ? 3 : 2}
                   />
                 ))}
               </Pie>
@@ -157,7 +166,7 @@ function CharacterizationChart({
                 verticalAlign="bottom" 
                 height={36}
                 formatter={(value) => (
-                  <span className="text-xs text-muted-foreground">{value}</span>
+                  <span className="text-xs text-muted-foreground">{getCharacterizationLabel(dimension, String(value))}</span>
                 )}
               />
             </PieChart>
@@ -168,8 +177,82 @@ function CharacterizationChart({
   );
 }
 
-export function LAIADashboard({ branchId, onCardClick }: LAIADashboardProps) {
+function DrillDownList({
+  selected,
+  assessments,
+  onClear,
+  onAssessmentClick,
+}: {
+  selected: { dimension: CharacterizationDimension; value: string };
+  assessments: LAIAAssessment[];
+  onClear: () => void;
+  onAssessmentClick?: (assessment: LAIAAssessment) => void;
+}) {
+  const dimensionLabel = CHARACTERIZATION_TITLES[selected.dimension];
+  const valueLabel = getCharacterizationLabel(selected.dimension, selected.value);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+        <div className="space-y-1">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            {dimensionLabel}: {valueLabel}
+          </CardTitle>
+          <CardDescription>
+            {assessments.length} avaliação(ões) compondo o recorte selecionado
+          </CardDescription>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onClear} aria-label="Limpar seleção">
+          <X className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="max-h-[420px] pr-3">
+          <div className="space-y-2">
+            {assessments.map((assessment) => (
+              <button
+                key={assessment.id}
+                type="button"
+                onClick={() => onAssessmentClick?.(assessment)}
+                className="w-full rounded-md border bg-card p-3 text-left transition-colors hover:bg-muted/60"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">{assessment.aspect_code}</Badge>
+                      {assessment.sector?.name && <Badge variant="secondary">{assessment.sector.name}</Badge>}
+                    </div>
+                    <p className="font-medium text-foreground">{assessment.environmental_aspect}</p>
+                    <p className="text-sm text-muted-foreground">{assessment.environmental_impact}</p>
+                    <p className="text-xs text-muted-foreground">{assessment.activity_operation}</p>
+                  </div>
+                  <Eye className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function LAIADashboard({ branchId, onCardClick, onAssessmentClick }: LAIADashboardProps) {
   const { data: stats, isLoading, error } = useLAIADashboardStats(branchId);
+  const { data: assessments = [] } = useLAIAAssessments({ branch_id: branchId, status: "ativo" });
+  const [selectedDrillDown, setSelectedDrillDown] = useState<{ dimension: CharacterizationDimension; value: string } | null>(null);
+
+  const drillDownAssessments = useMemo(() => {
+    if (!selectedDrillDown) return [];
+    return assessments.filter((assessment) => assessment[selectedDrillDown.dimension] === selectedDrillDown.value);
+  }, [assessments, selectedDrillDown]);
+
+  const handleChartSelect = (dimension: CharacterizationDimension, value: string) => {
+    setSelectedDrillDown((current) => (
+      current?.dimension === dimension && current.value === value ? null : { dimension, value }
+    ));
+  };
 
   if (isLoading) {
     return (
