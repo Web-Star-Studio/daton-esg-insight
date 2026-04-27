@@ -499,9 +499,16 @@ export const exportToExcel = (data: ExportData, filename: string) => {
   };
 
   const sheet: (string | number)[][] = [];
+  // Linhas que devem ocupar a largura inteira (critérios). São mescladas
+  // depois pra que textos longos não fiquem truncados pela largura da coluna A.
+  const fullWidthRows: number[] = [];
   if (data.criteria?.length) {
+    fullWidthRows.push(sheet.length);
     sheet.push(padRow(['Critérios Aplicados']));
-    data.criteria.forEach(c => sheet.push(padRow([c])));
+    data.criteria.forEach(c => {
+      fullWidthRows.push(sheet.length);
+      sheet.push(padRow([c]));
+    });
     sheet.push(padRow([]));
   }
   sheet.push(data.headers);
@@ -509,7 +516,7 @@ export const exportToExcel = (data: ExportData, filename: string) => {
 
   const ws = XLSX.utils.aoa_to_sheet(sheet);
   // Auto column widths baseados no conteúdo real do dado (ignora as linhas de
-  // critérios que costumam ser bem mais largas).
+  // critérios — elas são mescladas A:N abaixo).
   ws['!cols'] = data.headers.map((h, i) => {
     const maxLen = Math.max(
       String(h).length,
@@ -517,6 +524,24 @@ export const exportToExcel = (data: ExportData, filename: string) => {
     );
     return { wch: Math.min(Math.max(maxLen + 2, 12), 50) };
   });
+  // Merge das linhas de critérios cobrindo toda a largura — texto longo fica
+  // visível inteiro porque ocupa visualmente N colunas, sem inflar a coluna A.
+  if (fullWidthRows.length > 0 && numCols > 1) {
+    ws['!merges'] = fullWidthRows.map(r => ({
+      s: { r, c: 0 },
+      e: { r, c: numCols - 1 },
+    }));
+    // Habilita wrap text nas células mescladas como fallback caso o conteúdo
+    // ultrapasse a largura combinada — texto quebra em várias linhas em vez de
+    // ser cortado.
+    fullWidthRows.forEach(r => {
+      const addr = XLSX.utils.encode_cell({ r, c: 0 });
+      const cell = ws[addr];
+      if (cell) {
+        cell.s = { ...(cell.s || {}), alignment: { wrapText: true, vertical: 'top' } };
+      }
+    });
+  }
   XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
 
   XLSX.writeFile(wb, `${filename}.xlsx`);
