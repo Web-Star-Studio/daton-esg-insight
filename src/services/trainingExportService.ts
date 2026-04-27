@@ -312,17 +312,58 @@ export const getTrainingExportData = async (
   const criteria = buildCriteria(config, options);
 
   switch (config.type) {
-    case 'total':
-      return {
-        headers: ['Descrição', 'Valor'],
-        rows: [
-          ['Total de Horas de Treinamento', totalHours],
-          ['Total de Funcionários Treinados', totalEmployees],
-          ['Média de Horas por Funcionário', avgHours],
-        ],
-        summary,
-        criteria,
-      };
+    case 'total': {
+      // Lista cada treinamento concluído (dentro do escopo dos filtros) com
+      // suas horas totais, e fecha com 3 linhas de resumo. A duração total por
+      // programa = duration_hours × participantes que estão no recorte de
+      // employees filtrado, igual ao 'by_training' — mantém consistência.
+      const employeeIdSet = new Set(employees.map(e => e.id));
+      const programIdSet = new Set(
+        f.trainingProgramIds?.length ? f.trainingProgramIds : programs.map(p => p.id)
+      );
+      const trainingStats = programs
+        .filter(p => programIdSet.has(p.id))
+        .map(program => {
+          const programTrainings = trainingsScoped.filter(
+            t => t.training_program_id === program.id && employeeIdSet.has(t.employee_id)
+          );
+          const participants = programTrainings.length;
+          const duration = Number(program.duration_hours) || 0;
+          return {
+            name: program.name,
+            endDate: program.end_date || program.start_date || '',
+            duration,
+            participants,
+            totalHours: participants * duration,
+          };
+        })
+        .filter(p => p.participants > 0)
+        .sort((a, b) => {
+          // Mais recente primeiro; em empate, maior carga horária primeiro.
+          const dateCmp = (b.endDate || '').localeCompare(a.endDate || '');
+          if (dateCmp !== 0) return dateCmp;
+          return b.totalHours - a.totalHours;
+        });
+
+      const headers = ['Treinamento', 'Data Término', 'Duração (h)', 'Participantes', 'Horas Totais'];
+      const rows: (string | number)[][] = trainingStats.map(item => [
+        item.name,
+        item.endDate ? new Date(item.endDate).toLocaleDateString('pt-BR') : '—',
+        item.duration,
+        item.participants,
+        item.totalHours,
+      ]);
+      // Separador visual + bloco de resumo. As 3 colunas do meio ficam vazias
+      // pra alinhar o valor na coluna "Horas Totais".
+      if (rows.length > 0) {
+        rows.push(['', '', '', '', '']);
+      }
+      rows.push(['Total de Horas de Treinamento', '', '', '', totalHours]);
+      rows.push(['Total de Funcionários Treinados', '', '', '', totalEmployees]);
+      rows.push(['Média de Horas por Funcionário', '', '', '', avgHours]);
+
+      return { headers, rows, summary, criteria };
+    }
 
     case 'by_location': {
       const byLocation = groupByField(employeeHours, 'location');
