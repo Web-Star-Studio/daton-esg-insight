@@ -475,9 +475,6 @@ export const exportToCSV = (data: ExportData, filename: string) => {
   if (data.criteria?.length) {
     lines.push('Critérios aplicados');
     data.criteria.forEach(c => lines.push(c.replace(/;/g, ',')));
-    if (data.summary) {
-      lines.push(`Resumo: ${data.summary.totalHours}h totais; ${data.summary.totalEmployees} funcionários; ${data.summary.avgHours}h média`);
-    }
     lines.push('');
   }
 
@@ -491,26 +488,28 @@ export const exportToCSV = (data: ExportData, filename: string) => {
 export const exportToExcel = (data: ExportData, filename: string) => {
   const wb = XLSX.utils.book_new();
 
-  // Sheet 1: Critérios + Resumo
-  if (data.criteria?.length || data.summary) {
-    const criteriaSheet: (string | number)[][] = [['Critérios Aplicados']];
-    (data.criteria || []).forEach(c => criteriaSheet.push([c]));
-    criteriaSheet.push([]);
-    if (data.summary) {
-      criteriaSheet.push(['Resumo']);
-      criteriaSheet.push(['Horas Totais', data.summary.totalHours]);
-      criteriaSheet.push(['Funcionários', data.summary.totalEmployees]);
-      criteriaSheet.push(['Média de Horas', data.summary.avgHours]);
-    }
-    const wsCriteria = XLSX.utils.aoa_to_sheet(criteriaSheet);
-    wsCriteria['!cols'] = [{ wch: 30 }, { wch: 60 }];
-    XLSX.utils.book_append_sheet(wb, wsCriteria, 'Critérios');
-  }
+  // Aba única "Relatório": critérios no topo, headers + rows abaixo. O resumo
+  // (total horas, funcionários, média) já vem nas últimas linhas das rows quando
+  // o tipo é 'total' — pra outros tipos, cada linha do relatório carrega seus
+  // próprios totais por agrupador.
+  const numCols = data.headers.length;
+  const padRow = (cells: (string | number)[]): (string | number)[] => {
+    if (cells.length >= numCols) return cells;
+    return [...cells, ...Array(numCols - cells.length).fill('')];
+  };
 
-  // Sheet 2: Dados
-  const wsData = [data.headers, ...data.rows];
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  // Auto column widths
+  const sheet: (string | number)[][] = [];
+  if (data.criteria?.length) {
+    sheet.push(padRow(['Critérios Aplicados']));
+    data.criteria.forEach(c => sheet.push(padRow([c])));
+    sheet.push(padRow([]));
+  }
+  sheet.push(data.headers);
+  data.rows.forEach(row => sheet.push(row));
+
+  const ws = XLSX.utils.aoa_to_sheet(sheet);
+  // Auto column widths baseados no conteúdo real do dado (ignora as linhas de
+  // critérios que costumam ser bem mais largas).
   ws['!cols'] = data.headers.map((h, i) => {
     const maxLen = Math.max(
       String(h).length,
