@@ -351,25 +351,46 @@ export function LAIADashboard({ branchId, onCardClick, onAssessmentClick }: LAIA
       <div className="grid gap-4 md:grid-cols-2">
         <CharacterizationChart 
           title="Temporalidade" 
+          dimension="temporality"
           data={stats.by_temporality} 
           colors={CHART_COLORS.temporality} 
+          selectedValue={selectedDrillDown?.dimension === "temporality" ? selectedDrillDown.value : undefined}
+          onSelect={handleChartSelect}
         />
         <CharacterizationChart 
           title="Situação Operacional" 
+          dimension="operational_situation"
           data={stats.by_operational_situation} 
           colors={CHART_COLORS.operational_situation} 
+          selectedValue={selectedDrillDown?.dimension === "operational_situation" ? selectedDrillDown.value : undefined}
+          onSelect={handleChartSelect}
         />
         <CharacterizationChart 
           title="Incidência" 
+          dimension="incidence"
           data={stats.by_incidence} 
           colors={CHART_COLORS.incidence} 
+          selectedValue={selectedDrillDown?.dimension === "incidence" ? selectedDrillDown.value : undefined}
+          onSelect={handleChartSelect}
         />
         <CharacterizationChart 
           title="Classe de Impacto" 
+          dimension="impact_class"
           data={stats.by_impact_class} 
           colors={CHART_COLORS.impact_class} 
+          selectedValue={selectedDrillDown?.dimension === "impact_class" ? selectedDrillDown.value : undefined}
+          onSelect={handleChartSelect}
         />
       </div>
+
+      {selectedDrillDown && (
+        <DrillDownList
+          selected={selectedDrillDown}
+          assessments={drillDownAssessments}
+          onClear={() => setSelectedDrillDown(null)}
+          onAssessmentClick={onAssessmentClick}
+        />
+      )}
     </div>
   );
 }
