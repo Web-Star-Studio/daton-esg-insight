@@ -75,6 +75,8 @@ const isActiveStatus = (status: string | null | undefined): boolean => {
   return normalized === 'ativo' || normalized === 'ativa';
 };
 
+const toNumericHours = (value: number | string | null | undefined): number => Number(value) || 0;
+
 export const getTrainingFilterOptions = async (): Promise<FilterOptions> => {
   if (isDemoRuntimeEnabled()) {
     return {
@@ -288,7 +290,7 @@ export const getTrainingExportData = async (
     const empTrainings = trainingsScoped.filter(t => t.employee_id === emp.id);
     const totalHours = empTrainings.reduce((sum, t) => {
       const program = programs.find(p => p.id === t.training_program_id);
-      return sum + (program?.duration_hours || 0);
+      return sum + toNumericHours(program?.duration_hours);
     }, 0);
 
     const branchLabel = emp.branch_id ? branchesMap.get(emp.branch_id) : null;
@@ -408,11 +410,12 @@ export const getTrainingExportData = async (
             t => t.training_program_id === program.id && employeeIdSet.has(t.employee_id)
           );
           const completedCount = programTrainings.length;
-          const totalProgramHours = completedCount * (program.duration_hours || 0);
+          const duration = toNumericHours(program.duration_hours);
+          const totalProgramHours = completedCount * duration;
           return {
             name: program.name,
             category: program.category || 'Não categorizado',
-            duration: program.duration_hours || 0,
+            duration,
             participants: completedCount,
             totalHours: totalProgramHours,
           };
