@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from "@/integrations/supabase/client";
 import { formErrorHandler } from '@/utils/formErrorHandler';
 import { logger } from '@/utils/logger';
+import { fetchAllPaginated } from '@/utils/supabasePagination';
 
 // ============= Types =============
 
@@ -596,6 +597,47 @@ function normalizeKey(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
+// Normaliza texto (lowercase, sem acentos, espaços colapsados) para comparação
+// tolerante. Usado em chaves de reconciliação de tema/subtema/título.
+function normalizeText(s: string | null | undefined): string {
+  return (s || '').toString().toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// Família ABNT: "NBR", "NBR ABNT", "ABNT NBR", "NBR ISO", "ABNT NBR ISO",
+// "NBR NM", "ABNT PR", "ABNT NBR ISO/IEC" compartilham o mesmo espaço numérico —
+// o número é identificador único dentro da família. Colapsar todos em "nbr" pra
+// efeito de match permite reconciliar entries vindas de imports distintos
+// (ex.: "NBR 10004/2004" com "NBR ABNT 10004").
+function canonicalNormType(t: string | null | undefined): string {
+  const norm = normalizeText(t);
+  if (/\b(nbr|abnt)\b/.test(norm)) return 'nbr';
+  return norm;
+}
+
+// Normaliza número da norma — strip pontuação e ano-sufixo. Assim "10.088",
+// "10088", "Lei 12.305/2010" vs "12305" e "2.163-41" vs "2163-41" viram a
+// mesma chave e reconciliam leis em formato diferente do que vem na planilha.
+function normalizeNumForKey(n: string | null | undefined): string {
+  let s = (n || '').toString().toLowerCase().trim();
+  s = s.replace(/\/\d{4}$/, '');
+  s = s.replace(/[.,\s-]/g, '');
+  return s;
+}
+
+// Prefixo do título para reconciliação por título quando não há norm_number.
+// Mesma normalização do match do import.
+function titleHash(s: string | null | undefined): string {
+  return normalizeText(s).slice(0, 80);
+}
+
+// Chave canônica de match — mesma usada por `byTypeNum` no import. Validação e
+// import precisam compartilhar pra que a prévia "já existe" reflita exatamente
+// o que o import vai casar.
+function buildMatchKey(normType: string | null | undefined, normNumber: string | null | undefined): string {
+  return `${canonicalNormType(normType)}|${normalizeNumForKey(normNumber)}`;
+}
+
 function getColumnValue(row: any, ...possibleNames: string[]): string {
   // Fast path: exact match
   for (const name of possibleNames) {
@@ -958,8 +1000,14 @@ export async function parseLegislationExcelWithUnits(
             'Notas gerais', 'Responsáveis'
           );
           
-          // Parse múltiplos estados e detectar internacional
-          const stateRaw = getColumnValue(row, 'UF', 'Estado', 'ESTADO');
+          // Parse múltiplos estados e detectar internacional. NBR e
+          // internacional não têm coluna de UF — não tentamos ler nada
+          // pra evitar que getColumnValue casasse acidentalmente com
+          // colunas curtas (bug histórico do "ES" virar UF). Estado é
+          // exclusivo de imports legais e regionais.
+          const stateRaw = (importType === 'legal' || importType === 'estadual_municipal')
+            ? getColumnValue(row, 'UF', 'Estado', 'ESTADO')
+            : '';
           const { state, statesList, isInternational } = parseState(stateRaw);
           
           // Determinar jurisdição (passando UF para detectar internacional).
@@ -1167,21 +1215,41 @@ export async function validateLegislations(
   // pra que o aviso de "já existe" respeite o escopo — evita warnings confusos
   // quando a planilha internacional traz LEI/DECRETO cujo tipo+número coincide
   // com uma federal no DB (normas distintas, não são duplicatas reais).
-  const { data: existingLegislations } = await supabase
-    .from('legislations')
-    .select('title, norm_number, jurisdiction')
-    .eq('company_id', companyId);
-
-  // Chave de duplicata: jurisdição|título|número (lowercase). Match EXATO por
-  // jurisdição — federal e estadual com mesmo número são leis distintas e não
-  // devem disparar warning de "já existe" entre si.
-  const dupeKey = (j: string | null | undefined, t: string | null | undefined, n: string | null | undefined) => {
-    return `${(j || '').toLowerCase()}|${(t || '').toLowerCase()}|${(n || '').toLowerCase()}`;
-  };
-
-  const existingSet = new Set(
-    (existingLegislations || []).map(l => dupeKey(l.jurisdiction, l.title, l.norm_number))
+  // Paginado pra ultrapassar o limite default de 1000 rows do Postgrest.
+  const existingLegislations = await fetchAllPaginated<{
+    title: string | null;
+    norm_type: string | null;
+    norm_number: string | null;
+    jurisdiction: string | null;
+  }>((from, to) =>
+    supabase
+      .from('legislations')
+      .select('title, norm_type, norm_number, jurisdiction')
+      .eq('company_id', companyId)
+      .range(from, to),
   );
+
+  // Chave de duplicata escopada por jurisdição. Usa a MESMA forma canônica
+  // do matcher de import (canonicalNormType + normalizeNumForKey + titleHash)
+  // pra que a prévia "já existe" reflita exatamente o que o import vai casar.
+  // Sem isso, "ABNT NBR 10004:2004" no DB e "NBR 10004" na planilha são
+  // tratados como duplicatas pelo import (matchKey = "nbr|10004") mas não
+  // pela prévia (dupeKey literal diverge), e o usuário acha que entries
+  // sumiram quando na verdade só o aviso some.
+  const dupeKeyByTypeNum = (j: string | null | undefined, type: string | null | undefined, num: string | null | undefined) =>
+    `${(j || '').toLowerCase()}|tn:${buildMatchKey(type, num)}`;
+  const dupeKeyByTitle = (j: string | null | undefined, title: string | null | undefined) =>
+    `${(j || '').toLowerCase()}|t:${titleHash(title)}`;
+
+  const existingSet = new Set<string>();
+  for (const l of existingLegislations || []) {
+    if (l.norm_type && l.norm_number) {
+      existingSet.add(dupeKeyByTypeNum(l.jurisdiction, l.norm_type, l.norm_number));
+    }
+    if (l.title) {
+      existingSet.add(dupeKeyByTitle(l.jurisdiction, l.title));
+    }
+  }
   
   return legislations.map(leg => {
     const errors: string[] = [];
@@ -1235,11 +1303,16 @@ export async function validateLegislations(
       warnings.push('URL do texto integral parece inválida');
     }
     
-    // Check duplicates — escopado por família de jurisdição. Uma linha
-    // internacional com mesmo título+número de uma federal existente não
-    // dispara aviso, porque são normas distintas em jurisdições separadas.
-    const key = dupeKey(leg.jurisdiction, leg.title, leg.norm_number);
-    if (existingSet.has(key)) {
+    // Check duplicates — escopado por jurisdição. Uma linha internacional
+    // com mesmo título+número de uma federal existente NÃO dispara aviso,
+    // porque o import também não vai casar (jurisdições distintas).
+    // Casa via tipo+número canônico (mesmo matcher do import) ou via título
+    // prefixo — qualquer um dispara o aviso, espelhando o byTypeNum/byTitleExact.
+    const matchedByTypeNum = leg.norm_type && leg.norm_number
+      && existingSet.has(dupeKeyByTypeNum(leg.jurisdiction, leg.norm_type, leg.norm_number));
+    const matchedByTitle = leg.title
+      && existingSet.has(dupeKeyByTitle(leg.jurisdiction, leg.title));
+    if (matchedByTypeNum || matchedByTitle) {
       warnings.push('Legislação com mesmo título/número já existe');
     }
     
@@ -1303,13 +1376,6 @@ export async function importLegislations(
     const { profile } = await formErrorHandler.checkAuth();
     const companyId = profile.company_id;
 
-    // Normaliza texto (lowercase, sem acentos, espaços colapsados) para
-    // comparação tolerante. Usado tanto em temas/subtemas quanto em matching
-    // de legislações. Declarado cedo porque temas usam antes.
-    const normalizeText = (s: string | null | undefined) =>
-      (s || '').toString().toLowerCase().normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
-
     // Get existing themes and subthemes
     const { data: existingThemes } = await supabase
       .from('legislation_themes')
@@ -1331,35 +1397,26 @@ export async function importLegislations(
     // aparecem em ambas as jurisdições e, sem filtro, uma linha internacional
     // com DECRETO 99704 casaria com o DECRETO 99704 federal e viraria UPDATE
     // disfarçado em vez de uma entry internacional nova.
-    const { data: existingLegislations } = await supabase
-      .from('legislations')
-      .select('id, title, norm_type, norm_number, summary, jurisdiction')
-      .eq('company_id', companyId);
+    // Paginado pra ultrapassar o limite default de 1000 rows do Postgrest —
+    // sem isso, companies grandes (Fike >1.4k legislações) perdiam ~450 entries
+    // do `byTypeNum` e o re-import criava duplicatas em vez de casar.
+    const existingLegislations = await fetchAllPaginated<{
+      id: string;
+      title: string | null;
+      norm_type: string | null;
+      norm_number: string | null;
+      summary: string | null;
+      jurisdiction: string | null;
+    }>((from, to) =>
+      supabase
+        .from('legislations')
+        .select('id, title, norm_type, norm_number, summary, jurisdiction')
+        .eq('company_id', companyId)
+        .range(from, to),
+    );
 
-    const titleHash = (s: string | null | undefined) => normalizeText(s).slice(0, 80);
-
-    // Normaliza número da norma para chave de conciliação — strip pontuação
-    // e ano-sufixo. Assim "10.088", "10088", "Lei 12.305/2010" vs "12305" e
-    // "2.163-41" vs "2163-41" viram a mesma chave e reconciliam leis que
-    // existem no DB em formato diferente do que vem na planilha.
-    const normalizeNumForKey = (n: string | null | undefined) => {
-      let s = (n || '').toString().toLowerCase().trim();
-      s = s.replace(/\/\d{4}$/, '');
-      s = s.replace(/[.,\s-]/g, '');
-      return s;
-    };
-    // Família ABNT: "NBR", "NBR ABNT", "ABNT NBR", "NBR ISO", "ABNT NBR ISO",
-    // "NBR NM", "ABNT PR", "ABNT NBR ISO/IEC" compartilham o mesmo espaço
-    // numérico — o número é identificador único dentro da família. Colapsar
-    // todos em "nbr" pra efeito de match permite reconciliar entries vindas
-    // de imports distintos (ex.: "NBR 10004/2004" com "NBR ABNT 10004").
-    const canonicalNormType = (t: string | null | undefined) => {
-      const norm = normalizeText(t);
-      if (/\b(nbr|abnt)\b/.test(norm)) return 'nbr';
-      return norm;
-    };
-    const matchKey = (normType: string | null | undefined, normNum: string | null | undefined) =>
-      `${canonicalNormType(normType)}|${normalizeNumForKey(normNum)}`;
+    // matchKey alias to module-level buildMatchKey for readability locally.
+    const matchKey = buildMatchKey;
 
     type ExistingEntry = {
       id: string;
@@ -1389,8 +1446,12 @@ export async function importLegislations(
     // número, ex.: DECRETO 10088 Convenção 174 vs Convenção 170 da OIT).
     const byTypeNum = new Map<string, ExistingEntry[]>();
     // Maps secundários para fallback quando não há norm_number na planilha.
-    const byTitleExact = new Map<string, ExistingEntry>();
-    const bySummaryPrefix = new Map<string, ExistingEntry>();
+    // Listas (não single entry) — quando o mesmo título normalizado aparece em
+    // jurisdições distintas (federal e internacional do mesmo decreto, p.ex.),
+    // precisamos preservar ambas para que o filtro por jurisdição encontre a
+    // candidata certa em vez de cair no primeiro hit e descartar.
+    const byTitleExact = new Map<string, ExistingEntry[]>();
+    const bySummaryPrefix = new Map<string, ExistingEntry[]>();
 
     (existingLegislations || []).forEach(l => {
       const entry: ExistingEntry = {
@@ -1405,12 +1466,15 @@ export async function importLegislations(
         const list = byTypeNum.get(key);
         if (list) list.push(entry); else byTypeNum.set(key, [entry]);
       }
-      if (l.title && !byTitleExact.has(normalizeText(l.title))) {
-        byTitleExact.set(normalizeText(l.title), entry);
+      if (l.title) {
+        const k = normalizeText(l.title);
+        const list = byTitleExact.get(k);
+        if (list) list.push(entry); else byTitleExact.set(k, [entry]);
       }
       if (l.summary) {
         const k = normalizeText(l.summary).slice(0, 150);
-        if (!bySummaryPrefix.has(k)) bySummaryPrefix.set(k, entry);
+        const list = bySummaryPrefix.get(k);
+        if (list) list.push(entry); else bySummaryPrefix.set(k, [entry]);
       }
     });
 
@@ -1519,10 +1583,11 @@ export async function importLegislations(
         }
 
         if (!existingLegislation && leg.title) {
-          const byTitle = byTitleExact.get(normalizeText(leg.title));
-          if (byTitle
-              && !consumedIds.has(byTitle.id)
-              && canMatchJurisdiction(leg.jurisdiction, byTitle.jurisdiction)) {
+          const candidates = byTitleExact.get(normalizeText(leg.title)) || [];
+          const byTitle = candidates.find(c =>
+            !consumedIds.has(c.id) && canMatchJurisdiction(leg.jurisdiction, c.jurisdiction)
+          );
+          if (byTitle) {
             existingLegislation = { id: byTitle.id, title: byTitle.title };
           }
         }
@@ -1531,10 +1596,11 @@ export async function importLegislations(
         // "RESUMO E TÍTULO" da planilha corresponde ao campo summary no DB).
         if (!existingLegislation && leg.title) {
           const k = normalizeText(leg.title).slice(0, 150);
-          const bySum = bySummaryPrefix.get(k);
-          if (bySum
-              && !consumedIds.has(bySum.id)
-              && canMatchJurisdiction(leg.jurisdiction, bySum.jurisdiction)) {
+          const candidates = bySummaryPrefix.get(k) || [];
+          const bySum = candidates.find(c =>
+            !consumedIds.has(c.id) && canMatchJurisdiction(leg.jurisdiction, c.jurisdiction)
+          );
+          if (bySum) {
             existingLegislation = { id: bySum.id, title: bySum.title };
           }
         }

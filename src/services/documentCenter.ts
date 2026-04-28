@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 import type { Database } from "@/integrations/supabase/types";
 import { processDocumentWithAI } from "@/services/documentAI";
 import { downloadDocument, uploadDocument } from "@/services/documents";
@@ -351,16 +352,16 @@ async function getProfilesMap(userIds: string[]): Promise<Record<string, { id: s
     return {};
   }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .in("id", uniqueUserIds);
+  // Paginado pra cobrir empresas com >1000 colaboradores únicos referenciados.
+  const data = await fetchAllPaginated<{ id: string; full_name: string }>((from, to) =>
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", uniqueUserIds)
+      .range(from, to),
+  );
 
-  if (error) {
-    throw new Error(`Erro ao buscar colaboradores: ${error.message}`);
-  }
-
-  return (data || []).reduce<Record<string, { id: string; full_name: string }>>((acc, profile) => {
+  return data.reduce<Record<string, { id: string; full_name: string }>>((acc, profile) => {
     acc[profile.id] = profile;
     return acc;
   }, {});
@@ -418,16 +419,16 @@ async function getControlProfiles(documentIds: string[]): Promise<Record<string,
     return {};
   }
 
-  const { data, error } = await supabase
-    .from("document_control_profiles" as any)
-    .select("*")
-    .in("document_id", documentIds);
+  // Paginado: 1 perfil por documento, mas com >1000 documentos passa do limite.
+  const data = await fetchAllPaginated<DocumentControlProfile>((from, to) =>
+    (supabase as any)
+      .from("document_control_profiles")
+      .select("*")
+      .in("document_id", documentIds)
+      .range(from, to),
+  );
 
-  if (error) {
-    throw new Error(`Erro ao carregar perfis controlados: ${error.message}`);
-  }
-
-  return ((data || []) as any[]).reduce<Record<string, DocumentControlProfile>>((acc, row: DocumentControlProfile) => {
+  return data.reduce<Record<string, DocumentControlProfile>>((acc, row: DocumentControlProfile) => {
     acc[row.document_id] = row;
     return acc;
   }, {});

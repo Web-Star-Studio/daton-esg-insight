@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
+import { getCurrentCompanyId } from "@/utils/currentCompany";
 import {
   calculateEnvironmentalScore,
   calculateSocialScore,
@@ -36,13 +38,17 @@ export interface IntegratedReport {
 }
 
 export const getIntegratedReports = async () => {
-  const { data, error } = await supabase
-    .from('integrated_reports')
-    .select('*')
-    .order('reporting_period_start', { ascending: false });
-
-  if (error) throw error;
-  return data;
+  // Escopo + paginação: sem company_id retornava relatórios de outras
+  // empresas até 1000 rows.
+  const companyId = await getCurrentCompanyId();
+  return fetchAllPaginated<any>((from, to) =>
+    supabase
+      .from('integrated_reports')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('reporting_period_start', { ascending: false })
+      .range(from, to),
+  );
 };
 
 export const getIntegratedReport = async (id: string) => {

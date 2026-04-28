@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 
 export interface AnalysisConfig {
   metric_key: string;
@@ -86,24 +87,30 @@ export async function getAssetsForComparison() {
 }
 
 export async function getWasteClassesForComparison() {
-  const { data, error } = await supabase
-    .from('waste_logs')
-    .select('waste_class')
-    .not('waste_class', 'is', null)
-    .order('waste_class');
-
-  if (error) {
+  // Pagina toda a tabela pra varrer classes raras — sem isso, com >1000
+  // waste_logs o dropdown perdia classes que estavam no fim do response.
+  let data: { waste_class: string | null }[] = [];
+  try {
+    data = await fetchAllPaginated<{ waste_class: string | null }>((from, to) =>
+      supabase
+        .from('waste_logs')
+        .select('waste_class')
+        .not('waste_class', 'is', null)
+        .order('waste_class')
+        .range(from, to),
+    );
+  } catch (error) {
     console.error('Erro ao carregar classes de resíduo:', error);
     return [];
   }
 
   // Filtrar string "null" e valores vazios APÓS a query
   const validClasses = data
-    ?.map(item => item.waste_class)
-    .filter(wc => wc && wc.toLowerCase() !== 'null' && wc.trim() !== '');
-  
+    .map(item => item.waste_class)
+    .filter((wc): wc is string => !!wc && wc.toLowerCase() !== 'null' && wc.trim() !== '');
+
   const uniqueClasses = [...new Set(validClasses)];
-  
+
   return uniqueClasses.map(waste_class => ({
     id: waste_class,
     name: waste_class,

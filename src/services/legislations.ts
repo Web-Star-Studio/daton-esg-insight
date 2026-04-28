@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 
 export interface LegislationTheme {
   id: string;
@@ -182,66 +183,55 @@ export const fetchLegislations = async (
     ? 'legislation_unit_compliance!inner(branch_id, applicability)'
     : '';
 
-  let query = supabase
-    .from('legislations')
-    .select(`
-      *,
-      theme:legislation_themes(*),
-      subtheme:legislation_subthemes(*),
-      responsible_user:profiles!legislations_responsible_user_id_fkey(id, full_name)${complianceRelation ? `,
-      ${complianceRelation}` : ''}
-    `)
-    .eq('company_id', companyId)
-    .eq('is_active', true);
-
-  if (filters?.jurisdiction) {
-    query = query.eq('jurisdiction', filters.jurisdiction);
-  }
-  if (filters?.themeId) {
-    query = query.eq('theme_id', filters.themeId);
-  }
-  if (filters?.subthemeId) {
-    query = query.eq('subtheme_id', filters.subthemeId);
-  }
-  if (filters?.normType) {
-    query = query.eq('norm_type', filters.normType);
-  }
-  if (filters?.publicationDateFrom) {
-    query = query.gte('publication_date', filters.publicationDateFrom);
-  }
-  if (filters?.publicationDateTo) {
-    query = query.lte('publication_date', filters.publicationDateTo);
-  }
-  if (filters?.branchId) {
-    query = query
-      .eq('legislation_unit_compliance.branch_id', filters.branchId)
-      .in('legislation_unit_compliance.applicability', ['real', 'potential']);
-  }
-  if (filters?.applicability) {
-    query = query.eq('overall_applicability', filters.applicability);
-  }
-  if (filters?.status) {
-    query = query.eq('overall_status', filters.status);
-  }
-  if (filters?.responsibleUserId) {
-    query = query.eq('responsible_user_id', filters.responsibleUserId);
-  }
+  // Pré-carrega legislation_ids cujos evidences batem com o search term —
+  // feito UMA vez antes de paginar pra não refetchar a cada página.
+  let evidenceLegislationIds: string[] = [];
+  let safeTerm = '';
   if (filters?.search) {
-    // Remove chars que quebram a sintaxe do .or() do PostgREST (vírgula, parênteses, backslash).
-    const safeTerm = filters.search.replace(/[,()\\]/g, ' ').trim();
+    safeTerm = filters.search.replace(/[,()\\]/g, ' ').trim();
     if (safeTerm) {
-      // Também procura no conteúdo das evidências: pega primeiro os legislation_id
-      // cuja description bata com o termo e adiciona um `id.in.(...)` ao OR.
       const { data: evidenceMatches } = await supabase
         .from('legislation_evidences')
         .select('legislation_id')
         .eq('company_id', companyId)
         .ilike('description', `%${safeTerm}%`);
-
-      const evidenceLegislationIds = Array.from(
+      evidenceLegislationIds = Array.from(
         new Set((evidenceMatches || []).map((e) => e.legislation_id))
       );
+    }
+  }
 
+  // Builder do query — reconstruído a cada página pelo paginator. Aplica
+  // todos os filtros e o `.range()` de cada iteração.
+  const buildQuery = (from: number, to: number) => {
+    let query = supabase
+      .from('legislations')
+      .select(`
+        *,
+        theme:legislation_themes(*),
+        subtheme:legislation_subthemes(*),
+        responsible_user:profiles!legislations_responsible_user_id_fkey(id, full_name)${complianceRelation ? `,
+        ${complianceRelation}` : ''}
+      `)
+      .eq('company_id', companyId)
+      .eq('is_active', true);
+
+    if (filters?.jurisdiction) query = query.eq('jurisdiction', filters.jurisdiction);
+    if (filters?.themeId) query = query.eq('theme_id', filters.themeId);
+    if (filters?.subthemeId) query = query.eq('subtheme_id', filters.subthemeId);
+    if (filters?.normType) query = query.eq('norm_type', filters.normType);
+    if (filters?.publicationDateFrom) query = query.gte('publication_date', filters.publicationDateFrom);
+    if (filters?.publicationDateTo) query = query.lte('publication_date', filters.publicationDateTo);
+    if (filters?.branchId) {
+      query = query
+        .eq('legislation_unit_compliance.branch_id', filters.branchId)
+        .in('legislation_unit_compliance.applicability', ['real', 'potential']);
+    }
+    if (filters?.applicability) query = query.eq('overall_applicability', filters.applicability);
+    if (filters?.status) query = query.eq('overall_status', filters.status);
+    if (filters?.responsibleUserId) query = query.eq('responsible_user_id', filters.responsibleUserId);
+
+    if (safeTerm) {
       const orParts = [
         `title.ilike.%${safeTerm}%`,
         `norm_number.ilike.%${safeTerm}%`,
@@ -252,26 +242,32 @@ export const fetchLegislations = async (
       }
       query = query.or(orParts.join(','));
     }
-  }
 
-  const { data, error } = await query.order('created_at', { ascending: false });
+    return query.order('created_at', { ascending: false }).range(from, to);
+  };
 
-  if (error) throw error;
-  return (data || []) as unknown as Legislation[];
+  // Pagina pra ultrapassar o limite default de 1000 rows do Postgrest.
+  // Sem isso, o card "Total" no LegislationsHub mostrava exatamente 1000
+  // mesmo quando a empresa tinha mais legislações.
+  const data = await fetchAllPaginated<any>(buildQuery);
+  return data as unknown as Legislation[];
 };
 
 export const fetchDistinctNormTypes = async (companyId: string): Promise<string[]> => {
-  const { data, error } = await supabase
-    .from('legislations')
-    .select('norm_type')
-    .eq('company_id', companyId)
-    .eq('is_active', true)
-    .not('norm_type', 'is', null);
-
-  if (error) throw error;
+  // Pagina pra varrer todas as legislações da company — sem isso, com >1000
+  // legislações tipos raros que ficavam no fim do response sumiam do dropdown.
+  const data = await fetchAllPaginated<{ norm_type: string | null }>((from, to) =>
+    supabase
+      .from('legislations')
+      .select('norm_type')
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .not('norm_type', 'is', null)
+      .range(from, to),
+  );
 
   const set = new Set<string>();
-  (data || []).forEach((row: { norm_type: string | null }) => {
+  data.forEach((row) => {
     const value = row.norm_type?.trim();
     if (value) set.add(value);
   });
@@ -390,14 +386,15 @@ export const bulkUpsertUnitCompliance = async (
 
 // Evidences CRUD
 export const fetchLegislationEvidences = async (legislationId: string): Promise<LegislationEvidence[]> => {
-  const { data, error } = await supabase
-    .from('legislation_evidences')
-    .select('*')
-    .eq('legislation_id', legislationId)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
+  // Paginado pra cobrir o caso raro de uma legislação com >1000 evidências.
+  return fetchAllPaginated<LegislationEvidence>((from, to) =>
+    supabase
+      .from('legislation_evidences')
+      .select('*')
+      .eq('legislation_id', legislationId)
+      .order('created_at', { ascending: false })
+      .range(from, to),
+  );
 };
 
 export const createLegislationEvidence = async (evidence: Partial<LegislationEvidence>): Promise<LegislationEvidence> => {
@@ -422,42 +419,51 @@ export const deleteLegislationEvidence = async (id: string): Promise<void> => {
 
 // Statistics
 export const fetchLegislationStats = async (companyId: string) => {
-  const { data, error } = await supabase
-    .from('legislations')
-    .select('overall_applicability, overall_status, has_alert, jurisdiction')
-    .eq('company_id', companyId)
-    .eq('is_active', true);
-
-  if (error) throw error;
+  // Paginado pra varrer toda a base — sem isso os cards (Total, Reais,
+  // Conformes, Adequação etc) ficavam capados em 1000 mesmo com a empresa
+  // tendo mais legislações.
+  const data = await fetchAllPaginated<{
+    overall_applicability: string | null;
+    overall_status: string | null;
+    has_alert: boolean | null;
+    jurisdiction: string | null;
+  }>((from, to) =>
+    supabase
+      .from('legislations')
+      .select('overall_applicability, overall_status, has_alert, jurisdiction')
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .range(from, to),
+  );
 
   const stats = {
-    total: data?.length || 0,
+    total: data.length,
     byApplicability: {
-      real: data?.filter(l => l.overall_applicability === 'real').length || 0,
-      potential: data?.filter(l => l.overall_applicability === 'potential').length || 0,
-      revoked: data?.filter(l => l.overall_applicability === 'revoked').length || 0,
-      na: data?.filter(l => l.overall_applicability === 'na').length || 0,
-      pending: data?.filter(l => l.overall_applicability === 'pending').length || 0,
+      real: data.filter(l => l.overall_applicability === 'real').length,
+      potential: data.filter(l => l.overall_applicability === 'potential').length,
+      revoked: data.filter(l => l.overall_applicability === 'revoked').length,
+      na: data.filter(l => l.overall_applicability === 'na').length,
+      pending: data.filter(l => l.overall_applicability === 'pending').length,
     },
     byStatus: {
-      conforme: data?.filter(l => l.overall_status === 'conforme').length || 0,
-      para_conhecimento: data?.filter(l => l.overall_status === 'para_conhecimento').length || 0,
-      adequacao: data?.filter(l => l.overall_status === 'adequacao').length || 0,
-      plano_acao: data?.filter(l => l.overall_status === 'plano_acao').length || 0,
-      pending: data?.filter(l => l.overall_status === 'pending').length || 0,
+      conforme: data.filter(l => l.overall_status === 'conforme').length,
+      para_conhecimento: data.filter(l => l.overall_status === 'para_conhecimento').length,
+      adequacao: data.filter(l => l.overall_status === 'adequacao').length,
+      plano_acao: data.filter(l => l.overall_status === 'plano_acao').length,
+      pending: data.filter(l => l.overall_status === 'pending').length,
     },
     byJurisdiction: {
-      federal: data?.filter(l => l.jurisdiction === 'federal').length || 0,
-      estadual: data?.filter(l => l.jurisdiction === 'estadual').length || 0,
-      municipal: data?.filter(l => l.jurisdiction === 'municipal').length || 0,
-      nbr: data?.filter(l => l.jurisdiction === 'nbr').length || 0,
-      internacional: data?.filter(l => l.jurisdiction === 'internacional').length || 0,
+      federal: data.filter(l => l.jurisdiction === 'federal').length,
+      estadual: data.filter(l => l.jurisdiction === 'estadual').length,
+      municipal: data.filter(l => l.jurisdiction === 'municipal').length,
+      nbr: data.filter(l => l.jurisdiction === 'nbr').length,
+      internacional: data.filter(l => l.jurisdiction === 'internacional').length,
     },
-    alerts: data?.filter(l => l.has_alert).length || 0,
+    alerts: data.filter(l => l.has_alert).length,
     // Pendentes totais: applicability OU status pendente
-    pendingTotal: data?.filter(l => 
+    pendingTotal: data.filter(l =>
       l.overall_applicability === 'pending' || l.overall_status === 'pending'
-    ).length || 0,
+    ).length,
   };
 
   return stats;

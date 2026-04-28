@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Legislation, fetchLegislations, fetchLegislationStats } from './legislations';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllPaginated } from '@/utils/supabasePagination';
 
 export interface LegislationReportConfig {
   reportType: 'global' | 'unit' | 'theme';
@@ -400,20 +401,20 @@ export const exportUnitReportToPDF = async (
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  // Fetch unit compliance data
-  const { data: unitData, error } = await supabase
-    .from('legislation_unit_compliance')
-    .select(`
-      *,
-      legislation:legislation_id (id, title, norm_number, norm_type, jurisdiction),
-      responsible_user:profiles!unit_responsible_user_id (full_name)
-    `)
-    .eq('branch_id', branchId);
+  // Fetch unit compliance data — paginado pra não truncar relatórios de
+  // filiais com >1000 avaliações.
+  const records = await fetchAllPaginated<any>((from, to) =>
+    supabase
+      .from('legislation_unit_compliance')
+      .select(`
+        *,
+        legislation:legislation_id (id, title, norm_number, norm_type, jurisdiction),
+        responsible_user:profiles!unit_responsible_user_id (full_name)
+      `)
+      .eq('branch_id', branchId)
+      .range(from, to),
+  );
 
-  if (error) throw error;
-
-  const records = unitData || [];
-  
   // Calculate stats
   const stats = {
     total: records.length,
@@ -591,19 +592,19 @@ export const exportUnitReportToExcel = async (
   branchName: string,
   config: LegislationReportConfig
 ): Promise<void> => {
-  // Fetch unit compliance data
-  const { data: unitData, error } = await supabase
-    .from('legislation_unit_compliance')
-    .select(`
-      *,
-      legislation:legislation_id (id, title, norm_number, norm_type, jurisdiction),
-      responsible_user:responsible_user_id (full_name)
-    `)
-    .eq('branch_id', branchId);
-
-  if (error) throw error;
-
-  const records = unitData || [];
+  // Fetch unit compliance data — paginado pra não truncar relatórios de
+  // filiais com >1000 avaliações.
+  const records = await fetchAllPaginated<any>((from, to) =>
+    supabase
+      .from('legislation_unit_compliance')
+      .select(`
+        *,
+        legislation:legislation_id (id, title, norm_number, norm_type, jurisdiction),
+        responsible_user:responsible_user_id (full_name)
+      `)
+      .eq('branch_id', branchId)
+      .range(from, to),
+  );
   const workbook = XLSX.utils.book_new();
 
   // Calculate stats

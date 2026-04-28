@@ -1,4 +1,19 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
+
+// Resolve company_id do usuário atual — sem isso queries de NC podiam cruzar
+// empresas (até o limite de 1000 rows do Postgrest).
+async function getCurrentCompanyId(): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não autenticado');
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (!profile?.company_id) throw new Error('Empresa não encontrada');
+  return profile.company_id;
+}
 
 export interface NonConformity {
   id: string;
@@ -63,14 +78,18 @@ export interface UpdateNonConformityData {
 
 class NonConformitiesService {
   async getNonConformities(): Promise<NonConformity[]> {
-    // First get the non-conformities
-    const { data: ncs, error } = await supabase
-      .from("non_conformities")
-      .select("*")
-      .order("created_at", { ascending: false });
-    
-    if (error) throw error;
-    
+    const companyId = await getCurrentCompanyId();
+    // First get the non-conformities — escopadas por company e paginadas pra
+    // não truncar em 1000 quando empresa tem muitos NCs históricos.
+    const ncs = (await fetchAllPaginated<any>((from, to) =>
+      supabase
+        .from("non_conformities")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false })
+        .range(from, to),
+    )) as NonConformity[];
+
     // Then get user profiles for responsible and approved_by users
     const userIds = [...new Set([
       ...ncs.map(nc => nc.responsible_user_id).filter(Boolean),
@@ -205,25 +224,29 @@ class NonConformitiesService {
   }
 
   async getTimeline(nonConformityId: string) {
-    const { data, error } = await supabase
-      .from("non_conformity_timeline")
-      .select(`
-        *,
-        profiles:user_id(full_name)
-      `)
-      .eq("non_conformity_id", nonConformityId)
-      .order("created_at", { ascending: false });
-    
-    if (error) throw error;
-    return data;
+    // Paginado pra timelines longas (>1000 eventos) que apareciam truncadas.
+    return fetchAllPaginated<any>((from, to) =>
+      supabase
+        .from("non_conformity_timeline")
+        .select(`
+          *,
+          profiles:user_id(full_name)
+        `)
+        .eq("non_conformity_id", nonConformityId)
+        .order("created_at", { ascending: false })
+        .range(from, to),
+    );
   }
 
   async getDashboardStats() {
-    const { data: nonConformities, error } = await supabase
-      .from("non_conformities")
-      .select("*");
-
-    if (error) throw error;
+    const companyId = await getCurrentCompanyId();
+    const nonConformities = (await fetchAllPaginated<any>((from, to) =>
+      supabase
+        .from("non_conformities")
+        .select("*")
+        .eq("company_id", companyId)
+        .range(from, to),
+    )) as NonConformity[];
 
     const now = new Date();
     const currentMonth = now.getMonth();

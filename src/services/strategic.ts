@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
+import { getCurrentCompanyId } from "@/utils/currentCompany";
 
 // Strategic Maps
 export interface StrategicMap {
@@ -128,13 +130,17 @@ export interface KeyResult {
 
 // Strategic Maps Service
 export const getStrategicMaps = async (): Promise<StrategicMap[]> => {
-  const { data, error } = await supabase
-    .from("strategic_maps")
-    .select("*")
-    .order("created_at", { ascending: false });
-  
-  if (error) throw error;
-  return data;
+  // Escopo + paginação: sem company_id retornava mapas de outras empresas
+  // até o limite de 1000 rows do Postgrest.
+  const companyId = await getCurrentCompanyId();
+  return fetchAllPaginated<StrategicMap>((from, to) =>
+    supabase
+      .from("strategic_maps")
+      .select("*")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
+      .range(from, to),
+  );
 };
 
 export const createStrategicMap = async (mapData: Omit<StrategicMap, 'id' | 'company_id' | 'created_at' | 'updated_at'>) => {

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 
 export interface LAIARevision {
   id: string;
@@ -107,30 +108,35 @@ async function getUserId(): Promise<string> {
 export async function getRevisions(companyId?: string): Promise<LAIARevision[]> {
   const cid = companyId || await getUserCompanyId();
 
-  const { data, error } = await supabase
-    .from("laia_revisions" as any)
-    .select(`
-      *,
-      creator:profiles!laia_revisions_created_by_fkey(full_name),
-      validator:profiles!laia_revisions_validated_by_fkey(full_name)
-    `)
-    .eq("company_id", cid)
-    .order("revision_number", { ascending: false });
-
-  if (error) throw error;
+  // Paginado pra cobrir empresas com histórico extenso de revisões LAIA.
+  const revisions = await fetchAllPaginated<any>((from, to) =>
+    (supabase as any)
+      .from("laia_revisions")
+      .select(`
+        *,
+        creator:profiles!laia_revisions_created_by_fkey(full_name),
+        validator:profiles!laia_revisions_validated_by_fkey(full_name)
+      `)
+      .eq("company_id", cid)
+      .order("revision_number", { ascending: false })
+      .range(from, to),
+  );
 
   // Get changes count for each revision
-  const revisions = (data || []) as any[];
   const revisionIds = revisions.map((r: any) => r.id);
 
   if (revisionIds.length > 0) {
-    const { data: changes } = await supabase
-      .from("laia_revision_changes" as any)
-      .select("revision_id")
-      .in("revision_id", revisionIds);
+    // Paginado: 1 revisão pode ter centenas de mudanças, então N×M passa de 1000.
+    const changes = await fetchAllPaginated<{ revision_id: string }>((from, to) =>
+      (supabase as any)
+        .from("laia_revision_changes")
+        .select("revision_id")
+        .in("revision_id", revisionIds)
+        .range(from, to),
+    );
 
     const countMap: Record<string, number> = {};
-    (changes || []).forEach((c: any) => {
+    changes.forEach((c) => {
       countMap[c.revision_id] = (countMap[c.revision_id] || 0) + 1;
     });
 

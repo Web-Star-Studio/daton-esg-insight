@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 
 interface HistoryEntry {
   id: string;
@@ -140,17 +141,19 @@ export const LegislationHistoryTimeline: React.FC<LegislationHistoryTimelineProp
   const { data: history, isLoading } = useQuery({
     queryKey: ['legislation-history', legislationId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('legislation_history')
-        .select(`
-          *,
-          changed_by_user:profiles!legislation_history_changed_by_fkey(full_name)
-        `)
-        .eq('legislation_id', legislationId)
-        .order('changed_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as HistoryEntry[];
+      // Paginado pra timelines com >1000 mudanças de status — sem isso a
+      // legislação aparecia "estagnada" enquanto o histórico real era maior.
+      return fetchAllPaginated<HistoryEntry>((from, to) =>
+        supabase
+          .from('legislation_history')
+          .select(`
+            *,
+            changed_by_user:profiles!legislation_history_changed_by_fkey(full_name)
+          `)
+          .eq('legislation_id', legislationId)
+          .order('changed_at', { ascending: false })
+          .range(from, to),
+      );
     },
     enabled: !!legislationId,
   });

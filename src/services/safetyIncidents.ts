@@ -1,5 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
+
+// Resolve company_id do usuário autenticado. Usado pra escopar leitura de
+// safety_incidents — sem isso, o response pode trazer incidents de outras
+// empresas até o limite de 1000 rows do Postgrest, contaminando KPIs.
+async function getCurrentCompanyId(): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não autenticado');
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single();
+  if (!profile?.company_id) throw new Error('Empresa não encontrada');
+  return profile.company_id;
+}
 
 export interface SafetyIncident {
   id: string;
@@ -29,13 +45,15 @@ export const getSafetyIncidents = async () => {
     return Array.isArray(incidents) ? incidents : [];
   }
 
-  const { data, error } = await supabase
-    .from('safety_incidents')
-    .select('*')
-    .order('incident_date', { ascending: false });
-
-  if (error) throw error;
-  return Array.isArray(data) ? data : [];
+  const companyId = await getCurrentCompanyId();
+  return fetchAllPaginated<SafetyIncident>((from, to) =>
+    supabase
+      .from('safety_incidents')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('incident_date', { ascending: false })
+      .range(from, to),
+  );
 };
 
 export const getSafetyIncident = async (id: string) => {
@@ -87,36 +105,28 @@ export const getSafetyMetrics = async () => {
     return metrics ?? {};
   }
 
-  const { data: incidents, error } = await supabase
-    .from('safety_incidents')
-    .select('*');
-
-  if (error) throw error;
-  const incidentsList = Array.isArray(incidents) ? incidents : [];
-
-  const currentYear = new Date().getFullYear();
-  const currentYearIncidents = incidentsList.filter(incident => 
-    new Date(incident.incident_date).getFullYear() === currentYear
+  // Escopa por company_id antes de qualquer cálculo de KPI — sem isso o
+  // LTIFR cruzava empresas e ainda truncava em 1000 registros.
+  const companyId = await getCurrentCompanyId();
+  const incidentsList = await fetchAllPaginated<SafetyIncident>((from, to) =>
+    supabase
+      .from('safety_incidents')
+      .select('*')
+      .eq('company_id', companyId)
+      .range(from, to),
   );
 
-  // Buscar company_id do usuário autenticado
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado');
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('company_id')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile?.company_id) throw new Error('Empresa não encontrada');
+  const currentYear = new Date().getFullYear();
+  const currentYearIncidents = incidentsList.filter(incident =>
+    new Date(incident.incident_date).getFullYear() === currentYear
+  );
 
   // Importar função de cálculo de horas trabalhadas
   const { calculateWorkedHours } = await import('./workedHoursCalculator');
 
   // ✅ USAR NOVA FUNÇÃO PARA CALCULAR HORAS TRABALHADAS
   const workedHoursData = await calculateWorkedHours(
-    profile.company_id,
+    companyId,
     `${currentYear}-01-01`,
     `${currentYear}-12-31`
   );
