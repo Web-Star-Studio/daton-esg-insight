@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 
 // Interfaces
 export interface RequiredDocument {
@@ -157,14 +158,14 @@ function getQualificationStatusFromEvaluation(
 export async function getRequiredDocuments(): Promise<RequiredDocument[]> {
   const companyId = await getCurrentUserCompanyId();
 
-  const { data, error } = await supabase
-    .from('supplier_required_documents')
-    .select('*')
-    .eq('company_id', companyId)
-    .order('document_name');
-
-  if (error) throw error;
-  return data || [];
+  return fetchAllPaginated<RequiredDocument>((from, to) =>
+    supabase
+      .from('supplier_required_documents')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('document_name')
+      .range(from, to),
+  );
 }
 
 export async function createRequiredDocument(doc: { document_name: string; weight: number; description?: string }): Promise<RequiredDocument> {

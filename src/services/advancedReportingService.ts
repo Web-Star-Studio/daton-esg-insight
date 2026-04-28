@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import handleServiceError from '@/utils/errorHandler';
+import { fetchAllPaginated } from '@/utils/supabasePagination';
 
 export interface ReportConfig {
   id: string;
@@ -145,12 +146,17 @@ class AdvancedReportingService {
       data: indicators
     });
 
-    // Non-conformities
-    const { data: nonConformities } = await supabase
-      .from('non_conformities')
-      .select('*')
-      .eq('company_id', config.filters.companyId)
-      .gte('created_at', config.filters.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+    // Non-conformities — paginado pra não truncar score quando empresa
+    // tem >1000 NCs no período.
+    const startDate = config.filters.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const nonConformities = await fetchAllPaginated<any>((from, to) =>
+      supabase
+        .from('non_conformities')
+        .select('*')
+        .eq('company_id', config.filters.companyId)
+        .gte('created_at', startDate)
+        .range(from, to),
+    );
 
     sections.push({
       title: 'Não Conformidades',
@@ -168,14 +174,18 @@ class AdvancedReportingService {
   private async generateComplianceReport(config: ReportConfig) {
     const sections = [];
 
-    // Compliance tasks
-    const { data: tasks } = await supabase
-      .from('compliance_tasks')
-      .select('*')
-      .eq('company_id', config.filters.companyId);
+    // Compliance tasks — paginado pra não truncar o score quando empresa
+    // tem mais de 1000 tasks acumuladas.
+    const tasks = await fetchAllPaginated<any>((from, to) =>
+      supabase
+        .from('compliance_tasks')
+        .select('*')
+        .eq('company_id', config.filters.companyId)
+        .range(from, to),
+    );
 
-    const completedTasks = tasks?.filter(t => t.status === 'Concluído').length || 0;
-    const totalTasks = tasks?.length || 0;
+    const completedTasks = tasks.filter(t => t.status === 'Concluído').length;
+    const totalTasks = tasks.length;
     const complianceScore = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
     sections.push({
@@ -185,7 +195,7 @@ class AdvancedReportingService {
         score: complianceScore,
         completed: completedTasks,
         total: totalTasks,
-        overdue: tasks?.filter(t => t.status === 'Pendente' && new Date(t.due_date) < new Date()).length || 0
+        overdue: tasks.filter(t => t.status === 'Pendente' && new Date(t.due_date) < new Date()).length
       }
     });
 

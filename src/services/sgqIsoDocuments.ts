@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 import { uploadDocument } from "@/services/documents";
 import {
   notifyApprovalRequired,
@@ -227,14 +228,16 @@ const getSgqDocumentBranchesMap = async (
 ): Promise<Record<string, Array<{ branch_id: string; name: string | null }>>> => {
   if (documentIds.length === 0) return {};
 
-  const { data, error } = await (supabase as any)
-    .from("sgq_document_branches")
-    .select("sgq_document_id, branch_id, branches:branch_id(name)")
-    .in("sgq_document_id", documentIds);
+  // Paginado: N documents × M branches pode passar de 1000 facilmente.
+  const data = await fetchAllPaginated<any>((from, to) =>
+    (supabase as any)
+      .from("sgq_document_branches")
+      .select("sgq_document_id, branch_id, branches:branch_id(name)")
+      .in("sgq_document_id", documentIds)
+      .range(from, to),
+  );
 
-  if (error) throw new Error(`Erro ao buscar filiais SGQ: ${error.message}`);
-
-  return (data || []).reduce((acc: Record<string, Array<{ branch_id: string; name: string | null }>>, row: any) => {
+  return data.reduce((acc: Record<string, Array<{ branch_id: string; name: string | null }>>, row: any) => {
     if (!acc[row.sgq_document_id]) acc[row.sgq_document_id] = [];
     acc[row.sgq_document_id].push({
       branch_id: row.branch_id,

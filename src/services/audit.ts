@@ -1,6 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/utils/logger";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 import type { Json } from "@/integrations/supabase/types";
+
+// Resolve company_id do usuário atual — sem isso, queries de audits/findings
+// cruzavam empresas até o limite default de 1000 rows do Postgrest.
+async function getCurrentCompanyId(): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não autenticado');
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (!profile?.company_id) throw new Error('Empresa não encontrada');
+  return profile.company_id;
+}
 
 export interface ActivityLog {
   id: string;
@@ -84,19 +99,19 @@ export interface AuditTrailFilters {
 class AuditService {
   async getAudits(): Promise<Audit[]> {
     logger.debug('Fetching audits', 'audit');
-    
-    const { data, error } = await supabase
-      .from('audits')
-      .select('*')
-      .order('created_at', { ascending: false });
 
-    if (error) {
-      logger.error('Error fetching audits', error, 'audit');
-      throw new Error(`Erro ao buscar auditorias: ${error.message}`);
-    }
+    const companyId = await getCurrentCompanyId();
+    const data = await fetchAllPaginated<Audit>((from, to) =>
+      supabase
+        .from('audits')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .range(from, to),
+    );
 
-    logger.debug('Audits fetched successfully', 'audit', { count: data?.length || 0 });
-    return data || [];
+    logger.debug('Audits fetched successfully', 'audit', { count: data.length });
+    return data;
   }
 
   async createAudit(auditData: CreateAuditData): Promise<Audit> {
@@ -167,20 +182,20 @@ class AuditService {
 
   async getAuditFindings(auditId: string): Promise<AuditFinding[]> {
     logger.debug('Fetching audit findings', 'audit', { auditId });
-    
-    const { data, error } = await supabase
-      .from('audit_findings')
-      .select('*')
-      .eq('audit_id', auditId)
-      .order('created_at', { ascending: false });
 
-    if (error) {
-      logger.error('Error fetching audit findings', error, 'audit');
-      throw new Error(`Erro ao buscar achados da auditoria: ${error.message}`);
-    }
+    // Paginado pra cobrir auditorias com >1000 achados (raro mas possível
+    // em auditorias massivas multi-site).
+    const data = await fetchAllPaginated<AuditFinding>((from, to) =>
+      supabase
+        .from('audit_findings')
+        .select('*')
+        .eq('audit_id', auditId)
+        .order('created_at', { ascending: false })
+        .range(from, to),
+    );
 
-    logger.debug('Audit findings fetched successfully', 'audit', { count: data?.length || 0 });
-    return data || [];
+    logger.debug('Audit findings fetched successfully', 'audit', { count: data.length });
+    return data;
   }
 
   async createAuditFinding(auditId: string, findingData: CreateFindingData): Promise<AuditFinding> {

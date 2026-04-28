@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
+import { getCurrentCompanyId } from "@/utils/currentCompany";
 
 export interface BoardMember {
   id: string;
@@ -64,13 +66,16 @@ export interface WhistleblowerReport {
 
 // Board Members
 export const getBoardMembers = async () => {
-  const { data, error } = await supabase
-    .from('board_members')
-    .select('*')
-    .order('appointment_date', { ascending: false });
-
-  if (error) throw error;
-  return data;
+  // Escopo + paginação: sem company_id retornava membros de outras empresas.
+  const companyId = await getCurrentCompanyId();
+  return fetchAllPaginated<any>((from, to) =>
+    supabase
+      .from('board_members')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('appointment_date', { ascending: false })
+      .range(from, to),
+  );
 };
 
 export const createBoardMember = async (member: Omit<BoardMember, 'id' | 'created_at' | 'updated_at'>) => {
@@ -110,13 +115,15 @@ export const deleteBoardMember = async (id: string) => {
 
 // Corporate Policies
 export const getCorporatePolicies = async () => {
-  const { data, error } = await supabase
-    .from('corporate_policies')
-    .select('*')
-    .order('effective_date', { ascending: false });
-
-  if (error) throw error;
-  return data;
+  const companyId = await getCurrentCompanyId();
+  return fetchAllPaginated<any>((from, to) =>
+    supabase
+      .from('corporate_policies')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('effective_date', { ascending: false })
+      .range(from, to),
+  );
 };
 
 export const createCorporatePolicy = async (policy: Omit<CorporatePolicy, 'id' | 'created_at' | 'updated_at'>) => {
@@ -147,13 +154,15 @@ export const updateCorporatePolicy = async (id: string, updates: Partial<Corpora
 
 // Whistleblower Reports
 export const getWhistleblowerReports = async () => {
-  const { data, error } = await supabase
-    .from('whistleblower_reports')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data;
+  const companyId = await getCurrentCompanyId();
+  return fetchAllPaginated<any>((from, to) =>
+    supabase
+      .from('whistleblower_reports')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false })
+      .range(from, to),
+  );
 };
 
 export const createWhistleblowerReport = async (report: Omit<WhistleblowerReport, 'id' | 'report_code' | 'created_at' | 'updated_at'>) => {
@@ -187,19 +196,13 @@ export const updateWhistleblowerReport = async (id: string, updates: Partial<Whi
 };
 
 export const getGovernanceMetrics = async () => {
-  const [boardData, policiesData, reportsData] = await Promise.all([
-    supabase.from('board_members').select('*'),
-    supabase.from('corporate_policies').select('*'),
-    supabase.from('whistleblower_reports').select('*')
+  // Reusa as funções escopadas + paginadas pra que as métricas reflitam
+  // o universo real da company (sem cap de 1000 e sem cruzamento de empresas).
+  const [board, policies, reports] = await Promise.all([
+    getBoardMembers(),
+    getCorporatePolicies(),
+    getWhistleblowerReports(),
   ]);
-
-  if (boardData.error) throw boardData.error;
-  if (policiesData.error) throw policiesData.error;
-  if (reportsData.error) throw reportsData.error;
-
-  const board = boardData.data;
-  const policies = policiesData.data;
-  const reports = reportsData.data;
 
   // Board metrics
   const totalBoardMembers = board.length;

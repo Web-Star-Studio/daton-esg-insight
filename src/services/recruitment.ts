@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
+import { getCurrentCompanyId } from "@/utils/currentCompany";
 
 // Types
 export interface JobPosting {
@@ -71,13 +73,17 @@ export interface Interview {
 
 // Job Postings Service
 export const getJobPostings = async () => {
-  const { data, error } = await supabase
-    .from('internal_job_postings')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data as JobPosting[];
+  // Escopo + paginação: sem company_id retornava vagas de outras empresas
+  // até 1000 rows.
+  const companyId = await getCurrentCompanyId();
+  return fetchAllPaginated<JobPosting>((from, to) =>
+    supabase
+      .from('internal_job_postings')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false })
+      .range(from, to),
+  );
 };
 
 export const getJobPosting = async (id: string) => {

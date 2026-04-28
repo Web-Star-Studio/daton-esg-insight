@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 
 export interface UnitComplianceStats {
   total: number;
@@ -39,29 +40,27 @@ export interface UnitComplianceStats {
 export const fetchUnitComplianceStats = async (
   branchId: string
 ): Promise<UnitComplianceStats> => {
-  const { data, error } = await supabase
-    .from('legislation_unit_compliance')
-    .select(`
-      *,
-      legislation:legislation_id (
-        id, 
-        title, 
-        norm_number, 
-        norm_type, 
-        jurisdiction
-      ),
-      responsible_user:profiles!unit_responsible_user_id (
-        full_name
-      )
-    `)
-    .eq('branch_id', branchId);
-
-  if (error) {
-    console.error('Error fetching unit compliance:', error);
-    throw error;
-  }
-
-  const records = data || [];
+  // Pagina pra varrer toda a tabela — uma filial com >1000 avaliações
+  // (compliance_unit) tinha o KPI conforme/total calculado sobre amostra.
+  const records = await fetchAllPaginated<any>((from, to) =>
+    supabase
+      .from('legislation_unit_compliance')
+      .select(`
+        *,
+        legislation:legislation_id (
+          id,
+          title,
+          norm_number,
+          norm_type,
+          jurisdiction
+        ),
+        responsible_user:profiles!unit_responsible_user_id (
+          full_name
+        )
+      `)
+      .eq('branch_id', branchId)
+      .range(from, to),
+  );
   
   // Calculate stats
   const byStatus = {

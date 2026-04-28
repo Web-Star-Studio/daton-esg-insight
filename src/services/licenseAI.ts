@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/utils/logger";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 
 import type { Json } from "@/integrations/supabase/types";
 
@@ -95,51 +96,54 @@ export async function analyzeLicenseWithAI(
 
 // Buscar análises de uma licença
 export async function getLicenseAnalyses(licenseId: string): Promise<LicenseAIAnalysis[]> {
-  const { data, error } = await supabase
-    .from('license_ai_analysis')
-    .select('*')
-    .eq('license_id', licenseId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
+  try {
+    return await fetchAllPaginated<LicenseAIAnalysis>((from, to) =>
+      supabase
+        .from('license_ai_analysis')
+        .select('*')
+        .eq('license_id', licenseId)
+        .order('created_at', { ascending: false })
+        .range(from, to),
+    );
+  } catch (error) {
     logger.error('Error fetching license analyses', error, 'compliance');
     throw error;
   }
-
-  return data || [];
 }
 
 // Buscar condicionantes de uma licença
 export async function getLicenseConditions(licenseId: string): Promise<LicenseCondition[]> {
-  const { data, error } = await supabase
-    .from('license_conditions')
-    .select('*')
-    .eq('license_id', licenseId)
-    .order('due_date', { ascending: true });
-
-  if (error) {
+  try {
+    return await fetchAllPaginated<LicenseCondition>((from, to) =>
+      supabase
+        .from('license_conditions')
+        .select('*')
+        .eq('license_id', licenseId)
+        .order('due_date', { ascending: true })
+        .range(from, to),
+    );
+  } catch (error) {
     logger.error('Error fetching license conditions', error, 'compliance');
     throw error;
   }
-
-  return data || [];
 }
 
 // Buscar alertas de uma licença
 export async function getLicenseAlerts(licenseId: string): Promise<LicenseAlert[]> {
-  const { data, error } = await supabase
-    .from('license_alerts')
-    .select('*')
-    .eq('license_id', licenseId)
-    .eq('is_resolved', false)
-    .order('severity', { ascending: false });
-
-  if (error) {
+  try {
+    return await fetchAllPaginated<LicenseAlert>((from, to) =>
+      supabase
+        .from('license_alerts')
+        .select('*')
+        .eq('license_id', licenseId)
+        .eq('is_resolved', false)
+        .order('severity', { ascending: false })
+        .range(from, to),
+    );
+  } catch (error) {
     logger.error('Error fetching license alerts', error, 'compliance');
     throw error;
   }
-
-  return data || [];
 }
 
 // Atualizar status de condicionante

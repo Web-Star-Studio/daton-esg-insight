@@ -55,14 +55,23 @@ import {
   CreateFailureData
 } from "@/services/supplierFailuresService";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 
 async function getActiveSuppliers() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
   const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle();
   if (!profile?.company_id) return [];
-  const { data } = await supabase.from('supplier_management').select('id, company_name, full_name').eq('company_id', profile.company_id).eq('status', 'Ativo');
-  return data || [];
+  // Paginado pra cobrir empresas com >1000 fornecedores ativos.
+  return fetchAllPaginated<{ id: string; company_name: string | null; full_name: string | null }>(
+    (from, to) =>
+      supabase
+        .from('supplier_management')
+        .select('id, company_name, full_name')
+        .eq('company_id', profile.company_id)
+        .eq('status', 'Ativo')
+        .range(from, to),
+  );
 }
 
 export default function SupplierFailuresPage() {
