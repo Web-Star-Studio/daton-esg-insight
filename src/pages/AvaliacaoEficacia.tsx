@@ -12,23 +12,38 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getMyPendingEvaluations, getEvaluationDashboardMetrics } from "@/services/efficacyEvaluationDashboard";
-import { useNavigate } from "react-router-dom";
+import { getMyPendingEvaluations } from "@/services/efficacyEvaluationDashboard";
+import { TrainingProgramEfficacyDialog } from "@/components/TrainingProgramEfficacyDialog";
+import { TrainingProgramEvaluationFlow } from "@/components/TrainingProgramEvaluationFlow";
 
 const AvaliacaoEficacia = () => {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  // Wizard de avaliação contínua (estado='Pendente'/'Atrasado').
+  const [evaluatingProgram, setEvaluatingProgram] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  // Modo read-only com a lista de participants já avaliados (estado='Avaliado').
+  const [viewingProgram, setViewingProgram] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const { data: evaluations = [], isLoading } = useQuery({
     queryKey: ['my-efficacy-evaluations'],
     queryFn: getMyPendingEvaluations,
   });
 
-  const { data: metrics } = useQuery({
-    queryKey: ['efficacy-dashboard-metrics'],
-    queryFn: getEvaluationDashboardMetrics,
-  });
+  // Métricas derivadas do mesmo dataset — antes uma segunda useQuery chamava
+  // getEvaluationDashboardMetrics, que internamente refazia getMyPendingEvaluations
+  // (mais N queries por training). Reusar evita o trabalho dobrado.
+  const metrics = React.useMemo(() => ({
+    total: evaluations.length,
+    pending: evaluations.filter(e => e.status === 'Pendente').length,
+    evaluated: evaluations.filter(e => e.status === 'Avaliado').length,
+    overdue: evaluations.filter(e => e.status === 'Atrasado').length,
+  }), [evaluations]);
 
   const filteredEvaluations = evaluations.filter((e) => {
     const matchesSearch = e.training_name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -83,22 +98,40 @@ const AvaliacaoEficacia = () => {
                 <div className="text-center py-12 text-muted-foreground"><ClipboardCheck className="h-12 w-12 mx-auto mb-4 opacity-50" /><p>Nenhum treinamento encontrado</p></div>
               ) : (
                 <Table>
-                  <TableHeader><TableRow><TableHead>Treinamento</TableHead><TableHead>Categoria</TableHead><TableHead>Participantes</TableHead><TableHead>Prazo</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Treinamento</TableHead><TableHead>Categoria</TableHead><TableHead>Progresso</TableHead><TableHead>Prazo</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {filteredEvaluations.map((e) => (
+                    {filteredEvaluations.map((e) => {
+                      const evaluated = e.evaluated_count ?? 0;
+                      const total = e.participants_count ?? 0;
+                      const isComplete = total > 0 && evaluated >= total;
+                      return (
                       <TableRow key={e.training_program_id}>
                         <TableCell><div className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /><span className="font-medium">{e.training_name}</span></div></TableCell>
                         <TableCell><Badge variant="outline">{e.category || "—"}</Badge></TableCell>
-                        <TableCell><div className="flex items-center gap-1"><Users className="h-3 w-3" />{e.participants_count}</div></TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            <span className={isComplete ? "text-green-600 font-medium" : ""}>{evaluated} / {total}</span>
+                          </div>
+                        </TableCell>
                         <TableCell><div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(new Date(e.deadline), "dd/MM/yyyy", { locale: ptBR })}</div></TableCell>
                         <TableCell>{getStatusBadge(e.status, e.days_remaining)}</TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant={e.status === "Avaliado" ? "ghost" : "default"} onClick={() => navigate(`/gestao-treinamentos?openEfficacy=${e.training_program_id}`)}>
+                          <Button
+                            size="sm"
+                            variant={e.status === "Avaliado" ? "ghost" : "default"}
+                            onClick={() => {
+                              const target = { id: e.training_program_id, name: e.training_name };
+                              if (e.status === "Avaliado") setViewingProgram(target);
+                              else setEvaluatingProgram(target);
+                            }}
+                          >
                             {e.status === "Avaliado" ? <><Eye className="h-4 w-4 mr-1" />Ver</> : <><ClipboardCheck className="h-4 w-4 mr-1" />Avaliar</>}
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
@@ -106,6 +139,20 @@ const AvaliacaoEficacia = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      <TrainingProgramEvaluationFlow
+        open={!!evaluatingProgram}
+        onOpenChange={(open) => { if (!open) setEvaluatingProgram(null); }}
+        trainingProgramId={evaluatingProgram?.id ?? null}
+        trainingProgramName={evaluatingProgram?.name ?? ""}
+      />
+
+      <TrainingProgramEfficacyDialog
+        open={!!viewingProgram}
+        onOpenChange={(open) => { if (!open) setViewingProgram(null); }}
+        trainingProgramId={viewingProgram?.id ?? null}
+        trainingProgramName={viewingProgram?.name ?? ""}
+      />
     </div>
   );
 };

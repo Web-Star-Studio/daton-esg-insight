@@ -73,27 +73,43 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      // Calculate automatic status for each training based on program dates
-      const trainingsWithCalculatedStatus = (data || []).map((training: any) => {
+
+      const rows = data || [];
+
+      // Avaliação é granular por colaborador: cada employee_training tem sua
+      // própria evaluation. Buscamos por employee_training_id (não por programa
+      // como antes) pra que o status reflita a avaliação específica daquele
+      // colaborador naquele treinamento.
+      const employeeTrainingIds = rows.map((r: any) => r.id);
+      const evaluatedSet = new Set<string>();
+      if (employeeTrainingIds.length > 0) {
+        const { data: evals } = await supabase
+          .from('training_efficacy_evaluations')
+          .select('employee_training_id')
+          .in('employee_training_id', employeeTrainingIds)
+          .eq('status', 'Concluída');
+        for (const ev of evals || []) {
+          if (ev.employee_training_id) evaluatedSet.add(ev.employee_training_id);
+        }
+      }
+
+      const trainingsWithCalculatedStatus = rows.map((training: any) => {
         const program = training.training_program;
         if (!program) return training;
-        
-        // Calculate status based on program dates
+
         const calculatedStatus = calculateTrainingStatus({
           start_date: program.start_date,
           end_date: program.end_date,
           efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
-          hasEfficacyEvaluation: false // Could check DB if needed
+          hasEfficacyEvaluation: evaluatedSet.has(training.id),
         });
-        
-        // Return training with calculated status (unless manually set to Cancelado)
+
         return {
           ...training,
-          status: training.status === 'Cancelado' ? 'Cancelado' : calculatedStatus
+          status: training.status === 'Cancelado' ? 'Cancelado' : calculatedStatus,
         };
       });
-      
+
       return trainingsWithCalculatedStatus;
     },
   });

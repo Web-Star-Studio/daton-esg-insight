@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { DateInputWithCalendarForm } from "@/components/DateInputWithCalendarForm";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,76 +20,130 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Slider } from "@/components/ui/slider";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarIcon, Star, CheckCircle2, XCircle } from "lucide-react";
+import { Star, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/contexts/AuthContext";
 import { createEfficacyEvaluation } from "@/services/trainingEfficacyEvaluations";
+
+// 3 categorias intuitivas em vez do slider 0-10. Cada uma pré-preenche a
+// observação com texto padrão que o avaliador pode editar antes de salvar.
+const EFFECTIVENESS_OPTIONS = [
+  {
+    value: "effective",
+    label: "Eficaz",
+    description: "Treinamento atingiu os objetivos esperados.",
+    icon: CheckCircle2,
+    color: "text-green-600",
+    score: 10,
+    is_effective: true,
+    defaultComment:
+      "O treinamento atingiu os objetivos esperados. Os participantes demonstraram domínio do conteúdo e aplicação prática nas atividades.",
+  },
+  {
+    value: "partial",
+    label: "Parcialmente Eficaz",
+    description: "Atingiu parte dos objetivos; há pontos de melhoria.",
+    icon: AlertTriangle,
+    color: "text-yellow-600",
+    score: 6,
+    is_effective: true,
+    defaultComment:
+      "O treinamento atingiu parcialmente os objetivos. Há pontos de melhoria identificados que devem ser trabalhados em próximas edições.",
+  },
+  {
+    value: "not_effective",
+    label: "Não Eficaz",
+    description: "Não atingiu os objetivos esperados.",
+    icon: XCircle,
+    color: "text-red-600",
+    score: 3,
+    is_effective: false,
+    defaultComment:
+      "O treinamento não atingiu os objetivos esperados. Recomenda-se revisão do conteúdo e/ou metodologia antes de nova aplicação.",
+  },
+] as const;
+
+type EffectivenessValue = (typeof EFFECTIVENESS_OPTIONS)[number]["value"];
 
 const evaluationSchema = z.object({
   evaluation_date: z.date({ message: "Data da avaliação é obrigatória" }),
-  score: z.number().min(0).max(10),
-  is_effective: z.boolean(),
-  evaluator_name: z.string().optional(),
+  effectiveness: z.enum(["effective", "partial", "not_effective"], {
+    message: "Selecione uma categoria de eficácia",
+  }),
   comments: z.string().max(1000, "Observações devem ter no máximo 1000 caracteres").optional(),
 });
+
+type EvaluationFormValues = z.infer<typeof evaluationSchema>;
 
 interface TrainingEfficacyEvaluationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  employeeTrainingId: string;
   trainingProgramId: string;
+  // Avaliação é granular por participante: 1 evaluation por employee_training.
+  employeeTrainingId: string;
   trainingName: string;
+  // Nome do colaborador sendo avaliado, exibido no header pra contexto.
   employeeName?: string;
 }
 
 export function TrainingEfficacyEvaluationDialog({
   open,
   onOpenChange,
-  employeeTrainingId,
   trainingProgramId,
+  employeeTrainingId,
   trainingName,
   employeeName,
 }: TrainingEfficacyEvaluationDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof evaluationSchema>>({
+  const form = useForm<EvaluationFormValues>({
     resolver: zodResolver(evaluationSchema),
     defaultValues: {
       evaluation_date: new Date(),
-      score: 7,
-      is_effective: true,
-      evaluator_name: "",
-      comments: "",
+      effectiveness: "effective",
+      comments: EFFECTIVENESS_OPTIONS[0].defaultComment,
     },
   });
 
-  const score = form.watch("score");
-  const isEffective = form.watch("is_effective");
+  const effectiveness = form.watch("effectiveness") as EffectivenessValue;
 
-  const onSubmit = async (values: z.infer<typeof evaluationSchema>) => {
+  // Quando o usuário troca de categoria e ainda não escreveu nada próprio,
+  // atualiza o textarea com o template da nova categoria. Se já editou (texto
+  // diferente de qualquer template conhecido), preserva o que ele escreveu.
+  useEffect(() => {
+    if (!open) return;
+    const currentComment = form.getValues("comments") || "";
+    const isUntouched = EFFECTIVENESS_OPTIONS.some(o => o.defaultComment === currentComment) || currentComment === "";
+    if (isUntouched) {
+      const opt = EFFECTIVENESS_OPTIONS.find(o => o.value === effectiveness);
+      if (opt) form.setValue("comments", opt.defaultComment);
+    }
+  }, [effectiveness, open, form]);
+
+  const onSubmit = async (values: EvaluationFormValues) => {
     setIsSubmitting(true);
     try {
+      const opt = EFFECTIVENESS_OPTIONS.find(o => o.value === values.effectiveness)!;
       await createEfficacyEvaluation({
         company_id: "", // Will be set by service
+        // Avaliação granular: 1 evaluation por employee_training.
         employee_training_id: employeeTrainingId,
         training_program_id: trainingProgramId,
-        evaluation_date: format(values.evaluation_date, 'yyyy-MM-dd'),
-        score: values.score,
-        is_effective: values.is_effective,
-        evaluator_name: values.evaluator_name || undefined,
-        comments: values.comments || undefined,
+        evaluation_date: format(values.evaluation_date, "yyyy-MM-dd"),
+        score: opt.score,
+        is_effective: opt.is_effective,
+        evaluator_name: user?.full_name || undefined,
+        comments: values.comments?.trim() || undefined,
         status: "Concluída",
       });
 
@@ -98,10 +152,11 @@ export function TrainingEfficacyEvaluationDialog({
         description: "Avaliação de eficácia registrada com sucesso!",
       });
 
+      queryClient.invalidateQueries({ queryKey: ["my-efficacy-evaluations"] });
       queryClient.invalidateQueries({ queryKey: ["efficacy-evaluations"] });
       queryClient.invalidateQueries({ queryKey: ["employee-trainings"] });
       queryClient.invalidateQueries({ queryKey: ["training-metrics"] });
-      
+
       form.reset();
       onOpenChange(false);
     } catch (error: any) {
@@ -116,21 +171,6 @@ export function TrainingEfficacyEvaluationDialog({
     }
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return "text-green-500";
-    if (score >= 6) return "text-yellow-500";
-    return "text-red-500";
-  };
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 9) return "Excelente";
-    if (score >= 8) return "Muito Bom";
-    if (score >= 7) return "Bom";
-    if (score >= 6) return "Satisfatório";
-    if (score >= 5) return "Regular";
-    return "Insatisfatório";
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -140,12 +180,17 @@ export function TrainingEfficacyEvaluationDialog({
             Avaliação de Eficácia
           </DialogTitle>
           <DialogDescription>
-            Registre a avaliação de eficácia do treinamento{" "}
             <span className="font-medium text-foreground">{trainingName}</span>
             {employeeName && (
               <>
-                {" "}para o colaborador{" "}
+                {" — colaborador: "}
                 <span className="font-medium text-foreground">{employeeName}</span>
+              </>
+            )}
+            {user?.full_name && (
+              <>
+                <br />
+                <span className="text-xs">Avaliador: <span className="font-medium text-foreground">{user.full_name}</span></span>
               </>
             )}
           </DialogDescription>
@@ -173,80 +218,41 @@ export function TrainingEfficacyEvaluationDialog({
 
             <FormField
               control={form.control}
-              name="score"
+              name="effectiveness"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nota da Avaliação</FormLabel>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">0</span>
-                      <div className="text-center">
-                        <span className={cn("text-3xl font-bold", getScoreColor(score))}>
-                          {score.toFixed(1)}
-                        </span>
-                        <p className={cn("text-sm font-medium", getScoreColor(score))}>
-                          {getScoreLabel(score)}
-                        </p>
-                      </div>
-                      <span className="text-sm text-muted-foreground">10</span>
-                    </div>
-                    <FormControl>
-                      <Slider
-                        min={0}
-                        max={10}
-                        step={0.5}
-                        value={[field.value]}
-                        onValueChange={(vals) => field.onChange(vals[0])}
-                        className="w-full"
-                      />
-                    </FormControl>
-                  </div>
-                  <FormDescription>
-                    Avalie de 0 a 10 o desempenho do colaborador no treinamento
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="is_effective"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base flex items-center gap-2">
-                      {isEffective ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      )}
-                      O treinamento foi eficaz?
-                    </FormLabel>
-                    <FormDescription>
-                      {isEffective
-                        ? "O colaborador demonstrou domínio das competências treinadas"
-                        : "O colaborador precisa de reforço ou novo treinamento"}
-                    </FormDescription>
-                  </div>
+                  <FormLabel>Resultado da Avaliação</FormLabel>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="evaluator_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Avaliador</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Quem realizou a avaliação" {...field} />
+                    <RadioGroup
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      className="gap-2"
+                    >
+                      {EFFECTIVENESS_OPTIONS.map((opt) => {
+                        const Icon = opt.icon;
+                        return (
+                          <Label
+                            key={opt.value}
+                            htmlFor={`eff-${opt.value}`}
+                            className={cn(
+                              "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+                              field.value === opt.value
+                                ? "border-primary bg-primary/5"
+                                : "hover:bg-muted/40",
+                            )}
+                          >
+                            <RadioGroupItem id={`eff-${opt.value}`} value={opt.value} className="mt-1" />
+                            <div className="flex-1">
+                              <div className={cn("flex items-center gap-2 font-medium", opt.color)}>
+                                <Icon className="h-4 w-4" />
+                                {opt.label}
+                              </div>
+                              <p className="text-sm text-muted-foreground">{opt.description}</p>
+                            </div>
+                          </Label>
+                        );
+                      })}
+                    </RadioGroup>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -261,12 +267,15 @@ export function TrainingEfficacyEvaluationDialog({
                   <FormLabel>Observações</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Observações sobre a avaliação, pontos fortes, áreas de melhoria..."
+                      placeholder="Observações sobre a avaliação..."
                       className="resize-none"
-                      rows={3}
+                      rows={4}
                       {...field}
                     />
                   </FormControl>
+                  <FormDescription>
+                    A mensagem padrão é preenchida automaticamente. Você pode editá-la ou mantê-la como está.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

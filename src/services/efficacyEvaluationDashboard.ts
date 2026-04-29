@@ -12,6 +12,9 @@ export interface EfficacyEvaluationItem {
   evaluation_id?: string;
   branch_name?: string;
   participants_count?: number;
+  // Quantos participantes do programa já têm evaluation com status='Concluída'.
+  // Programa só vira 'Avaliado' quando evaluated_count == participants_count.
+  evaluated_count?: number;
 }
 
 export interface EfficacyDashboardMetrics {
@@ -45,12 +48,15 @@ export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[
 
   if (!profile?.company_id) return [];
 
-  // Buscar o employee vinculado ao email do usuário logado
+  // Buscar o employee vinculado ao email do usuário logado.
+  // Match case-insensitive: muitos employees vieram de import/clone com email
+  // em CAPS (ex.: GESTORARH@TRANSGABARDO.COM.BR), enquanto auth.users guarda
+  // lowercase. Sem o ilike, esses responsáveis não viam suas pendências.
   const userEmail = userData.user.email;
   const { data: linkedEmployee } = await supabase
     .from('employees')
     .select('id')
-    .eq('email', userEmail)
+    .ilike('email', userEmail!)
     .eq('company_id', profile.company_id)
     .maybeSingle();
 
@@ -69,47 +75,70 @@ export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[
     .not('efficacy_evaluation_deadline', 'is', null)
     .order('efficacy_evaluation_deadline', { ascending: true });
 
-  if (trainingsError || !trainings) return [];
+  if (trainingsError || !trainings || trainings.length === 0) return [];
+
+  // Batch fetch evaluations + participant counts pra todos os trainings de uma vez.
+  // Antes era um loop de 2 queries por training (N×2 sequencial), o que com 179
+  // trainings clonados da Gabardo gerava ~720 queries serializadas e a página
+  // ficava travada carregando por dezenas de segundos.
+  const trainingIds = trainings.map(t => t.id);
+
+  const [evalsResp, partsResp] = await Promise.all([
+    supabase
+      .from('training_efficacy_evaluations')
+      .select('id, training_program_id, employee_training_id, status')
+      .in('training_program_id', trainingIds)
+      .eq('status', 'Concluída'),
+    supabase
+      .from('employee_trainings')
+      .select('id, training_program_id')
+      .in('training_program_id', trainingIds),
+  ]);
+
+  // Conta participants únicos (employee_training_id) por programa.
+  const participantsByTraining = new Map<string, Set<string>>();
+  for (const row of partsResp.data || []) {
+    const set = participantsByTraining.get(row.training_program_id) || new Set<string>();
+    set.add(row.id);
+    participantsByTraining.set(row.training_program_id, set);
+  }
+
+  // Conta evaluations concluídas por programa, contabilizando participants
+  // distintos (employee_training_id). Avaliações antigas sem
+  // employee_training_id (formato legado por programa) contam como 1.
+  const evaluatedByTraining = new Map<string, Set<string>>();
+  for (const ev of evalsResp.data || []) {
+    const set = evaluatedByTraining.get(ev.training_program_id) || new Set<string>();
+    set.add(ev.employee_training_id || `__program__:${ev.id}`);
+    evaluatedByTraining.set(ev.training_program_id, set);
+  }
 
   const now = new Date();
-  const results: EfficacyEvaluationItem[] = [];
-
-  for (const training of trainings) {
-    const { data: evaluation } = await supabase
-      .from('training_efficacy_evaluations')
-      .select('id, status')
-      .eq('training_program_id', training.id)
-      .eq('status', 'Concluída')
-      .maybeSingle();
-
-    const { count: participantsCount } = await supabase
-      .from('employee_trainings')
-      .select('*', { count: 'exact', head: true })
-      .eq('training_program_id', training.id);
-
+  return trainings.map(training => {
+    const participants = participantsByTraining.get(training.id);
+    const evaluated = evaluatedByTraining.get(training.id);
+    const participantsCount = participants?.size ?? 0;
+    const evaluatedCount = evaluated?.size ?? 0;
     const deadline = new Date(training.efficacy_evaluation_deadline!);
     const daysRemaining = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
+    // Programa só sai de 'Pendente' quando TODOS os participantes têm evaluation
+    // concluída (granularidade por colaborador). Edge case: programa sem
+    // participantes nunca vira 'Avaliado' — mantém 'Pendente' (ou 'Atrasado').
+    const allEvaluated = participantsCount > 0 && evaluatedCount >= participantsCount;
     let status: 'Pendente' | 'Avaliado' | 'Atrasado' = 'Pendente';
-    if (evaluation) {
-      status = 'Avaliado';
-    } else if (daysRemaining < 0) {
-      status = 'Atrasado';
-    }
-
-    results.push({
+    if (allEvaluated) status = 'Avaliado';
+    else if (daysRemaining < 0) status = 'Atrasado';
+    return {
       training_program_id: training.id,
       training_name: training.name,
       category: training.category,
       deadline: training.efficacy_evaluation_deadline!,
       status,
       days_remaining: daysRemaining,
-      evaluation_id: evaluation?.id,
-      participants_count: participantsCount || 0,
-    });
-  }
-
-  return results;
+      participants_count: participantsCount,
+      evaluated_count: evaluatedCount,
+    };
+  });
 };
 
 export const getEvaluationDashboardMetrics = async (): Promise<EfficacyDashboardMetrics> => {

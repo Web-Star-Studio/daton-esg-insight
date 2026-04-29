@@ -1,20 +1,17 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { 
-  Clock, User, Calendar, Award, AlertTriangle, CheckCircle, FileText, 
-  Users, Target, Mail, Monitor, CheckSquare, XSquare, Loader2 
+import {
+  Clock, User, Calendar, Award, AlertTriangle, CheckCircle, FileText,
+  Users, Target, Mail, Monitor, CheckSquare, XSquare, Loader2, ArrowRight
 } from 'lucide-react';
 import { getTrainingStatusColor } from '@/utils/trainingStatusCalculator';
 import { getTrainingProgramParticipants, type TrainingParticipant } from '@/services/trainingProgramParticipants';
-import { getEfficacyEvaluations, createEfficacyEvaluation, type TrainingEfficacyEvaluation } from '@/services/trainingEfficacyEvaluations';
-import { toast } from 'sonner';
+import { getEfficacyEvaluations, type TrainingEfficacyEvaluation } from '@/services/trainingEfficacyEvaluations';
 import {
   Table,
   TableBody,
@@ -35,10 +32,6 @@ export function ViewEmployeeTrainingDialog({
   onClose,
   training,
 }: ViewEmployeeTrainingDialogProps) {
-  const [isEffective, setIsEffective] = useState<boolean | null>(null);
-  const [efficacyComments, setEfficacyComments] = useState('');
-  const queryClient = useQueryClient();
-
   const program = training?.training_program;
   const programId = program?.id;
   const hasEfficacyDeadline = !!program?.efficacy_evaluation_deadline;
@@ -61,32 +54,6 @@ export function ViewEmployeeTrainingDialog({
   const existingEvaluation = evaluations.find(
     (e: TrainingEfficacyEvaluation) => e.employee_training_id === training?.id
   );
-
-  // Create efficacy evaluation mutation
-  const createEvalMutation = useMutation({
-    mutationFn: async () => {
-      if (isEffective === null) throw new Error('Selecione se o treinamento foi eficaz ou não');
-      return createEfficacyEvaluation({
-        company_id: '',
-        employee_training_id: training!.id,
-        training_program_id: programId!,
-        evaluation_date: new Date().toISOString().split('T')[0],
-        is_effective: isEffective,
-        comments: efficacyComments || undefined,
-        status: 'Concluída',
-      });
-    },
-    onSuccess: () => {
-      toast.success('Avaliação de eficácia registrada com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['efficacy-evaluations', programId] });
-      queryClient.invalidateQueries({ queryKey: ['employee-trainings'] });
-      setIsEffective(null);
-      setEfficacyComments('');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erro ao registrar avaliação de eficácia');
-    },
-  });
 
   if (!training) return null;
 
@@ -374,6 +341,9 @@ export function ViewEmployeeTrainingDialog({
                       Avaliado em {formatDate(existingEvaluation.evaluation_date)}
                     </span>
                   </div>
+                  {existingEvaluation.evaluator_name && (
+                    <p className="text-sm"><strong>Avaliador:</strong> {existingEvaluation.evaluator_name}</p>
+                  )}
                   {existingEvaluation.score !== null && existingEvaluation.score !== undefined && (
                     <p className="text-sm"><strong>Nota:</strong> {existingEvaluation.score}</p>
                   )}
@@ -382,51 +352,19 @@ export function ViewEmployeeTrainingDialog({
                   )}
                 </div>
               ) : (
-                <div className="p-4 border rounded-lg space-y-4">
-                  <p className="text-sm text-muted-foreground">Nenhuma avaliação registrada. Registre abaixo:</p>
-                  <div className="flex items-center gap-3">
-                    <Label className="text-sm">O treinamento foi eficaz?</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={isEffective === true ? 'default' : 'outline'}
-                        onClick={() => setIsEffective(true)}
-                      >
-                        <CheckSquare className="h-4 w-4 mr-1" /> Sim
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={isEffective === false ? 'destructive' : 'outline'}
-                        onClick={() => setIsEffective(false)}
-                      >
-                        <XSquare className="h-4 w-4 mr-1" /> Não
-                      </Button>
-                    </div>
+                // O fluxo de avaliação foi centralizado em /avaliacao-eficacia
+                // (wizard contínuo com filtro por evaluator). Aqui só linkamos.
+                <Link
+                  to="/avaliacao-eficacia"
+                  onClick={onClose}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/40 transition-colors"
+                >
+                  <div className="text-sm">
+                    <p className="font-medium text-foreground">Avaliação ainda não registrada</p>
+                    <p className="text-muted-foreground text-xs">Registre em <span className="font-medium">Avaliação de Eficácia</span>.</p>
                   </div>
-                  <div>
-                    <Label className="text-sm">Comentários / Observações</Label>
-                    <Textarea
-                      value={efficacyComments}
-                      onChange={(e) => setEfficacyComments(e.target.value)}
-                      placeholder="Descreva os resultados observados..."
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
-                  <Button
-                    onClick={() => createEvalMutation.mutate()}
-                    disabled={isEffective === null || createEvalMutation.isPending}
-                    size="sm"
-                  >
-                    {createEvalMutation.isPending ? (
-                      <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Salvando...</>
-                    ) : (
-                      'Registrar Avaliação'
-                    )}
-                  </Button>
-                </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
               )}
             </div>
           )}

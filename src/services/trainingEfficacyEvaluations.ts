@@ -4,7 +4,9 @@ import { calculateTrainingStatus, checkHasEfficacyEvaluation } from "@/utils/tra
 export interface TrainingEfficacyEvaluation {
   id: string;
   company_id: string;
-  employee_training_id: string;
+  // Pode ser null quando a avaliação é por programa (cobre todos os
+  // participantes de uma vez). Default novo em /avaliacao-eficacia.
+  employee_training_id: string | null;
   training_program_id: string;
   evaluator_id?: string;
   evaluator_name?: string;
@@ -56,12 +58,24 @@ export const createEfficacyEvaluation = async (
 
   const { data: userData } = await supabase.auth.getUser();
 
+  // Defesa em profundidade: se o caller não passou evaluator_name, busca o
+  // full_name no profile do user logado pra preencher automático.
+  let evaluatorName = evaluation.evaluator_name || null;
+  if (!evaluatorName && userData?.user?.id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', userData.user.id)
+      .maybeSingle();
+    evaluatorName = profile?.full_name || null;
+  }
+
   const payload = {
     company_id: companyId as string,
     employee_training_id: evaluation.employee_training_id,
     training_program_id: evaluation.training_program_id,
     evaluator_id: userData?.user?.id || null,
-    evaluator_name: evaluation.evaluator_name || null,
+    evaluator_name: evaluatorName,
     evaluation_date: evaluation.evaluation_date,
     score: evaluation.score ?? null,
     is_effective: evaluation.is_effective ?? null,
@@ -80,36 +94,52 @@ export const createEfficacyEvaluation = async (
     throw new Error(`Erro ao criar avaliação de eficácia: ${error.message}`);
   }
 
-  // Update the training program status after creating efficacy evaluation
+  // Atualiza o status do training_program. Programa só vira 'Concluído' quando
+  // TODOS os participantes têm evaluation concluída — granularidade por
+  // colaborador. Antes passávamos hasEfficacyEvaluation:true cego, o que
+  // marcava o programa como Concluído já na primeira avaliação (bug visível
+  // na Gabardo: ex. "FORMAÇÃO DE MOTORISTA CEGONHEIRO" com 8 colabs e 1
+  // avaliado aparecia como Concluído).
   if (evaluation.status === 'Concluída' && evaluation.training_program_id) {
     try {
-      // Get the training program
-      const { data: program, error: programError } = await supabase
-        .from('training_programs')
-        .select('*')
-        .eq('id', evaluation.training_program_id)
-        .single();
+      const programId = evaluation.training_program_id;
+      const [
+        { data: program, error: programError },
+        { data: parts },
+        { data: evals },
+      ] = await Promise.all([
+        supabase.from('training_programs').select('*').eq('id', programId).single(),
+        supabase.from('employee_trainings').select('id').eq('training_program_id', programId),
+        supabase
+          .from('training_efficacy_evaluations')
+          .select('employee_training_id')
+          .eq('training_program_id', programId)
+          .eq('status', 'Concluída'),
+      ]);
 
       if (!programError && program) {
-        // Recalculate status with efficacy evaluation now completed
+        const evaluatedIds = new Set(
+          (evals || []).map((e) => e.employee_training_id).filter(Boolean) as string[],
+        );
+        const totalParts = parts?.length || 0;
+        const allEvaluated =
+          totalParts > 0 && (parts || []).every((p) => evaluatedIds.has(p.id));
+
         const newStatus = calculateTrainingStatus({
           start_date: program.start_date,
           end_date: program.end_date,
           efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
-          hasEfficacyEvaluation: true,
+          hasEfficacyEvaluation: allEvaluated,
         });
 
-        // Update the program status
         await supabase
           .from('training_programs')
           .update({ status: newStatus })
-          .eq('id', evaluation.training_program_id);
-        
-        console.warn('Training program status updated to:', newStatus);
+          .eq('id', programId);
       }
     } catch (statusError) {
       console.error('Error updating training program status:', statusError);
-      // Don't throw here - the evaluation was created successfully
+      // Não propaga: a evaluation foi criada com sucesso.
     }
   }
 
