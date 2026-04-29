@@ -7077,6 +7077,54 @@ export type Database = {
           },
         ]
       }
+      efficacy_email_reminders_log: {
+        Row: {
+          company_id: string
+          evaluator_email: string
+          evaluator_employee_id: string
+          id: string
+          resend_id: string | null
+          sent_at: string
+          sent_date: string | null
+          training_count: number
+        }
+        Insert: {
+          company_id: string
+          evaluator_email: string
+          evaluator_employee_id: string
+          id?: string
+          resend_id?: string | null
+          sent_at?: string
+          sent_date?: string | null
+          training_count: number
+        }
+        Update: {
+          company_id?: string
+          evaluator_email?: string
+          evaluator_employee_id?: string
+          id?: string
+          resend_id?: string | null
+          sent_at?: string
+          sent_date?: string | null
+          training_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "efficacy_email_reminders_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "efficacy_email_reminders_log_evaluator_employee_id_fkey"
+            columns: ["evaluator_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_campaign_sends: {
         Row: {
           campaign_id: string
@@ -24718,7 +24766,7 @@ export type Database = {
           comments: string | null
           company_id: string
           created_at: string | null
-          employee_training_id: string
+          employee_training_id: string | null
           evaluation_date: string
           evaluator_id: string | null
           evaluator_name: string | null
@@ -24733,7 +24781,7 @@ export type Database = {
           comments?: string | null
           company_id: string
           created_at?: string | null
-          employee_training_id: string
+          employee_training_id?: string | null
           evaluation_date?: string
           evaluator_id?: string | null
           evaluator_name?: string | null
@@ -24748,7 +24796,7 @@ export type Database = {
           comments?: string | null
           company_id?: string
           created_at?: string | null
-          employee_training_id?: string
+          employee_training_id?: string | null
           evaluation_date?: string
           evaluator_id?: string | null
           evaluator_name?: string | null
