@@ -26,15 +26,6 @@ const FROM_EMAIL = Deno.env.get("EFFICACY_REMINDER_FROM_EMAIL")
   || "Plataforma Daton <no-reply@daton.com.br>";
 const APP_URL = Deno.env.get("APP_URL") || "https://app.daton.com.br";
 
-// Allowlist opcional de companies (CSV de UUIDs). Usada em dev/staging pra
-// que o cron diário NÃO dispare emails pra clientes em produção (ex.: Gabardo)
-// enquanto a feature ainda está em validação. Sem essa env var, processa
-// todas as companies (comportamento de produção).
-const ALLOWED_COMPANY_IDS = (Deno.env.get("EFFICACY_REMINDER_ALLOWED_COMPANY_IDS") || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
 const REMINDER_DAYS = [7, 3, 1] as const;
 
 interface PendingEvaluation {
@@ -304,15 +295,11 @@ serve(async (req) => {
     payload = {};
   }
 
-  // Determina o conjunto de companies a processar:
-  //   1. Se payload tem `companyId`, prevalece (test manual).
-  //   2. Senão, se ALLOWED_COMPANY_IDS está set, restringe a essas (dev/staging).
-  //   3. Senão, processa todas (default produção).
+  // Companies a processar: todas, exceto quando o payload restringe via
+  // companyId (útil pra teste manual de uma única empresa).
   let companiesQuery = supabase.from("companies").select("id, name");
   if (payload.companyId) {
     companiesQuery = companiesQuery.eq("id", payload.companyId);
-  } else if (ALLOWED_COMPANY_IDS.length > 0) {
-    companiesQuery = companiesQuery.in("id", ALLOWED_COMPANY_IDS);
   }
   const { data: companies, error: cErr } = await companiesQuery;
 
