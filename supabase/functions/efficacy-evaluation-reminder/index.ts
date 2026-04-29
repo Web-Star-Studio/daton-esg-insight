@@ -24,7 +24,7 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 // `email-mailing-management`). Sender pode ser sobrescrito por env var.
 const FROM_EMAIL = Deno.env.get("EFFICACY_REMINDER_FROM_EMAIL")
   || "Plataforma Daton <no-reply@daton.com.br>";
-const APP_URL = Deno.env.get("APP_URL") || "https://app.daton.com.br";
+const APP_URL = Deno.env.get("APP_URL") || "https://daton.com.br";
 
 const REMINDER_DAYS = [7, 3, 1] as const;
 
