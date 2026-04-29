@@ -162,6 +162,7 @@ async function processCompany(
   resend: Resend,
   companyId: string,
   companyName: string,
+  force = false,
 ): Promise<{ sent: number; skipped: number; errors: number }> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -227,7 +228,7 @@ async function processCompany(
     const pending = evaluatorBuckets.get(emp.id);
     if (!pending || pending.length === 0) continue;
 
-    if (await alreadyNotifiedToday(supabase, emp.id)) {
+    if (!force && await alreadyNotifiedToday(supabase, emp.id)) {
       skipped++;
       continue;
     }
@@ -287,16 +288,17 @@ serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const resend = new Resend(RESEND_API_KEY);
 
-  // Optional payload: { companyId?: string, dryRun?: boolean }
-  let payload: { companyId?: string; dryRun?: boolean } = {};
+  // Optional payload:
+  //   - companyId: restringe pra 1 empresa (teste manual)
+  //   - force: ignora a idempotência (envia mesmo se já notificou hoje).
+  //     Útil pra reenviar quando há fix urgente em conteúdo do email.
+  let payload: { companyId?: string; force?: boolean } = {};
   try {
     payload = (await req.json()) || {};
   } catch {
     payload = {};
   }
 
-  // Companies a processar: todas, exceto quando o payload restringe via
-  // companyId (útil pra teste manual de uma única empresa).
   let companiesQuery = supabase.from("companies").select("id, name");
   if (payload.companyId) {
     companiesQuery = companiesQuery.eq("id", payload.companyId);
@@ -312,7 +314,9 @@ serve(async (req) => {
 
   const summary: Record<string, { sent: number; skipped: number; errors: number }> = {};
   for (const company of companies || []) {
-    summary[company.name] = await processCompany(supabase, resend, company.id, company.name);
+    summary[company.name] = await processCompany(
+      supabase, resend, company.id, company.name, !!payload.force,
+    );
   }
 
   return new Response(
