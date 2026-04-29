@@ -1,13 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { aiCall } from "../_shared/ai-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
 interface FieldMapping {
   sourceField: string;
@@ -157,12 +156,13 @@ async function autoMapFields(
   }
 
   // For unmapped fields, use AI for intelligent mapping
-  if (result.unmapped.length > 0 && LOVABLE_API_KEY) {
+  if (result.unmapped.length > 0 && Deno.env.get('LOVABLE_API_KEY')) {
     try {
       const aiMappings = await getAIMappings(
         result.unmapped,
         Object.keys(targetFields),
-        targetEntity
+        targetEntity,
+        companyId
       );
 
       for (const aiMapping of aiMappings) {
@@ -237,7 +237,8 @@ function calculateMatchConfidence(sourceField: string, patterns: string[]): numb
 async function getAIMappings(
   unmappedFields: string[],
   targetFields: string[],
-  entityType: string
+  entityType: string,
+  companyId?: string
 ): Promise<FieldMapping[]> {
   const prompt = `Você é um especialista em mapeamento de campos de dados ESG.
 
@@ -263,28 +264,23 @@ Para cada campo da planilha, identifique o melhor campo do sistema para mapear, 
   ]
 }`;
 
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json',
+  const data = await aiCall<{ choices: Array<{ message: { content: string } }> }>(
+    {
+      functionName: 'field-mapper',
+      featureTag: `auto-map-${entityType}`,
+      companyId: companyId ?? null,
+      meta: { entityType, unmappedCount: unmappedFields.length },
     },
-    body: JSON.stringify({
+    {
       model: 'google/gemini-3-flash-preview',
       messages: [
         { role: 'system', content: 'Você é um assistente de mapeamento de dados. Retorne apenas JSON válido.' },
         { role: 'user', content: prompt }
       ],
       temperature: 0.3,
-      max_completion_tokens: 2000
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`AI mapping failed: ${response.status}`);
-  }
-
-  const data = await response.json();
+      max_completion_tokens: 2000,
+    }
+  );
   const content = data.choices[0].message.content;
   
   // Extract JSON from markdown code blocks if present

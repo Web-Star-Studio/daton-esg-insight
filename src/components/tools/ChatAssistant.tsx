@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useChatAssistant } from '@/hooks/useChatAssistant';
+import { useEventTracking } from '@/hooks/useEventTracking';
 import { AIActionConfirmation } from '@/components/ai/AIActionConfirmation';
 import { AIOperationsPreview } from '@/components/ai/AIOperationsPreview';
 import { QuickActions } from '@/components/ai/QuickActions';
@@ -53,8 +54,9 @@ export function ChatAssistant({ embedded = false, isOpen: externalIsOpen, onClos
   
   const [inputMessage, setInputMessage] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(true);
-  
-  const { 
+  const { track } = useEventTracking();
+
+  const {
     messages, 
     isLoading, 
     sendMessage, 
@@ -165,6 +167,10 @@ export function ChatAssistant({ embedded = false, isOpen: externalIsOpen, onClos
     setInputMessage('');
     setShowQuickActions(false);
     const currentPage = window.location.pathname.split('/')[1];
+    void track({
+      type: 'ai_chat_started',
+      metadata: { page: currentPage, hasAttachments: attachments.length > 0 },
+    });
     await sendMessage(message, currentPage, attachments);
   };
 

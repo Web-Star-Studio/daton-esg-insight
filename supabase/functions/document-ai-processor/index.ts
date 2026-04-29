@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { aiCall } from "../_shared/ai-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -97,9 +98,8 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-    if (!lovableApiKey) {
+    if (!Deno.env.get('LOVABLE_API_KEY')) {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
@@ -210,97 +210,62 @@ Por favor, retorne um JSON com a seguinte estrutura:
 }`;
 
     console.warn('🤖 Calling Lovable AI for analysis...');
-    
-    // 8. Call Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'Você é um assistente especializado em análise de documentos ESG. Sempre retorne respostas em formato JSON válido.' 
-          },
-          { role: 'user', content: analysisPrompt }
-        ]
-      })
-    });
 
-    console.warn('📡 AI Response status:', aiResponse.status);
-    
-    // Handle rate limits and payment errors
-    if (aiResponse.status === 429) {
-      console.error('❌ Rate limit exceeded');
-      await supabase
-        .from('document_extraction_jobs')
-        .update({
-          status: 'Erro',
-          error_message: 'Limite de requisições atingido. Tente novamente em alguns minutos.',
-          processing_end_time: new Date().toISOString()
-        })
-        .eq('id', job.id);
-
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'rate_limit',
-          message: 'Limite de requisições atingido. Tente novamente em alguns minutos.' 
-        }), 
-        { 
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    // 8. Call Lovable AI (centraliza tracking de tokens/custo em ai_usage_logs)
+    let aiData: { choices?: Array<{ message?: { content?: string } }> };
+    try {
+      aiData = await aiCall<typeof aiData>(
+        {
+          functionName: 'document-ai-processor',
+          featureTag: 'general_extraction',
+          companyId: profile.company_id,
+          userId: user.id,
+          meta: { documentId, fileName: document.file_name },
+        },
+        {
+          model: 'google/gemini-3-flash-preview',
+          messages: [
+            {
+              role: 'system',
+              content: 'Você é um assistente especializado em análise de documentos ESG. Sempre retorne respostas em formato JSON válido.'
+            },
+            { role: 'user', content: analysisPrompt }
+          ]
         }
       );
-    }
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      const userMessage = status === 429
+        ? 'Limite de requisições atingido. Tente novamente em alguns minutos.'
+        : status === 402
+          ? 'Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage.'
+          : `Erro na API de IA: ${status ?? 'desconhecido'}`;
 
-    if (aiResponse.status === 402) {
-      console.error('❌ Payment required');
       await supabase
         .from('document_extraction_jobs')
         .update({
           status: 'Erro',
-          error_message: 'Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage.',
+          error_message: userMessage,
           processing_end_time: new Date().toISOString()
         })
         .eq('id', job.id);
 
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'payment_required',
-          message: 'Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage.' 
-        }), 
-        { 
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      if (status === 429 || status === 402) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: status === 429 ? 'rate_limit' : 'payment_required',
+            message: userMessage,
+          }),
+          {
+            status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      throw err;
     }
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('❌ AI Gateway error:', {
-        status: aiResponse.status,
-        error: errorText
-      });
-      
-      await supabase
-        .from('document_extraction_jobs')
-        .update({
-          status: 'Erro',
-          error_message: `Erro na API de IA: ${aiResponse.status}`,
-          processing_end_time: new Date().toISOString()
-        })
-        .eq('id', job.id);
-      
-      throw new Error(`AI Gateway error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || '';
 
     // 9. Parse AI response

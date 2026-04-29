@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { aiCall } from "../_shared/ai-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -88,8 +89,7 @@ serve(async (req) => {
       }
     }
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
+    if (!Deno.env.get('LOVABLE_API_KEY')) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
@@ -124,45 +124,42 @@ Analise o documento e retorne APENAS um objeto JSON no seguinte formato:
 Escolha o tipo que melhor corresponde ao conteúdo. Use "generic" se não houver correspondência clara.
 Confidence deve ser entre 0 e 1.`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.3,
-        max_tokens: 500
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: 'Rate limits exceeded. Please try again later.' 
+    let data: { choices: Array<{ message: { content: string } }> };
+    try {
+      data = await aiCall<typeof data>(
+        {
+          functionName: 'intelligent-document-classifier',
+          featureTag: 'classify',
+          meta: { fileName, fileType },
+        },
+        {
+          model: 'google/gemini-3-flash-preview',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.3,
+          max_tokens: 500,
+        }
+      );
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 429) {
+        return new Response(JSON.stringify({
+          error: 'Rate limits exceeded. Please try again later.'
         }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ 
-          error: 'Payment required. Please add credits to your workspace.' 
+      if (status === 402) {
+        return new Response(JSON.stringify({
+          error: 'Payment required. Please add credits to your workspace.'
         }), {
           status: 402,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      const errorText = await response.text();
-      console.error('AI classification error:', errorText);
-      throw new Error(`AI API error: ${response.status}`);
+      throw err;
     }
 
-    const data = await response.json();
     let classification;
 
     try {

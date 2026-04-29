@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { useEventTracking } from "@/hooks/useEventTracking";
 import { logger } from "@/utils/logger";
 import { ForgotPasswordModal } from "@/components/ForgotPasswordModal";
 import {
@@ -32,6 +33,7 @@ import "@/components/landing/heimdall/heimdall.css";
 export default function Auth() {
   const { login, register, isLoading, user } = useAuth();
   const { toast } = useToast();
+  const { track } = useEventTracking();
   const navigate = useNavigate();
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
@@ -68,6 +70,7 @@ export default function Auth() {
       logger.info("Submitting login form", "auth", { email: loginData.email });
       await login(loginData.email, loginData.password);
       logger.info("Login successful, navigating to dashboard", "auth");
+      void track({ type: "login" });
       navigate("/dashboard", { replace: true });
     } catch (error) {
       logger.error("Login form submission failed", error, "auth");

@@ -47,3 +47,14 @@ gabardo_*.csv
 gabardo_*.json
 gabardo_*.md
 *.xlsx
+
+# Supabase CLI: estado local do link com o projeto remoto (project-ref,
+# versões dos serviços, etc). Cada dev gera o seu via `supabase link`.
+supabase/.temp/
+
+# Claude Code: configuração local de servidores MCP por máquina.
+.mcp.json
+
+# Playwright: artefatos locais não-versionados.
+.playwright/
+.playwright-cli/

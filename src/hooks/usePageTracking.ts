@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getRoutePattern } from "@/lib/routePattern";
 
 /**
  * Registra cada navegação na tabela `page_view_logs` para análise de uso real
@@ -9,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
  * - Best-effort: erros são silenciosamente ignorados (não devem quebrar UX).
  * - Deduplica chamadas idênticas no mesmo render (StrictMode dispara 2x).
  * - Funciona para usuários anônimos (RLS permite INSERT sem autenticação).
+ * - Grava `route_pattern` (ex. `/licenciamento/:id`) além do `pathname` literal,
+ *   para o analytics agregar corretamente rotas dinâmicas.
  */
 export const usePageTracking = () => {
   const location = useLocation();
@@ -38,6 +41,7 @@ export const usePageTracking = () => {
           user_id: user?.id ?? null,
           company_id: companyId,
           pathname: location.pathname,
+          route_pattern: getRoutePattern(location.pathname),
           search: location.search || null,
           referrer: document.referrer || null,
           user_agent: navigator.userAgent.slice(0, 500),

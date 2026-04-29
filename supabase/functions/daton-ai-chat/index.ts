@@ -20,6 +20,7 @@ import {
   generateExecutiveSummary 
 } from './advanced-analytics.ts';
 import { getComprehensiveCompanyData, getPageSpecificData } from './comprehensive-data.ts';
+import { aiCall, logStreamRequest } from '../_shared/ai-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -1586,6 +1587,8 @@ ${attachmentContext}`;
     const AI_TIMEOUT = 45000; // 45 seconds
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT);
+    const aiStartedAt = Date.now();
+    const streamingModel = 'google/gemini-3-flash-preview';
 
     let response: Response;
     try {
@@ -1596,7 +1599,7 @@ ${attachmentContext}`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-3-flash-preview',
+          model: streamingModel,
           messages: [
             { role: 'system', content: systemPrompt },
             ...messages
@@ -1611,6 +1614,23 @@ ${attachmentContext}`;
       });
     } catch (err: any) {
       clearTimeout(timeoutId);
+      // Loga falha (timeout/network) — sem tokens, mas registra latência e erro.
+      void logStreamRequest(
+        {
+          functionName: 'daton-ai-chat',
+          featureTag: stream ? 'main-stream' : 'main',
+          companyId: companyId ?? null,
+          userId: userId ?? null,
+        },
+        { model: streamingModel, messages: [] },
+        {
+          latencyMs: Date.now() - aiStartedAt,
+          success: false,
+          errorText: err?.name === 'AbortError'
+            ? 'timeout'
+            : (err?.message ?? String(err)),
+        }
+      );
       if (err.name === 'AbortError') {
         console.error('⏱️ AI timeout after 45s');
         throw new Error('IA timeout - a análise está demorando muito. Tente novamente com uma pergunta mais simples.');
@@ -1619,6 +1639,24 @@ ${attachmentContext}`;
     } finally {
       clearTimeout(timeoutId);
     }
+
+    // Registra a chamada streaming sem usage detalhado (limitação atual:
+    // tokens só vêm na última linha SSE; instrumentação completa fica
+    // para refator com tee do stream).
+    void logStreamRequest(
+      {
+        functionName: 'daton-ai-chat',
+        featureTag: stream ? 'main-stream' : 'main',
+        companyId: companyId ?? null,
+        userId: userId ?? null,
+      },
+      { model: streamingModel, messages: [] },
+      {
+        latencyMs: Date.now() - aiStartedAt,
+        success: response.ok,
+        errorText: response.ok ? undefined : `HTTP ${response.status}`,
+      }
+    );
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -1878,29 +1916,32 @@ ${attachmentContext}`;
         })
       );
 
-      // Send tool results back to AI for final response
-      const finalResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${lovableApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-3-flash-preview',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages,
-            choice.message,
-            ...toolResults
-          ],
-          temperature: 0.7,
-          max_tokens: 2000
-        }),
-      });
-
-      if (!finalResponse.ok) {
-        if (finalResponse.status === 429) {
-          return new Response(JSON.stringify({ 
+      // Send tool results back to AI for final response (loga em ai_usage_logs)
+      let finalData: { choices: Array<{ message: { content: string } }> };
+      try {
+        finalData = await aiCall<typeof finalData>(
+          {
+            functionName: 'daton-ai-chat',
+            featureTag: 'final-after-tools',
+            companyId: companyId ?? null,
+            userId: userId ?? null,
+          },
+          {
+            model: 'google/gemini-3-flash-preview',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...messages,
+              choice.message,
+              ...toolResults
+            ],
+            temperature: 0.7,
+            max_tokens: 2000
+          }
+        );
+      } catch (err) {
+        const status = (err as { status?: number }).status;
+        if (status === 429) {
+          return new Response(JSON.stringify({
             error: 'Rate limits exceeded',
             message: '⏳ O limite de requisições foi atingido. Por favor, aguarde alguns instantes e tente novamente.'
           }), {
@@ -1908,8 +1949,8 @@ ${attachmentContext}`;
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        if (finalResponse.status === 402) {
-          return new Response(JSON.stringify({ 
+        if (status === 402) {
+          return new Response(JSON.stringify({
             error: 'Payment required',
             message: '💳 Os créditos de IA se esgotaram. Por favor, adicione créditos na sua workspace Lovable para continuar.'
           }), {
@@ -1917,12 +1958,9 @@ ${attachmentContext}`;
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        const errorText = await finalResponse.text();
-        console.error('AI final response error:', finalResponse.status, errorText);
-        throw new Error(`AI API error: ${finalResponse.status}`);
+        throw err;
       }
 
-      const finalData = await finalResponse.json();
       const assistantMessage = finalData.choices[0].message.content;
       
       // VALIDATION: Ensure message is valid after tool calls

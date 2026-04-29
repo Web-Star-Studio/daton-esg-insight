@@ -2,10 +2,10 @@ import { Building2, Users, FileText, TrendingUp } from "lucide-react";
 import { PlatformStatsCard } from "@/components/platform/PlatformStatsCard";
 import { CompanyTable } from "@/components/platform/CompanyTable";
 import { PlatformUsersTable } from "@/components/platform/PlatformUsersTable";
+import { UsageAnalyticsTab } from "@/components/platform/UsageAnalyticsTab";
 import { usePlatformAnalytics } from "@/hooks/usePlatformAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PageUsageTab } from "@/components/platform/PageUsageTab";
 
 export default function PlatformAdminDashboard() {
   const { data: analytics, isLoading } = usePlatformAnalytics('30d');
@@ -81,12 +81,12 @@ export default function PlatformAdminDashboard() {
         </Card>
       )}
 
-      {/* Tabs: Empresas & Usuários */}
+      {/* Tabs: Empresas, Usuários, Uso & Custos */}
       <Tabs defaultValue="empresas">
         <TabsList>
           <TabsTrigger value="empresas">Empresas</TabsTrigger>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-          <TabsTrigger value="uso">Uso de Páginas</TabsTrigger>
+          <TabsTrigger value="uso">Uso & Custos</TabsTrigger>
         </TabsList>
         <TabsContent value="empresas">
           <Card>
@@ -109,14 +109,7 @@ export default function PlatformAdminDashboard() {
           </Card>
         </TabsContent>
         <TabsContent value="uso">
-          <Card>
-            <CardHeader>
-              <CardTitle>Uso de Páginas por Organização</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PageUsageTab />
-            </CardContent>
-          </Card>
+          <UsageAnalyticsTab />
         </TabsContent>
       </Tabs>
     </div>
