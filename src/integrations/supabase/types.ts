@@ -950,6 +950,60 @@ export type Database = {
           },
         ]
       }
+      ai_usage_logs: {
+        Row: {
+          company_id: string | null
+          completion_tokens: number | null
+          created_at: string
+          error_text: string | null
+          estimated_cost_usd: number | null
+          feature_tag: string | null
+          function_name: string
+          id: string
+          latency_ms: number | null
+          model: string
+          prompt_tokens: number | null
+          request_meta: Json
+          success: boolean
+          total_tokens: number | null
+          user_id: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          completion_tokens?: number | null
+          created_at?: string
+          error_text?: string | null
+          estimated_cost_usd?: number | null
+          feature_tag?: string | null
+          function_name: string
+          id?: string
+          latency_ms?: number | null
+          model: string
+          prompt_tokens?: number | null
+          request_meta?: Json
+          success?: boolean
+          total_tokens?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          completion_tokens?: number | null
+          created_at?: string
+          error_text?: string | null
+          estimated_cost_usd?: number | null
+          feature_tag?: string | null
+          function_name?: string
+          id?: string
+          latency_ms?: number | null
+          model?: string
+          prompt_tokens?: number | null
+          request_meta?: Json
+          success?: boolean
+          total_tokens?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       airport_factors: {
         Row: {
           aircraft_category: string
@@ -8792,6 +8846,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_logs: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          route_pattern: string | null
+          user_id: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          route_pattern?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          route_pattern?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       extracted_data_preview: {
         Row: {
@@ -18252,6 +18342,7 @@ export type Database = {
           id: string
           pathname: string
           referrer: string | null
+          route_pattern: string | null
           search: string | null
           user_agent: string | null
           user_id: string | null
@@ -18262,6 +18353,7 @@ export type Database = {
           id?: string
           pathname: string
           referrer?: string | null
+          route_pattern?: string | null
           search?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -18272,6 +18364,7 @@ export type Database = {
           id?: string
           pathname?: string
           referrer?: string | null
+          route_pattern?: string | null
           search?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -26165,6 +26258,7 @@ export type Database = {
       check_supplier_mandatory_documents: { Args: never; Returns: undefined }
       cleanup_old_activity_logs: { Args: never; Returns: undefined }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
+      cleanup_tracking_logs: { Args: never; Returns: undefined }
       debug_auth_status: { Args: never; Returns: Json }
       exec_sql: { Args: { query: string }; Returns: Json }
       finalize_audit_planning: { Args: { p_audit_id: string }; Returns: Json }
