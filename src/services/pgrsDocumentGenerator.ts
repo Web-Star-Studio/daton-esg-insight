@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { trackEvent } from '@/lib/eventTracking'
 
 export interface PGRSDocumentData {
   company: {
@@ -268,6 +269,7 @@ export class PGRSDocumentGenerator {
     this.generateDocument(data)
     const fileName = filename || `PGRS_${data.company.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`
     this.doc.save(fileName)
+    void trackEvent({ type: "export_pdf", entityType: "pgrs_document", metadata: { company: data.company.name } })
   }
 }
 

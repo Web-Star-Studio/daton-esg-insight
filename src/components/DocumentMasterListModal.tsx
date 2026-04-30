@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
+import { trackEvent } from '@/lib/eventTracking';
 
 interface DocumentMasterListModalProps {
   documentId?: string;
@@ -166,6 +167,7 @@ export const DocumentMasterListModal: React.FC<DocumentMasterListModalProps> = (
       });
       
       doc.save('lista-mestra-documentos.pdf');
+      void trackEvent({ type: "export_pdf", entityType: "master_list_documents", metadata: { count: masterListItems?.length ?? 0 } });
       toast.success('Relatório PDF gerado com sucesso');
     } catch (error) {
       toast.error('Erro ao gerar relatório PDF');
@@ -190,6 +192,7 @@ export const DocumentMasterListModal: React.FC<DocumentMasterListModalProps> = (
       XLSX.utils.book_append_sheet(wb, ws, 'Lista Mestra');
       
       XLSX.writeFile(wb, 'lista-mestra-documentos.xlsx');
+      void trackEvent({ type: "export_excel", entityType: "master_list_documents", metadata: { count: masterListItems?.length ?? 0 } });
       toast.success('Relatório Excel gerado com sucesso');
     } catch (error) {
       toast.error('Erro ao gerar relatório Excel');

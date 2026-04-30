@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import type { Audit, AuditFinding } from '@/services/audit';
+import { trackEvent } from '@/lib/eventTracking';
 
 export const useAuditReportExport = () => {
   const [isExporting, setIsExporting] = useState(false);
@@ -152,6 +153,7 @@ export const useAuditReportExport = () => {
 
       // Salvar PDF
       doc.save(`relatorio-auditorias-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      void trackEvent({ type: "export_pdf", entityType: "audit_report", metadata: { total_audits: audits.length, total_findings: findings.length } });
       toast.success('Relatório PDF gerado com sucesso!');
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);

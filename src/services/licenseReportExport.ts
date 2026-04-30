@@ -3,6 +3,7 @@ import { getUserAndCompany } from '@/utils/auth';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { trackEvent } from '@/lib/eventTracking';
 
 export async function exportAlertsReport(
   licenseId?: string,
@@ -75,6 +76,7 @@ function exportAlertsToPDF(alerts: any[]) {
   });
 
   doc.save(`alertas-${Date.now()}.pdf`);
+  void trackEvent({ type: "export_pdf", entityType: "license_alerts_report", metadata: { count: alerts.length } });
 }
 
 function exportAlertsToExcel(alerts: any[]) {
@@ -111,6 +113,7 @@ function exportAlertsToExcel(alerts: any[]) {
   ];
 
   XLSX.writeFile(wb, `alertas-${Date.now()}.xlsx`);
+  void trackEvent({ type: "export_excel", entityType: "license_alerts_report", metadata: { count: alerts.length } });
 }
 
 export async function exportObservationsReport(
@@ -168,6 +171,7 @@ function exportObservationsToPDF(observations: any[]) {
   });
 
   doc.save(`observacoes-${Date.now()}.pdf`);
+  void trackEvent({ type: "export_pdf", entityType: "license_observations_report", metadata: { count: observations.length } });
 }
 
 function exportObservationsToExcel(observations: any[]) {
@@ -204,6 +208,7 @@ function exportObservationsToExcel(observations: any[]) {
   ];
 
   XLSX.writeFile(wb, `observacoes-${Date.now()}.xlsx`);
+  void trackEvent({ type: "export_excel", entityType: "license_observations_report", metadata: { count: observations.length } });
 }
 
 export async function exportComplianceReport(format: 'pdf' | 'excel' = 'pdf'): Promise<void> {
@@ -244,6 +249,7 @@ export async function exportComplianceReport(format: 'pdf' | 'excel' = 'pdf'): P
     doc.text(`Score de Conformidade: ${complianceScore}%`, 14, 75);
 
     doc.save(`compliance-${Date.now()}.pdf`);
+    void trackEvent({ type: "export_pdf", entityType: "compliance_report" });
   } else {
     const data = [{
       'Total de Licenças': licenses?.length || 0,
@@ -259,6 +265,7 @@ export async function exportComplianceReport(format: 'pdf' | 'excel' = 'pdf'): P
     XLSX.utils.book_append_sheet(wb, ws, 'Compliance');
 
     XLSX.writeFile(wb, `compliance-${Date.now()}.xlsx`);
+    void trackEvent({ type: "export_excel", entityType: "compliance_report" });
   }
 }
 

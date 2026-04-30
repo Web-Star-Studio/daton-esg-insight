@@ -6,6 +6,7 @@ import { ptBR } from 'date-fns/locale';
 import { Legislation, fetchLegislations, fetchLegislationStats } from './legislations';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchAllPaginated } from '@/utils/supabasePagination';
+import { trackEvent } from '@/lib/eventTracking';
 
 export interface LegislationReportConfig {
   reportType: 'global' | 'unit' | 'theme';
@@ -275,6 +276,7 @@ export const exportLegislationReportToPDF = async (
   // Save
   const fileName = `relatorio_legislacoes_${config.reportType}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
   doc.save(fileName);
+  void trackEvent({ type: "export_pdf", entityType: "legislation_report", metadata: { report_type: config.reportType } });
 };
 
 // Excel Export
@@ -388,6 +390,7 @@ export const exportLegislationReportToExcel = async (
   // Save
   const fileName = `relatorio_legislacoes_${config.reportType}_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`;
   XLSX.writeFile(workbook, fileName);
+  void trackEvent({ type: "export_excel", entityType: "legislation_report", metadata: { report_type: config.reportType } });
 };
 
 // Unit Report - PDF Export
@@ -582,6 +585,7 @@ export const exportUnitReportToPDF = async (
 
   const fileName = `relatorio_unidade_${branchName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
   doc.save(fileName);
+  void trackEvent({ type: "export_pdf", entityType: "legislation_unit_report", metadata: { branch: branchName } });
 };
 
 // Unit Report - Excel Export
@@ -701,6 +705,7 @@ export const exportUnitReportToExcel = async (
 
   const fileName = `relatorio_unidade_${branchName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`;
   XLSX.writeFile(workbook, fileName);
+  void trackEvent({ type: "export_excel", entityType: "legislation_unit_report", metadata: { branch: branchName } });
 };
 
 // Main export function

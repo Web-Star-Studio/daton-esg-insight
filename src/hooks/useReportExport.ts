@@ -6,6 +6,7 @@ import { type IntegratedReport } from '@/services/integratedReports';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { trackEvent } from '@/lib/eventTracking';
 
 export function useReportExport() {
   const [isExporting, setIsExporting] = useState(false);
@@ -152,6 +153,7 @@ export function useReportExport() {
       }
 
       doc.save(`${report.report_title}.pdf`);
+      void trackEvent({ type: "export_pdf", entityType: "integrated_report", entityId: report.id, metadata: { title: report.report_title } });
       toast.success('PDF exportado com sucesso!');
     } catch (error: any) {
       toast.error(`Erro ao exportar PDF: ${error.message}`);
@@ -233,6 +235,7 @@ export function useReportExport() {
       }
 
       XLSX.writeFile(workbook, `${report.report_title}.xlsx`);
+      void trackEvent({ type: "export_excel", entityType: "integrated_report", entityId: report.id, metadata: { title: report.report_title } });
       toast.success('Excel exportado com sucesso!');
     } catch (error: any) {
       toast.error(`Erro ao exportar Excel: ${error.message}`);
