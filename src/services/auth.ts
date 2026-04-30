@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from '@supabase/supabase-js';
 import { logger } from '@/utils/logger';
+import { trackEvent } from '@/lib/eventTracking';
 
 export interface AuthUser {
   id: string;
@@ -252,6 +253,10 @@ class AuthService {
    * Logout
    */
   async logout() {
+    // Captura o evento ANTES do signOut — depois do signOut, RLS bloqueia
+    // o insert em event_logs (user_id = auth.uid() já é null).
+    await trackEvent({ type: "logout" });
+
     const { error } = await supabase.auth.signOut();
     if (error) {
       throw new Error(error.message);

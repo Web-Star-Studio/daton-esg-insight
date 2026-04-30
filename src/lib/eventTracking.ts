@@ -8,7 +8,6 @@ import { getRoutePattern } from "@/lib/routePattern";
 export type EventType =
   | "login"
   | "logout"
-  | "org_switch"
   | "export_pdf"
   | "export_excel"
   | "export_csv"

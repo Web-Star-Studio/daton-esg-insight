@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/eventTracking";
 
 export interface DataCollectionTask {
   id: string;
@@ -153,7 +154,16 @@ export const dataCollectionService = {
       throw new Error('Failed to upload file');
     }
 
-    return response.json();
+    const result = await response.json();
+
+    void trackEvent({
+      type: "bulk_import",
+      entityType: "data_collection",
+      entityId: result.job_id,
+      metadata: { import_type: importType, file_name: file.name, file_size: file.size },
+    });
+
+    return result;
   },
 
   async getJobStatus(jobId: string): Promise<DataImportJob> {

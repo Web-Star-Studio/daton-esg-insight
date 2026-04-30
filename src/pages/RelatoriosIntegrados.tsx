@@ -46,6 +46,7 @@ import { SmartTemplateSelector } from "@/components/reports/SmartTemplateSelecto
 import { getGRIReports, type GRIReport } from "@/services/griReports";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/eventTracking";
 
 // Mock data for traditional reports (migrated from Relatorios.tsx)
 const mockReports = [
@@ -208,6 +209,8 @@ export default function RelatoriosIntegrados() {
       });
 
       if (error) throw error;
+
+      void trackEvent({ type: "report_generated", entityType: "intelligent_report", metadata: { templateId: config.templateId } });
 
       toast.success("Relatório em Geração", {
         description: "Seu relatório está sendo processado. Você será notificado quando estiver pronto.",
