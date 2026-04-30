@@ -46,7 +46,7 @@ export function EmployeeBenefitsModal({ isOpen, onClose, employee }: EmployeeBen
   const queryClient = useQueryClient();
 
   // Fetch available benefits
-  const { data: benefits = [], isLoading: isLoadingBenefits } = useQuery({
+  const { data: benefits, isLoading: isLoadingBenefits } = useQuery({
     queryKey: ['employee-benefits'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -62,11 +62,11 @@ export function EmployeeBenefitsModal({ isOpen, onClose, employee }: EmployeeBen
   });
 
   // Fetch current enrollments for this employee
-  const { data: enrollments = [], isLoading: isLoadingEnrollments } = useQuery({
+  const { data: enrollments, isLoading: isLoadingEnrollments } = useQuery({
     queryKey: ['employee-benefit-enrollments', employee?.id],
     queryFn: async () => {
       if (!employee?.id) return [];
-      
+
       const { data, error } = await supabase
         .from('benefit_enrollments')
         .select('*')
@@ -78,14 +78,23 @@ export function EmployeeBenefitsModal({ isOpen, onClose, employee }: EmployeeBen
     },
     enabled: isOpen && !!employee?.id,
   });
-  const normalizedBenefits = Array.isArray(benefits) ? benefits : [];
-  const normalizedEnrollments = Array.isArray(enrollments) ? enrollments : [];
+
+  // Memoizar derivados a partir de `data` direto: usar default `= []` no destructuring
+  // criava nova referência a cada render, disparando loop infinito no useEffect abaixo.
+  const normalizedBenefits = React.useMemo(
+    () => (Array.isArray(benefits) ? benefits : []),
+    [benefits]
+  );
+  const normalizedEnrollments = React.useMemo(
+    () => (Array.isArray(enrollments) ? enrollments : []),
+    [enrollments]
+  );
 
   // Update selected benefits when enrollments load
-  const enrollmentIds = React.useMemo(() => {
-    if (normalizedEnrollments.length === 0) return [];
-    return normalizedEnrollments.map((e: BenefitEnrollment) => e.benefit_id);
-  }, [normalizedEnrollments]);
+  const enrollmentIds = React.useMemo(
+    () => normalizedEnrollments.map((e: BenefitEnrollment) => e.benefit_id),
+    [normalizedEnrollments]
+  );
 
   React.useEffect(() => {
     setSelectedBenefits(enrollmentIds);

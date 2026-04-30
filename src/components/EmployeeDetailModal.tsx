@@ -237,39 +237,39 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                           <Separator />
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="flex items-start gap-3">
-                              <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <Mail className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">E-mail</p>
-                                <p className="text-sm text-muted-foreground">{employee.email || 'Não informado'}</p>
+                                <p className="text-sm text-muted-foreground break-all">{employee.email || 'Não informado'}</p>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-3">
-                              <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">Telefone</p>
                                 <p className="text-sm text-muted-foreground">{employee.phone || 'Não informado'}</p>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-3">
-                              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">Data de Nascimento</p>
                                 <p className="text-sm text-muted-foreground">
-                                  {employee.birth_date 
+                                  {employee.birth_date
                                     ? `${formatDateDisplay(employee.birth_date)}${calculateAge(employee.birth_date) ? ` (${calculateAge(employee.birth_date)} anos)` : ''}`
                                     : 'Não informado'
                                   }
                                 </p>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-3">
-                              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">Localização</p>
-                                <p className="text-sm text-muted-foreground">{employee.location || 'Não informado'}</p>
+                                <p className="text-sm text-muted-foreground break-words">{employee.location || 'Não informado'}</p>
                               </div>
                             </div>
                           </div>
@@ -300,67 +300,67 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                           <Separator />
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="flex items-start gap-3">
-                              <Building className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <Building className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">Departamento</p>
-                                <p className="text-sm text-muted-foreground">{employee.department || 'Não informado'}</p>
+                                <p className="text-sm text-muted-foreground break-words">{employee.department || 'Não informado'}</p>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-3">
-                              <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">Cargo</p>
-                                <p className="text-sm text-muted-foreground">{employee.position || 'Não informado'}</p>
+                                <p className="text-sm text-muted-foreground break-words">{employee.position || 'Não informado'}</p>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-3">
-                              <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">Filial</p>
-                                <p className="text-sm text-muted-foreground">{getBranchName(employee.branch_id)}</p>
+                                <p className="text-sm text-muted-foreground break-words">{getBranchName(employee.branch_id)}</p>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-3">
-                              <DollarSign className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <DollarSign className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">Salário</p>
                                 <p className="text-sm text-muted-foreground">{formatCurrency(employee.salary)}</p>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-3">
-                              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">Data de Contratação</p>
                                 <p className="text-sm text-muted-foreground">
                                   {formatDateDisplay(employee.hire_date) || 'Não informado'}
                                 </p>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-3">
-                              <TrendingUp className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <TrendingUp className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">Tempo na Empresa</p>
                                 <p className="text-sm text-muted-foreground">{calculateTenure(employee.hire_date)}</p>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-3">
-                              <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-                              <div>
+                              <FileText className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">Tipo de Contrato</p>
                                 <Badge variant="outline" className="mt-1">{employee.employment_type}</Badge>
                               </div>
                             </div>
-                            
+
                             {employee.status === 'Inativo' && (
                               <div className="flex items-start gap-3">
-                                <FileX className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                <div>
+                                <FileX className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                                <div className="min-w-0 flex-1">
                                   <p className="text-sm font-medium">Data de Rescisão</p>
                                   <p className="text-sm text-muted-foreground">{formatDate(employee.termination_date)}</p>
                                 </div>

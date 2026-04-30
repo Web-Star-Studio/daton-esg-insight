@@ -183,9 +183,18 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   }, [debouncedEmail, employee]);
 
   useEffect(() => {
-    if (isOpen) {
-      loadDepartmentsAndPositions();
-      setEmailValidation({ checking: false, exists: false });
+    if (!isOpen) return;
+    let cancelled = false;
+
+    setEmailValidation({ checking: false, exists: false });
+
+    const initialize = async () => {
+      // Carregar departamentos e cargos ANTES de aplicar formData.
+      // Caso contrário, o Radix Select é montado sem SelectItem correspondente
+      // ao valor salvo e exibe o placeholder mesmo após a lista carregar.
+      await loadDepartmentsAndPositions();
+      if (cancelled) return;
+
       if (employee) {
         setFormData({
           cpf: employee.cpf || '',
@@ -207,8 +216,6 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           notes: employee.notes || '',
         });
       } else {
-        // Clear form and pending items for creation mode
-        // Pre-fill hire_date with current date for new employees
         const today = formatDateForDB(new Date()) || '';
         setFormData({
           cpf: '',
@@ -232,7 +239,13 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         setPendingExperiences([]);
         setPendingEducation([]);
       }
-    }
+    };
+
+    initialize();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, employee]);
 
   const loadDepartmentsAndPositions = async () => {
@@ -590,11 +603,27 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
             <div>
               <Label htmlFor="department">Departamento</Label>
               <div className="flex gap-2">
-                <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
+                <Select
+                  value={formData.department}
+                  onValueChange={(value) => setFormData(prev => {
+                    // Radix Select dispara onValueChange("") via bubble input quando
+                    // o valor controlado ainda não foi registrado em nativeOptionsSet
+                    // (ex.: SelectContent fechado durante a inicialização do form).
+                    // Ignoramos para não apagar o valor salvo do usuário.
+                    if (value === '' && prev.department) return prev;
+                    return { ...prev, department: value };
+                  })}
+                >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Selecionar departamento" />
                   </SelectTrigger>
                   <SelectContent>
+                    {/* Fallback para valores legados que não existem mais na lista de departamentos */}
+                    {formData.department && !departments.some(d => d.name === formData.department) && (
+                      <SelectItem value={formData.department}>
+                        {formData.department}
+                      </SelectItem>
+                    )}
                     {departments.map(dept => (
                       <div key={dept.id} className="flex items-center justify-between group pr-2">
                         <SelectItem value={dept.name} className="flex-1">
@@ -678,21 +707,31 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
             <div>
               <Label htmlFor="position">Cargo</Label>
               <div className="flex gap-2">
-                <Select 
-                  value={formData.position} 
+                <Select
+                  value={formData.position}
                   onValueChange={(value) => {
-                    const selectedPosition = positions.find(p => p.title === value);
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      position: value,
-                      position_id: selectedPosition?.id || ''
-                    }));
+                    setFormData(prev => {
+                      // Ver comentário no Select de Departamento sobre onValueChange("")
+                      if (value === '' && prev.position) return prev;
+                      const selectedPosition = positions.find(p => p.title === value);
+                      return {
+                        ...prev,
+                        position: value,
+                        position_id: selectedPosition?.id || ''
+                      };
+                    });
                   }}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Selecionar cargo" />
                   </SelectTrigger>
                   <SelectContent>
+                    {/* Fallback para valores legados que não existem mais na lista de cargos */}
+                    {formData.position && !positions.some(p => p.title === formData.position) && (
+                      <SelectItem value={formData.position}>
+                        {formData.position}
+                      </SelectItem>
+                    )}
                     {positions.map(pos => (
                       <div key={pos.id} className="flex items-center justify-between group pr-2">
                         <SelectItem value={pos.title} className="flex-1">
@@ -806,7 +845,10 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
 
             <div>
               <Label htmlFor="education_level">Escolaridade</Label>
-              <Select value={formData.education_level} onValueChange={(value) => setFormData(prev => ({ ...prev, education_level: value }))}>
+              <Select value={formData.education_level} onValueChange={(value) => setFormData(prev => {
+                if (value === '' && prev.education_level) return prev;
+                return { ...prev, education_level: value };
+              })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar escolaridade" />
                 </SelectTrigger>
@@ -829,7 +871,10 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="gender">Gênero</Label>
-              <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}>
+              <Select value={formData.gender} onValueChange={(value) => setFormData(prev => {
+                if (value === '' && prev.gender) return prev;
+                return { ...prev, gender: value };
+              })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar gênero" />
                 </SelectTrigger>
