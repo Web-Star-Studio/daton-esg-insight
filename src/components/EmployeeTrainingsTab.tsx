@@ -31,6 +31,12 @@ import { toast } from 'sonner';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { calculateTrainingStatus, getTrainingStatusColor } from '@/utils/trainingStatusCalculator';
+import {
+  getEfficacyCategory,
+  EFFICACY_CATEGORY_LABEL,
+  EFFICACY_CATEGORY_BADGE,
+  type EfficacyCategory,
+} from '@/utils/trainingEfficacyCategory';
 
 interface EmployeeTrainingsTabProps {
   employeeId: string;
@@ -81,32 +87,44 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
       // como antes) pra que o status reflita a avaliação específica daquele
       // colaborador naquele treinamento.
       const employeeTrainingIds = rows.map((r: any) => r.id);
-      const evaluatedSet = new Set<string>();
+      const evaluationByTrainingId = new Map<
+        string,
+        { is_effective: boolean | null; score: number | null }
+      >();
       if (employeeTrainingIds.length > 0) {
         const { data: evals } = await supabase
           .from('training_efficacy_evaluations')
-          .select('employee_training_id')
+          .select('employee_training_id, is_effective, score')
           .in('employee_training_id', employeeTrainingIds)
           .eq('status', 'Concluída');
         for (const ev of evals || []) {
-          if (ev.employee_training_id) evaluatedSet.add(ev.employee_training_id);
+          if (ev.employee_training_id) {
+            evaluationByTrainingId.set(ev.employee_training_id, {
+              is_effective: ev.is_effective,
+              score: ev.score,
+            });
+          }
         }
       }
 
       const trainingsWithCalculatedStatus = rows.map((training: any) => {
         const program = training.training_program;
-        if (!program) return training;
+        const evaluation = evaluationByTrainingId.get(training.id) || null;
+        const efficacyCategory: EfficacyCategory | null = getEfficacyCategory(evaluation);
+
+        if (!program) return { ...training, efficacyCategory };
 
         const calculatedStatus = calculateTrainingStatus({
           start_date: program.start_date,
           end_date: program.end_date,
           efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
-          hasEfficacyEvaluation: evaluatedSet.has(training.id),
+          hasEfficacyEvaluation: !!evaluation,
         });
 
         return {
           ...training,
           status: training.status === 'Cancelado' ? 'Cancelado' : calculatedStatus,
+          efficacyCategory,
         };
       });
 
@@ -165,11 +183,19 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
     t.status === 'Concluído'
   ).length;
 
-  const averageScore = trainings.filter((t: any) => 
-    t.status === 'Concluído' && t.score
-  ).reduce((sum, t: any, _, arr) => {
-    return sum + (t.score || 0) / arr.length;
-  }, 0);
+  // Eficácia agregada: contagem dos treinamentos avaliados por categoria.
+  // Substitui "Nota Média" — score do banco é codificador interno (10/6/3),
+  // não nota real, então faz mais sentido agregar pelas 3 categorias.
+  const efficacyCounts = trainings.reduce(
+    (acc: Record<EfficacyCategory | 'total', number>, t: any) => {
+      if (t.efficacyCategory) {
+        acc[t.efficacyCategory as EfficacyCategory] += 1;
+        acc.total += 1;
+      }
+      return acc;
+    },
+    { effective: 0, partial: 0, not_effective: 0, total: 0 },
+  );
 
   const expiringCertificates = trainings.filter((t: any) => {
     if (!t.expiration_date) return false;
@@ -263,9 +289,18 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
                 <GraduationCap className="h-8 w-8 text-blue-600" />
                 <div>
                   <p className="text-2xl font-bold">
-                    {averageScore > 0 ? averageScore.toFixed(1) : '-'}
+                    {efficacyCounts.total > 0
+                      ? `${efficacyCounts.effective}/${efficacyCounts.total}`
+                      : '-'}
                   </p>
-                  <p className="text-sm text-muted-foreground">Nota Média</p>
+                  <p className="text-sm text-muted-foreground">Eficazes</p>
+                  {(efficacyCounts.partial > 0 || efficacyCounts.not_effective > 0) && (
+                    <p className="text-xs text-muted-foreground">
+                      {efficacyCounts.partial > 0 && `${efficacyCounts.partial} parcial`}
+                      {efficacyCounts.partial > 0 && efficacyCounts.not_effective > 0 && ' · '}
+                      {efficacyCounts.not_effective > 0 && `${efficacyCounts.not_effective} não eficaz`}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -330,10 +365,15 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        {training.efficacyCategory && (
+                          <Badge className={EFFICACY_CATEGORY_BADGE[training.efficacyCategory as EfficacyCategory]}>
+                            {EFFICACY_CATEGORY_LABEL[training.efficacyCategory as EfficacyCategory]}
+                          </Badge>
+                        )}
                         {getStatusBadge(training.status)}
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleView(training)}
                           title="Visualizar treinamento"
                         >
@@ -365,12 +405,6 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
                           <p className="font-medium">
                             {format(parseISO(training.completion_date), 'dd/MM/yyyy', { locale: ptBR })}
                           </p>
-                        </div>
-                      )}
-                      {training.score && (
-                        <div>
-                          <p className="text-muted-foreground">Nota</p>
-                          <p className="font-medium">{training.score}</p>
                         </div>
                       )}
                       {training.trainer && (

@@ -13,6 +13,11 @@ import { getTrainingStatusColor } from '@/utils/trainingStatusCalculator';
 import { getTrainingProgramParticipants, type TrainingParticipant } from '@/services/trainingProgramParticipants';
 import { getEfficacyEvaluations, type TrainingEfficacyEvaluation } from '@/services/trainingEfficacyEvaluations';
 import {
+  getEfficacyCategory,
+  EFFICACY_CATEGORY_LABEL,
+  EFFICACY_CATEGORY_BADGE,
+} from '@/utils/trainingEfficacyCategory';
+import {
   Table,
   TableBody,
   TableCell,
@@ -237,15 +242,6 @@ export function ViewEmployeeTrainingDialog({
                   </div>
                 </div>
               )}
-              {training.score !== null && training.score !== undefined && (
-                <div className="flex items-start gap-3">
-                  <Award className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Nota Obtida</p>
-                    <p className="font-medium text-lg">{training.score}</p>
-                  </div>
-                </div>
-              )}
               {training.trainer && (
                 <div className="flex items-start gap-3">
                   <User className="h-4 w-4 text-muted-foreground mt-0.5" />
@@ -326,31 +322,34 @@ export function ViewEmployeeTrainingDialog({
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : existingEvaluation ? (
-                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <div className="flex items-center gap-2">
-                    {existingEvaluation.is_effective ? (
-                      <Badge className="bg-green-100 text-green-800">
-                        <CheckSquare className="h-3 w-3 mr-1" /> Eficaz
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-red-100 text-red-800">
-                        <XSquare className="h-3 w-3 mr-1" /> Não Eficaz
-                      </Badge>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      Avaliado em {formatDate(existingEvaluation.evaluation_date)}
-                    </span>
-                  </div>
-                  {existingEvaluation.evaluator_name && (
-                    <p className="text-sm"><strong>Avaliador:</strong> {existingEvaluation.evaluator_name}</p>
-                  )}
-                  {existingEvaluation.score !== null && existingEvaluation.score !== undefined && (
-                    <p className="text-sm"><strong>Nota:</strong> {existingEvaluation.score}</p>
-                  )}
-                  {existingEvaluation.comments && (
-                    <p className="text-sm"><strong>Comentários:</strong> {existingEvaluation.comments}</p>
-                  )}
-                </div>
+                (() => {
+                  const category = getEfficacyCategory(existingEvaluation);
+                  return (
+                    <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                      <div className="flex items-center gap-2">
+                        {category && (
+                          <Badge className={EFFICACY_CATEGORY_BADGE[category]}>
+                            {category === 'not_effective' ? (
+                              <XSquare className="h-3 w-3 mr-1" />
+                            ) : (
+                              <CheckSquare className="h-3 w-3 mr-1" />
+                            )}
+                            {EFFICACY_CATEGORY_LABEL[category]}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          Avaliado em {formatDate(existingEvaluation.evaluation_date)}
+                        </span>
+                      </div>
+                      {existingEvaluation.evaluator_name && (
+                        <p className="text-sm"><strong>Avaliador:</strong> {existingEvaluation.evaluator_name}</p>
+                      )}
+                      {existingEvaluation.comments && (
+                        <p className="text-sm"><strong>Comentários:</strong> {existingEvaluation.comments}</p>
+                      )}
+                    </div>
+                  );
+                })()
               ) : (
                 // O fluxo de avaliação foi centralizado em /avaliacao-eficacia
                 // (wizard contínuo com filtro por evaluator). Aqui só linkamos.
