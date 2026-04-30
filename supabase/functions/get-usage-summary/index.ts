@@ -46,6 +46,8 @@ const getRoutePattern = (pathname: string): string => {
 const EXCLUDED_TEST_USER_IDS = new Set<string>([
   // jpbs@cesar.school — conta de teste do JP em Transportes Gabardo
   "9a67e806-6f97-4de8-a0dd-da5a5e8928d9",
+  // FELIPE ANTUNES (Transportes Gabardo) — conta interna Daton testando em prod
+  "48e5f925-9470-43a5-91b7-01490747cec3",
 ]);
 
 const excludedListLiteral = (() => {
