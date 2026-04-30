@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/eventTracking";
 
 export interface GRIFinancialData {
   indicator: string;
@@ -180,4 +181,6 @@ export async function downloadGRIFinancialExport(year: number) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+
+  void trackEvent({ type: "export_csv", entityType: "gri_financial_data", metadata: { year, rows: data.length } });
 }

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
+import { trackEvent } from "@/lib/eventTracking";
 
 export interface TrainingExportFilters {
   branchIds?: string[];
@@ -486,6 +487,7 @@ export const exportToCSV = (data: ExportData, filename: string) => {
 
   const blob = new Blob([BOM + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   downloadBlob(blob, `${filename}.csv`);
+  void trackEvent({ type: "export_csv", entityType: "training_report", metadata: { filename, rows: data.rows.length } });
 };
 
 export const exportToExcel = (data: ExportData, filename: string) => {
@@ -548,6 +550,7 @@ export const exportToExcel = (data: ExportData, filename: string) => {
   XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
 
   XLSX.writeFile(wb, `${filename}.xlsx`);
+  void trackEvent({ type: "export_excel", entityType: "training_report", metadata: { filename, rows: data.rows.length } });
 };
 
 function downloadBlob(blob: Blob, filename: string) {

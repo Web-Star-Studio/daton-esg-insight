@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import type { Json } from '@/integrations/supabase/types';
+import { trackEvent } from '@/lib/eventTracking';
 
 export interface AuditTrailFilters {
   userId?: string;
@@ -250,4 +251,5 @@ export const exportAuditLogsToCSV = async (filters: Omit<AuditTrailFilters, 'pag
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  void trackEvent({ type: "export_csv", entityType: "audit_trail", metadata: { count: csvData.length } });
 };

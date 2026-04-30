@@ -5,6 +5,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/utils/logger";
+import { trackEvent } from "@/lib/eventTracking";
 
 type ExportDataRow = Record<string, string | number | boolean>;
 
@@ -47,13 +48,17 @@ const downloadCSV = (content: string, filename: string) => {
   const blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', filename);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+
+  // Deriva o tipo de export do prefixo do filename (agua_/energia_/esg_/emissoes_/residuos_).
+  const prefix = filename.split('_')[0];
+  void trackEvent({ type: "export_csv", entityType: `esg_data_${prefix}`, metadata: { filename } });
 };
 
 /**
