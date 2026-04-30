@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardCheck, Loader2, Users } from "lucide-react";
 
@@ -18,7 +18,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -31,7 +30,6 @@ import {
   getEfficacyEvaluations,
   type TrainingEfficacyEvaluation,
 } from "@/services/trainingEfficacyEvaluations";
-import { TrainingEfficacyEvaluationDialog } from "./TrainingEfficacyEvaluationDialog";
 import {
   getEfficacyCategory,
   EFFICACY_CATEGORY_LABEL,
@@ -45,20 +43,16 @@ interface TrainingProgramEfficacyDialogProps {
   trainingProgramName: string;
 }
 
-// Modal disparado pela tela /avaliacao-eficacia. Lista os participantes do
-// programa e abre o TrainingEfficacyEvaluationDialog (avaliação individual)
-// pra cada um. A avaliação é granular por participante (employee_training_id).
+// Modal read-only disparado pela tela /avaliacao-eficacia (botão "Ver" do
+// programa Avaliado). Lista todos os participantes com a classificação e o
+// comentário registrados. O fluxo de avaliar pendentes vive no
+// TrainingProgramEvaluationFlow (botão "Avaliar" na lista de programas).
 export function TrainingProgramEfficacyDialog({
   open,
   onOpenChange,
   trainingProgramId,
   trainingProgramName,
 }: TrainingProgramEfficacyDialogProps) {
-  const [evaluatingTraining, setEvaluatingTraining] = useState<{
-    employeeTrainingId: string;
-    employeeName: string;
-  } | null>(null);
-
   const { data: participants = [], isLoading: loadingParticipants } = useQuery({
     queryKey: ["program-efficacy-participants", trainingProgramId],
     queryFn: () => getTrainingProgramParticipants(trainingProgramId!),
@@ -83,9 +77,8 @@ export function TrainingProgramEfficacyDialog({
   const totalCount = participants.length;
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ClipboardCheck className="h-5 w-5" />
@@ -125,7 +118,6 @@ export function TrainingProgramEfficacyDialog({
                     <TableHead>Departamento</TableHead>
                     <TableHead>Classificação</TableHead>
                     <TableHead>Comentário</TableHead>
-                    <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -162,45 +154,14 @@ export function TrainingProgramEfficacyDialog({
                             <span className="text-sm text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
-                          {evaluation ? (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                setEvaluatingTraining({
-                                  employeeTrainingId: p.id,
-                                  employeeName: p.employee_name,
-                                })
-                              }
-                            >
-                              Avaliar
-                            </Button>
-                          )}
-                        </TableCell>
                       </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
             </TooltipProvider>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {trainingProgramId && evaluatingTraining && (
-        <TrainingEfficacyEvaluationDialog
-          open={!!evaluatingTraining}
-          onOpenChange={(open) => {
-            if (!open) setEvaluatingTraining(null);
-          }}
-          trainingProgramId={trainingProgramId}
-          employeeTrainingId={evaluatingTraining.employeeTrainingId}
-          trainingName={trainingProgramName}
-          employeeName={evaluatingTraining.employeeName}
-        />
-      )}
-    </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
