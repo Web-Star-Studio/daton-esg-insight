@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllPaginated } from "@/utils/supabasePagination";
+import { trackEvent } from "@/lib/eventTracking";
 
 // Resolve company_id do usuário atual — sem isso queries de NC podiam cruzar
 // empresas (até o limite de 1000 rows do Postgrest).
@@ -184,6 +185,8 @@ class NonConformitiesService {
 
     if (error) throw new Error(`Erro ao criar não conformidade: ${error.message}`);
     if (!data) throw new Error('Não foi possível criar não conformidade');
+
+    void trackEvent({ type: "nc_created", entityType: "non_conformity", entityId: data.id });
 
     // Auto-create approval request if workflow exists
     try {

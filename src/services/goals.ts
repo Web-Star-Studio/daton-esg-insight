@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { trackEvent } from "@/lib/eventTracking";
 
 type Goal = Database['public']['Tables']['goals']['Row'];
 type GoalInsert = Database['public']['Tables']['goals']['Insert'];
@@ -151,6 +152,8 @@ export const createGoal = async (goalData: CreateGoalData): Promise<Goal> => {
   if (!data) {
     throw new Error('Erro ao criar meta');
   }
+
+  void trackEvent({ type: "goal_created", entityType: "goal", entityId: data.id });
 
   console.warn('Goal created successfully:', data);
   return data;

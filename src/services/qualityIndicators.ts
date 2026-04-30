@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { trackEvent } from "@/lib/eventTracking";
 
 // Interfaces para os tipos de dados
 export interface QualityIndicator {
@@ -174,6 +175,7 @@ class QualityIndicatorsService {
       .single();
 
     if (error) throw error;
+    void trackEvent({ type: "indicator_created", entityType: "quality_indicator", entityId: data.id });
     return data;
   }
 

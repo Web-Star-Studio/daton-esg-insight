@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Papa from 'papaparse';
 import { retryOperation } from "@/utils/retryOperation";
 import { logger } from "@/utils/logger";
+import { trackEvent } from "@/lib/eventTracking";
 
 // Type for CSV row data
 type CSVRow = Record<string, string | number | null>;
@@ -420,6 +421,17 @@ export const uploadDocument = async (
   }
 
   logger.debug(`Document uploaded successfully: ${data.id}`, 'document');
+
+  void trackEvent({
+    type: "document_uploaded",
+    entityType: "document",
+    entityId: data.id,
+    metadata: {
+      file_type: file.type,
+      file_size: file.size,
+      related_model: options?.related_model ?? "document",
+    },
+  });
 
   // Trigger automatic AI processing if enabled
   if (shouldAutoProcess) {

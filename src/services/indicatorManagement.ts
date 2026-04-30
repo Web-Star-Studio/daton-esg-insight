@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { trackEvent } from "@/lib/eventTracking";
 
 // ============================================
 // TYPES
@@ -509,9 +510,11 @@ export const useCreateIndicator = () => {
         })
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
+      void trackEvent({ type: "indicator_created", entityType: "quality_indicator", entityId: data.id });
+
       // Create target if provided
       if (indicator.target_value) {
         const { error: targetError } = await supabase
