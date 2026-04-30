@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { CheckCircle2, ClipboardCheck, Loader2, Users } from "lucide-react";
+import { ClipboardCheck, Loader2, Users } from "lucide-react";
 
 import {
   Dialog,
@@ -21,6 +19,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { getTrainingProgramParticipants } from "@/services/trainingProgramParticipants";
 import {
@@ -28,6 +32,11 @@ import {
   type TrainingEfficacyEvaluation,
 } from "@/services/trainingEfficacyEvaluations";
 import { TrainingEfficacyEvaluationDialog } from "./TrainingEfficacyEvaluationDialog";
+import {
+  getEfficacyCategory,
+  EFFICACY_CATEGORY_LABEL,
+  EFFICACY_CATEGORY_BADGE,
+} from "@/utils/trainingEfficacyCategory";
 
 interface TrainingProgramEfficacyDialogProps {
   open: boolean;
@@ -108,58 +117,74 @@ export function TrainingProgramEfficacyDialog({
               <p>Nenhum participante encontrado neste treinamento.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Colaborador</TableHead>
-                  <TableHead>Departamento</TableHead>
-                  <TableHead>Conclusão</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {participants.map((p) => {
-                  const evaluation = evalByEmployeeTraining.get(p.id);
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.employee_name}</TableCell>
-                      <TableCell>{p.department || "—"}</TableCell>
-                      <TableCell>
-                        {p.completion_date
-                          ? format(new Date(p.completion_date), "dd/MM/yyyy", { locale: ptBR })
-                          : "—"}
-                      </TableCell>
-                      <TableCell>
-                        {evaluation ? (
-                          <Badge className="bg-green-500">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Avaliado
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">Pendente</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant={evaluation ? "ghost" : "default"}
-                          disabled={!!evaluation}
-                          onClick={() =>
-                            setEvaluatingTraining({
-                              employeeTrainingId: p.id,
-                              employeeName: p.employee_name,
-                            })
-                          }
-                        >
-                          {evaluation ? "Avaliado" : "Avaliar"}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <TooltipProvider delayDuration={200}>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Colaborador</TableHead>
+                    <TableHead>Departamento</TableHead>
+                    <TableHead>Classificação</TableHead>
+                    <TableHead>Comentário</TableHead>
+                    <TableHead className="text-right">Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {participants.map((p) => {
+                    const evaluation = evalByEmployeeTraining.get(p.id);
+                    const category = getEfficacyCategory(evaluation);
+                    const comment = evaluation?.comments?.trim();
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-medium">{p.employee_name}</TableCell>
+                        <TableCell>{p.department || "—"}</TableCell>
+                        <TableCell>
+                          {category ? (
+                            <Badge className={EFFICACY_CATEGORY_BADGE[category]}>
+                              {EFFICACY_CATEGORY_LABEL[category]}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">Pendente</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          {comment ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-sm text-muted-foreground line-clamp-2 cursor-help">
+                                  {comment}
+                                </p>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-md whitespace-pre-wrap">
+                                {comment}
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {evaluation ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                setEvaluatingTraining({
+                                  employeeTrainingId: p.id,
+                                  employeeName: p.employee_name,
+                                })
+                              }
+                            >
+                              Avaliar
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TooltipProvider>
           )}
         </DialogContent>
       </Dialog>
