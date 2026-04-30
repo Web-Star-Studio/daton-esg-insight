@@ -39,6 +39,20 @@ const getRoutePattern = (pathname: string): string => {
   return result || "/";
 };
 
+// Usuários internos de teste em produção. As linhas com esses user_id são
+// removidas do agregado (KPIs, rankings, séries, heatmap) pra não inflar
+// dashboard de cliente. Fonte: contas Daton usadas para QA/validação no
+// ambiente prod. Edite aqui pra adicionar/remover.
+const EXCLUDED_TEST_USER_IDS = new Set<string>([
+  // jpbs@cesar.school — conta de teste do JP em Transportes Gabardo
+  "9a67e806-6f97-4de8-a0dd-da5a5e8928d9",
+]);
+
+const excludedListLiteral = (() => {
+  if (EXCLUDED_TEST_USER_IDS.size === 0) return null;
+  return `(${Array.from(EXCLUDED_TEST_USER_IDS).join(",")})`;
+})();
+
 type SummaryRequest = {
   /** ISO 8601 — limite inferior. */
   from: string;
@@ -107,6 +121,7 @@ serve(async (req) => {
       .lte("viewed_at", to)
       .limit(200_000);
     if (companyFilter) pvQuery = pvQuery.eq("company_id", companyFilter);
+    if (excludedListLiteral) pvQuery = pvQuery.not("user_id", "in", excludedListLiteral);
     const { data: pvRows, error: pvErr } = await pvQuery;
     if (pvErr) throw pvErr;
 
@@ -118,6 +133,7 @@ serve(async (req) => {
       .lte("created_at", to)
       .limit(200_000);
     if (companyFilter) evQuery = evQuery.eq("company_id", companyFilter);
+    if (excludedListLiteral) evQuery = evQuery.not("user_id", "in", excludedListLiteral);
     const { data: evRows, error: evErr } = await evQuery;
     if (evErr) throw evErr;
 
@@ -129,6 +145,7 @@ serve(async (req) => {
       .lte("created_at", to)
       .limit(100_000);
     if (companyFilter) aiQuery = aiQuery.eq("company_id", companyFilter);
+    if (excludedListLiteral) aiQuery = aiQuery.not("user_id", "in", excludedListLiteral);
     const { data: aiRows, error: aiErr } = await aiQuery;
     if (aiErr) throw aiErr;
 

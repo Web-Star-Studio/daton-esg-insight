@@ -526,10 +526,13 @@ export const UsageAnalyticsTab = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.users.slice(0, 100).map((u) => (
+                    {data.users.slice(0, 100).map((u) => {
+                      const prof = profiles.get(u.user_id);
+                      const label = prof?.email ?? prof?.full_name ?? null;
+                      return (
                       <TableRow key={u.user_id}>
                         <TableCell className="text-sm">
-                          {profiles.get(u.user_id)?.email ?? (
+                          {label ?? (
                             <span className="text-muted-foreground font-mono">
                               {u.user_id.slice(0, 8)}…
                             </span>
@@ -539,7 +542,8 @@ export const UsageAnalyticsTab = () => {
                         <TableCell className="text-right">{u.routes}</TableCell>
                         <TableCell className="text-right">{u.events}</TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
