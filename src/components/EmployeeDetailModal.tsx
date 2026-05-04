@@ -135,6 +135,13 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
     return !isNaN(date.getTime());
   };
 
+  const calcDaysInCompany = (hireDate: string | undefined | null): number => {
+    if (!hireDate) return -1;
+    const hire = parseDateSafe(hireDate);
+    if (!hire) return -1;
+    return Math.floor((new Date().getTime() - hire.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
   const calculateTenure = (hireDate: string | undefined | null) => {
     if (!hireDate) return 'Não informado';
     
@@ -356,6 +363,35 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                                 <Badge variant="outline" className="mt-1">{employee.employment_type}</Badge>
                               </div>
                             </div>
+
+                            {(() => {
+                              const days = calcDaysInCompany(employee.hire_date);
+                              if (days < 0 || days > 90) return null;
+                              const period = days <= 45 ? 1 : 2;
+                              const daysTo45 = days <= 45 ? 45 - days : null;
+                              const daysTo90 = 90 - days;
+                              return (
+                                <div className="flex items-start gap-3">
+                                  <FileText className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium">Contrato de Experiência</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {period}º período · {days} dia{days !== 1 ? 's' : ''} na empresa
+                                    </p>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {daysTo45 !== null && (
+                                        <Badge variant={daysTo45 <= 5 ? 'destructive' : 'secondary'}>
+                                          1º venc.: {daysTo45}d
+                                        </Badge>
+                                      )}
+                                      <Badge variant={daysTo90 <= 5 ? 'destructive' : 'secondary'}>
+                                        2º venc.: {daysTo90}d
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             {employee.status === 'Inativo' && (
                               <div className="flex items-start gap-3">

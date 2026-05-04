@@ -7,6 +7,7 @@ import { Users, UserPlus, TrendingUp, Building2, Briefcase, Calendar, FileText, 
 import { EmployeesList } from '@/components/EmployeesList';
 import { EmployeeModal } from '@/components/EmployeeModal';
 import { EmployeeDetailModal } from '@/components/EmployeeDetailModal';
+import { EmployeeExperienceContractTab } from '@/components/EmployeeExperienceContractTab';
 import { EmployeeReportsModal } from '@/components/EmployeeReportsModal';
 import { BenefitManagementModal } from '@/components/BenefitManagementModal';
 import { BenefitConfigurationModal } from '@/components/BenefitConfigurationModal';
@@ -128,6 +129,10 @@ export default function GestaoFuncionarios() {
             <TrendingUp className="w-4 h-4" />
             <span>Dashboard</span>
           </TabsTrigger>
+          <TabsTrigger value="contrato-experiencia" className="flex items-center gap-2 min-w-fit">
+            <FileText className="w-4 h-4" />
+            <span>Contrato de Experiência</span>
+          </TabsTrigger>
           <TabsTrigger value="funcionarios" className="flex items-center gap-2 min-w-fit">
             <Users className="w-4 h-4" />
             <span>Funcionários</span>
@@ -192,8 +197,12 @@ export default function GestaoFuncionarios() {
           )}
         </TabsContent>
 
+        <TabsContent value="contrato-experiencia" className="space-y-4">
+          <EmployeeExperienceContractTab onViewEmployee={handleViewEmployee} />
+        </TabsContent>
+
         <TabsContent value="funcionarios" className="space-y-4">
-          <EmployeesList 
+          <EmployeesList
             onEditEmployee={handleEditEmployee}
             onCreateEmployee={handleCreateEmployee}
             onViewEmployee={handleViewEmployee}

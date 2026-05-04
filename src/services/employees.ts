@@ -28,6 +28,7 @@ export interface Employee {
   branch_id?: string;
   termination_date?: string;
   notes?: string;
+  experience_contract_status?: 'efetivado' | 'nao_renovado' | null;
   created_at: string;
   updated_at: string;
 }
@@ -547,6 +548,50 @@ export const useEmployeesAsOptions = () => {
   });
 };
 
+export const resolveExperienceContract = async (
+  employeeId: string,
+  decision: 'efetivado' | 'nao_renovado'
+) => {
+  const updates: Record<string, unknown> = {
+    experience_contract_status: decision,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (decision === 'nao_renovado') {
+    updates.status = 'Inativo';
+    updates.termination_date = new Date().toISOString().split('T')[0];
+  }
+
+  const { error } = await supabase
+    .from('employees')
+    .update(updates)
+    .eq('id', employeeId);
+
+  if (error) throw error;
+};
+
+export const revertExperienceContract = async (
+  employeeId: string,
+  previousDecision: 'efetivado' | 'nao_renovado'
+) => {
+  const updates: Record<string, unknown> = {
+    experience_contract_status: null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (previousDecision === 'nao_renovado') {
+    updates.status = 'Ativo';
+    updates.termination_date = null;
+  }
+
+  const { error } = await supabase
+    .from('employees')
+    .update(updates)
+    .eq('id', employeeId);
+
+  if (error) throw error;
+};
+
 export const bulkUpdateEmployeeStatus = async (
   employeeIds: string[],
   status: 'Ativo' | 'Inativo'
@@ -557,4 +602,48 @@ export const bulkUpdateEmployeeStatus = async (
     .in('id', employeeIds);
 
   if (error) throw error;
+};
+
+export interface EmployeeInExperience extends Employee {
+  daysInCompany: number;
+  period: 1 | 2;
+  daysTo45: number | null;
+  daysTo90: number;
+  alertFor45: boolean;
+  alertFor90: boolean;
+}
+
+export const getEmployeesInExperiencePeriod = async (): Promise<EmployeeInExperience[]> => {
+  const { profile } = await formErrorHandler.checkAuth();
+  const today = new Date();
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() - 90);
+
+  const { data, error } = await supabase
+    .from('employees')
+    .select('*')
+    .eq('company_id', profile.company_id)
+    .eq('status', 'Ativo')
+    .is('experience_contract_status', null)
+    .gte('hire_date', cutoff.toISOString().split('T')[0])
+    .order('hire_date', { ascending: false });
+
+  if (error) throw error;
+
+  return (data || []).map((emp) => {
+    const hire = new Date(emp.hire_date);
+    const daysInCompany = Math.floor((today.getTime() - hire.getTime()) / (1000 * 60 * 60 * 24));
+    const period: 1 | 2 = daysInCompany <= 45 ? 1 : 2;
+    const daysTo45 = daysInCompany <= 45 ? 45 - daysInCompany : null;
+    const daysTo90 = 90 - daysInCompany;
+    return {
+      ...emp,
+      daysInCompany,
+      period,
+      daysTo45,
+      daysTo90,
+      alertFor45: daysTo45 !== null && daysTo45 <= 5,
+      alertFor90: daysTo90 >= 0 && daysTo90 <= 5,
+    };
+  });
 };

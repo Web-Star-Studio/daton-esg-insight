@@ -5,9 +5,9 @@ import { logger } from '@/utils/logger';
 
 export interface BusinessEvent {
   type: 'emission_data_added' | 'goal_updated' | 'license_expiring' | 'audit_finding_created' | 
-        'compliance_task_overdue' | 'document_uploaded' | 'quality_issue_detected' | 
+        'compliance_task_overdue' | 'document_uploaded' | 'quality_issue_detected' |
         'gri_indicator_updated' | 'risk_assessment_completed' | 'training_efficacy_pending' |
-        'document_sgq_expiring';
+        'document_sgq_expiring' | 'experience_contract_expiring';
   entityId: string;
   entityType: string;
   entityName: string;
@@ -175,6 +175,20 @@ class NotificationTriggersService {
           category: 'training',
           priority: (daysRemaining <= 3 || isOverdue) ? 'critical' : 'important'
         };
+
+      case 'experience_contract_expiring': {
+        const milestone = event.metadata?.milestone as 45 | 90;
+        const daysLeft = event.metadata?.daysLeft as number;
+        return {
+          title: `Contrato de experiência vence em ${daysLeft} dia(s)`,
+          message: `${event.entityName} atinge ${milestone} dias de contrato em ${daysLeft} dia(s)`,
+          type: 'warning' as const,
+          actionUrl: '/gestao-funcionarios',
+          actionLabel: 'Ver Contratos',
+          category: 'employees',
+          priority: 'important'
+        };
+      }
 
       default:
         return null;
@@ -572,6 +586,78 @@ class NotificationTriggersService {
       };
     }
   }
+
+  async checkExperienceContractDeadlines() {
+    try {
+      const today = new Date();
+      const from40 = new Date(today);
+      from40.setDate(from40.getDate() - 90);
+      const to90 = new Date(today);
+      to90.setDate(to90.getDate() - 40);
+
+      const { data: employees, error } = await supabase
+        .from('employees')
+        .select('id, full_name, hire_date')
+        .eq('status', 'Ativo')
+        .gte('hire_date', from40.toISOString().split('T')[0])
+        .lte('hire_date', to90.toISOString().split('T')[0]);
+
+      if (error) {
+        logger.error('Error fetching employees for experience check:', error, 'employees');
+        return { checked: 0, triggered: 0, timestamp: new Date().toISOString() };
+      }
+
+      if (!employees || employees.length === 0) {
+        return { checked: 0, triggered: 0, timestamp: new Date().toISOString() };
+      }
+
+      let triggered = 0;
+      for (const emp of employees) {
+        const hire = new Date(emp.hire_date);
+        const daysInCompany = Math.floor((today.getTime() - hire.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (daysInCompany >= 40 && daysInCompany < 45) {
+          const daysLeft = 45 - daysInCompany;
+          await createNotification(
+            `Contrato de experiência vence em ${daysLeft} dia(s)`,
+            `${emp.full_name} atinge 45 dias de contrato em ${daysLeft} dia(s)`,
+            'warning',
+            '/gestao-funcionarios',
+            'Ver Contratos',
+            'employees',
+            'important',
+            { employeeId: emp.id, milestone: 45, daysLeft }
+          );
+          triggered++;
+        }
+
+        if (daysInCompany >= 85 && daysInCompany < 90) {
+          const daysLeft = 90 - daysInCompany;
+          await createNotification(
+            `Contrato de experiência vence em ${daysLeft} dia(s)`,
+            `${emp.full_name} atinge 90 dias de contrato em ${daysLeft} dia(s)`,
+            'warning',
+            '/gestao-funcionarios',
+            'Ver Contratos',
+            'employees',
+            'important',
+            { employeeId: emp.id, milestone: 90, daysLeft }
+          );
+          triggered++;
+        }
+      }
+
+      return { checked: employees.length, triggered, timestamp: new Date().toISOString() };
+    } catch (error) {
+      logger.error('Error checking experience contract deadlines:', error, 'employees');
+      return {
+        checked: 0,
+        triggered: 0,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
 }
 
 // Export singleton instance
@@ -593,5 +679,6 @@ export const {
   setupRealtimeMonitoring,
   checkLicenseExpirations,
   checkOverdueTasks,
-  checkTrainingEfficacyDeadlines
+  checkTrainingEfficacyDeadlines,
+  checkExperienceContractDeadlines
 } = NotificationTriggersService.prototype;

@@ -38,6 +38,14 @@ export const useNotificationTriggers = () => {
     staleTime: 23 * 60 * 60 * 1000,
   });
 
+  // Verificação diária de prazos de contrato de experiência (45 e 90 dias)
+  const { data: experienceContractCheck } = useQuery({
+    queryKey: ['experience-contract-check'],
+    queryFn: () => notificationTriggers.checkExperienceContractDeadlines(),
+    refetchInterval: 24 * 60 * 60 * 1000,
+    staleTime: 23 * 60 * 60 * 1000,
+  });
+
   // Verificação diária de vencimento de documentos SGQ/ISO
   const { data: sgqExpirationCheck } = useQuery({
     queryKey: ['sgq-document-expiration-check'],
