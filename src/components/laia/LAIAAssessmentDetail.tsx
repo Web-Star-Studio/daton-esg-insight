@@ -36,6 +36,13 @@ export function LAIAAssessmentDetail({
   const approveMutation = useApproveLAIAAssessment();
   const markPendenteMutation = useMarkLAIAAssessmentAsPendente();
 
+  const normalizeLegislationUrl = (url: string | null | undefined): string => {
+    if (!url) return "";
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  };
+
   if (!assessment) return null;
 
   const getLabel = (value: string, type: string) => {
@@ -271,7 +278,7 @@ export function LAIAAssessmentDetail({
                 <div className="text-xs text-muted-foreground">Referência Legal</div>
                 {assessment.legislation_reference_url ? (
                   <a
-                    href={assessment.legislation_reference_url}
+                    href={normalizeLegislationUrl(assessment.legislation_reference_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-primary hover:underline"

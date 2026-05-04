@@ -210,9 +210,16 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
     }
   };
 
+  const normalizeLegislationUrl = (url: string | null | undefined): string => {
+    if (!url) return "";
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  };
+
   const acceptLegislationSuggestion = (s: LegislationSuggestion) => {
     updateField("legislation_reference", s.reference);
-    updateField("legislation_reference_url", s.url ?? "");
+    updateField("legislation_reference_url", normalizeLegislationUrl(s.url));
     setLegislationSuggestions([]);
   };
 
@@ -823,7 +830,7 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
                 />
                 {formData.legislation_reference_url && (
                   <a
-                    href={formData.legislation_reference_url}
+                    href={normalizeLegislationUrl(formData.legislation_reference_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-xs text-primary hover:underline"

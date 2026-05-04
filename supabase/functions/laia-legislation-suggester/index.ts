@@ -31,10 +31,11 @@ Tipos de norma a considerar:
 - NBRs ABNT (ex: NBR 10004 - Resíduos sólidos)
 - Decretos Federais e Resoluções de agências (ANA, IBAMA)
 
-Para URL, use:
-- planalto.gov.br/ccivil_03/_ato.../[ano]/lei/lXXXX.htm para leis federais
-- conama.mma.gov.br para CONAMA (use null se não souber a URL exata)
-- null para NBRs (ABNT é pago)
+Para URL, retorne SEMPRE a URL completa com scheme (https://...) ou null. Nunca retorne hostnames sem scheme.
+- Leis federais: https://www.planalto.gov.br/ccivil_03/_ato.../[ano]/lei/lXXXX.htm
+- Decretos federais: https://www.planalto.gov.br/ccivil_03/_ato.../[ano]/decreto/dXXXXX.htm
+- CONAMA: https://conama.mma.gov.br/?id=conama&pesquisa=resolucao (ou null se não souber a URL exata)
+- NBRs (ABNT é pago): null
 
 Responda APENAS com JSON válido no formato:
 {
