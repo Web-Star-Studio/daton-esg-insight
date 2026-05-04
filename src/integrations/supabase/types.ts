@@ -14444,6 +14444,7 @@ export type Database = {
           incidence: string
           is_vigente: boolean
           legislation_reference: string | null
+          legislation_reference_url: string | null
           lifecycle_stages: string[] | null
           notes: string | null
           operational_situation: string
@@ -14481,6 +14482,7 @@ export type Database = {
           incidence: string
           is_vigente?: boolean
           legislation_reference?: string | null
+          legislation_reference_url?: string | null
           lifecycle_stages?: string[] | null
           notes?: string | null
           operational_situation: string
@@ -14518,6 +14520,7 @@ export type Database = {
           incidence?: string
           is_vigente?: boolean
           legislation_reference?: string | null
+          legislation_reference_url?: string | null
           lifecycle_stages?: string[] | null
           notes?: string | null
           operational_situation?: string
