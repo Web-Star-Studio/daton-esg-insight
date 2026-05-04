@@ -185,3 +185,6 @@ verify_jwt = true
 
 [functions.copy-company-data]
 verify_jwt = false
+
+[functions.laia-legislation-suggester]
+verify_jwt = true
