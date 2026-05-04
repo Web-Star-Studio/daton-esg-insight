@@ -8006,6 +8006,7 @@ export type Database = {
           employee_code: string | null
           employment_type: string | null
           ethnicity: string | null
+          experience_contract_status: string | null
           full_name: string
           gender: string | null
           hire_date: string
@@ -8036,6 +8037,7 @@ export type Database = {
           employee_code?: string | null
           employment_type?: string | null
           ethnicity?: string | null
+          experience_contract_status?: string | null
           full_name: string
           gender?: string | null
           hire_date: string
@@ -8066,6 +8068,7 @@ export type Database = {
           employee_code?: string | null
           employment_type?: string | null
           ethnicity?: string | null
+          experience_contract_status?: string | null
           full_name?: string
           gender?: string | null
           hire_date?: string
@@ -14439,6 +14442,7 @@ export type Database = {
           id: string
           impact_class: string
           incidence: string
+          is_vigente: boolean
           legislation_reference: string | null
           lifecycle_stages: string[] | null
           notes: string | null
@@ -14475,6 +14479,7 @@ export type Database = {
           id?: string
           impact_class: string
           incidence: string
+          is_vigente?: boolean
           legislation_reference?: string | null
           lifecycle_stages?: string[] | null
           notes?: string | null
@@ -14511,6 +14516,7 @@ export type Database = {
           id?: string
           impact_class?: string
           incidence?: string
+          is_vigente?: boolean
           legislation_reference?: string | null
           lifecycle_stages?: string[] | null
           notes?: string | null
