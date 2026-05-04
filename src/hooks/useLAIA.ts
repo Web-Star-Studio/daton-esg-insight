@@ -192,6 +192,54 @@ export function useDeleteLAIAAssessment() {
   });
 }
 
+export function useApproveLAIAAssessment() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: laiaService.approveLAIAAssessment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-assessment"] });
+      toast({
+        title: "Avaliação aprovada",
+        description: "A avaliação foi marcada como em vigência.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao aprovar avaliação",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useMarkLAIAAssessmentAsPendente() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: laiaService.markLAIAAssessmentAsPendente,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-assessment"] });
+      toast({
+        title: "Avaliação marcada como pendente",
+        description: "A avaliação foi removida da listagem em vigência.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao alterar vigência",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 // ============ Bulk Deletes ============
 
 export function useBulkDeleteLAIAAssessments() {

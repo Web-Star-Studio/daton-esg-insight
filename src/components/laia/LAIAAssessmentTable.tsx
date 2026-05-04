@@ -37,16 +37,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLAIAAssessments, useDeleteLAIAAssessment, useBulkDeleteLAIAAssessments } from "@/hooks/useLAIA";
-import { 
-  Search, 
-  MoreVertical, 
-  Eye, 
-  Pencil, 
-  Trash2, 
+import { useLAIAAssessments, useDeleteLAIAAssessment, useBulkDeleteLAIAAssessments, useApproveLAIAAssessment, useMarkLAIAAssessmentAsPendente } from "@/hooks/useLAIA";
+import {
+  Search,
+  MoreVertical,
+  Eye,
+  Pencil,
+  Trash2,
   Copy,
   Filter,
   FileSpreadsheet,
+  CheckCircle2,
+  Clock,
   X
 } from "lucide-react";
 import { getCategoryColor, getSignificanceColor } from "@/types/laia";
@@ -62,9 +64,10 @@ interface LAIAAssessmentTableProps {
   onView?: (assessment: LAIAAssessment) => void;
   onEdit?: (assessment: LAIAAssessment) => void;
   initialFilters?: LAIAAssessmentTableInitialFilters;
+  vigenciaMode?: "vigentes" | "pendentes";
 }
 
-export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }: LAIAAssessmentTableProps) {
+export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, vigenciaMode = "vigentes" }: LAIAAssessmentTableProps) {
   const [search, setSearch] = useState("");
   const [activityFilter, setActivityFilter] = useState<string>("all");
   const [filters, setFilters] = useState<{
@@ -87,7 +90,12 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
-  const { data: assessments, isLoading } = useLAIAAssessments(filters);
+  const { data: assessments, isLoading } = useLAIAAssessments({
+    ...filters,
+    is_vigente: vigenciaMode === "vigentes",
+  });
+  const approveMutation = useApproveLAIAAssessment();
+  const markPendenteMutation = useMarkLAIAAssessmentAsPendente();
 
   const uniqueActivities = useMemo(() => {
     if (!assessments) return [];
@@ -187,7 +195,7 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5" />
-            Avaliações LAIA
+            {vigenciaMode === "pendentes" ? "Avaliações Pendentes" : "Avaliações LAIA"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -333,6 +341,17 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters }
                               <Pencil className="mr-2 h-4 w-4" />
                               Editar
                             </DropdownMenuItem>
+                            {!assessment.is_vigente ? (
+                              <DropdownMenuItem onClick={() => approveMutation.mutate(assessment.id)}>
+                                <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+                                Aprovar como em vigência
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => markPendenteMutation.mutate(assessment.id)}>
+                                <Clock className="mr-2 h-4 w-4 text-amber-600" />
+                                Marcar como pendente
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem>
                               <Copy className="mr-2 h-4 w-4" />
                               Duplicar

@@ -14,15 +14,17 @@ import { LAIAAssessmentForm } from "@/components/laia/LAIAAssessmentForm";
 import { LAIAAssessmentDetail } from "@/components/laia/LAIAAssessmentDetail";
 import { LAIAImportWizard } from "@/components/laia/LAIAImportWizard";
 import { useBranches } from "@/services/branches";
-import { 
-  Leaf, 
-  Plus, 
-  LayoutDashboard, 
-  FileSpreadsheet, 
+import { useLAIAAssessments } from "@/hooks/useLAIA";
+import {
+  Leaf,
+  Plus,
+  LayoutDashboard,
+  FileSpreadsheet,
   Building2,
   ArrowLeft,
   Upload,
-  ChevronRight
+  ChevronRight,
+  Clock
 } from "lucide-react";
 import type { LAIAAssessment } from "@/types/laia";
 
@@ -41,6 +43,9 @@ export default function LAIAUnidadePage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [assessmentFilters, setAssessmentFilters] = useState<LAIAAssessmentTableInitialFilters | undefined>();
+
+  const { data: pendentes } = useLAIAAssessments({ branch_id: branchId, is_vigente: false });
+  const pendentesCount = pendentes?.length ?? 0;
 
   const handleCardClick = (filter?: LAIADashboardFilters) => {
     setAssessmentFilters(filter ? { category: filter.category, significance: filter.significance } : undefined);
@@ -141,7 +146,7 @@ export default function LAIAUnidadePage() {
             </div>
           </div>
 
-          {activeTab === "assessments" && viewMode === "list" && (
+          {(activeTab === "assessments" || activeTab === "pendentes") && viewMode === "list" && (
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => setImportOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" />
@@ -180,6 +185,15 @@ export default function LAIAUnidadePage() {
                 <FileSpreadsheet className="h-4 w-4" />
                 <span className="hidden sm:inline">Avaliações</span>
               </TabsTrigger>
+              <TabsTrigger value="pendentes" className="min-w-fit shrink-0 gap-2">
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Pendentes</span>
+                {pendentesCount > 0 && (
+                  <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
+                    {pendentesCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="sectors" className="min-w-fit shrink-0 gap-2">
                 <Building2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Setores</span>
@@ -195,11 +209,21 @@ export default function LAIAUnidadePage() {
             </TabsContent>
 
             <TabsContent value="assessments" className="mt-6">
-              <LAIAAssessmentTable 
+              <LAIAAssessmentTable
                 branchId={branchId}
                 onView={handleView}
                 onEdit={handleEdit}
                 initialFilters={assessmentFilters}
+                vigenciaMode="vigentes"
+              />
+            </TabsContent>
+
+            <TabsContent value="pendentes" className="mt-6">
+              <LAIAAssessmentTable
+                branchId={branchId}
+                onView={handleView}
+                onEdit={handleEdit}
+                vigenciaMode="pendentes"
               />
             </TabsContent>
 

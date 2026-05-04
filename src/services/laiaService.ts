@@ -99,6 +99,7 @@ export async function getLAIAAssessments(filters?: {
   category?: string;
   significance?: string;
   status?: string;
+  is_vigente?: boolean;
 }): Promise<LAIAAssessment[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário não autenticado");
@@ -135,6 +136,9 @@ export async function getLAIAAssessments(filters?: {
   }
   if (filters?.status) {
     query = query.eq("status", filters.status);
+  }
+  if (typeof filters?.is_vigente === 'boolean') {
+    query = query.eq("is_vigente", filters.is_vigente);
   }
 
   const { data, error } = await query;
@@ -251,6 +255,7 @@ export async function createLAIAAssessment(formData: LAIAAssessmentFormData): Pr
       responsible_user_id: formData.responsible_user_id || profile.id,
       notes: formData.notes || null,
       status: 'ativo',
+      is_vigente: formData.is_vigente ?? true,
     })
     .select(`
       *,
@@ -317,6 +322,24 @@ export async function deleteLAIAAssessment(id: string): Promise<void> {
   const { error } = await supabase
     .from("laia_assessments")
     .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function approveLAIAAssessment(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("laia_assessments")
+    .update({ is_vigente: true, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function markLAIAAssessmentAsPendente(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("laia_assessments")
+    .update({ is_vigente: false, updated_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) throw error;

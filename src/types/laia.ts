@@ -57,6 +57,7 @@ export interface LAIAAssessment {
   // Metadata
   responsible_user_id?: string | null;
   status: 'ativo' | 'inativo' | 'em_revisao';
+  is_vigente: boolean;
   notes?: string | null;
   created_at: string;
   updated_at: string;
@@ -90,6 +91,7 @@ export interface LAIAAssessmentFormData {
   output_actions: string;
   responsible_user_id?: string;
   notes: string;
+  is_vigente: boolean;
 }
 
 export interface LAIADashboardStats {

@@ -15,9 +15,10 @@ import {
   CONTROL_TYPES 
 } from "@/types/laia";
 import type { LAIAAssessment } from "@/types/laia";
-import { X, Pencil, FileText, Calendar, User } from "lucide-react";
+import { X, Pencil, FileText, Calendar, User, CheckCircle2, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useApproveLAIAAssessment, useMarkLAIAAssessmentAsPendente } from "@/hooks/useLAIA";
 
 interface LAIAAssessmentDetailProps {
   assessment: LAIAAssessment | null;
@@ -26,12 +27,15 @@ interface LAIAAssessmentDetailProps {
   onEdit?: (assessment: LAIAAssessment) => void;
 }
 
-export function LAIAAssessmentDetail({ 
-  assessment, 
-  open, 
-  onClose, 
-  onEdit 
+export function LAIAAssessmentDetail({
+  assessment,
+  open,
+  onClose,
+  onEdit
 }: LAIAAssessmentDetailProps) {
+  const approveMutation = useApproveLAIAAssessment();
+  const markPendenteMutation = useMarkLAIAAssessmentAsPendente();
+
   if (!assessment) return null;
 
   const getLabel = (value: string, type: string) => {
@@ -69,21 +73,48 @@ export function LAIAAssessmentDetail({
 
         <div className="mt-6 space-y-6">
           {/* Header Info */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Badge className={getCategoryColor(assessment.category)}>
                 {getLabel(assessment.category, "category")}
               </Badge>
               <Badge className={getSignificanceColor(assessment.significance)}>
                 {getLabel(assessment.significance, "significance")}
               </Badge>
+              <Badge variant={assessment.is_vigente ? "default" : "secondary"}>
+                {assessment.is_vigente ? "Em Vigência" : "Pendente"}
+              </Badge>
             </div>
-            {onEdit && (
-              <Button variant="outline" size="sm" onClick={() => onEdit(assessment)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {!assessment.is_vigente ? (
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => approveMutation.mutate(assessment.id)}
+                  disabled={approveMutation.isPending}
+                >
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Aprovar
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-amber-600 border-amber-300 hover:bg-amber-50"
+                  onClick={() => markPendenteMutation.mutate(assessment.id)}
+                  disabled={markPendenteMutation.isPending}
+                >
+                  <Clock className="mr-2 h-4 w-4" />
+                  Marcar pendente
+                </Button>
+              )}
+              {onEdit && (
+                <Button variant="outline" size="sm" onClick={() => onEdit(assessment)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </Button>
+              )}
+            </div>
           </div>
 
           <Separator />

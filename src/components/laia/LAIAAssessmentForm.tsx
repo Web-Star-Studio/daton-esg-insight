@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -77,6 +78,7 @@ function mapAssessmentToFormData(a: LAIAAssessment, branchId: string): LAIAAsses
     lifecycle_stages: a.lifecycle_stages || [],
     output_actions: a.output_actions || "",
     notes: a.notes || "",
+    is_vigente: a.is_vigente ?? true,
   };
 }
 
@@ -110,6 +112,7 @@ const defaultFormData: LAIAAssessmentFormData = {
   lifecycle_stages: [],
   output_actions: "",
   notes: "",
+  is_vigente: true,
 };
 
 export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel }: LAIAAssessmentFormProps) {
@@ -691,6 +694,26 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
         {/* Step 5: Additional Observations & Lifecycle */}
         {currentStep === 5 && (
           <div className="space-y-6">
+            <div className="rounded-lg border p-4 bg-muted/30">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <Label htmlFor="is_vigente" className="text-base font-medium cursor-pointer">
+                    Esta avaliação está em vigência
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Avaliações pendentes ficam em aba separada até serem aprovadas.
+                  </p>
+                </div>
+                <Switch
+                  id="is_vigente"
+                  checked={formData.is_vigente}
+                  onCheckedChange={(c) => updateField("is_vigente", c)}
+                />
+              </div>
+            </div>
+
+            <Separator />
+
             <h3 className="text-lg font-medium">Observações Adicionais</h3>
 
             <div className="space-y-4">
