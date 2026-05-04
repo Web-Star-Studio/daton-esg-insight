@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { LAIASector, LAIAAssessment, LAIAAssessmentFormData, LAIADashboardStats } from "@/types/laia";
+import type { LAIASector, LAIAAssessment, LAIAAssessmentFormData, LAIADashboardStats, LegislationSuggestion } from "@/types/laia";
 import { 
   calculateConsequenceScore, 
   calculateFreqProbScore, 
@@ -249,6 +249,7 @@ export async function createLAIAAssessment(formData: LAIAAssessmentFormData): Pr
       control_types: formData.control_types,
       existing_controls: formData.existing_controls || null,
       legislation_reference: formData.legislation_reference || null,
+      legislation_reference_url: formData.legislation_reference_url || null,
       has_lifecycle_control: formData.has_lifecycle_control,
       lifecycle_stages: formData.lifecycle_stages,
       output_actions: formData.output_actions || null,
@@ -343,6 +344,22 @@ export async function markLAIAAssessmentAsPendente(id: string): Promise<void> {
     .eq("id", id);
 
   if (error) throw error;
+}
+
+export async function suggestLegislationReference(context: {
+  sector_name?: string;
+  activity_operation: string;
+  environmental_aspect: string;
+  environmental_impact: string;
+  control_types?: string[];
+  existing_controls?: string;
+  lifecycle_stages?: string[];
+}): Promise<LegislationSuggestion[]> {
+  const { data, error } = await supabase.functions.invoke("laia-legislation-suggester", {
+    body: { context },
+  });
+  if (error) throw error;
+  return (data?.suggestions ?? []) as LegislationSuggestion[];
 }
 
 export async function bulkDeleteLAIAAssessments(ids: string[]): Promise<void> {

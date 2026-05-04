@@ -48,6 +48,7 @@ export interface LAIAAssessment {
   control_types?: string[] | null;
   existing_controls?: string | null;
   legislation_reference?: string | null;
+  legislation_reference_url?: string | null;
   
   // Lifecycle Perspective
   has_lifecycle_control: boolean;
@@ -86,12 +87,19 @@ export interface LAIAAssessmentFormData {
   control_types: string[];
   existing_controls: string;
   legislation_reference: string;
+  legislation_reference_url: string;
   has_lifecycle_control: boolean;
   lifecycle_stages: string[];
   output_actions: string;
   responsible_user_id?: string;
   notes: string;
   is_vigente: boolean;
+}
+
+export interface LegislationSuggestion {
+  reference: string;
+  url: string | null;
+  summary: string;
 }
 
 export interface LAIADashboardStats {

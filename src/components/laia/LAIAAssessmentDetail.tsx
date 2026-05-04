@@ -15,7 +15,7 @@ import {
   CONTROL_TYPES 
 } from "@/types/laia";
 import type { LAIAAssessment } from "@/types/laia";
-import { X, Pencil, FileText, Calendar, User, CheckCircle2, Clock } from "lucide-react";
+import { X, Pencil, FileText, Calendar, User, CheckCircle2, Clock, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useApproveLAIAAssessment, useMarkLAIAAssessmentAsPendente } from "@/hooks/useLAIA";
@@ -269,7 +269,19 @@ export function LAIAAssessmentDetail({
             {assessment.legislation_reference && (
               <div>
                 <div className="text-xs text-muted-foreground">Referência Legal</div>
-                <div>{assessment.legislation_reference}</div>
+                {assessment.legislation_reference_url ? (
+                  <a
+                    href={assessment.legislation_reference_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                  >
+                    {assessment.legislation_reference}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                ) : (
+                  <div>{assessment.legislation_reference}</div>
+                )}
               </div>
             )}
           </div>

@@ -35,14 +35,17 @@ import {
   getCategoryColor,
   getSignificanceColor,
 } from "@/types/laia";
-import type { LAIAAssessmentFormData, LAIAAssessment } from "@/types/laia";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Check, 
+import type { LAIAAssessmentFormData, LAIAAssessment, LegislationSuggestion } from "@/types/laia";
+import * as laiaService from "@/services/laiaService";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
   Loader2,
   AlertTriangle,
-  Info
+  Info,
+  Sparkles,
+  ExternalLink
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { computeChanges, getOrCreateDraftRevision, addChangesToRevision } from "@/services/laiaRevisionService";
@@ -79,6 +82,7 @@ function mapAssessmentToFormData(a: LAIAAssessment, branchId: string): LAIAAsses
     output_actions: a.output_actions || "",
     notes: a.notes || "",
     is_vigente: a.is_vigente ?? true,
+    legislation_reference_url: a.legislation_reference_url || "",
   };
 }
 
@@ -113,6 +117,7 @@ const defaultFormData: LAIAAssessmentFormData = {
   output_actions: "",
   notes: "",
   is_vigente: true,
+  legislation_reference_url: "",
 };
 
 export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel }: LAIAAssessmentFormProps) {
@@ -124,6 +129,8 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
   const mutation = isEditing ? updateMutation : createMutation;
   
   const [currentStep, setCurrentStep] = useState(1);
+  const [legislationSuggestions, setLegislationSuggestions] = useState<LegislationSuggestion[]>([]);
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const [formData, setFormData] = useState<LAIAAssessmentFormData>(
     initialData
       ? mapAssessmentToFormData(initialData, branchId)
@@ -167,6 +174,46 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
     } else {
       updateField("lifecycle_stages", [...current, stage]);
     }
+  };
+
+  const canSuggestLegislation = !!(
+    formData.activity_operation &&
+    formData.environmental_aspect &&
+    formData.environmental_impact
+  );
+
+  const handleSuggestLegislation = async () => {
+    setIsSuggesting(true);
+    try {
+      const sectorName = sectors?.find((s) => s.id === formData.sector_id)?.name;
+      const result = await laiaService.suggestLegislationReference({
+        sector_name: sectorName,
+        activity_operation: formData.activity_operation,
+        environmental_aspect: formData.environmental_aspect,
+        environmental_impact: formData.environmental_impact,
+        control_types: formData.control_types,
+        existing_controls: formData.existing_controls || undefined,
+        lifecycle_stages: formData.lifecycle_stages,
+      });
+      setLegislationSuggestions(result);
+      if (result.length === 0) {
+        toast({ title: "Sem sugestões", description: "A IA não retornou sugestões para este contexto." });
+      }
+    } catch (e) {
+      toast({
+        title: "Erro ao buscar sugestões",
+        description: e instanceof Error ? e.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
+  const acceptLegislationSuggestion = (s: LegislationSuggestion) => {
+    updateField("legislation_reference", s.reference);
+    updateField("legislation_reference_url", s.url ?? "");
+    setLegislationSuggestions([]);
   };
 
   const canProceed = () => {
@@ -745,13 +792,74 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="legislation">Referência Legal</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="legislation">Referência Legal</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSuggestLegislation}
+                    disabled={isSuggesting || !canSuggestLegislation}
+                    title={!canSuggestLegislation ? "Preencha atividade, aspecto e impacto antes" : ""}
+                  >
+                    {isSuggesting ? (
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="mr-2 h-3.5 w-3.5" />
+                    )}
+                    {isSuggesting ? "Buscando..." : "Sugerir com IA"}
+                  </Button>
+                </div>
                 <Input
                   id="legislation"
                   value={formData.legislation_reference}
-                  onChange={(e) => updateField("legislation_reference", e.target.value)}
-                  placeholder="Ex: CONAMA 237/97, NBR 10004"
+                  onChange={(e) => {
+                    updateField("legislation_reference", e.target.value);
+                    if (formData.legislation_reference_url) {
+                      updateField("legislation_reference_url", "");
+                    }
+                  }}
+                  placeholder="Ex: Lei 12.305/2010, CONAMA 237/97"
                 />
+                {formData.legislation_reference_url && (
+                  <a
+                    href={formData.legislation_reference_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Abrir referência em nova aba
+                  </a>
+                )}
+                {legislationSuggestions.length > 0 && (
+                  <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      Sugestões da IA — clique para aplicar:
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {legislationSuggestions.map((s, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => acceptLegislationSuggestion(s)}
+                          className="text-left rounded-md border bg-background px-3 py-2 hover:bg-accent transition-colors"
+                          title={s.summary}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="font-medium text-sm">{s.reference}</div>
+                            {s.url && (
+                              <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                            {s.summary}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
