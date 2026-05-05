@@ -18348,36 +18348,60 @@ export type Database = {
       page_view_logs: {
         Row: {
           company_id: string | null
+          device_type: string | null
+          exit_type: string | null
+          had_focus_ms: number | null
           id: string
+          max_scroll_pct: number | null
           pathname: string
           referrer: string | null
           route_pattern: string | null
           search: string | null
+          session_id: string | null
+          time_on_page_ms: number | null
           user_agent: string | null
           user_id: string | null
           viewed_at: string
+          viewport_h: number | null
+          viewport_w: number | null
         }
         Insert: {
           company_id?: string | null
+          device_type?: string | null
+          exit_type?: string | null
+          had_focus_ms?: number | null
           id?: string
+          max_scroll_pct?: number | null
           pathname: string
           referrer?: string | null
           route_pattern?: string | null
           search?: string | null
+          session_id?: string | null
+          time_on_page_ms?: number | null
           user_agent?: string | null
           user_id?: string | null
           viewed_at?: string
+          viewport_h?: number | null
+          viewport_w?: number | null
         }
         Update: {
           company_id?: string | null
+          device_type?: string | null
+          exit_type?: string | null
+          had_focus_ms?: number | null
           id?: string
+          max_scroll_pct?: number | null
           pathname?: string
           referrer?: string | null
           route_pattern?: string | null
           search?: string | null
+          session_id?: string | null
+          time_on_page_ms?: number | null
           user_agent?: string | null
           user_id?: string | null
           viewed_at?: string
+          viewport_h?: number | null
+          viewport_w?: number | null
         }
         Relationships: []
       }
@@ -25370,6 +25394,63 @@ export type Database = {
           },
         ]
       }
+      user_activity_sessions: {
+        Row: {
+          active_seconds: number
+          company_id: string | null
+          device_type: string | null
+          end_reason: string | null
+          ended_at: string | null
+          heartbeat_count: number
+          id: string
+          idle_seconds: number
+          last_seen_at: string
+          locale: string | null
+          started_at: string
+          timezone: string | null
+          user_agent: string | null
+          user_id: string
+          viewport_h: number | null
+          viewport_w: number | null
+        }
+        Insert: {
+          active_seconds?: number
+          company_id?: string | null
+          device_type?: string | null
+          end_reason?: string | null
+          ended_at?: string | null
+          heartbeat_count?: number
+          id?: string
+          idle_seconds?: number
+          last_seen_at?: string
+          locale?: string | null
+          started_at?: string
+          timezone?: string | null
+          user_agent?: string | null
+          user_id: string
+          viewport_h?: number | null
+          viewport_w?: number | null
+        }
+        Update: {
+          active_seconds?: number
+          company_id?: string | null
+          device_type?: string | null
+          end_reason?: string | null
+          ended_at?: string | null
+          heartbeat_count?: number
+          id?: string
+          idle_seconds?: number
+          last_seen_at?: string
+          locale?: string | null
+          started_at?: string
+          timezone?: string | null
+          user_agent?: string | null
+          user_id?: string
+          viewport_h?: number | null
+          viewport_w?: number | null
+        }
+        Relationships: []
+      }
       user_custom_permissions: {
         Row: {
           company_id: string
@@ -26158,6 +26239,39 @@ export type Database = {
       }
     }
     Views: {
+      live_user_activity_sessions: {
+        Row: {
+          active_seconds: number | null
+          company_id: string | null
+          device_type: string | null
+          heartbeat_count: number | null
+          id: string | null
+          last_seen_at: string | null
+          started_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active_seconds?: number | null
+          company_id?: string | null
+          device_type?: string | null
+          heartbeat_count?: number | null
+          id?: string | null
+          last_seen_at?: string | null
+          started_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active_seconds?: number | null
+          company_id?: string | null
+          device_type?: string | null
+          heartbeat_count?: number | null
+          id?: string | null
+          last_seen_at?: string | null
+          started_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       page_view_stats_90d: {
         Row: {
           company_id: string | null
