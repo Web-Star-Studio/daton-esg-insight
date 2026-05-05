@@ -71,6 +71,7 @@ interface EmployeeDetailModalProps {
 
 export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: EmployeeDetailModalProps) {
   const [isBenefitsModalOpen, setIsBenefitsModalOpen] = useState(false);
+  const [isChildModalOpen, setIsChildModalOpen] = useState(false);
 
   // Fetch employee benefits
   const { data: benefitEnrollments = [] } = useQuery({
@@ -181,7 +182,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen && !isChildModalOpen} onOpenChange={(o) => { if (!o) onClose(); }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -654,6 +655,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                   <EmployeeTrainingsTab 
                     employeeId={employee.id}
                     employeeName={employee.full_name}
+                    onChildModalChange={setIsChildModalOpen}
                   />
                 </TabsContent>
 
