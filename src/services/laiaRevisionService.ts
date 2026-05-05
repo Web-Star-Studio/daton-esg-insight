@@ -73,7 +73,7 @@ export const FIELD_LABELS: Record<string, string> = {
   has_strategic_options: "Opções Estratégicas",
   control_types: "Tipos de Controle",
   existing_controls: "Controles Existentes",
-  legislation_reference: "Referência Legal",
+  legislation_references: "Referência Legal",
   has_lifecycle_control: "Controle de Ciclo de Vida",
   lifecycle_stages: "Etapas do Ciclo de Vida",
   output_actions: "Ações de Saída",
