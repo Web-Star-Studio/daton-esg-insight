@@ -39,7 +39,6 @@ import type {
   LAIAAssessmentFormData,
   LAIAAssessment,
   LegislationReference,
-  LegislationSuggestion,
 } from "@/types/laia";
 import { normalizeLegislationUrl } from "@/types/laia";
 import * as laiaService from "@/services/laiaService";
@@ -199,7 +198,7 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
     formData.environmental_impact
   );
 
-  const requestLegislationSuggestions = async (): Promise<LegislationSuggestion[]> => {
+  const requestLegislationSuggestions = async () => {
     const sectorName = sectors?.find((s) => s.id === formData.sector_id)?.name;
     return laiaService.suggestLegislationReference({
       sector_name: sectorName,

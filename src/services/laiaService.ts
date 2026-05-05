@@ -355,6 +355,11 @@ export async function markLAIAAssessmentAsPendente(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export interface LegislationSuggestionsResponse {
+  suggestions: LegislationSuggestion[];
+  citations: string[];
+}
+
 export async function suggestLegislationReference(context: {
   sector_name?: string;
   activity_operation: string;
@@ -363,12 +368,15 @@ export async function suggestLegislationReference(context: {
   control_types?: string[];
   existing_controls?: string;
   lifecycle_stages?: string[];
-}): Promise<LegislationSuggestion[]> {
+}): Promise<LegislationSuggestionsResponse> {
   const { data, error } = await supabase.functions.invoke("laia-legislation-suggester", {
     body: { context },
   });
   if (error) throw error;
-  return (data?.suggestions ?? []) as LegislationSuggestion[];
+  return {
+    suggestions: (data?.suggestions ?? []) as LegislationSuggestion[],
+    citations: Array.isArray(data?.citations) ? (data.citations as string[]) : [],
+  };
 }
 
 export async function bulkDeleteLAIAAssessments(ids: string[]): Promise<void> {

@@ -26,30 +26,80 @@ const SYSTEM_PROMPT = `Você é um especialista em legislação ambiental brasil
 
 Dado o contexto de uma avaliação de aspecto/impacto ambiental, sugira de 1 a 3 referências legais brasileiras realmente aplicáveis, priorizando especificidade.
 
-Tipos de norma a considerar:
-- Leis Federais (ex: Lei 12.305/2010 - Política Nacional de Resíduos Sólidos, Lei 9.605/1998 - Crimes Ambientais, Lei 9.433/1997 - Recursos Hídricos)
-- Resoluções CONAMA (ex: CONAMA 237/97 - Licenciamento, CONAMA 357/05 - Águas, CONAMA 313/02 - Resíduos Industriais, CONAMA 430/11 - Efluentes)
-- NBRs ABNT (ex: NBR 10004 - Resíduos sólidos)
-- Decretos Federais e Resoluções de agências (ANA, IBAMA)
+Tipos de norma a considerar: Leis Federais, Resoluções CONAMA, NBRs ABNT, Decretos Federais, Resoluções de agências (ANA, IBAMA).
 
-Para URL, retorne SEMPRE a URL completa com scheme (https://...) ou null. Nunca retorne hostnames sem scheme.
-- Leis federais: https://www.planalto.gov.br/ccivil_03/_ato.../[ano]/lei/lXXXX.htm
-- Decretos federais: https://www.planalto.gov.br/ccivil_03/_ato.../[ano]/decreto/dXXXXX.htm
-- CONAMA: https://conama.mma.gov.br/?id=conama&pesquisa=resolucao (ou null se não souber a URL exata)
-- NBRs (ABNT é pago): null
+Regras OBRIGATÓRIAS para URLs:
+- Use sua busca web em tempo real para encontrar a URL canônica oficial do documento.
+- A URL deve apontar DIRETAMENTE para o texto/PDF da norma, não para páginas de listagem ou busca.
+- Sempre inclua scheme completo (https://...).
+- Para CONAMA, use o link direto de download do Joomla (formato: https://conama.mma.gov.br/?option=com_sisconama&task=arquivo.download&id=NNN). Não retorne a URL raiz nem URL de busca genérica.
+- Se não conseguir confirmar URL canônica para a norma específica via busca, retorne url=null. NUNCA invente URLs.
+- NBRs ABNT são pagas e não têm URL pública: sempre url=null.
 
 Responda APENAS com JSON válido no formato:
 {
   "suggestions": [
     {
       "reference": "Lei 12.305/2010",
-      "url": "http://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12305.htm",
+      "url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12305.htm",
       "summary": "Política Nacional de Resíduos Sólidos - aplicável por envolver descarte e segregação."
     }
   ]
 }
 
 Priorize legislação específica ao contexto. Não sugira normas genéricas se não houver aderência clara.`;
+
+// Pricing Perplexity Sonar (USD): $1/1M input + $1/1M output + $5/1k searches.
+// Cada chamada faz 1 search (low context).
+const SONAR_INPUT_USD_PER_TOKEN = 1 / 1_000_000;
+const SONAR_OUTPUT_USD_PER_TOKEN = 1 / 1_000_000;
+const SONAR_SEARCH_USD = 5 / 1000;
+
+const logUsage = async (
+  model: string,
+  usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null,
+  latencyMs: number,
+  success: boolean,
+  errorText?: string,
+) => {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) return;
+
+  const promptTokens = usage?.prompt_tokens ?? 0;
+  const completionTokens = usage?.completion_tokens ?? 0;
+  const totalTokens = usage?.total_tokens ?? promptTokens + completionTokens;
+  const costUsd =
+    promptTokens * SONAR_INPUT_USD_PER_TOKEN +
+    completionTokens * SONAR_OUTPUT_USD_PER_TOKEN +
+    (success ? SONAR_SEARCH_USD : 0);
+
+  try {
+    await fetch(`${url}/rest/v1/ai_usage_logs`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        function_name: "laia-legislation-suggester",
+        feature_tag: "laia-legislation",
+        model,
+        prompt_tokens: promptTokens || null,
+        completion_tokens: completionTokens || null,
+        total_tokens: totalTokens || null,
+        estimated_cost_usd: costUsd,
+        latency_ms: latencyMs,
+        success,
+        error_text: errorText ?? null,
+      }),
+    });
+  } catch (err) {
+    console.warn("[laia-legislation-suggester] log usage failed:", err);
+  }
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -96,6 +146,9 @@ serve(async (req) => {
 
 Retorne 1-3 referências legais brasileiras aplicáveis em JSON.`;
 
+  const model = "sonar";
+  const startedAt = Date.now();
+
   try {
     const pplxResp = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
@@ -104,7 +157,7 @@ Retorne 1-3 referências legais brasileiras aplicáveis em JSON.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "sonar",
+        model,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
@@ -138,10 +191,13 @@ Retorne 1-3 referências legais brasileiras aplicáveis em JSON.`;
       }),
     });
 
+    const latencyMs = Date.now() - startedAt;
+
     if (!pplxResp.ok) {
       const errText = await pplxResp.text();
       const status = pplxResp.status;
       console.error("Perplexity error:", status, errText.slice(0, 300));
+      await logUsage(model, null, latencyMs, false, `HTTP ${status}: ${errText.slice(0, 500)}`);
       if (status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns instantes.", suggestions: [] }),
@@ -163,7 +219,10 @@ Retorne 1-3 referências legais brasileiras aplicáveis em JSON.`;
     const aiResponse = await pplxResp.json() as {
       choices?: Array<{ message?: { content?: string } }>;
       citations?: string[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
     };
+    await logUsage(model, aiResponse?.usage ?? null, latencyMs, true);
+
     const content: string = aiResponse?.choices?.[0]?.message?.content ?? "{}";
     const citations: string[] = Array.isArray(aiResponse?.citations) ? aiResponse.citations : [];
     let parsed: { suggestions?: unknown[] } = {};
@@ -180,7 +239,9 @@ Retorne 1-3 referências legais brasileiras aplicáveis em JSON.`;
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    const latencyMs = Date.now() - startedAt;
     const message = error instanceof Error ? error.message : String(error);
+    await logUsage(model, null, latencyMs, false, message);
     console.error("laia-legislation-suggester error:", message);
     return new Response(
       JSON.stringify({ error: message, suggestions: [] }),
