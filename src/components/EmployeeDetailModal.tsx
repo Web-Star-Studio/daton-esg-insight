@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -6,6 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { parseDateSafe, formatDateDisplay } from '@/utils/dateUtils';
+import { ViewEmployeeTrainingDialog } from './ViewEmployeeTrainingDialog';
+import { AddEmployeeTrainingDialog } from './AddEmployeeTrainingDialog';
+import { EmployeeEfficacyEvaluationDialog } from './EmployeeEfficacyEvaluationDialog';
 
 import { Separator } from './ui/separator';
 import { 
@@ -69,9 +72,53 @@ interface EmployeeDetailModalProps {
   } | null;
 }
 
+type TrainingDialogState =
+  | { type: 'view' | 'efficacy'; training: any }
+  | { type: 'add' }
+  | null;
+
 export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: EmployeeDetailModalProps) {
   const [isBenefitsModalOpen, setIsBenefitsModalOpen] = useState(false);
-  const [isChildModalOpen, setIsChildModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  // Lifted aqui (em vez de viver dentro do EmployeeTrainingsTab) pra sobreviver
+  // ao unmount do Dialog pai quando o ocultamos via `open={isOpen && !trainingDialog}`.
+  // Mesmo padrão do TrainingProgramEfficacyDialog (parent fecha enquanto inner está aberto).
+  const [trainingDialog, setTrainingDialog] = useState<TrainingDialogState>(null);
+  // Escalona o close do dialog filho antes de reabrir o pai pra evitar a
+  // transição "brusca" (close-anim do filho + open-anim do pai simultâneos).
+  // Enquanto isClosingTraining, o filho fica isOpen=false (toca close-anim) mas
+  // trainingDialog ainda é truthy → pai permanece fechado. Só depois do timer
+  // limpamos trainingDialog e o pai reabre com a própria open-anim.
+  const [isClosingTraining, setIsClosingTraining] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+      setTrainingDialog(null);
+      setIsClosingTraining(false);
+      setActiveTab('overview');
+    }
+  }, [isOpen]);
+
+  useEffect(() => () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  }, []);
+
+  const closeTrainingDialog = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    setIsClosingTraining(true);
+    // 200ms acompanha `duration-200` do DialogContent (src/components/ui/dialog.tsx).
+    closeTimerRef.current = setTimeout(() => {
+      setTrainingDialog(null);
+      setIsClosingTraining(false);
+      closeTimerRef.current = null;
+    }, 200);
+  };
+
+  const innerDialogOpen = (type: 'view' | 'add' | 'efficacy') =>
+    trainingDialog?.type === type && !isClosingTraining;
 
   // Fetch employee benefits
   const { data: benefitEnrollments = [] } = useQuery({
@@ -182,7 +229,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
 
   return (
     <>
-      <Dialog open={isOpen && !isChildModalOpen} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <Dialog open={isOpen && !trainingDialog} onOpenChange={onClose}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -211,7 +258,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
             </div>
           </DialogHeader>
 
-          <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <TabsList className="grid w-full grid-cols-8 shrink-0">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="experiences">Experiências</TabsTrigger>
@@ -652,10 +699,12 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                 </TabsContent>
 
                 <TabsContent value="trainings" className="space-y-6 mt-0">
-                  <EmployeeTrainingsTab 
+                  <EmployeeTrainingsTab
                     employeeId={employee.id}
                     employeeName={employee.full_name}
-                    onChildModalChange={setIsChildModalOpen}
+                    onView={(t) => setTrainingDialog({ type: 'view', training: t })}
+                    onAdd={() => setTrainingDialog({ type: 'add' })}
+                    onEvaluateEfficacy={(t) => setTrainingDialog({ type: 'efficacy', training: t })}
                   />
                 </TabsContent>
 
@@ -728,6 +777,36 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
         onClose={() => setIsBenefitsModalOpen(false)}
         employee={employee}
       />
+
+      <ViewEmployeeTrainingDialog
+        isOpen={innerDialogOpen('view')}
+        onClose={closeTrainingDialog}
+        training={trainingDialog?.type === 'view' ? trainingDialog.training : null}
+      />
+
+      <AddEmployeeTrainingDialog
+        isOpen={innerDialogOpen('add')}
+        onClose={closeTrainingDialog}
+        employeeId={employee.id}
+        employeeName={employee.full_name}
+      />
+
+      {trainingDialog?.type === 'efficacy' &&
+        trainingDialog.training?.id &&
+        trainingDialog.training?.training_program?.id && (
+          <EmployeeEfficacyEvaluationDialog
+            open={innerDialogOpen('efficacy')}
+            onOpenChange={(open) => {
+              if (!open) closeTrainingDialog();
+            }}
+            employeeName={employee.full_name}
+            employeeId={employee.id}
+            employeeTrainingId={trainingDialog.training.id}
+            trainingProgramId={trainingDialog.training.training_program.id}
+            trainingProgramName={trainingDialog.training.training_program.name}
+            existingEvaluation={trainingDialog.training.evaluation || null}
+          />
+        )}
     </>
   );
 }

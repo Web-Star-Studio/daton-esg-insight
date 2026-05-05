@@ -1,4 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
+import { calculateTrainingStatus } from "@/utils/trainingStatusCalculator";
+
+// Derivamos o status exibido a partir das datas do programa para evitar que o
+// participante fique "preso" em "Inscrito" depois do término. Status manuais
+// como "Cancelado" e "Reprovado" são preservados.
+const PRESERVE_STATUSES = new Set(["Cancelado", "Reprovado"]);
 
 export interface TrainingParticipant {
   id: string;
@@ -44,27 +50,59 @@ export const getTrainingProgramParticipants = async (programId: string): Promise
 
   // Get employee IDs
   const employeeIds = [...new Set(trainings.map(t => t.employee_id))];
-  
+
   if (employeeIds.length === 0) return [];
 
-  // Get employees data
-  const { data: employees, error: employeeError } = await supabase
-    .from('employees')
-    .select('id, full_name, employee_code, department')
-    .in('id', employeeIds);
+  // Fetch program dates and any concluded efficacy evaluations to derive the
+  // displayed status (avoids leaving participants stuck on "Inscrito" after
+  // the training end date).
+  const [{ data: program }, { data: evaluations }, { data: employees, error: employeeError }] =
+    await Promise.all([
+      supabase
+        .from('training_programs')
+        .select('start_date, end_date, efficacy_evaluation_deadline')
+        .eq('id', programId)
+        .maybeSingle(),
+      supabase
+        .from('training_efficacy_evaluations')
+        .select('employee_training_id')
+        .eq('training_program_id', programId)
+        .eq('status', 'Concluída'),
+      supabase
+        .from('employees')
+        .select('id, full_name, employee_code, department')
+        .in('id', employeeIds),
+    ]);
 
   if (employeeError) throw employeeError;
+
+  const evaluatedSet = new Set(
+    (evaluations || [])
+      .map((e: { employee_training_id: string | null }) => e.employee_training_id)
+      .filter((id): id is string => !!id),
+  );
 
   // Map trainings with employee data
   return trainings.map(training => {
     const employee = employees?.find(emp => emp.id === training.employee_id);
+    const derivedStatus = program
+      ? calculateTrainingStatus({
+          start_date: program.start_date,
+          end_date: program.end_date,
+          efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
+          hasEfficacyEvaluation: evaluatedSet.has(training.id),
+        })
+      : null;
+    const status = PRESERVE_STATUSES.has(training.status)
+      ? training.status
+      : derivedStatus || training.status;
     return {
       id: training.id,
       employee_id: training.employee_id,
       employee_name: employee?.full_name || 'N/A',
       employee_code: employee?.employee_code || 'N/A',
       department: employee?.department || 'N/A',
-      status: training.status,
+      status,
       completion_date: training.completion_date,
       expiration_date: training.expiration_date,
       score: training.score,
@@ -78,19 +116,49 @@ export const getTrainingProgramParticipants = async (programId: string): Promise
 };
 
 export const getTrainingProgramStats = async (programId: string): Promise<TrainingProgramStats> => {
-  const { data: trainings, error } = await supabase
-    .from('employee_trainings')
-    .select('status, score, attended')
-    .eq('training_program_id', programId);
+  const [{ data: trainings, error }, { data: program }, { data: evaluations }] =
+    await Promise.all([
+      supabase
+        .from('employee_trainings')
+        .select('id, status, score, attended')
+        .eq('training_program_id', programId),
+      supabase
+        .from('training_programs')
+        .select('start_date, end_date, efficacy_evaluation_deadline')
+        .eq('id', programId)
+        .maybeSingle(),
+      supabase
+        .from('training_efficacy_evaluations')
+        .select('employee_training_id')
+        .eq('training_program_id', programId)
+        .eq('status', 'Concluída'),
+    ]);
 
   if (error) throw error;
 
+  const evaluatedSet = new Set(
+    (evaluations || [])
+      .map((e: { employee_training_id: string | null }) => e.employee_training_id)
+      .filter((id): id is string => !!id),
+  );
+
+  const derivedStatuses = (trainings || []).map((t: any) => {
+    if (PRESERVE_STATUSES.has(t.status)) return t.status as string;
+    if (!program) return t.status as string;
+    return calculateTrainingStatus({
+      start_date: program.start_date,
+      end_date: program.end_date,
+      efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
+      hasEfficacyEvaluation: evaluatedSet.has(t.id),
+    }) as string;
+  });
+
   const total = trainings?.length || 0;
-  const completed = trainings?.filter(t => t.status === 'Concluído').length || 0;
-  const inProgress = trainings?.filter(t => t.status === 'Em Andamento').length || 0;
-  const enrolled = trainings?.filter(t => t.status === 'Inscrito').length || 0;
-  const cancelled = trainings?.filter(t => t.status === 'Cancelado').length || 0;
-  const failed = trainings?.filter(t => t.status === 'Reprovado').length || 0;
+  const completed = derivedStatuses.filter(s => s === 'Concluído' || s === 'Pendente Avaliação').length;
+  const inProgress = derivedStatuses.filter(s => s === 'Em Andamento').length;
+  const enrolled = derivedStatuses.filter(s => s === 'Inscrito' || s === 'Planejado').length;
+  const cancelled = derivedStatuses.filter(s => s === 'Cancelado').length;
+  const failed = derivedStatuses.filter(s => s === 'Reprovado').length;
 
   // Attendance stats
   const present = trainings?.filter(t => (t as any).attended === true).length || 0;

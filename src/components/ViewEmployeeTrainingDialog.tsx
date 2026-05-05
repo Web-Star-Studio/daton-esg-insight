@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Clock, User, Calendar, Award, AlertTriangle, CheckCircle, FileText,
-  Users, Target, Mail, Monitor, CheckSquare, XSquare, Loader2, ArrowRight
+  Users, Target, Mail, Monitor, CheckSquare, XSquare, Loader2, Pencil, ClipboardCheck
 } from 'lucide-react';
 import { getTrainingStatusColor } from '@/utils/trainingStatusCalculator';
 import { getTrainingProgramParticipants, type TrainingParticipant } from '@/services/trainingProgramParticipants';
@@ -25,21 +25,25 @@ import {
   TableHeader,
   TableRow,
 } from './ui/table';
+import { EmployeeEfficacyEvaluationDialog } from './EmployeeEfficacyEvaluationDialog';
 
 interface ViewEmployeeTrainingDialogProps {
   isOpen: boolean;
   onClose: () => void;
   training: any;
+  employeeName?: string;
 }
 
 export function ViewEmployeeTrainingDialog({
   isOpen,
   onClose,
   training,
+  employeeName,
 }: ViewEmployeeTrainingDialogProps) {
   const program = training?.training_program;
   const programId = program?.id;
   const hasEfficacyDeadline = !!program?.efficacy_evaluation_deadline;
+  const [isEvaluationDialogOpen, setIsEvaluationDialogOpen] = useState(false);
 
   // Fetch participants
   const { data: participants = [], isLoading: loadingParticipants } = useQuery({
@@ -326,20 +330,27 @@ export function ViewEmployeeTrainingDialog({
                   const category = getEfficacyCategory(existingEvaluation);
                   return (
                     <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                      <div className="flex items-center gap-2">
-                        {category && (
-                          <Badge className={EFFICACY_CATEGORY_BADGE[category]}>
-                            {category === 'not_effective' ? (
-                              <XSquare className="h-3 w-3 mr-1" />
-                            ) : (
-                              <CheckSquare className="h-3 w-3 mr-1" />
-                            )}
-                            {EFFICACY_CATEGORY_LABEL[category]}
-                          </Badge>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          Avaliado em {formatDate(existingEvaluation.evaluation_date)}
-                        </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {category && (
+                            <Badge className={EFFICACY_CATEGORY_BADGE[category]}>
+                              {category === 'not_effective' ? (
+                                <XSquare className="h-3 w-3 mr-1" />
+                              ) : (
+                                <CheckSquare className="h-3 w-3 mr-1" />
+                              )}
+                              {EFFICACY_CATEGORY_LABEL[category]}
+                            </Badge>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsEvaluationDialogOpen(true)}
+                        >
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
                       </div>
                       {existingEvaluation.evaluator_name && (
                         <p className="text-sm"><strong>Avaliador:</strong> {existingEvaluation.evaluator_name}</p>
@@ -351,19 +362,19 @@ export function ViewEmployeeTrainingDialog({
                   );
                 })()
               ) : (
-                // O fluxo de avaliação foi centralizado em /avaliacao-eficacia
-                // (wizard contínuo com filtro por evaluator). Aqui só linkamos.
-                <Link
-                  to="/avaliacao-eficacia"
-                  onClick={onClose}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/40 transition-colors"
-                >
+                <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="text-sm">
                     <p className="font-medium text-foreground">Avaliação ainda não registrada</p>
-                    <p className="text-muted-foreground text-xs">Registre em <span className="font-medium">Avaliação de Eficácia</span>.</p>
+                    <p className="text-muted-foreground text-xs">Registre a avaliação de eficácia deste colaborador.</p>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                </Link>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsEvaluationDialogOpen(true)}
+                  >
+                    <ClipboardCheck className="h-4 w-4 mr-1" />
+                    Avaliar
+                  </Button>
+                </div>
               )}
             </div>
           )}
@@ -376,6 +387,19 @@ export function ViewEmployeeTrainingDialog({
           </div>
         </div>
       </DialogContent>
+
+      {hasEfficacyDeadline && programId && training?.id && (
+        <EmployeeEfficacyEvaluationDialog
+          open={isEvaluationDialogOpen}
+          onOpenChange={setIsEvaluationDialogOpen}
+          employeeName={employeeName || training?.employee_name || 'Colaborador'}
+          employeeId={training?.employee_id}
+          employeeTrainingId={training.id}
+          trainingProgramId={programId}
+          trainingProgramName={program?.name}
+          existingEvaluation={existingEvaluation || null}
+        />
+      )}
     </Dialog>
   );
 }
