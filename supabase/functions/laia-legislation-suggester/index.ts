@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { aiCall } from "../_shared/ai-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,18 +51,15 @@ Responda APENAS com JSON válido no formato:
 
 Priorize legislação específica ao contexto. Não sugira normas genéricas se não houver aderência clara.`;
 
-type AiResponse = {
-  choices?: Array<{ message?: { content?: string } }>;
-};
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  if (!Deno.env.get("LOVABLE_API_KEY")) {
+  const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+  if (!PERPLEXITY_API_KEY) {
     return new Response(
-      JSON.stringify({ error: "LOVABLE_API_KEY not configured", suggestions: [] }),
+      JSON.stringify({ error: "PERPLEXITY_API_KEY not configured", suggestions: [] }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -101,25 +97,75 @@ serve(async (req) => {
 Retorne 1-3 referências legais brasileiras aplicáveis em JSON.`;
 
   try {
-    const aiResponse = await aiCall<AiResponse>(
-      {
-        functionName: "laia-legislation-suggester",
-        featureTag: "laia-legislation",
-        companyId: body.company_id ?? null,
-        userId: body.user_id ?? null,
-        meta: { sector: context.sector_name ?? null },
+    const pplxResp = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      {
-        model: "openai/gpt-5-mini",
+      body: JSON.stringify({
+        model: "sonar",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
-        response_format: { type: "json_object" },
-      },
-    );
+        temperature: 0.2,
+        search_domain_filter: ["planalto.gov.br", "mma.gov.br", "ibama.gov.br", "ana.gov.br", "in.gov.br"],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "legal_suggestions",
+            schema: {
+              type: "object",
+              properties: {
+                suggestions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      reference: { type: "string" },
+                      url: { type: ["string", "null"] },
+                      summary: { type: "string" },
+                    },
+                    required: ["reference", "summary"],
+                  },
+                },
+              },
+              required: ["suggestions"],
+            },
+          },
+        },
+      }),
+    });
 
+    if (!pplxResp.ok) {
+      const errText = await pplxResp.text();
+      const status = pplxResp.status;
+      console.error("Perplexity error:", status, errText.slice(0, 300));
+      if (status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns instantes.", suggestions: [] }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (status === 401 || status === 403) {
+        return new Response(
+          JSON.stringify({ error: "PERPLEXITY_API_KEY inválida ou sem permissão.", suggestions: [] }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      return new Response(
+        JSON.stringify({ error: `Perplexity error: ${status}`, suggestions: [] }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const aiResponse = await pplxResp.json() as {
+      choices?: Array<{ message?: { content?: string } }>;
+      citations?: string[];
+    };
     const content: string = aiResponse?.choices?.[0]?.message?.content ?? "{}";
+    const citations: string[] = Array.isArray(aiResponse?.citations) ? aiResponse.citations : [];
     let parsed: { suggestions?: unknown[] } = {};
     try {
       parsed = JSON.parse(content);
@@ -130,33 +176,12 @@ Retorne 1-3 referências legais brasileiras aplicáveis em JSON.`;
     const suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
 
     return new Response(
-      JSON.stringify({ suggestions }),
+      JSON.stringify({ suggestions, citations }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const status =
-      (error as { status?: number })?.status ?? null;
     console.error("laia-legislation-suggester error:", message);
-
-    if (status === 429) {
-      return new Response(
-        JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns instantes.", suggestions: [] }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (status === 402) {
-      return new Response(
-        JSON.stringify({ error: "Créditos do workspace Lovable AI insuficientes.", suggestions: [] }),
-        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (status && status >= 500) {
-      return new Response(
-        JSON.stringify({ error: `AI Gateway error: ${status}`, suggestions: [] }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
     return new Response(
       JSON.stringify({ error: message, suggestions: [] }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
