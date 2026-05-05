@@ -4,15 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { 
-  GraduationCap, 
-  Plus, 
-  Clock, 
-  Award, 
+import {
+  GraduationCap,
+  Plus,
+  Clock,
+  Award,
   AlertTriangle,
-  Edit,
   Trash2,
-  Eye
+  Eye,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -24,9 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './ui/alert-dialog';
-import { AddEmployeeTrainingDialog } from './AddEmployeeTrainingDialog';
-import { EditEmployeeTrainingDialog } from './EditEmployeeTrainingDialog';
-import { ViewEmployeeTrainingDialog } from './ViewEmployeeTrainingDialog';
+import { type TrainingEfficacyEvaluation } from '@/services/trainingEfficacyEvaluations';
 import { toast } from 'sonner';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -41,20 +39,24 @@ import {
 interface EmployeeTrainingsTabProps {
   employeeId: string;
   employeeName: string;
-  onChildModalChange?: (open: boolean) => void;
+  // Callbacks opcionais pra delegar abertura dos dialogs ao componente pai.
+  // Quando fornecidos, o pai (EmployeeDetailModal) controla os dialogs e fecha
+  // a si mesmo enquanto algum estiver aberto, evitando sobreposição.
+  onView?: (training: any) => void;
+  onAdd?: () => void;
+  onEvaluateEfficacy?: (training: any) => void;
 }
 
-export function EmployeeTrainingsTab({ employeeId, employeeName, onChildModalChange }: EmployeeTrainingsTabProps) {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+export function EmployeeTrainingsTab({
+  employeeId,
+  employeeName,
+  onView,
+  onAdd,
+  onEvaluateEfficacy,
+}: EmployeeTrainingsTabProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTraining, setSelectedTraining] = useState<any>(null);
   const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    onChildModalChange?.(isAddDialogOpen || isEditDialogOpen || isViewDialogOpen);
-  }, [isAddDialogOpen, isEditDialogOpen, isViewDialogOpen, onChildModalChange]);
 
   // Fetch employee trainings with program dates for automatic status calculation
   const { data: trainings = [], isLoading } = useQuery({
@@ -92,22 +94,16 @@ export function EmployeeTrainingsTab({ employeeId, employeeName, onChildModalCha
       // como antes) pra que o status reflita a avaliação específica daquele
       // colaborador naquele treinamento.
       const employeeTrainingIds = rows.map((r: any) => r.id);
-      const evaluationByTrainingId = new Map<
-        string,
-        { is_effective: boolean | null; score: number | null }
-      >();
+      const evaluationByTrainingId = new Map<string, TrainingEfficacyEvaluation>();
       if (employeeTrainingIds.length > 0) {
         const { data: evals } = await supabase
           .from('training_efficacy_evaluations')
-          .select('employee_training_id, is_effective, score')
+          .select('*')
           .in('employee_training_id', employeeTrainingIds)
           .eq('status', 'Concluída');
-        for (const ev of evals || []) {
+        for (const ev of (evals || []) as TrainingEfficacyEvaluation[]) {
           if (ev.employee_training_id) {
-            evaluationByTrainingId.set(ev.employee_training_id, {
-              is_effective: ev.is_effective,
-              score: ev.score,
-            });
+            evaluationByTrainingId.set(ev.employee_training_id, ev);
           }
         }
       }
@@ -117,7 +113,7 @@ export function EmployeeTrainingsTab({ employeeId, employeeName, onChildModalCha
         const evaluation = evaluationByTrainingId.get(training.id) || null;
         const efficacyCategory: EfficacyCategory | null = getEfficacyCategory(evaluation);
 
-        if (!program) return { ...training, efficacyCategory };
+        if (!program) return { ...training, efficacyCategory, evaluation };
 
         const calculatedStatus = calculateTrainingStatus({
           start_date: program.start_date,
@@ -130,6 +126,7 @@ export function EmployeeTrainingsTab({ employeeId, employeeName, onChildModalCha
           ...training,
           status: training.status === 'Cancelado' ? 'Cancelado' : calculatedStatus,
           efficacyCategory,
+          evaluation,
         };
       });
 
@@ -159,13 +156,15 @@ export function EmployeeTrainingsTab({ employeeId, employeeName, onChildModalCha
 
   // Helper functions
   const handleView = (training: any) => {
-    setSelectedTraining(training);
-    setIsViewDialogOpen(true);
+    onView?.(training);
   };
 
-  const handleEdit = (training: any) => {
-    setSelectedTraining(training);
-    setIsEditDialogOpen(true);
+  const handleAdd = () => {
+    onAdd?.();
+  };
+
+  const handleEvaluateEfficacy = (training: any) => {
+    onEvaluateEfficacy?.(training);
   };
 
   const handleDeleteConfirm = (training: any) => {
@@ -332,7 +331,7 @@ export function EmployeeTrainingsTab({ employeeId, employeeName, onChildModalCha
                 <GraduationCap className="h-5 w-5" />
                 Treinamentos
               </CardTitle>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Button onClick={handleAdd}>
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Treinamento
               </Button>
@@ -384,16 +383,18 @@ export function EmployeeTrainingsTab({ employeeId, employeeName, onChildModalCha
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleEdit(training)}
-                          title="Editar treinamento"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
+                        {training.training_program?.efficacy_evaluation_deadline && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEvaluateEfficacy(training)}
+                            title={training.evaluation ? 'Editar avaliação de eficácia' : 'Avaliar eficácia'}
+                          >
+                            <ClipboardCheck className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleDeleteConfirm(training)}
                           title="Excluir treinamento"
@@ -445,7 +446,7 @@ export function EmployeeTrainingsTab({ employeeId, employeeName, onChildModalCha
                 <p className="text-muted-foreground mb-4">
                   Adicione os treinamentos de {employeeName}
                 </p>
-                <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Button onClick={handleAdd}>
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar Treinamento
                 </Button>
@@ -455,34 +456,10 @@ export function EmployeeTrainingsTab({ employeeId, employeeName, onChildModalCha
         </Card>
       </div>
 
-      {/* Dialogs */}
-      <AddEmployeeTrainingDialog
-        isOpen={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        employeeId={employeeId}
-        employeeName={employeeName}
-      />
-
-      <EditEmployeeTrainingDialog
-        isOpen={isEditDialogOpen}
-        onClose={() => {
-          setIsEditDialogOpen(false);
-          setSelectedTraining(null);
-        }}
-        employeeId={employeeId}
-        employeeName={employeeName}
-        training={selectedTraining}
-      />
-
-      <ViewEmployeeTrainingDialog
-        isOpen={isViewDialogOpen}
-        onClose={() => {
-          setIsViewDialogOpen(false);
-          setSelectedTraining(null);
-        }}
-        training={selectedTraining}
-      />
-
+      {/* Add/View/Efficacy dialogs são lifted pro EmployeeDetailModal — assim
+          o modal pai pode fechar enquanto algum deles está aberto, evitando
+          sobreposição visual. Aqui só fica a confirmação de exclusão (centrada,
+          sem stacking visível). */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
