@@ -55,6 +55,7 @@ const AvaliacaoEficacia = () => {
 
   const getStatusBadge = (status: string, daysRemaining: number) => {
     if (status === "Avaliado") return <Badge className="bg-green-500">Avaliado</Badge>;
+    if (status === "Aguardando") return <Badge variant="secondary">Aguardando término</Badge>;
     if (status === "Atrasado") return <Badge variant="destructive">Atrasado ({Math.abs(daysRemaining)}d)</Badge>;
     if (daysRemaining <= 3) return <Badge variant="destructive">Urgente ({daysRemaining}d)</Badge>;
     if (daysRemaining <= 7) return <Badge className="bg-yellow-500 text-white">{daysRemaining}d</Badge>;
@@ -119,13 +120,22 @@ const AvaliacaoEficacia = () => {
                           <Button
                             size="sm"
                             variant={e.status === "Avaliado" ? "ghost" : "default"}
+                            disabled={e.status === "Aguardando"}
+                            title={e.status === "Aguardando" && e.end_date
+                              ? `Liberada após o término em ${formatDateDisplay(e.end_date)}`
+                              : undefined}
                             onClick={() => {
+                              if (e.status === "Aguardando") return;
                               const target = { id: e.training_program_id, name: e.training_name };
                               if (e.status === "Avaliado") setViewingProgram(target);
                               else setEvaluatingProgram(target);
                             }}
                           >
-                            {e.status === "Avaliado" ? <><Eye className="h-4 w-4 mr-1" />Ver</> : <><ClipboardCheck className="h-4 w-4 mr-1" />Avaliar</>}
+                            {e.status === "Avaliado"
+                              ? <><Eye className="h-4 w-4 mr-1" />Ver</>
+                              : e.status === "Aguardando"
+                                ? <><Clock className="h-4 w-4 mr-1" />Aguardando</>
+                                : <><ClipboardCheck className="h-4 w-4 mr-1" />Avaliar</>}
                           </Button>
                         </TableCell>
                       </TableRow>
