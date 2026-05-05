@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDateDisplay } from "@/utils/dateUtils";
 import { 
   ClipboardCheck, Clock, CheckCircle2, AlertTriangle, Eye, 
   GraduationCap, Calendar, Users, Building2
@@ -114,7 +113,7 @@ const AvaliacaoEficacia = () => {
                             <span className={isComplete ? "text-green-600 font-medium" : ""}>{evaluated} / {total}</span>
                           </div>
                         </TableCell>
-                        <TableCell><div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(new Date(e.deadline), "dd/MM/yyyy", { locale: ptBR })}</div></TableCell>
+                        <TableCell><div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDateDisplay(e.deadline)}</div></TableCell>
                         <TableCell>{getStatusBadge(e.status, e.days_remaining)}</TableCell>
                         <TableCell className="text-right">
                           <Button
