@@ -7,7 +7,7 @@ export interface EfficacyEvaluationItem {
   training_name: string;
   category: string | null;
   deadline: string;
-  status: 'Pendente' | 'Avaliado' | 'Atrasado';
+  status: 'Pendente' | 'Avaliado' | 'Atrasado' | 'Aguardando';
   days_remaining: number;
   evaluation_id?: string;
   branch_name?: string;
@@ -15,6 +15,10 @@ export interface EfficacyEvaluationItem {
   // Quantos participantes do programa já têm evaluation com status='Concluída'.
   // Programa só vira 'Avaliado' quando evaluated_count == participants_count.
   evaluated_count?: number;
+  // Data de término do treinamento. Avaliação de eficácia só pode ser realizada
+  // após esta data — antes disso o item entra como 'Aguardando'.
+  end_date?: string | null;
+  days_until_start?: number;
 }
 
 export interface EfficacyDashboardMetrics {
@@ -69,7 +73,7 @@ export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[
   // Buscar APENAS treinamentos onde o usuário é o responsável pela avaliação de eficácia
   const { data: trainings, error: trainingsError } = await supabase
     .from('training_programs')
-    .select('id, name, category, efficacy_evaluation_deadline, branch_id, efficacy_evaluator_employee_id')
+    .select('id, name, category, efficacy_evaluation_deadline, end_date, branch_id, efficacy_evaluator_employee_id')
     .eq('company_id', profile.company_id)
     .eq('efficacy_evaluator_employee_id', linkedEmployee.id) // ← Filtrar pelo responsável
     .not('efficacy_evaluation_deadline', 'is', null)
@@ -121,12 +125,21 @@ export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[
     const evaluatedCount = evaluated?.size ?? 0;
     const deadline = new Date(training.efficacy_evaluation_deadline!);
     const daysRemaining = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    // Janela de avaliação: só libera APÓS a data de término do treinamento.
+    // Sem end_date assumimos liberada (compat. legacy).
+    const endDate = training.end_date ? new Date(`${training.end_date}T12:00:00`) : null;
+    const daysUntilStart = endDate
+      ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+    const evaluationWindowOpen = !endDate || now >= endDate;
+
     // Programa só sai de 'Pendente' quando TODOS os participantes têm evaluation
     // concluída (granularidade por colaborador). Edge case: programa sem
     // participantes nunca vira 'Avaliado' — mantém 'Pendente' (ou 'Atrasado').
     const allEvaluated = participantsCount > 0 && evaluatedCount >= participantsCount;
-    let status: 'Pendente' | 'Avaliado' | 'Atrasado' = 'Pendente';
+    let status: 'Pendente' | 'Avaliado' | 'Atrasado' | 'Aguardando' = 'Pendente';
     if (allEvaluated) status = 'Avaliado';
+    else if (!evaluationWindowOpen) status = 'Aguardando';
     else if (daysRemaining < 0) status = 'Atrasado';
     return {
       training_program_id: training.id,
@@ -137,6 +150,8 @@ export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[
       days_remaining: daysRemaining,
       participants_count: participantsCount,
       evaluated_count: evaluatedCount,
+      end_date: training.end_date,
+      days_until_start: daysUntilStart,
     };
   });
 };
