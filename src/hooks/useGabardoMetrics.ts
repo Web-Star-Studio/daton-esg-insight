@@ -37,6 +37,12 @@ export type GabardoUserRow = {
   pageviews: number;
   active_days: number;
   last_seen: string | null;
+  /**
+   * Tempo ativo REAL (segundos) vindo de `user_activity_sessions`.
+   * Pré-deploy do useSessionTracking este número fica em 0 — o drilldown
+   * por usuário (UserActivityDrawer) deixa explícito o que é real vs
+   * estimado.
+   */
   total_active_seconds: number | null;
 };
 
@@ -44,6 +50,7 @@ export type GabardoRouteRow = {
   route_pattern: string;
   pageviews: number;
   unique_users: number;
+  /** Tempo médio em ms vindo de `time_on_page_ms` real. Null se não medido. */
   avg_time_on_page_ms: number | null;
 };
 

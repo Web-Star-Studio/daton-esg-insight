@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GabardoChartsRow } from "@/components/platform/GabardoChartsRow";
+import { UserActivityDrawer } from "@/components/platform/UserActivityDrawer";
 
 /**
  * Aba dedicada à Gabardo no admin — fonte única de evidência pra
@@ -121,10 +122,21 @@ const Kpi = ({
   </Card>
 );
 
-const TopUsersTable = ({ rows }: { rows: GabardoUserRow[] }) => (
+const TopUsersTable = ({
+  rows,
+  onSelectUser,
+}: {
+  rows: GabardoUserRow[];
+  onSelectUser: (userId: string) => void;
+}) => (
   <Card>
     <CardHeader>
-      <CardTitle className="text-base">Top usuários por engajamento</CardTitle>
+      <CardTitle className="text-base">
+        Top usuários por engajamento
+      </CardTitle>
+      <p className="text-xs text-muted-foreground mt-1">
+        Clique em qualquer linha pra ver a timeline detalhada do usuário.
+      </p>
     </CardHeader>
     <CardContent>
       <Table>
@@ -139,7 +151,11 @@ const TopUsersTable = ({ rows }: { rows: GabardoUserRow[] }) => (
         </TableHeader>
         <TableBody>
           {rows.map((u) => (
-            <TableRow key={u.user_id}>
+            <TableRow
+              key={u.user_id}
+              className="cursor-pointer hover:bg-muted/50"
+              onClick={() => onSelectUser(u.user_id)}
+            >
               <TableCell className="font-medium">
                 {u.full_name ?? u.user_id.slice(0, 8)}
               </TableCell>
@@ -297,7 +313,14 @@ const AiCostTable = ({ rows }: { rows: GabardoAiCostRow[] }) => (
 
 export const GabardoViewTab = () => {
   const [period, setPeriod] = useState<Period>("30d");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { data, isLoading } = useGabardoMetrics(period);
+
+  const handleSelectUser = (userId: string) => {
+    setSelectedUserId(userId);
+    setDrawerOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -365,10 +388,19 @@ export const GabardoViewTab = () => {
 
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              <TopUsersTable rows={data.top_users} />
+              <TopUsersTable
+                rows={data.top_users}
+                onSelectUser={handleSelectUser}
+              />
             </div>
             <GhostUsersCard rows={data.ghost_users} />
           </div>
+
+          <UserActivityDrawer
+            userId={selectedUserId}
+            open={drawerOpen}
+            onOpenChange={setDrawerOpen}
+          />
 
           <div className="grid gap-4 lg:grid-cols-2">
             <TopRoutesTable rows={data.top_routes} />
