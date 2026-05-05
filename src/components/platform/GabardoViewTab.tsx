@@ -28,6 +28,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GabardoChartsRow } from "@/components/platform/GabardoChartsRow";
 import { UserActivityDrawer } from "@/components/platform/UserActivityDrawer";
+import { RouteActivityDrawer } from "@/components/platform/RouteActivityDrawer";
 
 /**
  * Aba dedicada à Gabardo no admin — fonte única de evidência pra
@@ -220,10 +221,19 @@ const GhostUsersCard = ({
   </Card>
 );
 
-const TopRoutesTable = ({ rows }: { rows: GabardoRouteRow[] }) => (
+const TopRoutesTable = ({
+  rows,
+  onSelectRoute,
+}: {
+  rows: GabardoRouteRow[];
+  onSelectRoute: (route: string) => void;
+}) => (
   <Card>
     <CardHeader>
       <CardTitle className="text-base">Páginas mais usadas</CardTitle>
+      <p className="text-xs text-muted-foreground mt-1">
+        Clique numa rota pra ver quem acessou e quando.
+      </p>
     </CardHeader>
     <CardContent>
       <Table>
@@ -237,7 +247,11 @@ const TopRoutesTable = ({ rows }: { rows: GabardoRouteRow[] }) => (
         </TableHeader>
         <TableBody>
           {rows.map((r) => (
-            <TableRow key={r.route_pattern}>
+            <TableRow
+              key={r.route_pattern}
+              className="cursor-pointer hover:bg-muted/50"
+              onClick={() => onSelectRoute(r.route_pattern)}
+            >
               <TableCell className="font-mono text-xs">
                 {r.route_pattern}
               </TableCell>
@@ -315,11 +329,18 @@ export const GabardoViewTab = () => {
   const [period, setPeriod] = useState<Period>("30d");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
+  const [routeDrawerOpen, setRouteDrawerOpen] = useState(false);
   const { data, isLoading } = useGabardoMetrics(period);
 
   const handleSelectUser = (userId: string) => {
     setSelectedUserId(userId);
     setDrawerOpen(true);
+  };
+
+  const handleSelectRoute = (route: string) => {
+    setSelectedRoute(route);
+    setRouteDrawerOpen(true);
   };
 
   return (
@@ -401,9 +422,17 @@ export const GabardoViewTab = () => {
             open={drawerOpen}
             onOpenChange={setDrawerOpen}
           />
+          <RouteActivityDrawer
+            routePattern={selectedRoute}
+            open={routeDrawerOpen}
+            onOpenChange={setRouteDrawerOpen}
+          />
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <TopRoutesTable rows={data.top_routes} />
+            <TopRoutesTable
+              rows={data.top_routes}
+              onSelectRoute={handleSelectRoute}
+            />
             <AiCostTable rows={data.ai_cost_breakdown} />
           </div>
 

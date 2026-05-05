@@ -681,6 +681,60 @@ export type Database = {
           },
         ]
       }
+      admin_audit_logs: {
+        Row: {
+          action_type: string
+          actor_email: string | null
+          actor_role: string | null
+          actor_user_id: string | null
+          after_value: Json | null
+          before_value: Json | null
+          id: string
+          ip_address: string | null
+          occurred_at: string
+          reason: string | null
+          request_id: string | null
+          target_id: string | null
+          target_label: string | null
+          target_type: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action_type: string
+          actor_email?: string | null
+          actor_role?: string | null
+          actor_user_id?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
+          id?: string
+          ip_address?: string | null
+          occurred_at?: string
+          reason?: string | null
+          request_id?: string | null
+          target_id?: string | null
+          target_label?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action_type?: string
+          actor_email?: string | null
+          actor_role?: string | null
+          actor_user_id?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
+          id?: string
+          ip_address?: string | null
+          occurred_at?: string
+          reason?: string | null
+          request_id?: string | null
+          target_id?: string | null
+          target_label?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       ai_chat_conversations: {
         Row: {
           company_id: string
