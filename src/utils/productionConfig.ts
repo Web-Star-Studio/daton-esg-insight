@@ -17,6 +17,7 @@ export const PRODUCTION_CONFIG = {
     BENCHMARK_COMPARISON_ENABLED: false, // Enable when external APIs are configured
     KNOWLEDGE_BASE_ENABLED: false, // Enable when knowledge base is implemented
     MOCK_DATA_DISABLED: true, // All mock data is disabled in production
+    CLARITY_ANALYTICS_ENABLED: true, // Microsoft Clarity heatmaps & session recordings
   },
   
   // Database Configuration
