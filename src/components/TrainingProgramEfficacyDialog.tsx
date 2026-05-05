@@ -468,5 +468,3 @@ function EditEvaluationDialog({
     </Dialog>
   );
 }
-  );
-}
