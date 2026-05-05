@@ -46,9 +46,12 @@ const EFFECTIVENESS_OPTIONS = [
   {
     value: "effective",
     label: "Eficaz",
+    shortLabel: "Eficaz",
     description: "Treinamento atingiu os objetivos esperados.",
     icon: CheckCircle2,
     color: "text-green-600",
+    activeClasses:
+      "border-green-500 bg-green-50 text-green-700 dark:bg-green-950/40",
     score: 10,
     is_effective: true,
     defaultComment:
@@ -57,9 +60,12 @@ const EFFECTIVENESS_OPTIONS = [
   {
     value: "partial",
     label: "Parcialmente Eficaz",
+    shortLabel: "Parcial",
     description: "Atingiu parte dos objetivos; há pontos de melhoria.",
     icon: AlertTriangle,
     color: "text-yellow-600",
+    activeClasses:
+      "border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40",
     score: 6,
     is_effective: true,
     defaultComment:
@@ -68,9 +74,12 @@ const EFFECTIVENESS_OPTIONS = [
   {
     value: "not_effective",
     label: "Não Eficaz",
+    shortLabel: "Não Eficaz",
     description: "Não atingiu os objetivos esperados.",
     icon: XCircle,
     color: "text-red-600",
+    activeClasses:
+      "border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40",
     score: 3,
     is_effective: false,
     defaultComment:
@@ -80,6 +89,12 @@ const EFFECTIVENESS_OPTIONS = [
 
 type EffectivenessValue = (typeof EFFECTIVENESS_OPTIONS)[number]["value"];
 
+interface RowState {
+  effectiveness: EffectivenessValue | null;
+  comments: string;
+  commentsTouched: boolean;
+}
+
 interface TrainingProgramEvaluationFlowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -87,10 +102,9 @@ interface TrainingProgramEvaluationFlowProps {
   trainingProgramName: string;
 }
 
-// Wizard de avaliação contínua: ao abrir, fixa um snapshot dos participantes
-// PENDENTES e o avaliador caminha um a um (Salvar e Próximo / Pular). Não
-// re-computa a fila com base em invalidações de cache pra não pular nem
-// repetir colaboradores no meio do fluxo.
+// Tela em massa: lista todos os colaboradores pendentes em uma única view com
+// os botões de avaliação (Eficaz / Parcial / Não Eficaz) ao lado de cada nome,
+// permitindo registrar tudo de uma vez sem navegar individualmente.
 export function TrainingProgramEvaluationFlow({
   open,
   onOpenChange,
@@ -100,13 +114,9 @@ export function TrainingProgramEvaluationFlow({
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [queue, setQueue] = useState<TrainingParticipant[]>([]);
-  const [savedCount, setSavedCount] = useState(0);
-  const [skippedCount, setSkippedCount] = useState(0);
-  const [alreadyEvaluated, setAlreadyEvaluated] = useState(0);
+  const [evaluationDate, setEvaluationDate] = useState<Date>(new Date());
+  const [rows, setRows] = useState<Record<string, RowState>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [queueReady, setQueueReady] = useState(false);
 
   const { data: participants = [], isLoading: loadingParticipants } = useQuery({
     queryKey: ["program-efficacy-participants", trainingProgramId],
@@ -120,95 +130,62 @@ export function TrainingProgramEvaluationFlow({
     enabled: !!trainingProgramId && open,
   });
 
-  // Snapshot inicial: monta a queue uma única vez quando os dados chegam.
-  useEffect(() => {
-    if (
-      open &&
-      !loadingParticipants &&
-      !loadingEvaluations &&
-      !queueReady &&
-      trainingProgramId
-    ) {
-      const evaluatedSet = new Set<string>();
-      for (const ev of evaluations) {
-        if (ev.employee_training_id && ev.status === "Concluída") {
-          evaluatedSet.add(ev.employee_training_id);
-        }
+  const evaluatedSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const ev of evaluations) {
+      if (ev.employee_training_id && ev.status === "Concluída") {
+        s.add(ev.employee_training_id);
       }
-      const pending = participants.filter((p) => !evaluatedSet.has(p.id));
-      setQueue(pending);
-      setAlreadyEvaluated(participants.length - pending.length);
-      setCurrentIndex(0);
-      setSavedCount(0);
-      setSkippedCount(0);
-      setQueueReady(true);
     }
-  }, [
-    open,
-    loadingParticipants,
-    loadingEvaluations,
-    queueReady,
-    participants,
-    evaluations,
-    trainingProgramId,
-  ]);
+    return s;
+  }, [evaluations]);
 
-  // Reset ao fechar.
+  const pending: TrainingParticipant[] = useMemo(
+    () => participants.filter((p) => !evaluatedSet.has(p.id)),
+    [participants, evaluatedSet],
+  );
+
+  // Resetar estado ao abrir/fechar.
   useEffect(() => {
     if (!open) {
-      setQueue([]);
-      setCurrentIndex(0);
-      setSavedCount(0);
-      setSkippedCount(0);
-      setAlreadyEvaluated(0);
-      setQueueReady(false);
+      setRows({});
+      setEvaluationDate(new Date());
     }
   }, [open]);
 
-  const form = useForm<EvaluationFormValues>({
-    resolver: zodResolver(evaluationSchema),
-    defaultValues: {
-      evaluation_date: new Date(),
-      effectiveness: "effective",
-      comments: EFFECTIVENESS_OPTIONS[0].defaultComment,
-    },
-  });
+  const setRow = (id: string, patch: Partial<RowState>) => {
+    setRows((prev) => {
+      const current: RowState =
+        prev[id] || { effectiveness: null, comments: "", commentsTouched: false };
+      return { ...prev, [id]: { ...current, ...patch } };
+    });
+  };
 
-  const effectiveness = form.watch("effectiveness") as EffectivenessValue;
-  const currentParticipant = queue[currentIndex];
+  const handleSelect = (id: string, value: EffectivenessValue) => {
+    setRows((prev) => {
+      const current: RowState =
+        prev[id] || { effectiveness: null, comments: "", commentsTouched: false };
+      const opt = EFFECTIVENESS_OPTIONS.find((o) => o.value === value)!;
+      // Se o usuário não editou manualmente, preenche o comentário padrão.
+      const comments = current.commentsTouched
+        ? current.comments
+        : opt.defaultComment;
+      return {
+        ...prev,
+        [id]: { ...current, effectiveness: value, comments },
+      };
+    });
+  };
 
-  // Reset form sempre que muda de participante.
-  useEffect(() => {
-    if (currentParticipant) {
-      form.reset({
-        evaluation_date: new Date(),
-        effectiveness: "effective",
-        comments: EFFECTIVENESS_OPTIONS[0].defaultComment,
-      });
-    }
-  }, [currentParticipant?.id, form]);
-
-  // Auto-fill do comments quando troca de categoria, preservando edição manual.
-  useEffect(() => {
-    if (!open || !currentParticipant) return;
-    const current = form.getValues("comments") || "";
-    const isUntouched =
-      EFFECTIVENESS_OPTIONS.some((o) => o.defaultComment === current) || current === "";
-    if (isUntouched) {
-      const opt = EFFECTIVENESS_OPTIONS.find((o) => o.value === effectiveness);
-      if (opt) form.setValue("comments", opt.defaultComment);
-    }
-  }, [effectiveness, open, form, currentParticipant?.id]);
-
-  const isLoading = loadingParticipants || loadingEvaluations || !queueReady;
   const totalParticipants = participants.length;
-  const isLast = currentIndex >= queue.length - 1;
-  const isDone = queueReady && queue.length > 0 && currentIndex >= queue.length;
-  const noPending = queueReady && queue.length === 0;
-
-  const completedSoFar = alreadyEvaluated + savedCount;
+  const alreadyEvaluated = totalParticipants - pending.length;
+  const selectedCount = Object.values(rows).filter((r) => r.effectiveness).length;
+  const completedAfterSave = alreadyEvaluated + selectedCount;
   const progressPct =
-    totalParticipants > 0 ? (completedSoFar / totalParticipants) * 100 : 0;
+    totalParticipants > 0 ? (completedAfterSave / totalParticipants) * 100 : 0;
+
+  const isLoading = loadingParticipants || loadingEvaluations;
+  const noPending = !isLoading && pending.length === 0;
 
   const finishFlow = () => {
     queryClient.invalidateQueries({ queryKey: ["my-efficacy-evaluations"] });
@@ -220,79 +197,93 @@ export function TrainingProgramEvaluationFlow({
     onOpenChange(false);
   };
 
-  const handleSkip = () => {
-    if (!currentParticipant) return;
-    setSkippedCount((s) => s + 1);
-    setCurrentIndex((i) => i + 1);
-  };
-
-  const onSubmit = async (values: EvaluationFormValues) => {
-    if (!currentParticipant || !trainingProgramId) return;
-    setIsSubmitting(true);
-    try {
-      const opt = EFFECTIVENESS_OPTIONS.find(
-        (o) => o.value === values.effectiveness,
-      )!;
-      await createEfficacyEvaluation({
-        company_id: "",
-        employee_training_id: currentParticipant.id,
-        training_program_id: trainingProgramId,
-        evaluation_date: format(values.evaluation_date, "yyyy-MM-dd"),
-        score: opt.score,
-        is_effective: opt.is_effective,
-        evaluator_name: user?.full_name || undefined,
-        comments: values.comments?.trim() || undefined,
-        status: "Concluída",
-      });
-
-      setSavedCount((c) => c + 1);
-      const willBeLast = currentIndex >= queue.length - 1;
-      if (willBeLast) {
-        toast({
-          title: "Avaliações concluídas",
-          description: `${savedCount + 1} colaborador(es) avaliado(s) com sucesso.`,
-        });
-        finishFlow();
-      } else {
-        setCurrentIndex((i) => i + 1);
-      }
-    } catch (error: any) {
-      console.error("Error creating evaluation:", error);
+  const handleSaveAll = async () => {
+    if (!trainingProgramId) return;
+    const toSave = pending.filter((p) => rows[p.id]?.effectiveness);
+    if (toSave.length === 0) {
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao registrar avaliação",
+        title: "Nenhuma avaliação selecionada",
+        description: "Selecione o resultado para pelo menos um colaborador.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    setIsSubmitting(true);
+    let savedCount = 0;
+    const failures: string[] = [];
+
+    for (const p of toSave) {
+      const row = rows[p.id];
+      const opt = EFFECTIVENESS_OPTIONS.find(
+        (o) => o.value === row.effectiveness,
+      );
+      if (!opt) continue;
+      try {
+        await createEfficacyEvaluation({
+          company_id: "",
+          employee_training_id: p.id,
+          training_program_id: trainingProgramId,
+          evaluation_date: format(evaluationDate, "yyyy-MM-dd"),
+          score: opt.score,
+          is_effective: opt.is_effective,
+          evaluator_name: user?.full_name || undefined,
+          comments: row.comments?.trim() || undefined,
+          status: "Concluída",
+        });
+        savedCount++;
+      } catch (error: unknown) {
+        const msg = (error as Error)?.message || "Erro desconhecido";
+        failures.push(`${p.employee_name}: ${msg}`);
+      }
+    }
+
+    setIsSubmitting(false);
+
+    if (savedCount > 0) {
+      toast({
+        title: "Avaliações registradas",
+        description: `${savedCount} colaborador(es) avaliado(s) com sucesso.${
+          failures.length ? ` ${failures.length} falha(s).` : ""
+        }`,
+      });
+    }
+    if (failures.length > 0 && savedCount === 0) {
+      toast({
+        title: "Erro ao salvar",
+        description: failures[0],
+        variant: "destructive",
+      });
+      return;
+    }
+    finishFlow();
   };
 
   return (
     <Dialog
       open={open}
       onOpenChange={(o) => {
-        if (!o) {
-          // Se já salvou alguma, invalidar antes de fechar pra refletir.
-          if (savedCount > 0) finishFlow();
-          else onOpenChange(false);
-        }
+        if (!o) onOpenChange(false);
       }}
     >
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ClipboardCheck className="h-5 w-5" />
             Avaliação de Eficácia
           </DialogTitle>
           <DialogDescription>
-            <span className="font-medium text-foreground">{trainingProgramName}</span>
+            <span className="font-medium text-foreground">
+              {trainingProgramName}
+            </span>
             {user?.full_name && (
               <>
                 <br />
                 <span className="text-xs">
                   Avaliador:{" "}
-                  <span className="font-medium text-foreground">{user.full_name}</span>
+                  <span className="font-medium text-foreground">
+                    {user.full_name}
+                  </span>
                 </span>
               </>
             )}
@@ -308,199 +299,160 @@ export function TrainingProgramEvaluationFlow({
             <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
             <p className="font-medium text-foreground">Tudo avaliado!</p>
             <p className="text-sm">
-              Todos os {totalParticipants} colaborador(es) deste treinamento já foram
-              avaliados.
+              Todos os {totalParticipants} colaborador(es) deste treinamento já
+              foram avaliados.
             </p>
             <Button onClick={() => onOpenChange(false)} className="mt-2">
               Fechar
             </Button>
           </div>
-        ) : !currentParticipant ? null : (
+        ) : (
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">
-                  Avaliando {currentIndex + 1} de {queue.length} pendente
-                  {queue.length > 1 ? "s" : ""}
+                  {pending.length} pendente{pending.length > 1 ? "s" : ""} ·{" "}
+                  {selectedCount} selecionado{selectedCount === 1 ? "" : "s"}
                 </span>
                 <span className="text-muted-foreground text-xs flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  {completedSoFar} de {totalParticipants} concluído
-                  {totalParticipants > 1 ? "s" : ""}
+                  {completedAfterSave} de {totalParticipants}
                 </span>
               </div>
               <Progress value={progressPct} />
             </div>
 
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                Colaborador
-              </div>
-              <div className="font-medium">{currentParticipant.employee_name}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {currentParticipant.department || "—"}
-                {currentParticipant.completion_date && (
-                  <>
-                    {" · Concluiu em "}
-                    {format(new Date(currentParticipant.completion_date), "dd/MM/yyyy")}
-                  </>
-                )}
+            <div className="rounded-lg border p-3 bg-muted/20">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Data da Avaliação (aplicada a todos)
+              </Label>
+              <div className="mt-1 max-w-xs">
+                <DateInputWithCalendarForm
+                  value={evaluationDate}
+                  onChange={(d) => setEvaluationDate(d || new Date())}
+                  placeholder="DD/MM/AAAA"
+                />
               </div>
             </div>
 
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-5"
-                key={currentParticipant.id}
-              >
-                <FormField
-                  control={form.control}
-                  name="evaluation_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Data da Avaliação</FormLabel>
-                      <FormControl>
-                        <DateInputWithCalendarForm
-                          value={field.value || null}
-                          onChange={(d) => field.onChange(d || new Date())}
-                          placeholder="DD/MM/AAAA"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="effectiveness"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Resultado da Avaliação</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          className="gap-2"
-                        >
-                          {EFFECTIVENESS_OPTIONS.map((opt) => {
-                            const Icon = opt.icon;
-                            return (
-                              <Label
-                                key={opt.value}
-                                htmlFor={`flow-eff-${opt.value}`}
-                                className={cn(
-                                  "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
-                                  field.value === opt.value
-                                    ? "border-primary bg-primary/5"
-                                    : "hover:bg-muted/40",
-                                )}
-                              >
-                                <RadioGroupItem
-                                  id={`flow-eff-${opt.value}`}
-                                  value={opt.value}
-                                  className="mt-1"
-                                />
-                                <div className="flex-1">
-                                  <div
-                                    className={cn(
-                                      "flex items-center gap-2 font-medium",
-                                      opt.color,
-                                    )}
-                                  >
-                                    <Icon className="h-4 w-4" />
-                                    {opt.label}
-                                  </div>
-                                  <p className="text-sm text-muted-foreground">
-                                    {opt.description}
-                                  </p>
-                                </div>
-                              </Label>
-                            );
-                          })}
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="comments"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Observações</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Observações sobre a avaliação..."
-                          className="resize-none"
-                          rows={3}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        A mensagem padrão é preenchida automaticamente. Você pode editá-la
-                        ou mantê-la como está.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={handleSkip}
-                    disabled={isSubmitting}
-                    className="sm:mr-auto"
+            <div className="rounded-lg border divide-y">
+              {pending.map((p) => {
+                const row = rows[p.id];
+                const selected = row?.effectiveness ?? null;
+                return (
+                  <div
+                    key={p.id}
+                    className="p-3 flex flex-col md:flex-row md:items-center gap-3"
                   >
-                    <SkipForward className="h-4 w-4 mr-1" />
-                    Pular
-                  </Button>
-                  <div className="flex flex-col-reverse sm:flex-row gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        if (savedCount > 0) finishFlow();
-                        else onOpenChange(false);
-                      }}
-                      disabled={isSubmitting}
-                    >
-                      Fechar
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          Salvando...
-                        </>
-                      ) : isLast ? (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Salvar e Concluir
-                        </>
-                      ) : (
-                        <>
-                          Salvar e Próximo
-                          <ArrowRight className="h-4 w-4 ml-1" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </DialogFooter>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">
+                        {p.employee_name}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {p.department || "—"}
+                        {p.completion_date && (
+                          <>
+                            {" · Concluiu em "}
+                            {format(new Date(p.completion_date), "dd/MM/yyyy")}
+                          </>
+                        )}
+                      </div>
+                    </div>
 
-                {skippedCount > 0 && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    {skippedCount} colaborador(es) pulado(s) — você pode voltar e avaliar
-                    depois.
-                  </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {EFFECTIVENESS_OPTIONS.map((opt) => {
+                        const Icon = opt.icon;
+                        const isActive = selected === opt.value;
+                        return (
+                          <Button
+                            key={opt.value}
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSelect(p.id, opt.value)}
+                            className={cn(
+                              "gap-1.5",
+                              isActive && opt.activeClasses,
+                            )}
+                          >
+                            <Icon className="h-3.5 w-3.5" />
+                            {opt.shortLabel}
+                          </Button>
+                        );
+                      })}
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            disabled={!selected}
+                            title="Editar observações"
+                          >
+                            <MessageSquare
+                              className={cn(
+                                "h-4 w-4",
+                                row?.commentsTouched && "text-primary",
+                              )}
+                            />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80" align="end">
+                          <div className="space-y-2">
+                            <Label className="text-xs">Observações</Label>
+                            <Textarea
+                              rows={4}
+                              value={row?.comments || ""}
+                              onChange={(e) =>
+                                setRow(p.id, {
+                                  comments: e.target.value,
+                                  commentsTouched: true,
+                                })
+                              }
+                              placeholder="Observações sobre a avaliação..."
+                              className="resize-none"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              A mensagem padrão é preenchida automaticamente ao
+                              selecionar o resultado.
+                            </p>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSaveAll}
+                disabled={isSubmitting || selectedCount === 0}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    Salvar {selectedCount > 0 ? `(${selectedCount})` : ""}
+                  </>
                 )}
-              </form>
-            </Form>
+              </Button>
+            </DialogFooter>
           </div>
         )}
       </DialogContent>
