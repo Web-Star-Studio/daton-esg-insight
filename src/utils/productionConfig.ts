@@ -54,6 +54,11 @@ export const PRODUCTION_CONFIG = {
     TIMEOUT: 30000, // 30 seconds
     RETRY_ATTEMPTS: 3,
     ENABLE_AUTHENTICATION: true,
+  },
+
+  // Analytics Configuration
+  ANALYTICS: {
+    CLARITY_PROJECT_ID: 'wmbzduoxvg', // Microsoft Clarity heatmaps & recordings
   }
 } as const
 
