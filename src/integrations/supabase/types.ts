@@ -19623,6 +19623,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_approved: boolean
+          is_internal_tester: boolean
           job_title: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role_type"]
@@ -19642,6 +19643,7 @@ export type Database = {
           id: string
           is_active?: boolean | null
           is_approved?: boolean
+          is_internal_tester?: boolean
           job_title?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role_type"]
@@ -19661,6 +19663,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_approved?: boolean
+          is_internal_tester?: boolean
           job_title?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role_type"]
@@ -26487,6 +26490,7 @@ export type Database = {
       cleanup_old_activity_logs: { Args: never; Returns: undefined }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_tracking_logs: { Args: never; Returns: undefined }
+      compute_route_pattern: { Args: { pathname: string }; Returns: string }
       debug_auth_status: { Args: never; Returns: Json }
       exec_sql: { Args: { query: string }; Returns: Json }
       finalize_audit_planning: { Args: { p_audit_id: string }; Returns: Json }
