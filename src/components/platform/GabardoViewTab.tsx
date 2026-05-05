@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GabardoChartsRow } from "@/components/platform/GabardoChartsRow";
 
 /**
  * Aba dedicada à Gabardo no admin — fonte única de evidência pra
@@ -359,6 +360,8 @@ export const GabardoViewTab = () => {
               icon={DollarSign}
             />
           </div>
+
+          <GabardoChartsRow period={period} />
 
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">

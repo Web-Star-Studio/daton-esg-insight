@@ -4,6 +4,7 @@ import { CompanyTable } from "@/components/platform/CompanyTable";
 import { PlatformUsersTable } from "@/components/platform/PlatformUsersTable";
 import { UsageAnalyticsTab } from "@/components/platform/UsageAnalyticsTab";
 import { GabardoViewTab } from "@/components/platform/GabardoViewTab";
+import { ErrorsPerfTab } from "@/components/platform/ErrorsPerfTab";
 import { usePlatformAnalytics } from "@/hooks/usePlatformAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,16 +83,20 @@ export default function PlatformAdminDashboard() {
         </Card>
       )}
 
-      {/* Tabs: Gabardo View (foco), Empresas, Usuários, Uso & Custos */}
+      {/* Tabs: Gabardo View (foco), Erros & Perf, Empresas, Usuários, Uso & Custos */}
       <Tabs defaultValue="gabardo">
         <TabsList>
           <TabsTrigger value="gabardo">Gabardo View</TabsTrigger>
+          <TabsTrigger value="errors-perf">Erros & Performance</TabsTrigger>
           <TabsTrigger value="empresas">Empresas</TabsTrigger>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
           <TabsTrigger value="uso">Uso & Custos</TabsTrigger>
         </TabsList>
         <TabsContent value="gabardo">
           <GabardoViewTab />
+        </TabsContent>
+        <TabsContent value="errors-perf">
+          <ErrorsPerfTab />
         </TabsContent>
         <TabsContent value="empresas">
           <Card>
