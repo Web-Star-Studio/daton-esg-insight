@@ -41,15 +41,20 @@ import {
 interface EmployeeTrainingsTabProps {
   employeeId: string;
   employeeName: string;
+  onChildModalChange?: (open: boolean) => void;
 }
 
-export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrainingsTabProps) {
+export function EmployeeTrainingsTab({ employeeId, employeeName, onChildModalChange }: EmployeeTrainingsTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTraining, setSelectedTraining] = useState<any>(null);
   const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    onChildModalChange?.(isAddDialogOpen || isEditDialogOpen || isViewDialogOpen);
+  }, [isAddDialogOpen, isEditDialogOpen, isViewDialogOpen, onChildModalChange]);
 
   // Fetch employee trainings with program dates for automatic status calculation
   const { data: trainings = [], isLoading } = useQuery({
