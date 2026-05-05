@@ -26492,6 +26492,25 @@ export type Database = {
       cleanup_tracking_logs: { Args: never; Returns: undefined }
       compute_route_pattern: { Args: { pathname: string }; Returns: string }
       debug_auth_status: { Args: never; Returns: Json }
+      estimate_route_pageview_seconds: {
+        Args: { p_company_id: string; p_since: string }
+        Returns: {
+          estimated_seconds: number
+          pageviews: number
+          route_pattern: string
+          unique_users: number
+        }[]
+      }
+      estimate_user_pageview_seconds: {
+        Args: { p_company_id: string; p_since: string }
+        Returns: {
+          active_days: number
+          estimated_seconds: number
+          full_name: string
+          pageviews: number
+          user_id: string
+        }[]
+      }
       exec_sql: { Args: { query: string }; Returns: Json }
       finalize_audit_planning: { Args: { p_audit_id: string }; Returns: Json }
       get_conversion_factor:
