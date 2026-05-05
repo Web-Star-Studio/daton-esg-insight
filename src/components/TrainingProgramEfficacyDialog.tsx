@@ -98,6 +98,24 @@ const EFFECTIVENESS_OPTIONS = [
 
 type EffectivenessValue = (typeof EFFECTIVENESS_OPTIONS)[number]["value"];
 
+// Textos padrão sugeridos para cada classificação de eficácia. Usados como
+// placeholder e pré-preenchidos no campo de observações ao trocar a opção,
+// desde que o usuário ainda não tenha personalizado o texto.
+const DEFAULT_COMMENTS: Record<EffectivenessValue, string> = {
+  effective:
+    "O colaborador aplicou os conhecimentos adquiridos no treinamento, demonstrando domínio do conteúdo e atingindo os objetivos esperados.",
+  partial:
+    "O colaborador aplicou parcialmente os conhecimentos adquiridos. Foram identificados pontos de melhoria que requerem reforço ou acompanhamento adicional.",
+  not_effective:
+    "O colaborador não demonstrou aplicação efetiva dos conhecimentos adquiridos. Recomenda-se nova capacitação ou ação corretiva.",
+};
+
+const isDefaultComment = (text: string | undefined | null) => {
+  const t = (text || "").trim();
+  if (!t) return true;
+  return Object.values(DEFAULT_COMMENTS).some((d) => d.trim() === t);
+};
+
 function inferEffectiveness(ev: TrainingEfficacyEvaluation): EffectivenessValue {
   if (ev.is_effective === false) return "not_effective";
   if ((ev.score ?? 10) <= 6) return "partial";
@@ -159,7 +177,7 @@ export function TrainingProgramEfficacyDialog({
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open && !editing} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -329,12 +347,13 @@ function EditEvaluationDialog({
 
   useEffect(() => {
     if (evaluation) {
+      const eff = inferEffectiveness(evaluation);
       form.reset({
         evaluation_date: evaluation.evaluation_date
           ? new Date(`${evaluation.evaluation_date}T00:00:00`)
           : new Date(),
-        effectiveness: inferEffectiveness(evaluation),
-        comments: evaluation.comments || "",
+        effectiveness: eff,
+        comments: evaluation.comments?.trim() || DEFAULT_COMMENTS[eff],
       });
     }
   }, [evaluation?.id, form]);
@@ -386,7 +405,17 @@ function EditEvaluationDialog({
                   <FormControl>
                     <RadioGroup
                       value={field.value}
-                      onValueChange={field.onChange}
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        const currentComment = form.getValues("comments");
+                        if (isDefaultComment(currentComment)) {
+                          form.setValue(
+                            "comments",
+                            DEFAULT_COMMENTS[val as EffectivenessValue],
+                            { shouldDirty: true },
+                          );
+                        }
+                      }}
                       className="gap-2"
                     >
                       {EFFECTIVENESS_OPTIONS.map((opt) => {
@@ -439,14 +468,18 @@ function EditEvaluationDialog({
                   <FormLabel>Observações</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Observações sobre a avaliação..."
+                      placeholder={
+                        DEFAULT_COMMENTS[
+                          form.watch("effectiveness") as EffectivenessValue
+                        ] || "Observações sobre a avaliação..."
+                      }
                       className="resize-none"
-                      rows={3}
+                      rows={5}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Edite as observações conforme necessário.
+                    Texto padrão sugerido. Edite conforme necessário para refletir o caso real.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
