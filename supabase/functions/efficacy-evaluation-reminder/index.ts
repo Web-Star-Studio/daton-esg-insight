@@ -26,7 +26,7 @@ const FROM_EMAIL = Deno.env.get("EFFICACY_REMINDER_FROM_EMAIL")
   || "Plataforma Daton <no-reply@daton.com.br>";
 const APP_URL = Deno.env.get("APP_URL") || "https://daton.com.br";
 
-const REMINDER_DAYS = [7, 3, 1] as const;
+const REMINDER_DAYS = [7, 5, 3, 1] as const;
 
 interface PendingEvaluation {
   training_id: string;
@@ -170,7 +170,7 @@ async function processCompany(
   // Trainings com prazo definido + sem evaluation concluída.
   const { data: trainings, error: tErr } = await supabase
     .from("training_programs")
-    .select("id, name, category, efficacy_evaluation_deadline, efficacy_evaluator_employee_id")
+    .select("id, name, category, efficacy_evaluation_deadline, end_date, efficacy_evaluator_employee_id")
     .eq("company_id", companyId)
     .not("efficacy_evaluation_deadline", "is", null)
     .not("efficacy_evaluator_employee_id", "is", null);
@@ -192,10 +192,17 @@ async function processCompany(
   for (const t of trainings) {
     if (concluded.has(t.id)) continue;
     if (!t.efficacy_evaluator_employee_id || !t.efficacy_evaluation_deadline) continue;
+    // Janela de avaliação só abre após o término do treinamento.
+    // Se ainda não chegou o end_date, não envia lembrete.
+    if (t.end_date) {
+      const endDate = new Date(t.end_date);
+      endDate.setHours(0, 0, 0, 0);
+      if (today.getTime() < endDate.getTime()) continue;
+    }
     const deadline = new Date(t.efficacy_evaluation_deadline);
     deadline.setHours(0, 0, 0, 0);
     const days = Math.ceil((deadline.getTime() - today.getTime()) / 86_400_000);
-    // Manda só nos dias-chave (7, 3, 1) ou quando atrasado.
+    // Manda só nos dias-chave (7, 5, 3, 1) ou quando atrasado.
     const shouldRemind = days < 0 || (REMINDER_DAYS as readonly number[]).includes(days);
     if (!shouldRemind) continue;
     const arr = evaluatorBuckets.get(t.efficacy_evaluator_employee_id) || [];
