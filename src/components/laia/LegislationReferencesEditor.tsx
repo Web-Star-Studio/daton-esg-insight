@@ -34,12 +34,17 @@ export function LegislationReferencesEditor({
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
 
-  const isDuplicate = (ref: string) =>
-    value.some((r) => r.reference.trim().toLowerCase() === ref.trim().toLowerCase());
+  const norm = (ref: string) => ref.trim().toLowerCase();
+
+  const isReferenceTaken = (ref: string, excludeIndex?: number) => {
+    const target = norm(ref);
+    if (!target) return false;
+    return value.some((r, i) => i !== excludeIndex && norm(r.reference) === target);
+  };
 
   const addReference = (item: LegislationReference) => {
     const trimmed = item.reference.trim();
-    if (!trimmed || isDuplicate(trimmed)) return;
+    if (!trimmed || isReferenceTaken(trimmed)) return;
     onChange([
       ...value,
       {
@@ -55,8 +60,11 @@ export function LegislationReferencesEditor({
     setNewRef("");
   };
 
-  const handleUpdate = (index: number, next: LegislationReference) => {
-    onChange(value.map((r, i) => (i === index ? next : r)));
+  const handleUpdate = (index: number, next: LegislationReference): boolean => {
+    const trimmed = next.reference.trim();
+    if (!trimmed || isReferenceTaken(trimmed, index)) return false;
+    onChange(value.map((r, i) => (i === index ? { ...next, reference: trimmed } : r)));
+    return true;
   };
 
   const handleRemove = (index: number) => {
@@ -68,10 +76,15 @@ export function LegislationReferencesEditor({
     setSuggestError(null);
     try {
       const result = await onRequestSuggestions();
-      setSuggestions(result);
       if (result.length === 0) {
         setSuggestError("A IA não retornou sugestões para este contexto.");
+        return;
       }
+      setSuggestions((prev) => {
+        const seen = new Set(prev.map((s) => norm(s.reference)));
+        const additions = result.filter((s) => !seen.has(norm(s.reference)));
+        return [...prev, ...additions];
+      });
     } catch (e) {
       setSuggestError(e instanceof Error ? e.message : "Erro ao buscar sugestões");
     } finally {
@@ -81,7 +94,7 @@ export function LegislationReferencesEditor({
 
   const acceptSuggestion = (s: LegislationSuggestion) => {
     addReference({ reference: s.reference, url: s.url });
-    setSuggestions((prev) => prev.filter((x) => x.reference !== s.reference));
+    setSuggestions((prev) => prev.filter((x) => norm(x.reference) !== norm(s.reference)));
   };
 
   return (
@@ -135,8 +148,8 @@ export function LegislationReferencesEditor({
           variant="outline"
           size="icon"
           onClick={handleAddManual}
-          disabled={!newRef.trim() || isDuplicate(newRef)}
-          title={isDuplicate(newRef) ? "Esta referência já foi adicionada" : "Adicionar referência"}
+          disabled={!newRef.trim() || isReferenceTaken(newRef)}
+          title={isReferenceTaken(newRef) ? "Esta referência já foi adicionada" : "Adicionar referência"}
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -167,7 +180,7 @@ export function LegislationReferencesEditor({
           </div>
           <div className="space-y-2">
             {suggestions.map((s, i) => {
-              const already = isDuplicate(s.reference);
+              const already = isReferenceTaken(s.reference);
               return (
                 <button
                   key={`${s.reference}-${i}`}
@@ -203,7 +216,7 @@ export function LegislationReferencesEditor({
 
 interface LegislationChipProps {
   value: LegislationReference;
-  onUpdate: (next: LegislationReference) => void;
+  onUpdate: (next: LegislationReference) => boolean;
   onRemove: () => void;
 }
 
@@ -211,21 +224,27 @@ function LegislationChip({ value, onUpdate, onRemove }: LegislationChipProps) {
   const [open, setOpen] = useState(false);
   const [draftRef, setDraftRef] = useState(value.reference);
   const [draftUrl, setDraftUrl] = useState(value.url ?? "");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setDraftRef(value.reference);
       setDraftUrl(value.url ?? "");
+      setError(null);
     }
   }, [open, value]);
 
   const handleSave = () => {
     const trimmed = draftRef.trim();
     if (!trimmed) return;
-    onUpdate({
+    const accepted = onUpdate({
       reference: trimmed,
       url: draftUrl.trim() ? normalizeLegislationUrl(draftUrl) : null,
     });
+    if (!accepted) {
+      setError("Já existe outra referência com esse nome.");
+      return;
+    }
     setOpen(false);
   };
 
@@ -286,6 +305,9 @@ function LegislationChip({ value, onUpdate, onRemove }: LegislationChipProps) {
               placeholder="https://..."
             />
           </div>
+          {error && (
+            <p className="text-xs text-destructive">{error}</p>
+          )}
           <div className="flex justify-end gap-2 pt-1">
             <Button
               type="button"

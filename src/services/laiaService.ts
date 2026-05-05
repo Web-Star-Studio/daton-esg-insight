@@ -249,6 +249,9 @@ export async function createLAIAAssessment(formData: LAIAAssessmentFormData): Pr
       control_types: formData.control_types,
       existing_controls: formData.existing_controls || null,
       legislation_references: formData.legislation_references ?? [],
+      // Clear deprecated scalar columns so removed chips don't reappear via the read fallback.
+      legislation_reference: null,
+      legislation_reference_url: null,
       has_lifecycle_control: formData.has_lifecycle_control,
       lifecycle_stages: formData.lifecycle_stages,
       output_actions: formData.output_actions || null,
@@ -270,6 +273,13 @@ export async function createLAIAAssessment(formData: LAIAAssessmentFormData): Pr
 
 export async function updateLAIAAssessment(id: string, formData: Partial<LAIAAssessmentFormData>): Promise<LAIAAssessment> {
   const updateData: Record<string, unknown> = { ...formData };
+
+  // When the new array field is being written, drop the deprecated scalars so
+  // they don't repopulate removed chips on the next read.
+  if ('legislation_references' in formData) {
+    updateData.legislation_reference = null;
+    updateData.legislation_reference_url = null;
+  }
 
   // Recalculate scores if relevant fields changed
   if (formData.scope && formData.severity) {

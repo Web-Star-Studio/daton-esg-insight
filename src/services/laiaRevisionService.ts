@@ -74,6 +74,8 @@ export const FIELD_LABELS: Record<string, string> = {
   control_types: "Tipos de Controle",
   existing_controls: "Controles Existentes",
   legislation_references: "Referência Legal",
+  // Kept so historical revision entries (saved before the rename) still resolve to a label.
+  legislation_reference: "Referência Legal",
   has_lifecycle_control: "Controle de Ciclo de Vida",
   lifecycle_stages: "Etapas do Ciclo de Vida",
   output_actions: "Ações de Saída",
