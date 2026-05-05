@@ -8,6 +8,16 @@ import {
 } from "@/types/laia";
 import { createLAIASector } from './laiaService';
 
+// Convert the single legislation_reference text from the spreadsheet into the
+// JSONB array shape. Sentinel values like "Não há" / "N/A" become an empty list.
+function buildLegislationReferences(raw: string | null | undefined) {
+  const text = raw?.trim();
+  if (!text) return [];
+  const sentinel = ['não há', 'nao ha', 'n/a', '-', 'na'];
+  if (sentinel.includes(text.toLowerCase())) return [];
+  return [{ reference: text, url: null }];
+}
+
 // ============ Types ============
 
 export interface ParsedLAIARow {
@@ -675,7 +685,7 @@ export async function importLAIAAssessments(
           significance: row.significance,
           control_types: row.control_types,
           existing_controls: row.existing_controls || null,
-          legislation_reference: row.legislation_reference || null,
+          legislation_references: buildLegislationReferences(row.legislation_reference),
           has_lifecycle_control: row.has_lifecycle_control,
           lifecycle_stages: row.lifecycle_stages,
           output_actions: row.output_actions || null,

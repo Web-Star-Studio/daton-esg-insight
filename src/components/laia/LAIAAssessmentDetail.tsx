@@ -9,13 +9,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { 
-  getCategoryColor, 
+import {
+  getCategoryColor,
   getSignificanceColor,
-  CONTROL_TYPES 
+  CONTROL_TYPES,
+  normalizeLegislationUrl,
 } from "@/types/laia";
-import type { LAIAAssessment } from "@/types/laia";
-import { X, Pencil, FileText, Calendar, User, CheckCircle2, Clock, ExternalLink } from "lucide-react";
+import type { LAIAAssessment, LegislationReference } from "@/types/laia";
+import { Pencil, FileText, Calendar, User, CheckCircle2, Clock, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useApproveLAIAAssessment, useMarkLAIAAssessmentAsPendente } from "@/hooks/useLAIA";
@@ -36,14 +37,24 @@ export function LAIAAssessmentDetail({
   const approveMutation = useApproveLAIAAssessment();
   const markPendenteMutation = useMarkLAIAAssessmentAsPendente();
 
-  const normalizeLegislationUrl = (url: string | null | undefined): string => {
-    if (!url) return "";
-    const trimmed = url.trim();
-    if (!trimmed) return "";
-    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-  };
-
   if (!assessment) return null;
+
+  const legislationReferences: LegislationReference[] = (() => {
+    if (Array.isArray(assessment.legislation_references) && assessment.legislation_references.length > 0) {
+      return assessment.legislation_references;
+    }
+    if (assessment.legislation_reference?.trim()) {
+      return [
+        {
+          reference: assessment.legislation_reference.trim(),
+          url: assessment.legislation_reference_url?.trim()
+            ? normalizeLegislationUrl(assessment.legislation_reference_url)
+            : null,
+        },
+      ];
+    }
+    return [];
+  })();
 
   const getLabel = (value: string, type: string) => {
     const labels: Record<string, Record<string, string>> = {
@@ -273,22 +284,28 @@ export function LAIAAssessmentDetail({
               </div>
             )}
 
-            {assessment.legislation_reference && (
+            {legislationReferences.length > 0 && (
               <div>
                 <div className="text-xs text-muted-foreground">Referência Legal</div>
-                {assessment.legislation_reference_url ? (
-                  <a
-                    href={normalizeLegislationUrl(assessment.legislation_reference_url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-primary hover:underline"
-                  >
-                    {assessment.legislation_reference}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                ) : (
-                  <div>{assessment.legislation_reference}</div>
-                )}
+                <ul className="mt-1 space-y-1">
+                  {legislationReferences.map((ref, idx) => (
+                    <li key={`${ref.reference}-${idx}`}>
+                      {ref.url ? (
+                        <a
+                          href={normalizeLegislationUrl(ref.url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                        >
+                          {ref.reference}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <span>{ref.reference}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

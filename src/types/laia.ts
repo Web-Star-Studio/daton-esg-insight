@@ -47,7 +47,10 @@ export interface LAIAAssessment {
   // Additional Observations
   control_types?: string[] | null;
   existing_controls?: string | null;
+  legislation_references: LegislationReference[];
+  /** @deprecated use legislation_references */
   legislation_reference?: string | null;
+  /** @deprecated use legislation_references */
   legislation_reference_url?: string | null;
   
   // Lifecycle Perspective
@@ -86,8 +89,7 @@ export interface LAIAAssessmentFormData {
   has_strategic_options: boolean;
   control_types: string[];
   existing_controls: string;
-  legislation_reference: string;
-  legislation_reference_url: string;
+  legislation_references: LegislationReference[];
   has_lifecycle_control: boolean;
   lifecycle_stages: string[];
   output_actions: string;
@@ -96,10 +98,23 @@ export interface LAIAAssessmentFormData {
   is_vigente: boolean;
 }
 
+export interface LegislationReference {
+  reference: string;
+  url: string | null;
+}
+
 export interface LegislationSuggestion {
   reference: string;
   url: string | null;
   summary: string;
+}
+
+/** Prepends https:// when missing so URLs from AI/import always render correctly. */
+export function normalizeLegislationUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
 export interface LAIADashboardStats {
