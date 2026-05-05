@@ -103,17 +103,25 @@ type EffectivenessValue = (typeof EFFECTIVENESS_OPTIONS)[number]["value"];
 // desde que o usuário ainda não tenha personalizado o texto.
 const DEFAULT_COMMENTS: Record<EffectivenessValue, string> = {
   effective:
-    "O colaborador aplicou os conhecimentos adquiridos no treinamento, demonstrando domínio do conteúdo e atingindo os objetivos esperados.",
+    "O treinamento atingiu os objetivos esperados. O colaborador demonstrou domínio do conteúdo e aplicação prática nas atividades.",
   partial:
-    "O colaborador aplicou parcialmente os conhecimentos adquiridos. Foram identificados pontos de melhoria que requerem reforço ou acompanhamento adicional.",
+    "O treinamento atingiu parcialmente os objetivos. Há pontos de melhoria identificados que devem ser trabalhados em próximas edições.",
   not_effective:
-    "O colaborador não demonstrou aplicação efetiva dos conhecimentos adquiridos. Recomenda-se nova capacitação ou ação corretiva.",
+    "O treinamento não atingiu os objetivos esperados. Recomenda-se revisão do conteúdo e/ou metodologia antes de nova aplicação.",
 };
+
+// Textos padrão legados (variações com "participantes" no plural usadas em
+// fluxos antigos). Tratamos como "default" para que a troca de classificação
+// substitua automaticamente sem exigir limpeza manual.
+const LEGACY_DEFAULT_COMMENTS: string[] = [
+  "O treinamento atingiu os objetivos esperados. Os participantes demonstraram domínio do conteúdo e aplicação prática nas atividades.",
+];
 
 const isDefaultComment = (text: string | undefined | null) => {
   const t = (text || "").trim();
   if (!t) return true;
-  return Object.values(DEFAULT_COMMENTS).some((d) => d.trim() === t);
+  if (Object.values(DEFAULT_COMMENTS).some((d) => d.trim() === t)) return true;
+  return LEGACY_DEFAULT_COMMENTS.some((d) => d.trim() === t);
 };
 
 function inferEffectiveness(ev: TrainingEfficacyEvaluation): EffectivenessValue {
