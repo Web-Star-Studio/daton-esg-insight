@@ -347,12 +347,13 @@ function EditEvaluationDialog({
 
   useEffect(() => {
     if (evaluation) {
+      const eff = inferEffectiveness(evaluation);
       form.reset({
         evaluation_date: evaluation.evaluation_date
           ? new Date(`${evaluation.evaluation_date}T00:00:00`)
           : new Date(),
-        effectiveness: inferEffectiveness(evaluation),
-        comments: evaluation.comments || "",
+        effectiveness: eff,
+        comments: evaluation.comments?.trim() || DEFAULT_COMMENTS[eff],
       });
     }
   }, [evaluation?.id, form]);
@@ -404,7 +405,17 @@ function EditEvaluationDialog({
                   <FormControl>
                     <RadioGroup
                       value={field.value}
-                      onValueChange={field.onChange}
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        const currentComment = form.getValues("comments");
+                        if (isDefaultComment(currentComment)) {
+                          form.setValue(
+                            "comments",
+                            DEFAULT_COMMENTS[val as EffectivenessValue],
+                            { shouldDirty: true },
+                          );
+                        }
+                      }}
                       className="gap-2"
                     >
                       {EFFECTIVENESS_OPTIONS.map((opt) => {
@@ -457,14 +468,18 @@ function EditEvaluationDialog({
                   <FormLabel>Observações</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Observações sobre a avaliação..."
+                      placeholder={
+                        DEFAULT_COMMENTS[
+                          form.watch("effectiveness") as EffectivenessValue
+                        ] || "Observações sobre a avaliação..."
+                      }
                       className="resize-none"
-                      rows={3}
+                      rows={5}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Edite as observações conforme necessário.
+                    Texto padrão sugerido. Edite conforme necessário para refletir o caso real.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
