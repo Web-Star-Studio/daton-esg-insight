@@ -172,19 +172,37 @@ export const aiCall = async <T = unknown>(
 };
 
 /**
- * Variante streaming. Retorna o `Response` original (pra quem chama fazer
- * o forwarding do SSE) + uma promise que resolve quando o `usage` final
- * for parseado. O caller deve ler o stream com `tee()` ou interceptar e
- * resolver o `usage` chamando `reportStreamUsage()` no fim.
- *
- * Para a primeira onda de refator (PR 2), preferimos manter as edge
- * functions de streaming sem instrumentação e logar só o request inicial
- * (sem tokens). Implementação completa com tee fica para PR seguinte.
+ * Variante streaming sem usage detalhado — registra request e latência
+ * mas não tem tokens (vêm na última linha SSE). Usado em fluxos onde
+ * `stream_options.include_usage` não é viável.
  */
 export const logStreamRequest = async (
   ctx: AiCallContext,
   body: AiCallBody,
   result: { latencyMs: number; success: boolean; errorText?: string },
+) => {
+  await writeLog(ctx, body, result);
+};
+
+/**
+ * Log direto com usage já capturado — para fluxos streaming que
+ * interceptam o SSE e extraem `usage` da chunk final (Lovable AI manda
+ * `usage` quando a request inclui `stream_options: { include_usage: true }`).
+ *
+ * Use em conjunto com tee/intercept do ReadableStream:
+ *   1. Adicionar `stream_options: { include_usage: true }` no body
+ *   2. Capturar a chunk com `parsed.usage` no loop
+ *   3. Chamar `logAiUsage(...)` ao terminar o stream
+ */
+export const logAiUsage = async (
+  ctx: AiCallContext,
+  body: AiCallBody,
+  result: {
+    usage: Usage | null;
+    latencyMs: number;
+    success: boolean;
+    errorText?: string;
+  },
 ) => {
   await writeLog(ctx, body, result);
 };

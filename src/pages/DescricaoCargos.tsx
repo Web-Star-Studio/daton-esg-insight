@@ -156,13 +156,13 @@ export default function DescricaoCargos() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+            <Button data-track="cargos:open-modal:import" variant="outline" onClick={() => setIsImportModalOpen(true)}>
               <Upload className="w-4 h-4 mr-2" />
               Importar
             </Button>
             <Dialog open={isNewPositionModalOpen} onOpenChange={setIsNewPositionModalOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button data-track="cargos:open-modal:create">
                   <Plus className="w-4 h-4 mr-2" />
                   Novo Cargo
                 </Button>
@@ -286,7 +286,7 @@ export default function DescricaoCargos() {
                 <span className="text-sm text-muted-foreground">
                   {filteredPositions.length} resultado(s) encontrado(s)
                 </span>
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <Button data-track="cargos:filter-clear" variant="ghost" size="sm" onClick={clearFilters}>
                   Limpar filtros
                 </Button>
               </div>
@@ -310,7 +310,7 @@ export default function DescricaoCargos() {
                   : 'Comece criando o primeiro cargo'}
               </p>
               {!hasActiveFilters && (
-                <Button className="mt-4" onClick={() => setIsNewPositionModalOpen(true)}>
+                <Button data-track="cargos:open-modal:create-first" className="mt-4" onClick={() => setIsNewPositionModalOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Criar Primeiro Cargo
                 </Button>
@@ -320,8 +320,9 @@ export default function DescricaoCargos() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredPositions.map((position) => (
-              <Card 
-                key={position.id} 
+              <Card
+                key={position.id}
+                data-track="cargos:view-details"
                 className="hover:shadow-md transition-shadow cursor-pointer group"
                 onClick={() => handleViewDetails(position)}
               >

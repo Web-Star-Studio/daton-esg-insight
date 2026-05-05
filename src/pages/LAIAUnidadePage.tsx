@@ -86,7 +86,7 @@ export default function LAIAUnidadePage() {
           <p className="text-muted-foreground mb-4">
             A unidade solicitada não existe ou foi removida.
           </p>
-          <Button onClick={() => navigate("/laia")}>
+          <Button onClick={() => navigate("/laia")} data-track="laia:unidade:back-to-list">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar para seleção de unidades
           </Button>
@@ -111,9 +111,10 @@ export default function LAIAUnidadePage() {
           <div className="space-y-2">
             {/* Breadcrumb */}
             <nav className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Link 
-                to="/laia" 
+              <Link
+                to="/laia"
                 className="hover:text-foreground transition-colors"
+                data-track="laia:unidade:breadcrumb-laia"
               >
                 LAIA
               </Link>
@@ -123,11 +124,12 @@ export default function LAIAUnidadePage() {
             
             {/* Title */}
             <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => navigate("/laia")}
                 className="shrink-0"
+                data-track="laia:unidade:back"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -148,11 +150,11 @@ export default function LAIAUnidadePage() {
 
           {(activeTab === "assessments" || activeTab === "pendentes") && viewMode === "list" && (
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Button variant="outline" onClick={() => setImportOpen(true)} data-track="laia:unidade:open-modal:import-excel">
                 <Upload className="mr-2 h-4 w-4" />
                 Importar Excel
               </Button>
-              <Button onClick={() => setViewMode("create")}>
+              <Button onClick={() => setViewMode("create")} data-track="laia:unidade:create-assessment">
                 <Plus className="mr-2 h-4 w-4" />
                 Nova Avaliação
               </Button>
@@ -177,15 +179,15 @@ export default function LAIAUnidadePage() {
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="flex w-full overflow-x-auto">
-              <TabsTrigger value="dashboard" className="min-w-fit shrink-0 gap-2">
+              <TabsTrigger value="dashboard" className="min-w-fit shrink-0 gap-2" data-track="laia:unidade:tab:dashboard">
                 <LayoutDashboard className="h-4 w-4" />
                 <span className="hidden sm:inline">Visão Geral</span>
               </TabsTrigger>
-              <TabsTrigger value="assessments" className="min-w-fit shrink-0 gap-2">
+              <TabsTrigger value="assessments" className="min-w-fit shrink-0 gap-2" data-track="laia:unidade:tab:assessments">
                 <FileSpreadsheet className="h-4 w-4" />
                 <span className="hidden sm:inline">Avaliações</span>
               </TabsTrigger>
-              <TabsTrigger value="pendentes" className="min-w-fit shrink-0 gap-2">
+              <TabsTrigger value="pendentes" className="min-w-fit shrink-0 gap-2" data-track="laia:unidade:tab:pendentes">
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Pendentes</span>
                 {pendentesCount > 0 && (
@@ -194,7 +196,7 @@ export default function LAIAUnidadePage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="sectors" className="min-w-fit shrink-0 gap-2">
+              <TabsTrigger value="sectors" className="min-w-fit shrink-0 gap-2" data-track="laia:unidade:tab:sectors">
                 <Building2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Setores</span>
               </TabsTrigger>

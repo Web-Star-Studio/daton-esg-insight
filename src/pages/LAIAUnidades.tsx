@@ -168,22 +168,22 @@ export default function LAIAUnidades() {
 
         <Tabs defaultValue="unidades" className="w-full">
           <TabsList className="grid w-full grid-cols-4 max-w-lg">
-            <TabsTrigger value="metodologia" className="flex items-center gap-2">
+            <TabsTrigger value="metodologia" className="flex items-center gap-2" data-track="laia:tab:metodologia">
               <BookOpen className="h-4 w-4" />
               Metodologia
             </TabsTrigger>
-            <TabsTrigger value="unidades" className="flex items-center gap-2">
+            <TabsTrigger value="unidades" className="flex items-center gap-2" data-track="laia:tab:unidades">
               <Building2 className="h-4 w-4" />
               Unidades
             </TabsTrigger>
-            <TabsTrigger value="revisoes" className="flex items-center gap-2 relative">
+            <TabsTrigger value="revisoes" className="flex items-center gap-2 relative" data-track="laia:tab:revisoes">
               <RotateCcw className="h-4 w-4" />
               Revisões
               {!!pendingChangesCount && pendingChangesCount > 0 && (
                 <Badge className="ml-1 h-5 min-w-5 px-1 text-xs bg-amber-500 text-white">{pendingChangesCount}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="configuracoes" className="flex items-center gap-2">
+            <TabsTrigger value="configuracoes" className="flex items-center gap-2" data-track="laia:tab:configuracoes">
               <Settings className="h-4 w-4" />
               Configurações
             </TabsTrigger>
@@ -233,7 +233,7 @@ export default function LAIAUnidades() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Cadastre suas filiais para começar a gerenciar os aspectos ambientais
                   </p>
-                  <Button onClick={() => navigate("/configuracao-organizacional")}>
+                  <Button onClick={() => navigate("/configuracao-organizacional")} data-track="laia:unidades:goto-configuracao">
                     Ir para Configuração
                   </Button>
                 </CardContent>
@@ -246,7 +246,7 @@ export default function LAIAUnidades() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Tente ajustar os filtros para encontrar unidades
                   </p>
-                  <Button variant="outline" onClick={clearFilters}>
+                  <Button variant="outline" onClick={clearFilters} data-track="laia:unidades:clear-filters">
                     Limpar filtros
                   </Button>
                 </CardContent>
@@ -257,10 +257,11 @@ export default function LAIAUnidades() {
                   const stats = getStatsForBranch(branch.id);
                   
                   return (
-                    <Card 
-                      key={branch.id} 
+                    <Card
+                      key={branch.id}
                       className="cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 group"
                       onClick={() => navigate(`/laia/unidade/${branch.id}`)}
+                      data-track="laia:unidades:view-details"
                     >
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">

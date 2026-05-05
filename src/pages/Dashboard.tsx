@@ -318,6 +318,7 @@ export default function Dashboard() {
                 <Button
                   variant="outline"
                   className="h-10 justify-start gap-2 rounded-2xl border-border/60 bg-background/90 px-3.5 text-[12.5px] shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_10px_26px_-22px_rgba(15,23,42,0.55)] backdrop-blur-sm transition-all hover:bg-background"
+                  data-track="dashboard:open-modal:date-range"
                 >
                   <CalendarDays className="h-4 w-4 text-muted-foreground" />
                   <span>
@@ -344,6 +345,7 @@ export default function Dashboard() {
                             ? 'bg-background text-foreground shadow-sm'
                             : 'text-muted-foreground hover:bg-background/75 hover:text-foreground'
                         }`}
+                        data-track="dashboard:select-period-preset"
                       >
                         {preset.label}
                       </Button>
@@ -374,6 +376,7 @@ export default function Dashboard() {
                   onClick={() => navigate(action.path)}
                   title={action.description}
                   className="h-11 min-w-[164px] shrink-0 items-center justify-start gap-2 rounded-2xl border border-border/60 bg-background/90 px-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_12px_24px_-22px_rgba(15,23,42,0.5)] transition-all hover:border-border hover:bg-background hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_16px_30px_-24px_rgba(15,23,42,0.55)]"
+                  data-track="dashboard:quick-action"
                 >
                   <div className="rounded-[10px] border border-border/45 bg-muted/60 p-1.5">
                     <Icon className="h-3.5 w-3.5 text-foreground/80" />
@@ -440,6 +443,7 @@ export default function Dashboard() {
                       }}
                       role="button"
                       tabIndex={0}
+                      data-track="dashboard:view-activity"
                     >
                       <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${getActivityColor(activity.type)}`}>
                         <Icon className="h-4 w-4" />
@@ -459,7 +463,12 @@ export default function Dashboard() {
                 })}
               </div>
 
-              <Button variant="ghost" size="sm" className="mt-2 h-9 w-full justify-center gap-1.5 rounded-xl text-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2 h-9 w-full justify-center gap-1.5 rounded-xl text-sm"
+                data-track="dashboard:view-all-activities"
+              >
                 <Eye className="h-4 w-4" />
                 Ver todas
               </Button>
@@ -544,6 +553,7 @@ export default function Dashboard() {
                     size="sm"
                     onClick={() => navigate('/inventario-gee')}
                     className="gap-1.5 rounded-xl"
+                    data-track="dashboard:start-esg-onboarding"
                   >
                     <Plus className="h-4 w-4" />
                     Iniciar

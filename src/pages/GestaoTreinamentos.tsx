@@ -406,19 +406,19 @@ export default function GestaoTreinamentos() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setIsReportsModalOpen(true)} variant="outline" className="flex-1 sm:flex-none">
+          <Button onClick={() => setIsReportsModalOpen(true)} variant="outline" className="flex-1 sm:flex-none" data-track="treinamentos:open-modal:reports">
             <Download className="w-4 h-4 mr-2" />
             Relatórios
           </Button>
-          <Button onClick={() => setIsExportHoursModalOpen(true)} variant="outline" className="flex-1 sm:flex-none">
+          <Button onClick={() => setIsExportHoursModalOpen(true)} variant="outline" className="flex-1 sm:flex-none" data-track="treinamentos:open-modal:export-hours">
             <Clock className="w-4 h-4 mr-2" />
             Exportar Horas
           </Button>
-          <Button onClick={handleNewEmployeeTraining} variant="outline" className="flex-1 sm:flex-none">
+          <Button onClick={handleNewEmployeeTraining} variant="outline" className="flex-1 sm:flex-none" data-track="treinamentos:open-modal:new-employee-training">
             <UserPlus className="w-4 h-4 mr-2" />
             Novo Registro
           </Button>
-          <Button onClick={handleNewProgram} className="flex-1 sm:flex-none">
+          <Button onClick={handleNewProgram} className="flex-1 sm:flex-none" data-track="treinamentos:open-modal:create">
             <Plus className="w-4 h-4 mr-2" />
             Novo Programa
           </Button>
@@ -583,7 +583,7 @@ export default function GestaoTreinamentos() {
                     Gerencie os programas de treinamento disponíveis
                   </CardDescription>
                 </div>
-                <Button onClick={handleNewProgram}>
+                <Button onClick={handleNewProgram} data-track="treinamentos:open-modal:create">
                   <Plus className="w-4 h-4 mr-2" />
                   Novo Programa
                 </Button>
@@ -651,6 +651,7 @@ export default function GestaoTreinamentos() {
                       variant="destructive"
                       size="sm"
                       onClick={() => setIsBulkDeleteDialogOpen(true)}
+                      data-track="treinamentos:bulk-action:delete"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Excluir selecionados
@@ -728,24 +729,26 @@ export default function GestaoTreinamentos() {
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleViewProgram(program)}>
+                      <Button variant="outline" size="sm" onClick={() => handleViewProgram(program)} data-track="treinamentos:view-details">
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleRescheduleProgram(program)}
                         title="Reagendar"
+                        data-track="treinamentos:open-modal:reschedule"
                       >
                         <CalendarClock className="w-4 h-4 text-blue-600" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleEditProgram(program)}>
+                      <Button variant="outline" size="sm" onClick={() => handleEditProgram(program)} data-track="treinamentos:open-modal:edit">
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => handleDeleteProgram(program.id, program.name)}
+                        data-track="treinamentos:delete"
                       >
                         <Trash2 className="w-4 h-4 text-red-500" />
                       </Button>
@@ -815,10 +818,11 @@ export default function GestaoTreinamentos() {
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleViewCertification(training)}
+                          data-track="treinamentos:export:certificate"
                         >
                           <Download className="w-4 h-4 mr-1" />
                           Baixar Certificado
@@ -922,6 +926,7 @@ export default function GestaoTreinamentos() {
               onClick={handleBulkDelete}
               disabled={isDeletingBulk}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-track="treinamentos:bulk-action:delete-confirm"
             >
               {isDeletingBulk ? "Excluindo..." : `Excluir ${selectedProgramIds.length} programa(s)`}
             </AlertDialogAction>

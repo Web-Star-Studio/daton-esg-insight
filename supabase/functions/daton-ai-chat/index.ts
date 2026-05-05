@@ -20,7 +20,7 @@ import {
   generateExecutiveSummary 
 } from './advanced-analytics.ts';
 import { getComprehensiveCompanyData, getPageSpecificData } from './comprehensive-data.ts';
-import { aiCall, logStreamRequest } from '../_shared/ai-logger.ts';
+import { aiCall, logAiUsage, logStreamRequest } from '../_shared/ai-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -1608,7 +1608,10 @@ ${attachmentContext}`;
           tool_choice: 'auto',
           temperature: 0.7,
           max_tokens: 2000,
-          stream: stream || false
+          stream: stream || false,
+          // Quando streaming: pede tokens na chunk final pra logar custo.
+          // OpenAI-compatible (Lovable AI propaga o stream_options).
+          ...(stream ? { stream_options: { include_usage: true } } : {}),
         }),
         signal: controller.signal
       });
@@ -1640,23 +1643,26 @@ ${attachmentContext}`;
       clearTimeout(timeoutId);
     }
 
-    // Registra a chamada streaming sem usage detalhado (limitação atual:
-    // tokens só vêm na última linha SSE; instrumentação completa fica
-    // para refator com tee do stream).
-    void logStreamRequest(
-      {
-        functionName: 'daton-ai-chat',
-        featureTag: stream ? 'main-stream' : 'main',
-        companyId: companyId ?? null,
-        userId: userId ?? null,
-      },
-      { model: streamingModel, messages: [] },
-      {
-        latencyMs: Date.now() - aiStartedAt,
-        success: response.ok,
-        errorText: response.ok ? undefined : `HTTP ${response.status}`,
-      }
-    );
+    // Pra request com erro: log imediato (não vai ter usage, mas registra
+    // latência e status). Sucesso é logado depois — non-streaming via
+    // `logAiUsage` com `data.usage`, streaming via `logAiUsage` no final
+    // do tee, com usage capturado da chunk com `stream_options`.
+    if (!response.ok) {
+      void logStreamRequest(
+        {
+          functionName: 'daton-ai-chat',
+          featureTag: stream ? 'main-stream' : 'main',
+          companyId: companyId ?? null,
+          userId: userId ?? null,
+        },
+        { model: streamingModel, messages: [] },
+        {
+          latencyMs: Date.now() - aiStartedAt,
+          success: false,
+          errorText: `HTTP ${response.status}`,
+        }
+      );
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -1692,30 +1698,44 @@ ${attachmentContext}`;
           const reader = response.body!.getReader();
           const decoder = new TextDecoder();
           let fullAccumulatedContent = ''; // Accumulate full message
-          
+          // Capturado da chunk com `stream_options.include_usage`. Vai
+          // pro `ai_usage_logs` no final do stream — fechando a cobertura
+          // de custo IA da função `daton-ai-chat` (antes ficava sem tokens).
+          let capturedUsage: {
+            prompt_tokens?: number;
+            completion_tokens?: number;
+            total_tokens?: number;
+          } | null = null;
+
           try {
             while (true) {
               const { done, value } = await reader.read();
               if (done) break;
-              
+
               const chunk = decoder.decode(value, { stream: true });
               const lines = chunk.split('\n');
-              
+
               for (const line of lines) {
                 if (line.startsWith('data: ')) {
                   const data = line.slice(6);
                   if (data === '[DONE]') {
                     continue; // Don't send [DONE] yet
                   }
-                  
+
                   try {
                     const parsed = JSON.parse(data);
                     const content = parsed.choices?.[0]?.delta?.content;
-                    
+
                     if (content) {
                       fullAccumulatedContent += content;
                       // Send token delta
                       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: content })}\n\n`));
+                    }
+
+                    // Lovable AI envia `usage` na última chunk quando o
+                    // request tem `stream_options: { include_usage: true }`.
+                    if (parsed.usage) {
+                      capturedUsage = parsed.usage;
                     }
                   } catch (e) {
                     // Ignore parse errors in streaming
@@ -1723,9 +1743,25 @@ ${attachmentContext}`;
                 }
               }
             }
-            
+
+            // Loga uso REAL (com tokens) agora que o stream fechou.
+            void logAiUsage(
+              {
+                functionName: 'daton-ai-chat',
+                featureTag: 'main-stream',
+                companyId: companyId ?? null,
+                userId: userId ?? null,
+              },
+              { model: streamingModel, messages: [] },
+              {
+                usage: capturedUsage,
+                latencyMs: Date.now() - aiStartedAt,
+                success: true,
+              }
+            );
+
             // Send completion event with full message
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
               complete: true,
               message: fullAccumulatedContent,
               dataAccessed: []
@@ -1734,6 +1770,21 @@ ${attachmentContext}`;
             controller.close();
           } catch (error) {
             console.error('Streaming error:', error);
+            // Loga falha mid-stream — sem tokens, mas com latência.
+            void logStreamRequest(
+              {
+                functionName: 'daton-ai-chat',
+                featureTag: 'main-stream',
+                companyId: companyId ?? null,
+                userId: userId ?? null,
+              },
+              { model: streamingModel, messages: [] },
+              {
+                latencyMs: Date.now() - aiStartedAt,
+                success: false,
+                errorText: error instanceof Error ? error.message : String(error),
+              }
+            );
             controller.error(error);
           }
         }
@@ -1752,6 +1803,23 @@ ${attachmentContext}`;
     // Non-streaming response (original logic)
     const data = await response.json();
     console.warn('AI response:', JSON.stringify(data, null, 2));
+
+    // Loga uso REAL com tokens — fechando a cobertura de custo IA
+    // do caminho non-streaming da função.
+    void logAiUsage(
+      {
+        functionName: 'daton-ai-chat',
+        featureTag: 'main',
+        companyId: companyId ?? null,
+        userId: userId ?? null,
+      },
+      { model: streamingModel, messages: [] },
+      {
+        usage: data.usage ?? null,
+        latencyMs: Date.now() - aiStartedAt,
+        success: true,
+      }
+    );
     
     // Debug: Check if AI acknowledged attachments in response
     if (attachmentContext) {

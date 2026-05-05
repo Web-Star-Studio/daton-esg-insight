@@ -124,6 +124,7 @@ const AvaliacaoEficacia = () => {
                             title={e.status === "Aguardando" && e.end_date
                               ? `Liberada após o término em ${formatDateDisplay(e.end_date)}`
                               : undefined}
+                            data-track={e.status === "Avaliado" ? "eficacia:view-details" : "eficacia:open-modal:evaluate"}
                             onClick={() => {
                               if (e.status === "Aguardando") return;
                               const target = { id: e.training_program_id, name: e.training_name };

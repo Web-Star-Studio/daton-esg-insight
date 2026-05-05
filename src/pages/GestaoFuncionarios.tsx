@@ -276,7 +276,9 @@ export default function GestaoFuncionarios() {
                     Configure e gerencie benefícios oferecidos aos funcionários
                   </CardDescription>
                 </div>
-                <Button onClick={() => {
+                <Button
+                  data-track="funcionarios:open-modal:create-benefit"
+                  onClick={() => {
                   setSelectedBenefit(null);
                   setIsBenefitModalOpen(true);
                 }}>
@@ -353,8 +355,9 @@ export default function GestaoFuncionarios() {
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        data-track="funcionarios:open-modal:benefit-config"
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           setSelectedBenefit(benefit);
@@ -364,8 +367,9 @@ export default function GestaoFuncionarios() {
                         <Settings className="w-4 h-4 mr-1" />
                         Configurar
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        data-track="funcionarios:open-modal:edit-benefit"
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           setSelectedBenefit(benefit);
@@ -384,7 +388,10 @@ export default function GestaoFuncionarios() {
                     <p className="text-muted-foreground">
                       Nenhum benefício cadastrado
                     </p>
-                    <Button className="mt-4" onClick={() => {
+                    <Button
+                      data-track="funcionarios:open-modal:create-first-benefit"
+                      className="mt-4"
+                      onClick={() => {
                       setSelectedBenefit(null);
                       setIsBenefitModalOpen(true);
                     }}>
@@ -408,8 +415,9 @@ export default function GestaoFuncionarios() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  data-track="funcionarios:open-modal:report-employees"
+                  variant="outline"
                   className="h-24 flex flex-col items-center justify-center space-y-2"
                   onClick={() => {
                     setReportType('employees');
@@ -419,8 +427,9 @@ export default function GestaoFuncionarios() {
                   <FileText className="w-6 h-6" />
                   <span>Gerar Relatórios</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  data-track="funcionarios:open-modal:report-performance"
+                  variant="outline"
                   className="h-24 flex flex-col items-center justify-center space-y-2"
                   onClick={() => {
                     setReportType('turnover');
@@ -430,8 +439,9 @@ export default function GestaoFuncionarios() {
                   <TrendingUp className="w-6 h-6" />
                   <span>Análise de Performance</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  data-track="funcionarios:open-modal:report-departments"
+                  variant="outline"
                   className="h-24 flex flex-col items-center justify-center space-y-2"
                   onClick={() => {
                     setReportType('departments');
@@ -441,8 +451,9 @@ export default function GestaoFuncionarios() {
                   <Building2 className="w-6 h-6" />
                   <span>Análise por Departamento</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  data-track="funcionarios:open-modal:report-diversity"
+                  variant="outline"
                   className="h-24 flex flex-col items-center justify-center space-y-2"
                   onClick={() => {
                     setReportType('diversity');
@@ -452,8 +463,9 @@ export default function GestaoFuncionarios() {
                   <Calendar className="w-6 h-6" />
                   <span>Controle de Ponto</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  data-track="funcionarios:open-modal:report-salaries"
+                  variant="outline"
                   className="h-24 flex flex-col items-center justify-center space-y-2"
                   onClick={() => {
                     setReportType('salaries');
@@ -463,8 +475,9 @@ export default function GestaoFuncionarios() {
                   <Briefcase className="w-6 h-6" />
                   <span>Análise Salarial</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  data-track="funcionarios:open-modal:report-turnover"
+                  variant="outline"
                   className="h-24 flex flex-col items-center justify-center space-y-2"
                   onClick={() => {
                     setReportType('turnover');

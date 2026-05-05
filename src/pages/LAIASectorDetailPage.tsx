@@ -106,7 +106,7 @@ export default function LAIASectorDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <p className="text-muted-foreground mb-4">Setor não encontrado.</p>
-        <Button variant="outline" onClick={() => navigate(`/laia/unidade/${branchId}`)}>
+        <Button variant="outline" onClick={() => navigate(`/laia/unidade/${branchId}`)} data-track="laia:setor:back-to-unidade">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
@@ -118,11 +118,11 @@ export default function LAIASectorDetailPage() {
     <div className="space-y-6">
       {/* Breadcrumb & Back */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <button onClick={() => navigate("/laia")} className="hover:text-foreground transition-colors">
+        <button onClick={() => navigate("/laia")} className="hover:text-foreground transition-colors" data-track="laia:setor:breadcrumb-laia">
           LAIA
         </button>
         <span>/</span>
-        <button onClick={() => navigate(`/laia/unidade/${branchId}`)} className="hover:text-foreground transition-colors">
+        <button onClick={() => navigate(`/laia/unidade/${branchId}`)} className="hover:text-foreground transition-colors" data-track="laia:setor:breadcrumb-unidade">
           {branch?.code || branch?.name || "Unidade"}
         </button>
         <span>/</span>
@@ -132,7 +132,7 @@ export default function LAIASectorDetailPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/laia/unidade/${branchId}`)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/laia/unidade/${branchId}`)} data-track="laia:setor:back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -201,7 +201,7 @@ export default function LAIASectorDetailPage() {
               Filtros
             </CardTitle>
             {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <Button variant="ghost" size="sm" onClick={clearFilters} data-track="laia:setor:clear-filters">
                 <X className="mr-1 h-3 w-3" />
                 Limpar
               </Button>

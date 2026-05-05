@@ -417,6 +417,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
                 size="sm"
                 className="w-fit -ml-2 text-muted-foreground"
                 onClick={() => navigate("/residuos")}
+                data-track="residuos:back-to-all-branches"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Todas as filiais
@@ -431,7 +432,11 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
               <p className="text-sm text-muted-foreground">Gestão de Resíduos Sólidos</p>
             )}
           </div>
-          <Button className="w-fit" onClick={() => navigate("/residuos/registrar-destinacao")}>
+          <Button
+            className="w-fit"
+            onClick={() => navigate("/residuos/registrar-destinacao")}
+            data-track="residuos:register-destination"
+          >
             + Registrar Destinação
           </Button>
         </div>
@@ -471,35 +476,42 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => navigate("/fornecedores-residuos")}
             className="flex items-center gap-2"
+            data-track="residuos:manage-suppliers"
           >
             <Users className="h-4 w-4" />
             Gerenciar Fornecedores
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => navigate("/residuos/relatorios")}
             className="flex items-center gap-2"
+            data-track="residuos:open-pgrs-reports"
           >
             <BarChart3 className="h-4 w-4" />
             Relatórios PGRS
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2" disabled={isLoadingLogs}>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                disabled={isLoadingLogs}
+                data-track="residuos:open-modal:export"
+              >
                 <Download className="h-4 w-4" />
                 Exportar
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={handleExportCSV}>
+              <DropdownMenuItem onClick={handleExportCSV} data-track="residuos:export-csv">
                 CSV (.csv)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportXLSX}>
+              <DropdownMenuItem onClick={handleExportXLSX} data-track="residuos:export-xlsx">
                 Excel (.xlsx)
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -510,6 +522,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
               variant={statusFilter === "pendentes" ? "default" : "ghost"}
               className="h-7 gap-1.5 text-xs"
               onClick={() => setStatusFilter(statusFilter === "pendentes" ? "all" : "pendentes")}
+              data-track="residuos:filter-pending"
             >
               Pendentes
               <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px] leading-none">
@@ -521,6 +534,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
               variant={statusFilter === "concluidos" ? "default" : "ghost"}
               className="h-7 gap-1.5 text-xs"
               onClick={() => setStatusFilter(statusFilter === "concluidos" ? "all" : "concluidos")}
+              data-track="residuos:filter-completed"
             >
               Concluídos
               <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px] leading-none">
@@ -591,6 +605,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
                               variant="link"
                               onClick={() => navigate("/residuos/novo")}
                               className="ml-2"
+                              data-track="residuos:create-first"
                             >
                               Registrar o primeiro
                             </Button>
@@ -598,7 +613,12 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
                         ) : (
                           <>
                             Nenhum registro {statusFilter === "pendentes" ? "pendente" : "concluído"} encontrado.
-                            <Button variant="link" className="ml-2" onClick={() => setStatusFilter("all")}>
+                            <Button
+                              variant="link"
+                              className="ml-2"
+                              onClick={() => setStatusFilter("all")}
+                              data-track="residuos:filter-all"
+                            >
                               Ver todos
                             </Button>
                           </>
@@ -709,6 +729,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
                           onClick={() => {
                             navigate(`/residuos/${item.id}?tab=documents`)
                           }}
+                          data-track="residuos:view-documents"
                         >
                           <FileText className="h-4 w-4" />
                         </Button>
@@ -720,6 +741,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
                           onClick={() => {
                             navigate(`/residuos/${item.id}`)
                           }}
+                          data-track="residuos:view-details"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -731,6 +753,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
                           onClick={() => {
                             navigate(`/residuos/registrar-destinacao?edit=${item.id}`)
                           }}
+                          data-track="residuos:edit"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -740,6 +763,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           title="Excluir"
                           onClick={() => setDeleteTargetId(item.id)}
+                          data-track="residuos:open-modal:delete-confirm"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -768,6 +792,7 @@ const Residuos = ({ lockedBranchId }: ResiduosProps = {}) => {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => { if (deleteTargetId) deleteMutation.mutate(deleteTargetId) }}
+              data-track="residuos:delete"
             >
               Excluir
             </AlertDialogAction>
