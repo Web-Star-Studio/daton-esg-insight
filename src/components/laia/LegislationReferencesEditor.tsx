@@ -14,10 +14,15 @@ import {
   type LegislationSuggestion,
 } from "@/types/laia";
 
+interface SuggestionsResult {
+  suggestions: LegislationSuggestion[];
+  citations: string[];
+}
+
 interface LegislationReferencesEditorProps {
   value: LegislationReference[];
   onChange: (next: LegislationReference[]) => void;
-  onRequestSuggestions: () => Promise<LegislationSuggestion[]>;
+  onRequestSuggestions: () => Promise<SuggestionsResult>;
   canSuggest: boolean;
   canSuggestReason?: string;
 }
@@ -31,6 +36,7 @@ export function LegislationReferencesEditor({
 }: LegislationReferencesEditorProps) {
   const [newRef, setNewRef] = useState("");
   const [suggestions, setSuggestions] = useState<LegislationSuggestion[]>([]);
+  const [citations, setCitations] = useState<string[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
 
@@ -76,13 +82,18 @@ export function LegislationReferencesEditor({
     setSuggestError(null);
     try {
       const result = await onRequestSuggestions();
-      if (result.length === 0) {
+      if (result.suggestions.length === 0) {
         setSuggestError("A IA não retornou sugestões para este contexto.");
         return;
       }
       setSuggestions((prev) => {
         const seen = new Set(prev.map((s) => norm(s.reference)));
-        const additions = result.filter((s) => !seen.has(norm(s.reference)));
+        const additions = result.suggestions.filter((s) => !seen.has(norm(s.reference)));
+        return [...prev, ...additions];
+      });
+      setCitations((prev) => {
+        const seen = new Set(prev);
+        const additions = result.citations.filter((c) => !seen.has(c));
         return [...prev, ...additions];
       });
     } catch (e) {
@@ -173,7 +184,10 @@ export function LegislationReferencesEditor({
               variant="ghost"
               size="sm"
               className="h-7 text-xs"
-              onClick={() => setSuggestions([])}
+              onClick={() => {
+                setSuggestions([]);
+                setCitations([]);
+              }}
             >
               Dispensar
             </Button>
@@ -208,6 +222,28 @@ export function LegislationReferencesEditor({
               );
             })}
           </div>
+          {citations.length > 0 && (
+            <div className="border-t pt-2 mt-2">
+              <p className="text-xs text-muted-foreground mb-1">
+                Fontes consultadas pela IA:
+              </p>
+              <ul className="space-y-1">
+                {citations.map((url, i) => (
+                  <li key={`${url}-${i}`}>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                      <span className="truncate max-w-[480px]">{url}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>
