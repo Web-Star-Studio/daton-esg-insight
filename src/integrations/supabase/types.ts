@@ -4676,6 +4676,54 @@ export type Database = {
           },
         ]
       }
+      client_perf_logs: {
+        Row: {
+          company_id: string | null
+          device_type: string | null
+          id: string
+          measured_at: string
+          metric: string
+          navigation_type: string | null
+          pathname: string | null
+          rating: string | null
+          route_pattern: string
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+          value: number
+        }
+        Insert: {
+          company_id?: string | null
+          device_type?: string | null
+          id?: string
+          measured_at?: string
+          metric: string
+          navigation_type?: string | null
+          pathname?: string | null
+          rating?: string | null
+          route_pattern: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          value: number
+        }
+        Update: {
+          company_id?: string | null
+          device_type?: string | null
+          id?: string
+          measured_at?: string
+          metric?: string
+          navigation_type?: string | null
+          pathname?: string | null
+          rating?: string | null
+          route_pattern?: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           annual_revenue: number | null
@@ -8244,6 +8292,63 @@ export type Database = {
           priority?: string
           responsible_user_id?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      error_logs: {
+        Row: {
+          col_no: number | null
+          company_id: string | null
+          file_url: string | null
+          fingerprint: string | null
+          id: string
+          line_no: number | null
+          message: string
+          metadata: Json
+          occurred_at: string
+          pathname: string | null
+          route_pattern: string | null
+          session_id: string | null
+          source: string
+          stack: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          col_no?: number | null
+          company_id?: string | null
+          file_url?: string | null
+          fingerprint?: string | null
+          id?: string
+          line_no?: number | null
+          message: string
+          metadata?: Json
+          occurred_at?: string
+          pathname?: string | null
+          route_pattern?: string | null
+          session_id?: string | null
+          source: string
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          col_no?: number | null
+          company_id?: string | null
+          file_url?: string | null
+          fingerprint?: string | null
+          id?: string
+          line_no?: number | null
+          message?: string
+          metadata?: Json
+          occurred_at?: string
+          pathname?: string | null
+          route_pattern?: string | null
+          session_id?: string | null
+          source?: string
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
