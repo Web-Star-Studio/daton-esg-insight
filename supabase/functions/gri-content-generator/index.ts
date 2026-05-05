@@ -1,5 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { aiCall } from "../_shared/ai-logger.ts";
+
+type AiResponse = {
+  choices?: Array<{ message?: { content?: string } }>;
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -85,24 +90,28 @@ Deno.serve(async (req) => {
     
     if (sectionKey === 'sdg_alignment' && sdgData) {
       // Generate SDG-specific content
-      generatedContent = await generateSDGContent(company?.name || 'Organização', report, sdgData);
+      generatedContent = await generateSDGContent(company?.name || 'Organização', report, sdgData, profile.company_id, user.id);
     } else if (metadataType) {
       // Generate metadata content (CEO message, executive summary, methodology)
       generatedContent = await generateMetadataContent(
         metadataType,
         company?.name || 'Organização',
         report,
-        companyContext
+        companyContext,
+        profile.company_id,
+        user.id
       );
     } else if (sectionKey && contentType) {
       // Generate section content
       generatedContent = await generateContentWithAI(
-        sectionKey, 
+        sectionKey,
         contentType,
-        company?.name || 'Organização', 
+        company?.name || 'Organização',
         report,
         companyContext,
-        context
+        context,
+        profile.company_id,
+        user.id
       );
     } else {
       throw new Error('Either metadataType or sectionKey/contentType must be provided');
@@ -247,12 +256,13 @@ async function generateMetadataContent(
   metadataType: 'ceo_message' | 'executive_summary' | 'methodology',
   companyName: string,
   report: any,
-  companyContext: any
+  companyContext: any,
+  companyId: string | null,
+  userId: string | null
 ): Promise<string> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   const year = report?.year || new Date().getFullYear();
-  
-  if (!LOVABLE_API_KEY) {
+
+  if (!Deno.env.get('LOVABLE_API_KEY')) {
     console.warn('LOVABLE_API_KEY not configured, using metadata fallback');
     return generateMetadataFallback(metadataType, companyName, year, companyContext);
   }
@@ -314,13 +324,15 @@ Use 3-4 parágrafos técnicos mas claros.`
   }
 
   try {
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+    const result = await aiCall<AiResponse>(
+      {
+        functionName: 'gri-content-generator',
+        featureTag: `gri-content:metadata:${metadataType}`,
+        companyId,
+        userId,
+        meta: { metadata_type: metadataType, year },
       },
-      body: JSON.stringify({
+      {
         model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: prompt.system },
@@ -328,14 +340,9 @@ Use 3-4 parágrafos técnicos mas claros.`
         ],
         temperature: 0.7,
         max_tokens: 1500,
-      }),
-    });
+      },
+    );
 
-    if (!response.ok) {
-      throw new Error(`AI generation failed: ${response.status}`);
-    }
-
-    const result = await response.json();
     return result.choices?.[0]?.message?.content || generateMetadataFallback(metadataType, companyName, year, companyContext);
 
   } catch (error) {
@@ -383,11 +390,11 @@ Os limites organizacionais do relatório incluem todas as operações de ${compa
 async function generateSDGContent(
   companyName: string,
   report: any,
-  sdgData: any[]
+  sdgData: any[],
+  companyId: string | null,
+  userId: string | null
 ): Promise<string> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  
-  if (!LOVABLE_API_KEY) {
+  if (!Deno.env.get('LOVABLE_API_KEY')) {
     console.warn('LOVABLE_API_KEY not configured, using SDG fallback');
     return generateSDGFallback(companyName, report?.year || new Date().getFullYear(), sdgData);
   }
@@ -423,13 +430,15 @@ O texto deve:
 6. Seja específico e evite frases genéricas`;
 
   try {
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+    const result = await aiCall<AiResponse>(
+      {
+        functionName: 'gri-content-generator',
+        featureTag: 'gri-content:sdg',
+        companyId,
+        userId,
+        meta: { year: report?.year ?? null, sdg_count: Array.isArray(sdgData) ? sdgData.length : 0 },
       },
-      body: JSON.stringify({
+      {
         model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
@@ -437,14 +446,9 @@ O texto deve:
         ],
         temperature: 0.7,
         max_tokens: 2000,
-      }),
-    });
+      },
+    );
 
-    if (!response.ok) {
-      throw new Error(`AI generation failed: ${response.status}`);
-    }
-
-    const result = await response.json();
     return result.choices?.[0]?.message?.content || generateSDGFallback(companyName, report?.year || new Date().getFullYear(), sdgData);
 
   } catch (error) {
@@ -491,11 +495,11 @@ async function generateContentWithAI(
   companyName: string,
   report: any,
   companyContext: any,
-  additionalContext?: string
+  additionalContext?: string,
+  companyId: string | null = null,
+  userId: string | null = null
 ): Promise<string> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  
-  if (!LOVABLE_API_KEY) {
+  if (!Deno.env.get('LOVABLE_API_KEY')) {
     console.warn('LOVABLE_API_KEY not configured, using template fallback');
     return generateFallbackContent(sectionKey, companyName, report, companyContext);
   }
@@ -506,13 +510,15 @@ async function generateContentWithAI(
   console.warn('Calling Lovable AI for content generation...');
 
   try {
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+    const result = await aiCall<AiResponse>(
+      {
+        functionName: 'gri-content-generator',
+        featureTag: 'gri-content:section',
+        companyId,
+        userId,
+        meta: { section_key: sectionKey, content_type: contentType, year: report?.year ?? null },
       },
-      body: JSON.stringify({
+      {
         model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
@@ -520,26 +526,11 @@ async function generateContentWithAI(
         ],
         temperature: 0.7,
         max_tokens: 2000,
-      }),
-    });
+      },
+    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
-      
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later.');
-      }
-      if (response.status === 402) {
-        throw new Error('AI credits depleted. Please add credits to continue.');
-      }
-      
-      throw new Error(`AI generation failed: ${response.status}`);
-    }
-
-    const result = await response.json();
     const generatedText = result.choices?.[0]?.message?.content;
-    
+
     if (!generatedText) {
       console.warn('No content generated, using fallback');
       return generateFallbackContent(sectionKey, companyName, report, companyContext);
@@ -549,7 +540,14 @@ async function generateContentWithAI(
     return generatedText;
 
   } catch (error) {
-    console.error('Error generating content with AI:', error);
+    const status = (error as { status?: number })?.status;
+    if (status === 429) {
+      console.error('Lovable AI rate limit exceeded');
+    } else if (status === 402) {
+      console.error('Lovable AI credits depleted');
+    } else {
+      console.error('Error generating content with AI:', error);
+    }
     return generateFallbackContent(sectionKey, companyName, report, companyContext);
   }
 }

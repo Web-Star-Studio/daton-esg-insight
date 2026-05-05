@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { aiCall } from "../_shared/ai-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -72,17 +73,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      console.error('LOVABLE_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ success: false, error: 'API key não configurada' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const body = await req.json();
-    const { pdfBase64, imageBase64, fileName, fileType } = body;
+    const { pdfBase64, imageBase64, fileName, fileType, company_id, user_id } = body;
 
     const isImage = fileType?.startsWith('image/') || !!imageBase64;
     const base64Data = imageBase64 || pdfBase64;
@@ -102,79 +94,78 @@ Deno.serve(async (req) => {
     // Gemini 3 Flash Preview has native multimodal support for both images and PDFs
     console.warn('Sending to Lovable AI Gateway (google/gemini-3-flash-preview)');
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          {
-            role: 'system',
-            content: EXTRACTION_PROMPT
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Extraia os dados do comprovante de CNPJ deste documento:'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${base64Data}`,
-                  detail: 'high'
+    let aiData: { choices?: Array<{ message?: { content?: string } }> };
+    try {
+      aiData = await aiCall<{ choices?: Array<{ message?: { content?: string } }> }>(
+        {
+          functionName: 'cnpj-pdf-extractor',
+          featureTag: 'cnpj-extraction',
+          companyId: company_id ?? null,
+          userId: user_id ?? null,
+          meta: { file_name: fileName ?? null, file_type: fileType ?? null, is_image: isImage },
+        },
+        {
+          model: 'google/gemini-3-flash-preview',
+          messages: [
+            {
+              role: 'system',
+              content: EXTRACTION_PROMPT
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Extraia os dados do comprovante de CNPJ deste documento:'
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${mimeType};base64,${base64Data}`,
+                    detail: 'high'
+                  }
                 }
-              }
-            ]
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.1,
-      }),
-    });
-
-    // Handle rate limits and payment issues
-    if (aiResponse.status === 429) {
-      console.error('Rate limit exceeded');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Limite de requisições excedido. Aguarde alguns segundos e tente novamente.',
-          hint: 'rate_limit'
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              ]
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.1,
+        },
       );
-    }
-
-    if (aiResponse.status === 402) {
-      console.error('Payment required');
+    } catch (err) {
+      const status = (err as { status?: number })?.status;
+      if (status === 429) {
+        console.error('Rate limit exceeded');
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Limite de requisições excedido. Aguarde alguns segundos e tente novamente.',
+            hint: 'rate_limit'
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (status === 402) {
+        console.error('Payment required');
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Créditos de IA esgotados. Entre em contato com o suporte.',
+            hint: 'payment_required'
+          }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.error('Lovable AI Gateway error:', status, err instanceof Error ? err.message : err);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Créditos de IA esgotados. Entre em contato com o suporte.',
-          hint: 'payment_required'
-        }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('Lovable AI Gateway error:', aiResponse.status, errorText);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Erro ao processar documento com IA. Tente novamente.' 
+        JSON.stringify({
+          success: false,
+          error: 'Erro ao processar documento com IA. Tente novamente.'
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const aiData = await aiResponse.json();
     console.warn('Lovable AI response received');
 
     const content = aiData.choices?.[0]?.message?.content;

@@ -22,7 +22,13 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
   "google/gemini-2.5-pro": { input: 0.00125, output: 0.005 },
   "google/gemini-2.0-flash-exp": { input: 0.0001, output: 0.0004 },
 
-  // OpenAI
+  // OpenAI — slug com prefixo "openai/" é o que o gateway Lovable usa.
+  // Os mesmos modelos sem prefixo (legados) ficam abaixo pra
+  // compatibilidade com chamadas antigas.
+  "openai/gpt-5-mini": { input: 0.00025, output: 0.002 },
+  "openai/gpt-5": { input: 0.00125, output: 0.01 },
+  "openai/gpt-4o": { input: 0.0025, output: 0.01 },
+  "openai/gpt-4o-mini": { input: 0.00015, output: 0.0006 },
   "gpt-4o": { input: 0.0025, output: 0.01 },
   "gpt-4o-mini": { input: 0.00015, output: 0.0006 },
 };

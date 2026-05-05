@@ -1,8 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { aiCall } from "../_shared/ai-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+type AiResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string;
+      tool_calls?: Array<{ function?: { arguments?: string; name?: string } }>;
+    };
+  }>;
 };
 
 serve(async (req) => {
@@ -11,12 +21,8 @@ serve(async (req) => {
   }
 
   try {
-    const { ncTitle, ncDescription, rootCause, analysisMethod, contributingFactors } = await req.json();
-    
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    const body = await req.json();
+    const { ncTitle, ncDescription, rootCause, analysisMethod, contributingFactors } = body;
 
     const systemPrompt = `Você é um especialista em gestão da qualidade e tratamento de não conformidades.
 Sua tarefa é sugerir ações corretivas e preventivas baseadas na análise de causa raiz fornecida.
@@ -41,13 +47,19 @@ Análise de Causa Raiz:
 Por favor, sugira 3 ações corretivas/preventivas para eliminar esta causa raiz.
 Responda APENAS com o JSON, sem texto adicional.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    const data = await aiCall<AiResponse>(
+      {
+        functionName: 'nc-action-suggestions',
+        featureTag: 'nc-action',
+        companyId: body.company_id ?? null,
+        userId: body.user_id ?? null,
+        meta: {
+          nc_id: body.nc_id ?? null,
+          analysis_method: analysisMethod ?? null,
+          has_root_cause: Boolean(rootCause),
+        },
       },
-      body: JSON.stringify({
+      {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
@@ -83,32 +95,9 @@ Responda APENAS com o JSON, sem texto adicional.`;
           }
         ],
         tool_choice: { type: "function", function: { name: "suggest_actions" } },
-      }),
-    });
+      },
+    );
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limits exceeded, please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: "AI gateway error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const data = await response.json();
-    
     // Extract tool call result
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
@@ -143,6 +132,25 @@ Responda APENAS com o JSON, sem texto adicional.`;
     );
   } catch (e) {
     console.error("NC action suggestions error:", e);
+    const status = (e as { status?: number })?.status;
+    if (status === 429) {
+      return new Response(
+        JSON.stringify({ error: "Rate limits exceeded, please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (status === 402) {
+      return new Response(
+        JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }),
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (status && status >= 500) {
+      return new Response(
+        JSON.stringify({ error: "AI gateway error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

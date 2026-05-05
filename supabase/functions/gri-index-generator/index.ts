@@ -1,5 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { aiCall } from "../_shared/ai-logger.ts";
+
+type AiResponse = {
+  choices?: Array<{ message?: { content?: string } }>;
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -90,9 +95,6 @@ ${s.content?.substring(0, 2000) || 'Sem conteúdo'}
       return `- ${i.indicator.code}: ${i.indicator.title}\n  Valor: ${value}`;
     }).join('\n') || 'Nenhum indicador preenchido';
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
-
     // AI Prompt
     const systemPrompt = `Você é um especialista em GRI Standards e relatórios de sustentabilidade.
 
@@ -133,28 +135,25 @@ Retorne JSON:
 }`;
 
     // Call Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json'
+    const aiData = await aiCall<AiResponse>(
+      {
+        functionName: 'gri-index-generator',
+        featureTag: 'gri-index',
+        companyId: report?.companies?.id ?? null,
+        userId: null,
+        meta: { report_id, year: report?.year ?? null, regenerate },
       },
-      body: JSON.stringify({
+      {
         model: 'google/gemini-2.0-flash-exp',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         response_format: { type: 'json_object' }
-      })
-    });
+      },
+    );
 
-    if (!aiResponse.ok) {
-      throw new Error(`AI API error: ${aiResponse.statusText}`);
-    }
-
-    const aiData = await aiResponse.json();
-    const result = JSON.parse(aiData.choices[0].message.content);
+    const result = JSON.parse(aiData.choices?.[0]?.message?.content ?? '{}');
     const items = result.content_index_items || [];
 
     // Save to database

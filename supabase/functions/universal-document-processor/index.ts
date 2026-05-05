@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { buildCompanyContext } from '../_shared/company-context-builder.ts';
+import { aiCall } from '../_shared/ai-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,11 +19,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { 
-      document_id, 
+    const {
+      document_id,
       mode = 'exploratory',
       parsed_content = null,
-      skip_parse = false 
+      skip_parse = false,
+      user_id = null,
     } = await req.json();
 
     console.warn('📍 [universal-document-processor] Starting:', {
@@ -122,12 +124,6 @@ serve(async (req) => {
       total_emissions: context.current_data.total_emissions,
     });
 
-    // Call Lovable AI for intelligent analysis
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
     const aiMessages = [
       {
         role: 'system',
@@ -189,13 +185,21 @@ Responda SEMPRE usando a estrutura de tool calling fornecida.`,
 
     console.warn('Calling Lovable AI for intelligent analysis...');
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+    const aiData = await aiCall<{ choices?: Array<{ message?: { tool_calls?: Array<{ function: { arguments: string } }> } }> }>(
+      {
+        functionName: 'universal-document-processor',
+        featureTag: 'document-analysis',
+        companyId: document.company_id ?? null,
+        userId: user_id ?? null,
+        meta: {
+          document_id,
+          mode,
+          file_type: document.file_type,
+          file_name: document.file_name,
+          skip_parse,
+        },
       },
-      body: JSON.stringify({
+      {
         model: 'google/gemini-2.5-pro',
         messages: aiMessages,
         tools: [
@@ -285,16 +289,9 @@ Responda SEMPRE usando a estrutura de tool calling fornecida.`,
           },
         ],
         tool_choice: { type: 'function', function: { name: 'analyze_unstructured_document' } },
-      }),
-    });
+      },
+    );
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API Error:', aiResponse.status, errorText);
-      throw new Error(`AI API Error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
     console.warn('AI analysis complete');
 
     // Parse AI response
@@ -355,7 +352,21 @@ Responda SEMPRE usando a estrutura de tool calling fornecida.`,
       timestamp: new Date().toISOString()
     };
     console.error('❌ [universal-document-processor] Error:', errorDetails);
-    
+
+    const status = (error as { status?: number })?.status;
+    if (status === 429) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Limite de requisições excedido. Tente novamente em alguns instantes.', details: errorDetails }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (status === 402) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Créditos do workspace Lovable AI insuficientes.', details: errorDetails }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: false,

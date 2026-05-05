@@ -24,6 +24,11 @@ import RouteValidator from "@/components/RouteValidator";
 import { GlobalKeyboardShortcuts } from "@/components/GlobalKeyboardShortcuts";
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { useSessionTracking } from "@/hooks/useSessionTracking";
+import { ClarityScript } from "@/components/tracking/ClarityScript";
+import { UITracker } from "@/components/tracking/UITracker";
+import { ErrorTracker } from "@/components/tracking/ErrorTracker";
+import { WebVitalsTracker } from "@/components/tracking/WebVitalsTracker";
 import { lazyImportWithRetry } from "@/utils/lazyImportWithRetry";
 
 import AuthErrorHandler from "@/components/AuthErrorHandler";
@@ -272,11 +277,17 @@ const queryClient = new QueryClient({
 const AppContent = () => {
   // Hook para notificações de processamento em tempo real
   useDocumentProcessingNotifications();
-  // Tracking de page views para análise de uso (inclui rotas com 0 acesso)
+  // Tracking de page views (entrada + tempo na página + scroll + exit)
   usePageTracking();
+  // Tracking de sessão de atividade (heartbeat 30s, ativo vs idle)
+  useSessionTracking();
 
   return (
     <>
+      <ClarityScript />
+      <UITracker />
+      <ErrorTracker />
+      <WebVitalsTracker />
       <AuthErrorHandler />
       <RouteValidator>
         <GlobalKeyboardShortcuts />

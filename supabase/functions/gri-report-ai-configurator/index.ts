@@ -1,31 +1,45 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { aiCall } from "../_shared/ai-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+type AiToolResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string;
+      tool_calls?: Array<{ function?: { arguments?: string } }>;
+    };
+  }>;
+};
+
 // Helper functions defined first
 async function handleDocumentUpload(supabase: any, reportId: string, fileContent: string, fileType: string) {
   console.warn('[Upload] Processing document...');
-  
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    throw new Error('LOVABLE_API_KEY not configured');
-  }
 
   // Extract text from document using tool
   const extractedText = fileContent; // Simplified - in production, use document parsing
 
+  // Resolve companyId for logging
+  const { data: reportRow } = await supabase
+    .from('gri_reports')
+    .select('company_id')
+    .eq('id', reportId)
+    .single();
+
   // Call Lovable AI to categorize and extract metrics
-  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json'
+  const result = await aiCall<AiToolResponse>(
+    {
+      functionName: 'gri-report-ai-configurator',
+      featureTag: 'gri-config:upload_document',
+      companyId: reportRow?.company_id ?? null,
+      userId: null,
+      meta: { report_id: reportId, file_type: fileType },
     },
-    body: JSON.stringify({
+    {
       model: 'google/gemini-3-flash-preview',
       messages: [
         {
@@ -74,17 +88,11 @@ async function handleDocumentUpload(supabase: any, reportId: string, fileContent
         }
       }],
       tool_choice: { type: 'function', function: { name: 'categorize_document' } }
-    })
-  });
+    },
+  );
 
-  if (!aiResponse.ok) {
-    const errorText = await aiResponse.text();
-    throw new Error(`Lovable AI error: ${aiResponse.status} - ${errorText}`);
-  }
-
-  const result = await aiResponse.json();
-  const toolCall = result.choices[0].message.tool_calls[0];
-  const analysis = JSON.parse(toolCall.function.arguments);
+  const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+  const analysis = JSON.parse(toolCall?.function?.arguments ?? '{}');
 
   console.warn('[Upload] Document analyzed:', analysis);
 
@@ -100,11 +108,6 @@ async function handleDocumentUpload(supabase: any, reportId: string, fileContent
 
 async function handleExtractInfo(supabase: any, reportId: string, phase: string) {
   console.warn(`[Extract Info] Phase: ${phase}`);
-  
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    throw new Error('LOVABLE_API_KEY not configured');
-  }
 
   // Get uploaded documents for this report
   const { data: documents } = await supabase
@@ -115,14 +118,22 @@ async function handleExtractInfo(supabase: any, reportId: string, phase: string)
 
   const combinedText = documents?.map((d: any) => d.extracted_text).join('\n\n') || '';
 
+  const { data: reportRow } = await supabase
+    .from('gri_reports')
+    .select('company_id')
+    .eq('id', reportId)
+    .single();
+
   // Call Lovable AI to extract organizational info
-  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json'
+  const result = await aiCall<AiToolResponse>(
+    {
+      functionName: 'gri-report-ai-configurator',
+      featureTag: 'gri-config:extract_info',
+      companyId: reportRow?.company_id ?? null,
+      userId: null,
+      meta: { report_id: reportId, phase, doc_count: documents?.length ?? 0 },
     },
-    body: JSON.stringify({
+    {
       model: 'google/gemini-3-flash-preview',
       messages: [
         {
@@ -161,16 +172,11 @@ async function handleExtractInfo(supabase: any, reportId: string, phase: string)
         }
       }],
       tool_choice: { type: 'function', function: { name: 'extract_organizational_info' } }
-    })
-  });
+    },
+  );
 
-  if (!aiResponse.ok) {
-    throw new Error(`Lovable AI error: ${aiResponse.status}`);
-  }
-
-  const result = await aiResponse.json();
-  const toolCall = result.choices[0].message.tool_calls[0];
-  const orgInfo = JSON.parse(toolCall.function.arguments);
+  const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+  const orgInfo = JSON.parse(toolCall?.function?.arguments ?? '{}');
 
   return new Response(
     JSON.stringify({ success: true, data: orgInfo }),
@@ -180,11 +186,6 @@ async function handleExtractInfo(supabase: any, reportId: string, phase: string)
 
 async function handleGenerateContent(supabase: any, reportId: string, sectionKey: string) {
   console.warn(`[Generate Content] Section: ${sectionKey}`);
-  
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    throw new Error('LOVABLE_API_KEY not configured');
-  }
 
   // Get report data with new fields
   const { data: report } = await supabase
@@ -376,13 +377,15 @@ REGRAS DE OURO:
 ✓ Indicar quando informações adicionais são necessárias
 ✓ Manter tom profissional mas não robotizado`;
 
-  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json'
+  const result = await aiCall<AiToolResponse>(
+    {
+      functionName: 'gri-report-ai-configurator',
+      featureTag: 'gri-config:generate_content',
+      companyId: report?.company_id ?? null,
+      userId: null,
+      meta: { report_id: reportId, section_key: sectionKey, year: report?.reporting_year ?? null },
     },
-    body: JSON.stringify({
+    {
       model: 'google/gemini-2.5-pro',
       messages: [
         {
@@ -433,18 +436,11 @@ REGRAS DE OURO:
         }
       }],
       tool_choice: { type: 'function', function: { name: 'generate_section_content' } }
-    })
-  });
+    },
+  );
 
-  if (!aiResponse.ok) {
-    const errorText = await aiResponse.text();
-    console.error('[Generate Content] Lovable AI error:', errorText);
-    throw new Error(`Lovable AI error: ${aiResponse.status}`);
-  }
-
-  const result = await aiResponse.json();
-  const toolCall = result.choices[0].message.tool_calls[0];
-  const generatedData = JSON.parse(toolCall.function.arguments);
+  const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+  const generatedData = JSON.parse(toolCall?.function?.arguments ?? '{}');
 
   // Save to database
   await supabase
@@ -478,11 +474,6 @@ REGRAS DE OURO:
 
 async function handleSuggestIndicators(supabase: any, reportId: string, category: string) {
   console.warn(`[Suggest Indicators] Category: ${category}`);
-  
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    throw new Error('LOVABLE_API_KEY not configured');
-  }
 
   // Get report and company data
   const { data: report } = await supabase
@@ -491,13 +482,15 @@ async function handleSuggestIndicators(supabase: any, reportId: string, category
     .eq('id', reportId)
     .single();
 
-  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json'
+  const result = await aiCall<AiToolResponse>(
+    {
+      functionName: 'gri-report-ai-configurator',
+      featureTag: 'gri-config:suggest_indicators',
+      companyId: report?.company_id ?? null,
+      userId: null,
+      meta: { report_id: reportId, category, sector: report?.companies?.sector ?? null },
     },
-    body: JSON.stringify({
+    {
       model: 'google/gemini-3-flash-preview',
       messages: [
         {
@@ -534,16 +527,11 @@ async function handleSuggestIndicators(supabase: any, reportId: string, category
         }
       }],
       tool_choice: { type: 'function', function: { name: 'suggest_gri_indicators' } }
-    })
-  });
+    },
+  );
 
-  if (!aiResponse.ok) {
-    throw new Error(`Lovable AI error: ${aiResponse.status}`);
-  }
-
-  const result = await aiResponse.json();
-  const toolCall = result.choices[0].message.tool_calls[0];
-  const suggestions = JSON.parse(toolCall.function.arguments);
+  const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+  const suggestions = JSON.parse(toolCall?.function?.arguments ?? '{}');
 
   return new Response(
     JSON.stringify({ success: true, suggestions: suggestions.suggested_indicators }),
@@ -587,16 +575,11 @@ async function handleGenerateVisuals(supabase: any, reportId: string, dataType: 
 
 async function handleProcessGuidelines(supabase: any, reportId: string) {
   console.warn('[Process Guidelines] Starting...');
-  
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    throw new Error('LOVABLE_API_KEY not configured');
-  }
 
   // 1. Get report with guidelines info
   const { data: report } = await supabase
     .from('gri_reports')
-    .select('guidelines_file_path, target_audience, organization_purpose')
+    .select('guidelines_file_path, target_audience, organization_purpose, company_id')
     .eq('id', reportId)
     .single();
 
@@ -618,13 +601,15 @@ async function handleProcessGuidelines(supabase: any, reportId: string) {
   const fileText = await fileData.text();
   
   // 4. Call Lovable AI to interpret guidelines
-  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json'
+  const result = await aiCall<AiToolResponse>(
+    {
+      functionName: 'gri-report-ai-configurator',
+      featureTag: 'gri-config:process_guidelines',
+      companyId: report?.company_id ?? null,
+      userId: null,
+      meta: { report_id: reportId },
     },
-    body: JSON.stringify({
+    {
       model: 'google/gemini-2.5-pro',
       messages: [
         {
@@ -711,23 +696,16 @@ Analise a planilha de diretrizes fornecida e extraia configurações estruturada
         }
       }],
       tool_choice: { type: 'function', function: { name: 'interpret_guidelines' } }
-    })
-  });
+    },
+  );
 
-  if (!aiResponse.ok) {
-    const errorText = await aiResponse.text();
-    console.error('[Process Guidelines] Lovable AI error:', errorText);
-    throw new Error(`Lovable AI error: ${aiResponse.status}`);
-  }
+  const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
 
-  const result = await aiResponse.json();
-  const toolCall = result.choices[0].message.tool_calls?.[0];
-  
   if (!toolCall) {
     throw new Error('AI did not return structured interpretation');
   }
 
-  const interpretation = JSON.parse(toolCall.function.arguments);
+  const interpretation = JSON.parse(toolCall.function?.arguments ?? '{}');
 
   console.warn('[Process Guidelines] Interpretation complete:', interpretation);
 
@@ -788,16 +766,15 @@ async function handleAnalyzeStrategyData(supabase: any, body: any) {
   console.warn('[Analyze Strategy Data] Processed', documentContents.length, 'documents');
 
   // 3. Chamar Lovable AI para análise
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY não configurada');
-
-  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json'
+  const result = await aiCall<AiToolResponse>(
+    {
+      functionName: 'gri-report-ai-configurator',
+      featureTag: 'gri-config:analyze_strategy',
+      companyId: report?.company_id ?? null,
+      userId: null,
+      meta: { report_id, doc_count: documentContents.length },
     },
-    body: JSON.stringify({
+    {
       model: 'google/gemini-2.5-pro',
       messages: [
         {
@@ -880,17 +857,10 @@ Gere um texto de 500-800 palavras integrando essas informações de forma coesa.
         }
       }],
       tool_choice: { type: 'function', function: { name: 'analyze_strategy_content' } }
-    })
-  });
+    },
+  );
 
-  if (!aiResponse.ok) {
-    const errorText = await aiResponse.text();
-    console.error('[Analyze Strategy Data] Lovable AI error:', errorText);
-    throw new Error(`Lovable AI error: ${aiResponse.status}`);
-  }
-
-  const result = await aiResponse.json();
-  const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+  const analysis = JSON.parse(result.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments ?? '{}');
 
   console.warn('[Analyze Strategy Data] Analysis complete. Confidence:', analysis.confidence_score);
 
@@ -942,15 +912,15 @@ async function handleAnalyzeEconomicData(supabase: any, body: any) {
   };
 
   // 4. Call Lovable AI
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-
-  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json'
+  const result = await aiCall<AiToolResponse>(
+    {
+      functionName: 'gri-report-ai-configurator',
+      featureTag: 'gri-config:analyze_economic',
+      companyId: report?.company_id ?? null,
+      userId: null,
+      meta: { report_id, doc_count: documentContents.length },
     },
-    body: JSON.stringify({
+    {
       model: 'google/gemini-2.5-pro',
       messages: [
         {
@@ -1101,17 +1071,10 @@ Gere um texto de 1000-1400 palavras integrando TODOS os dados numéricos de form
         }
       }],
       tool_choice: { type: 'function', function: { name: 'analyze_economic_content' } }
-    })
-  });
+    },
+  );
 
-  if (!aiResponse.ok) {
-    const errorText = await aiResponse.text();
-    console.error('[Analyze Economic Data] Error:', errorText);
-    throw new Error(`Lovable AI error: ${aiResponse.status}`);
-  }
-
-  const result = await aiResponse.json();
-  const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+  const analysis = JSON.parse(result.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments ?? '{}');
 
   console.warn('[Analyze Economic Data] Complete with quantitative data');
 
@@ -1167,18 +1130,15 @@ async function handleAnalyzeEnvironmentalData(supabase: any, body: any) {
   };
 
   // 4. Chamar Lovable AI
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    throw new Error('LOVABLE_API_KEY not configured');
-  }
-
-  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json'
+  const result = await aiCall<AiToolResponse>(
+    {
+      functionName: 'gri-report-ai-configurator',
+      featureTag: 'gri-config:analyze_environmental',
+      companyId: report?.company_id ?? null,
+      userId: null,
+      meta: { report_id, doc_count: documentContents.length },
     },
-    body: JSON.stringify({
+    {
       model: 'google/gemini-2.5-pro',
       messages: [
         {
@@ -1297,17 +1257,10 @@ Gere um texto de 1000-1500 palavras integrando TODOS os dados numéricos de form
         }
       }],
       tool_choice: { type: 'function', function: { name: 'analyze_environmental_content' } }
-    })
-  });
+    },
+  );
 
-  if (!aiResponse.ok) {
-    const errorText = await aiResponse.text();
-    console.error('[Analyze Environmental Data] Lovable AI error:', errorText);
-    throw new Error(`Lovable AI error: ${aiResponse.status}`);
-  }
-
-  const result = await aiResponse.json();
-  const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+  const analysis = JSON.parse(result.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments ?? '{}');
 
   console.warn('[Analyze Environmental Data] Analysis complete with quantitative data');
 
@@ -1342,16 +1295,15 @@ async function handleAnalyzeGovernanceData(supabase: any, body: any) {
     })
   ).then(results => results.filter(Boolean));
 
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY não configurada');
-
-  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json'
+  const result = await aiCall<AiToolResponse>(
+    {
+      functionName: 'gri-report-ai-configurator',
+      featureTag: 'gri-config:analyze_governance',
+      companyId: report?.company_id ?? null,
+      userId: null,
+      meta: { report_id, doc_count: documentContents.length },
     },
-    body: JSON.stringify({
+    {
       model: 'google/gemini-2.5-pro',
       messages: [
         {
@@ -1417,17 +1369,10 @@ Gere texto de 800-1200 palavras com números específicos.`
         }
       }],
       tool_choice: { type: 'function', function: { name: 'analyze_governance_content' } }
-    })
-  });
+    },
+  );
 
-  if (!aiResponse.ok) {
-    const errorText = await aiResponse.text();
-    console.error('[Analyze Governance Data] Error:', errorText);
-    throw new Error(`Lovable AI error: ${aiResponse.status}`);
-  }
-
-  const result = await aiResponse.json();
-  const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+  const analysis = JSON.parse(result.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments ?? '{}');
 
   console.warn('[Analyze Governance Data] Complete. Confidence:', analysis.confidence_score);
 

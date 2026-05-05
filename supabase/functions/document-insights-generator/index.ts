@@ -3,8 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { buildCompanyContext } from '../_shared/company-context-builder.ts'
-
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+import { aiCall } from '../_shared/ai-logger.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -22,7 +21,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { document_id, generate_visualizations } = await req.json()
+    const { document_id, generate_visualizations, user_id } = await req.json()
     console.warn('Generating insights for document:', document_id);
 
     // Get document
@@ -246,27 +245,27 @@ Seja ESPECÍFICO, CONTEXTUALIZADO e ACIONÁVEL. Use números reais da empresa pa
       }
     };
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+    const aiResult = await aiCall<{ choices?: Array<{ message?: { tool_calls?: Array<{ function: { arguments: string } }> } }> }>(
+      {
+        functionName: 'document-insights-generator',
+        featureTag: 'insights',
+        companyId: document.company_id ?? null,
+        userId: user_id ?? null,
+        meta: {
+          document_id,
+          file_type: document.file_type,
+          file_name: document.file_name,
+          generate_visualizations: !!generate_visualizations,
+        },
       },
-      body: JSON.stringify({
+      {
         model: 'google/gemini-2.5-pro',
         messages: aiMessages,
         tools: [toolDefinition],
-        tool_choice: { type: "function", function: { name: "generate_document_insights" } }
-      }),
-    });
+        tool_choice: { type: "function", function: { name: "generate_document_insights" } },
+      },
+    );
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
-
-    const aiResult = await aiResponse.json();
     const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
     
     if (!toolCall) {
@@ -296,8 +295,25 @@ Seja ESPECÍFICO, CONTEXTUALIZADO e ACIONÁVEL. Use números reais da empresa pa
 
   } catch (error) {
     console.error('Error generating insights:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    const status = (error as { status?: number })?.status;
+    if (status === 429) {
+      return new Response(JSON.stringify({
+        error: 'Limite de requisições excedido. Tente novamente em alguns instantes.'
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    if (status === 402) {
+      return new Response(JSON.stringify({
+        error: 'Créditos do workspace Lovable AI insuficientes.'
+      }), {
+        status: 402,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    return new Response(JSON.stringify({
+      error: error instanceof Error ? error.message : 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

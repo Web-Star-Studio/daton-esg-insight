@@ -1,11 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { aiCall } from "../_shared/ai-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 interface SuggestionContext {
   sector_name?: string;
@@ -19,6 +18,9 @@ interface SuggestionContext {
 
 interface RequestBody {
   context: SuggestionContext;
+  // Opcionais para correlação no admin: se o caller não passar, sai null.
+  company_id?: string | null;
+  user_id?: string | null;
 }
 
 const SYSTEM_PROMPT = `Você é um especialista em legislação ambiental brasileira aplicada a sistemas de gestão ambiental ISO 14001 e LAIA (Levantamento de Aspectos e Impactos Ambientais).
@@ -50,49 +52,8 @@ Responda APENAS com JSON válido no formato:
 
 Priorize legislação específica ao contexto. Não sugira normas genéricas se não houver aderência clara.`;
 
-const logUsage = async (
-  functionName: string,
-  model: string,
-  usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null,
-  latencyMs: number,
-  success: boolean,
-  errorText?: string,
-) => {
-  const url = Deno.env.get("SUPABASE_URL");
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !key) return;
-
-  const promptTokens = usage?.prompt_tokens ?? 0;
-  const completionTokens = usage?.completion_tokens ?? 0;
-  const totalTokens = usage?.total_tokens ?? promptTokens + completionTokens;
-  const costUsd =
-    (promptTokens / 1000) * 0.00025 + (completionTokens / 1000) * 0.002;
-
-  try {
-    await fetch(`${url}/rest/v1/ai_usage_logs`, {
-      method: "POST",
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({
-        function_name: functionName,
-        feature_tag: "laia-legislation",
-        model,
-        prompt_tokens: promptTokens || null,
-        completion_tokens: completionTokens || null,
-        total_tokens: totalTokens || null,
-        estimated_cost_usd: costUsd,
-        latency_ms: latencyMs,
-        success,
-        error_text: errorText ?? null,
-      }),
-    });
-  } catch (err) {
-    console.warn("[laia-legislation-suggester] log usage failed:", err);
-  }
+type AiResponse = {
+  choices?: Array<{ message?: { content?: string } }>;
 };
 
 serve(async (req) => {
@@ -100,8 +61,7 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) {
+  if (!Deno.env.get("LOVABLE_API_KEY")) {
     return new Response(
       JSON.stringify({ error: "LOVABLE_API_KEY not configured", suggestions: [] }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -140,53 +100,24 @@ serve(async (req) => {
 
 Retorne 1-3 referências legais brasileiras aplicáveis em JSON.`;
 
-  const model = "openai/gpt-5-mini";
-  const startedAt = Date.now();
-
   try {
-    const response = await fetch(GATEWAY_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+    const aiResponse = await aiCall<AiResponse>(
+      {
+        functionName: "laia-legislation-suggester",
+        featureTag: "laia-legislation",
+        companyId: body.company_id ?? null,
+        userId: body.user_id ?? null,
+        meta: { sector: context.sector_name ?? null },
       },
-      body: JSON.stringify({
-        model,
+      {
+        model: "openai/gpt-5-mini",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
         response_format: { type: "json_object" },
-        stream: false,
-      }),
-    });
-
-    const latencyMs = Date.now() - startedAt;
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      await logUsage("laia-legislation-suggester", model, null, latencyMs, false, `HTTP ${response.status}: ${errorText.slice(0, 500)}`);
-
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns instantes.", suggestions: [] }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos do workspace Lovable AI insuficientes.", suggestions: [] }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      return new Response(
-        JSON.stringify({ error: `AI Gateway error: ${response.status}`, suggestions: [] }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const aiResponse = await response.json();
-    await logUsage("laia-legislation-suggester", model, aiResponse?.usage ?? null, latencyMs, true);
+      },
+    );
 
     const content: string = aiResponse?.choices?.[0]?.message?.content ?? "{}";
     let parsed: { suggestions?: unknown[] } = {};
@@ -203,10 +134,29 @@ Retorne 1-3 referências legais brasileiras aplicáveis em JSON.`;
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    const latencyMs = Date.now() - startedAt;
     const message = error instanceof Error ? error.message : String(error);
-    await logUsage("laia-legislation-suggester", model, null, latencyMs, false, message);
+    const status =
+      (error as { status?: number })?.status ?? null;
     console.error("laia-legislation-suggester error:", message);
+
+    if (status === 429) {
+      return new Response(
+        JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns instantes.", suggestions: [] }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (status === 402) {
+      return new Response(
+        JSON.stringify({ error: "Créditos do workspace Lovable AI insuficientes.", suggestions: [] }),
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (status && status >= 500) {
+      return new Response(
+        JSON.stringify({ error: `AI Gateway error: ${status}`, suggestions: [] }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ error: message, suggestions: [] }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

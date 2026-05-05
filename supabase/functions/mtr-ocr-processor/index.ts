@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { aiCall } from "../_shared/ai-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,14 +41,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY não configurada');
-    }
-
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const documentType = formData.get('document_type') as string;
+    const companyId = (formData.get('company_id') as string | null) ?? null;
+    const userId = (formData.get('user_id') as string | null) ?? null;
 
     if (!file) {
       throw new Error('Nenhum arquivo fornecido');
@@ -60,82 +58,77 @@ Deno.serve(async (req) => {
     const base64File = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
     const mimeType = file.type;
 
-    console.warn(`Tipo MIME: ${mimeType}, enviando para Lovable AI Gateway...`);
+    console.warn(`Tipo MIME: ${mimeType}, enviando para Lovable AI Gateway via aiCall...`);
 
-    // Call Lovable AI Gateway with Gemini Vision
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          {
-            role: 'system',
-            content: EXTRACTION_PROMPT
+    type GeminiResponse = {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+
+    let aiResult: GeminiResponse;
+    try {
+      aiResult = await aiCall<GeminiResponse>(
+        {
+          functionName: 'mtr-ocr-processor',
+          featureTag: 'mtr-ocr',
+          companyId,
+          userId,
+          meta: {
+            file_name: file.name,
+            file_size: file.size,
+            mime_type: mimeType,
+            document_type: documentType,
           },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Analise este documento MTR e extraia os dados conforme solicitado:'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${base64File}`,
-                  detail: 'high'
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 1500,
-        temperature: 0.1
-      })
-    });
-
-    // Handle rate limiting and payment errors
-    if (aiResponse.status === 429) {
-      console.error('Rate limit exceeded');
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Limite de requisições excedido. Por favor, aguarde alguns segundos e tente novamente.',
-          hint: 'rate_limit'
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 429
-        }
+        },
+        {
+          model: 'google/gemini-3-flash-preview',
+          messages: [
+            { role: 'system', content: EXTRACTION_PROMPT },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Analise este documento MTR e extraia os dados conforme solicitado:',
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${mimeType};base64,${base64File}`,
+                    detail: 'high',
+                  },
+                },
+              ],
+            },
+          ],
+          max_tokens: 1500,
+          temperature: 0.1,
+        },
       );
+    } catch (gatewayErr) {
+      const status = (gatewayErr as { status?: number })?.status ?? 0;
+      if (status === 429) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Limite de requisições excedido. Por favor, aguarde alguns segundos e tente novamente.',
+            hint: 'rate_limit',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+        );
+      }
+      if (status === 402) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Créditos insuficientes. Por favor, adicione créditos ao seu workspace Lovable.',
+            hint: 'payment_required',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
+        );
+      }
+      throw gatewayErr;
     }
 
-    if (aiResponse.status === 402) {
-      console.error('Payment required - insufficient credits');
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Créditos insuficientes. Por favor, adicione créditos ao seu workspace Lovable.',
-          hint: 'payment_required'
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 402
-        }
-      );
-    }
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('Lovable AI Gateway error:', aiResponse.status, errorText);
-      throw new Error(`Erro no gateway de IA: ${aiResponse.status}`);
-    }
-
-    const aiResult = await aiResponse.json();
     console.warn('Resposta da IA recebida');
 
     // Extract the JSON from the response

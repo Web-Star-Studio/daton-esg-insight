@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { aiCall } from '../_shared/ai-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,8 +37,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     const authHeader = req.headers.get('Authorization');
@@ -79,7 +79,7 @@ serve(async (req) => {
     
     // Generate AI insights if requested
     const insights = requestData.includeInsights
-      ? await generateAIInsights(lovableApiKey, reportData, requestData.reportType)
+      ? await generateAIInsights(reportData, requestData.reportType, profile.company_id, user.id)
       : null;
     
     // Calculate key metrics
@@ -269,27 +269,39 @@ function generateCharts(reportData: any, reportType: string): ChartData[] {
   return charts;
 }
 
-async function generateAIInsights(apiKey: string, reportData: any, reportType: string) {
+async function generateAIInsights(
+  reportData: any,
+  reportType: string,
+  companyId: string | null,
+  userId: string | null,
+) {
   try {
     const prompt = buildInsightsPrompt(reportData, reportType);
-    
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+
+    const result = await aiCall<{
+      choices?: Array<{
+        message?: { tool_calls?: Array<{ function?: { arguments?: string } }> };
+      }>;
+    }>(
+      {
+        functionName: 'smart-report-generator',
+        featureTag: 'insights',
+        companyId: companyId ?? null,
+        userId: userId ?? null,
+        meta: { report_type: reportType },
       },
-      body: JSON.stringify({
+      {
         model: 'google/gemini-3-flash-preview',
         messages: [
           {
             role: 'system',
-            content: 'Você é um especialista em análise de dados ESG e sustentabilidade. Analise os dados fornecidos e gere insights acionáveis, tendências e recomendações.'
+            content:
+              'Você é um especialista em análise de dados ESG e sustentabilidade. Analise os dados fornecidos e gere insights acionáveis, tendências e recomendações.',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         tools: [{
           type: "function",
@@ -337,25 +349,24 @@ async function generateAIInsights(apiKey: string, reportData: any, reportType: s
             }
           }
         }],
-        tool_choice: { type: "function", function: { name: "generate_insights" } }
-      })
-    });
-    
-    if (!response.ok) {
-      console.error('AI insights error:', response.status, await response.text());
-      return null;
-    }
-    
-    const result = await response.json();
+        tool_choice: { type: "function", function: { name: "generate_insights" } },
+      },
+    );
+
     const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
-    
+
     if (toolCall?.function?.arguments) {
       return JSON.parse(toolCall.function.arguments);
     }
-    
+
     return null;
   } catch (error) {
-    console.error('Error generating AI insights:', error);
+    const status = (error as { status?: number })?.status;
+    if (status === 429 || status === 402) {
+      console.error(`AI insights error (${status}):`, (error as Error).message);
+    } else {
+      console.error('Error generating AI insights:', error);
+    }
     return null;
   }
 }

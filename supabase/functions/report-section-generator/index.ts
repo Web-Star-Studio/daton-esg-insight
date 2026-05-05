@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { aiCall } from '../_shared/ai-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -86,7 +87,8 @@ serve(async (req) => {
     const generatedText = await generateContentWithAI(
       template,
       report,
-      collectedData
+      collectedData,
+      user.id
     );
 
     // Gerar visuais
@@ -238,11 +240,10 @@ async function collectDataFromSources(
 async function generateContentWithAI(
   template: any,
   report: any,
-  collectedData: any
+  collectedData: any,
+  userId: string | null
 ): Promise<string> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  
-  if (!LOVABLE_API_KEY) {
+  if (!Deno.env.get('LOVABLE_API_KEY')) {
     return generateFallbackContent(template, report, collectedData);
   }
 
@@ -252,38 +253,41 @@ Gere conteúdo profissional, técnico e baseado em dados para a seção "${templ
   const userPrompt = buildPromptForTemplate(template, report, collectedData);
 
   try {
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+    const result = await aiCall<{ choices?: Array<{ message?: { content?: string } }> }>(
+      {
+        functionName: 'report-section-generator',
+        featureTag: 'section-content',
+        companyId: report.company_id ?? null,
+        userId: userId ?? null,
+        meta: {
+          template_key: template.template_key ?? null,
+          template_name: template.template_name ?? null,
+          report_year: report.year ?? null,
+        },
       },
-      body: JSON.stringify({
+      {
         model: 'openai/gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { role: 'user', content: userPrompt },
         ],
         temperature: 0.7,
-      }),
-    });
+      },
+    );
 
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => '');
-      if (response.status === 429) {
-        console.error('AI gateway rate limit (429):', errorBody);
-      } else if (response.status === 402) {
-        console.error('AI gateway payment required (402):', errorBody);
-      } else {
-        console.error(`AI gateway error ${response.status}:`, errorBody);
-      }
-      throw new Error(`AI gateway error: ${response.status} ${response.statusText}`);
-    }
-
-    const result = await response.json();
     return result.choices?.[0]?.message?.content ?? generateFallbackContent(template, report, collectedData);
   } catch (error) {
-    console.error('Error calling AI gateway:', (error as Error).message);
+    const status = (error as { status?: number })?.status;
+    const message = error instanceof Error ? error.message : String(error);
+    if (status === 429) {
+      console.error('AI gateway rate limit (429):', message);
+    } else if (status === 402) {
+      console.error('AI gateway payment required (402):', message);
+    } else if (status) {
+      console.error(`AI gateway error ${status}:`, message);
+    } else {
+      console.error('Error calling AI gateway:', message);
+    }
     return generateFallbackContent(template, report, collectedData);
   }
 }

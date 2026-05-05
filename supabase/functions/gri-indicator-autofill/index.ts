@@ -1,6 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { aiCall } from "../_shared/ai-logger.ts";
+
+type AiResponse = {
+  choices?: Array<{ message?: { content?: string } }>;
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,8 +21,6 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   );
-
-  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
   try {
     const { indicatorCode, companyId, reportId } = await req.json();
@@ -66,7 +69,6 @@ serve(async (req) => {
 
     // Generate AI suggestion
     const aiSuggestion = await generateAISuggestion(
-      lovableApiKey!,
       indicator,
       company,
       companyId,
@@ -91,13 +93,12 @@ serve(async (req) => {
 });
 
 async function generateAISuggestion(
-  apiKey: string,
   indicator: any,
   company: any,
   companyId: string,
   supabaseClient: any
 ) {
-  if (!apiKey) {
+  if (!Deno.env.get('LOVABLE_API_KEY')) {
     console.warn('No LOVABLE_API_KEY, returning template');
     return generateTemplateSuggestion(indicator, company);
   }
@@ -105,18 +106,20 @@ async function generateAISuggestion(
   try {
     // Gather context about the company
     const context = await gatherCompanyContext(companyId, supabaseClient);
-    
+
     const prompt = buildAIPrompt(indicator, company, context);
-    
+
     console.warn('Calling Lovable AI for suggestion...');
-    
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+
+    const data = await aiCall<AiResponse>(
+      {
+        functionName: 'gri-indicator-autofill',
+        featureTag: 'gri-autofill',
+        companyId: companyId ?? null,
+        userId: null,
+        meta: { indicator_code: indicator?.code ?? null, data_type: indicator?.data_type ?? null },
       },
-      body: JSON.stringify({
+      {
         model: 'google/gemini-3-flash-preview',
         messages: [
           {
@@ -130,16 +133,11 @@ async function generateAISuggestion(
         ],
         max_tokens: 500,
         temperature: 0.7
-      }),
-    });
+      },
+    );
 
-    if (!response.ok) {
-      throw new Error(`AI API error: ${response.status}`);
-    }
+    const suggestedValue = data.choices?.[0]?.message?.content?.trim() ?? '';
 
-    const data = await response.json();
-    const suggestedValue = data.choices[0].message.content.trim();
-    
     return {
       suggested_value: suggestedValue,
       data_source: 'ai_generated',

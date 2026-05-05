@@ -2,13 +2,12 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { buildCompanyContext } from '../_shared/company-context-builder.ts';
+import { aiCall } from '../_shared/ai-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -18,7 +17,7 @@ serve(async (req) => {
   try {
     console.warn('🧠 Smart Content Analyzer: Starting analysis...');
 
-    const { content, fileType, fileName, companyId } = await req.json();
+    const { content, fileType, fileName, companyId, user_id } = await req.json();
 
     if (!content || !fileType || !companyId) {
       throw new Error('content, fileType e companyId são obrigatórios');
@@ -211,27 +210,25 @@ ${content.substring(0, 20000)}`,
 
     console.warn('🤖 Calling Gemini 2.5 Pro for classification...');
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+    const aiResult = await aiCall<{ choices?: Array<{ message?: { tool_calls?: Array<{ function: { arguments: string } }> } }> }>(
+      {
+        functionName: 'smart-content-analyzer',
+        featureTag: 'classify-extract',
+        companyId: companyId ?? null,
+        userId: user_id ?? null,
+        meta: {
+          file_name: fileName ?? null,
+          file_type: fileType ?? null,
+        },
       },
-      body: JSON.stringify({
+      {
         model: 'google/gemini-2.5-pro',
         messages: aiMessages,
         tools: [toolDefinition],
         tool_choice: { type: 'function', function: { name: 'classify_and_extract_document' } },
-      }),
-    });
+      },
+    );
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API Error:', aiResponse.status, errorText);
-      throw new Error(`AI API Error: ${aiResponse.status}`);
-    }
-
-    const aiResult = await aiResponse.json();
     const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
 
     if (!toolCall) {
@@ -303,6 +300,19 @@ ${content.substring(0, 20000)}`,
     );
   } catch (error) {
     console.error('❌ Error in smart-content-analyzer:', error);
+    const status = (error as { status?: number })?.status;
+    if (status === 429) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Limite de requisições excedido. Tente novamente em alguns instantes.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (status === 402) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Créditos do workspace Lovable AI insuficientes.' }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     return new Response(
       JSON.stringify({
         success: false,

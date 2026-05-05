@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { aiCall } from "../_shared/ai-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,18 +88,23 @@ ISO 39001:2012 - Segurança Viária:
 - 10.2: Não conformidade e ação corretiva
 `;
 
+type AiResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string;
+      tool_calls?: Array<{ function?: { arguments?: string; name?: string } }>;
+    };
+  }>;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
-    const { description, context } = await req.json();
+    const body = await req.json();
+    const { description, context } = body;
 
     if (!description) {
       return new Response(
@@ -132,13 +138,19 @@ ${context?.sector ? `Setor: ${context.sector}` : ''}
 
 Responda APENAS com o JSON, sem texto adicional.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    const aiResponse = await aiCall<AiResponse>(
+      {
+        functionName: 'nc-iso-suggestions',
+        featureTag: 'nc-iso',
+        companyId: body.company_id ?? null,
+        userId: body.user_id ?? null,
+        meta: {
+          nc_id: body.nc_id ?? null,
+          category: context?.category ?? null,
+          sector: context?.sector ?? null,
+        },
       },
-      body: JSON.stringify({
+      {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
@@ -158,12 +170,12 @@ Responda APENAS com o JSON, sem texto adicional.`;
                     items: {
                       type: "object",
                       properties: {
-                        standard: { 
-                          type: "string", 
+                        standard: {
+                          type: "string",
                           enum: ["ISO_9001", "ISO_14001", "ISO_45001", "ISO_39001"],
                           description: "ID da norma ISO"
                         },
-                        clause_number: { 
+                        clause_number: {
                           type: "string",
                           description: "Número da cláusula (ex: 7.2, 8.4)"
                         },
@@ -171,7 +183,7 @@ Responda APENAS com o JSON, sem texto adicional.`;
                           type: "string",
                           description: "Título da cláusula"
                         },
-                        confidence: { 
+                        confidence: {
                           type: "number",
                           description: "Score de confiança de 0 a 100"
                         }
@@ -188,39 +200,18 @@ Responda APENAS com o JSON, sem texto adicional.`;
           }
         ],
         tool_choice: { type: "function", function: { name: "suggest_iso_clauses" } }
-      }),
-    });
+      },
+    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limits exceeded, please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      throw new Error(`AI Gateway error: ${response.status}`);
-    }
-
-    const aiResponse = await response.json();
     console.warn("AI Response received");
 
     // Extract tool call result
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall || toolCall.function.name !== "suggest_iso_clauses") {
+    if (!toolCall || toolCall.function?.name !== "suggest_iso_clauses") {
       throw new Error("Invalid AI response format");
     }
 
-    const result = JSON.parse(toolCall.function.arguments);
+    const result = JSON.parse(toolCall.function?.arguments ?? "{}");
     console.warn("Suggestions:", result.suggestions?.length || 0);
 
     return new Response(
@@ -230,6 +221,19 @@ Responda APENAS com o JSON, sem texto adicional.`;
 
   } catch (error) {
     console.error("Error in nc-iso-suggestions:", error);
+    const status = (error as { status?: number })?.status;
+    if (status === 429) {
+      return new Response(
+        JSON.stringify({ error: "Rate limits exceeded, please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (status === 402) {
+      return new Response(
+        JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }),
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
