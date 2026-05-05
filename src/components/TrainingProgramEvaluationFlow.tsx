@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { format } from "date-fns";
 import {
   CheckCircle2,
@@ -10,9 +7,8 @@ import {
   XCircle,
   ClipboardCheck,
   Loader2,
-  ArrowRight,
-  SkipForward,
   Users,
+  MessageSquare,
 } from "lucide-react";
 
 import {
@@ -23,20 +19,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -88,19 +79,6 @@ const EFFECTIVENESS_OPTIONS = [
 ] as const;
 
 type EffectivenessValue = (typeof EFFECTIVENESS_OPTIONS)[number]["value"];
-
-const evaluationSchema = z.object({
-  evaluation_date: z.date({ message: "Data da avaliação é obrigatória" }),
-  effectiveness: z.enum(["effective", "partial", "not_effective"], {
-    message: "Selecione uma categoria de eficácia",
-  }),
-  comments: z
-    .string()
-    .max(1000, "Observações devem ter no máximo 1000 caracteres")
-    .optional(),
-});
-
-type EvaluationFormValues = z.infer<typeof evaluationSchema>;
 
 interface TrainingProgramEvaluationFlowProps {
   open: boolean;
