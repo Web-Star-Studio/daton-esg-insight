@@ -1,7 +1,39 @@
-import { defineConfig } from "vite";
+import { defineConfig, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+
+// Plugin que carimba a versão do build em duas formas:
+//   1. `__BUILD_VERSION__` injetado no bundle JS (cliente compara
+//      contra `/build-version.json` em runtime)
+//   2. `dist/build-version.json` emitido junto do build (servido pelo
+//      mesmo deploy, com `no-cache` no vercel.json pra sempre revalidar)
+//
+// Quando o cliente detecta versão diferente, mostra toast pedindo
+// reload. Resolve o cenário de user logado com bundle antigo em cache.
+const buildVersionPlugin = (): PluginOption => {
+  const version = `${Date.now()}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+  return {
+    name: "build-version",
+    config() {
+      return {
+        define: {
+          __BUILD_VERSION__: JSON.stringify(version),
+        },
+      };
+    },
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "build-version.json",
+        source: JSON.stringify({
+          version,
+          built_at: new Date().toISOString(),
+        }),
+      });
+    },
+  };
+};
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -9,7 +41,11 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    buildVersionPlugin(),
+    mode === "development" && componentTagger(),
+  ].filter(Boolean) as PluginOption[],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

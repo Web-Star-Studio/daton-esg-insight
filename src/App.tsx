@@ -29,6 +29,7 @@ import { ClarityScript } from "@/components/tracking/ClarityScript";
 import { UITracker } from "@/components/tracking/UITracker";
 import { ErrorTracker } from "@/components/tracking/ErrorTracker";
 import { WebVitalsTracker } from "@/components/tracking/WebVitalsTracker";
+import { VersionUpdatePrompt } from "@/components/tracking/VersionUpdatePrompt";
 import { lazyImportWithRetry } from "@/utils/lazyImportWithRetry";
 
 import AuthErrorHandler from "@/components/AuthErrorHandler";
@@ -288,6 +289,7 @@ const AppContent = () => {
       <UITracker />
       <ErrorTracker />
       <WebVitalsTracker />
+      <VersionUpdatePrompt />
       <AuthErrorHandler />
       <RouteValidator>
         <GlobalKeyboardShortcuts />
