@@ -1,74 +1,71 @@
+# Refocar a aba "Uso & Custos" — remover duplicações com Gabardo View
 
+## Diagnóstico
 
-# Plano: PRD LAIA - User Stories e Fluxos de Uso (PDF)
+Hoje, com o filtro padrão setado em Gabardo, **a aba "Uso & Custos" repete quase tudo que já existe em "Gabardo View"**:
 
-## Resumo
+| Métrica / Visão | Gabardo View | Uso & Custos | Veredito |
+|---|---|---|---|
+| KPI Pageviews / Usuários únicos / Eventos | ✅ | ✅ | Duplicado |
+| KPI Chamadas IA / Tokens / Custo IA | ✅ (Custo) | ✅ (3 cards) | Duplicado |
+| Top usuários por engajamento (com tempo, dias ativos) | ✅ + drawer | ✅ (versão mais pobre) | Duplicado — Gabardo é melhor |
+| Páginas mais usadas | ✅ + drawer + tempo médio | ✅ + último acesso | Duplicado — Gabardo é melhor |
+| Custo IA por função/feature/modelo (tabela) | ✅ | ✅ | Duplicado |
+| Série diária (views/eventos/custo) | ✅ (`GabardoChartsRow`) | ✅ (LineChart overview) | Duplicado |
+| Classificação Power/Regular/Casual/Churning/Ghost + adoção por módulo | ✅ (`GabardoUsageInsightsPanel`) | ❌ | Único Gabardo |
+| Ghost users (cadastrados, nunca acessaram) | ✅ | ❌ | Único Gabardo |
 
-Gerar um PDF profissional com o PRD do modulo LAIA focado em User Stories e fluxos de uso, baseado na analise completa de 11 componentes, 4 services, 3 hooks e tipos do modulo.
+O que **só "Uso & Custos" oferece** e vale manter:
 
-## Estrutura do Documento
+1. **Seletor multi-empresa** (útil só para auditar contas de teste — usar pouco, mas necessário)
+2. **Custo por modelo** (chart) — visão de engenharia / decisão de gateway
+3. **Custo por edge function** (chart) + **latência média** — perf/finops
+4. **Custo por empresa** (quando "Todas") — comparativo cross-tenant
+5. **Heatmap dia × hora** — sazonalidade real de uso
+6. **Rotas mortas** (auditoria de código — candidatas a remoção)
+7. **Erros de IA** (timeouts, 429, 402)
 
-1. **Visao Geral do Modulo** - LAIA (Levantamento e Avaliacao dos Aspectos e Impactos Ambientais), alinhado a ISO 14001. 4 abas: Metodologia, Unidades, Revisoes, Configuracoes.
+## Plano
 
-2. **Personas** - Gestor Ambiental (principal), Analista Ambiental, Administrador.
+Reposicionar **"Uso & Custos"** como aba **técnica / engenharia / finops da plataforma inteira**, não mais como duplicata da visão Gabardo.
 
-3. **Epicos e User Stories** organizados por fluxo:
+### Mudanças em `src/components/platform/UsageAnalyticsTab.tsx`
 
-   **Epico 1: Configuracao de Unidades**
-   - US01: Configurar status de levantamento por unidade (Nao Levantado / Em Levantamento / Levantado)
-   - US02: Alterar status em lote (selecao multipla + barra de acoes)
-   - US03: Filtrar unidades visiveis (somente com status mapeado)
+1. **Mudar copy do header** para:
+   > "Visão técnica de custo IA, performance de edge functions e auditoria de rotas. Para uso por usuário/feature da Gabardo, ver aba 'Gabardo View'."
 
-   **Epico 2: Gestao de Setores**
-   - US04: Criar setor com codigo e nome (uniqueness: company_id + branch_id + code)
-   - US05: Editar/desativar setor
-   - US06: Excluir setores em lote (bulk delete)
+2. **Mudar default do filtro** de empresa: passar de "Gabardo" para **"Todas as organizações"** (a aba agora é multi-tenant por natureza). Remover o `localStorage GABARDO_DEFAULT_KEY` ou manter só como override manual.
 
-   **Epico 3: Avaliacao de Aspectos Ambientais**
-   - US07: Criar avaliacao via formulario multi-step (identificacao → caracterizacao → verificacao de importancia → significancia → controles → ciclo de vida)
-   - US08: Calculo automatico de scores (Consequencia = Abrangencia x Severidade, FreqProb, Total, Categoria, Significancia)
-   - US09: Geracao automatica de codigo de aspecto (setor.code + sequencial)
-   - US10: Editar avaliacao existente (initialData prop, recalculo de scores)
-   - US11: Excluir avaliacoes individuais e em lote
-   - US12: Filtrar avaliacoes por setor, categoria, significancia, status, atividade
+3. **Reduzir KPIs de 6 para 3**, focando em custo/perf:
+   - Custo IA total (USD)
+   - Tokens IA totais
+   - Erros de IA (com badge destrutivo se > 0)
+   
+   Remover: Visualizações, Usuários únicos, Eventos (já em Gabardo View).
 
-   **Epico 4: Importacao Excel (Wizard 5 etapas)**
-   - US13: Upload de arquivo Excel (drag-and-drop, .xlsx/.xls, max 10MB)
-   - US14: Selecao de filial destino (ou importar sem filial)
-   - US15: Preview dos dados parseados (mapeamento automatico de colunas Gabardo)
-   - US16: Validacao pre-importacao (campos obrigatorios, setores existentes vs novos, duplicatas)
-   - US17: Importacao com criacao automatica de setores inexistentes (retry-query strategy)
-   - US18: Download de template padrao
+4. **Remover sub-tabs duplicadas**:
+   - ❌ Remover **"Visão geral"** (LineChart diário) — `GabardoChartsRow` já cobre
+   - ❌ Remover **"Páginas"** — `TopRoutesTable` já cobre com mais contexto
+   - ❌ Remover **"Eventos"** — já tem em Gabardo View KPI + `GabardoChartsRow`
+   - ❌ Remover **"Usuários"** (sub-tab `usuarios-uso`) — `TopUsersTable` + `GabardoUsageInsightsPanel` já cobrem com classificação
+   - ✅ Manter **"IA & Custos"** (custo por modelo, por function, por empresa, latência, erros) — promover a default
+   - ✅ Manter **"Heatmap"** — não existe em Gabardo View
+   - ✅ Manter **"Rotas mortas"** — auditoria de código, não-uso
 
-   **Epico 5: Dashboard e KPIs**
-   - US19: Visualizar KPIs (Total, Significativos, Criticos, Nao Significativos) com click-to-filter
-   - US20: Graficos de caracterizacao (Temporalidade, Situacao Operacional, Incidencia, Classe de Impacto)
-   - US21: Estatisticas por unidade (branch stats)
+5. **Renomear a aba** no `PlatformAdminDashboard.tsx` de **"Uso & Custos"** para **"Custos & Infra IA"** (deixa claro o foco).
 
-   **Epico 6: Controle de Revisoes**
-   - US22: Criar rascunho de revisao automaticamente ao modificar dados
-   - US23: Rastrear mudancas como diffs (entity_type, field_name, old/new value)
-   - US24: Validar revisao (usuario validador)
-   - US25: Finalizar revisao com titulo e descricao (numero sequencial)
-   - US26: Descartar revisao (remove log sem reverter dados)
-   - US27: Visualizar historico de revisoes com detalhes enriquecidos
+### Arquivos afetados
 
-   **Epico 7: Metodologia**
-   - US28: Consultar documento metodologico FPLAN-002
-   - US29: Visualizar tabelas de scoring (Consequencia, FreqProb, Categoria, Significancia)
+- `src/components/platform/UsageAnalyticsTab.tsx` — refator principal (corte de ~250 linhas)
+- `src/pages/PlatformAdminDashboard.tsx` — renomear o trigger da aba
 
-4. **Regras de Negocio** - Tabela de scoring, fluxo de significancia, constraint de unicidade de setores, isolamento multi-tenant.
+### Resultado esperado
 
-5. **Fluxos de Uso** - Diagramas textuais dos fluxos principais (criacao de avaliacao, importacao Excel, ciclo de revisao).
+- **Gabardo View** = "quem usou o quê, por quanto tempo, qual feature adotou" (negócio).
+- **Custos & Infra IA** = "quanto custou, qual modelo, qual function, quais rotas estão mortas, quando bate o pico" (técnico).
 
-6. **Modelo de Dados** - Tabelas: laia_sectors, laia_assessments, laia_revisions, laia_revision_changes, laia_branch_config.
+Sem sobreposição, cada aba com propósito único e screenshot-ready.
 
-## Implementacao
+## Pergunta antes de implementar
 
-- Script Python com reportlab
-- User stories no formato "Como [persona], quero [acao], para que [beneficio]"
-- Criterios de aceite para cada user story
-- Diagramas de fluxo em formato textual
-- Saida: `/mnt/documents/PRD_LAIA_UserStories.pdf`
-- QA visual obrigatorio
-
+A edge function `get-usage-summary` continua sendo usada pelo que sobra (IA, heatmap, dead routes, custo por empresa) — **não precisa mexer no backend**. Confirma que posso prosseguir com esse corte?
