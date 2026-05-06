@@ -29,6 +29,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GabardoChartsRow } from "@/components/platform/GabardoChartsRow";
 import { UserActivityDrawer } from "@/components/platform/UserActivityDrawer";
 import { RouteActivityDrawer } from "@/components/platform/RouteActivityDrawer";
+import { GabardoOperationalPanel } from "@/components/platform/GabardoOperationalPanel";
 
 /**
  * Aba dedicada à Gabardo no admin — fonte única de evidência pra
@@ -406,6 +407,8 @@ export const GabardoViewTab = () => {
           </div>
 
           <GabardoChartsRow period={period} />
+
+          <GabardoOperationalPanel />
 
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">
