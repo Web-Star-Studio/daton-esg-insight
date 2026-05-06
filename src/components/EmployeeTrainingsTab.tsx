@@ -69,21 +69,7 @@ export function EmployeeTrainingsTab({
         .from('employee_trainings')
         .select(`
           *,
-          training_program:training_programs(
-            id,
-            name,
-            category,
-            duration_hours,
-            is_mandatory,
-            valid_for_months,
-            start_date,
-            end_date,
-            efficacy_evaluation_deadline,
-            description,
-            responsible_name,
-            responsible_email,
-            modality
-          )
+          training_program:training_programs(*)
         `)
         .eq('employee_id', employeeId)
         .order('created_at', { ascending: false });

@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { parseDateSafe, formatDateDisplay } from '@/utils/dateUtils';
 import { ViewEmployeeTrainingDialog } from './ViewEmployeeTrainingDialog';
 import { AddEmployeeTrainingDialog } from './AddEmployeeTrainingDialog';
-import { EditEmployeeTrainingDialog } from './EditEmployeeTrainingDialog';
+import { TrainingProgramModal } from './TrainingProgramModal';
 import { EmployeeEfficacyEvaluationDialog } from './EmployeeEfficacyEvaluationDialog';
 
 import { Separator } from './ui/separator';
@@ -793,14 +793,13 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
         employeeName={employee.full_name}
       />
 
-      {trainingDialog?.type === 'edit' && trainingDialog.training && (
-        <EditEmployeeTrainingDialog
-          isOpen={innerDialogOpen('edit')}
-          onClose={closeTrainingDialog}
-          employeeId={employee.id}
-          employeeName={employee.full_name}
-          training={trainingDialog.training}
-          programId={trainingDialog.training.training_program?.id}
+      {trainingDialog?.type === 'edit' && trainingDialog.training?.training_program && (
+        <TrainingProgramModal
+          open={innerDialogOpen('edit')}
+          onOpenChange={(open) => {
+            if (!open) closeTrainingDialog();
+          }}
+          program={trainingDialog.training.training_program}
         />
       )}
 
