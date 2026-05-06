@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 import type { Database } from "@/integrations/supabase/types";
 
 type WasteStatusEnum = Database["public"]["Enums"]["waste_status_enum"];
@@ -150,78 +151,81 @@ const formatDate = (date: string): string => {
 
 // GET /api/v1/waste-logs
 export const getWasteLogs = async (filters?: WasteFilters): Promise<WasteLogListItem[]> => {
-  let query = supabase
-    .from('waste_logs')
-    .select(`
-      id,
-      mtr_number,
-      waste_description,
-      collection_date,
-      quantity,
-      unit,
-      status,
-      waste_class,
-      destination_name,
-      transporter_name,
-      branch_id,
-      destination_cost_per_unit,
-      destination_cost_total,
-      transport_cost,
-      revenue_per_unit,
-      revenue_total,
-      driver_name,
-      vehicle_plate,
-      storage_type,
-      invoice_generator,
-      invoice_payment,
-      cdf_number,
-      cdf_additional_1,
-      cdf_additional_2
-    `)
-    .order('collection_date', { ascending: false });
+  // PostgREST cap default de 1000 rows truncava a listagem em companies com
+  // alto volume de resíduos (waste_logs já passou de 1000 globalmente).
+  // RLS escopa por empresa; aqui só paginamos. Filters são reaplicados a
+  // cada página via builder.
+  const buildQuery = (from: number, to: number) => {
+    let query = supabase
+      .from('waste_logs')
+      .select(`
+        id,
+        mtr_number,
+        waste_description,
+        collection_date,
+        quantity,
+        unit,
+        status,
+        waste_class,
+        destination_name,
+        transporter_name,
+        branch_id,
+        destination_cost_per_unit,
+        destination_cost_total,
+        transport_cost,
+        revenue_per_unit,
+        revenue_total,
+        driver_name,
+        vehicle_plate,
+        storage_type,
+        invoice_generator,
+        invoice_payment,
+        cdf_number,
+        cdf_additional_1,
+        cdf_additional_2
+      `)
+      .order('collection_date', { ascending: false });
 
-  if (filters?.start_date) {
-    query = query.gte('collection_date', filters.start_date);
-  }
-  if (filters?.end_date) {
-    query = query.lte('collection_date', filters.end_date);
-  }
-  if (filters?.branch_id) {
-    query = query.eq('branch_id', filters.branch_id);
-  }
-  if (filters?.waste_description) {
-    query = query.eq('waste_description', filters.waste_description);
-  }
-  if (filters?.waste_class) {
-    query = query.eq('waste_class', filters.waste_class as WasteClassEnum);
-  }
-  if (filters?.destination_name) {
-    query = query.eq('destination_name', filters.destination_name);
-  }
-  if (filters?.transporter_name) {
-    query = query.eq('transporter_name', filters.transporter_name);
-  }
-  if (filters?.storage_type) {
-    query = query.eq('storage_type', filters.storage_type);
-  }
-  if (filters?.search) {
-    const term = filters.search.replace(/[,()]/g, ' ').trim();
-    if (term) {
-      // Busca global: MTR, motorista, placa, NF gabardo, NF pagamento
-      query = query.or(
-        `mtr_number.ilike.%${term}%,driver_name.ilike.%${term}%,vehicle_plate.ilike.%${term}%,invoice_generator.ilike.%${term}%,invoice_payment.ilike.%${term}%`
-      );
+    if (filters?.start_date) {
+      query = query.gte('collection_date', filters.start_date);
     }
-  }
+    if (filters?.end_date) {
+      query = query.lte('collection_date', filters.end_date);
+    }
+    if (filters?.branch_id) {
+      query = query.eq('branch_id', filters.branch_id);
+    }
+    if (filters?.waste_description) {
+      query = query.eq('waste_description', filters.waste_description);
+    }
+    if (filters?.waste_class) {
+      query = query.eq('waste_class', filters.waste_class as WasteClassEnum);
+    }
+    if (filters?.destination_name) {
+      query = query.eq('destination_name', filters.destination_name);
+    }
+    if (filters?.transporter_name) {
+      query = query.eq('transporter_name', filters.transporter_name);
+    }
+    if (filters?.storage_type) {
+      query = query.eq('storage_type', filters.storage_type);
+    }
+    if (filters?.search) {
+      const term = filters.search.replace(/[,()]/g, ' ').trim();
+      if (term) {
+        // Busca global: MTR, motorista, placa, NF gabardo, NF pagamento
+        query = query.or(
+          `mtr_number.ilike.%${term}%,driver_name.ilike.%${term}%,vehicle_plate.ilike.%${term}%,invoice_generator.ilike.%${term}%,invoice_payment.ilike.%${term}%`
+        );
+      }
+    }
 
-  const { data, error } = await query;
+    return query.range(from, to);
+  };
 
-  if (error) {
-    console.error('Error fetching waste logs:', error);
-    throw new Error('Erro ao buscar registros de resíduos');
-  }
+  const data = await fetchAllPaginated<any>(buildQuery);
 
-  return (data || []).map(log => ({
+  return data.map(log => ({
     ...log,
     collection_date: formatDate(log.collection_date)
   }));
