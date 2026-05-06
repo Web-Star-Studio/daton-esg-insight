@@ -1,4 +1,4 @@
-import { Building2, Users, FileText, TrendingUp } from "lucide-react";
+import { Users, FileText, TrendingUp, MousePointerClick } from "lucide-react";
 import { PlatformStatsCard } from "@/components/platform/PlatformStatsCard";
 import { CompanyTable } from "@/components/platform/CompanyTable";
 import { PlatformUsersTable } from "@/components/platform/PlatformUsersTable";
@@ -6,12 +6,12 @@ import { UsageAnalyticsTab } from "@/components/platform/UsageAnalyticsTab";
 import { GabardoViewTab } from "@/components/platform/GabardoViewTab";
 import { ErrorsPerfTab } from "@/components/platform/ErrorsPerfTab";
 import { AdminAuditTab } from "@/components/platform/AdminAuditTab";
-import { usePlatformAnalytics } from "@/hooks/usePlatformAnalytics";
+import { useGabardoMetrics } from "@/hooks/useGabardoMetrics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function PlatformAdminDashboard() {
-  const { data: analytics, isLoading } = usePlatformAnalytics('30d');
+  const { data: gabardo, isLoading } = useGabardoMetrics("30d");
 
   if (isLoading) {
     return (
@@ -26,63 +26,33 @@ export default function PlatformAdminDashboard() {
       <div>
         <h1 className="text-3xl font-bold">Platform Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Visão geral e gerenciamento de todas as empresas
+          Foco operacional na Gabardo (único cliente ativo)
         </p>
       </div>
 
-      {/* KPIs */}
+      {/* KPIs — escopo Gabardo */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <PlatformStatsCard
-          title="Empresas Ativas"
-          value={analytics?.overview.activeCompanies || 0}
-          icon={Building2}
-        />
-        <PlatformStatsCard
-          title="Total de Usuários"
-          value={analytics?.overview.totalUsers || 0}
+          title="Usuários Gabardo"
+          value={gabardo?.totals.total_users ?? 0}
           icon={Users}
         />
         <PlatformStatsCard
           title="Usuários Ativos (30d)"
-          value={analytics?.overview.activeUsers || 0}
+          value={gabardo?.totals.active_users ?? 0}
           icon={TrendingUp}
         />
         <PlatformStatsCard
-          title="Atividades (30d)"
-          value={analytics?.overview.totalActivities || 0}
+          title="Pageviews (30d)"
+          value={gabardo?.totals.pageviews ?? 0}
+          icon={MousePointerClick}
+        />
+        <PlatformStatsCard
+          title="Eventos (30d)"
+          value={gabardo?.totals.events ?? 0}
           icon={FileText}
         />
       </div>
-
-      {/* Top Companies */}
-      {analytics?.engagement.topCompanies && analytics.engagement.topCompanies.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Empresas Mais Ativas (30 dias)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {analytics.engagement.topCompanies.slice(0, 5).map((company, index) => (
-                <div key={company.cnpj} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium">{company.name}</p>
-                      <p className="text-sm text-muted-foreground">{company.cnpj}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{company.count}</p>
-                    <p className="text-sm text-muted-foreground">atividades</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Tabs: Gabardo View (foco), Erros & Perf, Auditoria, Empresas, Usuários, Uso */}
       <Tabs defaultValue="gabardo">
