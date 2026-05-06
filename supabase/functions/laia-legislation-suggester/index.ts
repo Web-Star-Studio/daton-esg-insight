@@ -47,6 +47,7 @@ DIMENSÃO TERRITORIAL
 LAIA é fortemente afetado por normas estaduais. Se o contexto trouxer UF (campo "Localização da unidade"):
 - priorize o nível federal como referência de base; quando houver norma estadual do órgão ambiental da UF informada que regule o mesmo aspecto/impacto com mais especificidade ou parâmetros mais restritivos, inclua-a entre as 1–3 sugestões;
 - principais órgãos por UF: SP → CETESB; RJ → INEA; MG → COPAM/SEMAD; PR → IAT; ES → IEMA; RS → SEMA/FEPAM; BA → INEMA; SC → IMA; CE → SEMACE; PE → CPRH; DF → IBRAM; demais UFs: respectivo órgão estadual de meio ambiente;
+- REGRA CRÍTICA: qualquer norma estadual sugerida deve ser EXCLUSIVAMENTE da UF informada no contexto. Nunca sugira norma estadual de outra UF, mesmo que tematicamente equivalente ou que apareça nos resultados de busca. Se a UF informada não tiver norma estadual específica aplicável, omita a sugestão estadual e devolva apenas as federais — o número total de sugestões pode ficar entre 1 e 3 sem incluir estadual nesse caso;
 - para normas estaduais, se não conseguir confirmar URL canônica via busca, retorne url=null (não invente).
 Se a UF não vier no contexto, foque exclusivamente no nível federal.
 
