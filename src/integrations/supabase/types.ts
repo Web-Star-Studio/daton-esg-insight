@@ -14589,6 +14589,7 @@ export type Database = {
           consequence_score: number
           control_types: string[] | null
           created_at: string | null
+          deleted_at: string | null
           environmental_aspect: string
           environmental_impact: string
           existing_controls: string | null
@@ -14628,6 +14629,7 @@ export type Database = {
           consequence_score: number
           control_types?: string[] | null
           created_at?: string | null
+          deleted_at?: string | null
           environmental_aspect: string
           environmental_impact: string
           existing_controls?: string | null
@@ -14667,6 +14669,7 @@ export type Database = {
           consequence_score?: number
           control_types?: string[] | null
           created_at?: string | null
+          deleted_at?: string | null
           environmental_aspect?: string
           environmental_impact?: string
           existing_controls?: string | null
@@ -26695,6 +26698,7 @@ export type Database = {
           retry_attempt: number
         }[]
       }
+      purge_laia_assessments_trash: { Args: never; Returns: number }
       queue_job_for_retry: { Args: { job_id: string }; Returns: boolean }
       search_across_tables: {
         Args: {
