@@ -83,6 +83,48 @@ const SONAR_INPUT_USD_PER_TOKEN = 1 / 1_000_000;
 const SONAR_OUTPUT_USD_PER_TOKEN = 1 / 1_000_000;
 const SONAR_SEARCH_USD = 5 / 1000;
 
+// Domínios federais sempre incluídos no search_domain_filter — garantem que o
+// modelo encontre URL canônica para Leis, Decretos, CONAMA, ANA, IBAMA, DOU.
+const FEDERAL_DOMAINS = [
+  "planalto.gov.br",
+  "mma.gov.br",
+  "ibama.gov.br",
+  "ana.gov.br",
+  "in.gov.br",
+];
+
+// Domínios de órgãos ambientais estaduais por UF. Quando branch_state vier no
+// contexto, o(s) domínio(s) correspondente(s) é(são) anexado(s) ao filtro
+// federal — assim o Perplexity consegue confirmar URL canônica para sugestões
+// estaduais (CETESB, INEA, etc.) em vez de devolver url=null. UF não mapeada
+// cai silenciosamente no fallback federal-only.
+//
+// Adicionar nova UF: 1) confirmar que o domínio do órgão está indexado em
+// busca web; 2) adicionar entrada aqui. Sem outras mudanças no código.
+const UF_TO_DOMAINS: Record<string, string[]> = {
+  SP: ["cetesb.sp.gov.br"],
+  RJ: ["inea.rj.gov.br"],
+  MG: ["meioambiente.mg.gov.br", "semad.mg.gov.br"],
+  PR: ["iat.pr.gov.br"],
+  ES: ["iema.es.gov.br"],
+  RS: ["fepam.rs.gov.br", "sema.rs.gov.br"],
+  BA: ["inema.ba.gov.br"],
+  SC: ["ima.sc.gov.br"],
+  CE: ["semace.ce.gov.br"],
+  PE: ["cprh.pe.gov.br"],
+  DF: ["ibram.df.gov.br"],
+};
+
+// Perplexity Sonar aceita até 10 domínios em search_domain_filter. Federal (5)
+// + 1–2 estaduais cabe folgado, mas o slice é defensivo caso alguma UF receba
+// mais entradas no futuro.
+const PERPLEXITY_DOMAIN_FILTER_MAX = 10;
+
+function buildDomainFilter(uf: string | null): string[] {
+  const stateDomains = uf ? (UF_TO_DOMAINS[uf.toUpperCase()] ?? []) : [];
+  return [...FEDERAL_DOMAINS, ...stateDomains].slice(0, PERPLEXITY_DOMAIN_FILTER_MAX);
+}
+
 const logUsage = async (
   model: string,
   usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null,
@@ -198,7 +240,7 @@ Retorne 1-3 referências legais brasileiras aplicáveis em JSON.`;
           { role: "user", content: userPrompt },
         ],
         temperature: 0.2,
-        search_domain_filter: ["planalto.gov.br", "mma.gov.br", "ibama.gov.br", "ana.gov.br", "in.gov.br"],
+        search_domain_filter: buildDomainFilter(stateLabel),
         response_format: {
           type: "json_schema",
           json_schema: {
