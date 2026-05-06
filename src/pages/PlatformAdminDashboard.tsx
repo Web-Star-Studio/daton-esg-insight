@@ -92,7 +92,7 @@ export default function PlatformAdminDashboard() {
           <TabsTrigger value="audit">Auditoria Admin</TabsTrigger>
           <TabsTrigger value="empresas">Empresas</TabsTrigger>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-          <TabsTrigger value="uso">Uso & Custos</TabsTrigger>
+          <TabsTrigger value="uso">Custos & Infra IA</TabsTrigger>
         </TabsList>
         <TabsContent value="gabardo">
           <GabardoViewTab />

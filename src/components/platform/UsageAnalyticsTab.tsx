@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -23,15 +22,12 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Loader2, Search, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { DECLARED_ROUTES } from "@/constants/declaredRoutes";
 
 type Period = "24h" | "7d" | "30d" | "90d";
@@ -63,10 +59,8 @@ type Summary = {
 };
 
 type Company = { id: string; name: string };
-type Profile = { id: string; email: string | null; full_name: string | null };
 
 const ALL_COMPANIES = "__all__";
-const GABARDO_DEFAULT_KEY = "admin_usage_default_company";
 
 const periodToFromIso = (p: Period): string => {
   const hours = p === "24h" ? 24 : p === "7d" ? 24 * 7 : p === "30d" ? 24 * 30 : 24 * 90;
@@ -80,15 +74,22 @@ const fmtTokens = (v: number) => v.toLocaleString("pt-BR");
 
 const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+/**
+ * Aba "Custos & Infra IA" — visão técnica/finops da plataforma.
+ *
+ * Escopo intencionalmente restrito a:
+ *   • Custo IA (modelos, edge functions, empresas)
+ *   • Performance (latência por function, erros)
+ *   • Auditoria (heatmap de uso, rotas declaradas sem acesso)
+ *
+ * Métricas de "quem usou o quê / por quanto tempo / qual feature" vivem
+ * na aba "Gabardo View" (foco de negócio). Não duplicar aqui.
+ */
 export const UsageAnalyticsTab = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [companyFilter, setCompanyFilter] = useState<string>(() => {
-    return localStorage.getItem(GABARDO_DEFAULT_KEY) || ALL_COMPANIES;
-  });
+  const [companyFilter, setCompanyFilter] = useState<string>(ALL_COMPANIES);
   const [period, setPeriod] = useState<Period>("30d");
-  const [search, setSearch] = useState("");
   const [data, setData] = useState<Summary | null>(null);
-  const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -97,27 +98,9 @@ export const UsageAnalyticsTab = () => {
         .from("companies")
         .select("id, name")
         .order("name");
-      const list = (rows as Company[]) ?? [];
-      setCompanies(list);
-
-      // Default Gabardo na primeira visita.
-      if (!localStorage.getItem(GABARDO_DEFAULT_KEY)) {
-        const gabardo = list.find((c) => /gabardo/i.test(c.name));
-        if (gabardo) {
-          setCompanyFilter(gabardo.id);
-          localStorage.setItem(GABARDO_DEFAULT_KEY, gabardo.id);
-        }
-      }
+      setCompanies((rows as Company[]) ?? []);
     })();
   }, []);
-
-  useEffect(() => {
-    if (companyFilter !== ALL_COMPANIES) {
-      localStorage.setItem(GABARDO_DEFAULT_KEY, companyFilter);
-    } else {
-      localStorage.removeItem(GABARDO_DEFAULT_KEY);
-    }
-  }, [companyFilter]);
 
   useEffect(() => {
     void (async () => {
@@ -134,18 +117,6 @@ export const UsageAnalyticsTab = () => {
         return;
       }
       setData(result as Summary);
-
-      const userIds = (result as Summary).users.slice(0, 50).map((u) => u.user_id);
-      if (userIds.length > 0) {
-        const { data: profs } = await supabase
-          .from("profiles")
-          .select("id, email, full_name")
-          .in("id", userIds);
-        const map = new Map<string, Profile>();
-        (profs ?? []).forEach((p) => map.set((p as Profile).id, p as Profile));
-        setProfiles(map);
-      }
-
       setLoading(false);
     })();
   }, [period, companyFilter]);
@@ -155,17 +126,7 @@ export const UsageAnalyticsTab = () => {
     return companies.find((c) => c.id === companyFilter)?.name ?? "—";
   }, [companies, companyFilter]);
 
-  const filteredRoutes = useMemo(() => {
-    if (!data) return [];
-    return data.routes.filter((r) =>
-      r.route_pattern.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [data, search]);
-
   // Rotas declaradas em App.tsx que NÃO aparecem em page_view_logs no período.
-  // Compara contra route_pattern (forma canônica). Não filtra pelo `search`
-  // textual da UI — o filtro tem outra finalidade (busca dentro de páginas
-  // acessadas). Aqui mostra a lista cheia pra ser uma visão de auditoria.
   const deadRoutes = useMemo(() => {
     if (!data) return [];
     const accessed = new Set(data.routes.map((r) => r.route_pattern));
@@ -187,12 +148,13 @@ export const UsageAnalyticsTab = () => {
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
-        Visão consolidada de páginas, eventos e custo de IA. Filtro padrão:{" "}
-        <span className="font-medium">{companyName}</span>.
+        Visão técnica de custo IA, performance de edge functions e auditoria de rotas.
+        Para uso por usuário/feature da Gabardo, ver aba <span className="font-medium">Gabardo View</span>.
+        Escopo atual: <span className="font-medium">{companyName}</span>.
       </p>
 
       {/* Filtros globais */}
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2">
         <Select value={companyFilter} onValueChange={setCompanyFilter}>
           <SelectTrigger>
             <SelectValue placeholder="Organização" />
@@ -218,29 +180,25 @@ export const UsageAnalyticsTab = () => {
             <SelectItem value="90d">Últimos 90 dias</SelectItem>
           </SelectContent>
         </Select>
-
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar rota…"
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-6">
-        <KpiCard label="Visualizações" value={data?.totals.page_views.toLocaleString("pt-BR") ?? "—"} />
-        <KpiCard label="Usuários únicos" value={data?.totals.unique_users.toString() ?? "—"} />
-        <KpiCard label="Eventos" value={data?.totals.events.toLocaleString("pt-BR") ?? "—"} />
-        <KpiCard label="Chamadas IA" value={data?.totals.ai_calls.toLocaleString("pt-BR") ?? "—"} />
-        <KpiCard label="Tokens IA" value={data ? fmtTokens(data.totals.ai_tokens) : "—"} />
+      {/* KPIs focados em custo/perf */}
+      <div className="grid gap-4 md:grid-cols-3">
         <KpiCard
           label="Custo IA (estim.)"
           value={data ? fmtUsd(data.totals.ai_cost_usd) : "—"}
           accent="text-primary"
+          hint={data ? `${data.totals.ai_calls.toLocaleString("pt-BR")} chamadas` : undefined}
+        />
+        <KpiCard
+          label="Tokens IA"
+          value={data ? fmtTokens(data.totals.ai_tokens) : "—"}
+        />
+        <KpiCard
+          label="Erros de IA"
+          value={data ? data.totals.ai_errors.toLocaleString("pt-BR") : "—"}
+          accent={data && data.totals.ai_errors > 0 ? "text-destructive" : undefined}
+          hint="Timeouts, 429, 402 e erros internos do gateway"
         />
       </div>
 
@@ -255,128 +213,12 @@ export const UsageAnalyticsTab = () => {
           </CardContent>
         </Card>
       ) : (
-        <Tabs defaultValue="overview">
+        <Tabs defaultValue="ai">
           <TabsList className="flex-wrap">
-            <TabsTrigger value="overview">Visão geral</TabsTrigger>
-            <TabsTrigger value="pages">Páginas ({data.routes.length})</TabsTrigger>
-            <TabsTrigger value="events">Eventos ({data.eventCounts.length})</TabsTrigger>
-            <TabsTrigger value="ai">
-              <Sparkles className="h-3 w-3 mr-1" />IA & Custos
-            </TabsTrigger>
-            <TabsTrigger value="usuarios-uso">Usuários ({data.users.length})</TabsTrigger>
-            <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
-            <TabsTrigger value="dead">
-              Rotas mortas ({deadRoutes.length})
-            </TabsTrigger>
+            <TabsTrigger value="ai">IA & Custos</TabsTrigger>
+            <TabsTrigger value="heatmap">Heatmap de uso</TabsTrigger>
+            <TabsTrigger value="dead">Rotas mortas ({deadRoutes.length})</TabsTrigger>
           </TabsList>
-
-          {/* OVERVIEW */}
-          <TabsContent value="overview" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Atividade ao longo do período</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={data.daily}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="views" name="Views" stroke="hsl(var(--primary))" />
-                    <Line yAxisId="left" type="monotone" dataKey="events" name="Eventos" stroke="#10b981" />
-                    <Line yAxisId="right" type="monotone" dataKey="cost_usd" name="Custo IA (USD)" stroke="#f59e0b" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* PAGES */}
-          <TabsContent value="pages" className="mt-4 space-y-4">
-            <Card>
-              <CardContent className="p-0 max-h-[600px] overflow-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
-                    <TableRow>
-                      <TableHead>Rota (padrão)</TableHead>
-                      <TableHead className="text-right">Views</TableHead>
-                      <TableHead className="text-right">Usuários</TableHead>
-                      <TableHead>Último acesso</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRoutes.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                          Sem dados.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {filteredRoutes.map((r) => (
-                      <TableRow key={r.route_pattern}>
-                        <TableCell className="font-mono text-sm">{r.route_pattern}</TableCell>
-                        <TableCell className="text-right font-semibold">{r.views}</TableCell>
-                        <TableCell className="text-right">{r.unique_users}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {r.last ? new Date(r.last).toLocaleString("pt-BR") : "—"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* EVENTS */}
-          <TabsContent value="events" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Eventos por tipo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={data.eventCounts}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="event_type" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead className="text-right">Quantidade</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.eventCounts.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
-                          Nenhum evento no período.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {data.eventCounts.map((e) => (
-                      <TableRow key={e.event_type}>
-                        <TableCell className="font-mono text-sm">{e.event_type}</TableCell>
-                        <TableCell className="text-right font-semibold">{e.count}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* AI & COSTS */}
           <TabsContent value="ai" className="mt-4 space-y-4">
@@ -512,85 +354,12 @@ export const UsageAnalyticsTab = () => {
             )}
           </TabsContent>
 
-          {/* USERS (sub-tab dentro de Uso & Custos, distinto do tab "Usuários" do PlatformAdmin) */}
-          <TabsContent value="usuarios-uso" className="mt-4">
-            <Card>
-              <CardContent className="p-0 max-h-[600px] overflow-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
-                    <TableRow>
-                      <TableHead>Usuário</TableHead>
-                      <TableHead className="text-right">Views</TableHead>
-                      <TableHead className="text-right">Rotas distintas</TableHead>
-                      <TableHead className="text-right">Eventos</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.users.slice(0, 100).map((u) => {
-                      const prof = profiles.get(u.user_id);
-                      const label = prof?.email ?? prof?.full_name ?? null;
-                      return (
-                      <TableRow key={u.user_id}>
-                        <TableCell className="text-sm">
-                          {label ?? (
-                            <span className="text-muted-foreground font-mono">
-                              {u.user_id.slice(0, 8)}…
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">{u.views}</TableCell>
-                        <TableCell className="text-right">{u.routes}</TableCell>
-                        <TableCell className="text-right">{u.events}</TableCell>
-                      </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* DEAD ROUTES */}
-          <TabsContent value="dead" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Rotas declaradas sem acesso no período</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Lista de {DECLARED_ROUTES.length} rotas declaradas em{" "}
-                  <code>App.tsx</code> comparada contra <code>route_pattern</code>{" "}
-                  visto em <code>page_view_logs</code>
-                  {companyFilter !== ALL_COMPANIES &&
-                    " (apenas para a organização selecionada)"}
-                  . Rotas listadas abaixo são candidatas a remoção — nunca foram
-                  acessadas no período. Aumente o filtro de período antes de remover
-                  (uma rota pode ser usada raramente, ex. trimestralmente).
-                </p>
-                {deadRoutes.length === 0 ? (
-                  <p className="text-sm">
-                    🎉 Todas as rotas declaradas tiveram pelo menos um acesso no
-                    período.
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-2 max-h-[600px] overflow-auto">
-                    {deadRoutes.map((r) => (
-                      <Badge key={r} variant="outline" className="font-mono">
-                        {r}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* HEATMAP */}
           <TabsContent value="heatmap" className="mt-4">
             <Card>
               <CardContent className="p-4 overflow-x-auto">
                 <p className="text-sm text-muted-foreground mb-4">
-                  Distribuição de views por dia da semana × hora.
+                  Distribuição de views por dia da semana × hora — sazonalidade real de uso.
                 </p>
                 <div className="inline-block">
                   <div className="flex">
@@ -630,6 +399,41 @@ export const UsageAnalyticsTab = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* DEAD ROUTES */}
+          <TabsContent value="dead" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Rotas declaradas sem acesso no período</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Lista de {DECLARED_ROUTES.length} rotas declaradas em{" "}
+                  <code>App.tsx</code> comparada contra <code>route_pattern</code>{" "}
+                  visto em <code>page_view_logs</code>
+                  {companyFilter !== ALL_COMPANIES &&
+                    " (apenas para a organização selecionada)"}
+                  . Rotas listadas abaixo são candidatas a remoção — nunca foram
+                  acessadas no período. Aumente o filtro de período antes de remover
+                  (uma rota pode ser usada raramente, ex. trimestralmente).
+                </p>
+                {deadRoutes.length === 0 ? (
+                  <p className="text-sm">
+                    🎉 Todas as rotas declaradas tiveram pelo menos um acesso no
+                    período.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2 max-h-[600px] overflow-auto">
+                    {deadRoutes.map((r) => (
+                      <Badge key={r} variant="outline" className="font-mono">
+                        {r}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       )}
     </div>
@@ -640,10 +444,12 @@ function KpiCard({
   label,
   value,
   accent,
+  hint,
 }: {
   label: string;
   value: string;
   accent?: string;
+  hint?: string;
 }) {
   return (
     <Card>
@@ -652,6 +458,7 @@ function KpiCard({
       </CardHeader>
       <CardContent>
         <div className={`text-2xl font-bold ${accent ?? ""}`}>{value}</div>
+        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
       </CardContent>
     </Card>
   );
