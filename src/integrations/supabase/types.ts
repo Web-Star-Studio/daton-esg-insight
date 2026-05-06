@@ -14589,6 +14589,7 @@ export type Database = {
           consequence_score: number
           control_types: string[] | null
           created_at: string | null
+          deleted_at: string | null
           environmental_aspect: string
           environmental_impact: string
           existing_controls: string | null
@@ -14628,6 +14629,7 @@ export type Database = {
           consequence_score: number
           control_types?: string[] | null
           created_at?: string | null
+          deleted_at?: string | null
           environmental_aspect: string
           environmental_impact: string
           existing_controls?: string | null
@@ -14667,6 +14669,7 @@ export type Database = {
           consequence_score?: number
           control_types?: string[] | null
           created_at?: string | null
+          deleted_at?: string | null
           environmental_aspect?: string
           environmental_impact?: string
           existing_controls?: string | null
@@ -15221,79 +15224,37 @@ export type Database = {
       }
       legislation_compliance_profiles: {
         Row: {
-          activities: Json | null
-          activity_sectors: Json | null
           branch_id: string | null
-          certifications: string[] | null
           company_id: string
           completed_at: string | null
           completed_by: string | null
           created_at: string | null
-          employee_count_range: string | null
-          has_air_emissions: boolean | null
-          has_environmental_license: boolean | null
-          has_fleet: boolean | null
-          has_hazardous_materials: boolean | null
-          has_solid_waste: boolean | null
-          has_wastewater_treatment: boolean | null
+          generated_tags: string[]
           id: string
-          industry_type: string | null
-          notes: string | null
-          operating_municipalities: string[] | null
-          operating_states: string[] | null
-          risk_level: string | null
+          responses: Json
           updated_at: string | null
-          waste_types: Json | null
         }
         Insert: {
-          activities?: Json | null
-          activity_sectors?: Json | null
           branch_id?: string | null
-          certifications?: string[] | null
           company_id: string
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string | null
-          employee_count_range?: string | null
-          has_air_emissions?: boolean | null
-          has_environmental_license?: boolean | null
-          has_fleet?: boolean | null
-          has_hazardous_materials?: boolean | null
-          has_solid_waste?: boolean | null
-          has_wastewater_treatment?: boolean | null
+          generated_tags?: string[]
           id?: string
-          industry_type?: string | null
-          notes?: string | null
-          operating_municipalities?: string[] | null
-          operating_states?: string[] | null
-          risk_level?: string | null
+          responses?: Json
           updated_at?: string | null
-          waste_types?: Json | null
         }
         Update: {
-          activities?: Json | null
-          activity_sectors?: Json | null
           branch_id?: string | null
-          certifications?: string[] | null
           company_id?: string
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string | null
-          employee_count_range?: string | null
-          has_air_emissions?: boolean | null
-          has_environmental_license?: boolean | null
-          has_fleet?: boolean | null
-          has_hazardous_materials?: boolean | null
-          has_solid_waste?: boolean | null
-          has_wastewater_treatment?: boolean | null
+          generated_tags?: string[]
           id?: string
-          industry_type?: string | null
-          notes?: string | null
-          operating_municipalities?: string[] | null
-          operating_states?: string[] | null
-          risk_level?: string | null
+          responses?: Json
           updated_at?: string | null
-          waste_types?: Json | null
         }
         Relationships: [
           {
@@ -26695,6 +26656,7 @@ export type Database = {
           retry_attempt: number
         }[]
       }
+      purge_laia_assessments_trash: { Args: never; Returns: number }
       queue_job_for_retry: { Args: { job_id: string }; Returns: boolean }
       search_across_tables: {
         Args: {
