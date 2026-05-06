@@ -368,6 +368,8 @@ export async function suggestLegislationReference(context: {
   control_types?: string[];
   existing_controls?: string;
   lifecycle_stages?: string[];
+  branch_state?: string | null;
+  branch_city?: string | null;
 }): Promise<LegislationSuggestionsResponse> {
   const { data, error } = await supabase.functions.invoke("laia-legislation-suggester", {
     body: { context },

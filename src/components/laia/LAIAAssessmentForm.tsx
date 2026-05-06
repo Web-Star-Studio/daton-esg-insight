@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useLAIASectors, useCreateLAIAAssessment, useUpdateLAIAAssessment } from "@/hooks/useLAIA";
+import { useBranches } from "@/services/branches";
 import {
   TEMPORALITY_OPTIONS,
   OPERATIONAL_SITUATION_OPTIONS,
@@ -141,6 +142,7 @@ const defaultFormData: LAIAAssessmentFormData = {
 export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel }: LAIAAssessmentFormProps) {
   const { toast } = useToast();
   const { data: sectors } = useLAIASectors(branchId);
+  const { data: branches } = useBranches();
   const createMutation = useCreateLAIAAssessment();
   const updateMutation = useUpdateLAIAAssessment();
   const isEditing = !!initialData;
@@ -200,6 +202,7 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
 
   const requestLegislationSuggestions = async () => {
     const sectorName = sectors?.find((s) => s.id === formData.sector_id)?.name;
+    const branch = branches?.find((b) => b.id === branchId);
     return laiaService.suggestLegislationReference({
       sector_name: sectorName,
       activity_operation: formData.activity_operation,
@@ -208,6 +211,8 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
       control_types: formData.control_types,
       existing_controls: formData.existing_controls || undefined,
       lifecycle_stages: formData.lifecycle_stages,
+      branch_state: branch?.state ?? null,
+      branch_city: branch?.city ?? null,
     });
   };
 
