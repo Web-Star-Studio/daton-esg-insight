@@ -17,8 +17,26 @@ import {
   useBulkRestoreLAIAAssessments,
 } from "@/hooks/useLAIA";
 import { Trash2, Undo2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+const RETENTION_MS = 60 * 60 * 1000; // 1h, must match the pg_cron purge interval
+
+function timeLeftLabel(deletedAt: string | null | undefined): {
+  text: string;
+  variant: "secondary" | "destructive" | "outline";
+} {
+  if (!deletedAt) return { text: "—", variant: "outline" };
+  const elapsed = Date.now() - new Date(deletedAt).getTime();
+  const remainingMs = RETENTION_MS - elapsed;
+  if (remainingMs <= 0) return { text: "removendo…", variant: "destructive" };
+  const minutes = Math.ceil(remainingMs / 60_000);
+  return {
+    text: minutes <= 5 ? `${minutes} min` : `${minutes} min`,
+    variant: minutes <= 10 ? "destructive" : "secondary",
+  };
+}
 
 interface LAIATrashTableProps {
   branchId?: string;
@@ -72,6 +90,7 @@ export function LAIATrashTable({ branchId }: LAIATrashTableProps) {
           <CardTitle>Lixeira</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
             Avaliações excluídas. Restaure para devolvê-las à listagem.
+            Itens com mais de 1 hora são removidos automaticamente.
           </p>
         </div>
         {selectedIds.size > 0 && (
@@ -109,6 +128,7 @@ export function LAIATrashTable({ branchId }: LAIATrashTableProps) {
                 <TableHead>Atividade</TableHead>
                 <TableHead>Aspecto</TableHead>
                 <TableHead>Excluída em</TableHead>
+                <TableHead>Resta</TableHead>
                 <TableHead className="w-24"></TableHead>
               </TableRow>
             </TableHeader>
@@ -133,6 +153,12 @@ export function LAIATrashTable({ branchId }: LAIATrashTableProps) {
                     {a.deleted_at
                       ? format(new Date(a.deleted_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
                       : "-"}
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const { text, variant } = timeLeftLabel(a.deleted_at);
+                      return <Badge variant={variant}>{text}</Badge>;
+                    })()}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
