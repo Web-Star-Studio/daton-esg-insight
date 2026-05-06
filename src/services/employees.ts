@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formErrorHandler } from "@/utils/formErrorHandler";
 import { logger } from '@/utils/logger';
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
 
 export interface Employee {
@@ -204,15 +205,19 @@ export const getDepartments = async (): Promise<string[]> => {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('employees')
-    .select('department')
-    .not('department', 'is', null)
-    .order('department');
+  // PostgREST cap default de 1000 rows truncava o conjunto de employees em
+  // companies grandes (Gabardo: 946+) — dropdown de departamentos ficava
+  // incompleto. RLS cobre o escopo por empresa; aqui só paginamos.
+  const data = await fetchAllPaginated<{ department: string | null }>((from, to) =>
+    supabase
+      .from('employees')
+      .select('department')
+      .not('department', 'is', null)
+      .order('department')
+      .range(from, to),
+  );
 
-  if (error) throw error;
-  
-  const uniqueDepartments = [...new Set(data?.map(e => e.department).filter(Boolean) as string[])];
+  const uniqueDepartments = [...new Set(data.map(e => e.department).filter(Boolean) as string[])];
   return uniqueDepartments;
 };
 
