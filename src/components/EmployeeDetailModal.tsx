@@ -252,7 +252,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                   </div>
                 </DialogTitle>
               </div>
-              <Button onClick={onEdit}>
+              <Button onClick={onEdit} className="mr-8">
                 <Edit className="h-4 w-4 mr-2" />
                 Editar
               </Button>
