@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { parseDateSafe, formatDateDisplay } from '@/utils/dateUtils';
 import { ViewEmployeeTrainingDialog } from './ViewEmployeeTrainingDialog';
 import { AddEmployeeTrainingDialog } from './AddEmployeeTrainingDialog';
+import { TrainingProgramModal } from './TrainingProgramModal';
 import { EmployeeEfficacyEvaluationDialog } from './EmployeeEfficacyEvaluationDialog';
 
 import { Separator } from './ui/separator';
@@ -73,7 +74,7 @@ interface EmployeeDetailModalProps {
 }
 
 type TrainingDialogState =
-  | { type: 'view' | 'efficacy'; training: any }
+  | { type: 'view' | 'edit' | 'efficacy'; training: any }
   | { type: 'add' }
   | null;
 
@@ -117,7 +118,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
     }, 200);
   };
 
-  const innerDialogOpen = (type: 'view' | 'add' | 'efficacy') =>
+  const innerDialogOpen = (type: 'view' | 'add' | 'edit' | 'efficacy') =>
     trainingDialog?.type === type && !isClosingTraining;
 
   // Fetch employee benefits
@@ -251,7 +252,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                   </div>
                 </DialogTitle>
               </div>
-              <Button onClick={onEdit}>
+              <Button onClick={onEdit} className="mr-8">
                 <Edit className="h-4 w-4 mr-2" />
                 Editar
               </Button>
@@ -704,6 +705,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                     employeeName={employee.full_name}
                     onView={(t) => setTrainingDialog({ type: 'view', training: t })}
                     onAdd={() => setTrainingDialog({ type: 'add' })}
+                    onEdit={(t) => setTrainingDialog({ type: 'edit', training: t })}
                     onEvaluateEfficacy={(t) => setTrainingDialog({ type: 'efficacy', training: t })}
                   />
                 </TabsContent>
@@ -790,6 +792,16 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
         employeeId={employee.id}
         employeeName={employee.full_name}
       />
+
+      {trainingDialog?.type === 'edit' && trainingDialog.training?.training_program && (
+        <TrainingProgramModal
+          open={innerDialogOpen('edit')}
+          onOpenChange={(open) => {
+            if (!open) closeTrainingDialog();
+          }}
+          program={trainingDialog.training.training_program}
+        />
+      )}
 
       {trainingDialog?.type === 'efficacy' &&
         trainingDialog.training?.id &&

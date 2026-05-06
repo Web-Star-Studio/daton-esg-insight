@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Trash2,
   Eye,
+  Edit,
   ClipboardCheck,
 } from 'lucide-react';
 import {
@@ -44,6 +45,7 @@ interface EmployeeTrainingsTabProps {
   // a si mesmo enquanto algum estiver aberto, evitando sobreposição.
   onView?: (training: any) => void;
   onAdd?: () => void;
+  onEdit?: (training: any) => void;
   onEvaluateEfficacy?: (training: any) => void;
 }
 
@@ -52,6 +54,7 @@ export function EmployeeTrainingsTab({
   employeeName,
   onView,
   onAdd,
+  onEdit,
   onEvaluateEfficacy,
 }: EmployeeTrainingsTabProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -66,21 +69,7 @@ export function EmployeeTrainingsTab({
         .from('employee_trainings')
         .select(`
           *,
-          training_program:training_programs(
-            id,
-            name,
-            category,
-            duration_hours,
-            is_mandatory,
-            valid_for_months,
-            start_date,
-            end_date,
-            efficacy_evaluation_deadline,
-            description,
-            responsible_name,
-            responsible_email,
-            modality
-          )
+          training_program:training_programs(*)
         `)
         .eq('employee_id', employeeId)
         .order('created_at', { ascending: false });
@@ -161,6 +150,10 @@ export function EmployeeTrainingsTab({
 
   const handleAdd = () => {
     onAdd?.();
+  };
+
+  const handleEdit = (training: any) => {
+    onEdit?.(training);
   };
 
   const handleEvaluateEfficacy = (training: any) => {
@@ -382,6 +375,14 @@ export function EmployeeTrainingsTab({
                           title="Visualizar treinamento"
                         >
                           <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(training)}
+                          title="Editar treinamento"
+                        >
+                          <Edit className="w-4 h-4" />
                         </Button>
                         {training.training_program?.efficacy_evaluation_deadline && (
                           <Button
