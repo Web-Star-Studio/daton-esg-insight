@@ -65,7 +65,8 @@ export interface LAIAAssessment {
   notes?: string | null;
   created_at: string;
   updated_at: string;
-  
+  deleted_at?: string | null;
+
   // Relations (joined)
   sector?: LAIASector | null;
   responsible_user?: { full_name: string } | null;

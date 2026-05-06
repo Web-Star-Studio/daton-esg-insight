@@ -13,8 +13,9 @@ import { LAIAAssessmentTable } from "@/components/laia/LAIAAssessmentTable";
 import { LAIAAssessmentForm } from "@/components/laia/LAIAAssessmentForm";
 import { LAIAAssessmentDetail } from "@/components/laia/LAIAAssessmentDetail";
 import { LAIAImportWizard } from "@/components/laia/LAIAImportWizard";
+import { LAIATrashTable } from "@/components/laia/LAIATrashTable";
 import { useBranches } from "@/services/branches";
-import { useLAIAAssessments } from "@/hooks/useLAIA";
+import { useLAIAAssessments, useDeletedLAIAAssessments } from "@/hooks/useLAIA";
 import {
   Leaf,
   Plus,
@@ -24,7 +25,8 @@ import {
   ArrowLeft,
   Upload,
   ChevronRight,
-  Clock
+  Clock,
+  Trash2
 } from "lucide-react";
 import type { LAIAAssessment } from "@/types/laia";
 
@@ -46,6 +48,8 @@ export default function LAIAUnidadePage() {
 
   const { data: pendentes } = useLAIAAssessments({ branch_id: branchId, is_vigente: false });
   const pendentesCount = pendentes?.length ?? 0;
+  const { data: trashed } = useDeletedLAIAAssessments(branchId);
+  const trashedCount = trashed?.length ?? 0;
 
   const handleCardClick = (filter?: LAIADashboardFilters) => {
     setAssessmentFilters(filter ? { category: filter.category, significance: filter.significance } : undefined);
@@ -200,6 +204,15 @@ export default function LAIAUnidadePage() {
                 <Building2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Setores</span>
               </TabsTrigger>
+              <TabsTrigger value="lixeira" className="min-w-fit shrink-0 gap-2" data-track="laia:unidade:tab:lixeira">
+                <Trash2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Lixeira</span>
+                {trashedCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {trashedCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard" className="mt-6">
@@ -231,6 +244,10 @@ export default function LAIAUnidadePage() {
 
             <TabsContent value="sectors" className="mt-6">
               <LAIASectorManager branchId={branchId} />
+            </TabsContent>
+
+            <TabsContent value="lixeira" className="mt-6">
+              <LAIATrashTable branchId={branchId} />
             </TabsContent>
           </Tabs>
         )}
