@@ -13,6 +13,8 @@ interface SuggestionContext {
   control_types?: string[];
   existing_controls?: string;
   lifecycle_stages?: string[];
+  branch_state?: string | null;
+  branch_city?: string | null;
 }
 
 interface RequestBody {
@@ -22,32 +24,58 @@ interface RequestBody {
   user_id?: string | null;
 }
 
-const SYSTEM_PROMPT = `Você é um especialista em legislação ambiental brasileira aplicada a sistemas de gestão ambiental ISO 14001 e LAIA (Levantamento de Aspectos e Impactos Ambientais).
+const SYSTEM_PROMPT = `Você é um analista de legislação ambiental brasileira que dá suporte a um LAIA (Levantamento de Aspectos e Impactos Ambientais) sob a ISO 14001.
 
-Dado o contexto de uma avaliação de aspecto/impacto ambiental, sugira de 1 a 3 referências legais brasileiras realmente aplicáveis, priorizando especificidade.
+CONCEITOS DA TAREFA
+- Aspecto ambiental: o elemento das atividades de uma organização que pode interagir com o meio ambiente (ex.: emissão de partículas, captação de água, geração de resíduo, lançamento de efluente, ruído).
+- Impacto ambiental: a alteração no meio ambiente resultante do aspecto (ex.: degradação da qualidade do ar, esgotamento de recurso hídrico, contaminação do solo).
+- Para o LAIA, o vínculo legal aplicável é determinado pelo PAR ASPECTO+IMPACTO e pelo RECURSO/MEIO afetado — não pela atividade ou setor que o gera. A "atividade/operação" recebida é apenas contexto situacional.
+- Vigência: a recomendação deve ser uma norma vigente. Normas revogadas ou substituídas por versão mais recente devem ser ignoradas em favor da que está em vigor.
 
-Tipos de norma a considerar: Leis Federais, Resoluções CONAMA, NBRs ABNT, Decretos Federais, Resoluções de agências (ANA, IBAMA).
+OBJETIVO
+Para o contexto recebido, retornar de 1 a 3 normas brasileiras vigentes que regulam diretamente o aspecto+impacto descrito. Priorize especificidade técnica em relação ao fenômeno ambiental, não ao setor.
 
-Regras OBRIGATÓRIAS para URLs:
-- Use sua busca web em tempo real para encontrar a URL canônica oficial do documento.
-- A URL deve apontar DIRETAMENTE para o texto/PDF da norma, não para páginas de listagem ou busca.
-- Sempre inclua scheme completo (https://...).
-- Para CONAMA, use o link direto de download do Joomla (formato: https://conama.mma.gov.br/?option=com_sisconama&task=arquivo.download&id=NNN). Não retorne a URL raiz nem URL de busca genérica.
-- Se não conseguir confirmar URL canônica para a norma específica via busca, retorne url=null. NUNCA invente URLs.
-- NBRs ABNT são pagas e não têm URL pública: sempre url=null.
+RACIOCÍNIO ESPERADO (faça mentalmente antes de listar)
+1. Identifique o RECURSO/MEIO afetado pelo impacto: ar, água superficial, água subterrânea, solo, biota, ruído, resíduo sólido, fauna, paisagem, etc.
+2. Liste o(s) marco(s) regulatório(s) federal(is) desse recurso/meio.
+3. Localize a norma técnica que estabelece PARÂMETROS, LIMITES, CLASSIFICAÇÃO ou PROCEDIMENTO específico para o aspecto descrito (CONAMA, NBR ABNT, resoluções ANA/IBAMA).
+4. Verifique vigência: a norma identificada está em vigor? Foi alterada, compilada ou substituída? Se foi revogada ou superada por norma mais recente que regula o mesmo objeto (ex.: padrão de qualidade do ar atualmente está em CONAMA 491/2018, que substituiu trechos da CONAMA 03/1990), use a versão atual.
+5. Adicione norma-quadro (PNMA, Lei de Crimes Ambientais, lei de licenciamento) apenas se complementar concretamente — nunca como sugestão isolada.
+6. Auto-checagem: para cada candidata, responda "esta norma regula o impacto <X> sobre o meio <Y>?". Se exige reinterpretar a atividade ou o setor para caber, descarte.
 
-Responda APENAS com JSON válido no formato:
+DIMENSÃO TERRITORIAL
+LAIA é fortemente afetado por normas estaduais. Se o contexto trouxer UF (campo "Localização da unidade"):
+- priorize o nível federal como referência de base; quando houver norma estadual do órgão ambiental da UF informada que regule o mesmo aspecto/impacto com mais especificidade ou parâmetros mais restritivos, inclua-a entre as 1–3 sugestões;
+- principais órgãos por UF: SP → CETESB; RJ → INEA; MG → COPAM/SEMAD; PR → IAT; ES → IEMA; RS → SEMA/FEPAM; BA → INEMA; SC → IMA; CE → SEMACE; PE → CPRH; DF → IBRAM; demais UFs: respectivo órgão estadual de meio ambiente;
+- para normas estaduais, se não conseguir confirmar URL canônica via busca, retorne url=null (não invente).
+Se a UF não vier no contexto, foque exclusivamente no nível federal.
+
+TIPOS DE NORMA ELEGÍVEIS
+Leis e Decretos Federais, Resoluções CONAMA, Resoluções CNRH, Resoluções ANA/IBAMA/ANP/ANTT, NBRs ABNT, Resoluções e Decretos estaduais (quando UF informada), Portarias do MMA/Ministério da Saúde quando estabelecem parâmetros.
+
+PARA URL (regras rígidas)
+- Use busca web em tempo real para confirmar a URL canônica.
+- A URL deve apontar DIRETAMENTE para o texto/PDF oficial da norma — não para listagens, mecanismos de busca ou páginas-índice.
+- Sempre com scheme https://.
+- CONAMA: use o link de download do Joomla no formato https://conama.mma.gov.br/?option=com_sisconama&task=arquivo.download&id=NNN.
+- NBRs ABNT: sempre url=null (são pagas).
+- Se não confirmar a URL canônica via busca, url=null. NUNCA invente URL.
+
+FORMATO DE SAÍDA
+JSON válido, sem texto fora do JSON:
 {
   "suggestions": [
-    {
-      "reference": "Lei 12.305/2010",
-      "url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12305.htm",
-      "summary": "Política Nacional de Resíduos Sólidos - aplicável por envolver descarte e segregação."
-    }
+    { "reference": "<nome curto e padrão>",
+      "url": "<URL canônica ou null>",
+      "summary": "<1 frase descrita conforme as regras abaixo>" }
   ]
 }
 
-Priorize legislação específica ao contexto. Não sugira normas genéricas se não houver aderência clara.`;
+QUALIDADE DO SUMMARY
+O summary deve, em uma frase:
+- nomear o MEIO/RECURSO regulado (ar, água, solo, ruído…) e o ASPECTO coberto (emissão, captação, lançamento, descarte…);
+- citar o CRITÉRIO TÉCNICO objetivo estabelecido pela norma para esse aspecto — limite numérico, frequência de monitoramento, classificação, proibição expressa ou exigência procedimental — quando aplicável.
+Evite frases genéricas como "aplicável ao setor" ou "trata da matéria".`;
 
 // Pricing Perplexity Sonar (USD): $1/1M input + $1/1M output + $5/1k searches.
 // Cada chamada faz 1 search (low context).
@@ -135,8 +163,15 @@ serve(async (req) => {
     );
   }
 
+  const stateLabel = context.branch_state?.trim() || null;
+  const cityLabel = context.branch_city?.trim() || null;
+  const locationLine = stateLabel || cityLabel
+    ? `${cityLabel ?? ""}${cityLabel && stateLabel ? ", " : ""}${stateLabel ?? ""}`.trim()
+    : "N/A";
+
   const userPrompt = `Contexto da avaliação ambiental:
 - Setor: ${context.sector_name ?? "N/A"}
+- Localização da unidade: ${locationLine}
 - Atividade/Operação: ${context.activity_operation}
 - Aspecto Ambiental: ${context.environmental_aspect}
 - Impacto Ambiental: ${context.environmental_impact}
