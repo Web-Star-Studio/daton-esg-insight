@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllPaginated } from '@/utils/supabasePagination';
 
 export interface ActionPlan {
   id: string;
@@ -64,21 +65,24 @@ export interface UpdateActionPlanItemData {
 
 class ActionPlansService {
   async getActionPlans(): Promise<ActionPlan[]> {
-    const { data, error } = await supabase
-      .from('action_plans')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // PostgREST cap default de 1000 rows truncava listagens em companies com
+    // muitos planos. RLS já escopa por empresa; aqui só paginamos.
+    const data = await fetchAllPaginated<any>((from, to) =>
+      supabase
+        .from('action_plans')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to),
+    );
 
-    if (error) throw error;
-    
     // Get items separately for each plan
     const plansWithItems = await Promise.all(
-      (data || []).map(async (plan) => {
+      data.map(async (plan) => {
         const items = await this.getActionPlanItems(plan.id);
         return { ...plan, items };
       })
     );
-    
+
     return plansWithItems;
   }
 
