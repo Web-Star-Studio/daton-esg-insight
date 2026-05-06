@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { calculateTrainingStatus } from "@/utils/trainingStatusCalculator";
+import { fetchAllPaginated } from "@/utils/supabasePagination";
 import { isDemoRuntimeEnabled, resolveDemoData } from "./demoResolver";
 
 export interface TrainingProgram {
@@ -269,28 +270,45 @@ export const getEmployeeTrainings = async () => {
     return Array.isArray(trainings) ? trainings : [];
   }
 
-  // Get employee trainings first
-  const { data: trainings, error: trainingError } = await supabase
-    .from('employee_trainings')
-    .select('*')
-    .order('created_at', { ascending: false });
+  // PostgREST aplica cap default de 1000 rows; companies como Gabardo (>3k
+  // trainings) ficavam silenciosamente truncadas — KPIs do dashboard exibiam
+  // 1000 fixo em vez do total real. Usar fetchAllPaginated pagina via .range
+  // até esgotar e devolve o agregado.
+  const trainings = await fetchAllPaginated<any>((from, to) =>
+    supabase
+      .from('employee_trainings')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, to),
+  );
+  if (trainings.length === 0) return [];
 
-  if (trainingError) throw trainingError;
-  if (!trainings) return [];
+  // Get employees data (também paginado: companies grandes podem ter >1000)
+  const employees = await fetchAllPaginated<{
+    id: string;
+    full_name: string;
+    employee_code: string | null;
+    department: string | null;
+  }>((from, to) =>
+    supabase
+      .from('employees')
+      .select('id, full_name, employee_code, department')
+      .range(from, to),
+  );
 
-  // Get employees data
-  const { data: employees, error: employeeError } = await supabase
-    .from('employees')
-    .select('id, full_name, employee_code, department');
-
-  if (employeeError) throw employeeError;
-
-  // Get training programs data
-  const { data: programs, error: programError } = await supabase
-    .from('training_programs')
-    .select('id, name, category, is_mandatory, duration_hours');
-
-  if (programError) throw programError;
+  // Get training programs data (paginado por consistência; raramente >1000)
+  const programs = await fetchAllPaginated<{
+    id: string;
+    name: string;
+    category: string | null;
+    is_mandatory: boolean;
+    duration_hours: number | null;
+  }>((from, to) =>
+    supabase
+      .from('training_programs')
+      .select('id, name, category, is_mandatory, duration_hours')
+      .range(from, to),
+  );
 
   // Manually join the data and ensure safe property access
   return trainings.map(training => {
