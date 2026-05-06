@@ -55,14 +55,16 @@ export const getTrainingPrograms = async () => {
     return Array.isArray(programs) ? programs : [];
   }
 
-  // Query 1: Buscar todos os programas
-  const { data: programs, error } = await supabase
-    .from('training_programs')
-    .select('*')
-    .order('name');
-
-  if (error) throw error;
-  if (!programs || programs.length === 0) return [];
+  // Query 1: Buscar todos os programas (paginado — tabela em 993 rows
+  // globais, à beira do cap default de 1000 do PostgREST; defensivo).
+  const programs = await fetchAllPaginated<any>((from, to) =>
+    supabase
+      .from('training_programs')
+      .select('*')
+      .order('name')
+      .range(from, to),
+  );
+  if (programs.length === 0) return [];
 
   // Status legados que devem ser preservados (não recalcular)
   const legacyStatuses = ['Ativo', 'Inativo', 'Suspenso', 'Arquivado'];
