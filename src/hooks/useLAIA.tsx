@@ -5,7 +5,94 @@ import * as laiaService from "@/services/laiaService";
 import * as laiaBranchConfigService from "@/services/laiaBranchConfigService";
 import type { LAIAAssessmentFormData } from "@/types/laia";
 
-const PENDENTE_UNDO_WINDOW_MS = 10_000;
+const UNDO_WINDOW_MS = 10_000;
+
+type ToastFn = ReturnType<typeof useToast>["toast"];
+
+function showUndoToast(args: {
+  toast: ToastFn;
+  title: string;
+  description: string;
+  onUndo: () => Promise<void>;
+  doneTitle?: string;
+  doneDescription?: string;
+  workingTitle?: string;
+  workingDescription?: string;
+}) {
+  const {
+    toast,
+    title,
+    description,
+    onUndo,
+    doneTitle = "Ação desfeita",
+    doneDescription = "Restaurado com sucesso.",
+    workingTitle = "Revertendo…",
+    workingDescription = "Restaurando.",
+  } = args;
+
+  let secondsLeft = Math.round(UNDO_WINDOW_MS / 1000);
+  let undone = false;
+
+  const t = toast({
+    title,
+    description: `${description} · Reverter em ${secondsLeft}s`,
+    action: (
+      <ToastAction
+        altText="Desfazer"
+        onClick={() => {
+          if (undone) return;
+          undone = true;
+          clearInterval(intervalId);
+          clearTimeout(dismissId);
+          t.update({
+            id: t.id,
+            title: workingTitle,
+            description: workingDescription,
+            action: undefined,
+          });
+          onUndo()
+            .then(() => {
+              t.update({
+                id: t.id,
+                title: doneTitle,
+                description: doneDescription,
+                action: undefined,
+              });
+              setTimeout(() => t.dismiss(), 2500);
+            })
+            .catch((err: Error) => {
+              t.update({
+                id: t.id,
+                title: "Erro ao desfazer",
+                description: err.message,
+                variant: "destructive",
+                action: undefined,
+              });
+            });
+        }}
+      >
+        Desfazer
+      </ToastAction>
+    ),
+  });
+
+  const intervalId = setInterval(() => {
+    secondsLeft -= 1;
+    if (undone || secondsLeft <= 0) {
+      clearInterval(intervalId);
+      return;
+    }
+    t.update({
+      id: t.id,
+      description: `${description} · Reverter em ${secondsLeft}s`,
+    });
+  }, 1000);
+
+  const dismissId = setTimeout(() => {
+    clearInterval(intervalId);
+    if (!undone) t.dismiss();
+  }, UNDO_WINDOW_MS);
+}
 
 // ============ Sectors ============
 
@@ -176,13 +263,28 @@ export function useDeleteLAIAAssessment() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: laiaService.deleteLAIAAssessment,
-    onSuccess: () => {
+    mutationFn: ({ id }: { id: string; label?: string }) =>
+      laiaService.deleteLAIAAssessment(id),
+    onSuccess: (_data, { id, label }) => {
       queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-deleted-assessments"] });
       queryClient.invalidateQueries({ queryKey: ["laia-dashboard-stats"] });
-      toast({
-        title: "Avaliação excluída",
-        description: "A avaliação LAIA foi excluída com sucesso.",
+      queryClient.invalidateQueries({ queryKey: ["laia-branch-stats"] });
+
+      const ref = label ? `“${label}”` : "Avaliação";
+      showUndoToast({
+        toast,
+        title: `${ref} excluída`,
+        description: "Movida para a Lixeira",
+        doneDescription: `${ref} foi restaurada.`,
+        workingDescription: `Restaurando ${ref}.`,
+        onUndo: async () => {
+          await laiaService.restoreLAIAAssessment(id);
+          queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+          queryClient.invalidateQueries({ queryKey: ["laia-deleted-assessments"] });
+          queryClient.invalidateQueries({ queryKey: ["laia-dashboard-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["laia-branch-stats"] });
+        },
       });
     },
     onError: (error: Error) => {
@@ -230,69 +332,19 @@ export function useMarkLAIAAssessmentAsPendente() {
       queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
       queryClient.invalidateQueries({ queryKey: ["laia-assessment"] });
 
-      let secondsLeft = Math.round(PENDENTE_UNDO_WINDOW_MS / 1000);
-      let undone = false;
       const ref = label ? `“${label}”` : "Avaliação";
-
-      const t = toast({
+      showUndoToast({
+        toast,
         title: `${ref} marcada como pendente`,
-        description: `Reverter em ${secondsLeft}s`,
-        action: (
-          <ToastAction
-            altText="Desfazer"
-            onClick={() => {
-              if (undone) return;
-              undone = true;
-              clearInterval(intervalId);
-              clearTimeout(dismissId);
-              t.update({
-                id: t.id,
-                title: "Revertendo…",
-                description: `Restaurando ${ref} para Em Vigência.`,
-                action: undefined,
-              });
-              laiaService
-                .approveLAIAAssessment(id)
-                .then(() => {
-                  queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
-                  queryClient.invalidateQueries({ queryKey: ["laia-assessment"] });
-                  t.update({
-                    id: t.id,
-                    title: "Ação desfeita",
-                    description: `${ref} voltou para Em Vigência.`,
-                    action: undefined,
-                  });
-                  setTimeout(() => t.dismiss(), 2500);
-                })
-                .catch((err: Error) => {
-                  t.update({
-                    id: t.id,
-                    title: "Erro ao desfazer",
-                    description: err.message,
-                    variant: "destructive",
-                    action: undefined,
-                  });
-                });
-            }}
-          >
-            Desfazer
-          </ToastAction>
-        ),
+        description: "Removida da listagem em vigência",
+        doneDescription: `${ref} voltou para Em Vigência.`,
+        workingDescription: `Restaurando ${ref} para Em Vigência.`,
+        onUndo: async () => {
+          await laiaService.approveLAIAAssessment(id);
+          queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+          queryClient.invalidateQueries({ queryKey: ["laia-assessment"] });
+        },
       });
-
-      const intervalId = setInterval(() => {
-        secondsLeft -= 1;
-        if (undone || secondsLeft <= 0) {
-          clearInterval(intervalId);
-          return;
-        }
-        t.update({ id: t.id, description: `Reverter em ${secondsLeft}s` });
-      }, 1000);
-
-      const dismissId = setTimeout(() => {
-        clearInterval(intervalId);
-        if (!undone) t.dismiss();
-      }, PENDENTE_UNDO_WINDOW_MS);
     },
     onError: (error: Error) => {
       toast({
@@ -314,16 +366,91 @@ export function useBulkDeleteLAIAAssessments() {
     mutationFn: laiaService.bulkDeleteLAIAAssessments,
     onSuccess: (_data, ids) => {
       queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-deleted-assessments"] });
       queryClient.invalidateQueries({ queryKey: ["laia-dashboard-stats"] });
       queryClient.invalidateQueries({ queryKey: ["laia-branch-stats"] });
-      toast({
-        title: "Avaliações excluídas",
-        description: `${ids.length} avaliação(ões) excluída(s) com sucesso.`,
+
+      const n = ids.length;
+      const noun = n === 1 ? "avaliação" : "avaliações";
+      showUndoToast({
+        toast,
+        title: `${n} ${noun} excluída${n === 1 ? "" : "s"}`,
+        description: "Movidas para a Lixeira",
+        doneDescription: `${n} ${noun} restaurada${n === 1 ? "" : "s"}.`,
+        workingDescription: `Restaurando ${n} ${noun}.`,
+        onUndo: async () => {
+          await laiaService.bulkRestoreLAIAAssessments(ids);
+          queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+          queryClient.invalidateQueries({ queryKey: ["laia-deleted-assessments"] });
+          queryClient.invalidateQueries({ queryKey: ["laia-dashboard-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["laia-branch-stats"] });
+        },
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Erro ao excluir avaliações",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// ============ Trash (soft-deleted assessments) ============
+
+export function useDeletedLAIAAssessments(branchId?: string) {
+  return useQuery({
+    queryKey: ["laia-deleted-assessments", branchId],
+    queryFn: () => laiaService.getDeletedLAIAAssessments(branchId),
+  });
+}
+
+export function useRestoreLAIAAssessment() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: laiaService.restoreLAIAAssessment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-deleted-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-branch-stats"] });
+      toast({
+        title: "Avaliação restaurada",
+        description: "A avaliação voltou para a listagem.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao restaurar avaliação",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useBulkRestoreLAIAAssessments() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: laiaService.bulkRestoreLAIAAssessments,
+    onSuccess: (_data, ids) => {
+      queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-deleted-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-branch-stats"] });
+      toast({
+        title: "Avaliações restauradas",
+        description: `${ids.length} avaliação(ões) restaurada(s).`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao restaurar avaliações",
         description: error.message,
         variant: "destructive",
       });

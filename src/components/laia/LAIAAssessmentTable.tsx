@@ -125,7 +125,10 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
 
   const handleDelete = async () => {
     if (deleteAssessment) {
-      await deleteMutation.mutateAsync(deleteAssessment.id);
+      await deleteMutation.mutateAsync({
+        id: deleteAssessment.id,
+        label: formatAssessmentLabel(deleteAssessment),
+      });
       setDeleteAssessment(null);
     }
   };
@@ -425,10 +428,13 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
       <AlertDialog open={!!deleteAssessment} onOpenChange={(open) => !open && setDeleteAssessment(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Avaliação</AlertDialogTitle>
+            <AlertDialogTitle>Excluir avaliação</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a avaliação "{deleteAssessment?.aspect_code}"? 
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir{" "}
+              <span className="font-medium">
+                “{deleteAssessment ? formatAssessmentLabel(deleteAssessment) : ""}”
+              </span>
+              ? Ela ficará na Lixeira e poderá ser restaurada de lá.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -447,10 +453,10 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Avaliações em Lote</AlertDialogTitle>
+            <AlertDialogTitle>Excluir avaliações em lote</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir {selectedIds.size} avaliação(ões)? 
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir {selectedIds.size} avaliação(ões)? Elas ficarão
+              na Lixeira e poderão ser restauradas de lá.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

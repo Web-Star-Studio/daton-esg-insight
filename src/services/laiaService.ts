@@ -120,6 +120,7 @@ export async function getLAIAAssessments(filters?: {
       responsible_user:profiles!laia_assessments_responsible_user_id_fkey(full_name)
     `)
     .eq("company_id", profile.company_id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (filters?.branch_id) {
@@ -156,6 +157,7 @@ export async function getLAIAAssessmentById(id: string): Promise<LAIAAssessment 
       responsible_user:profiles!laia_assessments_responsible_user_id_fkey(full_name)
     `)
     .eq("id", id)
+    .is("deleted_at", null)
     .single();
 
   if (error) {
@@ -331,7 +333,17 @@ export async function updateLAIAAssessment(id: string, formData: Partial<LAIAAss
 export async function deleteLAIAAssessment(id: string): Promise<void> {
   const { error } = await supabase
     .from("laia_assessments")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() } as never)
+    .eq("id", id)
+    .is("deleted_at", null);
+
+  if (error) throw error;
+}
+
+export async function restoreLAIAAssessment(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("laia_assessments")
+    .update({ deleted_at: null } as never)
     .eq("id", id);
 
   if (error) throw error;
@@ -384,9 +396,50 @@ export async function suggestLegislationReference(context: {
 export async function bulkDeleteLAIAAssessments(ids: string[]): Promise<void> {
   const { error } = await supabase
     .from("laia_assessments")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() } as never)
+    .in("id", ids)
+    .is("deleted_at", null);
+  if (error) throw error;
+}
+
+export async function bulkRestoreLAIAAssessments(ids: string[]): Promise<void> {
+  const { error } = await supabase
+    .from("laia_assessments")
+    .update({ deleted_at: null } as never)
     .in("id", ids);
   if (error) throw error;
+}
+
+export async function getDeletedLAIAAssessments(branchId?: string): Promise<LAIAAssessment[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("company_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
+
+  let query = supabase
+    .from("laia_assessments")
+    .select(`
+      *,
+      sector:laia_sectors(id, code, name),
+      responsible_user:profiles!laia_assessments_responsible_user_id_fkey(full_name)
+    `)
+    .eq("company_id", profile.company_id)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+
+  if (branchId) {
+    query = query.eq("branch_id", branchId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as LAIAAssessment[];
 }
 
 export async function bulkDeleteLAIASectors(ids: string[]): Promise<void> {
