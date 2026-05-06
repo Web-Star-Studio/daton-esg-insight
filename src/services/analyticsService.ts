@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllPaginated } from '@/utils/supabasePagination';
 import handleServiceError from '@/utils/errorHandler';
 
 export interface AnalyticsData {
@@ -41,27 +42,31 @@ class AnalyticsService {
     try {
       const startDate = this.getPeriodStart(period);
       
-      const { data: emissions, error } = await supabase
-        .from('calculated_emissions')
-        .select(`
-          *,
-          activity_data (
-            period_start_date,
-            emission_sources (scope, category)
-          )
-        `)
-        .gte('calculation_date', startDate.toISOString())
-        .order('calculation_date');
+      // PostgREST cap default de 1000 rows truncava analytics em companies
+      // grandes — métricas agregadas (total, por escopo) saíam subestimadas.
+      // RLS escopa por empresa; aqui só paginamos.
+      const emissions = await fetchAllPaginated<any>((from, to) =>
+        supabase
+          .from('calculated_emissions')
+          .select(`
+            *,
+            activity_data (
+              period_start_date,
+              emission_sources (scope, category)
+            )
+          `)
+          .gte('calculation_date', startDate.toISOString())
+          .order('calculation_date')
+          .range(from, to),
+      );
 
-      if (error) throw error;
-
-      const totalEmissions = emissions?.reduce((sum, e) => sum + e.total_co2e, 0) || 0;
-      const scope1 = emissions?.filter(e => e.activity_data?.emission_sources?.scope === 1)
-        .reduce((sum, e) => sum + e.total_co2e, 0) || 0;
-      const scope2 = emissions?.filter(e => e.activity_data?.emission_sources?.scope === 2)
-        .reduce((sum, e) => sum + e.total_co2e, 0) || 0;
-      const scope3 = emissions?.filter(e => e.activity_data?.emission_sources?.scope === 3)
-        .reduce((sum, e) => sum + e.total_co2e, 0) || 0;
+      const totalEmissions = emissions.reduce((sum, e) => sum + e.total_co2e, 0);
+      const scope1 = emissions.filter(e => e.activity_data?.emission_sources?.scope === 1)
+        .reduce((sum, e) => sum + e.total_co2e, 0);
+      const scope2 = emissions.filter(e => e.activity_data?.emission_sources?.scope === 2)
+        .reduce((sum, e) => sum + e.total_co2e, 0);
+      const scope3 = emissions.filter(e => e.activity_data?.emission_sources?.scope === 3)
+        .reduce((sum, e) => sum + e.total_co2e, 0);
 
       // Calculate trends
       const trends = this.calculateTrends(emissions, 'total_co2e', 'calculation_date');
@@ -87,13 +92,17 @@ class AnalyticsService {
 
   async getQualityAnalytics(companyId: string): Promise<AnalyticsData> {
     try {
-      // Non-conformities trend
-      const { data: nonConformities } = await supabase
-        .from('non_conformities')
-        .select('*')
-        .eq('company_id', companyId)
-        .gte('created_at', this.getPeriodStart('year').toISOString())
-        .order('created_at');
+      // Non-conformities trend (paginado: tabela já passou de 1000 rows
+      // globais e companies grandes podem hit o cap em 1 ano de NCs)
+      const nonConformities = await fetchAllPaginated<any>((from, to) =>
+        supabase
+          .from('non_conformities')
+          .select('*')
+          .eq('company_id', companyId)
+          .gte('created_at', this.getPeriodStart('year').toISOString())
+          .order('created_at')
+          .range(from, to),
+      );
 
       // Quality indicators
       const { data: indicators } = await supabase

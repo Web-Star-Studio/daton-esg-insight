@@ -111,52 +111,54 @@ export const publishReport = async (id: string, approvedBy: string) => {
 };
 
 export const generateReportData = async (reportId: string) => {
-  // Buscar dados de todos os módulos para gerar o relatório
+  // Buscar dados de todos os módulos para gerar o relatório.
+  // PostgREST cap default de 1000 rows truncava os agregados em companies
+  // grandes (Gabardo: 4540 employee_trainings, ~3370 calculated_emissions
+  // potenciais, etc.) — relatório saía com KPIs incorretos. RLS escopa
+  // por empresa em todas as tabelas; aqui paginamos pra evitar truncagem.
   const [
-    employeesData,
-    safetyData,
-    socialProjectsData,
-    risksData,
-    performanceData,
-    emissionsData,
-    wasteData,
-    licensesData,
-    goalsData,
-    trainingData
+    employees,
+    safetyIncidents,
+    socialProjects,
+    risks,
+    indicators,
+    emissions,
+    waste,
+    licenses,
+    goals,
+    trainings,
   ] = await Promise.all([
-    supabase.from('employees').select('*'),
-    supabase.from('safety_incidents').select('*'),
-    supabase.from('social_projects').select('*'),
-    supabase.from('esg_risks').select('*'),
-    supabase.from('esg_performance_indicators').select('*'),
-    supabase.from('calculated_emissions').select('*'),
-    supabase.from('waste_logs').select('*'),
-    supabase.from('licenses').select('*'),
-    supabase.from('goals').select('*'),
-    supabase.from('training_programs').select('*')
+    fetchAllPaginated<any>((from, to) =>
+      supabase.from('employees').select('*').range(from, to),
+    ),
+    fetchAllPaginated<any>((from, to) =>
+      supabase.from('safety_incidents').select('*').range(from, to),
+    ),
+    fetchAllPaginated<any>((from, to) =>
+      supabase.from('social_projects').select('*').range(from, to),
+    ),
+    fetchAllPaginated<any>((from, to) =>
+      supabase.from('esg_risks').select('*').range(from, to),
+    ),
+    fetchAllPaginated<any>((from, to) =>
+      supabase.from('esg_performance_indicators').select('*').range(from, to),
+    ),
+    fetchAllPaginated<any>((from, to) =>
+      supabase.from('calculated_emissions').select('*').range(from, to),
+    ),
+    fetchAllPaginated<any>((from, to) =>
+      supabase.from('waste_logs').select('*').range(from, to),
+    ),
+    fetchAllPaginated<any>((from, to) =>
+      supabase.from('licenses').select('*').range(from, to),
+    ),
+    fetchAllPaginated<any>((from, to) =>
+      supabase.from('goals').select('*').range(from, to),
+    ),
+    fetchAllPaginated<any>((from, to) =>
+      supabase.from('training_programs').select('*').range(from, to),
+    ),
   ]);
-
-  if (employeesData.error) throw employeesData.error;
-  if (safetyData.error) throw safetyData.error;
-  if (socialProjectsData.error) throw socialProjectsData.error;
-  if (risksData.error) throw risksData.error;
-  if (performanceData.error) throw performanceData.error;
-  if (emissionsData.error) throw emissionsData.error;
-  if (wasteData.error) throw wasteData.error;
-  if (licensesData.error) throw licensesData.error;
-  if (goalsData.error) throw goalsData.error;
-  if (trainingData.error) throw trainingData.error;
-
-  const employees = employeesData.data;
-  const safetyIncidents = safetyData.data;
-  const socialProjects = socialProjectsData.data;
-  const risks = risksData.data;
-  const indicators = performanceData.data;
-  const emissions = emissionsData.data;
-  const waste = wasteData.data;
-  const licenses = licensesData.data;
-  const goals = goalsData.data;
-  const trainings = trainingData.data;
 
   // Calcular scores ESG
   const environmentalScore = calculateEnvironmentalScore(emissions, indicators, waste, licenses);
