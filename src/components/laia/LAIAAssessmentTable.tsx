@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLAIAAssessments, useDeleteLAIAAssessment, useBulkDeleteLAIAAssessments, useApproveLAIAAssessment, useMarkLAIAAssessmentAsPendente } from "@/hooks/useLAIA";
+import { formatAssessmentLabel } from "@/utils/laiaFormat";
 import {
   Search,
   MoreVertical,
@@ -347,7 +348,7 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
                                 Aprovar como em vigência
                               </DropdownMenuItem>
                             ) : (
-                              <DropdownMenuItem onClick={() => markPendenteMutation.mutate(assessment.id)}>
+                              <DropdownMenuItem onClick={() => markPendenteMutation.mutate({ id: assessment.id, label: formatAssessmentLabel(assessment) })}>
                                 <Clock className="mr-2 h-4 w-4 text-amber-600" />
                                 Marcar como pendente
                               </DropdownMenuItem>

@@ -20,6 +20,7 @@ import { Pencil, FileText, Calendar, User, CheckCircle2, Clock, ExternalLink } f
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useApproveLAIAAssessment, useMarkLAIAAssessmentAsPendente } from "@/hooks/useLAIA";
+import { formatAssessmentLabel } from "@/utils/laiaFormat";
 
 interface LAIAAssessmentDetailProps {
   assessment: LAIAAssessment | null;
@@ -119,7 +120,7 @@ export function LAIAAssessmentDetail({
                   size="sm"
                   variant="outline"
                   className="text-amber-600 border-amber-300 hover:bg-amber-50"
-                  onClick={() => markPendenteMutation.mutate(assessment.id)}
+                  onClick={() => markPendenteMutation.mutate({ id: assessment.id, label: formatAssessmentLabel(assessment) })}
                   disabled={markPendenteMutation.isPending}
                 >
                   <Clock className="mr-2 h-4 w-4" />

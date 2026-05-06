@@ -1,8 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import * as laiaService from "@/services/laiaService";
 import * as laiaBranchConfigService from "@/services/laiaBranchConfigService";
 import type { LAIAAssessmentFormData } from "@/types/laia";
+
+const PENDENTE_UNDO_WINDOW_MS = 10_000;
 
 // ============ Sectors ============
 
@@ -221,14 +224,75 @@ export function useMarkLAIAAssessmentAsPendente() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: laiaService.markLAIAAssessmentAsPendente,
-    onSuccess: () => {
+    mutationFn: ({ id }: { id: string; label?: string }) =>
+      laiaService.markLAIAAssessmentAsPendente(id),
+    onSuccess: (_data, { id, label }) => {
       queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
       queryClient.invalidateQueries({ queryKey: ["laia-assessment"] });
-      toast({
-        title: "Avaliação marcada como pendente",
-        description: "A avaliação foi removida da listagem em vigência.",
+
+      let secondsLeft = Math.round(PENDENTE_UNDO_WINDOW_MS / 1000);
+      let undone = false;
+      const ref = label ? `“${label}”` : "Avaliação";
+
+      const t = toast({
+        title: `${ref} marcada como pendente`,
+        description: `Reverter em ${secondsLeft}s`,
+        action: (
+          <ToastAction
+            altText="Desfazer"
+            onClick={() => {
+              if (undone) return;
+              undone = true;
+              clearInterval(intervalId);
+              clearTimeout(dismissId);
+              t.update({
+                id: t.id,
+                title: "Revertendo…",
+                description: `Restaurando ${ref} para Em Vigência.`,
+                action: undefined,
+              });
+              laiaService
+                .approveLAIAAssessment(id)
+                .then(() => {
+                  queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+                  queryClient.invalidateQueries({ queryKey: ["laia-assessment"] });
+                  t.update({
+                    id: t.id,
+                    title: "Ação desfeita",
+                    description: `${ref} voltou para Em Vigência.`,
+                    action: undefined,
+                  });
+                  setTimeout(() => t.dismiss(), 2500);
+                })
+                .catch((err: Error) => {
+                  t.update({
+                    id: t.id,
+                    title: "Erro ao desfazer",
+                    description: err.message,
+                    variant: "destructive",
+                    action: undefined,
+                  });
+                });
+            }}
+          >
+            Desfazer
+          </ToastAction>
+        ),
       });
+
+      const intervalId = setInterval(() => {
+        secondsLeft -= 1;
+        if (undone || secondsLeft <= 0) {
+          clearInterval(intervalId);
+          return;
+        }
+        t.update({ id: t.id, description: `Reverter em ${secondsLeft}s` });
+      }, 1000);
+
+      const dismissId = setTimeout(() => {
+        clearInterval(intervalId);
+        if (!undone) t.dismiss();
+      }, PENDENTE_UNDO_WINDOW_MS);
     },
     onError: (error: Error) => {
       toast({
