@@ -53,19 +53,20 @@ const LegislationComplianceProfiles: React.FC = () => {
         <AlertTitle>Como funciona o Questionário de Compliance?</AlertTitle>
         <AlertDescription className="mt-2 space-y-2">
           <p>
-            O questionário ajuda a identificar quais legislações são realmente aplicáveis a cada unidade da empresa,
-            com base em suas características específicas como:
+            O questionário cobre 21 temas de compliance organizados por área de risco regulatório,
+            como por exemplo:
           </p>
           <ul className="list-disc list-inside text-sm space-y-1 mt-2">
-            <li>Setores de atividade (Meio Ambiente, RH, SST, etc.)</li>
-            <li>Atividades realizadas (transporte, produção, armazenamento)</li>
-            <li>Tipos de resíduos gerados</li>
-            <li>Localização e estados de operação</li>
-            <li>Certificações possuídas</li>
+            <li>Licenciamento ambiental, instalações e localização (fauna/flora)</li>
+            <li>Produtos químicos, perigosos e produtos florestais</li>
+            <li>Recursos hídricos, efluentes, emissões atmosféricas e resíduos</li>
+            <li>Equipamentos, energia e transporte (rodoviário, aéreo, marítimo)</li>
+            <li>Profissionais, PCD, saúde do trabalhador e Normas Regulamentadoras (NR)</li>
+            <li>Mineração, pesagem e LGPD</li>
           </ul>
           <p className="mt-2 font-medium">
-            Após configurar o perfil, as legislações serão automaticamente filtradas com base nas tags
-            geradas, mostrando apenas o que é relevante para cada unidade.
+            As respostas geram tags de compliance da unidade, usadas para filtrar legislações
+            aplicáveis e disparar notificações quando novas leis relevantes forem cadastradas.
           </p>
         </AlertDescription>
       </Alert>

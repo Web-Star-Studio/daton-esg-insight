@@ -14,8 +14,7 @@ import {
 } from "lucide-react";
 import { useBranches } from "@/services/branches";
 import { useAllComplianceProfiles } from "@/hooks/useComplianceProfiles";
-import { ComplianceQuestionnaireWizard } from "./ComplianceQuestionnaireWizard";
-import { generateProfileTags } from "@/services/complianceProfiles";
+import { ComplianceQuestionnaireModal } from "./compliance-questionnaire/ComplianceQuestionnaireModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -47,8 +46,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
     if (!profiles) return [];
     const tagSet = new Set<string>();
     profiles.forEach(profile => {
-      const tags = generateProfileTags(profile);
-      tags.forEach(tag => tagSet.add(tag));
+      profile.generated_tags?.forEach(tag => tagSet.add(tag));
     });
     return Array.from(tagSet).sort();
   }, [profiles]);
@@ -119,7 +117,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
             {branches?.map(branch => {
               const profile = getProfileForBranch(branch.id);
               const isCompleted = !!profile?.completed_at;
-              const tags = profile ? generateProfileTags(profile) : [];
+              const tags = profile?.generated_tags ?? [];
               
               return (
                 <Card 
@@ -213,9 +211,9 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
         </CardContent>
       </Card>
 
-      {/* Wizard Modal */}
+      {/* Questionnaire Modal */}
       {selectedBranch && (
-        <ComplianceQuestionnaireWizard
+        <ComplianceQuestionnaireModal
           open={!!selectedBranch}
           onOpenChange={(open) => !open && setSelectedBranch(null)}
           branchId={selectedBranch.id}
