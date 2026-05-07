@@ -1,5 +1,142 @@
 import type { Theme } from "./types";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Produtos Químicos — perguntas 18 a 22.
+// Cada uma das 5 perguntas no gabarito tem uma lista própria (não é a mesma
+// repetida). q18 (fabrica) e q21 (armazena) coincidem. q19 (importa) e q20
+// (comercializa) compartilham o subconjunto de bens importados/distribuídos.
+// q22 (utiliza) é a mais distinta — exclui bens de consumo final (Pneu,
+// Pilha/Bateria, Domissanitários, Detergente em pó) e inclui itens técnicos
+// específicos (Perigosos por FDS/Fispq, Óleos Combustíveis, Cloro/Ácido
+// clorídrico puro). Itens são definidos uma vez em PROD_QUIM_ITEMS e cada
+// pergunta enumera os IDs aplicáveis na ordem do PDF.
+// ─────────────────────────────────────────────────────────────────────────────
+type Verb = "fab" | "imp" | "com" | "arm" | "uti";
+
+const PROD_QUIM_ITEMS = {
+  biometano: { label: "Biometano", tags: ["biometano"] },
+  negro_fumo: { label: "Negro de Fumo", tags: ["negro_fumo", "produtos_perigosos"] },
+  veterinarios: { label: "Produtos veterinários", tags: ["produtos_veterinarios"] },
+  saneantes: { label: "Saneantes", tags: ["saneantes"] },
+  solventes_pf_60: {
+    label: "Solventes controlados pela Polícia Federal com concentração acima de 60%",
+    tags: ["solventes", "controlados_pf", "produtos_perigosos"],
+  },
+  chumbo: { label: "Chumbo", tags: ["chumbo", "produtos_perigosos"] },
+  soda_caustica: { label: "Soda Cáustica", tags: ["soda_caustica", "produtos_perigosos"] },
+  acido_fluoridrico: { label: "Ácido Fluorídrico", tags: ["acido_fluoridrico", "produtos_perigosos"] },
+  nitrato_amonio: { label: "Nitrato de Amônio", tags: ["nitrato_amonio", "produtos_perigosos"] },
+  mercurio: { label: "Mercúrio", tags: ["mercurio", "produtos_perigosos"] },
+  solventes: { label: "Solventes", tags: ["solventes"] },
+  cola_adesivos: {
+    label: "Cola de Sapateiro, Adesivos Ou Corretivos",
+    tags: ["cola_adesivos", "produtos_quimicos"],
+  },
+  thiner: { label: "Thiner", tags: ["thiner", "produtos_quimicos"] },
+  tolueno: { label: "Tolueno", tags: ["tolueno", "produtos_perigosos"] },
+  cloro: { label: "Cloro", tags: ["cloro", "produtos_perigosos"] },
+  detergente_po: { label: "Detergente em pó", tags: ["detergente_po"] },
+  benzeno: { label: "Benzeno", tags: ["benzeno", "produtos_perigosos"] },
+  fertilizantes: { label: "Fertilizantes", tags: ["fertilizantes"] },
+  controlados_pc: { label: "Controlados Pela Polícia Civil", tags: ["controlados_pc"] },
+  controlados_pf: { label: "Controlados Pela Polícia Federal", tags: ["controlados_pf"] },
+  controlados_exercito: { label: "Controlados Pelo Exército", tags: ["controlados_exercito"] },
+  biodiesel: { label: "Biodiesel", tags: ["biodiesel"] },
+  gas_natural: { label: "Gás Natural", tags: ["gas_natural"] },
+  glp: { label: "GLP - Gás Liquefeito de Petróleo", tags: ["glp"] },
+  agrotoxicos: { label: "Agrotóxicos", tags: ["agrotoxicos", "produtos_perigosos"] },
+  oleo_lubrificante: { label: "Óleo Lubrificante", tags: ["oleo_lubrificante"] },
+  oleo_diesel: { label: "Óleo Diesel", tags: ["oleo_diesel"] },
+  medicamentos: {
+    label: "Medicamentos, Drogas, Insumos Farmacêuticos e Afins",
+    tags: ["medicamentos_insumos"],
+  },
+  controle_pragas: {
+    label: "Produtos Para Controle de Pragas e Vetores",
+    tags: ["controle_pragas_vetores"],
+  },
+  higienizacao: {
+    label: "Produtos Para Higienização E/ou Desinfecção",
+    tags: ["higienizacao"],
+  },
+  pilha_bateria: { label: "Pilha/Bateria", tags: ["pilhas_baterias"] },
+  metanol: { label: "Metanol", tags: ["metanol", "produtos_perigosos"] },
+  pneu: { label: "Pneu", tags: ["pneu"] },
+  domissanitarios: { label: "Domissanitários", tags: ["domissanitarios"] },
+  perigosos_fds: {
+    label: "Perigosos (conforme FDS/Fispq do Produto)",
+    tags: ["produtos_perigosos"],
+  },
+  oleos_combustiveis: { label: "Óleos Combustíveis", tags: ["oleos_combustiveis"] },
+  cloro_acido_clor: {
+    label:
+      "Cloro/Ácido clorídrico puro (não considerar produtos de limpeza ou tratamento de água diluídos)",
+    tags: ["acido_cloridrico", "produtos_perigosos"],
+  },
+} as const satisfies Record<string, { label: string; tags?: readonly string[] }>;
+
+type ProdQuimKey = keyof typeof PROD_QUIM_ITEMS;
+
+// q18 (fabrica) e q21 (armazena) — mesma lista, 33 itens.
+const PROD_QUIM_FAB_ARM: readonly ProdQuimKey[] = [
+  "biometano", "negro_fumo", "veterinarios", "saneantes", "solventes_pf_60",
+  "chumbo", "soda_caustica", "acido_fluoridrico", "nitrato_amonio", "mercurio",
+  "solventes", "cola_adesivos", "thiner", "tolueno", "cloro", "detergente_po",
+  "benzeno", "fertilizantes", "controlados_pc", "controlados_pf", "controlados_exercito",
+  "biodiesel", "gas_natural", "glp", "agrotoxicos", "oleo_lubrificante", "oleo_diesel",
+  "medicamentos", "controle_pragas", "higienizacao", "pilha_bateria", "metanol", "pneu",
+];
+
+// q19 (importa) — sem Biometano, Negro de Fumo, Detergente em pó, Metanol;
+// inclui Domissanitários. 30 itens.
+const PROD_QUIM_IMP: readonly ProdQuimKey[] = [
+  "veterinarios", "saneantes", "solventes_pf_60", "solventes", "cola_adesivos",
+  "thiner", "tolueno", "cloro", "mercurio", "nitrato_amonio", "acido_fluoridrico",
+  "chumbo", "oleo_lubrificante", "agrotoxicos", "domissanitarios", "glp",
+  "gas_natural", "biodiesel", "controlados_exercito", "controlados_pf", "controlados_pc",
+  "fertilizantes", "benzeno", "soda_caustica", "pilha_bateria", "pneu", "oleo_diesel",
+  "medicamentos", "controle_pragas", "higienizacao",
+];
+
+// q20 (comercializa) — q19 + Biometano + Metanol; sem Negro de Fumo nem
+// Detergente em pó. 32 itens.
+const PROD_QUIM_COM: readonly ProdQuimKey[] = [
+  "biometano", "veterinarios", "saneantes", "solventes_pf_60", "solventes",
+  "cola_adesivos", "thiner", "tolueno", "cloro", "mercurio", "nitrato_amonio",
+  "acido_fluoridrico", "soda_caustica", "chumbo", "oleo_lubrificante", "agrotoxicos",
+  "domissanitarios", "glp", "gas_natural", "biodiesel", "controlados_exercito",
+  "controlados_pf", "controlados_pc", "fertilizantes", "benzeno", "oleo_diesel",
+  "medicamentos", "controle_pragas", "higienizacao", "pilha_bateria", "metanol", "pneu",
+];
+
+// q22 (utiliza) — sem bens de consumo final (Detergente, Pilha/Bateria, Pneu,
+// Domissanitários, Cloro puro); inclui Cloro/Ácido clorídrico puro, Perigosos
+// por FDS/Fispq e Óleos Combustíveis. 32 itens.
+const PROD_QUIM_UTI: readonly ProdQuimKey[] = [
+  "biometano", "negro_fumo", "veterinarios", "saneantes", "solventes_pf_60",
+  "chumbo", "mercurio", "cloro_acido_clor", "cola_adesivos", "thiner", "tolueno",
+  "solventes", "acido_fluoridrico", "soda_caustica", "oleo_lubrificante", "agrotoxicos",
+  "glp", "gas_natural", "biodiesel", "controlados_exercito", "controlados_pf",
+  "controlados_pc", "fertilizantes", "benzeno", "perigosos_fds", "oleos_combustiveis",
+  "oleo_diesel", "nitrato_amonio", "controle_pragas", "medicamentos", "higienizacao",
+  "metanol",
+];
+
+function produtosQuimicosOptions(verb: Verb, keys: readonly ProdQuimKey[]) {
+  return [
+    { id: "nao_aplica", label: "Não Se Aplica" },
+    ...keys.map((key) => {
+      const item = PROD_QUIM_ITEMS[key];
+      const baseTags = item.tags ?? [];
+      return {
+        id: `${verb}_${key}`,
+        label: item.label,
+        tags: [...baseTags, `quimicos_${verb}`],
+      };
+    }),
+  ];
+}
+
 // Themes 5-12 and 14-21 extracted from the Brazilian-Portuguese compliance PDFs.
 // Themes 1-4 and 13 already live in `questions.config.ts`.
 export const EXTRACTED_THEMES: Theme[] = [
@@ -478,35 +615,35 @@ export const EXTRACTED_THEMES: Theme[] = [
         number: "18",
         label: "Indique quais os produtos a unidade fabrica/produz:",
         type: "multi",
-        options: produtosQuimicosOptions("fab"),
+        options: produtosQuimicosOptions("fab", PROD_QUIM_FAB_ARM),
       },
       {
         id: "qui.q19",
         number: "19",
         label: "Indique quais os produtos a unidade importa:",
         type: "multi",
-        options: produtosQuimicosOptions("imp"),
+        options: produtosQuimicosOptions("imp", PROD_QUIM_IMP),
       },
       {
         id: "qui.q20",
         number: "20",
         label: "Indique quais os produtos químicos a unidade comercializa:",
         type: "multi",
-        options: produtosQuimicosOptions("com"),
+        options: produtosQuimicosOptions("com", PROD_QUIM_COM),
       },
       {
         id: "qui.q21",
         number: "21",
         label: "Indique quais os produtos a unidade armazena:",
         type: "multi",
-        options: produtosQuimicosOptions("arm"),
+        options: produtosQuimicosOptions("arm", PROD_QUIM_FAB_ARM),
       },
       {
         id: "qui.q22",
         number: "22",
         label: "Indique quais os produtos químicos a unidade utiliza:",
         type: "multi",
-        options: produtosQuimicosOptions("uti"),
+        options: produtosQuimicosOptions("uti", PROD_QUIM_UTI),
       },
       {
         id: "qui.q22_1",
@@ -2344,91 +2481,3 @@ export const EXTRACTED_THEMES: Theme[] = [
     ],
   },
 ];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper: shared product lists for the Produtos Químicos questions 18-22.
-// The PDF repeats roughly the same list across "fabrica", "importa",
-// "comercializa", "armazena" and "utiliza", with slight differences. We share
-// a base and prefix each option id with the verb so multi-question state
-// remains separable without colliding tags.
-// ─────────────────────────────────────────────────────────────────────────────
-type Verb = "fab" | "imp" | "com" | "arm" | "uti";
-
-function produtosQuimicosOptions(verb: Verb) {
-  // tags reused: produtos_quimicos for the entire family; produtos_perigosos
-  // when the substance is intrinsically hazardous; controlados_* for police/army
-  // controlled. The verb is appended only when relevant for downstream rules.
-  const base: Array<{ id: string; label: string; tags?: string[] }> = [
-    { id: "biometano", label: "Biometano", tags: ["biometano"] },
-    { id: "negro_fumo", label: "Negro de Fumo", tags: ["negro_fumo", "produtos_perigosos"] },
-    { id: "veterinarios", label: "Produtos veterinários", tags: ["produtos_veterinarios"] },
-    { id: "saneantes", label: "Saneantes", tags: ["saneantes"] },
-    {
-      id: "solventes_pf_60",
-      label: "Solventes controlados pela Polícia Federal com concentração acima de 60%",
-      tags: ["solventes", "controlados_pf", "produtos_perigosos"],
-    },
-    { id: "chumbo", label: "Chumbo", tags: ["chumbo", "produtos_perigosos"] },
-    { id: "soda_caustica", label: "Soda Cáustica", tags: ["soda_caustica", "produtos_perigosos"] },
-    { id: "acido_fluoridrico", label: "Ácido Fluorídrico", tags: ["acido_fluoridrico", "produtos_perigosos"] },
-    { id: "nitrato_amonio", label: "Nitrato de Amônio", tags: ["nitrato_amonio", "produtos_perigosos"] },
-    { id: "mercurio", label: "Mercúrio", tags: ["mercurio", "produtos_perigosos"] },
-    { id: "solventes", label: "Solventes", tags: ["solventes"] },
-    {
-      id: "cola_adesivos",
-      label: "Cola de Sapateiro, Adesivos Ou Corretivos",
-      tags: ["cola_adesivos", "produtos_quimicos"],
-    },
-    { id: "thiner", label: "Thiner", tags: ["thiner", "produtos_quimicos"] },
-    { id: "tolueno", label: "Tolueno", tags: ["tolueno", "produtos_perigosos"] },
-    { id: "cloro", label: "Cloro", tags: ["cloro", "produtos_perigosos"] },
-    { id: "detergente_po", label: "Detergente em pó", tags: ["detergente_po"] },
-    { id: "benzeno", label: "Benzeno", tags: ["benzeno", "produtos_perigosos"] },
-    { id: "fertilizantes", label: "Fertilizantes", tags: ["fertilizantes"] },
-    { id: "controlados_pc", label: "Controlados Pela Polícia Civil", tags: ["controlados_pc"] },
-    { id: "controlados_pf", label: "Controlados Pela Polícia Federal", tags: ["controlados_pf"] },
-    { id: "controlados_exercito", label: "Controlados Pelo Exército", tags: ["controlados_exercito"] },
-    { id: "biodiesel", label: "Biodiesel", tags: ["biodiesel"] },
-    { id: "gas_natural", label: "Gás Natural", tags: ["gas_natural"] },
-    { id: "glp", label: "GLP - Gás Liquefeito de Petróleo", tags: ["glp"] },
-    { id: "agrotoxicos", label: "Agrotóxicos", tags: ["agrotoxicos", "produtos_perigosos"] },
-    { id: "oleo_lubrificante", label: "Óleo Lubrificante", tags: ["oleo_lubrificante"] },
-    { id: "oleo_diesel", label: "Óleo Diesel", tags: ["oleo_diesel"] },
-    {
-      id: "medicamentos",
-      label: "Medicamentos, Drogas, Insumos Farmacêuticos e Afins",
-      tags: ["medicamentos_insumos"],
-    },
-    {
-      id: "controle_pragas",
-      label: "Produtos Para Controle de Pragas e Vetores",
-      tags: ["controle_pragas_vetores"],
-    },
-    {
-      id: "higienizacao",
-      label: "Produtos Para Higienização E/ou Desinfecção",
-      tags: ["higienizacao"],
-    },
-    { id: "pilha_bateria", label: "Pilha/Bateria", tags: ["pilhas_baterias"] },
-    { id: "metanol", label: "Metanol", tags: ["metanol", "produtos_perigosos"] },
-    { id: "pneu", label: "Pneu", tags: ["pneu"] },
-    { id: "domissanitarios", label: "Domissanitários", tags: ["domissanitarios"] },
-    { id: "perigosos_fds", label: "Perigosos (conforme FDS/Fispq do Produto)", tags: ["produtos_perigosos"] },
-    { id: "oleos_combustiveis", label: "Óleos Combustíveis", tags: ["oleos_combustiveis"] },
-    {
-      id: "cloro_acido_clor",
-      label:
-        "Cloro/Ácido clorídrico puro (não considerar produtos de limpeza ou tratamento de água diluídos)",
-      tags: ["acido_cloridrico", "produtos_perigosos"],
-    },
-  ];
-
-  return [
-    { id: "nao_aplica", label: "Não Se Aplica" },
-    ...base.map((opt) => ({
-      ...opt,
-      id: `${verb}_${opt.id}`,
-      tags: opt.tags ? [...opt.tags, `quimicos_${verb}`] : [`quimicos_${verb}`],
-    })),
-  ];
-}
