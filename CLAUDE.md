@@ -83,17 +83,17 @@ The `build` task uses `dependsOn: ["^build"]` and caches `NEXT_PUBLIC_*` and `EX
 - **Root scripts must use `turbo run`** (not the `turbo` shorthand) per Turborepo best practices.
 - **CI uses `--affected`** to only run tasks on changed packages.
 
-## Mandatory Code Review Workflow (Greptile)
+## Mandatory Code Review Workflow (CodeRabbit)
 
 Every time you write or modify actual code (not docs-only or config-only changes), you **must** follow this workflow before moving on to the next task:
 
 1. **Stage and commit** your changes with a conventional commit message.
-2. **Create a PR** targeting `main`. Keep each PR to **100 changed files or fewer** — this is a hard limit imposed by Greptile's review execution. If your changes exceed 100 files, split them into multiple sequential PRs.
-3. **Wait for Greptile's auto-review.** Greptile automatically reviews every PR on creation — no manual trigger is needed. Poll for comments using `list_merge_request_comments` (with `greptileGenerated: true`) or `get_merge_request` until the review appears.
-4. **If Greptile raises issues**: fix them in the same branch, push, and wait for a follow-up review pass.
-5. **If Greptile has no issues** (or all issues are resolved): merge the PR and continue to the next task.
+2. **Create a PR** targeting `main`. Keep each PR to **100 changed files or fewer** — manter PRs pequenos é uma boa prática do projeto e ajuda a revisão automatizada a ser eficaz. Se as mudanças passarem de 100 arquivos, divida em PRs sequenciais.
+3. **Wait for CodeRabbit's auto-review.** CodeRabbit revisa automaticamente todo PR ao ser criado — sem trigger manual. Acompanhe pelos comentários do bot no PR ou via `gh pr view <num> --comments`.
+4. **If CodeRabbit raises issues**: corrija na mesma branch, faça push, e aguarde a revisão de follow-up.
+5. **If CodeRabbit has no issues** (ou todas as issues foram resolvidas): merge o PR e siga para a próxima tarefa.
 
-**Do not skip this workflow.** Code that hasn't passed Greptile review must not be merged.
+**Do not skip this workflow.** Código que não passou pela revisão do CodeRabbit não deve ser mergeado.
 
 ## EAS Workflows
 
