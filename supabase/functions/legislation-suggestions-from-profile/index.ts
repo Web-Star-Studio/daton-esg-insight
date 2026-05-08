@@ -10,13 +10,16 @@
 // UI, e o aceite vira upsert em `legislation_unit_compliance` (rota separada).
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { callPerplexityWithRetry } from "../_shared/perplexity-call.ts";
+import { runAgent, type AgentTool } from "../_shared/agent-runtime.ts";
+import { extractFirstJsonObject } from "../_shared/json-utils.ts";
 
 interface RequestBody {
   branch_id: string;
   expand_ai?: boolean; // força camada IA mesmo quando matched > limite
+  cron_internal?: boolean; // chamada server-to-server — pula JWT (admin/test)
 }
 
 interface MatchedSuggestion {
@@ -122,101 +125,159 @@ function intersect<T>(a: T[], b: T[]): T[] {
   return a.filter((x) => set.has(x));
 }
 
-async function callPerplexityDiscovery(
-  apiKey: string,
-  ctx: {
-    sector: string;
-    state: string | null;
-    city: string | null;
-    activities: string;
-    topTags: string[];
-  },
-): Promise<{ items: DiscoveredSuggestion[]; failed: boolean; error?: string }> {
-  const startedAt = Date.now();
-  const userPrompt = `Sugira até 5 normas brasileiras vigentes aplicáveis à unidade abaixo. Considere overlap de obrigações federais, estaduais (se houver UF) e municipais. Não repita normas óbvias do catálogo padrão (CF/88, CLT, lei do meio ambiente).
+// ---------- agentic discovery ----------
 
-Setor: ${ctx.sector || "transporte rodoviário de cargas"}
-UF: ${ctx.state ?? "—"}
-Cidade: ${ctx.city ?? "—"}
-Atividades/Características: ${ctx.activities || "—"}
-Temas-chave (tags do questionário): ${ctx.topTags.slice(0, 12).join(", ")}
+interface SuggestionsAgentCtx {
+  apiKey: string;
+  supabase: SupabaseClient;
+  branchId: string;
+  responses: Record<string, unknown>;
+  state: string | null;
+  city: string | null;
+}
 
-Para cada norma: reference (nome curto e padrão), url canônica do texto oficial (ou null se não confirmar via busca), summary técnico em 1 frase, jurisdiction_hint (federal | estadual | municipal | nbr | internacional), applicability_hint (real | potential).`;
-
-  try {
-    const resp = await callPerplexityWithRetry(apiKey, {
-      model: "sonar",
-      messages: [
-        {
-          role: "system",
-          content:
-            "Você é analista de legislação brasileira focado em compliance ambiental, trabalhista e operacional. Português do Brasil, tom técnico, sem marketing. Retorne apenas JSON.",
-        },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.2,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "discovered_legislation",
-          schema: {
-            type: "object",
-            properties: {
-              items: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    reference: { type: "string" },
-                    url: { type: ["string", "null"] },
-                    summary: { type: "string" },
-                    jurisdiction_hint: { type: "string" },
-                    applicability_hint: { type: "string" },
-                  },
-                  required: ["reference", "summary", "jurisdiction_hint", "applicability_hint"],
-                },
-              },
-            },
-            required: ["items"],
-          },
+function buildSearchPerplexityTool(apiKey: string): AgentTool {
+  return {
+    name: "search_perplexity",
+    description:
+      "Busca normas brasileiras vigentes via Perplexity Sonar-pro com web search. Use UMA query por tema/agência. Útil pra cobrir gaps que o overlap SQL determinístico não pegou.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description:
+            "Query natural em PT-BR. Ex: 'normas LGPD ANPD compliance dados pessoais transportadoras' ou 'NRs MTE saúde do trabalhador motoristas profissionais'.",
         },
       },
-    });
-    const latency = Date.now() - startedAt;
-    if (!resp.ok) {
-      const errText = await resp.text();
-      await logUsage("discovery", null, latency, false, `HTTP ${resp.status}: ${errText.slice(0, 300)}`);
-      return { items: [], failed: true, error: `HTTP ${resp.status}` };
-    }
-    const json = await resp.json() as {
-      choices?: Array<{ message?: { content?: string } }>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
-    };
-    await logUsage("discovery", json.usage ?? null, latency, true);
-    const content = json.choices?.[0]?.message?.content ?? "{}";
-    try {
-      const parsed = JSON.parse(content) as { items?: DiscoveredSuggestion[] };
-      const items = Array.isArray(parsed.items) ? parsed.items : [];
-      // Sanitiza enums simples para reduzir surpresa na UI.
-      const norm = items.map((it) => ({
-        reference: String(it.reference ?? "").trim(),
-        url: typeof it.url === "string" && it.url.startsWith("http") ? it.url : null,
-        summary: String(it.summary ?? "").trim(),
-        jurisdiction_hint: String(it.jurisdiction_hint ?? "").toLowerCase(),
-        applicability_hint:
-          (String(it.applicability_hint ?? "").toLowerCase() === "real" ? "real" : "potential") as "real" | "potential",
-      })).filter((it) => it.reference && it.summary);
-      return { items: norm, failed: false };
-    } catch {
-      return { items: [], failed: true, error: "parse" };
-    }
-  } catch (err) {
-    const latency = Date.now() - startedAt;
-    const message = err instanceof Error ? err.message : String(err);
-    await logUsage("discovery", null, latency, false, message);
-    return { items: [], failed: true, error: message };
-  }
+      required: ["query"],
+    },
+    execute: async (args) => {
+      const query = String(args.query ?? "").trim();
+      if (!query) return { error: "query obrigatória" };
+      const userPrompt = `Liste até 6 normas brasileiras vigentes sobre: ${query}.\n\nPara cada norma: reference (nome curto, ex.: "Resolução CONAMA nº 357/2005"), url canônica HTTPS (DOU, planalto, agência), summary técnico em 1 frase, jurisdiction_hint (federal|estadual|municipal|nbr|internacional), applicability_hint (real|potential).\n\nFORMATO DE SAÍDA: JSON {"items":[...]}, sem markdown, sem texto antes ou depois. Sem URL canônica → omita o item.`;
+      try {
+        const resp = await callPerplexityWithRetry(apiKey, {
+          model: "sonar-pro",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Você é analista jurídico brasileiro especializado em compliance ambiental, trabalhista e operacional. Use busca web pra normas oficiais. Retorne APENAS JSON {\"items\":[...]}.",
+            },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.2,
+        });
+        if (!resp.ok) return { error: `HTTP ${resp.status}`, items: [] };
+        const json = await resp.json() as { choices?: Array<{ message?: { content?: string } }> };
+        const raw = json.choices?.[0]?.message?.content ?? "{}";
+        const parsed = JSON.parse(extractFirstJsonObject(raw)) as { items?: unknown[] };
+        return { items: Array.isArray(parsed.items) ? parsed.items : [] };
+      } catch (err) {
+        return { error: err instanceof Error ? err.message : String(err), items: [] };
+      }
+    },
+  };
 }
+
+function buildQueryExistingTool(supabase: SupabaseClient, branchId: string): AgentTool {
+  return {
+    name: "query_existing_legislations",
+    description:
+      "Lista normas já vinculadas à unidade. Use pra evitar sugerir duplicata. branch_id é fixo no contexto da run (passe o mesmo do user message).",
+    parameters: {
+      type: "object",
+      properties: {
+        branch_id: { type: "string", description: "UUID da branch (placeholder — closure usa o real)." },
+      },
+      required: ["branch_id"],
+    },
+    execute: async () => {
+      const { data: linkedRows } = await supabase
+        .from("legislation_unit_compliance")
+        .select("legislations(norm_type, norm_number, title)")
+        .eq("branch_id", branchId);
+      const items = ((linkedRows ?? []) as Array<{ legislations: { norm_type: string | null; norm_number: string | null; title: string | null } | null }>)
+        .map((r) => {
+          const l = r.legislations;
+          if (!l) return null;
+          return { norm_type: l.norm_type, norm_number: l.norm_number, title: l.title };
+        })
+        .filter(Boolean);
+      return { count: items.length, items: items.slice(0, 80) };
+    },
+  };
+}
+
+function buildInspectComplianceResponseTool(responses: Record<string, unknown>): AgentTool {
+  return {
+    name: "inspect_compliance_response",
+    description:
+      "Lê uma resposta específica do questionário de compliance da unidade. Use pra contextualizar antes de buscar (ex.: ver atividades em texto livre, equipamentos específicos, escopo de transporte). Question IDs típicos: 'inst.q4', 'inst.q5', 'TRANSPORTE.q3', 'RES.q2', etc. Sem o ID exato, devolve a lista de IDs disponíveis.",
+    parameters: {
+      type: "object",
+      properties: {
+        question_id: {
+          type: "string",
+          description:
+            "ID exato da pergunta (ex.: 'inst.q4'). Se não souber, passe 'list' pra ver todos os IDs disponíveis.",
+        },
+      },
+      required: ["question_id"],
+    },
+    execute: async ({ question_id }) => {
+      const q = String(question_id ?? "").trim();
+      if (q === "list" || !q) {
+        const keys = Object.keys(responses).slice(0, 50);
+        return { available_question_ids: keys, total: Object.keys(responses).length };
+      }
+      const value = responses[q];
+      if (value === undefined) {
+        const partial = Object.keys(responses)
+          .filter((k) => k.toLowerCase().includes(q.toLowerCase()))
+          .slice(0, 10);
+        return { found: false, similar_keys: partial };
+      }
+      return { found: true, question_id: q, value };
+    },
+  };
+}
+
+interface FinalizeSuggestionsPayload {
+  suggestions: DiscoveredSuggestion[];
+}
+
+const finalizeSuggestionsTool: AgentTool = {
+  name: "finalize_suggestions",
+  description:
+    "Encerra o loop e devolve a lista final de sugestões. Chame UMA vez como ÚLTIMA tool. Aceita lista vazia se nenhuma busca foi conclusiva.",
+  parameters: {
+    type: "object",
+    properties: {
+      suggestions: {
+        type: "array",
+        description: "Lista final (3-8 itens recomendados; até 12 max).",
+        items: {
+          type: "object",
+          properties: {
+            reference: { type: "string" },
+            url: { type: ["string", "null"] },
+            summary: { type: "string" },
+            jurisdiction_hint: { type: "string", enum: ["federal", "estadual", "municipal", "nbr", "internacional"] },
+            applicability_hint: { type: "string", enum: ["real", "potential"] },
+          },
+          required: ["reference", "summary", "jurisdiction_hint", "applicability_hint"],
+        },
+      },
+    },
+    required: ["suggestions"],
+  },
+  execute: async ({ suggestions }) => {
+    const arr = Array.isArray(suggestions) ? suggestions.length : 0;
+    return { saved: true, count: arr };
+  },
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -262,9 +323,10 @@ async function handle(req: Request): Promise<Response> {
     );
   }
 
-  // JWT do usuário (mesmo padrão do generator).
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const cronInternalHeader = req.headers.get("x-cron-internal") === "1";
+  const isCronInternal = !!body.cron_internal && cronInternalHeader && token === SERVICE_ROLE;
   if (!token) {
     return new Response(
       JSON.stringify({ error: "Authorization header ausente" }),
@@ -276,45 +338,68 @@ async function handle(req: Request): Promise<Response> {
     auth: { persistSession: false },
   });
 
-  const { data: userResp, error: userErr } = await supabase.auth.getUser(token);
-  if (userErr || !userResp?.user) {
-    return new Response(
-      JSON.stringify({ error: "JWT inválido" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-  const userId = userResp.user.id;
+  let userId: string | null = null;
+  let companyId: string | null = null;
+  let branch: { id: string; company_id: string; name: string; state: string | null; city: string | null } | null = null;
 
-  const { data: profileRow } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", userId)
-    .maybeSingle();
-  if (!profileRow?.company_id) {
-    return new Response(
-      JSON.stringify({ error: "Usuário sem company_id no profile" }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+  if (isCronInternal) {
+    const { data: branchRow } = await supabase
+      .from("branches")
+      .select("id, company_id, name, state, city")
+      .eq("id", body.branch_id)
+      .maybeSingle();
+    if (!branchRow) {
+      return new Response(
+        JSON.stringify({ error: "Unidade não encontrada" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    branch = branchRow;
+    companyId = branchRow.company_id;
+  } else {
+    const { data: userResp, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userResp?.user) {
+      return new Response(
+        JSON.stringify({ error: "JWT inválido" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    userId = userResp.user.id;
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!profileRow?.company_id) {
+      return new Response(
+        JSON.stringify({ error: "Usuário sem company_id no profile" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    companyId = profileRow.company_id;
+    const { data: branchRow } = await supabase
+      .from("branches")
+      .select("id, company_id, name, state, city")
+      .eq("id", body.branch_id)
+      .maybeSingle();
+    if (!branchRow || branchRow.company_id !== companyId) {
+      return new Response(
+        JSON.stringify({ error: "Unidade não encontrada nesta empresa" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    branch = branchRow;
   }
-  const companyId = profileRow.company_id;
-
-  const { data: branch } = await supabase
-    .from("branches")
-    .select("id, company_id, name, state, city")
-    .eq("id", body.branch_id)
-    .maybeSingle();
-  if (!branch || branch.company_id !== companyId) {
-    return new Response(
-      JSON.stringify({ error: "Unidade não encontrada nesta empresa" }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
+  // Após if/else, branch e companyId são garantidos. O `!` silencia o
+  // narrow-type — runtime já está coberto pelos checks acima.
+  const targetBranch = branch!;
+  const targetCompanyId = companyId!;
 
   // Profile da unidade. Se vazio ou sem tags → erro semântico claro pra UI.
   const { data: profile } = await supabase
     .from("legislation_compliance_profiles")
     .select("generated_tags, responses, completed_at")
-    .eq("branch_id", branch.id)
+    .eq("branch_id", targetBranch.id)
     .maybeSingle();
   const tags = (profile?.generated_tags ?? []) as string[];
   if (tags.length === 0) {
@@ -324,7 +409,7 @@ async function handle(req: Request): Promise<Response> {
         discovered: [],
         ai_used: false,
         ai_failed: false,
-        branch: { id: branch.id, name: branch.name, state: branch.state, city: branch.city },
+        branch: { id: targetBranch.id, name: targetBranch.name, state: targetBranch.state, city: targetBranch.city },
         profile: { tag_count: 0 },
         error: "questionnaire-not-completed",
       }),
@@ -349,7 +434,7 @@ async function handle(req: Request): Promise<Response> {
     .select(
       "id, title, summary, jurisdiction, state, municipality, overall_applicability, theme_id, applicability_tags, norm_type, norm_number",
     )
-    .eq("company_id", companyId)
+    .eq("company_id", targetCompanyId)
     .eq("is_active", true);
   if (orFilter.length > 0) {
     legQuery = legQuery.or(orFilter);
@@ -370,11 +455,11 @@ async function handle(req: Request): Promise<Response> {
   const { data: linkedRows } = await supabase
     .from("legislation_unit_compliance")
     .select("legislation_id")
-    .eq("branch_id", branch.id);
+    .eq("branch_id", targetBranch.id);
   const linkedIds = new Set((linkedRows ?? []).map((r) => r.legislation_id));
 
-  const branchState = (branch.state ?? "").toUpperCase();
-  const branchCity = (branch.city ?? "").trim().toLowerCase();
+  const branchState = (targetBranch.state ?? "").toUpperCase();
+  const branchCity = (targetBranch.city ?? "").trim().toLowerCase();
 
   const matched: MatchedSuggestion[] = [];
   for (const row of legRows ?? []) {
@@ -416,27 +501,113 @@ async function handle(req: Request): Promise<Response> {
 
   // Camada IA: dispara se cliente pediu OU se matched é raso.
   const responses = (profile?.responses ?? {}) as Record<string, unknown>;
-  const activitiesParts: string[] = [];
-  for (const key of ["inst.q4", "inst.q5"]) {
-    const v = responses[key];
-    if (typeof v === "string" && v.trim().length > 0) activitiesParts.push(v.trim());
-  }
 
   const shouldRunAi = (body.expand_ai === true || matched.length < AUTO_AI_THRESHOLD) && !!PERPLEXITY_API_KEY;
   let discovered: DiscoveredSuggestion[] = [];
   let aiFailed = false;
   let aiError: string | undefined;
+
   if (shouldRunAi) {
-    const result = await callPerplexityDiscovery(PERPLEXITY_API_KEY!, {
-      sector: "transporte rodoviário de cargas",
-      state: branch.state,
-      city: branch.city,
-      activities: activitiesParts.join(" | "),
-      topTags: tags,
-    });
-    discovered = result.items;
-    aiFailed = result.failed;
-    aiError = result.error;
+    // Camada determinística cobre o caso massivo (overlap SQL com tags).
+    // O agente entra pra preencher gaps: temas com poucos matches no SQL,
+    // normas que talvez não estejam no catálogo ainda, etc. inspect_*
+    // permite ler responses específicos do questionário pra contextualizar.
+    const tools: AgentTool[] = [
+      buildSearchPerplexityTool(PERPLEXITY_API_KEY!),
+      buildQueryExistingTool(supabase, targetBranch.id),
+      buildInspectComplianceResponseTool(responses),
+      finalizeSuggestionsTool,
+    ];
+
+    const matchedThemeIds = Array.from(
+      new Set(matched.map((m) => m.theme_id).filter((v): v is string => !!v)),
+    ).slice(0, 10);
+    const weakAreasHint = tags.length > matched.length
+      ? `Apenas ${matched.length} matches SQL pra ${tags.length} tags — provavelmente alguns temas estão sub-cobertos.`
+      : `Catálogo já cobre bem (${matched.length} matches). Foque em normas marginais, novidades regulatórias ou temas pouco padronizados.`;
+
+    const systemPrompt = `Você é analista jurídico brasileiro. Sua missão é COMPLEMENTAR a camada determinística (overlap SQL de tags) com sugestões de normas que podem não estar no catálogo OU não casaram via tags.
+
+PROCESSO E ORÇAMENTO (siga rigorosamente):
+1. Comece chamando query_existing_legislations pra ver o catálogo atual da branch.
+2. (Opcional) Use inspect_compliance_response pra ver respostas livres do questionário (ex.: 'inst.q4' descreve atividades em texto). Limite: 2 chamadas.
+3. Faça NO MÁXIMO 3 search_perplexity, uma por tema/agência diferente. Mire em gaps (temas onde o SQL pegou pouco) ou áreas pouco-padronizadas (LGPD, NRs novas, regulações setoriais recentes).
+4. Chame finalize_suggestions OBRIGATORIAMENTE como ÚLTIMA tool, com 3-8 itens (até 12 max).
+
+ORÇAMENTO TOTAL DO LOOP: 8 turnos. Você DEVE chamar finalize_suggestions antes do fim. Se ficar com 2+ turnos restantes e ainda não finalizou, FINALIZE AGORA com o que tiver.
+
+REGRAS DURAS pra cada suggestion:
+- url HTTPS quando houver fonte oficial; null aceito quando você não conseguir confirmar a URL.
+- jurisdiction_hint: federal | estadual | municipal | nbr | internacional.
+- applicability_hint='real' quando obrigatória/diretamente aplicável; 'potential' caso contrário.
+- NÃO sugira normas óbvias (CF/88, CLT genérica). NÃO sugira normas que já apareceram em query_existing_legislations.
+
+NUNCA termine sem chamar finalize_suggestions (mesmo com lista vazia).`;
+
+    const userPrompt = `Branch: ${targetBranch.name} (${targetBranch.city ?? "—"}/${targetBranch.state ?? "—"}).
+Branch ID (para query_existing_legislations): ${targetBranch.id}.
+Setor: transporte rodoviário de cargas.
+Temas-chave do questionário (top 30): ${tags.slice(0, 30).join(", ") || "(perfil sem tags)"}.
+${matched.length} sugestões já vieram da camada determinística (catálogo × tags).
+Temas já cobertos por essas matches: ${matchedThemeIds.join(", ") || "(nenhum theme_id)"}.
+
+Diagnóstico: ${weakAreasHint}
+
+Sua tarefa: descobrir 3-8 sugestões NOVAS focando em temas/agências que o SQL não cobriu bem. Use inspect_compliance_response pra contextualizar dúvidas específicas (ex.: que tipos de transporte a unidade faz, equipamentos críticos).`;
+
+    try {
+      const agentResult = await runAgent({
+        agentName: "legislation-suggestions-from-profile",
+        model: "google/gemini-2.5-pro",
+        systemPrompt,
+        userPrompt,
+        tools,
+        maxSteps: 8,
+        companyId: targetCompanyId,
+        branchId: targetBranch.id,
+        triggeredBy: userId,
+        supabase,
+        inputForLog: {
+          matched_count: matched.length,
+          tag_count: tags.length,
+          expand_ai: body.expand_ai === true,
+        },
+      });
+
+      const finalizeCalls = agentResult.toolCalls.filter((c) => c.name === "finalize_suggestions");
+      const finalize = finalizeCalls[finalizeCalls.length - 1];
+      if (!finalize) {
+        aiFailed = true;
+        aiError = agentResult.reachedMaxSteps
+          ? "agent did not finalize within maxSteps"
+          : "agent ended without finalize_suggestions call";
+      } else {
+        const items = ((finalize.input as FinalizeSuggestionsPayload | undefined)?.suggestions ?? []) as unknown[];
+        discovered = items
+          .map((it) => {
+            if (!it || typeof it !== "object") return null;
+            const x = it as Record<string, unknown>;
+            const reference = String(x.reference ?? "").trim();
+            const summary = String(x.summary ?? "").trim();
+            const jurisdiction = String(x.jurisdiction_hint ?? "").toLowerCase();
+            const applicability = String(x.applicability_hint ?? "").toLowerCase();
+            const urlRaw = typeof x.url === "string" ? x.url.trim() : "";
+            const url = urlRaw.startsWith("http") ? urlRaw : null;
+            if (!reference || !summary) return null;
+            return {
+              reference,
+              url,
+              summary,
+              jurisdiction_hint: jurisdiction,
+              applicability_hint: (applicability === "real" ? "real" : "potential") as "real" | "potential",
+            } satisfies DiscoveredSuggestion;
+          })
+          .filter((v): v is DiscoveredSuggestion => v !== null);
+      }
+    } catch (err) {
+      aiFailed = true;
+      aiError = err instanceof Error ? err.message : String(err);
+    }
   }
 
   const responseBody: ResponseShape = {
@@ -445,7 +616,7 @@ async function handle(req: Request): Promise<Response> {
     ai_used: shouldRunAi,
     ai_failed: aiFailed,
     ai_error: aiError,
-    branch: { id: branch.id, name: branch.name, state: branch.state, city: branch.city },
+    branch: { id: targetBranch.id, name: targetBranch.name, state: targetBranch.state, city: targetBranch.city },
     profile: { tag_count: tags.length },
   };
 
