@@ -1,13 +1,15 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Building2, 
-  CheckCircle2, 
-  AlertCircle, 
-  Edit2, 
+import {
+  Building2,
+  CheckCircle2,
+  AlertCircle,
+  Edit2,
   ClipboardList,
   Filter,
   Tag,
@@ -27,6 +29,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
   onFilterChange,
   selectedTags = [],
 }) => {
+  const navigate = useNavigate();
   const { data: branches, isLoading: branchesLoading } = useBranches();
   const { data: profiles, isLoading: profilesLoading } = useAllComplianceProfiles();
   const [selectedBranch, setSelectedBranch] = useState<{ id: string; name: string; code?: string | null } | null>(null);
@@ -218,6 +221,20 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
           onOpenChange={(open) => !open && setSelectedBranch(null)}
           branchId={selectedBranch.id}
           branchName={selectedBranch.code ? `${selectedBranch.code} - ${selectedBranch.name}` : selectedBranch.name}
+          onSubmitComplete={(branchId, generatedTags) => {
+            // Toast persistente com deep-link para a página de Sugestões.
+            // Usa o número de tags como gatilho do convite — só aparece
+            // se há sinal suficiente para gerar sugestões úteis.
+            if (generatedTags.length === 0) return;
+            toast.success("Questionário concluído", {
+              description: `${generatedTags.length} tags geradas. Veja agora as legislações sugeridas para esta unidade.`,
+              duration: 12000,
+              action: {
+                label: "Revisar sugestões",
+                onClick: () => navigate(`/licenciamento/legislacoes/sugestoes?branch=${branchId}`),
+              },
+            });
+          }}
         />
       )}
     </>

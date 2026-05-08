@@ -55,6 +55,10 @@ interface ComplianceQuestionnaireModalProps {
   onOpenChange: (open: boolean) => void;
   branchId: string;
   branchName: string;
+  // Disparado após o submit final do questionário, antes do modal fechar.
+  // Caller usa isso para deeplinkar para a página de Sugestões e mostrar
+  // um CTA tipo "X legislações sugeridas — revisar agora?".
+  onSubmitComplete?: (branchId: string, generatedTags: string[]) => void;
 }
 
 const formatTime = (date: Date | null): string => {
@@ -215,6 +219,7 @@ const AutosaveIndicator: React.FC<{
 export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModalProps> = ({
   open,
   onOpenChange,
+  onSubmitComplete,
   branchId,
   branchName,
 }) => {
@@ -278,6 +283,7 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
     });
     setConfirmOpen(false);
     onOpenChange(false);
+    onSubmitComplete?.(branchId, generatedTags);
   };
 
   const previewTags = useMemo(
