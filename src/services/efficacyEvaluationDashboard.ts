@@ -29,9 +29,19 @@ export interface EfficacyDashboardMetrics {
 }
 
 /**
- * Buscar avaliações de eficácia pendentes para o usuário logado
+ * Buscar avaliações de eficácia pendentes para o usuário logado.
+ *
+ * Modos:
+ * - default (sem args): traz só os programas onde o usuário logado é o
+ *   `efficacy_evaluator_employee_id` (auto-filtro via lookup do employee
+ *   pelo email).
+ * - `{ viewAll: true }`: pula o filtro de evaluator e devolve TUDO da
+ *   empresa — usar quando admin precisa de visão consolidada. UI gates
+ *   acesso por role; o service só implementa a query.
  */
-export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[]> => {
+export const getMyPendingEvaluations = async (
+  opts: { viewAll?: boolean } = {},
+): Promise<EfficacyEvaluationItem[]> => {
   if (isDemoRuntimeEnabled()) {
     const evaluations = resolveDemoData<EfficacyEvaluationItem[]>(['my-efficacy-evaluations']);
     return Array.isArray(evaluations) ? evaluations : [];
@@ -52,32 +62,40 @@ export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[
 
   if (!profile?.company_id) return [];
 
-  // Buscar o employee vinculado ao email do usuário logado.
-  // Match case-insensitive: muitos employees vieram de import/clone com email
-  // em CAPS (ex.: GESTORARH@TRANSGABARDO.COM.BR), enquanto auth.users guarda
-  // lowercase. Sem o ilike, esses responsáveis não viam suas pendências.
-  const userEmail = userData.user.email;
-  const { data: linkedEmployee } = await supabase
-    .from('employees')
-    .select('id')
-    .ilike('email', userEmail!)
-    .eq('company_id', profile.company_id)
-    .maybeSingle();
+  // Modo "viewAll" pula o lookup de employee + filtro por evaluator —
+  // útil pra admin tirar overview da empresa toda.
+  let evaluatorFilter: string | null = null;
+  if (!opts.viewAll) {
+    const userEmail = userData.user.email;
+    // Match case-insensitive: muitos employees vieram de import/clone com email
+    // em CAPS (ex.: GESTORARH@TRANSGABARDO.COM.BR), enquanto auth.users guarda
+    // lowercase. Sem o ilike, esses responsáveis não viam suas pendências.
+    const { data: linkedEmployee } = await supabase
+      .from('employees')
+      .select('id')
+      .ilike('email', userEmail!)
+      .eq('company_id', profile.company_id)
+      .maybeSingle();
 
-  // Se o usuário não está vinculado a nenhum employee, não mostrar avaliações
-  if (!linkedEmployee) {
-    logger.debug('User is not linked to any employee record', 'training');
-    return [];
+    if (!linkedEmployee) {
+      logger.debug('User is not linked to any employee record', 'training');
+      return [];
+    }
+    evaluatorFilter = linkedEmployee.id;
   }
 
-  // Buscar APENAS treinamentos onde o usuário é o responsável pela avaliação de eficácia
-  const { data: trainings, error: trainingsError } = await supabase
+  let query = supabase
     .from('training_programs')
     .select('id, name, category, efficacy_evaluation_deadline, end_date, branch_id, efficacy_evaluator_employee_id')
     .eq('company_id', profile.company_id)
-    .eq('efficacy_evaluator_employee_id', linkedEmployee.id) // ← Filtrar pelo responsável
     .not('efficacy_evaluation_deadline', 'is', null)
     .order('efficacy_evaluation_deadline', { ascending: true });
+
+  if (evaluatorFilter) {
+    query = query.eq('efficacy_evaluator_employee_id', evaluatorFilter);
+  }
+
+  const { data: trainings, error: trainingsError } = await query;
 
   if (trainingsError || !trainings || trainings.length === 0) return [];
 
