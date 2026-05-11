@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatDateDisplay } from "@/utils/dateUtils";
-import { 
-  ClipboardCheck, Clock, CheckCircle2, AlertTriangle, Eye, 
+import {
+  ClipboardCheck, Clock, CheckCircle2, AlertTriangle, Eye,
   GraduationCap, Calendar, Users, Building2
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,10 +14,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getMyPendingEvaluations } from "@/services/efficacyEvaluationDashboard";
 import { TrainingProgramEfficacyDialog } from "@/components/TrainingProgramEfficacyDialog";
 import { TrainingProgramEvaluationFlow } from "@/components/TrainingProgramEvaluationFlow";
+import { useHasRole } from "@/middleware/roleGuard";
 
 const AvaliacaoEficacia = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  // Admin vê automaticamente TODAS as avaliações da empresa (não só
+  // aquelas onde é evaluator). Usuário comum continua com a visão "minhas"
+  // pra cobrar apenas o que é responsabilidade dele.
+  const isAdmin = useHasRole(['admin', 'platform_admin']);
+  const viewAll = isAdmin;
   // Wizard de avaliação contínua (estado='Pendente'/'Atrasado').
   const [evaluatingProgram, setEvaluatingProgram] = useState<{
     id: string;
@@ -30,8 +36,8 @@ const AvaliacaoEficacia = () => {
   } | null>(null);
 
   const { data: evaluations = [], isLoading } = useQuery({
-    queryKey: ['my-efficacy-evaluations'],
-    queryFn: getMyPendingEvaluations,
+    queryKey: ['my-efficacy-evaluations', viewAll],
+    queryFn: () => getMyPendingEvaluations({ viewAll: isAdmin && viewAll }),
   });
 
   // Métricas derivadas do mesmo dataset — antes uma segunda useQuery chamava
@@ -66,7 +72,11 @@ const AvaliacaoEficacia = () => {
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold">Avaliação de Eficácia</h1>
-        <p className="text-muted-foreground">Treinamentos sob sua responsabilidade para avaliação</p>
+        <p className="text-muted-foreground">
+          {viewAll
+            ? "Todos os treinamentos da empresa com prazo de avaliação"
+            : "Treinamentos sob sua responsabilidade para avaliação"}
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -79,7 +89,14 @@ const AvaliacaoEficacia = () => {
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div><CardTitle>Meus Treinamentos para Avaliar</CardTitle><CardDescription>Treinamentos onde você é o responsável pela avaliação</CardDescription></div>
+            <div>
+              <CardTitle>{viewAll ? "Treinamentos da Empresa" : "Meus Treinamentos para Avaliar"}</CardTitle>
+              <CardDescription>
+                {viewAll
+                  ? "Todos os programas com prazo de avaliação de eficácia configurado"
+                  : "Treinamentos onde você é o responsável pela avaliação"}
+              </CardDescription>
+            </div>
             <Input placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-64" />
           </div>
         </CardHeader>
