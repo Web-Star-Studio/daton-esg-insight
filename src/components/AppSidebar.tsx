@@ -36,6 +36,7 @@ import { useFavorites } from "@/hooks/useFavorites"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { useHasRole } from "@/middleware/roleGuard"
+import { BETA_FEATURE_SIDEBAR_IDS, useHasBetaAccess } from "@/lib/betaFeatures"
 import datonLogo from "@/assets/daton-logo-header.png"
 import { cn } from "@/lib/utils"
 
@@ -719,6 +720,7 @@ export function AppSidebar() {
   }
 
   const { isSectionVisible, isEsgCategoryVisible } = useModuleSettings()
+  const hasBetaAccess = useHasBetaAccess()
 
   // Filter sections based on enabled modules configuration (dynamic from DB)
   const modulesFilteredSections = useMemo(() => {
@@ -760,8 +762,25 @@ export function AppSidebar() {
         }
         return section
       })
+      // Beta gating: esconde subItems com id em BETA_FEATURE_SIDEBAR_IDS
+      // (ex.: Sugestões de Legislação, Cartas Mensais) quando o usuário
+      // logado não está na lista de beta-testers. Roda DEPOIS dos filtros
+      // de módulo pra preservar a lógica existente; apenas decapita os
+      // sub-itens das menu items.
+      .map(section => ({
+        ...section,
+        items: section.items.map(item => {
+          if (!item.subItems) return item
+          return {
+            ...item,
+            subItems: item.subItems.filter(
+              sub => hasBetaAccess || !BETA_FEATURE_SIDEBAR_IDS.has(sub.id),
+            ),
+          }
+        }),
+      }))
       .filter(section => section.items.length > 0)
-  }, [isSectionVisible, isEsgCategoryVisible, branches])
+  }, [isSectionVisible, isEsgCategoryVisible, branches, hasBetaAccess])
 
   const filteredSections = searchQuery.trim()
     ? modulesFilteredSections

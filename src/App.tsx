@@ -16,6 +16,7 @@ import { DemoRoute } from "@/components/DemoRoute";
 import { RoleGuard } from "@/middleware/roleGuard";
 import { LazyPageWrapper } from "@/components/LazyPageWrapper";
 import { ProtectedLazyPageWrapper } from "@/components/ProtectedLazyPageWrapper";
+import { BetaRouteGuard } from "@/components/BetaRouteGuard";
 import { SmartToastProvider } from "@/components/feedback/SmartToastProvider";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { errorHandler } from "@/utils/errorHandler";
@@ -339,8 +340,8 @@ const AppContent = () => {
               <Route path="licenciamento/legislacoes/relatorios" element={<LazyPageWrapper><LegislationReports /></LazyPageWrapper>} />
               <Route path="licenciamento/legislacoes/analitico" element={<LazyPageWrapper><LegislationAnalytics /></LazyPageWrapper>} />
               <Route path="licenciamento/legislacoes/compliance" element={<LazyPageWrapper><LegislationComplianceProfiles /></LazyPageWrapper>} />
-              <Route path="licenciamento/legislacoes/cartas-mensais" element={<LazyPageWrapper><ComplianceUpdateLettersPage /></LazyPageWrapper>} />
-              <Route path="licenciamento/legislacoes/sugestoes" element={<LazyPageWrapper><LegislationSuggestionsPage /></LazyPageWrapper>} />
+              <Route path="licenciamento/legislacoes/cartas-mensais" element={<BetaRouteGuard><LazyPageWrapper><ComplianceUpdateLettersPage /></LazyPageWrapper></BetaRouteGuard>} />
+              <Route path="licenciamento/legislacoes/sugestoes" element={<BetaRouteGuard><LazyPageWrapper><LegislationSuggestionsPage /></LazyPageWrapper></BetaRouteGuard>} />
               <Route path="laia" element={<LazyPageWrapper><LAIAUnidades /></LazyPageWrapper>} />
               <Route path="fornecedores/dashboard" element={<LazyPageWrapper><SupplierManagementDashboard /></LazyPageWrapper>} />
               <Route path="fornecedores/cadastro" element={<LazyPageWrapper><SupplierRegistration /></LazyPageWrapper>} />
@@ -684,14 +685,18 @@ const AppContent = () => {
               </ProtectedLazyPageWrapper>
             } />
             <Route path="/licenciamento/legislacoes/cartas-mensais" element={
-              <ProtectedLazyPageWrapper>
-                <ComplianceUpdateLettersPage />
-              </ProtectedLazyPageWrapper>
+              <BetaRouteGuard>
+                <ProtectedLazyPageWrapper>
+                  <ComplianceUpdateLettersPage />
+                </ProtectedLazyPageWrapper>
+              </BetaRouteGuard>
             } />
             <Route path="/licenciamento/legislacoes/sugestoes" element={
-              <ProtectedLazyPageWrapper>
-                <LegislationSuggestionsPage />
-              </ProtectedLazyPageWrapper>
+              <BetaRouteGuard>
+                <ProtectedLazyPageWrapper>
+                  <LegislationSuggestionsPage />
+                </ProtectedLazyPageWrapper>
+              </BetaRouteGuard>
             } />
 
             <Route path="/residuos" element={
