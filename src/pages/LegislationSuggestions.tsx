@@ -340,6 +340,27 @@ export default function LegislationSuggestions() {
           </CardContent>
         </Card>
 
+        {/* Loading visível antes do response chegar — a primeira chamada
+            dispara IA automaticamente (quando matched < 20) e leva 70-90s.
+            Sem isso o usuário fica olhando pra tela vazia achando que
+            travou. */}
+        {selectedBranch && !noProfile && !response && isLoading && (
+          <Card>
+            <CardContent className="py-8">
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <div className="space-y-1">
+                  <p className="font-medium text-foreground">Calculando sugestões para esta unidade…</p>
+                  <p className="text-xs">
+                    Primeiro a camada determinística (overlap SQL de tags) e, se necessário, a IA
+                    via Perplexity. Pode levar até 1-2 minutos na primeira execução.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {!noProfile && response && (
           <Tabs defaultValue="catalogo" className="space-y-4">
             <TabsList>
@@ -469,17 +490,19 @@ export default function LegislationSuggestions() {
                     Normas que a IA acha relevantes mas que talvez ainda não estejam no catálogo. Confira a fonte antes de incluir.
                   </CardDescription>
                 </div>
-                {!response.ai_used && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setExpandAi(true)}
-                    disabled={isFetching}
-                    className="gap-2"
-                  >
-                    {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    Buscar com IA
-                  </Button>
-                )}
+                {/* "Buscar com IA" / "Refazer busca IA": setExpandAi(true)
+                    JÁ muda a queryKey do useLegislationSuggestions → React
+                    Query cria nova query automaticamente. NÃO chamar
+                    refetch() junto (faria 2 fetches paralelos). */}
+                <Button
+                  variant="outline"
+                  onClick={() => setExpandAi(true)}
+                  disabled={isFetching}
+                  className="gap-2"
+                >
+                  {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {response.ai_used ? "Refazer busca IA" : "Buscar com IA"}
+                </Button>
               </CardHeader>
               <CardContent>
                 {!response.ai_used ? (

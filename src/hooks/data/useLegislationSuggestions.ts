@@ -13,7 +13,17 @@ export function useLegislationSuggestions(branchId: string | undefined, expandAi
     queryKey: ["legislation-suggestions", branchId, expandAi],
     queryFn: () => fetchSuggestions(branchId!, { expandAi }),
     enabled: !!branchId,
-    staleTime: 1000 * 60, // sugestões mudam quando o catálogo muda — 1min de cache é seguro
+    // Cada chamada custa ~$0.10 e leva 70-90s. Defaults do React Query
+    // (refetchOnWindowFocus=true, staleTime=0) disparavam refetch toda vez
+    // que o usuário voltava pra aba — visto em prod: 10 runs em 27min.
+    // Suggestions só precisa rebuscar via ação explícita (botão "Refazer
+    // busca IA"), então fixamos cache "estável até trocar query key".
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: false,
   });
 }
 

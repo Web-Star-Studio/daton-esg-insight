@@ -369,15 +369,25 @@ async function handle(req: Request): Promise<Response> {
 PROCESSO E ORÇAMENTO (siga rigorosamente):
 1. PRIMEIRO turno: chame query_existing_legislations (1 chamada).
 2. Faça NO MÁXIMO 4 search_perplexity, uma por tema/agência diferente (ANTT, CONTRAN, MTE/NRs, ANP, IBAMA, CONAMA, ANVISA, FEPAM-RS quando estadual). NÃO repita busca semelhante.
-3. fetch_url é OPCIONAL — use só quando a URL retornada pela busca parecer suspeita. Limite: 2 fetch_url por run.
+3. **ANTES** de chamar finalize_novelties, valide cada source_url via fetch_url. Se valid=false (404/410), substitua a URL OU omita a novelty. Limite: 8 fetch_url por run.
 4. Chame finalize_novelties OBRIGATORIAMENTE como ÚLTIMA tool. Mesmo que tenha encontrado poucos itens, finalize com o que tiver.
 
 ORÇAMENTO TOTAL DO LOOP: 16 turnos. Você DEVE chamar finalize_novelties antes do fim. Se ficar com 4+ turnos restantes e ainda não finalizou, FINALIZE AGORA com o que tiver.
 
+BUSCA: livre. Sonar-pro pode varrer qualquer fonte — DOU, planalto, agências (ANTT, ANP, IBAMA, CONAMA, ANVISA), MTE, portais estaduais (FEPAM-RS quando aplicável), municipais, mídia especializada. NÃO restrinja origens.
+
+URL DA NORMA — DICAS de padrão (NÃO regra fechada):
+Quando você tiver uma URL candidata, antes de incluir, use fetch_url pra confirmar. Estes padrões TENDEM a ser corretos:
+- DOU: in.gov.br/web/dou/-/<slug>
+- Planalto leis/decretos: planalto.gov.br/ccivil_03/_atoYYYY-YYYY/YYYY/lei/lXXXXX.htm
+- ANTT resoluções: anttlegis.antt.gov.br/... (atenção: gov.br/antt/legislacao/resolucoes dá 404, evite)
+- NRs (MTE): subpath de cada NR varia — sempre valide com fetch_url
+- Outras agências (ANP, IBAMA, CONAMA, ANVISA), FEPAM-RS, municipais: aceita qualquer URL HTTPS confiável que fetch_url confirme.
+
 REGRAS DURAS pra cada novelty:
 - publication_date dentro da janela informada (rejeitamos fora dela).
 - jurisdiction='estadual' SÓ pra UF da unidade; 'municipal' SÓ pra cidade da unidade.
-- source_url HTTPS obrigatório.
+- source_url HTTPS obrigatório E validado via fetch_url (valid=true).
 - matched_themes: ids EXATOS da lista: licenciamento, instalacoes, localizacao_fauna_flora, produtos_insumos, produtos_florestais, combustiveis_inflamaveis, produtos_quimicos, recursos_hidricos, emissoes_atmosfericas, residuos, equipamentos, energia, transporte, profissionais, pcd, saude_trabalhador, tipos_trabalho_terceiros, normas_regulamentadoras, mineracao, pesagem, lgpd.
 - applicability_hint='real' quando obrigatória/diretamente aplicável; 'potential' caso contrário.
 

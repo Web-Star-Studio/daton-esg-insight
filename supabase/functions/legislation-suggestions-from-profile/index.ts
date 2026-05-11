@@ -229,6 +229,42 @@ function buildInspectComplianceResponseTool(responses: Record<string, unknown>):
   };
 }
 
+// Tool `fetch_url` — permite o agente VALIDAR URLs antes de incluí-las
+// no finalize. Sem isso, Sonar-pro alucina URLs plausíveis (path inventado
+// no gov.br, etc.). HEAD com timeout 6s — 405 cai pra GET.
+const fetchUrlTool: AgentTool = {
+  name: "fetch_url",
+  description:
+    "Faz um HEAD request pra validar se uma URL existe. Use ANTES de incluir uma URL no finalize_suggestions. Retorna { status, valid } — `valid=true` se 2xx/3xx OU se servidor flap (5xx/timeout); `valid=false` se 404/410.",
+  parameters: z.object({
+    url: z.string().url().describe("URL HTTPS pra validar"),
+  }),
+  execute: async ({ url }) => {
+    if (!url.startsWith("https://") && !url.startsWith("http://")) {
+      return { status: 0, valid: false, reason: "scheme inválido" };
+    }
+    try {
+      let r = await fetch(url, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(6000),
+        redirect: "follow",
+      });
+      if (r.status === 405 || r.status === 501) {
+        r = await fetch(url, {
+          method: "GET",
+          signal: AbortSignal.timeout(6000),
+          redirect: "follow",
+        });
+      }
+      const valid = r.status < 400 || r.status >= 500; // 4xx = morto; 5xx = flap
+      return { status: r.status, valid };
+    } catch (err) {
+      // Timeout/DNS/conn reset — gov.br é flaky, melhor assumir válido.
+      return { status: 0, valid: true, reason: "timeout/network (gov.br flap)" };
+    }
+  },
+};
+
 const finalizeSuggestionsTool: AgentTool = {
   name: "finalize_suggestions",
   description:
@@ -478,6 +514,7 @@ async function handle(req: Request): Promise<Response> {
     // permite ler responses específicos do questionário pra contextualizar.
     const tools: AgentTool[] = [
       buildSearchPerplexityTool(PERPLEXITY_API_KEY!),
+      fetchUrlTool,
       buildQueryExistingTool(supabase, targetBranch.id),
       buildInspectComplianceResponseTool(responses),
       finalizeSuggestionsTool,
@@ -496,12 +533,25 @@ PROCESSO E ORÇAMENTO (siga rigorosamente):
 1. Comece chamando query_existing_legislations pra ver o catálogo atual da branch.
 2. (Opcional) Use inspect_compliance_response pra ver respostas livres do questionário (ex.: 'inst.q4' descreve atividades em texto). Limite: 2 chamadas.
 3. Faça NO MÁXIMO 3 search_perplexity, uma por tema/agência diferente. Mire em gaps (temas onde o SQL pegou pouco) ou áreas pouco-padronizadas (LGPD, NRs novas, regulações setoriais recentes).
-4. Chame finalize_suggestions OBRIGATORIAMENTE como ÚLTIMA tool, com 3-8 itens (até 12 max).
+4. **ANTES** de chamar finalize_suggestions, valide cada URL via fetch_url. Se valid=false (404/410), substitua a URL por null ou omita o item. Limite: até 8 fetch_url no total.
+5. Chame finalize_suggestions OBRIGATORIAMENTE como ÚLTIMA tool, com 3-8 itens (até 12 max).
 
 ORÇAMENTO TOTAL DO LOOP: 8 turnos. Você DEVE chamar finalize_suggestions antes do fim. Se ficar com 2+ turnos restantes e ainda não finalizou, FINALIZE AGORA com o que tiver.
 
+BUSCA: livre. Sonar-pro pode varrer qualquer fonte — DOU, planalto, agências, portais estaduais/municipais, mídia especializada, jusbrasil, legisweb, repercussão setorial. NÃO restrinja temas nem origens.
+
+URL DA NORMA — DICAS de padrão (NÃO regra fechada):
+Quando você tiver uma URL candidata, antes de incluir, use fetch_url pra confirmar. Estes padrões TENDEM a ser corretos quando aplicáveis:
+- Leis/decretos federais: planalto.gov.br/ccivil_03/_atoYYYY-YYYY/YYYY/lei/lXXXXX.htm (ex: LGPD = .../2018/lei/l13709.htm)
+- DOU: in.gov.br/web/dou/-/<slug>
+- ANTT resoluções: anttlegis.antt.gov.br/... (atenção: gov.br/antt/legislacao/resolucoes dá 404, evite)
+- NRs: gov.br/trabalho-e-emprego/.../normas-regulamentadoras (subpath de cada NR varia — sempre valide)
+
+Qualquer URL HTTPS confiável é aceitável (legisweb, jusbrasil, sites de agências, mídia especializada) — desde que fetch_url confirme.
+Quando você acha uma norma boa mas a URL parece duvidosa: prefira url: null (UI lida com isso) em vez de inventar.
+
 REGRAS DURAS pra cada suggestion:
-- url HTTPS quando houver fonte oficial; null aceito quando você não conseguir confirmar a URL.
+- url HTTPS qualquer fonte confiável, OU null se não conseguir validar.
 - jurisdiction_hint: federal | estadual | municipal | nbr | internacional.
 - applicability_hint='real' quando obrigatória/diretamente aplicável; 'potential' caso contrário.
 - NÃO sugira normas óbvias (CF/88, CLT genérica). NÃO sugira normas que já apareceram em query_existing_legislations.
@@ -547,6 +597,10 @@ Sua tarefa: descobrir 3-8 sugestões NOVAS focando em temas/agências que o SQL 
           : "agent ended without finalize_suggestions call";
       } else {
         const items = ((finalize.input as { suggestions?: SuggestionZ[] } | undefined)?.suggestions ?? []) as unknown[];
+        // Validação backend de URL removida (visto que gov.br é flaky e
+        // descartava URLs intermitentes). Prevenção fica do lado do prompt
+        // do agent — padrões canônicos + instrução pra usar fetch_url
+        // antes do finalize.
         discovered = items
           .map((it) => {
             if (!it || typeof it !== "object") return null;
