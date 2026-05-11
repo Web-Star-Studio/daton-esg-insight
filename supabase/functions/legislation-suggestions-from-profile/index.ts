@@ -11,6 +11,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "npm:zod@3.25.76";
 import { corsHeaders } from "../_shared/cors.ts";
 import { callPerplexityWithRetry } from "../_shared/perplexity-call.ts";
 import { runAgent, type AgentTool } from "../_shared/agent-runtime.ts";
@@ -127,34 +128,28 @@ function intersect<T>(a: T[], b: T[]): T[] {
 
 // ---------- agentic discovery ----------
 
-interface SuggestionsAgentCtx {
-  apiKey: string;
-  supabase: SupabaseClient;
-  branchId: string;
-  responses: Record<string, unknown>;
-  state: string | null;
-  city: string | null;
-}
+// Zod schema da sugestão final — AI SDK valida automaticamente.
+const suggestionZ = z.object({
+  reference: z.string(),
+  url: z.string().nullable(),
+  summary: z.string(),
+  jurisdiction_hint: z.enum(["federal", "estadual", "municipal", "nbr", "internacional"]),
+  applicability_hint: z.enum(["real", "potential"]),
+});
+type SuggestionZ = z.infer<typeof suggestionZ>;
 
 function buildSearchPerplexityTool(apiKey: string): AgentTool {
   return {
     name: "search_perplexity",
     description:
       "Busca normas brasileiras vigentes via Perplexity Sonar-pro com web search. Use UMA query por tema/agência. Útil pra cobrir gaps que o overlap SQL determinístico não pegou.",
-    parameters: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description:
-            "Query natural em PT-BR. Ex: 'normas LGPD ANPD compliance dados pessoais transportadoras' ou 'NRs MTE saúde do trabalhador motoristas profissionais'.",
-        },
-      },
-      required: ["query"],
-    },
-    execute: async (args) => {
-      const query = String(args.query ?? "").trim();
-      if (!query) return { error: "query obrigatória" };
+    parameters: z.object({
+      query: z.string().describe(
+        "Query natural em PT-BR. Ex: 'normas LGPD ANPD compliance dados pessoais transportadoras' ou 'NRs MTE saúde do trabalhador motoristas profissionais'.",
+      ),
+    }),
+    execute: async ({ query }) => {
+      if (!query.trim()) return { error: "query obrigatória" };
       const userPrompt = `Liste até 6 normas brasileiras vigentes sobre: ${query}.\n\nPara cada norma: reference (nome curto, ex.: "Resolução CONAMA nº 357/2005"), url canônica HTTPS (DOU, planalto, agência), summary técnico em 1 frase, jurisdiction_hint (federal|estadual|municipal|nbr|internacional), applicability_hint (real|potential).\n\nFORMATO DE SAÍDA: JSON {"items":[...]}, sem markdown, sem texto antes ou depois. Sem URL canônica → omita o item.`;
       try {
         const resp = await callPerplexityWithRetry(apiKey, {
@@ -186,13 +181,9 @@ function buildQueryExistingTool(supabase: SupabaseClient, branchId: string): Age
     name: "query_existing_legislations",
     description:
       "Lista normas já vinculadas à unidade. Use pra evitar sugerir duplicata. branch_id é fixo no contexto da run (passe o mesmo do user message).",
-    parameters: {
-      type: "object",
-      properties: {
-        branch_id: { type: "string", description: "UUID da branch (placeholder — closure usa o real)." },
-      },
-      required: ["branch_id"],
-    },
+    parameters: z.object({
+      branch_id: z.string().describe("UUID da branch (placeholder — closure usa o real)."),
+    }),
     execute: async () => {
       const { data: linkedRows } = await supabase
         .from("legislation_unit_compliance")
@@ -214,20 +205,14 @@ function buildInspectComplianceResponseTool(responses: Record<string, unknown>):
   return {
     name: "inspect_compliance_response",
     description:
-      "Lê uma resposta específica do questionário de compliance da unidade. Use pra contextualizar antes de buscar (ex.: ver atividades em texto livre, equipamentos específicos, escopo de transporte). Question IDs típicos: 'inst.q4', 'inst.q5', 'TRANSPORTE.q3', 'RES.q2', etc. Sem o ID exato, devolve a lista de IDs disponíveis.",
-    parameters: {
-      type: "object",
-      properties: {
-        question_id: {
-          type: "string",
-          description:
-            "ID exato da pergunta (ex.: 'inst.q4'). Se não souber, passe 'list' pra ver todos os IDs disponíveis.",
-        },
-      },
-      required: ["question_id"],
-    },
+      "Lê uma resposta específica do questionário de compliance da unidade. Use pra contextualizar antes de buscar (ex.: ver atividades em texto livre, equipamentos específicos, escopo de transporte). Question IDs típicos: 'inst.q4', 'inst.q5', 'TRANSPORTE.q3', 'RES.q2', etc. Sem o ID exato, passe 'list' pra ver os IDs disponíveis.",
+    parameters: z.object({
+      question_id: z.string().describe(
+        "ID exato da pergunta (ex.: 'inst.q4'). Se não souber, passe 'list' pra ver todos os IDs disponíveis.",
+      ),
+    }),
     execute: async ({ question_id }) => {
-      const q = String(question_id ?? "").trim();
+      const q = question_id.trim();
       if (q === "list" || !q) {
         const keys = Object.keys(responses).slice(0, 50);
         return { available_question_ids: keys, total: Object.keys(responses).length };
@@ -244,38 +229,53 @@ function buildInspectComplianceResponseTool(responses: Record<string, unknown>):
   };
 }
 
-interface FinalizeSuggestionsPayload {
-  suggestions: DiscoveredSuggestion[];
-}
+// Tool `fetch_url` — permite o agente VALIDAR URLs antes de incluí-las
+// no finalize. Sem isso, Sonar-pro alucina URLs plausíveis (path inventado
+// no gov.br, etc.). HEAD com timeout 6s — 405 cai pra GET.
+const fetchUrlTool: AgentTool = {
+  name: "fetch_url",
+  description:
+    "Faz um HEAD request pra validar se uma URL existe. Use ANTES de incluir uma URL no finalize_suggestions. Retorna { status, valid } — `valid=true` se 2xx/3xx OU se servidor flap (5xx/timeout); `valid=false` se 404/410.",
+  parameters: z.object({
+    url: z.string().url().describe("URL HTTPS pra validar"),
+  }),
+  execute: async ({ url }) => {
+    if (!url.startsWith("https://") && !url.startsWith("http://")) {
+      return { status: 0, valid: false, reason: "scheme inválido" };
+    }
+    try {
+      let r = await fetch(url, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(6000),
+        redirect: "follow",
+      });
+      if (r.status === 405 || r.status === 501) {
+        r = await fetch(url, {
+          method: "GET",
+          signal: AbortSignal.timeout(6000),
+          redirect: "follow",
+        });
+      }
+      const valid = r.status < 400 || r.status >= 500; // 4xx = morto; 5xx = flap
+      return { status: r.status, valid };
+    } catch (err) {
+      // Timeout/DNS/conn reset — gov.br é flaky, melhor assumir válido.
+      return { status: 0, valid: true, reason: "timeout/network (gov.br flap)" };
+    }
+  },
+};
 
 const finalizeSuggestionsTool: AgentTool = {
   name: "finalize_suggestions",
   description:
     "Encerra o loop e devolve a lista final de sugestões. Chame UMA vez como ÚLTIMA tool. Aceita lista vazia se nenhuma busca foi conclusiva.",
-  parameters: {
-    type: "object",
-    properties: {
-      suggestions: {
-        type: "array",
-        description: "Lista final (3-8 itens recomendados; até 12 max).",
-        items: {
-          type: "object",
-          properties: {
-            reference: { type: "string" },
-            url: { type: ["string", "null"] },
-            summary: { type: "string" },
-            jurisdiction_hint: { type: "string", enum: ["federal", "estadual", "municipal", "nbr", "internacional"] },
-            applicability_hint: { type: "string", enum: ["real", "potential"] },
-          },
-          required: ["reference", "summary", "jurisdiction_hint", "applicability_hint"],
-        },
-      },
-    },
-    required: ["suggestions"],
-  },
+  parameters: z.object({
+    suggestions: z.array(suggestionZ).describe(
+      "Lista final (3-8 itens recomendados; até 12 max).",
+    ),
+  }),
   execute: async ({ suggestions }) => {
-    const arr = Array.isArray(suggestions) ? suggestions.length : 0;
-    return { saved: true, count: arr };
+    return { saved: true, count: suggestions.length };
   },
 };
 
@@ -514,6 +514,7 @@ async function handle(req: Request): Promise<Response> {
     // permite ler responses específicos do questionário pra contextualizar.
     const tools: AgentTool[] = [
       buildSearchPerplexityTool(PERPLEXITY_API_KEY!),
+      fetchUrlTool,
       buildQueryExistingTool(supabase, targetBranch.id),
       buildInspectComplianceResponseTool(responses),
       finalizeSuggestionsTool,
@@ -532,12 +533,25 @@ PROCESSO E ORÇAMENTO (siga rigorosamente):
 1. Comece chamando query_existing_legislations pra ver o catálogo atual da branch.
 2. (Opcional) Use inspect_compliance_response pra ver respostas livres do questionário (ex.: 'inst.q4' descreve atividades em texto). Limite: 2 chamadas.
 3. Faça NO MÁXIMO 3 search_perplexity, uma por tema/agência diferente. Mire em gaps (temas onde o SQL pegou pouco) ou áreas pouco-padronizadas (LGPD, NRs novas, regulações setoriais recentes).
-4. Chame finalize_suggestions OBRIGATORIAMENTE como ÚLTIMA tool, com 3-8 itens (até 12 max).
+4. **ANTES** de chamar finalize_suggestions, valide cada URL via fetch_url. Se valid=false (404/410), substitua a URL por null ou omita o item. Limite: até 8 fetch_url no total.
+5. Chame finalize_suggestions OBRIGATORIAMENTE como ÚLTIMA tool, com 3-8 itens (até 12 max).
 
 ORÇAMENTO TOTAL DO LOOP: 8 turnos. Você DEVE chamar finalize_suggestions antes do fim. Se ficar com 2+ turnos restantes e ainda não finalizou, FINALIZE AGORA com o que tiver.
 
+BUSCA: livre. Sonar-pro pode varrer qualquer fonte — DOU, planalto, agências, portais estaduais/municipais, mídia especializada, jusbrasil, legisweb, repercussão setorial. NÃO restrinja temas nem origens.
+
+URL DA NORMA — DICAS de padrão (NÃO regra fechada):
+Quando você tiver uma URL candidata, antes de incluir, use fetch_url pra confirmar. Estes padrões TENDEM a ser corretos quando aplicáveis:
+- Leis/decretos federais: planalto.gov.br/ccivil_03/_atoYYYY-YYYY/YYYY/lei/lXXXXX.htm (ex: LGPD = .../2018/lei/l13709.htm)
+- DOU: in.gov.br/web/dou/-/<slug>
+- ANTT resoluções: anttlegis.antt.gov.br/... (atenção: gov.br/antt/legislacao/resolucoes dá 404, evite)
+- NRs: gov.br/trabalho-e-emprego/.../normas-regulamentadoras (subpath de cada NR varia — sempre valide)
+
+Qualquer URL HTTPS confiável é aceitável (legisweb, jusbrasil, sites de agências, mídia especializada) — desde que fetch_url confirme.
+Quando você acha uma norma boa mas a URL parece duvidosa: prefira url: null (UI lida com isso) em vez de inventar.
+
 REGRAS DURAS pra cada suggestion:
-- url HTTPS quando houver fonte oficial; null aceito quando você não conseguir confirmar a URL.
+- url HTTPS qualquer fonte confiável, OU null se não conseguir validar.
 - jurisdiction_hint: federal | estadual | municipal | nbr | internacional.
 - applicability_hint='real' quando obrigatória/diretamente aplicável; 'potential' caso contrário.
 - NÃO sugira normas óbvias (CF/88, CLT genérica). NÃO sugira normas que já apareceram em query_existing_legislations.
@@ -582,7 +596,11 @@ Sua tarefa: descobrir 3-8 sugestões NOVAS focando em temas/agências que o SQL 
           ? "agent did not finalize within maxSteps"
           : "agent ended without finalize_suggestions call";
       } else {
-        const items = ((finalize.input as FinalizeSuggestionsPayload | undefined)?.suggestions ?? []) as unknown[];
+        const items = ((finalize.input as { suggestions?: SuggestionZ[] } | undefined)?.suggestions ?? []) as unknown[];
+        // Validação backend de URL removida (visto que gov.br é flaky e
+        // descartava URLs intermitentes). Prevenção fica do lado do prompt
+        // do agent — padrões canônicos + instrução pra usar fetch_url
+        // antes do finalize.
         discovered = items
           .map((it) => {
             if (!it || typeof it !== "object") return null;
