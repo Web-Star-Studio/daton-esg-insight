@@ -301,7 +301,9 @@ const menuSections: MenuSection[] = [
         description: "Gestão de licenças e autorizações",
         subItems: [
           { id: "licensing-dashboard", title: "Dashboard", icon: BarChart3, path: "/licenciamento", description: "Visão geral de licenciamento" },
-          { id: "licensing-legislations", title: "Legislações", icon: Scale, path: "/licenciamento/legislacoes", description: "Gestão de legislações aplicáveis" }
+          { id: "licensing-legislations", title: "Legislações", icon: Scale, path: "/licenciamento/legislacoes", description: "Gestão de legislações aplicáveis" },
+          { id: "licensing-suggestions", title: "Sugestões de Legislação", icon: Sparkles, path: "/licenciamento/legislacoes/sugestoes", description: "Sugestões a partir do questionário de compliance da unidade" },
+          { id: "licensing-monthly-letters", title: "Cartas Mensais", icon: Mail, path: "/licenciamento/legislacoes/cartas-mensais", description: "Carta de atualização mensal de compliance por unidade" }
         ]
       }
     ]

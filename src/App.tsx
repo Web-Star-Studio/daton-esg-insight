@@ -70,6 +70,8 @@ const LegislationDetail = lazy(() => import("./pages/LegislationDetail"));
 const LegislationReports = lazy(() => import("./pages/LegislationReports"));
 const LegislationAnalytics = lazy(() => import("./pages/LegislationAnalytics"));
 const LegislationComplianceProfiles = lazy(() => import("./pages/LegislationComplianceProfiles"));
+const ComplianceUpdateLettersPage = lazy(() => import("./pages/ComplianceUpdateLetters"));
+const LegislationSuggestionsPage = lazy(() => import("./pages/LegislationSuggestions"));
 const ResiduosFiliais = lazy(() => import("./pages/ResiduosFiliais"));
 const Residuos = lazy(() => import("./pages/Residuos"));
 const ResiduosFilial = lazy(() => import("./pages/ResiduosFilial"));
@@ -337,6 +339,8 @@ const AppContent = () => {
               <Route path="licenciamento/legislacoes/relatorios" element={<LazyPageWrapper><LegislationReports /></LazyPageWrapper>} />
               <Route path="licenciamento/legislacoes/analitico" element={<LazyPageWrapper><LegislationAnalytics /></LazyPageWrapper>} />
               <Route path="licenciamento/legislacoes/compliance" element={<LazyPageWrapper><LegislationComplianceProfiles /></LazyPageWrapper>} />
+              <Route path="licenciamento/legislacoes/cartas-mensais" element={<LazyPageWrapper><ComplianceUpdateLettersPage /></LazyPageWrapper>} />
+              <Route path="licenciamento/legislacoes/sugestoes" element={<LazyPageWrapper><LegislationSuggestionsPage /></LazyPageWrapper>} />
               <Route path="laia" element={<LazyPageWrapper><LAIAUnidades /></LazyPageWrapper>} />
               <Route path="fornecedores/dashboard" element={<LazyPageWrapper><SupplierManagementDashboard /></LazyPageWrapper>} />
               <Route path="fornecedores/cadastro" element={<LazyPageWrapper><SupplierRegistration /></LazyPageWrapper>} />
@@ -677,6 +681,16 @@ const AppContent = () => {
             <Route path="/licenciamento/legislacoes/compliance" element={
               <ProtectedLazyPageWrapper>
                 <LegislationComplianceProfiles />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/licenciamento/legislacoes/cartas-mensais" element={
+              <ProtectedLazyPageWrapper>
+                <ComplianceUpdateLettersPage />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/licenciamento/legislacoes/sugestoes" element={
+              <ProtectedLazyPageWrapper>
+                <LegislationSuggestionsPage />
               </ProtectedLazyPageWrapper>
             } />
 
