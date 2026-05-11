@@ -63,17 +63,37 @@ export const getMyPendingEvaluations = async (
   if (!profile?.company_id) return [];
 
   // Modo "viewAll" pula o lookup de employee + filtro por evaluator —
-  // útil pra admin tirar overview da empresa toda.
+  // útil pra admin tirar overview da empresa toda. Mesmo com a UI gating
+  // por role, validamos role server-side: caller pode pular o front
+  // (chamada direta do service via console/integração).
   let evaluatorFilter: string | null = null;
-  if (!opts.viewAll) {
+  if (opts.viewAll) {
+    const { data: roleRow } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+    const role = roleRow?.role;
+    if (role !== 'admin' && role !== 'platform_admin') {
+      logger.warn('Non-admin attempted viewAll access', 'training');
+      return [];
+    }
+  } else {
     const userEmail = userData.user.email;
+    if (!userEmail) {
+      // Provedores não-email (SAML, OIDC) podem não popular auth.users.email.
+      // Sem isso o lookup por employee.email é impossível — devolver vazio
+      // ao invés de jogar erro NPE no .ilike(null).
+      logger.warn('Authenticated user has no email — cannot resolve evaluator', 'training');
+      return [];
+    }
     // Match case-insensitive: muitos employees vieram de import/clone com email
     // em CAPS (ex.: GESTORARH@TRANSGABARDO.COM.BR), enquanto auth.users guarda
     // lowercase. Sem o ilike, esses responsáveis não viam suas pendências.
     const { data: linkedEmployee } = await supabase
       .from('employees')
       .select('id')
-      .ilike('email', userEmail!)
+      .ilike('email', userEmail)
       .eq('company_id', profile.company_id)
       .maybeSingle();
 
