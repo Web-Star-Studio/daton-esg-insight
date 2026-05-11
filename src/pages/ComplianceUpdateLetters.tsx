@@ -24,6 +24,7 @@ import {
   useComplianceUpdateLetters,
 } from "@/hooks/data/useComplianceUpdateLetters";
 import { ComplianceUpdateLetterViewer } from "@/components/compliance/ComplianceUpdateLetterViewer";
+import { formatReferenceMonthLabel } from "@/lib/complianceSystems";
 
 // Lista o mês corrente (em curso) + os 12 últimos meses como opções para o
 // seletor de geração. O mês corrente é útil para teste e para gerar prévias
@@ -35,7 +36,10 @@ function generateMonthOptions(n: number): MonthOption[] {
   for (let i = 0; i <= n; i++) {
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
     const value = d.toISOString().slice(0, 10);
-    const label = format(d, "LLLL 'de' yyyy", { locale: ptBR });
+    // formatReferenceMonthLabel é UTC-safe (parsing manual do ISO).
+    // `format()` do date-fns aplica timezone local — em BRT (UTC-3) o
+    // dia 1 UTC vira dia 30 do mês anterior local, e o label rola pra trás.
+    const label = formatReferenceMonthLabel(value, "de");
     out.push({
       value,
       label: label.charAt(0).toUpperCase() + label.slice(1),
@@ -310,8 +314,10 @@ export default function ComplianceUpdateLetters() {
                 </TableHeader>
                 <TableBody>
                   {letters.map((letter) => {
-                    const monthDate = new Date(`${letter.reference_month}T00:00:00Z`);
-                    const monthLabel = format(monthDate, "LLLL 'de' yyyy", { locale: ptBR });
+                    // UTC-safe via formatReferenceMonthLabel (parsing manual
+                    // do ISO). `format()` do date-fns aplicaria timezone
+                    // local — bug recorrente, ver fix em generateMonthOptions.
+                    const monthLabel = formatReferenceMonthLabel(letter.reference_month, "de");
                     const total =
                       (letter.content?.sections?.published?.length ?? 0) +
                       (letter.content?.sections?.modified?.length ?? 0) +

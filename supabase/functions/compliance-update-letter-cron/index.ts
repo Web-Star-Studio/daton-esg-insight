@@ -50,6 +50,25 @@ serve(async (req) => {
     );
   }
 
+  // Auth do caller: cron lê do vault e passa via Authorization Bearer.
+  // Sem essa checagem, qualquer um que descobrisse a URL poderia disparar
+  // o lote (custo Perplexity × N branches por chamada). O secret é o mesmo
+  // `cron_invoke_jwt` usado pelo pg_cron (ver migration de vault).
+  const CRON_INVOKE_JWT = Deno.env.get("CRON_INVOKE_JWT");
+  if (!CRON_INVOKE_JWT) {
+    return new Response(
+      JSON.stringify({ error: "CRON_INVOKE_JWT não configurada — provisionar no Edge Function Secrets" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const authHeader = req.headers.get("Authorization") ?? "";
+  if (authHeader !== `Bearer ${CRON_INVOKE_JWT}`) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },
   });

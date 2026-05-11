@@ -80,8 +80,20 @@ export function downloadComplianceUpdateLetterPDF(content: LetterContent, genera
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     const summaryLines = doc.splitTextToSize(content.executive_summary, pageWidth - 28);
-    doc.text(summaryLines, 14, yPos);
-    yPos += summaryLines.length * 5 + 6;
+    // Imprime linha a linha checando overflow. `splitTextToSize` só quebra
+    // wrap horizontal; sem isso, sumário >25 linhas escapa pra fora da
+    // página em vez de criar página nova.
+    const lineHeight = 5;
+    const bottomMargin = 195;
+    for (const line of summaryLines) {
+      if (yPos > bottomMargin) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.text(line, 14, yPos);
+      yPos += lineHeight;
+    }
+    yPos += 6;
   }
 
   // Cinco tabelas — replica formato SOGI: seções vazias não são impressas.

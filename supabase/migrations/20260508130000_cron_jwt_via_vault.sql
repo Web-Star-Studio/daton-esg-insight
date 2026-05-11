@@ -1,34 +1,44 @@
 -- Move JWT do cron `compliance-update-letter-monthly` para o `vault`.
 -- A migration original (20260507120000) tinha o JWT inline no SQL, indo
--- pra git e sem dar para rotacionar sem nova migration. Esta correção:
+-- pra git. Esta correção troca pra leitura via vault.decrypted_secrets,
+-- mas NÃO carrega o JWT no SQL — exige que o operador provisione o
+-- secret out-of-band antes de aplicar.
 --
---   1) Cria o secret `cron_invoke_jwt` no vault com o anon key atual.
---   2) Reagenda o cron lendo o secret em runtime via vault.decrypted_secrets.
+-- ORDEM DE OPERAÇÃO (obrigatória):
 --
--- IMPORTANTE: após mergear esta migration, ROTACIONAR o anon key no
--- dashboard do Supabase (o JWT antigo está no histórico do git da branch
--- atual). O fluxo completo de rotação:
+--   1. No dashboard do Supabase (SQL Editor), provisionar o secret:
 --
---   1. Dashboard → Settings → API → Reset anon key
---   2. SELECT vault.update_secret(
---        (SELECT id FROM vault.secrets WHERE name = 'cron_invoke_jwt'),
---        '<novo-anon-jwt>'
---      );
---   3. Atualizar `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` / `VITE_SUPABASE_PUBLISHABLE_KEY`
---      no Lovable env e redeployar o front.
+--        SELECT vault.create_secret(
+--          '<novo-anon-jwt>',
+--          'cron_invoke_jwt',
+--          'JWT anon usado pelo pg_cron para invocar edge functions internas'
+--        );
+--
+--      Se o anon key antigo já está comprometido (vazou no git), gere um
+--      NOVO no Dashboard → Settings → API → Reset anon key ANTES de criar
+--      o secret. Não reusar o JWT antigo.
+--
+--   2. Provisionar `CRON_INVOKE_JWT` no Edge Functions Secrets (mesmo
+--      valor do vault). A função `compliance-update-letter-cron` valida
+--      o header `Authorization: Bearer <jwt>` contra essa env var.
+--
+--   3. Atualizar env var do front (NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+--      ou VITE_SUPABASE_PUBLISHABLE_KEY) com o novo anon key e redeployar.
+--
+--   4. Aplicar esta migration. Ela falha intencionalmente com EXCEPTION
+--      se o secret não existir — protege contra rodar sem cumprir o
+--      passo 1 e deixar o cron com `Authorization: Bearer ` (vazio).
 
--- 1. Garante o secret. Idempotente: se já existir, não recria.
+-- 1. Pré-requisito: secret deve existir. Se não existir, falha com
+--    instrução clara em vez de carregar JWT inline ou seguir silencioso.
 DO $$
 DECLARE
   v_secret_id uuid;
 BEGIN
   SELECT id INTO v_secret_id FROM vault.secrets WHERE name = 'cron_invoke_jwt';
   IF v_secret_id IS NULL THEN
-    PERFORM vault.create_secret(
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbHZpb2lqcXpsdm52dmFqbWZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NzM1MzUsImV4cCI6MjA3MzA0OTUzNX0.tJdmq7Y5bMKdO1njvPR73W0wPwmUPyltsBM_oNCqDPQ',
-      'cron_invoke_jwt',
-      'JWT anon usado pelo pg_cron para invocar edge functions internas. Rotacionar junto com o anon key.'
-    );
+    RAISE EXCEPTION
+      'vault secret "cron_invoke_jwt" não encontrado. Provisione manualmente antes de aplicar esta migration — ver cabeçalho do arquivo (ORDEM DE OPERAÇÃO passo 1).';
   END IF;
 END $$;
 

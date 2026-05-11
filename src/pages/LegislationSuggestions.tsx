@@ -102,7 +102,22 @@ export default function LegislationSuggestions() {
       setSearchParams(next, { replace: true });
     }
     setSelectedIds(new Set()); // limpa seleção ao trocar de unidade
+    // Reset do radar: ao trocar branch, querKey antiga fica enabled=true
+    // e dispara novamente o agente Radar pra outra branch sem ação do
+    // usuário (gasta ~$0.10 sem necessidade). Volta pra lazy-mode.
+    setRadarEnabled(false);
+    setRadarSelected(new Set());
+    setRadarOverrides({});
   }, [selectedBranch, searchParams, setSearchParams]);
+
+  // Mesmo motivo do reset acima: trocar mês com radarEnabled=true dispara
+  // chamada nova do agente automaticamente. Reseta o flag — o usuário
+  // precisa clicar "Buscar novidades" explicitamente pro novo mês.
+  useEffect(() => {
+    setRadarEnabled(false);
+    setRadarSelected(new Set());
+    setRadarOverrides({});
+  }, [radarMonth]);
 
   const { data: response, isLoading, refetch, isFetching } = useLegislationSuggestions(
     selectedBranch || undefined,
@@ -193,14 +208,17 @@ export default function LegislationSuggestions() {
   const allVisibleSelected = filteredMatched.length > 0 && filteredMatched.every((m) => selectedIds.has(m.legislation_id));
 
   const handleAccept = async () => {
-    const items = matched.filter((m) => selectedIds.has(m.legislation_id)).map((m) => ({
-      legislation_id: m.legislation_id,
-      applicability: (m.default_applicability === "real"
-        ? "real"
-        : m.default_applicability === "potential"
-        ? "potential"
-        : "potential") as "real" | "potential",
-    }));
+    // Preserva o `default_applicability` da legislação no catálogo. Antes
+    // colapsava qualquer valor !== 'real' em 'potential', perdendo 'na',
+    // 'revoked' e 'pending' que `acceptSuggestions` aceita nativamente.
+    const VALID_APPLICABILITIES = new Set(["real", "potential", "na", "revoked", "pending"]);
+    const items = matched.filter((m) => selectedIds.has(m.legislation_id)).map((m) => {
+      const raw = (m.default_applicability ?? "").toLowerCase();
+      const applicability = (
+        VALID_APPLICABILITIES.has(raw) ? raw : "potential"
+      ) as "real" | "potential" | "na" | "revoked" | "pending";
+      return { legislation_id: m.legislation_id, applicability };
+    });
     if (items.length === 0) return;
     await accept.mutateAsync(items);
     setSelectedIds(new Set());
