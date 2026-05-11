@@ -1,74 +1,57 @@
-// Loop agentic minimalista usando `aiCall` (Lovable Gateway).
+// Loop agentic via Vercel AI SDK (npm:ai), apontando pro Lovable Gateway.
 //
-// O modelo decide quais tools chamar; este runtime executa cada tool e
-// devolve o resultado pro modelo até `finish_reason !== 'tool_calls'` OU
-// `maxSteps` ser atingido. Persiste 1 row em `agent_runs` por execução
-// e 1 row em `agent_steps` por turno (LLM call ou tool call).
+// O modelo decide quais tools chamar; o SDK roda o loop até maxSteps OU até
+// `finishReason !== 'tool-calls'`. Persistimos 1 row em `agent_runs` por
+// execução e várias em `agent_steps` (1 por LLM call + 1 por tool call)
+// via `onStepFinish` callback.
 //
-// Por que loop manual (não framework): `aiCall` em `_shared/ai-logger.ts`
-// já passa `tools`/`tool_choice` direto pro Lovable Gateway (linhas 40-41
-// + spread em 135) e loga em `ai_usage_logs`. `daton-ai-chat` faz só
-// single-turn com tools — não é loop verdadeiro. Esta é a primeira
-// implementação real de loop multi-turno no projeto.
+// Por que AI SDK (e não loop manual): tools com Zod schemas dão type
+// safety nos `execute`, parallel tool calls funcionam nativamente, e
+// trocar provider é mudança de 1 linha. Mesma infra (Deno + Lovable
+// Gateway via OpenAI-compatible baseURL) — zero secret novo.
 //
-// Custo: passamos `meta: { run_id }` no contexto do `aiCall`, então
-// `ai_usage_logs.request_meta->>'run_id'` cruza com `agent_runs.id`.
-// Para custo total da run:
+// Versionamento: travamos `npm:ai@4.3.16` + `@ai-sdk/openai@1.3.22` +
+// `zod@3.25.76`. AI SDK lança versão major a cada ~6 meses com breaking
+// changes — pinar evita surpresa silenciosa.
 //
-//   SELECT SUM(estimated_cost_usd) FROM ai_usage_logs
-//   WHERE request_meta->>'run_id' = '<runId>';
+// Diferença pro loop manual anterior: AI SDK faz UM `generateText` que
+// internamente loopa; nosso código antigo fazia N chamadas `aiCall`
+// explicitamente. Schema do DB (`agent_runs`/`agent_steps`/`ai_usage_logs`)
+// não muda — só a forma de gerar os steps que vai pra dentro do callback.
 
-import { aiCall, type AiCallContext } from "./ai-logger.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { generateText, tool as aiTool } from "npm:ai@4.3.16";
+import { createOpenAI } from "npm:@ai-sdk/openai@1.3.22";
+import { z } from "npm:zod@3.25.76";
+import { estimateCostUsd, isPricedModel } from "./ai-pricing.ts";
 
-export interface AgentTool {
+// Tool com Zod schema. O `execute` recebe args já parseados e tipados.
+// `T extends z.ZodTypeAny` permite que cada tool tenha seu próprio shape.
+export interface AgentTool<T extends z.ZodTypeAny = z.ZodTypeAny> {
   name: string;
   description: string;
-  /** JSON Schema (formato OpenAI tool params). */
-  parameters: Record<string, unknown>;
-  /** Executa a tool e devolve o resultado serializável. Erros são
-   *  capturados pelo runtime e devolvidos pro modelo como `{ error: ... }`. */
-  execute: (args: Record<string, unknown>) => Promise<unknown>;
+  parameters: T;
+  execute: (args: z.infer<T>) => Promise<unknown>;
 }
 
 export interface AgentRunInput {
   agentName: string;
-  /** Default: google/gemini-2.5-pro. */
+  /** Default: google/gemini-2.5-pro. Pode trocar pra openai/gpt-4o-mini, etc. */
   model?: string;
   systemPrompt: string;
   userPrompt: string;
-  tools: AgentTool[];
-  /** Default: 8. Cap duro — sem isso loop pode queimar custo silenciosamente. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tools: AgentTool<any>[];
+  /** Default: 8. Cap duro pro caso do agente não chamar finalize. */
   maxSteps?: number;
   companyId?: string | null;
   branchId?: string | null;
-  /** null em runs do cron / chamadas server-to-server. */
   triggeredBy?: string | null;
   /** Cliente Supabase com service role — único writer das tabelas agent_*. */
   supabase: SupabaseClient;
-  /** Snapshot leve do input pra debugging — não loga prompt completo. */
   inputForLog?: Record<string, unknown>;
-  /** Default: 0.2. Determinismo razoável pro caso típico. */
+  /** Default: 0.2. */
   temperature?: number;
-}
-
-interface ChatMessage {
-  role: "system" | "user" | "assistant" | "tool";
-  content: string | null;
-  tool_calls?: Array<{
-    id: string;
-    type: "function";
-    function: { name: string; arguments: string };
-  }>;
-  tool_call_id?: string;
-  name?: string;
-}
-
-interface CompletionResponse {
-  choices: Array<{
-    message: ChatMessage;
-    finish_reason: string;
-  }>;
 }
 
 export interface ToolCallRecord {
@@ -82,16 +65,28 @@ export interface AgentRunResult {
   runId: string;
   finalText: string;
   toolCallCount: number;
-  /** Toda invocação de tool, na ordem. Inclui erros. */
   toolCalls: ToolCallRecord[];
-  /** true se o loop saiu por bater maxSteps sem o modelo finalizar. */
   reachedMaxSteps: boolean;
+  totalCostUsd: number;
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
 }
 
 export async function runAgent(input: AgentRunInput): Promise<AgentRunResult> {
   const model = input.model ?? "google/gemini-2.5-pro";
   const maxSteps = input.maxSteps ?? 8;
   const temperature = input.temperature ?? 0.2;
+
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    throw new Error("LOVABLE_API_KEY not configured");
+  }
+
+  // Lovable Gateway é OpenAI-compatible. Mesmo apiKey usado pelo aiCall.
+  const lovable = createOpenAI({
+    baseURL: "https://ai.gateway.lovable.dev/v1",
+    apiKey: LOVABLE_API_KEY,
+  });
 
   const { data: run, error: runErr } = await input.supabase
     .from("agent_runs")
@@ -110,129 +105,129 @@ export async function runAgent(input: AgentRunInput): Promise<AgentRunResult> {
   }
   const runId = run.id as string;
 
-  const messages: ChatMessage[] = [
-    { role: "system", content: input.systemPrompt },
-    { role: "user", content: input.userPrompt },
-  ];
+  // Converte nossos `AgentTool` pro formato do AI SDK.
+  const aiTools = Object.fromEntries(
+    input.tools.map((t) => [
+      t.name,
+      aiTool({
+        description: t.description,
+        parameters: t.parameters,
+        execute: t.execute,
+      }),
+    ]),
+  );
 
-  // Formato OpenAI: [{ type: "function", function: { name, description, parameters } }]
-  // Lovable Gateway repassa pro provider (Gemini/GPT) que entende esse shape.
-  const openAiTools = input.tools.map((t) => ({
-    type: "function" as const,
-    function: {
-      name: t.name,
-      description: t.description,
-      parameters: t.parameters,
-    },
-  }));
-
-  const ctx: AiCallContext = {
-    functionName: input.agentName,
-    featureTag: "agent-loop",
-    companyId: input.companyId ?? undefined,
-    userId: input.triggeredBy ?? undefined,
-    meta: { run_id: runId },
-  };
-
+  // Contador global de step_index — incrementa pra cada row (llm_call OU
+  // tool_call). Persistência granular no onStepFinish callback.
   let stepIndex = 0;
   let toolCallCount = 0;
-  let finalText = "";
-  let reachedMaxSteps = false;
+  let totalPromptTokens = 0;
+  let totalCompletionTokens = 0;
+  let totalCostUsd = 0;
   const toolCalls: ToolCallRecord[] = [];
 
   try {
-    for (let step = 0; step < maxSteps; step++) {
-      const llmStart = Date.now();
-      let resp: CompletionResponse;
-      try {
-        resp = await aiCall<CompletionResponse>(ctx, {
-          model,
-          messages: messages as Array<{ role: string; content: unknown }>,
-          tools: openAiTools,
-          tool_choice: "auto",
-          temperature,
-        });
-      } catch (err) {
-        const errorText = err instanceof Error ? err.message : String(err);
-        await input.supabase.from("agent_steps").insert({
-          run_id: runId,
-          step_index: stepIndex++,
-          step_type: "llm_call",
-          duration_ms: Date.now() - llmStart,
-          error_text: errorText,
-        });
-        throw err;
-      }
+    const result = await generateText({
+      model: lovable(model),
+      system: input.systemPrompt,
+      prompt: input.userPrompt,
+      tools: aiTools,
+      maxSteps,
+      temperature,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onStepFinish: async ({ toolCalls: stepToolCalls, toolResults, finishReason, text, usage }: any) => {
+        // Acumula custo do step.
+        const promptTokens = usage?.promptTokens ?? 0;
+        const completionTokens = usage?.completionTokens ?? 0;
+        const costUsd = isPricedModel(model)
+          ? estimateCostUsd(model, promptTokens, completionTokens)
+          : 0;
+        totalPromptTokens += promptTokens;
+        totalCompletionTokens += completionTokens;
+        totalCostUsd += costUsd;
 
-      const choice = resp.choices?.[0];
-      if (!choice) {
-        throw new Error("Lovable Gateway response missing choices");
-      }
-      const assistantMsg = choice.message;
-      messages.push(assistantMsg);
-
-      await input.supabase.from("agent_steps").insert({
-        run_id: runId,
-        step_index: stepIndex++,
-        step_type: "llm_call",
-        output: { finish_reason: choice.finish_reason, has_tool_calls: !!assistantMsg.tool_calls?.length },
-        duration_ms: Date.now() - llmStart,
-      });
-
-      const turnToolCalls = assistantMsg.tool_calls ?? [];
-      // Loop encerra quando o modelo respondeu com texto final (sem tool_calls)
-      // OU explicitamente sinalizou stop. A condição `finish_reason ===
-      // "tool_calls"` é a forma OpenAI-compatible — Gemini via Lovable usa
-      // o mesmo schema.
-      if (turnToolCalls.length === 0 || choice.finish_reason !== "tool_calls") {
-        finalText = assistantMsg.content ?? "";
-        break;
-      }
-
-      for (const tc of turnToolCalls) {
-        const toolDef = input.tools.find((t) => t.name === tc.function.name);
-        const tcStart = Date.now();
-        let result: unknown;
-        let errorText: string | undefined;
-        let parsedArgs: Record<string, unknown> = {};
+        // 1 row pro llm_call.
         try {
-          parsedArgs = JSON.parse(tc.function.arguments || "{}");
-          if (!toolDef) throw new Error(`Unknown tool: ${tc.function.name}`);
-          result = await toolDef.execute(parsedArgs);
+          await input.supabase.from("agent_steps").insert({
+            run_id: runId,
+            step_index: stepIndex++,
+            step_type: "llm_call",
+            output: {
+              finish_reason: finishReason ?? null,
+              has_tool_calls: (stepToolCalls?.length ?? 0) > 0,
+              text_length: (text ?? "").length,
+            },
+            tokens_prompt: promptTokens,
+            tokens_completion: completionTokens,
+            cost_usd: costUsd,
+          });
         } catch (err) {
-          errorText = err instanceof Error ? err.message : String(err);
-          // Devolvemos um objeto serializável pro modelo. Sem isso, o turno
-          // seguinte vê "undefined" e fica perdido.
-          result = { error: errorText };
+          console.warn(`[agent-runtime] failed to log llm_call step:`, err);
         }
 
-        await input.supabase.from("agent_steps").insert({
-          run_id: runId,
-          step_index: stepIndex++,
-          step_type: "tool_call",
-          tool_name: tc.function.name,
-          input: parsedArgs,
-          output: result as Record<string, unknown>,
-          duration_ms: Date.now() - tcStart,
-          error_text: errorText ?? null,
-        });
+        // 1 row por tool call do step. toolResults vem alinhado por toolCallId.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const resultsByCallId = new Map(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ((toolResults ?? []) as any[]).map((r) => [r.toolCallId, r]),
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const tc of (stepToolCalls ?? []) as any[]) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const resultEntry = resultsByCallId.get(tc.toolCallId) as any;
+          const output = resultEntry?.result ?? null;
+          const errorText = resultEntry?.error
+            ? String(resultEntry.error?.message ?? resultEntry.error)
+            : undefined;
 
-        toolCallCount++;
-        toolCalls.push({ name: tc.function.name, input: parsedArgs, output: result, errorText });
+          try {
+            await input.supabase.from("agent_steps").insert({
+              run_id: runId,
+              step_index: stepIndex++,
+              step_type: "tool_call",
+              tool_name: tc.toolName,
+              input: tc.args as Record<string, unknown>,
+              output: output as Record<string, unknown>,
+              error_text: errorText ?? null,
+            });
+          } catch (err) {
+            console.warn(`[agent-runtime] failed to log tool_call step:`, err);
+          }
 
-        messages.push({
-          role: "tool",
-          tool_call_id: tc.id,
-          name: tc.function.name,
-          content: JSON.stringify(result),
-        });
-      }
+          toolCallCount++;
+          toolCalls.push({
+            name: tc.toolName,
+            input: tc.args as Record<string, unknown>,
+            output,
+            errorText,
+          });
+        }
+      },
+    });
 
-      if (step === maxSteps - 1) {
-        // Última iteração e ainda há tool_calls — vai sair do loop sem
-        // finalText. Marcamos pra UI poder reportar "agent did not finalize".
-        reachedMaxSteps = true;
-      }
+    // AI SDK considera "reached max steps" quando finishReason === 'length'
+    // OU quando steps.length === maxSteps sem finishReason='stop'.
+    const reachedMaxSteps =
+      result.finishReason !== "stop" &&
+      result.steps.length >= maxSteps;
+
+    // Log agregado em ai_usage_logs (compat com dashboard existente).
+    try {
+      await input.supabase.from("ai_usage_logs").insert({
+        function_name: input.agentName,
+        feature_tag: "agent-loop",
+        model,
+        company_id: input.companyId ?? null,
+        user_id: input.triggeredBy ?? null,
+        prompt_tokens: totalPromptTokens || null,
+        completion_tokens: totalCompletionTokens || null,
+        total_tokens: (totalPromptTokens + totalCompletionTokens) || null,
+        estimated_cost_usd: totalCostUsd,
+        success: true,
+        request_meta: { run_id: runId, ai_sdk: true },
+      });
+    } catch (err) {
+      console.warn(`[agent-runtime] ai_usage_logs insert failed:`, err);
     }
 
     await input.supabase
@@ -240,24 +235,54 @@ export async function runAgent(input: AgentRunInput): Promise<AgentRunResult> {
       .update({
         status: "completed",
         output: {
-          text: finalText,
+          text: result.text,
           tool_call_count: toolCallCount,
           reached_max_steps: reachedMaxSteps,
+          finish_reason: result.finishReason,
         },
         total_steps: stepIndex,
+        total_cost_usd: totalCostUsd,
         finished_at: new Date().toISOString(),
       })
       .eq("id", runId);
 
-    return { runId, finalText, toolCallCount, toolCalls, reachedMaxSteps };
+    return {
+      runId,
+      finalText: result.text,
+      toolCallCount,
+      toolCalls,
+      reachedMaxSteps,
+      totalCostUsd,
+      totalPromptTokens,
+      totalCompletionTokens,
+    };
   } catch (err) {
     const errorText = err instanceof Error ? err.message : String(err);
+
+    try {
+      await input.supabase.from("ai_usage_logs").insert({
+        function_name: input.agentName,
+        feature_tag: "agent-loop",
+        model,
+        company_id: input.companyId ?? null,
+        user_id: input.triggeredBy ?? null,
+        prompt_tokens: totalPromptTokens || null,
+        completion_tokens: totalCompletionTokens || null,
+        total_tokens: (totalPromptTokens + totalCompletionTokens) || null,
+        estimated_cost_usd: totalCostUsd,
+        success: false,
+        error_text: errorText,
+        request_meta: { run_id: runId, ai_sdk: true },
+      });
+    } catch { /* ignore */ }
+
     await input.supabase
       .from("agent_runs")
       .update({
         status: "failed",
         error_text: errorText,
         total_steps: stepIndex,
+        total_cost_usd: totalCostUsd,
         finished_at: new Date().toISOString(),
       })
       .eq("id", runId);

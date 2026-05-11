@@ -11,6 +11,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "npm:zod@3.25.76";
 import { corsHeaders } from "../_shared/cors.ts";
 import { callPerplexityWithRetry } from "../_shared/perplexity-call.ts";
 import { runAgent, type AgentTool } from "../_shared/agent-runtime.ts";
@@ -127,34 +128,28 @@ function intersect<T>(a: T[], b: T[]): T[] {
 
 // ---------- agentic discovery ----------
 
-interface SuggestionsAgentCtx {
-  apiKey: string;
-  supabase: SupabaseClient;
-  branchId: string;
-  responses: Record<string, unknown>;
-  state: string | null;
-  city: string | null;
-}
+// Zod schema da sugestão final — AI SDK valida automaticamente.
+const suggestionZ = z.object({
+  reference: z.string(),
+  url: z.string().nullable(),
+  summary: z.string(),
+  jurisdiction_hint: z.enum(["federal", "estadual", "municipal", "nbr", "internacional"]),
+  applicability_hint: z.enum(["real", "potential"]),
+});
+type SuggestionZ = z.infer<typeof suggestionZ>;
 
 function buildSearchPerplexityTool(apiKey: string): AgentTool {
   return {
     name: "search_perplexity",
     description:
       "Busca normas brasileiras vigentes via Perplexity Sonar-pro com web search. Use UMA query por tema/agência. Útil pra cobrir gaps que o overlap SQL determinístico não pegou.",
-    parameters: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description:
-            "Query natural em PT-BR. Ex: 'normas LGPD ANPD compliance dados pessoais transportadoras' ou 'NRs MTE saúde do trabalhador motoristas profissionais'.",
-        },
-      },
-      required: ["query"],
-    },
-    execute: async (args) => {
-      const query = String(args.query ?? "").trim();
-      if (!query) return { error: "query obrigatória" };
+    parameters: z.object({
+      query: z.string().describe(
+        "Query natural em PT-BR. Ex: 'normas LGPD ANPD compliance dados pessoais transportadoras' ou 'NRs MTE saúde do trabalhador motoristas profissionais'.",
+      ),
+    }),
+    execute: async ({ query }) => {
+      if (!query.trim()) return { error: "query obrigatória" };
       const userPrompt = `Liste até 6 normas brasileiras vigentes sobre: ${query}.\n\nPara cada norma: reference (nome curto, ex.: "Resolução CONAMA nº 357/2005"), url canônica HTTPS (DOU, planalto, agência), summary técnico em 1 frase, jurisdiction_hint (federal|estadual|municipal|nbr|internacional), applicability_hint (real|potential).\n\nFORMATO DE SAÍDA: JSON {"items":[...]}, sem markdown, sem texto antes ou depois. Sem URL canônica → omita o item.`;
       try {
         const resp = await callPerplexityWithRetry(apiKey, {
@@ -186,13 +181,9 @@ function buildQueryExistingTool(supabase: SupabaseClient, branchId: string): Age
     name: "query_existing_legislations",
     description:
       "Lista normas já vinculadas à unidade. Use pra evitar sugerir duplicata. branch_id é fixo no contexto da run (passe o mesmo do user message).",
-    parameters: {
-      type: "object",
-      properties: {
-        branch_id: { type: "string", description: "UUID da branch (placeholder — closure usa o real)." },
-      },
-      required: ["branch_id"],
-    },
+    parameters: z.object({
+      branch_id: z.string().describe("UUID da branch (placeholder — closure usa o real)."),
+    }),
     execute: async () => {
       const { data: linkedRows } = await supabase
         .from("legislation_unit_compliance")
@@ -214,20 +205,14 @@ function buildInspectComplianceResponseTool(responses: Record<string, unknown>):
   return {
     name: "inspect_compliance_response",
     description:
-      "Lê uma resposta específica do questionário de compliance da unidade. Use pra contextualizar antes de buscar (ex.: ver atividades em texto livre, equipamentos específicos, escopo de transporte). Question IDs típicos: 'inst.q4', 'inst.q5', 'TRANSPORTE.q3', 'RES.q2', etc. Sem o ID exato, devolve a lista de IDs disponíveis.",
-    parameters: {
-      type: "object",
-      properties: {
-        question_id: {
-          type: "string",
-          description:
-            "ID exato da pergunta (ex.: 'inst.q4'). Se não souber, passe 'list' pra ver todos os IDs disponíveis.",
-        },
-      },
-      required: ["question_id"],
-    },
+      "Lê uma resposta específica do questionário de compliance da unidade. Use pra contextualizar antes de buscar (ex.: ver atividades em texto livre, equipamentos específicos, escopo de transporte). Question IDs típicos: 'inst.q4', 'inst.q5', 'TRANSPORTE.q3', 'RES.q2', etc. Sem o ID exato, passe 'list' pra ver os IDs disponíveis.",
+    parameters: z.object({
+      question_id: z.string().describe(
+        "ID exato da pergunta (ex.: 'inst.q4'). Se não souber, passe 'list' pra ver todos os IDs disponíveis.",
+      ),
+    }),
     execute: async ({ question_id }) => {
-      const q = String(question_id ?? "").trim();
+      const q = question_id.trim();
       if (q === "list" || !q) {
         const keys = Object.keys(responses).slice(0, 50);
         return { available_question_ids: keys, total: Object.keys(responses).length };
@@ -244,38 +229,17 @@ function buildInspectComplianceResponseTool(responses: Record<string, unknown>):
   };
 }
 
-interface FinalizeSuggestionsPayload {
-  suggestions: DiscoveredSuggestion[];
-}
-
 const finalizeSuggestionsTool: AgentTool = {
   name: "finalize_suggestions",
   description:
     "Encerra o loop e devolve a lista final de sugestões. Chame UMA vez como ÚLTIMA tool. Aceita lista vazia se nenhuma busca foi conclusiva.",
-  parameters: {
-    type: "object",
-    properties: {
-      suggestions: {
-        type: "array",
-        description: "Lista final (3-8 itens recomendados; até 12 max).",
-        items: {
-          type: "object",
-          properties: {
-            reference: { type: "string" },
-            url: { type: ["string", "null"] },
-            summary: { type: "string" },
-            jurisdiction_hint: { type: "string", enum: ["federal", "estadual", "municipal", "nbr", "internacional"] },
-            applicability_hint: { type: "string", enum: ["real", "potential"] },
-          },
-          required: ["reference", "summary", "jurisdiction_hint", "applicability_hint"],
-        },
-      },
-    },
-    required: ["suggestions"],
-  },
+  parameters: z.object({
+    suggestions: z.array(suggestionZ).describe(
+      "Lista final (3-8 itens recomendados; até 12 max).",
+    ),
+  }),
   execute: async ({ suggestions }) => {
-    const arr = Array.isArray(suggestions) ? suggestions.length : 0;
-    return { saved: true, count: arr };
+    return { saved: true, count: suggestions.length };
   },
 };
 
@@ -582,7 +546,7 @@ Sua tarefa: descobrir 3-8 sugestões NOVAS focando em temas/agências que o SQL 
           ? "agent did not finalize within maxSteps"
           : "agent ended without finalize_suggestions call";
       } else {
-        const items = ((finalize.input as FinalizeSuggestionsPayload | undefined)?.suggestions ?? []) as unknown[];
+        const items = ((finalize.input as { suggestions?: SuggestionZ[] } | undefined)?.suggestions ?? []) as unknown[];
         discovered = items
           .map((it) => {
             if (!it || typeof it !== "object") return null;

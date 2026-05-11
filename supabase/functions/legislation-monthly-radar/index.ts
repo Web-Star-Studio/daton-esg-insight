@@ -22,6 +22,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "npm:zod@3.25.76";
 import { corsHeaders } from "../_shared/cors.ts";
 import { callPerplexityWithRetry } from "../_shared/perplexity-call.ts";
 import { runAgent, type AgentTool, type AgentRunResult } from "../_shared/agent-runtime.ts";
@@ -76,32 +77,43 @@ const VALID_JURISDICTIONS = new Set(["federal", "estadual", "municipal", "nbr", 
 
 // ---------- Tools ----------
 
+// Zod schema da novelty — usado tanto no finalize_novelties quanto na
+// extração final pra ResponseShape. AI SDK valida automaticamente o
+// payload que o modelo manda na tool call.
+const noveltyZ = z.object({
+  reference: z.string(),
+  norm_type: z.string(),
+  norm_number: z.string(),
+  publication_date: z.string().describe("YYYY-MM-DD"),
+  title: z.string(),
+  summary: z.string(),
+  jurisdiction: z.enum(["federal", "estadual", "municipal", "nbr", "internacional"]),
+  state: z.string().nullable(),
+  municipality: z.string().nullable(),
+  issuing_body: z.string(),
+  source_url: z.string().url(),
+  applicability_hint: z.enum(["real", "potential"]),
+  matched_themes: z.array(z.string()),
+});
+type NoveltyZ = z.infer<typeof noveltyZ>;
+
 function buildSearchPerplexityTool(apiKey: string): AgentTool {
   return {
     name: "search_perplexity",
     description:
       "Busca normas legais brasileiras publicadas em uma janela de datas usando Perplexity Sonar-pro com web search. Use UMA query por tema/agência (ex.: 'normas ANTT publicadas abril 2026 transporte cargas'). NÃO faça uma busca única ampla — múltiplas buscas focadas dão melhor cobertura.",
-    parameters: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description:
-            "Query natural em PT-BR descrevendo o que buscar. Ex: 'portarias ANTT abril 2026 transporte rodoviário cargas' ou 'normas FEPAM-RS resíduos perigosos abril 2026'.",
-        },
-        date_from: { type: "string", description: "YYYY-MM-DD (início da janela)" },
-        date_to: { type: "string", description: "YYYY-MM-DD (fim da janela)" },
-      },
-      required: ["query", "date_from", "date_to"],
-    },
-    execute: async (args) => {
-      const query = String(args.query ?? "").trim();
-      const dateFrom = String(args.date_from ?? "").trim();
-      const dateTo = String(args.date_to ?? "").trim();
-      if (!query || !dateFrom || !dateTo) {
+    parameters: z.object({
+      query: z.string().describe(
+        "Query natural em PT-BR descrevendo o que buscar. Ex: 'portarias ANTT abril 2026 transporte rodoviário cargas' ou 'normas FEPAM-RS resíduos perigosos abril 2026'.",
+      ),
+      date_from: z.string().describe("YYYY-MM-DD (início da janela)"),
+      date_to: z.string().describe("YYYY-MM-DD (fim da janela)"),
+    }),
+    execute: async ({ query, date_from, date_to }) => {
+      if (!query.trim() || !date_from.trim() || !date_to.trim()) {
         return { error: "query, date_from, date_to são obrigatórios" };
       }
-      const userPrompt = `Liste normas brasileiras publicadas entre ${dateFrom} e ${dateTo} sobre: ${query}.\n\nPara cada norma: reference (nome curto), norm_type, norm_number, publication_date YYYY-MM-DD, title, summary técnico em 1 frase, jurisdiction (federal|estadual|municipal|nbr|internacional), state (UF se estadual), municipality (cidade se municipal), issuing_body, source_url HTTPS canônica.\n\nFORMATO DE SAÍDA: JSON {"items": [...]}, sem markdown, sem texto antes ou depois. Sem URL canônica → não incluir.`;
+      const userPrompt = `Liste normas brasileiras publicadas entre ${date_from} e ${date_to} sobre: ${query}.\n\nPara cada norma: reference (nome curto), norm_type, norm_number, publication_date YYYY-MM-DD, title, summary técnico em 1 frase, jurisdiction (federal|estadual|municipal|nbr|internacional), state (UF se estadual), municipality (cidade se municipal), issuing_body, source_url HTTPS canônica.\n\nFORMATO DE SAÍDA: JSON {"items": [...]}, sem markdown, sem texto antes ou depois. Sem URL canônica → não incluir.`;
       try {
         const resp = await callPerplexityWithRetry(apiKey, {
           model: "sonar-pro",
@@ -135,20 +147,15 @@ const fetchUrlTool: AgentTool = {
   name: "fetch_url",
   description:
     "Baixa o HTML de uma URL para validar publicação. Use SÓ pra URLs governamentais (in.gov.br, planalto, agências reguladoras, portais estaduais/municipais). Retorna primeiros 4KB do body. Timeout 8s.",
-  parameters: {
-    type: "object",
-    properties: {
-      url: { type: "string", format: "uri", description: "URL HTTPS para validar" },
-    },
-    required: ["url"],
-  },
+  parameters: z.object({
+    url: z.string().url().describe("URL HTTPS para validar"),
+  }),
   execute: async ({ url }) => {
-    const u = String(url ?? "").trim();
-    if (!u.startsWith("https://") && !u.startsWith("http://")) {
+    if (!url.startsWith("https://") && !url.startsWith("http://")) {
       return { error: "URL precisa começar com http(s)://" };
     }
     try {
-      const resp = await fetch(u, { signal: AbortSignal.timeout(8000) });
+      const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
       const text = await resp.text();
       return { status: resp.status, snippet: text.slice(0, 4000) };
     } catch (err) {
@@ -162,16 +169,9 @@ function buildQueryExistingTool(supabase: SupabaseClient, branchId: string): Age
     name: "query_existing_legislations",
     description:
       "Lista normas já vinculadas a esta unidade (legislation_unit_compliance). Use pra evitar sugerir duplicata. branch_id é fixo no contexto da run; o argumento é só placeholder pra disparar a tool.",
-    parameters: {
-      type: "object",
-      properties: {
-        branch_id: {
-          type: "string",
-          description: "UUID da branch — passe o mesmo do contexto do user message.",
-        },
-      },
-      required: ["branch_id"],
-    },
+    parameters: z.object({
+      branch_id: z.string().describe("UUID da branch — passe o mesmo do contexto do user message."),
+    }),
     execute: async () => {
       // Ignoramos o argumento (closure usa a branch real). Evita o agente
       // tentar consultar outra branch.
@@ -194,49 +194,17 @@ function buildQueryExistingTool(supabase: SupabaseClient, branchId: string): Age
   };
 }
 
-interface FinalizeNoveltiesPayload {
-  novelties: RadarNovelty[];
-}
-
 const finalizeNoveltiesTool: AgentTool = {
   name: "finalize_novelties",
   description:
     "Encerra a busca e devolve a lista curada. Chame UMA vez no final, com 6-12 itens. Após esta chamada, NÃO faça mais buscas.",
-  parameters: {
-    type: "object",
-    properties: {
-      novelties: {
-        type: "array",
-        description: "Lista final de novidades (6-12 itens, ordenadas Real > Potencial).",
-        items: {
-          type: "object",
-          properties: {
-            reference: { type: "string" },
-            norm_type: { type: "string" },
-            norm_number: { type: "string" },
-            publication_date: { type: "string", description: "YYYY-MM-DD" },
-            title: { type: "string" },
-            summary: { type: "string" },
-            jurisdiction: { type: "string", enum: ["federal", "estadual", "municipal", "nbr", "internacional"] },
-            state: { type: ["string", "null"] },
-            municipality: { type: ["string", "null"] },
-            issuing_body: { type: "string" },
-            source_url: { type: "string", format: "uri" },
-            applicability_hint: { type: "string", enum: ["real", "potential"] },
-            matched_themes: { type: "array", items: { type: "string" } },
-          },
-          required: [
-            "reference", "title", "summary", "jurisdiction", "source_url",
-            "applicability_hint", "matched_themes", "publication_date",
-          ],
-        },
-      },
-    },
-    required: ["novelties"],
-  },
+  parameters: z.object({
+    novelties: z.array(noveltyZ).describe(
+      "Lista final de novidades (6-12 itens, ordenadas Real > Potencial).",
+    ),
+  }),
   execute: async ({ novelties }) => {
-    const arr = Array.isArray(novelties) ? novelties.length : 0;
-    return { saved: true, count: arr };
+    return { saved: true, count: novelties.length };
   },
 };
 
@@ -476,7 +444,7 @@ Inclua federais, estaduais de "${targetBranch.state ?? ""}", municipais de "${ta
     );
   }
 
-  const candidates = ((finalize.input as FinalizeNoveltiesPayload | undefined)?.novelties ?? []) as unknown[];
+  const candidates = ((finalize.input as { novelties?: NoveltyZ[] } | undefined)?.novelties ?? []) as unknown[];
 
   // Validação server-side (defesa em profundidade — o agente já recebeu
   // as regras no system, mas validamos novamente). Mesma lógica do
