@@ -5,7 +5,10 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Eye,
   Loader2,
+  ScanLine,
+  Trash2,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -19,7 +22,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -27,27 +29,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
   useComplianceProfile,
+  useUpdateComplianceResponses,
   useUpsertComplianceProfile,
 } from "@/hooks/useComplianceProfiles";
 import { cn } from "@/lib/utils";
 import { type ComplianceResponses } from "@/services/complianceProfiles";
 import { COMPLIANCE_THEMES } from "./questions.config";
+import { QuestionField } from "./QuestionField";
 import {
+  countStaleAnswers,
   generateTagsFromResponses,
   isQuestionVisible,
+  isThemeSuppressed,
   overallCompletionPercent,
+  stripSuppressedAnswers,
   themeCompletionPercent,
 } from "./helpers";
-import type { Question, QuestionOption, Theme } from "./types";
+import { keysToSuppression, type Suppression } from "./suppressionRules";
+import type { Theme } from "./types";
 import { useDebouncedAutosave } from "./useDebouncedAutosave";
 
 interface ComplianceQuestionnaireModalProps {
@@ -59,6 +64,7 @@ interface ComplianceQuestionnaireModalProps {
   // Caller usa isso para deeplinkar para a página de Sugestões e mostrar
   // um CTA tipo "X legislações sugeridas — revisar agora?".
   onSubmitComplete?: (branchId: string, generatedTags: string[]) => void;
+  onEditScope?: (branchId: string) => void;
 }
 
 const formatTime = (date: Date | null): string => {
@@ -69,13 +75,15 @@ const formatTime = (date: Date | null): string => {
 const ThemeNav: React.FC<{
   themes: Theme[];
   responses: ComplianceResponses;
+  suppression: Suppression;
   activeIndex: number;
   onSelect: (index: number) => void;
-}> = ({ themes, responses, activeIndex, onSelect }) => (
+}> = ({ themes, responses, suppression, activeIndex, onSelect }) => (
   <ScrollArea className="h-full w-full">
     <ul className="space-y-1 p-2">
       {themes.map((theme, index) => {
-        const percent = themeCompletionPercent(theme, responses);
+        const suppressed = isThemeSuppressed(theme, suppression);
+        const percent = themeCompletionPercent(theme, responses, suppression);
         const isActive = index === activeIndex;
         return (
           <li key={theme.id}>
@@ -87,18 +95,25 @@ const ThemeNav: React.FC<{
                 isActive
                   ? "border-primary/30 bg-primary/10 font-medium text-foreground"
                   : "hover:bg-muted/60 text-muted-foreground",
+                suppressed && !isActive && "opacity-60",
               )}
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="line-clamp-2">{theme.title}</span>
-                <span
-                  className={cn(
-                    "shrink-0 text-xs tabular-nums",
-                    percent === 100 ? "text-green-600" : "text-muted-foreground",
-                  )}
-                >
-                  {percent}%
-                </span>
+                {suppressed ? (
+                  <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Fora do escopo
+                  </span>
+                ) : (
+                  <span
+                    className={cn(
+                      "shrink-0 text-xs tabular-nums",
+                      percent === 100 ? "text-green-600" : "text-muted-foreground",
+                    )}
+                  >
+                    {percent}%
+                  </span>
+                )}
               </div>
             </button>
           </li>
@@ -107,82 +122,6 @@ const ThemeNav: React.FC<{
     </ul>
   </ScrollArea>
 );
-
-const QuestionField: React.FC<{
-  question: Question;
-  value: string | string[] | undefined;
-  onChange: (next: string | string[]) => void;
-}> = ({ question, value, onChange }) => {
-  const renderOptionRow = (option: QuestionOption, control: React.ReactNode) => (
-    <div
-      key={option.id}
-      className="flex items-start gap-3 rounded-md border border-transparent px-3 py-2 hover:bg-muted/40"
-    >
-      {control}
-      <Label htmlFor={`${question.id}-${option.id}`} className="cursor-pointer text-sm font-normal leading-snug">
-        {option.label}
-      </Label>
-    </div>
-  );
-
-  if (question.type === "single") {
-    const current = typeof value === "string" ? value : "";
-    return (
-      <RadioGroup value={current} onValueChange={onChange}>
-        {question.options?.map((option) =>
-          renderOptionRow(
-            option,
-            <RadioGroupItem id={`${question.id}-${option.id}`} value={option.id} className="mt-0.5" />,
-          ),
-        )}
-      </RadioGroup>
-    );
-  }
-
-  if (question.type === "multi") {
-    const current = Array.isArray(value) ? value : [];
-    const toggle = (optionId: string) => {
-      const next = current.includes(optionId)
-        ? current.filter((v) => v !== optionId)
-        : [...current, optionId];
-      onChange(next);
-    };
-    return (
-      <div className="space-y-1">
-        {question.options?.map((option) =>
-          renderOptionRow(
-            option,
-            <Checkbox
-              id={`${question.id}-${option.id}`}
-              checked={current.includes(option.id)}
-              onCheckedChange={() => toggle(option.id)}
-              className="mt-0.5"
-            />,
-          ),
-        )}
-      </div>
-    );
-  }
-
-  if (question.type === "textarea") {
-    return (
-      <Textarea
-        value={typeof value === "string" ? value : ""}
-        onChange={(e) => onChange(e.target.value)}
-        rows={4}
-        placeholder="Digite sua resposta…"
-      />
-    );
-  }
-
-  return (
-    <Input
-      value={typeof value === "string" ? value : ""}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder="Digite sua resposta…"
-    />
-  );
-};
 
 const AutosaveIndicator: React.FC<{
   status: "idle" | "saving" | "saved" | "error";
@@ -207,7 +146,10 @@ const AutosaveIndicator: React.FC<{
   }
   if (status === "error") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-destructive" title={error ?? undefined}>
+      <span
+        className="inline-flex items-center gap-1.5 text-xs text-destructive"
+        title={error ?? undefined}
+      >
         <AlertCircle className="h-3 w-3" />
         Erro ao salvar
       </span>
@@ -220,22 +162,26 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
   open,
   onOpenChange,
   onSubmitComplete,
+  onEditScope,
   branchId,
   branchName,
 }) => {
   const { selectedCompany } = useCompany();
   const { data: existingProfile, isLoading } = useComplianceProfile(branchId);
   const upsertMutation = useUpsertComplianceProfile();
+  const updateResponsesMutation = useUpdateComplianceResponses();
 
   const [responses, setResponses] = useState<ComplianceResponses>({});
   const [activeIndex, setActiveIndex] = useState(0);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [revealedThemes, setRevealedThemes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!open) {
       setHydrated(false);
       setActiveIndex(0);
+      setRevealedThemes(new Set());
       return;
     }
     if (existingProfile && !hydrated) {
@@ -247,6 +193,11 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
     }
   }, [open, existingProfile, isLoading, hydrated]);
 
+  const suppression = useMemo(
+    () => keysToSuppression(existingProfile?.suppressed_keys ?? []),
+    [existingProfile],
+  );
+
   const autosave = useDebouncedAutosave({
     branchId,
     companyId: selectedCompany?.id ?? "",
@@ -255,25 +206,51 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
   });
 
   const overallPercent = useMemo(
-    () => overallCompletionPercent(COMPLIANCE_THEMES, responses),
-    [responses],
+    () => overallCompletionPercent(COMPLIANCE_THEMES, responses, suppression),
+    [responses, suppression],
   );
 
   const activeTheme = COMPLIANCE_THEMES[activeIndex];
+  const activeThemeSuppressed = isThemeSuppressed(activeTheme, suppression);
+  const activeThemeRevealed = revealedThemes.has(activeTheme.id);
+
   const visibleQuestions = useMemo(
-    () => activeTheme.questions.filter((q) => isQuestionVisible(q, responses)),
-    [activeTheme, responses],
+    () => activeTheme.questions.filter((q) => isQuestionVisible(q, responses, suppression)),
+    [activeTheme, responses, suppression],
+  );
+
+  // Quando o tema é suprimido mas o user clicou "Mostrar mesmo assim",
+  // mostramos todas as perguntas (incluindo as que normalmente estariam
+  // ocultas por showIf? Não — mantemos showIf, só ignoramos a supressão
+  // de tema para esta visualização de auditoria).
+  const revealedQuestions = useMemo(() => {
+    if (!activeThemeSuppressed || !activeThemeRevealed) return [];
+    const lightSuppression: Suppression = {
+      themeIds: new Set(),
+      questionIds: suppression.questionIds,
+    };
+    return activeTheme.questions.filter((q) => isQuestionVisible(q, responses, lightSuppression));
+  }, [activeTheme, activeThemeSuppressed, activeThemeRevealed, responses, suppression]);
+
+  const staleCount = useMemo(
+    () => countStaleAnswers(COMPLIANCE_THEMES, responses, suppression),
+    [responses, suppression],
   );
 
   const setAnswer = (questionId: string, next: string | string[]) =>
     setResponses((prev) => ({ ...prev, [questionId]: next }));
 
   const goPrev = () => setActiveIndex((i) => Math.max(0, i - 1));
-  const goNext = () => setActiveIndex((i) => Math.min(COMPLIANCE_THEMES.length - 1, i + 1));
+  const goNext = () =>
+    setActiveIndex((i) => Math.min(COMPLIANCE_THEMES.length - 1, i + 1));
 
   const handleSubmit = async () => {
     if (!selectedCompany) return;
-    const generatedTags = generateTagsFromResponses(COMPLIANCE_THEMES, responses);
+    const generatedTags = generateTagsFromResponses(
+      COMPLIANCE_THEMES,
+      responses,
+      suppression,
+    );
     await upsertMutation.mutateAsync({
       branch_id: branchId,
       company_id: selectedCompany.id,
@@ -286,9 +263,26 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
     onSubmitComplete?.(branchId, generatedTags);
   };
 
+  const handleStripStale = async () => {
+    if (!selectedCompany) return;
+    const cleaned = stripSuppressedAnswers(COMPLIANCE_THEMES, responses, suppression);
+    setResponses(cleaned);
+    const regeneratedTags = generateTagsFromResponses(
+      COMPLIANCE_THEMES,
+      cleaned,
+      suppression,
+    );
+    await updateResponsesMutation.mutateAsync({
+      branch_id: branchId,
+      company_id: selectedCompany.id,
+      responses: cleaned,
+      regenerated_tags: regeneratedTags,
+    });
+  };
+
   const previewTags = useMemo(
-    () => generateTagsFromResponses(COMPLIANCE_THEMES, responses),
-    [responses],
+    () => generateTagsFromResponses(COMPLIANCE_THEMES, responses, suppression),
+    [responses, suppression],
   );
 
   return (
@@ -301,12 +295,32 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
                 <DialogTitle>Questionário de Compliance</DialogTitle>
                 <DialogDescription>
                   Unidade: <strong className="text-foreground">{branchName}</strong>
+                  {suppression.themeIds.size > 0 && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      · {suppression.themeIds.size} tema
+                      {suppression.themeIds.size === 1 ? "" : "s"} fora do escopo
+                    </span>
+                  )}
                 </DialogDescription>
               </div>
               <div className="flex flex-col items-end gap-1">
                 <div className="flex items-center gap-2">
+                  {onEditScope && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => onEditScope(branchId)}
+                    >
+                      <ScanLine className="mr-1 h-3 w-3" />
+                      Editar escopo
+                    </Button>
+                  )}
                   <span className="text-xs text-muted-foreground">Progresso geral</span>
-                  <Badge variant={overallPercent === 100 ? "default" : "outline"} className="tabular-nums">
+                  <Badge
+                    variant={overallPercent === 100 ? "default" : "outline"}
+                    className="tabular-nums"
+                  >
                     {overallPercent}%
                   </Badge>
                 </div>
@@ -318,6 +332,26 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
               </div>
             </div>
             <Progress value={overallPercent} className="mt-3 h-1.5" />
+            {staleCount > 0 && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                <span>
+                  {staleCount} resposta{staleCount === 1 ? "" : "s"} existente
+                  {staleCount === 1 ? "" : "s"} {staleCount === 1 ? "está" : "estão"} fora do
+                  escopo atual da unidade. {staleCount === 1 ? "Ela" : "Elas"} não
+                  contam para tags ou progresso.
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-amber-900 hover:bg-amber-100 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                  onClick={handleStripStale}
+                  disabled={updateResponsesMutation.isPending}
+                >
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  Limpar respostas fora do escopo
+                </Button>
+              </div>
+            )}
           </DialogHeader>
 
           <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -328,6 +362,7 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
               <ThemeNav
                 themes={COMPLIANCE_THEMES}
                 responses={responses}
+                suppression={suppression}
                 activeIndex={activeIndex}
                 onSelect={setActiveIndex}
               />
@@ -340,17 +375,82 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
                     {activeTheme.number}. {activeTheme.title}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    {visibleQuestions.length} pergunta{visibleQuestions.length === 1 ? "" : "s"} nesta seção
+                    {activeThemeSuppressed
+                      ? "Tema fora do escopo desta unidade"
+                      : `${visibleQuestions.length} pergunta${
+                          visibleQuestions.length === 1 ? "" : "s"
+                        } nesta seção`}
                   </p>
                 </div>
-                <Badge variant="outline" className="tabular-nums">
-                  {themeCompletionPercent(activeTheme, responses)}%
-                </Badge>
+                {activeThemeSuppressed ? (
+                  <Badge variant="outline" className="text-xs uppercase tracking-wide">
+                    Fora do escopo
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="tabular-nums">
+                    {themeCompletionPercent(activeTheme, responses, suppression)}%
+                  </Badge>
+                )}
               </div>
 
               <ScrollArea className="flex-1">
                 <div className="space-y-6 px-6 py-5">
-                  {visibleQuestions.length === 0 ? (
+                  {activeThemeSuppressed && !activeThemeRevealed ? (
+                    <div className="rounded-md border border-dashed bg-muted/30 px-4 py-6 text-sm">
+                      <p className="text-muted-foreground">
+                        Este tema foi marcado como fora do escopo desta unidade
+                        com base no Pré-Compliance. As perguntas estão ocultas
+                        e não contam para o progresso nem para a geração de
+                        tags.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {onEditScope && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onEditScope(branchId)}
+                          >
+                            <ScanLine className="mr-1 h-3 w-3" />
+                            Editar escopo da unidade
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setRevealedThemes((prev) => new Set(prev).add(activeTheme.id))
+                          }
+                        >
+                          <Eye className="mr-1 h-3 w-3" />
+                          Mostrar mesmo assim
+                        </Button>
+                      </div>
+                    </div>
+                  ) : activeThemeSuppressed && activeThemeRevealed ? (
+                    <>
+                      <div className="rounded-md border border-dashed bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+                        Tema fora do escopo — exibido apenas para inspeção.
+                        Respostas aqui não contam para tags nem progresso.
+                      </div>
+                      {revealedQuestions.map((question) => (
+                        <div key={question.id} className="space-y-2 opacity-80">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xs font-semibold text-muted-foreground tabular-nums">
+                              {question.number}
+                            </span>
+                            <Label className="text-sm font-medium leading-snug">
+                              {question.label}
+                            </Label>
+                          </div>
+                          <QuestionField
+                            question={question}
+                            value={responses[question.id]}
+                            onChange={(next) => setAnswer(question.id, next)}
+                          />
+                        </div>
+                      ))}
+                    </>
+                  ) : visibleQuestions.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       Nenhuma pergunta aplicável a partir das respostas anteriores.
                     </p>
@@ -361,7 +461,9 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
                           <span className="text-xs font-semibold text-muted-foreground tabular-nums">
                             {question.number}
                           </span>
-                          <Label className="text-sm font-medium leading-snug">{question.label}</Label>
+                          <Label className="text-sm font-medium leading-snug">
+                            {question.label}
+                          </Label>
                         </div>
                         <QuestionField
                           question={question}

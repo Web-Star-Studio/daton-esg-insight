@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,18 +12,34 @@ import {
   Edit2,
   ClipboardList,
   Filter,
+  ScanLine,
   Tag,
 } from "lucide-react";
 import { useBranches } from "@/services/branches";
 import { useAllComplianceProfiles } from "@/hooks/useComplianceProfiles";
 import { ComplianceQuestionnaireModal } from "./compliance-questionnaire/ComplianceQuestionnaireModal";
+import { PreComplianceModal } from "./compliance-questionnaire/PreComplianceModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import type { ComplianceProfile } from "@/services/complianceProfiles";
 
 interface ComplianceProfilesManagerProps {
   onFilterChange?: (tags: string[]) => void;
   selectedTags?: string[];
 }
+
+type ProfileStatus = "pre_pending" | "compliance_pending" | "configured";
+
+const deriveStatus = (profile: ComplianceProfile | undefined): ProfileStatus => {
+  if (!profile) return "pre_pending";
+  const hasPreResponses = Object.keys(profile.pre_responses ?? {}).length > 0;
+  if (!hasPreResponses) return "pre_pending";
+  if (profile.completed_at) return "configured";
+  return "compliance_pending";
+};
+
+type SelectedBranch = { id: string; name: string };
+type ModalKind = "pre" | "main";
 
 export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps> = ({
   onFilterChange,
@@ -32,36 +48,53 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
   const navigate = useNavigate();
   const { data: branches, isLoading: branchesLoading } = useBranches();
   const { data: profiles, isLoading: profilesLoading } = useAllComplianceProfiles();
-  const [selectedBranch, setSelectedBranch] = useState<{ id: string; name: string; code?: string | null } | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<SelectedBranch | null>(null);
+  const [activeModal, setActiveModal] = useState<ModalKind | null>(null);
 
   const isLoading = branchesLoading || profilesLoading;
 
-  const getProfileForBranch = (branchId: string) => {
-    return profiles?.find(p => p.branch_id === branchId);
-  };
+  const profilesByBranch = useMemo(() => {
+    const map = new Map<string, ComplianceProfile>();
+    profiles?.forEach((p) => {
+      if (p.branch_id) map.set(p.branch_id, p);
+    });
+    return map;
+  }, [profiles]);
 
-  const completedProfiles = profiles?.filter(p => p.completed_at)?.length || 0;
+  const configuredCount = profiles?.filter((p) => p.completed_at)?.length || 0;
   const totalBranches = branches?.length || 0;
-  const completionPercentage = totalBranches > 0 ? (completedProfiles / totalBranches) * 100 : 0;
+  const completionPercentage = totalBranches > 0 ? (configuredCount / totalBranches) * 100 : 0;
 
-  // Aggregate all tags from all profiles
-  const allTags = React.useMemo(() => {
+  const allTags = useMemo(() => {
     if (!profiles) return [];
     const tagSet = new Set<string>();
-    profiles.forEach(profile => {
-      profile.generated_tags?.forEach(tag => tagSet.add(tag));
+    profiles.forEach((profile) => {
+      profile.generated_tags?.forEach((tag) => tagSet.add(tag));
     });
     return Array.from(tagSet).sort();
   }, [profiles]);
 
   const handleTagClick = (tag: string) => {
     if (!onFilterChange) return;
-    
     const newTags = selectedTags.includes(tag)
-      ? selectedTags.filter(t => t !== tag)
+      ? selectedTags.filter((t) => t !== tag)
       : [...selectedTags, tag];
-    
     onFilterChange(newTags);
+  };
+
+  const openPre = (branch: SelectedBranch) => {
+    setSelectedBranch(branch);
+    setActiveModal("pre");
+  };
+
+  const openMain = (branch: SelectedBranch) => {
+    setSelectedBranch(branch);
+    setActiveModal("main");
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+    setSelectedBranch(null);
   };
 
   if (isLoading) {
@@ -74,7 +107,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
         <CardContent className="space-y-4">
           <Skeleton className="h-4 w-full" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map(i => (
+            {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-24" />
             ))}
           </div>
@@ -94,17 +127,19 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
                 Perfis de Compliance
               </CardTitle>
               <CardDescription>
-                Configure o perfil de cada unidade para filtrar legislações relevantes
+                Etapa 1: defina o escopo da unidade no Pré-Compliance. Etapa 2:
+                preencha o questionário principal. Apenas temas dentro do escopo
+                contam para tags e legislações sugeridas.
               </CardDescription>
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-primary">
-                {completedProfiles}/{totalBranches}
+                {configuredCount}/{totalBranches}
               </div>
-              <div className="text-sm text-muted-foreground">perfis completos</div>
+              <div className="text-sm text-muted-foreground">perfis configurados</div>
             </div>
           </div>
-          
+
           <div className="mt-4">
             <div className="flex justify-between text-sm text-muted-foreground mb-1">
               <span>Progresso de configuração</span>
@@ -113,45 +148,63 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
             <Progress value={completionPercentage} className="h-2" />
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           {/* Units Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {branches?.map(branch => {
-              const profile = getProfileForBranch(branch.id);
-              const isCompleted = !!profile?.completed_at;
+            {branches?.map((branch) => {
+              const profile = profilesByBranch.get(branch.id);
+              const status = deriveStatus(profile);
               const tags = profile?.generated_tags ?? [];
-              
+              const suppressedCount = (profile?.suppressed_keys ?? []).filter((k) =>
+                k.startsWith("theme:"),
+              ).length;
+              const branchLabel = branch.code ? `${branch.code} - ${branch.name}` : branch.name;
+              const branchPayload: SelectedBranch = { id: branch.id, name: branch.name };
+
               return (
-                <Card 
+                <Card
                   key={branch.id}
                   className={cn(
                     "transition-all hover:shadow-md",
-                    isCompleted ? "border-green-500/30" : "border-orange-500/30"
+                    status === "configured" && "border-green-500/30",
+                    status === "compliance_pending" && "border-amber-500/30",
+                    status === "pre_pending" && "border-orange-500/30",
                   )}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{branch.code ? `${branch.code} - ${branch.name}` : branch.name}</span>
+                        <span className="font-medium">{branchLabel}</span>
                       </div>
-                      {isCompleted ? (
+                      {status === "configured" ? (
                         <Badge variant="outline" className="text-green-600 border-green-600">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                           Configurado
                         </Badge>
+                      ) : status === "compliance_pending" ? (
+                        <Badge variant="outline" className="text-amber-600 border-amber-600">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Questionário pendente
+                        </Badge>
                       ) : (
                         <Badge variant="outline" className="text-orange-600 border-orange-600">
                           <AlertCircle className="h-3 w-3 mr-1" />
-                          Pendente
+                          Escopo pendente
                         </Badge>
                       )}
                     </div>
-                    
+
+                    {suppressedCount > 0 && (
+                      <div className="mb-2 text-xs text-muted-foreground">
+                        {suppressedCount} tema{suppressedCount === 1 ? "" : "s"} fora do escopo
+                      </div>
+                    )}
+
                     {tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-3">
-                        {tags.slice(0, 4).map(tag => (
+                        {tags.slice(0, 4).map((tag) => (
                           <Badge key={tag} variant="secondary" className="text-xs">
                             {tag}
                           </Badge>
@@ -163,16 +216,41 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
                         )}
                       </div>
                     )}
-                    
-                    <Button
-                      size="sm"
-                      variant={isCompleted ? "outline" : "default"}
-                      className="w-full"
-                      onClick={() => setSelectedBranch({ id: branch.id, name: branch.name })}
-                    >
-                      <Edit2 className="h-3 w-3 mr-1" />
-                      {isCompleted ? "Editar Perfil" : "Configurar Perfil"}
-                    </Button>
+
+                    <div className="flex flex-col gap-1.5">
+                      {status === "pre_pending" ? (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="w-full"
+                          onClick={() => openPre(branchPayload)}
+                        >
+                          <ScanLine className="h-3 w-3 mr-1" />
+                          Definir escopo
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            variant={status === "configured" ? "outline" : "default"}
+                            className="w-full"
+                            onClick={() => openMain(branchPayload)}
+                          >
+                            <Edit2 className="h-3 w-3 mr-1" />
+                            {status === "configured" ? "Editar questionário" : "Continuar questionário"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="w-full text-xs h-7"
+                            onClick={() => openPre(branchPayload)}
+                          >
+                            <ScanLine className="h-3 w-3 mr-1" />
+                            Editar escopo
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -197,7 +275,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                {allTags.map(tag => (
+                {allTags.map((tag) => (
                   <Badge
                     key={tag}
                     variant={selectedTags.includes(tag) ? "default" : "outline"}
@@ -214,24 +292,46 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
         </CardContent>
       </Card>
 
-      {/* Questionnaire Modal */}
-      {selectedBranch && (
-        <ComplianceQuestionnaireModal
-          open={!!selectedBranch}
-          onOpenChange={(open) => !open && setSelectedBranch(null)}
+      {selectedBranch && activeModal === "pre" && (
+        <PreComplianceModal
+          open
+          onOpenChange={(open) => {
+            if (!open) closeModal();
+          }}
           branchId={selectedBranch.id}
-          branchName={selectedBranch.code ? `${selectedBranch.code} - ${selectedBranch.name}` : selectedBranch.name}
+          branchName={selectedBranch.name}
+          onSubmitComplete={(branchId) => {
+            // Chain: salva escopo e abre o questionário principal para
+            // a mesma unidade (somente em primeiro preenchimento).
+            const profile = profilesByBranch.get(branchId);
+            const isFirstRun = !profile || Object.keys(profile.pre_responses ?? {}).length === 0;
+            if (isFirstRun) {
+              setActiveModal("main");
+            } else {
+              closeModal();
+            }
+          }}
+        />
+      )}
+
+      {selectedBranch && activeModal === "main" && (
+        <ComplianceQuestionnaireModal
+          open
+          onOpenChange={(open) => {
+            if (!open) closeModal();
+          }}
+          branchId={selectedBranch.id}
+          branchName={selectedBranch.name}
+          onEditScope={() => setActiveModal("pre")}
           onSubmitComplete={(branchId, generatedTags) => {
-            // Toast persistente com deep-link para a página de Sugestões.
-            // Usa o número de tags como gatilho do convite — só aparece
-            // se há sinal suficiente para gerar sugestões úteis.
             if (generatedTags.length === 0) return;
             toast.success("Questionário concluído", {
               description: `${generatedTags.length} tags geradas. Veja agora as legislações sugeridas para esta unidade.`,
               duration: 12000,
               action: {
                 label: "Revisar sugestões",
-                onClick: () => navigate(`/licenciamento/legislacoes/sugestoes?branch=${branchId}`),
+                onClick: () =>
+                  navigate(`/licenciamento/legislacoes/sugestoes?branch=${branchId}`),
               },
             });
           }}

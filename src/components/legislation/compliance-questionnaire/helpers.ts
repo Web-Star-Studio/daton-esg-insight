@@ -1,4 +1,5 @@
 import type { ComplianceResponses } from "@/services/complianceProfiles";
+import type { Suppression } from "./suppressionRules";
 import type { Question, Theme } from "./types";
 
 const isAnswered = (value: string | string[] | undefined): boolean => {
@@ -11,10 +12,15 @@ const matchesAny = (value: string | string[] | undefined, candidates: string[]):
   return typeof value === "string" && candidates.includes(value);
 };
 
+export const isThemeSuppressed = (theme: Theme, suppression?: Suppression): boolean =>
+  !!suppression?.themeIds.has(theme.id);
+
 export const isQuestionVisible = (
   question: Question,
   responses: ComplianceResponses,
+  suppression?: Suppression,
 ): boolean => {
+  if (suppression?.questionIds.has(question.id)) return false;
   if (!question.showIf) return true;
   return matchesAny(responses[question.showIf.questionId], question.showIf.anyOf);
 };
@@ -22,16 +28,20 @@ export const isQuestionVisible = (
 export const visibleRequiredQuestions = (
   theme: Theme,
   responses: ComplianceResponses,
-): Question[] =>
-  theme.questions.filter(
-    (q) => (q.required ?? true) && isQuestionVisible(q, responses),
+  suppression?: Suppression,
+): Question[] => {
+  if (isThemeSuppressed(theme, suppression)) return [];
+  return theme.questions.filter(
+    (q) => (q.required ?? true) && isQuestionVisible(q, responses, suppression),
   );
+};
 
 export const themeCompletionPercent = (
   theme: Theme,
   responses: ComplianceResponses,
+  suppression?: Suppression,
 ): number => {
-  const required = visibleRequiredQuestions(theme, responses);
+  const required = visibleRequiredQuestions(theme, responses, suppression);
   if (required.length === 0) return 100;
   const answered = required.filter((q) => isAnswered(responses[q.id])).length;
   return Math.round((answered / required.length) * 100);
@@ -40,10 +50,12 @@ export const themeCompletionPercent = (
 export const overallCompletionPercent = (
   themes: Theme[],
   responses: ComplianceResponses,
+  suppression?: Suppression,
 ): number => {
   const totals = themes.reduce(
     (acc, theme) => {
-      const required = visibleRequiredQuestions(theme, responses);
+      if (isThemeSuppressed(theme, suppression)) return acc;
+      const required = visibleRequiredQuestions(theme, responses, suppression);
       const answered = required.filter((q) => isAnswered(responses[q.id])).length;
       acc.required += required.length;
       acc.answered += answered;
@@ -55,18 +67,23 @@ export const overallCompletionPercent = (
   return Math.round((totals.answered / totals.required) * 100);
 };
 
-export const isThemeComplete = (theme: Theme, responses: ComplianceResponses): boolean =>
-  themeCompletionPercent(theme, responses) === 100;
+export const isThemeComplete = (
+  theme: Theme,
+  responses: ComplianceResponses,
+  suppression?: Suppression,
+): boolean => themeCompletionPercent(theme, responses, suppression) === 100;
 
 export const generateTagsFromResponses = (
   themes: Theme[],
   responses: ComplianceResponses,
+  suppression?: Suppression,
 ): string[] => {
   const tags = new Set<string>();
 
   for (const theme of themes) {
+    if (isThemeSuppressed(theme, suppression)) continue;
     for (const question of theme.questions) {
-      if (!isQuestionVisible(question, responses)) continue;
+      if (!isQuestionVisible(question, responses, suppression)) continue;
       const value = responses[question.id];
       if (!isAnswered(value)) continue;
       if (!question.options) continue;
@@ -80,4 +97,47 @@ export const generateTagsFromResponses = (
   }
 
   return Array.from(tags).sort();
+};
+
+// Conta respostas existentes que caíram fora do escopo após mudança de
+// pre_responses. Usado pelo UI pra mostrar advisory "X respostas fora do
+// escopo — você pode mantê-las ou limpar".
+export const countStaleAnswers = (
+  themes: Theme[],
+  responses: ComplianceResponses,
+  suppression: Suppression,
+): number => {
+  let count = 0;
+  for (const theme of themes) {
+    const themeSuppressed = suppression.themeIds.has(theme.id);
+    for (const question of theme.questions) {
+      const value = responses[question.id];
+      if (!isAnswered(value)) continue;
+      if (themeSuppressed || suppression.questionIds.has(question.id)) {
+        count += 1;
+      }
+    }
+  }
+  return count;
+};
+
+// Retorna um novo objeto de responses com as chaves suprimidas removidas.
+// Não muta o input. Usado pela ação "Limpar respostas fora do escopo".
+export const stripSuppressedAnswers = (
+  themes: Theme[],
+  responses: ComplianceResponses,
+  suppression: Suppression,
+): ComplianceResponses => {
+  const result: ComplianceResponses = {};
+  for (const theme of themes) {
+    const themeSuppressed = suppression.themeIds.has(theme.id);
+    for (const question of theme.questions) {
+      const value = responses[question.id];
+      if (value === undefined) continue;
+      if (themeSuppressed) continue;
+      if (suppression.questionIds.has(question.id)) continue;
+      result[question.id] = value;
+    }
+  }
+  return result;
 };

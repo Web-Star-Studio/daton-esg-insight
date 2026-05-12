@@ -53,20 +53,27 @@ const LegislationComplianceProfiles: React.FC = () => {
         <AlertTitle>Como funciona o Questionário de Compliance?</AlertTitle>
         <AlertDescription className="mt-2 space-y-2">
           <p>
-            O questionário cobre 21 temas de compliance organizados por área de risco regulatório,
-            como por exemplo:
+            A configuração tem duas etapas por unidade:
           </p>
-          <ul className="list-disc list-inside text-sm space-y-1 mt-2">
-            <li>Licenciamento ambiental, instalações e localização (fauna/flora)</li>
-            <li>Produtos químicos, perigosos e produtos florestais</li>
-            <li>Recursos hídricos, efluentes, emissões atmosféricas e resíduos</li>
-            <li>Equipamentos, energia e transporte (rodoviário, aéreo, marítimo)</li>
-            <li>Profissionais, PCD, saúde do trabalhador e Normas Regulamentadoras (NR)</li>
-            <li>Mineração, pesagem e LGPD</li>
-          </ul>
+          <ol className="list-decimal list-inside text-sm space-y-1 mt-2">
+            <li>
+              <strong>Pré-Compliance</strong> — um questionário curto que define
+              o escopo da unidade (tipo de ocupação, responsabilidade pela infra,
+              atividades, etc.). Áreas que não estão sob controle da unidade são
+              ocultadas no passo seguinte.
+            </li>
+            <li>
+              <strong>Questionário principal</strong> — cobre os 21 temas de
+              compliance (licenciamento, instalações, produtos químicos,
+              recursos hídricos, resíduos, emissões, transporte, profissionais,
+              NRs, mineração, LGPD, etc.). Apenas os temas dentro do escopo da
+              unidade são exibidos.
+            </li>
+          </ol>
           <p className="mt-2 font-medium">
-            As respostas geram tags de compliance da unidade, usadas para filtrar legislações
-            aplicáveis e disparar notificações quando novas leis relevantes forem cadastradas.
+            As respostas geram tags de compliance da unidade, usadas para
+            filtrar legislações aplicáveis e disparar notificações quando novas
+            leis relevantes forem cadastradas.
           </p>
         </AlertDescription>
       </Alert>
@@ -86,37 +93,49 @@ const LegislationComplianceProfiles: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-2">
               <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
                 1
               </div>
-              <h4 className="font-medium">Configure cada unidade</h4>
+              <h4 className="font-medium">Defina o escopo</h4>
               <p className="text-sm text-muted-foreground">
-                Clique em "Configurar Perfil" em cada unidade e responda o questionário sobre
-                suas características, atividades e responsabilidades.
+                Em cada unidade, clique em "Definir escopo" e responda o
+                Pré-Compliance — 8 perguntas rápidas sobre o que está sob
+                responsabilidade da unidade.
               </p>
             </div>
-            
+
             <div className="space-y-2">
               <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
                 2
               </div>
-              <h4 className="font-medium">Tags são geradas automaticamente</h4>
+              <h4 className="font-medium">Responda o questionário principal</h4>
               <p className="text-sm text-muted-foreground">
-                Com base nas respostas, o sistema gera tags que identificam as áreas de
-                responsabilidade legal da unidade.
+                Temas fora do escopo são ocultados automaticamente. Você
+                responde só o que faz sentido para a unidade.
               </p>
             </div>
-            
+
             <div className="space-y-2">
               <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
                 3
               </div>
+              <h4 className="font-medium">Tags são geradas automaticamente</h4>
+              <p className="text-sm text-muted-foreground">
+                Com base nas respostas dentro do escopo, o sistema gera tags
+                que identificam as áreas de responsabilidade legal da unidade.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                4
+              </div>
               <h4 className="font-medium">Filtre legislações relevantes</h4>
               <p className="text-sm text-muted-foreground">
-                Use as tags para filtrar a lista de legislações e ver apenas aquelas que
-                são realmente aplicáveis às suas unidades.
+                Use as tags para filtrar legislações aplicáveis e receber
+                sugestões automáticas via radar e cartas mensais.
               </p>
             </div>
           </div>
