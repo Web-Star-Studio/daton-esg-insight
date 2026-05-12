@@ -59,7 +59,8 @@ const formatDuration = (ms: number | null): string => {
 
 const formatCost = (usd: number | null | undefined): string => {
   if (usd == null) return "—";
-  if (usd < 0.0001) return "$0,0001";
+  if (usd === 0) return "$0,0000";
+  if (usd < 0.0001) return "<$0,0001";
   return `$${usd.toFixed(4)}`;
 };
 

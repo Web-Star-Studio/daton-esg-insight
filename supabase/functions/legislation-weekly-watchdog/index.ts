@@ -27,8 +27,15 @@ import { extractFirstJsonArray } from "../_shared/json-utils.ts";
 
 const BATCH_SIZE = 10;
 const PERPLEXITY_MODEL = "sonar";
+// Sonar (basic) pricing: $1/1M tokens input + $1/1M output + $5/1k request
+// (low search context default). Request fee é parte material — não dá
+// pra ignorar como na v1.
 const SONAR_INPUT_USD_PER_1K = 0.001;
 const SONAR_OUTPUT_USD_PER_1K = 0.001;
+const SONAR_REQUEST_FEE_USD = 0.005;
+// Janela máxima ao ler histórico de checagens prévias. Sem isso a query
+// puxa tudo (M de rows após meses de operação).
+const LAST_CHECK_LOOKBACK_DAYS = 180;
 
 interface RequestBody {
   /** "global" varre todas legislações ativas; "company" requer `company_id`. */
@@ -104,13 +111,20 @@ async function handle(req: Request): Promise<Response> {
   }
   const userId = userResp.user.id;
 
-  const { data: roleRow } = await supabase
+  // user_roles tem UNIQUE (user_id, company_id) — usuário pode ter role em
+  // múltiplas empresas. Não dá pra .maybeSingle(); checamos se ALGUMA row
+  // confere `admin` ou `platform_admin`.
+  const { data: roleRows, error: rolesErr } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
-    .maybeSingle();
-  const role = roleRow?.role;
-  if (role !== "admin" && role !== "platform_admin") {
+    .in("role", ["admin", "platform_admin"])
+    .limit(1);
+  if (rolesErr) {
+    console.warn(`[watchdog] user_roles query failed: ${rolesErr.message}`);
+    return jsonError(500, `Falha verificando role: ${rolesErr.message}`);
+  }
+  if (!roleRows || roleRows.length === 0) {
     console.warn(`[watchdog] non-admin attempted access user=${userId}`);
     return jsonError(403, "Apenas admin/platform_admin podem disparar o watchdog");
   }
@@ -178,6 +192,8 @@ async function handle(req: Request): Promise<Response> {
     let totalCost = 0;
     let normasChecked = 0;
     let eventsCreated = 0;
+    let batchesFailed = 0;
+    let firstBatchError: string | null = null;
 
     for (let i = 0; i < unique.length; i += BATCH_SIZE) {
       const batch = unique.slice(i, i + BATCH_SIZE);
@@ -189,7 +205,15 @@ async function handle(req: Request): Promise<Response> {
       const batchLatency = Date.now() - batchStart;
 
       totalCost += result.costUsd;
-      normasChecked += batch.length;
+      // `normasChecked` só conta batches que de fato responderam — falhas
+      // do Perplexity NÃO contam como checadas. Antes inflávamos a métrica
+      // mesmo quando upstream caiu, mascarando partial outage.
+      if (!result.error) {
+        normasChecked += batch.length;
+      } else {
+        batchesFailed++;
+        if (!firstBatchError) firstBatchError = result.error;
+      }
 
       // Log granular em ai_usage_logs pra correlacionar custo por batch.
       try {
@@ -252,14 +276,23 @@ async function handle(req: Request): Promise<Response> {
     }
 
     const duration = Date.now() - startedAt;
+    const totalBatches = Math.ceil(unique.length / BATCH_SIZE);
+    // Status "failed" se TODO mundo falhou; "completed" caso contrário
+    // (sucesso parcial fica registrado em `error_text` + ai_usage_logs).
+    const allBatchesFailed = totalBatches > 0 && batchesFailed >= totalBatches;
+    const auditStatus = allBatchesFailed ? "failed" : "completed";
+    const errorText = batchesFailed > 0
+      ? `${batchesFailed}/${totalBatches} batches falharam${firstBatchError ? `; primeiro erro: ${firstBatchError}` : ""}`
+      : null;
     await supabase.from("watchdog_run_audit").update({
-      status: "completed",
+      status: auditStatus,
       normas_total: totalRows,
       normas_unique: unique.length,
       normas_checked: normasChecked,
       change_events_created: eventsCreated,
       total_cost_usd: totalCost,
       duration_ms: duration,
+      error_text: errorText,
       finished_at: new Date().toISOString(),
     }).eq("id", runId);
 
@@ -269,6 +302,7 @@ async function handle(req: Request): Promise<Response> {
       normas_unique: unique.length,
       normas_checked: normasChecked,
       change_events_created: eventsCreated,
+      batches_failed: batchesFailed,
       total_cost_usd: totalCost,
       duration_ms: duration,
     });
@@ -324,17 +358,37 @@ async function loadUniqueNormas(
     offset += PAGE;
   }
 
-  // Última detecção por chave — usado pra contextualizar a busca ("o que
-  // mudou desde X?"). Lê de uma vez só pra evitar N+1.
-  const { data: lastChecks } = await supabase
-    .from("legislation_change_events")
-    .select("legislation_id, detected_at")
-    .order("detected_at", { ascending: false });
+  // Última detecção por norma — contextualiza a busca ("o que mudou desde
+  // X?"). Bound:
+  //   - filtra por company quando scope=company (consistente com a varredura);
+  //   - janela de LAST_CHECK_LOOKBACK_DAYS (default 180); eventos mais
+  //     antigos não influenciam priorização e crescem indefinidamente;
+  //   - paginado pra não estourar PostgREST cap (1000 rows/req).
+  const lookbackCutoff = new Date(Date.now() - LAST_CHECK_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const lastByLeg = new Map<string, string>();
-  for (const row of (lastChecks ?? []) as Array<{ legislation_id: string; detected_at: string }>) {
-    if (!lastByLeg.has(row.legislation_id)) {
-      lastByLeg.set(row.legislation_id, row.detected_at);
+  const LAST_CHECK_PAGE = 1000;
+  for (let lcOffset = 0; ; lcOffset += LAST_CHECK_PAGE) {
+    let lcQ = supabase
+      .from("legislation_change_events")
+      .select("legislation_id, detected_at")
+      .gte("detected_at", lookbackCutoff)
+      .order("detected_at", { ascending: false })
+      .range(lcOffset, lcOffset + LAST_CHECK_PAGE - 1);
+    if (scope === "company" && companyId) {
+      lcQ = lcQ.eq("company_id", companyId);
     }
+    const { data: lcData, error: lcErr } = await lcQ;
+    if (lcErr) {
+      console.warn(`[watchdog] last-checks page ${lcOffset} failed: ${lcErr.message}`);
+      break;
+    }
+    if (!lcData || lcData.length === 0) break;
+    for (const row of lcData as Array<{ legislation_id: string; detected_at: string }>) {
+      if (!lastByLeg.has(row.legislation_id)) {
+        lastByLeg.set(row.legislation_id, row.detected_at);
+      }
+    }
+    if (lcData.length < LAST_CHECK_PAGE) break;
   }
 
   const byKey = new Map<string, UniqueNorma>();
@@ -463,9 +517,12 @@ EXEMPLO DE FORMATO:
     const raw = json.choices?.[0]?.message?.content ?? "[]";
     const promptTokens = json.usage?.prompt_tokens ?? 0;
     const completionTokens = json.usage?.completion_tokens ?? 0;
+    // Custo = tokens × pricing + request fee fixa por call (search included).
+    // O request fee é a maior parte do custo em batches pequenos.
     const costUsd =
       (promptTokens / 1000) * SONAR_INPUT_USD_PER_1K +
-      (completionTokens / 1000) * SONAR_OUTPUT_USD_PER_1K;
+      (completionTokens / 1000) * SONAR_OUTPUT_USD_PER_1K +
+      SONAR_REQUEST_FEE_USD;
 
     let parsed: unknown;
     try {

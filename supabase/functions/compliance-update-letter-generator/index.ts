@@ -743,60 +743,85 @@ async function handle(req: Request): Promise<Response> {
   // dentro da janela do mês. Sinal independente do legislation_history
   // (este só pega edição interna do app). Dedup por legislation_id mantendo
   // o evento mais recente — se houve várias detecções no mês, mostra a última.
-  const { data: changeEventRows } = await supabase
-    .from("legislation_change_events")
-    .select("id, legislation_id, change_type, diff_summary, source_url, confidence, detected_at")
-    .eq("company_id", profileCompanyId)
-    .gte("detected_at", startISO)
-    .lt("detected_at", endISO)
-    .order("detected_at", { ascending: false });
-
-  // Snapshot das legislações referenciadas pelos change events
-  // (podem não ter aparecido em `legislations` ainda — recarregamos pra UI).
-  const changeEventsRaw = (changeEventRows ?? []) as Array<{
-    id: string;
-    legislation_id: string;
-    change_type: "amended" | "revoked" | "superseded" | "clarified";
-    diff_summary: string;
-    source_url: string | null;
-    confidence: number | null;
-    detected_at: string;
-  }>;
-  const seenLegIds = new Set<string>();
-  const dedupedEvents = changeEventsRaw.filter((e) => {
-    if (seenLegIds.has(e.legislation_id)) return false;
-    seenLegIds.add(e.legislation_id);
-    return true;
-  });
-  const missingLegIds = dedupedEvents
-    .map((e) => e.legislation_id)
-    .filter((id) => !legById.has(id));
-  if (missingLegIds.length > 0) {
-    for (let i = 0; i < missingLegIds.length; i += ID_CHUNK) {
-      const slice = missingLegIds.slice(i, i + ID_CHUNK);
-      const { data: extraLegs } = await supabase
-        .from("legislations")
-        .select("id, title, norm_type, norm_number, summary, observations, general_notes, jurisdiction, state, municipality, overall_applicability, overall_status, publication_date, is_active, theme_id, applicability_tags, revoked_by_legislation_id, revokes_legislation_id")
-        .in("id", slice);
-      for (const row of ((extraLegs ?? []) as LegislationRow[])) {
-        legById.set(row.id, row);
+  //
+  // CRÍTICO: filtramos por linkedIds (legislações vinculadas A ESTA branch
+  // via legislation_unit_compliance) — sem isso uma empresa com múltiplas
+  // unidades veria todos os eventos de todas as unidades em cada carta.
+  // O catálogo de legislations é company-scoped, mas o que aparece na carta
+  // tem que ser branch-scoped pra refletir o escopo real da unidade.
+  const externalChanges: ExternalChangeLine[] = [];
+  if (linkedIds.size > 0) {
+    const linkedIdsArr = Array.from(linkedIds);
+    const changeEventsRaw: Array<{
+      id: string;
+      legislation_id: string;
+      change_type: "amended" | "revoked" | "superseded" | "clarified";
+      diff_summary: string;
+      source_url: string | null;
+      confidence: number | null;
+      detected_at: string;
+    }> = [];
+    // Paginamos em chunks de IDs pra não estourar URL do PostgREST.
+    for (let i = 0; i < linkedIdsArr.length; i += ID_CHUNK) {
+      const slice = linkedIdsArr.slice(i, i + ID_CHUNK);
+      const { data: chunkRows, error: chunkErr } = await supabase
+        .from("legislation_change_events")
+        .select("id, legislation_id, change_type, diff_summary, source_url, confidence, detected_at")
+        .eq("company_id", profileCompanyId)
+        .in("legislation_id", slice)
+        .gte("detected_at", startISO)
+        .lt("detected_at", endISO)
+        .order("detected_at", { ascending: false });
+      if (chunkErr) {
+        console.warn(`[carta] legislation_change_events chunk ${i} falhou: ${chunkErr.message}`);
+        continue;
+      }
+      if (chunkRows) {
+        changeEventsRaw.push(...(chunkRows as typeof changeEventsRaw));
       }
     }
-  }
 
-  const externalChanges: ExternalChangeLine[] = [];
-  for (const ev of dedupedEvents) {
-    const row = legById.get(ev.legislation_id);
-    if (!row) continue;
-    const line = serialize(row, "", ev.detected_at);
-    externalChanges.push({
-      ...line,
-      change_type: ev.change_type,
-      diff_summary: ev.diff_summary,
-      confidence: ev.confidence,
-      source_url: ev.source_url,
-      detected_at: ev.detected_at,
+    // Re-sort após paginar (chunks vêm independentes), depois dedup por
+    // legislation_id mantendo o evento mais recente.
+    changeEventsRaw.sort((a, b) => b.detected_at.localeCompare(a.detected_at));
+    const seenLegIds = new Set<string>();
+    const dedupedEvents = changeEventsRaw.filter((e) => {
+      if (seenLegIds.has(e.legislation_id)) return false;
+      seenLegIds.add(e.legislation_id);
+      return true;
     });
+
+    // Snapshot das legislações referenciadas pelos eventos (algumas podem
+    // não ter entrado em `touchedIds` ainda — recarregamos sob demanda).
+    const missingLegIds = dedupedEvents
+      .map((e) => e.legislation_id)
+      .filter((id) => !legById.has(id));
+    if (missingLegIds.length > 0) {
+      for (let i = 0; i < missingLegIds.length; i += ID_CHUNK) {
+        const slice = missingLegIds.slice(i, i + ID_CHUNK);
+        const { data: extraLegs } = await supabase
+          .from("legislations")
+          .select("id, title, norm_type, norm_number, summary, observations, general_notes, jurisdiction, state, municipality, overall_applicability, overall_status, publication_date, is_active, theme_id, applicability_tags, revoked_by_legislation_id, revokes_legislation_id")
+          .in("id", slice);
+        for (const row of ((extraLegs ?? []) as LegislationRow[])) {
+          legById.set(row.id, row);
+        }
+      }
+    }
+
+    for (const ev of dedupedEvents) {
+      const row = legById.get(ev.legislation_id);
+      if (!row) continue;
+      const line = serialize(row, "", ev.detected_at);
+      externalChanges.push({
+        ...line,
+        change_type: ev.change_type,
+        diff_summary: ev.diff_summary,
+        confidence: ev.confidence,
+        source_url: ev.source_url,
+        detected_at: ev.detected_at,
+      });
+    }
   }
 
   const counts = {
