@@ -16,6 +16,35 @@ ALTER TABLE public.legislation_compliance_profiles
   ADD COLUMN IF NOT EXISTS pre_responses JSONB NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS suppressed_keys TEXT[] NOT NULL DEFAULT '{}'::text[];
 
+-- Garantias de forma a nível de banco para evitar gravações inconsistentes
+-- (ex: pre_responses como array/string, ou suppressed_keys com NULL/vazios)
+-- que quebrariam a derivação de supressão e o cálculo de progresso.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'legislation_compliance_profiles_pre_responses_object_chk'
+  ) THEN
+    ALTER TABLE public.legislation_compliance_profiles
+      ADD CONSTRAINT legislation_compliance_profiles_pre_responses_object_chk
+        CHECK (jsonb_typeof(pre_responses) = 'object');
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'legislation_compliance_profiles_suppressed_keys_clean_chk'
+  ) THEN
+    ALTER TABLE public.legislation_compliance_profiles
+      ADD CONSTRAINT legislation_compliance_profiles_suppressed_keys_clean_chk
+        CHECK (
+          array_position(suppressed_keys, NULL) IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM unnest(suppressed_keys) AS k WHERE k = ''
+          )
+        );
+  END IF;
+END $$;
+
 COMMENT ON COLUMN public.legislation_compliance_profiles.pre_responses IS
   'Respostas do pré-questionário de triagem (escopo da unidade): { [preQuestionId]: string | string[] }. IDs definidos em src/components/legislation/compliance-questionnaire/preQuestions.config.ts.';
 

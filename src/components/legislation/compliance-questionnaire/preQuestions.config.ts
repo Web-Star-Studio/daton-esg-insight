@@ -7,7 +7,7 @@ import type { Question } from "./types";
 // IDs prefixados com `pre.` para não colidir com IDs do main form
 // (lic.q1, inst.q5, flo.q2 etc).
 //
-// Mantenha curto (~7 perguntas) — o objetivo é triagem, não detalhamento.
+// Mantenha curto — o objetivo é triagem, não detalhamento.
 export const PRE_COMPLIANCE_QUESTIONS: Question[] = [
   {
     id: "pre.ocupacao",
@@ -84,6 +84,7 @@ export const PRE_COMPLIANCE_QUESTIONS: Question[] = [
       {
         id: "nenhum",
         label: "Nenhum — tudo é gerenciado pelo host (cliente/condomínio)",
+        exclusive: true,
       },
     ],
   },

@@ -50,6 +50,9 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
   const { data: profiles, isLoading: profilesLoading } = useAllComplianceProfiles();
   const [selectedBranch, setSelectedBranch] = useState<SelectedBranch | null>(null);
   const [activeModal, setActiveModal] = useState<ModalKind | null>(null);
+  // Capturado no momento em que o pré-modal abre — evita depender do estado
+  // refetched de profilesByBranch, que é assíncrono após o upsert.
+  const [preChainsToMain, setPreChainsToMain] = useState(false);
 
   const isLoading = branchesLoading || profilesLoading;
 
@@ -83,11 +86,15 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
   };
 
   const openPre = (branch: SelectedBranch) => {
+    const profile = profilesByBranch.get(branch.id);
+    const isFirstRun = !profile || Object.keys(profile.pre_responses ?? {}).length === 0;
+    setPreChainsToMain(isFirstRun);
     setSelectedBranch(branch);
     setActiveModal("pre");
   };
 
   const openMain = (branch: SelectedBranch) => {
+    setPreChainsToMain(false);
     setSelectedBranch(branch);
     setActiveModal("main");
   };
@@ -95,6 +102,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
   const closeModal = () => {
     setActiveModal(null);
     setSelectedBranch(null);
+    setPreChainsToMain(false);
   };
 
   if (isLoading) {
@@ -300,12 +308,12 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
           }}
           branchId={selectedBranch.id}
           branchName={selectedBranch.name}
-          onSubmitComplete={(branchId) => {
-            // Chain: salva escopo e abre o questionário principal para
-            // a mesma unidade (somente em primeiro preenchimento).
-            const profile = profilesByBranch.get(branchId);
-            const isFirstRun = !profile || Object.keys(profile.pre_responses ?? {}).length === 0;
-            if (isFirstRun) {
+          onSubmitComplete={() => {
+            // Chain: em primeiro preenchimento (capturado em openPre),
+            // abre o questionário principal automaticamente. Em edições
+            // posteriores, fecha o modal e devolve o usuário ao grid.
+            if (preChainsToMain) {
+              setPreChainsToMain(false);
               setActiveModal("main");
             } else {
               closeModal();

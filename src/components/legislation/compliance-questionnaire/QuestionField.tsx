@@ -48,10 +48,21 @@ export const QuestionField: React.FC<QuestionFieldProps> = ({ question, value, o
 
   if (question.type === "multi") {
     const current = Array.isArray(value) ? value : [];
+    const exclusiveIds = new Set(
+      (question.options ?? []).filter((o) => o.exclusive).map((o) => o.id),
+    );
     const toggle = (optionId: string) => {
-      const next = current.includes(optionId)
-        ? current.filter((v) => v !== optionId)
-        : [...current, optionId];
+      const isExclusive = exclusiveIds.has(optionId);
+      if (current.includes(optionId)) {
+        onChange(current.filter((v) => v !== optionId));
+        return;
+      }
+      // Selecionar uma exclusive limpa tudo o mais; selecionar uma normal
+      // remove qualquer exclusive já marcada. Mantém invariante de que
+      // exclusive nunca coexiste com outra opção.
+      const next = isExclusive
+        ? [optionId]
+        : [...current.filter((v) => !exclusiveIds.has(v)), optionId];
       onChange(next);
     };
     return (

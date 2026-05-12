@@ -4,6 +4,10 @@ export interface QuestionOption {
   id: string;
   label: string;
   tags?: string[];
+  // Em multi-select, marca uma opção como mutuamente exclusiva: selecioná-la
+  // desmarca todas as outras, e selecionar qualquer outra desmarca esta.
+  // Usado para opções "Nenhum" / "Não Se Aplica" que contradizem as demais.
+  exclusive?: boolean;
 }
 
 export interface ConditionalRule {
