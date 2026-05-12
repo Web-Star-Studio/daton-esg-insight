@@ -27,6 +27,14 @@ export interface SerializedLine {
   changed_at: string | null;
 }
 
+export interface ExternalChangeLine extends SerializedLine {
+  change_type: "amended" | "revoked" | "superseded" | "clarified";
+  diff_summary: string;
+  confidence: number | null;
+  source_url: string | null;
+  detected_at: string;
+}
+
 export interface LetterContent {
   unit_name: string;
   unit_city?: string | null;
@@ -40,6 +48,12 @@ export interface LetterContent {
     revoked: SerializedLine[];
     excluded: SerializedLine[];
     included_by_review: SerializedLine[];
+    /**
+     * Mudanças detectadas pelo watchdog em fontes externas (DOU, planalto,
+     * agências). Opcional — cartas geradas antes do watchdog não têm este
+     * campo. UI deve tratar como array vazio quando ausente.
+     */
+    external_changes?: ExternalChangeLine[];
   };
   ai_meta: {
     summary_failed: boolean;
