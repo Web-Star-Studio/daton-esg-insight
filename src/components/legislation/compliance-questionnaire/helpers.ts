@@ -121,6 +121,23 @@ export const countStaleAnswers = (
   return count;
 };
 
+// Conta respostas preenchidas dentro de um tema. Usado pelo preview do
+// Pré-Compliance pra mostrar quantas respostas estão em risco quando o
+// usuário considera ocultar/revelar um tema.
+export const countAnsweredInTheme = (
+  theme: Theme,
+  responses: ComplianceResponses,
+): number => {
+  let count = 0;
+  for (const question of theme.questions) {
+    const value = responses[question.id];
+    if (Array.isArray(value) ? value.length > 0 : typeof value === "string" && value.trim().length > 0) {
+      count += 1;
+    }
+  }
+  return count;
+};
+
 // Retorna um novo objeto de responses com as chaves suprimidas removidas.
 // Não muta o input. Usado pela ação "Limpar respostas fora do escopo".
 export const stripSuppressedAnswers = (

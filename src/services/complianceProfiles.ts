@@ -92,18 +92,21 @@ export const upsertComplianceProfile = async (
   return normalizeProfile(data as Record<string, unknown>);
 };
 
-// Upsert do pré-questionário. Sempre grava pre_responses + suppressed_keys.
+// Upsert do pré-questionário.
 //
-// Quando `final` é true:
-// - re-estampa generated_tags a partir das respostas existentes × novo
-//   suppressed_keys (passado pelo caller, que já tem o cálculo feito).
-// - reseta completed_at: mudança de escopo invalida a marca de "concluído"
-//   porque temas antes contados podem ter saído do escopo.
+// Forma `partial` (autosave): grava APENAS `pre_responses`. Não altera
+// suppressed_keys, generated_tags, nem completed_at. Isso garante que o
+// pré-form funcione como rascunho — o usuário pode preencher/editar sem
+// que a supressão entre em efeito.
+//
+// Forma `final` ("Aplicar escopo"): commita `suppressed_keys` + re-estampa
+// generated_tags a partir das respostas existentes × novo suppressed_keys.
+// Opcionalmente reseta completed_at (decidido pelo caller — só vale a pena
+// resetar quando a supressão de fato mudou).
 export type UpsertPreCompliancePartialInput = {
   branch_id: string;
   company_id: string;
   pre_responses: ComplianceResponses;
-  suppressed_keys: string[];
   final?: false;
 };
 
@@ -112,8 +115,9 @@ export type UpsertPreComplianceFinalInput = {
   company_id: string;
   pre_responses: ComplianceResponses;
   suppressed_keys: string[];
-  final: true;
   regenerated_tags: string[];
+  reset_completed_at: boolean;
+  final: true;
 };
 
 export type UpsertCompliancePreResponsesInput =
@@ -127,13 +131,15 @@ export const upsertCompliancePreResponses = async (
     branch_id: input.branch_id,
     company_id: input.company_id,
     pre_responses: input.pre_responses,
-    suppressed_keys: input.suppressed_keys,
   };
 
   if (input.final) {
+    payload.suppressed_keys = input.suppressed_keys;
     payload.generated_tags = input.regenerated_tags;
-    payload.completed_at = null;
-    payload.completed_by = null;
+    if (input.reset_completed_at) {
+      payload.completed_at = null;
+      payload.completed_by = null;
+    }
   }
 
   const { data, error } = await supabase

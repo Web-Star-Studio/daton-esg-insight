@@ -22,6 +22,10 @@ import { PreComplianceModal } from "./compliance-questionnaire/PreComplianceModa
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { ComplianceProfile } from "@/services/complianceProfiles";
+import {
+  computeSuppression,
+  keysToSuppression,
+} from "./compliance-questionnaire/suppressionRules";
 
 interface ComplianceProfilesManagerProps {
   onFilterChange?: (tags: string[]) => void;
@@ -36,6 +40,19 @@ const deriveStatus = (profile: ComplianceProfile | undefined): ProfileStatus => 
   if (!hasPreResponses) return "pre_pending";
   if (profile.completed_at) return "configured";
   return "compliance_pending";
+};
+
+// True quando o rascunho do pré-form (pre_responses) gera uma supressão
+// diferente da que está commitada (suppressed_keys). Indica que o usuário
+// tem mudanças não aplicadas.
+const hasUnappliedDraft = (profile: ComplianceProfile | undefined): boolean => {
+  if (!profile) return false;
+  if (Object.keys(profile.pre_responses ?? {}).length === 0) return false;
+  const draft = computeSuppression(profile.pre_responses);
+  const committed = keysToSuppression(profile.suppressed_keys);
+  if (draft.themeIds.size !== committed.themeIds.size) return true;
+  for (const id of draft.themeIds) if (!committed.themeIds.has(id)) return true;
+  return false;
 };
 
 type SelectedBranch = { id: string; name: string };
@@ -163,6 +180,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
             {branches?.map((branch) => {
               const profile = profilesByBranch.get(branch.id);
               const status = deriveStatus(profile);
+              const draftPending = hasUnappliedDraft(profile);
               const tags = profile?.generated_tags ?? [];
               const suppressedCount = (profile?.suppressed_keys ?? []).filter((k) =>
                 k.startsWith("theme:"),
@@ -207,6 +225,13 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
                     {suppressedCount > 0 && (
                       <div className="mb-2 text-xs text-muted-foreground">
                         {suppressedCount} tema{suppressedCount === 1 ? "" : "s"} fora do escopo
+                      </div>
+                    )}
+
+                    {draftPending && (
+                      <div className="mb-2 inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                        <AlertCircle className="h-3 w-3" />
+                        Rascunho do escopo não aplicado
                       </div>
                     )}
 
@@ -308,10 +333,10 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
           }}
           branchId={selectedBranch.id}
           branchName={selectedBranch.name}
-          onSubmitComplete={() => {
+          onApplyComplete={() => {
             // Chain: em primeiro preenchimento (capturado em openPre),
-            // abre o questionário principal automaticamente. Em edições
-            // posteriores, fecha o modal e devolve o usuário ao grid.
+            // abre o questionário principal automaticamente após aplicar.
+            // Em edições posteriores, fecha o modal e devolve o usuário ao grid.
             if (preChainsToMain) {
               setPreChainsToMain(false);
               setActiveModal("main");

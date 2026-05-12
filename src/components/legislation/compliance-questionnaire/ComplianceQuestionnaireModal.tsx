@@ -51,7 +51,11 @@ import {
   stripSuppressedAnswers,
   themeCompletionPercent,
 } from "./helpers";
-import { keysToSuppression, type Suppression } from "./suppressionRules";
+import {
+  computeSuppression,
+  keysToSuppression,
+  type Suppression,
+} from "./suppressionRules";
 import type { Theme } from "./types";
 import { useDebouncedAutosave } from "./useDebouncedAutosave";
 
@@ -198,6 +202,19 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
     [existingProfile],
   );
 
+  // Detecta se o rascunho do pré-form difere do escopo aplicado. Quando
+  // difere, mostra banner pra avisar o usuário e oferecer o atalho pra
+  // reabrir o pré-form e aplicar.
+  const hasDraftPending = useMemo(() => {
+    if (!existingProfile) return false;
+    const preResponses = existingProfile.pre_responses ?? {};
+    if (Object.keys(preResponses).length === 0) return false;
+    const draft = computeSuppression(preResponses);
+    if (draft.themeIds.size !== suppression.themeIds.size) return true;
+    for (const id of draft.themeIds) if (!suppression.themeIds.has(id)) return true;
+    return false;
+  }, [existingProfile, suppression]);
+
   const autosave = useDebouncedAutosave({
     branchId,
     companyId: selectedCompany?.id ?? "",
@@ -332,6 +349,23 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
               </div>
             </div>
             <Progress value={overallPercent} className="mt-3 h-1.5" />
+            {hasDraftPending && onEditScope && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                <span>
+                  Existe um rascunho do Pré-Compliance que ainda não foi aplicado.
+                  Os temas abaixo refletem o escopo atualmente aplicado.
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-amber-900 hover:bg-amber-100 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                  onClick={() => onEditScope(branchId)}
+                >
+                  <ScanLine className="mr-1 h-3 w-3" />
+                  Revisar e aplicar
+                </Button>
+              </div>
+            )}
             {staleCount > 0 && (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
                 <span>

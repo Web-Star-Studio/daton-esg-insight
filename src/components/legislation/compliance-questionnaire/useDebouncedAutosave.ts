@@ -22,7 +22,6 @@ interface PreAutosaveOptions {
   branchId: string;
   companyId: string;
   preResponses: ComplianceResponses;
-  suppressedKeys: string[];
   enabled: boolean;
   debounceMs?: number;
 }
@@ -39,11 +38,10 @@ export const useDebouncedAutosave = (options: AutosaveOptions): AutosaveState =>
   const { branchId, companyId, enabled, debounceMs = 1500 } = options;
   const mode = options.mode ?? "main";
 
-  // Para que os deps do useEffect mudem corretamente em pre-mode,
-  // pegamos os payloads em variáveis estáveis no momento da render.
+  // Em pre-mode, autosave grava APENAS pre_responses (rascunho). suppressed_keys
+  // só vira na ação explícita "Aplicar escopo" — pré-form é não-mandatório.
   const responses = mode === "main" ? (options as MainAutosaveOptions).responses : null;
   const preResponses = mode === "pre" ? (options as PreAutosaveOptions).preResponses : null;
-  const suppressedKeys = mode === "pre" ? (options as PreAutosaveOptions).suppressedKeys : null;
 
   const [state, setState] = useState<AutosaveState>({
     status: "idle",
@@ -74,7 +72,6 @@ export const useDebouncedAutosave = (options: AutosaveOptions): AutosaveState =>
             branch_id: branchId,
             company_id: companyId,
             pre_responses: preResponses ?? {},
-            suppressed_keys: suppressedKeys ?? [],
           });
         } else {
           await upsertComplianceProfile({
@@ -97,7 +94,7 @@ export const useDebouncedAutosave = (options: AutosaveOptions): AutosaveState =>
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [mode, branchId, companyId, responses, preResponses, suppressedKeys, enabled, debounceMs, queryClient]);
+  }, [mode, branchId, companyId, responses, preResponses, enabled, debounceMs, queryClient]);
 
   return state;
 };
