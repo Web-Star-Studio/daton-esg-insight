@@ -77,6 +77,14 @@ interface SerializedLine {
   changed_at: string | null;
 }
 
+interface ExternalChangeLine extends SerializedLine {
+  change_type: "amended" | "revoked" | "superseded" | "clarified";
+  diff_summary: string;
+  confidence: number | null;
+  source_url: string | null;
+  detected_at: string;
+}
+
 interface LetterContent {
   unit_name: string;
   unit_city: string | null;
@@ -90,6 +98,13 @@ interface LetterContent {
     revoked: SerializedLine[];
     excluded: SerializedLine[];
     included_by_review: SerializedLine[];
+    /**
+     * Mudanças detectadas pelo watchdog em fontes externas (DOU, planalto,
+     * agências) — independentes de edição interna. Pode haver overlap com
+     * `modified`/`revoked` quando o admin já tinha sincronizado; mantemos
+     * separado pra UI distinguir "nós sabíamos" vs "detectamos lá fora".
+     */
+    external_changes: ExternalChangeLine[];
   };
   ai_meta: {
     summary_failed: boolean;
@@ -227,7 +242,7 @@ async function callPerplexitySummary(
   // dia da chamada).
   const userPrompt = `Unidade: ${unitName}
 Mês de referência (USE EXATAMENTE ESTE LABEL): ${monthLabel}
-Quantidades por categoria — Publicadas: ${counts.published}, Alteradas: ${counts.modified}, Revogadas: ${counts.revoked}, Excluídas: ${counts.excluded}, Incluídas por revisão: ${counts.included_by_review}.
+Quantidades por categoria — Publicadas: ${counts.published}, Alteradas: ${counts.modified}, Revogadas: ${counts.revoked}, Excluídas: ${counts.excluded}, Incluídas por revisão: ${counts.included_by_review}, Alterações externas detectadas: ${counts.external_changes ?? 0}.
 Destaques (até 5 normas com aplicabilidade real):
 ${highlights.map((h) => `- ${h}`).join("\n") || "- (sem destaques)"}
 
@@ -508,7 +523,7 @@ async function handle(req: Request): Promise<Response> {
       reference_month: referenceMonthISO,
       generated_at: new Date().toISOString(),
       executive_summary: "Nenhuma legislação vinculada à unidade no período. Nada a reportar.",
-      sections: { published: [], modified: [], revoked: [], excluded: [], included_by_review: [] },
+      sections: { published: [], modified: [], revoked: [], excluded: [], included_by_review: [], external_changes: [] },
       ai_meta: { summary_failed: false, diffs_failed: false },
     };
     const { data: persisted, error: persistErr } = await supabase
@@ -724,12 +739,73 @@ async function handle(req: Request): Promise<Response> {
     includedByReview.push(serialize(row, "", null));
   }
 
+  // Watchdog: mudanças detectadas em fontes externas (DOU, planalto, agências)
+  // dentro da janela do mês. Sinal independente do legislation_history
+  // (este só pega edição interna do app). Dedup por legislation_id mantendo
+  // o evento mais recente — se houve várias detecções no mês, mostra a última.
+  const { data: changeEventRows } = await supabase
+    .from("legislation_change_events")
+    .select("id, legislation_id, change_type, diff_summary, source_url, confidence, detected_at")
+    .eq("company_id", profileCompanyId)
+    .gte("detected_at", startISO)
+    .lt("detected_at", endISO)
+    .order("detected_at", { ascending: false });
+
+  // Snapshot das legislações referenciadas pelos change events
+  // (podem não ter aparecido em `legislations` ainda — recarregamos pra UI).
+  const changeEventsRaw = (changeEventRows ?? []) as Array<{
+    id: string;
+    legislation_id: string;
+    change_type: "amended" | "revoked" | "superseded" | "clarified";
+    diff_summary: string;
+    source_url: string | null;
+    confidence: number | null;
+    detected_at: string;
+  }>;
+  const seenLegIds = new Set<string>();
+  const dedupedEvents = changeEventsRaw.filter((e) => {
+    if (seenLegIds.has(e.legislation_id)) return false;
+    seenLegIds.add(e.legislation_id);
+    return true;
+  });
+  const missingLegIds = dedupedEvents
+    .map((e) => e.legislation_id)
+    .filter((id) => !legById.has(id));
+  if (missingLegIds.length > 0) {
+    for (let i = 0; i < missingLegIds.length; i += ID_CHUNK) {
+      const slice = missingLegIds.slice(i, i + ID_CHUNK);
+      const { data: extraLegs } = await supabase
+        .from("legislations")
+        .select("id, title, norm_type, norm_number, summary, observations, general_notes, jurisdiction, state, municipality, overall_applicability, overall_status, publication_date, is_active, theme_id, applicability_tags, revoked_by_legislation_id, revokes_legislation_id")
+        .in("id", slice);
+      for (const row of ((extraLegs ?? []) as LegislationRow[])) {
+        legById.set(row.id, row);
+      }
+    }
+  }
+
+  const externalChanges: ExternalChangeLine[] = [];
+  for (const ev of dedupedEvents) {
+    const row = legById.get(ev.legislation_id);
+    if (!row) continue;
+    const line = serialize(row, "", ev.detected_at);
+    externalChanges.push({
+      ...line,
+      change_type: ev.change_type,
+      diff_summary: ev.diff_summary,
+      confidence: ev.confidence,
+      source_url: ev.source_url,
+      detected_at: ev.detected_at,
+    });
+  }
+
   const counts = {
     published: published.length,
     modified: modified.length,
     revoked: revoked.length,
     excluded: excluded.length,
     included_by_review: includedByReview.length,
+    external_changes: externalChanges.length,
   };
 
   // 7. Enriquecimento IA — só faz sentido se há conteúdo. Sem chave, segue
@@ -741,7 +817,8 @@ async function handle(req: Request): Promise<Response> {
     incomplete: incompleteHistory || undefined,
   };
   const totalChanges =
-    counts.published + counts.modified + counts.revoked + counts.excluded + counts.included_by_review;
+    counts.published + counts.modified + counts.revoked + counts.excluded +
+    counts.included_by_review + counts.external_changes;
 
   // Formatação manual — Deno Deploy tem ICU enxuto e "pt-BR" + month:"long"
   // pode retornar inglês ou cair em erro silencioso dependendo da build.
@@ -803,6 +880,7 @@ async function handle(req: Request): Promise<Response> {
       revoked,
       excluded,
       included_by_review: includedByReview,
+      external_changes: externalChanges,
     },
     ai_meta: aiMeta,
   };

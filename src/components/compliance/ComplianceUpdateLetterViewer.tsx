@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import type { LetterContent, SerializedLine } from "@/services/complianceUpdateLetters";
+import type { ExternalChangeLine, LetterContent, SerializedLine } from "@/services/complianceUpdateLetters";
 import { APPLICABILITY_LABELS, formatReferenceMonthLabel, titleForTheme } from "@/lib/complianceSystems";
 import { downloadComplianceUpdateLetterPDF } from "./ComplianceUpdateLetterPDF";
 
@@ -49,12 +49,14 @@ export function ComplianceUpdateLetterViewer({
   // UTC-safe — ver justificativa em formatReferenceMonthLabel.
   const monthLabelCap = formatReferenceMonthLabel(content.reference_month, "/");
 
+  const externalChanges = content.sections.external_changes ?? [];
   const totalChanges =
     content.sections.published.length +
     content.sections.modified.length +
     content.sections.revoked.length +
     content.sections.excluded.length +
-    content.sections.included_by_review.length;
+    content.sections.included_by_review.length +
+    externalChanges.length;
 
   const handleDownload = () => downloadComplianceUpdateLetterPDF(content, generatorName ?? null);
 
@@ -128,9 +130,13 @@ export function ComplianceUpdateLetterViewer({
 
         {SECTIONS.map((section) => {
           const lines = content.sections[section.key];
-          if (lines.length === 0) return null; // espelha SOGI: omite seções vazias
+          if (!lines || lines.length === 0) return null; // espelha SOGI: omite seções vazias
           return <Section key={section.key} {...section} lines={lines} />;
         })}
+
+        {externalChanges.length > 0 && (
+          <ExternalChangesSection lines={externalChanges} />
+        )}
 
         {totalChanges === 0 && (
           <Card>
@@ -222,6 +228,90 @@ function Section({ title, description, lines }: SectionProps) {
             </Table>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const CHANGE_TYPE_LABEL: Record<ExternalChangeLine["change_type"], string> = {
+  amended: "Alterada",
+  revoked: "Revogada",
+  superseded: "Substituída",
+  clarified: "Esclarecida",
+};
+
+const CHANGE_TYPE_VARIANT: Record<ExternalChangeLine["change_type"], "default" | "destructive" | "secondary"> = {
+  amended: "default",
+  revoked: "destructive",
+  superseded: "destructive",
+  clarified: "secondary",
+};
+
+function ExternalChangesSection({ lines }: { lines: ExternalChangeLine[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center justify-between">
+          <span>
+            Alterações Externas Detectadas{" "}
+            <span className="text-muted-foreground font-normal text-sm">({lines.length})</span>
+          </span>
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Mudanças identificadas em fontes oficiais (DOU, planalto, agências) pelo monitoramento contínuo, independente de edição manual.
+        </p>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px]">Requisito</TableHead>
+                <TableHead className="w-[130px]">Tipo de mudança</TableHead>
+                <TableHead>Resumo da alteração</TableHead>
+                <TableHead className="w-[120px]">Confiança</TableHead>
+                <TableHead className="w-[120px]">Fonte</TableHead>
+                <TableHead className="w-[120px]">Detectado em</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {lines.map((line) => (
+                <TableRow key={`${line.legislation_id}-${line.detected_at}`}>
+                  <TableCell className="align-top">
+                    <div className="font-mono text-xs text-muted-foreground">{line.code}</div>
+                    <div className="font-medium">{line.title}</div>
+                  </TableCell>
+                  <TableCell className="align-top">
+                    <Badge variant={CHANGE_TYPE_VARIANT[line.change_type]}>
+                      {CHANGE_TYPE_LABEL[line.change_type]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="align-top text-sm">{line.diff_summary || "—"}</TableCell>
+                  <TableCell className="align-top text-sm">
+                    {line.confidence != null ? `${Math.round(line.confidence * 100)}%` : "—"}
+                  </TableCell>
+                  <TableCell className="align-top text-sm">
+                    {line.source_url ? (
+                      <a
+                        href={line.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline hover:no-underline"
+                      >
+                        Abrir
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell className="align-top text-sm">
+                    {format(new Date(line.detected_at), "dd/MM/yyyy", { locale: ptBR })}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );

@@ -323,7 +323,8 @@ export default function ComplianceUpdateLetters() {
                       (letter.content?.sections?.modified?.length ?? 0) +
                       (letter.content?.sections?.revoked?.length ?? 0) +
                       (letter.content?.sections?.excluded?.length ?? 0) +
-                      (letter.content?.sections?.included_by_review?.length ?? 0);
+                      (letter.content?.sections?.included_by_review?.length ?? 0) +
+                      (letter.content?.sections?.external_changes?.length ?? 0);
                     return (
                       <TableRow key={letter.id}>
                         <TableCell className="capitalize font-medium">{monthLabel}</TableCell>

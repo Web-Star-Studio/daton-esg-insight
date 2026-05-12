@@ -240,6 +240,7 @@ const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
 const SystemStatus = lazy(() => import("./pages/SystemStatus"));
 const PlatformAdminDashboard = lazy(() => import("./pages/PlatformAdminDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const LegislationWatchdog = lazy(() => import("./pages/LegislationWatchdog"));
 const DemoDashboard = lazy(() => import("./pages/DemoDashboard"));
 const DemoLayout = lazy(() => import("./components/DemoLayout").then(m => ({ default: m.DemoLayout })));
 
@@ -1031,6 +1032,20 @@ const AppContent = () => {
                   <RoleGuard requiredRole="admin">
                     <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
                       <AdminDashboard />
+                    </Suspense>
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Watchdog de Legislações — admin only, manual durante fase de testes */}
+            <Route
+              path="/admin/legislation-watchdog"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard requiredRole="admin">
+                    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                      <LegislationWatchdog />
                     </Suspense>
                   </RoleGuard>
                 </ProtectedRoute>
