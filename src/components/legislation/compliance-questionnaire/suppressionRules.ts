@@ -183,3 +183,15 @@ export const EMPTY_SUPPRESSION: Suppression = {
   themeIds: new Set<string>(),
   questionIds: new Set<string>(),
 };
+
+const setsEqual = <T,>(a: Set<T>, b: Set<T>): boolean => {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+};
+
+// Compara dois Suppression sets considerando temas E perguntas.
+// Mudanças apenas em questionIds (per-question suppression) também contam —
+// não basta olhar themeIds.
+export const suppressionEqual = (a: Suppression, b: Suppression): boolean =>
+  setsEqual(a.themeIds, b.themeIds) && setsEqual(a.questionIds, b.questionIds);

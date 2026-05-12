@@ -54,6 +54,7 @@ import {
 import {
   computeSuppression,
   keysToSuppression,
+  suppressionEqual,
   type Suppression,
 } from "./suppressionRules";
 import type { Theme } from "./types";
@@ -204,15 +205,13 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
 
   // Detecta se o rascunho do pré-form difere do escopo aplicado. Quando
   // difere, mostra banner pra avisar o usuário e oferecer o atalho pra
-  // reabrir o pré-form e aplicar.
+  // reabrir o pré-form e aplicar. Compara temas E perguntas.
   const hasDraftPending = useMemo(() => {
     if (!existingProfile) return false;
     const preResponses = existingProfile.pre_responses ?? {};
     if (Object.keys(preResponses).length === 0) return false;
     const draft = computeSuppression(preResponses);
-    if (draft.themeIds.size !== suppression.themeIds.size) return true;
-    for (const id of draft.themeIds) if (!suppression.themeIds.has(id)) return true;
-    return false;
+    return !suppressionEqual(draft, suppression);
   }, [existingProfile, suppression]);
 
   const autosave = useDebouncedAutosave({

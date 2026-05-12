@@ -25,6 +25,7 @@ import type { ComplianceProfile } from "@/services/complianceProfiles";
 import {
   computeSuppression,
   keysToSuppression,
+  suppressionEqual,
 } from "./compliance-questionnaire/suppressionRules";
 
 interface ComplianceProfilesManagerProps {
@@ -44,15 +45,14 @@ const deriveStatus = (profile: ComplianceProfile | undefined): ProfileStatus => 
 
 // True quando o rascunho do pré-form (pre_responses) gera uma supressão
 // diferente da que está commitada (suppressed_keys). Indica que o usuário
-// tem mudanças não aplicadas.
+// tem mudanças não aplicadas. Compara temas E perguntas (regras per-question
+// também precisam contar como mudança).
 const hasUnappliedDraft = (profile: ComplianceProfile | undefined): boolean => {
   if (!profile) return false;
   if (Object.keys(profile.pre_responses ?? {}).length === 0) return false;
   const draft = computeSuppression(profile.pre_responses);
   const committed = keysToSuppression(profile.suppressed_keys);
-  if (draft.themeIds.size !== committed.themeIds.size) return true;
-  for (const id of draft.themeIds) if (!committed.themeIds.has(id)) return true;
-  return false;
+  return !suppressionEqual(draft, committed);
 };
 
 type SelectedBranch = { id: string; name: string };

@@ -46,6 +46,7 @@ import {
 import {
   computeSuppression,
   keysToSuppression,
+  suppressionEqual,
   suppressionToKeys,
   type Suppression,
 } from "./suppressionRules";
@@ -118,11 +119,6 @@ const diffThemes = (committed: Suppression, preview: Suppression) => {
   return { willHide, willReveal };
 };
 
-const setsEqual = <T,>(a: Set<T>, b: Set<T>): boolean => {
-  if (a.size !== b.size) return false;
-  for (const v of a) if (!b.has(v)) return false;
-  return true;
-};
 
 export const PreComplianceModal: React.FC<PreComplianceModalProps> = ({
   open,
@@ -173,7 +169,7 @@ export const PreComplianceModal: React.FC<PreComplianceModalProps> = ({
   );
 
   const scopeChanged = useMemo(
-    () => !setsEqual(committedSuppression.themeIds, previewSuppression.themeIds),
+    () => !suppressionEqual(committedSuppression, previewSuppression),
     [committedSuppression, previewSuppression],
   );
 
@@ -250,12 +246,7 @@ export const PreComplianceModal: React.FC<PreComplianceModalProps> = ({
   };
 
   const hasAnyAnswers = Object.keys(preResponses).length > 0;
-  const isApplied = !setsEqual(
-    committedSuppression.themeIds,
-    previewSuppression.themeIds,
-  )
-    ? false
-    : true;
+  const isApplied = suppressionEqual(committedSuppression, previewSuppression);
 
   return (
     <>

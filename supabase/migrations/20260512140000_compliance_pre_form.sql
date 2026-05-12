@@ -24,6 +24,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint
     WHERE conname = 'legislation_compliance_profiles_pre_responses_object_chk'
+      AND conrelid = 'public.legislation_compliance_profiles'::regclass
   ) THEN
     ALTER TABLE public.legislation_compliance_profiles
       ADD CONSTRAINT legislation_compliance_profiles_pre_responses_object_chk
@@ -33,6 +34,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint
     WHERE conname = 'legislation_compliance_profiles_suppressed_keys_clean_chk'
+      AND conrelid = 'public.legislation_compliance_profiles'::regclass
   ) THEN
     ALTER TABLE public.legislation_compliance_profiles
       ADD CONSTRAINT legislation_compliance_profiles_suppressed_keys_clean_chk
