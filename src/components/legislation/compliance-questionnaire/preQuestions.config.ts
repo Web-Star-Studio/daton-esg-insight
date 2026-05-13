@@ -45,7 +45,13 @@ export const PRE_COMPLIANCE_QUESTIONS: Question[] = [
       { id: "armazenagem", label: "Armazenagem / logística" },
       { id: "industrial_fabril", label: "Industrial / fabril" },
       { id: "oficina_manutencao", label: "Oficina / manutenção" },
-      { id: "mineracao", label: "Mineração" },
+      { id: "mineracao", label: "Mineração / extração mineral" },
+      { id: "construcao_civil", label: "Construção civil / obras" },
+      { id: "agropecuaria", label: "Atividade agrícola, pecuária ou florestal" },
+      { id: "energia", label: "Geração ou distribuição de energia" },
+      { id: "saude", label: "Serviços de saúde" },
+      { id: "lavagem", label: "Lavagem de veículos ou equipamentos" },
+      { id: "abastecimento", label: "Abastecimento de combustíveis" },
     ],
   },
   {
@@ -56,6 +62,7 @@ export const PRE_COMPLIANCE_QUESTIONS: Question[] = [
     options: [
       { id: "sim_propria", label: "Sim — frota própria" },
       { id: "sim_terceirizada", label: "Sim — frota terceirizada gerenciada pela unidade" },
+      { id: "sim_propria_terceirizada", label: "Sim — frota própria e terceirizada" },
       { id: "nao", label: "Não" },
     ],
   },
