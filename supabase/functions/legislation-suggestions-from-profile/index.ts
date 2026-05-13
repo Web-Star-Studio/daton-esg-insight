@@ -533,10 +533,10 @@ PROCESSO E ORÇAMENTO (siga rigorosamente):
 1. Comece chamando query_existing_legislations pra ver o catálogo atual da branch.
 2. (Opcional) Use inspect_compliance_response pra ver respostas livres do questionário (ex.: 'inst.q4' descreve atividades em texto). Limite: 2 chamadas.
 3. Faça NO MÁXIMO 3 search_perplexity, uma por tema/agência diferente. Mire em gaps (temas onde o SQL pegou pouco) ou áreas pouco-padronizadas (LGPD, NRs novas, regulações setoriais recentes).
-4. **ANTES** de chamar finalize_suggestions, valide cada URL via fetch_url. Se valid=false (404/410), substitua a URL por null ou omita o item. Limite: até 8 fetch_url no total.
-5. Chame finalize_suggestions OBRIGATORIAMENTE como ÚLTIMA tool, com 3-8 itens (até 12 max).
+4. **ANTES** de chamar finalize_suggestions, valide cada URL via fetch_url. Se valid=false (404/410), substitua a URL por null ou omita o item. Limite: até 6 fetch_url no total.
+5. Chame finalize_suggestions com 3-8 itens (até 12 max). Pode ser chamado mais de uma vez — o ÚLTIMO finalize vence. Use isso pra fazer um "save-point" cedo (ex: depois de 1-2 buscas) e depois enriquecer se houver budget.
 
-ORÇAMENTO TOTAL DO LOOP: 8 turnos. Você DEVE chamar finalize_suggestions antes do fim. Se ficar com 2+ turnos restantes e ainda não finalizou, FINALIZE AGORA com o que tiver.
+ORÇAMENTO TOTAL DO LOOP: 14 turnos. Você DEVE chamar finalize_suggestions antes do fim — mesmo que a lista esteja parcial. Se ficar com 3+ turnos restantes e ainda não finalizou pela primeira vez, FAÇA UM FINALIZE AGORA com o que tiver e depois siga refinando.
 
 BUSCA: livre. Sonar-pro pode varrer qualquer fonte — DOU, planalto, agências, portais estaduais/municipais, mídia especializada, jusbrasil, legisweb, repercussão setorial. NÃO restrinja temas nem origens.
 
@@ -576,7 +576,12 @@ Sua tarefa: descobrir 3-8 sugestões NOVAS focando em temas/agências que o SQL 
         systemPrompt,
         userPrompt,
         tools,
-        maxSteps: 8,
+        // Bump 8 → 14 (commit fix-suggestions-maxsteps): em 9/10 runs históricos
+        // o agente batia o cap sem chamar finalize_suggestions. Workload típico
+        // usa 1 query + 2 inspect + 3 search + 4-6 fetch_url + 1 finalize ≈ 11-13
+        // tool calls, mais ~1 turno extra de "pensar" entre eles. Cap em 14 dá
+        // folga sem aproximar do radar (16). Custo/run sobe ~$0,01.
+        maxSteps: 14,
         companyId: targetCompanyId,
         branchId: targetBranch.id,
         triggeredBy: userId,
