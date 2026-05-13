@@ -6,7 +6,7 @@ import {
   fetchAllComplianceProfiles,
   fetchComplianceProfile,
   generateProfileTags,
-  updateComplianceResponses,
+  toggleThemeSuppression,
   upsertComplianceProfile,
   upsertCompliancePreResponses,
 } from "@/services/complianceProfiles";
@@ -64,17 +64,17 @@ export const useUpsertCompliancePreResponses = () => {
   });
 };
 
-export const useUpdateComplianceResponses = () => {
+export const useToggleThemeSuppression = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateComplianceResponses,
+    mutationFn: toggleThemeSuppression,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["compliance-profile", data.branch_id] });
       queryClient.invalidateQueries({ queryKey: ["compliance-profiles"] });
     },
     onError: (error: Error) => {
-      toast.error("Erro ao atualizar respostas: " + error.message);
+      toast.error("Erro ao alterar escopo do tema: " + error.message);
     },
   });
 };

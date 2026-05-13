@@ -6,9 +6,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  EyeOff,
   Loader2,
   ScanLine,
-  Trash2,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -35,7 +35,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
   useComplianceProfile,
-  useUpdateComplianceResponses,
+  useToggleThemeSuppression,
   useUpsertComplianceProfile,
 } from "@/hooks/useComplianceProfiles";
 import { cn } from "@/lib/utils";
@@ -43,18 +43,14 @@ import { type ComplianceResponses } from "@/services/complianceProfiles";
 import { COMPLIANCE_THEMES } from "./questions.config";
 import { QuestionField } from "./QuestionField";
 import {
-  countStaleAnswers,
   generateTagsFromResponses,
   isQuestionVisible,
   isThemeSuppressed,
   overallCompletionPercent,
-  stripSuppressedAnswers,
   themeCompletionPercent,
 } from "./helpers";
 import {
-  computeSuppression,
   keysToSuppression,
-  suppressionEqual,
   type Suppression,
 } from "./suppressionRules";
 import type { Theme } from "./types";
@@ -83,7 +79,9 @@ const ThemeNav: React.FC<{
   suppression: Suppression;
   activeIndex: number;
   onSelect: (index: number) => void;
-}> = ({ themes, responses, suppression, activeIndex, onSelect }) => (
+  onToggleScope?: (themeId: string) => void;
+  toggleDisabled?: boolean;
+}> = ({ themes, responses, suppression, activeIndex, onSelect, onToggleScope, toggleDisabled }) => (
   <ScrollArea className="h-full w-full">
     <ul className="space-y-1 p-2">
       {themes.map((theme, index) => {
@@ -91,17 +89,20 @@ const ThemeNav: React.FC<{
         const percent = themeCompletionPercent(theme, responses, suppression);
         const isActive = index === activeIndex;
         return (
-          <li key={theme.id}>
+          <li
+            key={theme.id}
+            className={cn(
+              "flex items-stretch rounded-md border border-transparent transition-colors",
+              isActive
+                ? "border-primary/30 bg-primary/10 font-medium text-foreground"
+                : "hover:bg-muted/60 text-muted-foreground",
+              suppressed && !isActive && "opacity-60",
+            )}
+          >
             <button
               type="button"
               onClick={() => onSelect(index)}
-              className={cn(
-                "w-full rounded-md border border-transparent px-3 py-2 text-left text-sm transition-colors",
-                isActive
-                  ? "border-primary/30 bg-primary/10 font-medium text-foreground"
-                  : "hover:bg-muted/60 text-muted-foreground",
-                suppressed && !isActive && "opacity-60",
-              )}
+              className="flex-1 px-3 py-2 text-left text-sm"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="line-clamp-2">{theme.title}</span>
@@ -121,6 +122,29 @@ const ThemeNav: React.FC<{
                 )}
               </div>
             </button>
+            {onToggleScope && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleScope(theme.id);
+                }}
+                disabled={toggleDisabled}
+                title={
+                  suppressed
+                    ? "Trazer este tema de volta ao escopo"
+                    : "Marcar este tema como fora do escopo"
+                }
+                aria-label={
+                  suppressed
+                    ? "Trazer ao escopo"
+                    : "Marcar como fora do escopo"
+                }
+                className="flex shrink-0 items-center justify-center px-2 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-wait disabled:opacity-50"
+              >
+                {suppressed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </button>
+            )}
           </li>
         );
       })}
@@ -174,7 +198,7 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
   const { selectedCompany } = useCompany();
   const { data: existingProfile, isLoading } = useComplianceProfile(branchId);
   const upsertMutation = useUpsertComplianceProfile();
-  const updateResponsesMutation = useUpdateComplianceResponses();
+  const toggleScopeMutation = useToggleThemeSuppression();
 
   const [responses, setResponses] = useState<ComplianceResponses>({});
   const [activeIndex, setActiveIndex] = useState(0);
@@ -202,17 +226,6 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
     () => keysToSuppression(existingProfile?.suppressed_keys ?? []),
     [existingProfile],
   );
-
-  // Detecta se o rascunho do pré-form difere do escopo aplicado. Quando
-  // difere, mostra banner pra avisar o usuário e oferecer o atalho pra
-  // reabrir o pré-form e aplicar. Compara temas E perguntas.
-  const hasDraftPending = useMemo(() => {
-    if (!existingProfile) return false;
-    const preResponses = existingProfile.pre_responses ?? {};
-    if (Object.keys(preResponses).length === 0) return false;
-    const draft = computeSuppression(preResponses);
-    return !suppressionEqual(draft, suppression);
-  }, [existingProfile, suppression]);
 
   const autosave = useDebouncedAutosave({
     branchId,
@@ -248,17 +261,34 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
     return activeTheme.questions.filter((q) => isQuestionVisible(q, responses, lightSuppression));
   }, [activeTheme, activeThemeSuppressed, activeThemeRevealed, responses, suppression]);
 
-  const staleCount = useMemo(
-    () => countStaleAnswers(COMPLIANCE_THEMES, responses, suppression),
-    [responses, suppression],
-  );
-
   const setAnswer = (questionId: string, next: string | string[]) =>
     setResponses((prev) => ({ ...prev, [questionId]: next }));
 
   const goPrev = () => setActiveIndex((i) => Math.max(0, i - 1));
   const goNext = () =>
     setActiveIndex((i) => Math.min(COMPLIANCE_THEMES.length - 1, i + 1));
+
+  const handleToggleThemeScope = async (themeId: string) => {
+    if (!selectedCompany) return;
+    const themeKey = `theme:${themeId}`;
+    const currentKeys = existingProfile?.suppressed_keys ?? [];
+    const isCurrentlySuppressed = currentKeys.includes(themeKey);
+    const newKeys = isCurrentlySuppressed
+      ? currentKeys.filter((k) => k !== themeKey)
+      : [...currentKeys, themeKey];
+    const newSuppression = keysToSuppression(newKeys);
+    const regeneratedTags = generateTagsFromResponses(
+      COMPLIANCE_THEMES,
+      responses,
+      newSuppression,
+    );
+    await toggleScopeMutation.mutateAsync({
+      branch_id: branchId,
+      company_id: selectedCompany.id,
+      suppressed_keys: newKeys,
+      regenerated_tags: regeneratedTags,
+    });
+  };
 
   const handleSubmit = async () => {
     if (!selectedCompany) return;
@@ -277,23 +307,6 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
     setConfirmOpen(false);
     onOpenChange(false);
     onSubmitComplete?.(branchId, generatedTags);
-  };
-
-  const handleStripStale = async () => {
-    if (!selectedCompany) return;
-    const cleaned = stripSuppressedAnswers(COMPLIANCE_THEMES, responses, suppression);
-    setResponses(cleaned);
-    const regeneratedTags = generateTagsFromResponses(
-      COMPLIANCE_THEMES,
-      cleaned,
-      suppression,
-    );
-    await updateResponsesMutation.mutateAsync({
-      branch_id: branchId,
-      company_id: selectedCompany.id,
-      responses: cleaned,
-      regenerated_tags: regeneratedTags,
-    });
   };
 
   const previewTags = useMemo(
@@ -348,43 +361,6 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
               </div>
             </div>
             <Progress value={overallPercent} className="mt-3 h-1.5" />
-            {hasDraftPending && onEditScope && (
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-                <span>
-                  Existe um rascunho do Pré-Compliance que ainda não foi aplicado.
-                  Os temas abaixo refletem o escopo atualmente aplicado.
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs text-amber-900 hover:bg-amber-100 dark:text-amber-200 dark:hover:bg-amber-900/40"
-                  onClick={() => onEditScope(branchId)}
-                >
-                  <ScanLine className="mr-1 h-3 w-3" />
-                  Revisar e aplicar
-                </Button>
-              </div>
-            )}
-            {staleCount > 0 && (
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-                <span>
-                  {staleCount} resposta{staleCount === 1 ? "" : "s"} existente
-                  {staleCount === 1 ? "" : "s"} {staleCount === 1 ? "está" : "estão"} fora do
-                  escopo atual da unidade. {staleCount === 1 ? "Ela" : "Elas"} não
-                  contam para tags ou progresso.
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs text-amber-900 hover:bg-amber-100 dark:text-amber-200 dark:hover:bg-amber-900/40"
-                  onClick={handleStripStale}
-                  disabled={updateResponsesMutation.isPending}
-                >
-                  <Trash2 className="mr-1 h-3 w-3" />
-                  Limpar respostas fora do escopo
-                </Button>
-              </div>
-            )}
           </DialogHeader>
 
           <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -398,6 +374,8 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
                 suppression={suppression}
                 activeIndex={activeIndex}
                 onSelect={setActiveIndex}
+                onToggleScope={handleToggleThemeScope}
+                toggleDisabled={toggleScopeMutation.isPending}
               />
             </aside>
 
@@ -555,7 +533,7 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
             </AlertDialogDescription>
           </AlertDialogHeader>
           {previewTags.length > 0 && (
-            <div className="flex flex-wrap gap-1 rounded-md border bg-muted/30 p-2">
+            <div className="flex max-h-[32vh] flex-wrap gap-1 overflow-y-auto rounded-md border bg-muted/30 p-2">
               {previewTags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="text-xs">
                   {tag}

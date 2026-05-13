@@ -20,13 +20,9 @@ import { useAllComplianceProfiles } from "@/hooks/useComplianceProfiles";
 import { ComplianceQuestionnaireModal } from "./compliance-questionnaire/ComplianceQuestionnaireModal";
 import { PreComplianceModal } from "./compliance-questionnaire/PreComplianceModal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useHasBetaAccess } from "@/lib/betaFeatures";
 import { cn } from "@/lib/utils";
 import type { ComplianceProfile } from "@/services/complianceProfiles";
-import {
-  computeSuppression,
-  keysToSuppression,
-  suppressionEqual,
-} from "./compliance-questionnaire/suppressionRules";
 
 interface ComplianceProfilesManagerProps {
   onFilterChange?: (tags: string[]) => void;
@@ -41,18 +37,6 @@ const deriveStatus = (profile: ComplianceProfile | undefined): ProfileStatus => 
   if (!hasPreResponses) return "pre_pending";
   if (profile.completed_at) return "configured";
   return "compliance_pending";
-};
-
-// True quando o rascunho do pré-form (pre_responses) gera uma supressão
-// diferente da que está commitada (suppressed_keys). Indica que o usuário
-// tem mudanças não aplicadas. Compara temas E perguntas (regras per-question
-// também precisam contar como mudança).
-const hasUnappliedDraft = (profile: ComplianceProfile | undefined): boolean => {
-  if (!profile) return false;
-  if (Object.keys(profile.pre_responses ?? {}).length === 0) return false;
-  const draft = computeSuppression(profile.pre_responses);
-  const committed = keysToSuppression(profile.suppressed_keys);
-  return !suppressionEqual(draft, committed);
 };
 
 type SelectedBranch = { id: string; name: string };
@@ -70,6 +54,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
   // Capturado no momento em que o pré-modal abre — evita depender do estado
   // refetched de profilesByBranch, que é assíncrono após o upsert.
   const [preChainsToMain, setPreChainsToMain] = useState(false);
+  const hasBetaAccess = useHasBetaAccess();
 
   const isLoading = branchesLoading || profilesLoading;
 
@@ -180,7 +165,6 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
             {branches?.map((branch) => {
               const profile = profilesByBranch.get(branch.id);
               const status = deriveStatus(profile);
-              const draftPending = hasUnappliedDraft(profile);
               const tags = profile?.generated_tags ?? [];
               const suppressedCount = (profile?.suppressed_keys ?? []).filter((k) =>
                 k.startsWith("theme:"),
@@ -225,13 +209,6 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
                     {suppressedCount > 0 && (
                       <div className="mb-2 text-xs text-muted-foreground">
                         {suppressedCount} tema{suppressedCount === 1 ? "" : "s"} fora do escopo
-                      </div>
-                    )}
-
-                    {draftPending && (
-                      <div className="mb-2 inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-                        <AlertCircle className="h-3 w-3" />
-                        Rascunho do escopo não aplicado
                       </div>
                     )}
 
@@ -357,16 +334,28 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
           branchName={selectedBranch.name}
           onEditScope={() => setActiveModal("pre")}
           onSubmitComplete={(branchId, generatedTags) => {
-            if (generatedTags.length === 0) return;
-            toast.success("Questionário concluído", {
-              description: `${generatedTags.length} tags geradas. Veja agora as legislações sugeridas para esta unidade.`,
-              duration: 12000,
-              action: {
-                label: "Revisar sugestões",
-                onClick: () =>
-                  navigate(`/licenciamento/legislacoes/sugestoes?branch=${branchId}`),
-              },
-            });
+            // CTA para "Sugestões" (feature em beta) só aparece para
+            // beta-testers; demais users recebem confirmação genérica.
+            if (hasBetaAccess) {
+              if (generatedTags.length === 0) return;
+              toast.success("Questionário concluído", {
+                description: `${generatedTags.length} tags geradas. Veja agora as legislações sugeridas para esta unidade.`,
+                duration: 12000,
+                action: {
+                  label: "Revisar sugestões",
+                  onClick: () =>
+                    navigate(`/licenciamento/legislacoes/sugestoes?branch=${branchId}`),
+                },
+              });
+            } else {
+              toast.success("Questionário enviado com sucesso", {
+                description:
+                  generatedTags.length > 0
+                    ? `${generatedTags.length} tag${generatedTags.length === 1 ? "" : "s"} de compliance ${generatedTags.length === 1 ? "gerada" : "geradas"} para esta unidade.`
+                    : undefined,
+                duration: 6000,
+              });
+            }
           }}
         />
       )}

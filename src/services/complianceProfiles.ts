@@ -152,27 +152,31 @@ export const upsertCompliancePreResponses = async (
   return normalizeProfile(data as Record<string, unknown>);
 };
 
-// Atualiza apenas o campo responses (e opcionalmente generated_tags) sem
-// tocar em pre_responses/suppressed_keys/completed_at. Usado pela ação
-// "Limpar respostas fora do escopo" para gravar o responses limpo.
-export const updateComplianceResponses = async (input: {
+// Toggle manual de escopo a partir da barra lateral do questionário principal.
+// Substitui suppressed_keys e regenera generated_tags. Não toca em pre_responses
+// — o pré-form continua sendo o rascunho original; este toggle apenas diverge
+// (e o banner "rascunho não aplicado" no pré-form deixa isso explícito).
+export type ToggleThemeSuppressionInput = {
   branch_id: string;
   company_id: string;
-  responses: ComplianceResponses;
-  regenerated_tags?: string[];
-}): Promise<ComplianceProfile> => {
-  const payload: Record<string, unknown> = {
-    branch_id: input.branch_id,
-    company_id: input.company_id,
-    responses: input.responses,
-  };
-  if (input.regenerated_tags) {
-    payload.generated_tags = input.regenerated_tags;
-  }
+  suppressed_keys: string[];
+  regenerated_tags: string[];
+};
 
+export const toggleThemeSuppression = async (
+  input: ToggleThemeSuppressionInput,
+): Promise<ComplianceProfile> => {
   const { data, error } = await supabase
     .from("legislation_compliance_profiles")
-    .upsert(payload, { onConflict: "branch_id" })
+    .upsert(
+      {
+        branch_id: input.branch_id,
+        company_id: input.company_id,
+        suppressed_keys: input.suppressed_keys,
+        generated_tags: input.regenerated_tags,
+      },
+      { onConflict: "branch_id" },
+    )
     .select()
     .single();
 
