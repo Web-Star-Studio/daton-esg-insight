@@ -40,9 +40,7 @@ BEGIN
       ADD CONSTRAINT legislation_compliance_profiles_suppressed_keys_clean_chk
         CHECK (
           array_position(suppressed_keys, NULL) IS NULL
-          AND NOT EXISTS (
-            SELECT 1 FROM unnest(suppressed_keys) AS k WHERE k = ''
-          )
+          AND array_position(suppressed_keys, '') IS NULL
         );
   END IF;
 END $$;

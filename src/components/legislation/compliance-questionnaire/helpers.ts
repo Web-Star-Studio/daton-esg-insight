@@ -99,28 +99,6 @@ export const generateTagsFromResponses = (
   return Array.from(tags).sort();
 };
 
-// Conta respostas existentes que caíram fora do escopo após mudança de
-// pre_responses. Usado pelo UI pra mostrar advisory "X respostas fora do
-// escopo — você pode mantê-las ou limpar".
-export const countStaleAnswers = (
-  themes: Theme[],
-  responses: ComplianceResponses,
-  suppression: Suppression,
-): number => {
-  let count = 0;
-  for (const theme of themes) {
-    const themeSuppressed = suppression.themeIds.has(theme.id);
-    for (const question of theme.questions) {
-      const value = responses[question.id];
-      if (!isAnswered(value)) continue;
-      if (themeSuppressed || suppression.questionIds.has(question.id)) {
-        count += 1;
-      }
-    }
-  }
-  return count;
-};
-
 // Conta respostas preenchidas dentro de um tema. Usado pelo preview do
 // Pré-Compliance pra mostrar quantas respostas estão em risco quando o
 // usuário considera ocultar/revelar um tema.
@@ -138,23 +116,3 @@ export const countAnsweredInTheme = (
   return count;
 };
 
-// Retorna um novo objeto de responses com as chaves suprimidas removidas.
-// Não muta o input. Usado pela ação "Limpar respostas fora do escopo".
-export const stripSuppressedAnswers = (
-  themes: Theme[],
-  responses: ComplianceResponses,
-  suppression: Suppression,
-): ComplianceResponses => {
-  const result: ComplianceResponses = {};
-  for (const theme of themes) {
-    const themeSuppressed = suppression.themeIds.has(theme.id);
-    for (const question of theme.questions) {
-      const value = responses[question.id];
-      if (value === undefined) continue;
-      if (themeSuppressed) continue;
-      if (suppression.questionIds.has(question.id)) continue;
-      result[question.id] = value;
-    }
-  }
-  return result;
-};
