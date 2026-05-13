@@ -510,7 +510,7 @@ export const ComplianceQuestionnaireModal: React.FC<ComplianceQuestionnaireModal
                   <Button
                     size="sm"
                     onClick={() => setConfirmOpen(true)}
-                    disabled={overallPercent < 100 || upsertMutation.isPending}
+                    disabled={upsertMutation.isPending}
                   >
                     <Check className="mr-1 h-4 w-4" />
                     Enviar questionário
