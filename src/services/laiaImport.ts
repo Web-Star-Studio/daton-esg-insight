@@ -613,7 +613,8 @@ export async function importLAIAAssessments(
       if (
         !best ||
         count > best.count ||
-        (count === best.count && firstIdx < best.firstIdx)
+        (count === best.count && firstIdx < best.firstIdx) ||
+        (count === best.count && firstIdx === best.firstIdx && activity < best.activity)
       ) {
         best = { activity, count, firstIdx };
       }
