@@ -210,20 +210,28 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
                     </TableCell>
                     <TableCell className="font-mono font-medium">{sector.code}</TableCell>
                     <TableCell className="text-primary hover:underline">
-                      {(() => {
-                        const activities = activitiesBySector.get(sector.id);
-                        if (!activities || activities.length === 0) return "-";
-                        const shown = activities.slice(0, 3);
-                        const remaining = activities.length - 3;
-                        return (
-                          <span>
-                            {shown.join(", ")}
-                            {remaining > 0 && (
-                              <span className="text-muted-foreground ml-1">+{remaining} mais</span>
-                            )}
-                          </span>
-                        );
-                      })()}
+                      <div className="flex flex-col">
+                        <span>{sector.name || "-"}</span>
+                        {(() => {
+                          const activities = activitiesBySector.get(sector.id);
+                          if (!activities || activities.length === 0) return null;
+                          const sectorNameNorm = sector.name?.trim().toLowerCase() ?? "";
+                          const extras = activities.filter(
+                            (a) => a.trim().toLowerCase() !== sectorNameNorm
+                          );
+                          if (extras.length === 0) return null;
+                          const shown = extras.slice(0, 3);
+                          const remaining = extras.length - 3;
+                          return (
+                            <span className="text-xs text-muted-foreground">
+                              {shown.join(", ")}
+                              {remaining > 0 && (
+                                <span className="ml-1">+{remaining} mais</span>
+                              )}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {sector.description || "-"}
