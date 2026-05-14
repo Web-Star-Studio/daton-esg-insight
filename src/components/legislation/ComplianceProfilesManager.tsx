@@ -170,7 +170,7 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
                 k.startsWith("theme:"),
               ).length;
               const branchLabel = branch.code ? `${branch.code} - ${branch.name}` : branch.name;
-              const branchPayload: SelectedBranch = { id: branch.id, name: branch.name };
+              const branchPayload: SelectedBranch = { id: branch.id, name: branchLabel };
 
               return (
                 <Card
