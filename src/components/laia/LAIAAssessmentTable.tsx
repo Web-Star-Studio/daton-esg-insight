@@ -37,7 +37,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLAIAAssessments, useDeleteLAIAAssessment, useBulkDeleteLAIAAssessments, useApproveLAIAAssessment, useMarkLAIAAssessmentAsPendente } from "@/hooks/useLAIA";
+import { useLAIAAssessments, useDeleteLAIAAssessment, useBulkDeleteLAIAAssessments, useApproveLAIAAssessment, useMarkLAIAAssessmentAsPendente, useLAIASectors } from "@/hooks/useLAIA";
 import { formatAssessmentLabel } from "@/utils/laiaFormat";
 import {
   Search,
@@ -73,10 +73,19 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
   const [activityFilter, setActivityFilter] = useState<string>("all");
   const [filters, setFilters] = useState<{
     branch_id?: string;
+    sector_id?: string;
     category?: string;
     significance?: string;
     status?: string;
   }>({ branch_id: branchId });
+
+  const { data: sectors } = useLAIASectors(branchId);
+  const sectorOptions = useMemo(() => {
+    if (!sectors) return [];
+    return [...sectors]
+      .filter((s) => s.is_active)
+      .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+  }, [sectors]);
 
   useEffect(() => {
     if (initialFilters) {
@@ -163,6 +172,13 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
     setSearch("");
   };
 
+  const hasActiveFilters =
+    activityFilter !== "all" ||
+    !!filters.sector_id ||
+    !!filters.category ||
+    !!filters.significance ||
+    !!search;
+
   const getCategoryLabel = (cat: string) => {
     switch (cat) {
       case "desprezivel": return "Desprezível";
@@ -216,6 +232,25 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
             </div>
 
             <Select
+              value={filters.sector_id || "all"}
+              onValueChange={(v) =>
+                setFilters({ ...filters, sector_id: v === "all" ? undefined : v })
+              }
+            >
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Setor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Setores</SelectItem>
+                {sectorOptions.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
               value={activityFilter}
               onValueChange={setActivityFilter}
             >
@@ -261,7 +296,7 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
               </SelectContent>
             </Select>
 
-            {(activityFilter !== "all" || filters.category || filters.significance || search) && (
+            {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <Filter className="mr-2 h-4 w-4" />
                 Limpar Filtros

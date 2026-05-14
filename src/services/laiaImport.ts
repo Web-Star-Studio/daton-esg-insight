@@ -584,23 +584,52 @@ export async function importLAIAAssessments(
   
   const sectorMap = new Map((existingSectors || []).map(s => [s.code.toUpperCase(), s.id]));
   
-  // Find missing sectors
+  // Find missing sectors and pick the best display name from the rows that
+  // reference each code. The most frequent non-empty activity_operation wins;
+  // ties go to the first occurrence in the spreadsheet. Falls back to
+  // `Setor <code>` only when no row has a usable activity name.
   const missingSectors = new Set<string>();
-  for (const row of rows) {
-    if (row.sector_code && !sectorMap.has(row.sector_code.toUpperCase())) {
-      missingSectors.add(row.sector_code.toUpperCase());
-    }
+  const sectorNameCandidates = new Map<string, Map<string, { count: number; firstIdx: number }>>();
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row.sector_code) continue;
+    const codeKey = row.sector_code.toUpperCase();
+    if (sectorMap.has(codeKey)) continue;
+    missingSectors.add(codeKey);
+
+    const activity = row.activity_operation?.trim();
+    if (!activity || activity.toLowerCase() === 'não especificada') continue;
+    const counts = sectorNameCandidates.get(codeKey) ?? new Map();
+    const prev = counts.get(activity);
+    counts.set(activity, { count: (prev?.count ?? 0) + 1, firstIdx: prev?.firstIdx ?? i });
+    sectorNameCandidates.set(codeKey, counts);
   }
-  
+
+  const pickSectorName = (codeKey: string): string => {
+    const counts = sectorNameCandidates.get(codeKey);
+    if (!counts || counts.size === 0) return `Setor ${codeKey}`;
+    let best: { activity: string; count: number; firstIdx: number } | null = null;
+    for (const [activity, { count, firstIdx }] of counts) {
+      if (
+        !best ||
+        count > best.count ||
+        (count === best.count && firstIdx < best.firstIdx)
+      ) {
+        best = { activity, count, firstIdx };
+      }
+    }
+    return best?.activity ?? `Setor ${codeKey}`;
+  };
+
   // Create missing sectors
   if (createMissingSectors && missingSectors.size > 0) {
     onProgress?.(0, rows.length, `Criando ${missingSectors.size} setor(es)...`);
-    
+
     for (const sectorCode of missingSectors) {
       try {
         const newSector = await createLAIASector({
           code: sectorCode,
-          name: `Setor ${sectorCode}`,
+          name: pickSectorName(sectorCode),
           description: 'Criado automaticamente pela importação',
           branch_id: branchId || undefined,
         });
