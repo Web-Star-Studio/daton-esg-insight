@@ -34,10 +34,13 @@ export interface EfficacyDashboardMetrics {
  * Modos:
  * - default (sem args): traz só os programas onde o usuário logado é o
  *   `efficacy_evaluator_employee_id` (auto-filtro via lookup do employee
- *   pelo email).
+ *   pelo email). Vale tanto para usuários comuns quanto para admins —
+ *   admins de matriz não podem ver, por padrão, avaliações de filiais
+ *   onde não são o responsável cadastrado.
  * - `{ viewAll: true }`: pula o filtro de evaluator e devolve TUDO da
- *   empresa — usar quando admin precisa de visão consolidada. UI gates
- *   acesso por role; o service só implementa a query.
+ *   empresa — usar quando admin precisa de visão consolidada (toggle
+ *   explícito na UI). O service revalida role server-side e só libera
+ *   para admin / platform_admin.
  */
 export const getMyPendingEvaluations = async (
   opts: { viewAll?: boolean } = {},

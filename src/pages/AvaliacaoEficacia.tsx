@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getMyPendingEvaluations } from "@/services/efficacyEvaluationDashboard";
 import { TrainingProgramEfficacyDialog } from "@/components/TrainingProgramEfficacyDialog";
@@ -19,11 +20,12 @@ import { useHasRole } from "@/middleware/roleGuard";
 const AvaliacaoEficacia = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  // Admin vê automaticamente TODAS as avaliações da empresa (não só
-  // aquelas onde é evaluator). Usuário comum continua com a visão "minhas"
-  // pra cobrar apenas o que é responsabilidade dele.
+  // Admin pode alternar entre "minhas" (default) e "todas". Antes o admin
+  // entrava automaticamente em viewAll, mas isso fazia a matriz ver pendências
+  // de filiais onde não era o responsável — atrasando o fluxo de avaliação
+  // dos responsáveis cadastrados. Default agora é "minhas" pra todos.
   const isAdmin = useHasRole(['admin', 'platform_admin']);
-  const viewAll = isAdmin;
+  const [viewAll, setViewAll] = useState(false);
   // Wizard de avaliação contínua (estado='Pendente'/'Atrasado').
   const [evaluatingProgram, setEvaluatingProgram] = useState<{
     id: string;
@@ -35,9 +37,10 @@ const AvaliacaoEficacia = () => {
     name: string;
   } | null>(null);
 
+  const effectiveViewAll = isAdmin && viewAll;
   const { data: evaluations = [], isLoading } = useQuery({
-    queryKey: ['my-efficacy-evaluations', viewAll],
-    queryFn: () => getMyPendingEvaluations({ viewAll: isAdmin && viewAll }),
+    queryKey: ['my-efficacy-evaluations', effectiveViewAll],
+    queryFn: () => getMyPendingEvaluations({ viewAll: effectiveViewAll }),
   });
 
   // Métricas derivadas do mesmo dataset — antes uma segunda useQuery chamava
@@ -70,13 +73,27 @@ const AvaliacaoEficacia = () => {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold">Avaliação de Eficácia</h1>
-        <p className="text-muted-foreground">
-          {viewAll
-            ? "Todos os treinamentos da empresa com prazo de avaliação"
-            : "Treinamentos sob sua responsabilidade para avaliação"}
-        </p>
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Avaliação de Eficácia</h1>
+          <p className="text-muted-foreground">
+            {effectiveViewAll
+              ? "Todos os treinamentos da empresa com prazo de avaliação"
+              : "Treinamentos sob sua responsabilidade para avaliação"}
+          </p>
+        </div>
+        {isAdmin && (
+          <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+            <Switch
+              id="view-all-toggle"
+              checked={viewAll}
+              onCheckedChange={setViewAll}
+            />
+            <label htmlFor="view-all-toggle" className="cursor-pointer select-none">
+              Ver todas as filiais
+            </label>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -90,9 +107,9 @@ const AvaliacaoEficacia = () => {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <CardTitle>{viewAll ? "Treinamentos da Empresa" : "Meus Treinamentos para Avaliar"}</CardTitle>
+              <CardTitle>{effectiveViewAll ? "Treinamentos da Empresa" : "Meus Treinamentos para Avaliar"}</CardTitle>
               <CardDescription>
-                {viewAll
+                {effectiveViewAll
                   ? "Todos os programas com prazo de avaliação de eficácia configurado"
                   : "Treinamentos onde você é o responsável pela avaliação"}
               </CardDescription>

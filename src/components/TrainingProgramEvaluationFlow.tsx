@@ -55,6 +55,7 @@ import {
   createEfficacyEvaluation,
 } from "@/services/trainingEfficacyEvaluations";
 import { createEmployeeTraining } from "@/services/trainingPrograms";
+import { getEvaluatorByTrainingId } from "@/services/efficacyEvaluationDashboard";
 
 const EFFECTIVENESS_OPTIONS = [
   {
@@ -147,6 +148,15 @@ export function TrainingProgramEvaluationFlow({
   const { data: participants = [], isLoading: loadingParticipants } = useQuery({
     queryKey: ["program-efficacy-participants", trainingProgramId],
     queryFn: () => getTrainingProgramParticipants(trainingProgramId!),
+    enabled: !!trainingProgramId && open,
+  });
+
+  // Avaliador cadastrado no programa (efficacy_evaluator_employee_id) —
+  // exibido no header do modal. Sem isso a UI mostrava o usuário logado,
+  // confundindo admin/matriz com o avaliador real da filial.
+  const { data: assignedEvaluator } = useQuery({
+    queryKey: ["program-efficacy-assigned-evaluator", trainingProgramId],
+    queryFn: () => getEvaluatorByTrainingId(trainingProgramId!),
     enabled: !!trainingProgramId && open,
   });
 
@@ -454,14 +464,21 @@ export function TrainingProgramEvaluationFlow({
             <span className="font-medium text-foreground">
               {trainingProgramName}
             </span>
-            {user?.full_name && (
+            {(assignedEvaluator?.full_name || user?.full_name) && (
               <>
                 <br />
                 <span className="text-xs">
                   Avaliador:{" "}
                   <span className="font-medium text-foreground">
-                    {user.full_name}
+                    {assignedEvaluator?.full_name || user?.full_name}
                   </span>
+                  {assignedEvaluator?.full_name &&
+                    user?.full_name &&
+                    assignedEvaluator.full_name !== user.full_name && (
+                      <span className="ml-1 text-muted-foreground">
+                        (registrando como {user.full_name})
+                      </span>
+                    )}
                 </span>
               </>
             )}

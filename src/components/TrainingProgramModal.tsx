@@ -406,9 +406,10 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
         const newParticipants = Array.from(pendingParticipants).filter(
           empId => !existingParticipantIds.includes(empId)
         );
-        
+
         if (newParticipants.length > 0) {
           let successCount = 0;
+          const failures: Array<{ employeeId: string; message: string }> = [];
           for (const employeeId of newParticipants) {
             try {
               await createEmployeeTraining({
@@ -419,17 +420,33 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
               });
               successCount++;
             } catch (err) {
+              const message = err instanceof Error ? err.message : String(err);
               console.error(`Erro ao inscrever funcionário ${employeeId}:`, err);
+              failures.push({ employeeId, message });
             }
           }
-          
+
           queryClient.invalidateQueries({ queryKey: ['training-program-participants'] });
           queryClient.invalidateQueries({ queryKey: ['employee-trainings'] });
-          
-          toast({
-            title: "Sucesso",
-            description: `Programa atualizado. ${successCount} novo(s) participante(s) adicionado(s).`,
-          });
+
+          if (failures.length === 0) {
+            toast({
+              title: "Sucesso",
+              description: `Programa atualizado. ${successCount} novo(s) participante(s) adicionado(s).`,
+            });
+          } else {
+            // Silencioso só dava console.error e fechava o modal — usuária
+            // saía achando que inscreveu, mas o programa ficava 0/0 na
+            // avaliação. Agora reporta falhas no toast e mantém o modal.
+            toast({
+              title: failures.length === newParticipants.length
+                ? "Falha ao inscrever participantes"
+                : "Inscrição parcial",
+              description: `${successCount} inscrito(s), ${failures.length} falha(s): ${failures[0].message}`,
+              variant: "destructive",
+            });
+            return; // não fechar o modal
+          }
         } else {
           toast({
             title: "Sucesso",
@@ -444,12 +461,13 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
         };
         
         const newProgram = await createTrainingProgram(programData);
-        
+
         // Criar participantes pendentes após criar o programa
         if (pendingParticipants.size > 0 && newProgram?.id) {
           const participantArray = Array.from(pendingParticipants);
           let successCount = 0;
-          
+          const failures: Array<{ employeeId: string; message: string }> = [];
+
           for (const employeeId of participantArray) {
             try {
               await createEmployeeTraining({
@@ -460,14 +478,29 @@ function useTrainingProgramModalComponent({ open, onOpenChange, program }: Train
               });
               successCount++;
             } catch (err) {
+              const message = err instanceof Error ? err.message : String(err);
               console.error(`Erro ao inscrever funcionário ${employeeId}:`, err);
+              failures.push({ employeeId, message });
             }
           }
-          
-          toast({
-            title: "Sucesso",
-            description: `Programa criado com ${successCount} participante(s) inscrito(s)!`,
-          });
+
+          if (failures.length === 0) {
+            toast({
+              title: "Sucesso",
+              description: `Programa criado com ${successCount} participante(s) inscrito(s)!`,
+            });
+          } else {
+            // Antes: silent failure — toast dizia "criado com 0 inscritos"
+            // como sucesso e a usuária ia direto avaliar achando que tinha
+            // dado certo, encontrando "Programa sem colaboradores inscritos".
+            toast({
+              title: failures.length === participantArray.length
+                ? "Programa criado, mas falha ao inscrever participantes"
+                : "Programa criado com inscrição parcial",
+              description: `${successCount} inscrito(s), ${failures.length} falha(s): ${failures[0].message}`,
+              variant: "destructive",
+            });
+          }
         } else {
           toast({
             title: "Sucesso",
