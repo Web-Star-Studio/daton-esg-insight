@@ -1,71 +1,86 @@
-# Refocar a aba "Uso & Custos" — remover duplicações com Gabardo View
+## Objetivo
 
-## Diagnóstico
+Gerar um **PDF executivo** que o Daton possa entregar ao cliente Gabardo (e usar como template para outros), respondendo:
 
-Hoje, com o filtro padrão setado em Gabardo, **a aba "Uso & Custos" repete quase tudo que já existe em "Gabardo View"**:
+1. **Quanto já foi investido** no desenvolvimento do Daton até hoje (em horas × R$50 + tokens de IA consumidos no build).
+2. **Quanto custa manter** mensalmente, quebrado por módulo, somando: tokens de IA em runtime, infra (Supabase/Lovable Cloud), domínio/terceiros e bolsa de manutenção evolutiva.
 
-| Métrica / Visão | Gabardo View | Uso & Custos | Veredito |
-|---|---|---|---|
-| KPI Pageviews / Usuários únicos / Eventos | ✅ | ✅ | Duplicado |
-| KPI Chamadas IA / Tokens / Custo IA | ✅ (Custo) | ✅ (3 cards) | Duplicado |
-| Top usuários por engajamento (com tempo, dias ativos) | ✅ + drawer | ✅ (versão mais pobre) | Duplicado — Gabardo é melhor |
-| Páginas mais usadas | ✅ + drawer + tempo médio | ✅ + último acesso | Duplicado — Gabardo é melhor |
-| Custo IA por função/feature/modelo (tabela) | ✅ | ✅ | Duplicado |
-| Série diária (views/eventos/custo) | ✅ (`GabardoChartsRow`) | ✅ (LineChart overview) | Duplicado |
-| Classificação Power/Regular/Casual/Churning/Ghost + adoção por módulo | ✅ (`GabardoUsageInsightsPanel`) | ❌ | Único Gabardo |
-| Ghost users (cadastrados, nunca acessaram) | ✅ | ❌ | Único Gabardo |
+## Metodologia
 
-O que **só "Uso & Custos" oferece** e vale manter:
+### Estimativa de horas já gastas (triangulação)
 
-1. **Seletor multi-empresa** (útil só para auditar contas de teste — usar pouco, mas necessário)
-2. **Custo por modelo** (chart) — visão de engenharia / decisão de gateway
-3. **Custo por edge function** (chart) + **latência média** — perf/finops
-4. **Custo por empresa** (quando "Todas") — comparativo cross-tenant
-5. **Heatmap dia × hora** — sazonalidade real de uso
-6. **Rotas mortas** (auditoria de código — candidatas a remoção)
-7. **Erros de IA** (timeouts, 429, 402)
+Três fontes combinadas, média ponderada:
 
-## Plano
+- **A. Contagem de código** — `~477k LOC` em `src/` + `~75 edge functions` + `436 migrations`. Aplicar produtividade ajustada (60–80 LOC/h efetivos para código gerado por IA com revisão humana, considerando refactors e descartes).
+- **B. Histórico de mensagens Lovable** — extrair número de turnos/iterações desta workspace como proxy de esforço de produto (PM + QA + prompt engineering).
+- **C. Complexidade funcional** — pontuar cada módulo por features entregues (CRUDs, integrações, IA, dashboards, fluxos multi-stage) usando benchmarks de mercado (story points → horas).
 
-Reposicionar **"Uso & Custos"** como aba **técnica / engenharia / finops da plataforma inteira**, não mais como duplicata da visão Gabardo.
+A triangulação dá faixa baixa/central/alta para evitar número único frágil.
 
-### Mudanças em `src/components/platform/UsageAnalyticsTab.tsx`
+### Custo de IA já consumido
 
-1. **Mudar copy do header** para:
-   > "Visão técnica de custo IA, performance de edge functions e auditoria de rotas. Para uso por usuário/feature da Gabardo, ver aba 'Gabardo View'."
+- Histórico real da tabela `ai_usage_logs`: hoje acumula `~US$ 3,57` (108 chamadas; Gemini 2.5 Pro domina). Converter a BRL pelo câmbio do dia.
+- Acrescentar estimativa de tokens consumidos **no build via Lovable** (não logados na tabela) — usar média de mercado por LOC gerado.
 
-2. **Mudar default do filtro** de empresa: passar de "Gabardo" para **"Todas as organizações"** (a aba agora é multi-tenant por natureza). Remover o `localStorage GABARDO_DEFAULT_KEY` ou manter só como override manual.
+### Custo operacional mensal por módulo
 
-3. **Reduzir KPIs de 6 para 3**, focando em custo/perf:
-   - Custo IA total (USD)
-   - Tokens IA totais
-   - Erros de IA (com badge destrutivo se > 0)
-   
-   Remover: Visualizações, Usuários únicos, Eventos (já em Gabardo View).
+Para cada um dos módulos mapeados abaixo, somar 4 componentes:
 
-4. **Remover sub-tabs duplicadas**:
-   - ❌ Remover **"Visão geral"** (LineChart diário) — `GabardoChartsRow` já cobre
-   - ❌ Remover **"Páginas"** — `TopRoutesTable` já cobre com mais contexto
-   - ❌ Remover **"Eventos"** — já tem em Gabardo View KPI + `GabardoChartsRow`
-   - ❌ Remover **"Usuários"** (sub-tab `usuarios-uso`) — `TopUsersTable` + `GabardoUsageInsightsPanel` já cobrem com classificação
-   - ✅ Manter **"IA & Custos"** (custo por modelo, por function, por empresa, latência, erros) — promover a default
-   - ✅ Manter **"Heatmap"** — não existe em Gabardo View
-   - ✅ Manter **"Rotas mortas"** — auditoria de código, não-uso
+```text
+Custo mensal módulo = IA runtime + Infra alocada + Terceiros + Bolsa manutenção
+```
 
-5. **Renomear a aba** no `PlatformAdminDashboard.tsx` de **"Uso & Custos"** para **"Custos & Infra IA"** (deixa claro o foco).
+- **IA runtime**: projeção mensal a partir do `ai_usage_logs` (últimos 30/90 dias) atribuído ao módulo via nome da edge function. 19 edge functions chamam IA.
+- **Infra**: rateio do custo Supabase (DB, storage, edge invocations, bandwidth) por % de tabelas/storage do módulo.
+- **Terceiros**: domínio `daton.com.br`, e-mail transacional, ViaCEP (grátis), OCR MTR, Perplexity (legislação).
+- **Manutenção evolutiva**: bolsa sugerida de horas/mês × R$50 por módulo, dimensionada pela criticidade e taxa de mudança.
 
-### Arquivos afetados
+### Mapa de módulos (capítulos do PDF)
 
-- `src/components/platform/UsageAnalyticsTab.tsx` — refator principal (corte de ~250 linhas)
-- `src/pages/PlatformAdminDashboard.tsx` — renomear o trigger da aba
+Baseado em `src/components/`, `src/pages/` e edge functions:
 
-### Resultado esperado
+| Módulo | Componentes-chave |
+|---|---|
+| SGQ / ISO 9001 | document control, audits, NCs, ações corretivas |
+| LAIA / ISO 14001 | sectors, assessments, revisions |
+| Licenciamento ambiental | licenses, renovações, compliance profiles, legislações |
+| Resíduos & MTR | waste logs, OCR de MTR, fornecedores |
+| Emissões GEE & Água | inventários, monitoramento |
+| Social / RH | employees, training, succession, indicadores |
+| Governança / ESG | materialidade, GRI wizard, ROI ESG |
+| Financeiro | contas a pagar/receber, plano de contas, lançamentos |
+| Inteligência & IA | daton-ai-chat, insights engine, learning engine |
+| Plataforma & Admin | onboarding, RBAC, multi-tenant, platform admin |
+| Infra transversal | auth, notificações, storage, design system |
 
-- **Gabardo View** = "quem usou o quê, por quanto tempo, qual feature adotou" (negócio).
-- **Custos & Infra IA** = "quanto custou, qual modelo, qual function, quais rotas estão mortas, quando bate o pico" (técnico).
+## Entregável
 
-Sem sobreposição, cada aba com propósito único e screenshot-ready.
+PDF de ~12–18 páginas em `/mnt/documents/daton-analise-custo-gabardo.pdf` com:
 
-## Pergunta antes de implementar
+1. **Capa** — Daton, cliente Gabardo, data, escopo do orçamento.
+2. **Sumário executivo** — 1 página: total investido (faixa R$), custo mensal recomendado, ROI vs reconstrução em software house.
+3. **Metodologia** — como calculamos (transparência para o cliente).
+4. **Investimento já realizado** — tabela por módulo (horas estimadas, R$ horas, IA build, total) + gráfico de barras.
+5. **Custo operacional mensal** — tabela por módulo (IA runtime, infra, terceiros, manutenção, total) + gráfico de pizza.
+6. **Detalhamento por módulo** — 1 parágrafo + sub-tabela cada (11 módulos).
+7. **Premissas e limitações** — câmbio USD/BRL, faixa de produtividade, escopo do que não está incluso (treinamento, suporte N1).
+8. **Anexo** — dados brutos: top 10 edge functions por custo de IA, totais de LOC, lista de 75 edge functions.
 
-A edge function `get-usage-summary` continua sendo usada pelo que sobra (IA, heatmap, dead routes, custo por empresa) — **não precisa mexer no backend**. Confirma que posso prosseguir com esse corte?
+Identidade visual Daton (Carbon Emerald `#00bf63`, fundo `#0B1210`, Plus Jakarta Sans).
+
+## Detalhes técnicos
+
+- Script Python em `/tmp/gen_cost_report.py` usando ReportLab (Platypus) para gerar o PDF com tabelas, gráficos (matplotlib) e branding.
+- Coletar números via:
+  - `wc -l` por subpasta de `src/components/` e `src/pages/` para LOC por módulo.
+  - `supabase--read_query` em `ai_usage_logs` agrupado por `function_name` (precisa confirmar se a coluna existe; senão usar `metadata`).
+  - Tabela hardcoded de mapeamento `edge_function → módulo` no script.
+- Câmbio USD/BRL: usar valor fixo (ex.: R$5,00) declarado nas premissas — sem dependência de API externa.
+- QA visual obrigatório: converter PDF para imagens com `pdftoppm` e revisar cada página antes de entregar.
+- Versionar como `_v1`, `_v2` se o cliente pedir ajustes.
+
+## Fora de escopo
+
+- Não altera código da aplicação.
+- Não inclui análise de receita/preço de venda ao cliente final (só custo).
+- Não rastreia retroativamente custo de IA do build no Lovable — entra como estimativa declarada.
