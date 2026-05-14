@@ -1064,7 +1064,7 @@ const AppContent = () => {
 const App = () => (
   <HelmetProvider>
     <ErrorBoundary>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+      <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false} disableTransitionOnChange>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <CompanyProvider>
