@@ -735,6 +735,132 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_runs: {
+        Row: {
+          agent_name: string
+          branch_id: string | null
+          company_id: string | null
+          error_text: string | null
+          finished_at: string | null
+          id: string
+          input: Json
+          output: Json | null
+          started_at: string
+          status: string
+          total_cost_usd: number
+          total_steps: number
+          triggered_by: string | null
+        }
+        Insert: {
+          agent_name: string
+          branch_id?: string | null
+          company_id?: string | null
+          error_text?: string | null
+          finished_at?: string | null
+          id?: string
+          input?: Json
+          output?: Json | null
+          started_at?: string
+          status?: string
+          total_cost_usd?: number
+          total_steps?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          agent_name?: string
+          branch_id?: string | null
+          company_id?: string | null
+          error_text?: string | null
+          finished_at?: string | null
+          id?: string
+          input?: Json
+          output?: Json | null
+          started_at?: string
+          status?: string
+          total_cost_usd?: number
+          total_steps?: number
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_runs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_runs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_runs_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_steps: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          duration_ms: number | null
+          error_text: string | null
+          id: string
+          input: Json | null
+          output: Json | null
+          run_id: string
+          step_index: number
+          step_type: string
+          tokens_completion: number | null
+          tokens_prompt: number | null
+          tool_name: string | null
+        }
+        Insert: {
+          cost_usd?: number
+          created_at?: string
+          duration_ms?: number | null
+          error_text?: string | null
+          id?: string
+          input?: Json | null
+          output?: Json | null
+          run_id: string
+          step_index: number
+          step_type: string
+          tokens_completion?: number | null
+          tokens_prompt?: number | null
+          tool_name?: string | null
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          duration_ms?: number | null
+          error_text?: string | null
+          id?: string
+          input?: Json | null
+          output?: Json | null
+          run_id?: string
+          step_index?: number
+          step_type?: string
+          tokens_completion?: number | null
+          tokens_prompt?: number | null
+          tool_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_chat_conversations: {
         Row: {
           company_id: string
@@ -4946,6 +5072,61 @@ export type Database = {
           {
             foreignKeyName: "compliance_tasks_responsible_user_id_fkey"
             columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_update_letters: {
+        Row: {
+          branch_id: string
+          company_id: string
+          content: Json
+          generated_at: string
+          generated_by: string | null
+          id: string
+          reference_month: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          company_id: string
+          content?: Json
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          reference_month: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          company_id?: string
+          content?: Json
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          reference_month?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_update_letters_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_update_letters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_update_letters_generated_by_fkey"
+            columns: ["generated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -15222,6 +15403,70 @@ export type Database = {
           },
         ]
       }
+      legislation_change_events: {
+        Row: {
+          change_type: string
+          company_id: string
+          confidence: number | null
+          created_at: string
+          detected_at: string
+          diff_summary: string
+          id: string
+          legislation_id: string
+          raw_response: Json | null
+          source_url: string | null
+          watchdog_run_id: string | null
+        }
+        Insert: {
+          change_type: string
+          company_id: string
+          confidence?: number | null
+          created_at?: string
+          detected_at?: string
+          diff_summary: string
+          id?: string
+          legislation_id: string
+          raw_response?: Json | null
+          source_url?: string | null
+          watchdog_run_id?: string | null
+        }
+        Update: {
+          change_type?: string
+          company_id?: string
+          confidence?: number | null
+          created_at?: string
+          detected_at?: string
+          diff_summary?: string
+          id?: string
+          legislation_id?: string
+          raw_response?: Json | null
+          source_url?: string | null
+          watchdog_run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legislation_change_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_change_events_legislation_id_fkey"
+            columns: ["legislation_id"]
+            isOneToOne: false
+            referencedRelation: "legislations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_change_events_watchdog_run_id_fkey"
+            columns: ["watchdog_run_id"]
+            isOneToOne: false
+            referencedRelation: "watchdog_run_audit"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legislation_compliance_profiles: {
         Row: {
           branch_id: string | null
@@ -15634,6 +15879,9 @@ export type Database = {
       }
       legislations: {
         Row: {
+          ai_ingested: boolean
+          ai_ingestion_meta: Json | null
+          ai_source_url: string | null
           applicability_tags: Json | null
           company_id: string
           compliance_details: string | null
@@ -15670,6 +15918,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_ingested?: boolean
+          ai_ingestion_meta?: Json | null
+          ai_source_url?: string | null
           applicability_tags?: Json | null
           company_id: string
           compliance_details?: string | null
@@ -15706,6 +15957,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_ingested?: boolean
+          ai_ingestion_meta?: Json | null
+          ai_source_url?: string | null
           applicability_tags?: Json | null
           company_id?: string
           compliance_details?: string | null
@@ -26135,6 +26389,82 @@ export type Database = {
           volume_treated?: number | null
         }
         Relationships: []
+      }
+      watchdog_run_audit: {
+        Row: {
+          agent_run_id: string | null
+          change_events_created: number
+          duration_ms: number | null
+          error_text: string | null
+          finished_at: string | null
+          id: string
+          normas_checked: number
+          normas_total: number
+          normas_unique: number
+          scope: string
+          scope_company_id: string | null
+          started_at: string
+          status: string
+          total_cost_usd: number
+          triggered_by: string | null
+        }
+        Insert: {
+          agent_run_id?: string | null
+          change_events_created?: number
+          duration_ms?: number | null
+          error_text?: string | null
+          finished_at?: string | null
+          id?: string
+          normas_checked?: number
+          normas_total?: number
+          normas_unique?: number
+          scope?: string
+          scope_company_id?: string | null
+          started_at?: string
+          status?: string
+          total_cost_usd?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          agent_run_id?: string | null
+          change_events_created?: number
+          duration_ms?: number | null
+          error_text?: string | null
+          finished_at?: string | null
+          id?: string
+          normas_checked?: number
+          normas_total?: number
+          normas_unique?: number
+          scope?: string
+          scope_company_id?: string | null
+          started_at?: string
+          status?: string
+          total_cost_usd?: number
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watchdog_run_audit_agent_run_id_fkey"
+            columns: ["agent_run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watchdog_run_audit_scope_company_id_fkey"
+            columns: ["scope_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watchdog_run_audit_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       water_consumption_data: {
         Row: {
