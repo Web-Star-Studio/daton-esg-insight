@@ -37,6 +37,16 @@ export async function getLAIASectors(branchId?: string): Promise<LAIASector[]> {
   return (data ?? []) as LAIASector[];
 }
 
+const SECTOR_CODE_DUPLICATE_MSG =
+  "Já existe um setor com esse código nesta unidade. Use um código diferente.";
+
+// Postgres unique_violation; lança erro amigável para o usuário em vez do
+// SQL cru ("duplicate key value violates unique constraint…").
+function mapSectorWriteError(error: { code?: string; message?: string }): Error {
+  if (error.code === "23505") return new Error(SECTOR_CODE_DUPLICATE_MSG);
+  return new Error(error.message ?? "Erro ao salvar setor");
+}
+
 export async function createLAIASector(sector: { code: string; name: string; description?: string; branch_id?: string }): Promise<LAIASector> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário não autenticado");
@@ -61,7 +71,7 @@ export async function createLAIASector(sector: { code: string; name: string; des
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) throw mapSectorWriteError(error);
   return data as LAIASector;
 }
 
@@ -78,7 +88,7 @@ export async function updateLAIASector(id: string, sector: Partial<LAIASector>):
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) throw mapSectorWriteError(error);
   return data as LAIASector;
 }
 

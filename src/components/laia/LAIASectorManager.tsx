@@ -88,9 +88,17 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
+  const nextSectorCode = useMemo(() => {
+    const maxNumeric = sortedSectors.reduce((max, s) => {
+      const n = parseInt(s.code, 10);
+      return Number.isFinite(n) && n > max ? n : max;
+    }, 0);
+    return String(maxNumeric + 1);
+  }, [sortedSectors]);
+
   const handleOpenCreate = () => {
     setEditingSector(null);
-    setFormData({ code: "", name: "", description: "" });
+    setFormData({ code: nextSectorCode, name: "", description: "" });
     setIsDialogOpen(true);
   };
 
@@ -105,12 +113,17 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
   };
 
   const handleSubmit = async () => {
-    if (editingSector) {
-      await updateMutation.mutateAsync({ id: editingSector.id, data: formData });
-    } else {
-      await createMutation.mutateAsync(formData);
+    try {
+      if (editingSector) {
+        await updateMutation.mutateAsync({ id: editingSector.id, data: formData });
+      } else {
+        await createMutation.mutateAsync(formData);
+      }
+      setIsDialogOpen(false);
+    } catch {
+      // Toast já é exibido pelo hook (onError); manter o dialog aberto para
+      // o usuário corrigir o código duplicado ou outro problema.
     }
-    setIsDialogOpen(false);
   };
 
   const handleDelete = async () => {
@@ -339,7 +352,9 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
                 maxLength={10}
               />
               <p className="text-xs text-muted-foreground">
-                Código único do setor (máximo 10 caracteres)
+                {editingSector
+                  ? "Código único do setor (máximo 10 caracteres)"
+                  : "Sugerido automaticamente. Você pode trocar por um código personalizado (ex.: ADM, PROD)."}
               </p>
             </div>
 
