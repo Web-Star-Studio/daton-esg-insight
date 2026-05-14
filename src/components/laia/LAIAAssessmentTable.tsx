@@ -73,19 +73,12 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
   const [activityFilter, setActivityFilter] = useState<string>("all");
   const [filters, setFilters] = useState<{
     branch_id?: string;
-    sector_id?: string;
     category?: string;
     significance?: string;
     status?: string;
   }>({ branch_id: branchId });
 
   const { data: sectors } = useLAIASectors(branchId);
-  const sectorOptions = useMemo(() => {
-    if (!sectors) return [];
-    return [...sectors]
-      .filter((s) => s.is_active)
-      .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
-  }, [sectors]);
 
   useEffect(() => {
     if (initialFilters) {
@@ -107,16 +100,24 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
   const approveMutation = useApproveLAIAAssessment();
   const markPendenteMutation = useMarkLAIAAssessmentAsPendente();
 
+  // União de atividades vindas de assessments existentes + nomes dos setores
+  // ativos. O sector.name é rotulado como "Atividade" no cadastro de setor,
+  // então setores recém-criados (ainda sem assessment) também devem aparecer
+  // como opção de filtro — selecionar apenas resulta em lista vazia, o que
+  // é informativo ("essa atividade ainda não tem avaliações").
   const uniqueActivities = useMemo(() => {
-    if (!assessments) return [];
-    const activities = [...new Set(assessments.map(a => a.activity_operation).filter(Boolean))];
-    return activities.sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  }, [assessments]);
+    const fromAssessments = assessments?.map(a => a.activity_operation) ?? [];
+    const fromSectors = sectors?.filter(s => s.is_active).map(s => s.name) ?? [];
+    const all = [...fromAssessments, ...fromSectors]
+      .map(v => v?.trim())
+      .filter((v): v is string => !!v);
+    return [...new Set(all)].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [assessments, sectors]);
   const deleteMutation = useDeleteLAIAAssessment();
   const bulkDeleteMutation = useBulkDeleteLAIAAssessments();
 
   const filteredAssessments = assessments?.filter((a) => {
-    if (activityFilter !== "all" && a.activity_operation !== activityFilter) return false;
+    if (activityFilter !== "all" && a.activity_operation?.trim() !== activityFilter) return false;
     if (!search) return true;
     const searchLower = search.toLowerCase();
     return (
@@ -174,7 +175,6 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
 
   const hasActiveFilters =
     activityFilter !== "all" ||
-    !!filters.sector_id ||
     !!filters.category ||
     !!filters.significance ||
     !!search;
@@ -230,25 +230,6 @@ export function LAIAAssessmentTable({ branchId, onView, onEdit, initialFilters, 
                 className="pl-9"
               />
             </div>
-
-            <Select
-              value={filters.sector_id || "all"}
-              onValueChange={(v) =>
-                setFilters({ ...filters, sector_id: v === "all" ? undefined : v })
-              }
-            >
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Setor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Setores</SelectItem>
-                {sectorOptions.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.code} — {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
             <Select
               value={activityFilter}
