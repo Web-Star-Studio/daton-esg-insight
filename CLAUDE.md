@@ -83,7 +83,7 @@ The `build` task uses `dependsOn: ["^build"]` and caches `NEXT_PUBLIC_*` and `EX
 - **Root scripts must use `turbo run`** (not the `turbo` shorthand) per Turborepo best practices.
 - **CI uses `--affected`** to only run tasks on changed packages.
 
-## Mandatory Code Review Workflow (CodeRabbit)
+## Mandatory Code Review Workflow
 
 Every time you write or modify actual code (not docs-only or config-only changes), you **must** follow this workflow before moving on to the next task:
 
@@ -93,7 +93,17 @@ Every time you write or modify actual code (not docs-only or config-only changes
 4. **If CodeRabbit raises issues**: corrija na mesma branch, faça push, e aguarde a revisão de follow-up.
 5. **If CodeRabbit has no issues** (ou todas as issues foram resolvidas): merge o PR e siga para a próxima tarefa.
 
-**Do not skip this workflow.** Código que não passou pela revisão do CodeRabbit não deve ser mergeado.
+### Fallback quando CodeRabbit não está disponível
+
+Se CodeRabbit estiver indisponível (rate limit excedido, créditos esgotados, conta fora do ar, ou qualquer outro motivo que impeça a revisão automática), use o skill **`/code-review:code-review`** local como substituto:
+
+- Invoque-o passando o número do PR (ou a branch) como argumento.
+- Trate os achados com o mesmo rigor de uma review CodeRabbit: corrija o que for bloqueante, justifique skips, e só mergee depois.
+- Registre no comentário do PR ou no commit que a revisão foi feita via `/code-review:code-review` para auditoria.
+
+A regra "código não passa por merge sem revisão" continua valendo — só muda quem executa a revisão.
+
+**Do not skip this workflow.** Código que não passou por revisão (CodeRabbit ou `/code-review:code-review`) não deve ser mergeado.
 
 ## EAS Workflows
 
