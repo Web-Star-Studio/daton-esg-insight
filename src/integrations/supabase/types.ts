@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      _laia_sectors_rename_audit_20260514: {
+        Row: {
+          alternative_activities: Json | null
+          branch_id: string | null
+          code: string | null
+          company_id: string | null
+          new_name: string | null
+          old_name: string | null
+          picked_occurrences: number | null
+          renamed_at: string
+          sector_id: string
+        }
+        Insert: {
+          alternative_activities?: Json | null
+          branch_id?: string | null
+          code?: string | null
+          company_id?: string | null
+          new_name?: string | null
+          old_name?: string | null
+          picked_occurrences?: number | null
+          renamed_at?: string
+          sector_id: string
+        }
+        Update: {
+          alternative_activities?: Json | null
+          branch_id?: string | null
+          code?: string | null
+          company_id?: string | null
+          new_name?: string | null
+          old_name?: string | null
+          picked_occurrences?: number | null
+          renamed_at?: string
+          sector_id?: string
+        }
+        Relationships: []
+      }
       accounting_entries: {
         Row: {
           accounting_date: string
