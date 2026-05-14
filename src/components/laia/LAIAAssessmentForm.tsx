@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,6 +143,12 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
   const { toast } = useToast();
   const { data: sectors } = useLAIASectors(branchId);
   const { data: branches } = useBranches();
+
+  const activeSectorsSorted = useMemo(() => {
+    return (sectors ?? [])
+      .filter((s) => s.is_active)
+      .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+  }, [sectors]);
   const createMutation = useCreateLAIAAssessment();
   const updateMutation = useUpdateLAIAAssessment();
   const isEditing = !!initialData;
@@ -375,16 +381,16 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
                 onValueChange={(v) => updateField("sector_id", v)}
               >
                 <SelectTrigger>
-                  <SelectValue 
+                  <SelectValue
                     placeholder={
-                      sectors?.filter(s => s.is_active).length 
-                        ? "Selecione o setor" 
+                      activeSectorsSorted.length
+                        ? "Selecione o setor"
                         : "Nenhum setor disponível - cadastre na aba Setores"
-                    } 
+                    }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {sectors?.filter(s => s.is_active).map((s) => (
+                  {activeSectorsSorted.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.code} - {s.name}
                     </SelectItem>
