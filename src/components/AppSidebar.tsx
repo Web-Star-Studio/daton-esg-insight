@@ -10,6 +10,7 @@ import { useDemo } from "@/contexts/DemoContext"
 import { useBranches } from "@/services/branches"
 import { getBranchDisplayLabel } from "@/utils/branchDisplay"
 import { MigratedBadge } from "@/components/sidebar/MigratedBadge"
+import { DECLARED_ROUTES } from "@/constants/declaredRoutes"
 import {
   Sidebar,
   SidebarContent,
@@ -415,6 +416,14 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path || currentPath === `${demoPrefix}${path}`
   const prefixPath = (path: string) => path === '#' ? '#' : `${demoPrefix}${path}`
 
+  // Detecta itens de menu cujo path NÃO existe como <Route> declarado em App.tsx.
+  // Marca com um ponto azul ao lado para verificação visual de links potencialmente quebrados.
+  const declaredSet = useMemo(() => new Set<string>(DECLARED_ROUTES as readonly string[]), [])
+  const isOrphanPath = (path: string) => {
+    if (!path || path === '#' || path === '/') return false
+    return !declaredSet.has(path)
+  }
+
   // Auto-expand category if active page belongs to it
   useEffect(() => {
     const environmentalPaths = ['/monitoramento-esg', '/monitoramento-agua', '/monitoramento-energia', '/monitoramento-emissoes', '/monitoramento-residuos', '/inventario-gee', '/dashboard-ghg', '/projetos-carbono', '/residuos', '/residuos/filial', '/residuos/geral', '/financeiro/residuos', '/licenciamento', '/metas-sustentabilidade']
@@ -517,6 +526,13 @@ export function AppSidebar() {
                 </span>
               )}
               {!collapsed && <MigratedBadge path={item.path} />}
+              {!collapsed && isOrphanPath(item.path) && (
+                <span
+                  className="inline-block h-2 w-2 rounded-full bg-blue-500 flex-shrink-0"
+                  title="Rota não encontrada em DECLARED_ROUTES — verificar"
+                  aria-label="Rota possivelmente quebrada"
+                />
+              )}
             </div>
           </NavigationTooltip>
 
@@ -589,6 +605,13 @@ export function AppSidebar() {
                       </span>
                     )}
                     {!collapsed && <MigratedBadge path={item.path} />}
+                    {!collapsed && isOrphanPath(item.path) && (
+                      <span
+                        className="inline-block h-2 w-2 rounded-full bg-blue-500 flex-shrink-0"
+                        title="Rota não encontrada em DECLARED_ROUTES — verificar"
+                        aria-label="Rota possivelmente quebrada"
+                      />
+                    )}
                   </div>
                 </NavigationTooltip>
 
@@ -670,6 +693,13 @@ export function AppSidebar() {
                 </span>
               )}
               {!collapsed && <MigratedBadge path={item.path} />}
+              {!collapsed && isOrphanPath(item.path) && (
+                <span
+                  className="inline-block h-2 w-2 rounded-full bg-blue-500 flex-shrink-0"
+                  title="Rota não encontrada em DECLARED_ROUTES — verificar"
+                  aria-label="Rota possivelmente quebrada"
+                />
+              )}
             </div>
           </NavigationTooltip>
 
