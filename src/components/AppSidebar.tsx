@@ -526,6 +526,13 @@ export function AppSidebar() {
                 </span>
               )}
               {!collapsed && <MigratedBadge path={item.path} />}
+              {!collapsed && isOrphanPath(item.path) && (
+                <span
+                  className="inline-block h-2 w-2 rounded-full bg-blue-500 flex-shrink-0"
+                  title="Rota não encontrada em DECLARED_ROUTES — verificar"
+                  aria-label="Rota possivelmente quebrada"
+                />
+              )}
             </div>
           </NavigationTooltip>
 
@@ -598,6 +605,13 @@ export function AppSidebar() {
                       </span>
                     )}
                     {!collapsed && <MigratedBadge path={item.path} />}
+                    {!collapsed && isOrphanPath(item.path) && (
+                      <span
+                        className="inline-block h-2 w-2 rounded-full bg-blue-500 flex-shrink-0"
+                        title="Rota não encontrada em DECLARED_ROUTES — verificar"
+                        aria-label="Rota possivelmente quebrada"
+                      />
+                    )}
                   </div>
                 </NavigationTooltip>
 
@@ -679,6 +693,13 @@ export function AppSidebar() {
                 </span>
               )}
               {!collapsed && <MigratedBadge path={item.path} />}
+              {!collapsed && isOrphanPath(item.path) && (
+                <span
+                  className="inline-block h-2 w-2 rounded-full bg-blue-500 flex-shrink-0"
+                  title="Rota não encontrada em DECLARED_ROUTES — verificar"
+                  aria-label="Rota possivelmente quebrada"
+                />
+              )}
             </div>
           </NavigationTooltip>
 
