@@ -814,15 +814,44 @@ export function AppSidebar() {
       .filter(section => section.items.length > 0)
   }, [isSectionVisible, isEsgCategoryVisible, branches, hasBetaAccess])
 
+  // Remove menu items whose path is orphan (route não declarada ou redirecionada
+  // para /dashboard por módulo desabilitado). Categorias (path === "#") são
+  // mantidas se ainda tiverem subItems válidos.
+  const prunedSections = useMemo(() => {
+    const isOrphan = (path: string) => {
+      if (!path || path === '#' || path === '/') return false
+      return !declaredSet.has(path) || isRouteDisabled(path)
+    }
+    const pruneItems = (items: MenuItem[]): MenuItem[] => {
+      return items
+        .map(item => {
+          const subItems = item.subItems ? pruneItems(item.subItems) : undefined
+          return { ...item, subItems }
+        })
+        .filter(item => {
+          if (item.path === '#') {
+            return (item.subItems?.length ?? 0) > 0
+          }
+          if (isOrphan(item.path)) {
+            return (item.subItems?.length ?? 0) > 0
+          }
+          return true
+        })
+    }
+    return modulesFilteredSections
+      .map(section => ({ ...section, items: pruneItems(section.items) }))
+      .filter(section => section.items.length > 0)
+  }, [modulesFilteredSections, declaredSet])
+
   const filteredSections = searchQuery.trim()
-    ? modulesFilteredSections
+    ? prunedSections
       .filter(section => isPlatformAdmin || section.id !== 'platform-admin')
       .map(section => ({
         ...section,
         items: filterMenuItems(section.items)
       }))
       .filter(section => section.items.length > 0)
-    : modulesFilteredSections.filter(section => isPlatformAdmin || section.id !== 'platform-admin')
+    : prunedSections.filter(section => isPlatformAdmin || section.id !== 'platform-admin')
 
   return (
     <Sidebar
