@@ -29,6 +29,8 @@ const LegislationsHub: React.FC = () => {
     status: "",
     responsibleUserId: "",
     onlyFavorites: false,
+    hasAlert: false,
+    pendingOnly: false,
   });
 
   // Combine tab filter with other filters
@@ -60,6 +62,8 @@ const LegislationsHub: React.FC = () => {
       status: "",
       responsibleUserId: "",
       onlyFavorites: false,
+      hasAlert: false,
+      pendingOnly: false,
     });
   };
 
@@ -67,19 +71,30 @@ const LegislationsHub: React.FC = () => {
     if (filter.type === "all") {
       handleClearFilters();
     } else if (filter.type === "alerts") {
-      setFilters(prev => ({ ...prev, applicability: "", status: "vencida" }));
-      return;
-    } else if (filter.type === "pending") {
+      // has_alert é coluna boolean — não tem valor "vencida" em overall_status.
       setFilters(prev => ({
         ...prev,
         applicability: "",
-        status: "pendente",
+        status: "",
+        pendingOnly: false,
+        hasAlert: true,
+      }));
+    } else if (filter.type === "pending") {
+      // Espelha o contador pendingTotal: applicability='pending' OU status='pending'.
+      setFilters(prev => ({
+        ...prev,
+        applicability: "",
+        status: "",
+        hasAlert: false,
+        pendingOnly: true,
       }));
     } else {
       setFilters(prev => ({
         ...prev,
         applicability: filter.applicability || "",
         status: filter.status || "",
+        hasAlert: false,
+        pendingOnly: false,
       }));
     }
     
