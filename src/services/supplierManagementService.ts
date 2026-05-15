@@ -598,7 +598,7 @@ export async function updateManagedSupplier(id: string, updates: Partial<Managed
     .from('supplier_management')
     .update(supplierUpdates)
     .eq('id', id)
-    .select()
+    .select(SAFE_SUPPLIER_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -681,12 +681,16 @@ export async function getSupplierConnections(): Promise<SupplierConnection[]> {
 
   const companyId = await getCurrentUserCompanyId();
 
+  // Embed apenas colunas básicas dos fornecedores ligados (suficiente para a UI
+  // de conexões). Wildcard quebraria com REVOKE de columns sensíveis.
+  const supplierEmbedCols =
+    'id, company_id, person_type, full_name, company_name, cnpj, cpf, nickname, status';
   const { data, error } = await supabase
     .from('supplier_connections')
     .select(`
       *,
-      primary_supplier:supplier_management!supplier_connections_primary_supplier_id_fkey(*),
-      connected_supplier:supplier_management!supplier_connections_connected_supplier_id_fkey(*)
+      primary_supplier:supplier_management!supplier_connections_primary_supplier_id_fkey(${supplierEmbedCols}),
+      connected_supplier:supplier_management!supplier_connections_connected_supplier_id_fkey(${supplierEmbedCols})
     `)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false });

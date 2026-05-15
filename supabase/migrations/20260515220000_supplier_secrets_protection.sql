@@ -18,17 +18,35 @@
 BEGIN;
 
 -- =============================================================================
--- 1) REVOKE column-level SELECT
+-- 1) Substituir o GRANT table-level SELECT por GRANT coluna-nivel só nas colunas
+--    seguras. Em Postgres, table-level e column-level são aditivos (OR), então
+--    apenas REVOKE column-level seria no-op enquanto o table-level existir.
+--    Aqui derrubamos o table-level e re-emitimos GRANT explícito apenas pelas
+--    colunas seguras. password_hash, temporary_password e access_code ficam
+--    inacessíveis para o role `authenticated` (qualquer SELECT direto falha
+--    com "permission denied for column ...").
+--
+--    Também aplicamos o mesmo a `anon` (esse role nunca deveria ler a tabela,
+--    mas o GRANT default da Supabase deixou aberto historicamente; RLS bloqueia
+--    em prática, mas defesa em profundidade).
 -- =============================================================================
-REVOKE SELECT (password_hash, temporary_password, access_code)
-  ON public.supplier_management
-  FROM authenticated;
+REVOKE SELECT ON public.supplier_management FROM authenticated;
+REVOKE SELECT ON public.supplier_management FROM anon;
 
--- Garantir explicitamente que service_role mantém o acesso (default geralmente
--- já permite, mas registramos para evitar regressão silenciosa).
-GRANT SELECT (password_hash, temporary_password, access_code)
-  ON public.supplier_management
-  TO service_role;
+GRANT SELECT (
+  id, company_id, person_type, full_name, cpf, company_name, cnpj,
+  responsible_name, nickname, full_address, cep, street, street_number,
+  neighborhood, city, state, phone_1, phone_2, email, registration_date,
+  status, created_at, updated_at, must_change_password, last_login_at,
+  login_attempts, is_locked, portal_enabled, supply_failure_count,
+  last_failure_date, auto_inactivation_reason, auto_inactivated_at,
+  reactivation_blocked_until, inactivation_reason, status_changed_at,
+  status_changed_by
+) ON public.supplier_management TO authenticated;
+
+-- service_role bypassa RLS e tem table-level SELECT por default da Supabase;
+-- nada precisa ser ajustado aqui (edge functions supplier-auth etc. continuam
+-- lendo todas as colunas).
 
 -- =============================================================================
 -- 2) RPC para admins consultarem credenciais
