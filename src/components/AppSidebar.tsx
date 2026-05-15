@@ -10,6 +10,7 @@ import { useDemo } from "@/contexts/DemoContext"
 import { useBranches } from "@/services/branches"
 import { getBranchDisplayLabel } from "@/utils/branchDisplay"
 import { MigratedBadge } from "@/components/sidebar/MigratedBadge"
+import { DECLARED_ROUTES } from "@/constants/declaredRoutes"
 import {
   Sidebar,
   SidebarContent,
@@ -414,6 +415,14 @@ export function AppSidebar() {
   const currentPath = location.pathname
   const isActive = (path: string) => currentPath === path || currentPath === `${demoPrefix}${path}`
   const prefixPath = (path: string) => path === '#' ? '#' : `${demoPrefix}${path}`
+
+  // Detecta itens de menu cujo path NÃO existe como <Route> declarado em App.tsx.
+  // Marca com um ponto azul ao lado para verificação visual de links potencialmente quebrados.
+  const declaredSet = useMemo(() => new Set<string>(DECLARED_ROUTES as readonly string[]), [])
+  const isOrphanPath = (path: string) => {
+    if (!path || path === '#' || path === '/') return false
+    return !declaredSet.has(path)
+  }
 
   // Auto-expand category if active page belongs to it
   useEffect(() => {
