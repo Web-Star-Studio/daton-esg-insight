@@ -202,7 +202,7 @@ export async function getFailureStats(): Promise<{
   // Fornecedores em risco
   const { count: atRiskCount } = await supabase
     .from('supplier_management')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('company_id', companyId)
     .eq('status', 'Ativo')
     .gte('supply_failure_count', 2);
@@ -210,7 +210,7 @@ export async function getFailureStats(): Promise<{
   // Fornecedores inativados automaticamente
   const { count: inactivatedCount } = await supabase
     .from('supplier_management')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('company_id', companyId)
     .not('auto_inactivated_at', 'is', null);
 
