@@ -188,7 +188,7 @@ const CORE_THEMES: Theme[] = [
             label: "Outorga de Direito de Uso de Recurso Hídrico",
             tags: ["outorga_hidrica"],
           },
-          { id: "avcb", label: "AVCB", tags: ["avcb"] },
+          { id: "avcb", label: "AVCB/CLCB", tags: ["avcb", "clcb"] },
           {
             id: "alvara_sanitario",
             label: "Alvarás Sanitários de Ambulatório e Refeitório",
@@ -220,6 +220,36 @@ const CORE_THEMES: Theme[] = [
             id: "lic_fornecedores",
             label: "Licenças e Outros Docs. de Fornecedores / Prestadores de Serviço",
             tags: ["docs_fornecedores"],
+          },
+          {
+            id: "dispensa_lic_ambiental",
+            label: "Dispensa de Licença Ambiental",
+            tags: ["licenciamento_dispensa"],
+          },
+          {
+            id: "pgrs",
+            label: "PGRS – Plano de Gerenciamento de Resíduos Sólidos",
+            tags: ["pgrs"],
+          },
+          {
+            id: "aso",
+            label: "ASO – Atestado de Saúde Ocupacional",
+            tags: ["aso"],
+          },
+          {
+            id: "pgr",
+            label: "PGR – Programa de Gerenciamento de Riscos (NR-1)",
+            tags: ["pgr"],
+          },
+          {
+            id: "spda",
+            label: "SPDA – Sistema de Proteção contra Descargas Atmosféricas",
+            tags: ["spda"],
+          },
+          {
+            id: "pcmso",
+            label: "PCMSO – Programa de Controle Médico de Saúde Ocupacional (NR-7)",
+            tags: ["pcmso"],
           },
           { id: "nao_aplica", label: "Não Se Aplica" },
         ],
