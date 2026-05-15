@@ -527,8 +527,27 @@ async function handle(req: Request): Promise<Response> {
       ? `Apenas ${matched.length} matches SQL pra ${tags.length} tags — provavelmente alguns temas estão sub-cobertos.`
       : `Catálogo já cobre bem (${matched.length} matches). Foque em normas marginais, novidades regulatórias ou temas pouco padronizados.`;
 
-    const systemPrompt = `Você é analista jurídico brasileiro. Sua missão é COMPLEMENTAR a camada determinística (overlap SQL de tags) com sugestões de normas que podem não estar no catálogo OU não casaram via tags.
+    const isLicensingInProgress = tags.includes("licenciamento_em_andamento");
+    const inProgressBlock = isLicensingInProgress
+      ? `
+CONTEXTO ESPECIAL — LICENCIAMENTO EM ANDAMENTO:
+A unidade está em PROCESSO de licenciamento (LP/LI/LO ainda não emitida).
+ANTES de buscar, chame inspect_compliance_response em 'lic.q1_5' (protocolo),
+'lic.q1_6' (órgão licenciador), 'lic.q1_7' (data protocolo), 'lic.q1_8' (fase).
+Use o órgão e a fase pra montar queries específicas no search_perplexity:
+  - condicionantes típicas da fase atual (LP/LI/LO)
+  - prazos legais de manifestação do órgão e validade da fase atual
+  - requisitos durante o trâmite (regras de operação provisória, TAC)
+  - audiências públicas obrigatórias (se LP ainda não emitida)
+  - monitoramento exigido na fase atual
+EVITE sugerir requisitos pós-LO (ex: relatórios anuais de LO, taxa anual de
+fiscalização ambiental atrelada à licença emitida) — a unidade ainda não
+está nessa fase.
+`
+      : "";
 
+    const systemPrompt = `Você é analista jurídico brasileiro. Sua missão é COMPLEMENTAR a camada determinística (overlap SQL de tags) com sugestões de normas que podem não estar no catálogo OU não casaram via tags.
+${inProgressBlock}
 PROCESSO E ORÇAMENTO (siga rigorosamente):
 1. Comece chamando query_existing_legislations pra ver o catálogo atual da branch.
 2. (Opcional) Use inspect_compliance_response pra ver respostas livres do questionário (ex.: 'inst.q4' descreve atividades em texto). Limite: 2 chamadas.

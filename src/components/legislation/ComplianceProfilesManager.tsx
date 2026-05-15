@@ -9,6 +9,7 @@ import {
   Building2,
   CheckCircle2,
   AlertCircle,
+  Clock,
   Edit2,
   ClipboardList,
   Filter,
@@ -205,6 +206,15 @@ export const ComplianceProfilesManager: React.FC<ComplianceProfilesManagerProps>
                         </Badge>
                       )}
                     </div>
+
+                    {tags.includes("licenciamento_em_andamento") && (
+                      <div className="mb-2">
+                        <Badge variant="outline" className="text-blue-600 border-blue-600">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Licenciamento em processo
+                        </Badge>
+                      </div>
+                    )}
 
                     {suppressedCount > 0 && (
                       <div className="mb-2 text-xs text-muted-foreground">
