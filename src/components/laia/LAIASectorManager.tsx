@@ -34,12 +34,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  useLAIASectors, 
-  useCreateLAIASector, 
-  useUpdateLAIASector, 
+import {
+  useLAIASectors,
+  useCreateLAIASector,
+  useUpdateLAIASector,
   useDeleteLAIASector,
-  useLAIAAssessments,
   useBulkDeleteLAIASectors,
 } from "@/hooks/useLAIA";
 import { Plus, Pencil, Trash2, Building2, X } from "lucide-react";
@@ -53,7 +52,6 @@ interface LAIASectorManagerProps {
 export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
   const navigate = useNavigate();
   const { data: sectors, isLoading } = useLAIASectors(branchId);
-  const { data: assessments } = useLAIAAssessments({ branch_id: branchId });
   const createMutation = useCreateLAIASector(branchId);
   const updateMutation = useUpdateLAIASector();
   const deleteMutation = useDeleteLAIASector();
@@ -65,20 +63,6 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
       a.code.localeCompare(b.code, undefined, { numeric: true })
     );
   }, [sectors]);
-
-  const activitiesBySector = useMemo(() => {
-    const map = new Map<string, string[]>();
-    assessments?.forEach((a) => {
-      if (a.sector_id && a.activity_operation) {
-        const existing = map.get(a.sector_id) || [];
-        if (!existing.includes(a.activity_operation)) {
-          existing.push(a.activity_operation);
-        }
-        map.set(a.sector_id, existing);
-      }
-    });
-    return map;
-  }, [assessments]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -223,28 +207,7 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
                     </TableCell>
                     <TableCell className="font-mono font-medium">{sector.code}</TableCell>
                     <TableCell className="text-primary hover:underline">
-                      <div className="flex flex-col">
-                        <span>{sector.name || "-"}</span>
-                        {(() => {
-                          const activities = activitiesBySector.get(sector.id);
-                          if (!activities || activities.length === 0) return null;
-                          const sectorNameNorm = sector.name?.trim().toLowerCase() ?? "";
-                          const extras = activities.filter(
-                            (a) => a.trim().toLowerCase() !== sectorNameNorm
-                          );
-                          if (extras.length === 0) return null;
-                          const shown = extras.slice(0, 3);
-                          const remaining = extras.length - 3;
-                          return (
-                            <span className="text-xs text-muted-foreground">
-                              {shown.join(", ")}
-                              {remaining > 0 && (
-                                <span className="ml-1">+{remaining} mais</span>
-                              )}
-                            </span>
-                          );
-                        })()}
-                      </div>
+                      {sector.name || "-"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {sector.description || "-"}
