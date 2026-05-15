@@ -378,9 +378,9 @@ export function LAIARevisoes() {
                           </div>
                         ) : (
                           <>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-medium text-sm">{rev.title}</p>
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Legado</Badge>
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <p className="font-medium text-sm truncate min-w-0">{rev.title}</p>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 flex-shrink-0">Legado</Badge>
                             </div>
                             {rev.description && (
                               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
