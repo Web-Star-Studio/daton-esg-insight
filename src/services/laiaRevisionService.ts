@@ -8,6 +8,7 @@ export interface LAIARevision {
   title: string;
   description: string | null;
   status: 'rascunho' | 'validada' | 'finalizada';
+  is_legacy: boolean;
   created_by: string | null;
   validated_by: string | null;
   validated_at: string | null;
