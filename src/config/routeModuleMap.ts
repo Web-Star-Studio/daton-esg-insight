@@ -53,10 +53,13 @@ export const ROUTE_MODULE_MAP: Record<string, string> = {
   // === Dados e Relatórios ===
   '/coleta-dados': 'dataReports',
   '/relatorios': 'dataReports',
-  '/formularios-customizados': 'dataReports',
 
   // === Configurações (apenas organizacional — /configuracao é acessível a todos) ===
   '/configuracao-organizacional': 'settings',
+  // Formulários Customizados vive na seção CONFIGURAÇÕES e é transversal
+  // (usado por Pesquisas de Satisfação, Mailing, Fornecedores). Gate pelo
+  // módulo settings, não por dataReports.
+  '/formularios-customizados': 'settings',
 };
 
 /**
