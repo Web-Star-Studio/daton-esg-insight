@@ -122,6 +122,22 @@ export interface DocumentTypeRequirement {
   supplier_type?: SupplierType;
 }
 
+// Colunas seguras de supplier_management para projeção via cliente authenticated.
+// password_hash, temporary_password e access_code estão protegidas por
+// REVOKE SELECT (migration 20260515220000_supplier_secrets_protection.sql) e
+// só são lidas por edge functions (service_role) ou pela RPC
+// get_supplier_credentials() para admins.
+const SAFE_SUPPLIER_COLUMNS = [
+  'id', 'company_id', 'person_type', 'full_name', 'cpf', 'company_name', 'cnpj',
+  'responsible_name', 'nickname', 'full_address', 'cep', 'street', 'street_number',
+  'neighborhood', 'city', 'state', 'phone_1', 'phone_2', 'email', 'registration_date',
+  'status', 'created_at', 'updated_at', 'must_change_password', 'last_login_at',
+  'login_attempts', 'is_locked', 'portal_enabled', 'supply_failure_count',
+  'last_failure_date', 'auto_inactivation_reason', 'auto_inactivated_at',
+  'reactivation_blocked_until', 'inactivation_reason', 'status_changed_at',
+  'status_changed_by',
+].join(', ');
+
 // Helper
 const isDemoMode = () => typeof window !== 'undefined' && (window as any).__DATON_DEMO_MODE__;
 
@@ -372,7 +388,7 @@ export async function getManagedSuppliers(): Promise<ManagedSupplierWithTypeCoun
   // Buscar fornecedores
   const { data: suppliers, error } = await supabase
     .from('supplier_management')
-    .select('*')
+    .select(SAFE_SUPPLIER_COLUMNS)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false });
 
@@ -419,12 +435,37 @@ export async function getManagedSuppliers(): Promise<ManagedSupplierWithTypeCoun
 export async function getManagedSupplierById(id: string): Promise<ManagedSupplier | null> {
   const { data, error } = await supabase
     .from('supplier_management')
-    .select('*')
+    .select(SAFE_SUPPLIER_COLUMNS)
     .eq('id', id)
     .maybeSingle();
 
   if (error) throw error;
   return data as ManagedSupplier | null;
+}
+
+/**
+ * Retorna access_code e must_change_password de um fornecedor. Backend impõe
+ * que o caller seja admin/super_admin/platform_admin da mesma empresa
+ * (RPC get_supplier_credentials, migration 20260515220000). Em modo demo,
+ * retorna null (não há fornecedor real).
+ */
+export async function getSupplierCredentials(
+  supplierId: string,
+): Promise<{ access_code: string | null; must_change_password: boolean } | null> {
+  if (isDemoMode()) return null;
+  const { data, error } = await supabase.rpc('get_supplier_credentials', {
+    p_supplier_id: supplierId,
+  });
+  if (error) {
+    // Caller não-admin ou cross-tenant: silenciosamente não exibe credenciais.
+    return null;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return {
+    access_code: row.access_code ?? null,
+    must_change_password: Boolean(row.must_change_password),
+  };
 }
 
 export function generateTemporaryPassword(): string {
@@ -511,18 +552,27 @@ export async function createManagedSupplier(supplierData: CreateSupplierData): P
   const companyId = await getCurrentUserCompanyId();
   const { type_ids, ...supplier } = supplierData;
 
+  // Gerados localmente — retornados ao caller via objeto ManagedSupplier, mas
+  // NÃO via SELECT pós-insert (essas colunas estão revogadas para authenticated).
+  const tempPassword = generateTemporaryPassword();
+  const accessCode = generateAccessCode();
+
   const { data, error } = await supabase
     .from('supplier_management')
     .insert({
       ...supplier,
       company_id: companyId,
-      temporary_password: generateTemporaryPassword(),
-      access_code: generateAccessCode(),
+      temporary_password: tempPassword,
+      access_code: accessCode,
     })
-    .select()
+    .select(SAFE_SUPPLIER_COLUMNS)
     .single();
 
   if (error) throw error;
+
+  // Reanexar credenciais ao retorno para a tela poder exibir uma única vez.
+  (data as ManagedSupplier).temporary_password = tempPassword;
+  (data as ManagedSupplier).access_code = accessCode;
 
   // Assign types if provided
   if (type_ids && type_ids.length > 0) {

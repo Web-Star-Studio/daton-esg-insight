@@ -51,6 +51,7 @@ import {
   getSupplierTypes,
   getSupplierCategories,
   checkCnpjCpfExists,
+  getSupplierCredentials,
   ManagedSupplier,
   ManagedSupplierWithTypeCount,
   SupplierType,
@@ -90,6 +91,10 @@ export default function SupplierRegistration() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewingSupplier, setViewingSupplier] = useState<ManagedSupplierWithTypeCount | null>(null);
+  // access_code não é mais retornado por getManagedSuppliers (revogado para
+  // role authenticated). Buscado via RPC get_supplier_credentials apenas para
+  // admin/super_admin/platform_admin quando o modal de detalhes abre.
+  const [viewingAccessCode, setViewingAccessCode] = useState<string | null>(null);
   const [editingSupplier, setEditingSupplier] = useState<ManagedSupplierWithTypeCount | null>(null);
   const [personType, setPersonType] = useState<'PF' | 'PJ'>('PJ');
   const [searchTerm, setSearchTerm] = useState("");
@@ -290,8 +295,25 @@ export default function SupplierRegistration() {
     setIsModalOpen(false);
     setEditingSupplier(null);
     setViewingSupplier(null);
+    setViewingAccessCode(null);
     setSelectedTypes([]);
   };
+
+  // Buscar access_code via RPC quando admin abre o modal de detalhes.
+  // RPC nega para roles não-admin → fica null (UI esconde a seção).
+  useEffect(() => {
+    if (!viewingSupplier?.id) {
+      setViewingAccessCode(null);
+      return;
+    }
+    let cancelled = false;
+    void getSupplierCredentials(viewingSupplier.id).then((creds) => {
+      if (!cancelled) setViewingAccessCode(creds?.access_code ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [viewingSupplier?.id]);
 
   const handleSubmit = async () => {
     // Validações básicas
@@ -1026,16 +1048,16 @@ export default function SupplierRegistration() {
                     <p className="text-yellow-800 mt-1">{viewingSupplier.inactivation_reason}</p>
                   </div>
                 )}
-                {viewingSupplier.access_code && (
+                {viewingAccessCode && (
                   <div className="p-3 bg-muted rounded-lg">
                     <span className="text-muted-foreground">Código de Acesso:</span>
                     <div className="flex items-center gap-2">
-                      <p className="font-mono font-medium">{viewingSupplier.access_code}</p>
+                      <p className="font-mono font-medium">{viewingAccessCode}</p>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6"
-                        onClick={() => copyToClipboard(viewingSupplier.access_code!, "Código")}
+                        onClick={() => copyToClipboard(viewingAccessCode, "Código")}
                       >
                         <Copy className="h-3 w-3" />
                       </Button>
