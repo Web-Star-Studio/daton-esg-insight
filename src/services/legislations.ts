@@ -175,6 +175,8 @@ export const fetchLegislations = async (
     status?: string;
     search?: string;
     responsibleUserId?: string;
+    hasAlert?: boolean;
+    pendingOnly?: boolean;
   }
 ): Promise<Legislation[]> => {
   // Base relation: inner-joins legislation_unit_compliance only when filtering by branch,
@@ -230,6 +232,12 @@ export const fetchLegislations = async (
     if (filters?.applicability) query = query.eq('overall_applicability', filters.applicability);
     if (filters?.status) query = query.eq('overall_status', filters.status);
     if (filters?.responsibleUserId) query = query.eq('responsible_user_id', filters.responsibleUserId);
+    if (filters?.hasAlert) query = query.eq('has_alert', true);
+    // Pendentes (KPI): espelha exatamente o contador em fetchLegislationStats —
+    // applicability='pending' OU status='pending'.
+    if (filters?.pendingOnly) {
+      query = query.or('overall_applicability.eq.pending,overall_status.eq.pending');
+    }
 
     if (safeTerm) {
       const orParts = [

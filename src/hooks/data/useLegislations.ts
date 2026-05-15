@@ -42,6 +42,8 @@ export const useLegislations = (filters?: {
   status?: string;
   search?: string;
   responsibleUserId?: string;
+  hasAlert?: boolean;
+  pendingOnly?: boolean;
 }) => {
   const { selectedCompany: currentCompany } = useCompany();
   const queryClient = useQueryClient();
