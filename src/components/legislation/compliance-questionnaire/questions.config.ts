@@ -14,6 +14,11 @@ const CORE_THEMES: Theme[] = [
         type: "single",
         options: [
           { id: "sim", label: "Sim", tags: ["licenciamento_ambiental"] },
+          {
+            id: "em_andamento",
+            label: "Licenciamento em andamento/processo em andamento",
+            tags: ["licenciamento_ambiental", "licenciamento_em_andamento"],
+          },
           { id: "dispensa", label: "Possui declaração/certidão de dispensa", tags: ["licenciamento_dispensa"] },
           { id: "nao_aplica", label: "Não Se Aplica" },
         ],
@@ -23,7 +28,7 @@ const CORE_THEMES: Theme[] = [
         number: "1.1",
         label: "Em qual âmbito o licenciamento ambiental é exigido?",
         type: "multi",
-        showIf: { questionId: "lic.q1", anyOf: ["sim"] },
+        showIf: { questionId: "lic.q1", anyOf: ["sim", "em_andamento"] },
         options: [
           { id: "federal", label: "Federal", tags: ["licenciamento_federal"] },
           { id: "estadual", label: "Estadual", tags: ["licenciamento_estadual"] },
@@ -35,7 +40,7 @@ const CORE_THEMES: Theme[] = [
         number: "1.2",
         label: "No licenciamento da unidade, foi exigido EIA/RIMA?",
         type: "single",
-        showIf: { questionId: "lic.q1", anyOf: ["sim"] },
+        showIf: { questionId: "lic.q1", anyOf: ["sim", "em_andamento"] },
         options: [
           { id: "sim", label: "Sim", tags: ["eia_rima"] },
           { id: "nao_aplica", label: "Não Se Aplica" },
@@ -46,7 +51,7 @@ const CORE_THEMES: Theme[] = [
         number: "1.3",
         label: "No licenciamento da unidade, a compensação ambiental foi exigida?",
         type: "multi",
-        showIf: { questionId: "lic.q1", anyOf: ["sim"] },
+        showIf: { questionId: "lic.q1", anyOf: ["sim", "em_andamento"] },
         options: [
           { id: "sim", label: "Sim", tags: ["compensacao_ambiental"] },
           { id: "financeira", label: "Financeira", tags: ["compensacao_financeira"] },
@@ -59,10 +64,44 @@ const CORE_THEMES: Theme[] = [
         number: "1.4",
         label: "No licenciamento da unidade, foram executadas audiências públicas?",
         type: "single",
-        showIf: { questionId: "lic.q1", anyOf: ["sim"] },
+        showIf: { questionId: "lic.q1", anyOf: ["sim", "em_andamento"] },
         options: [
           { id: "sim", label: "Sim", tags: ["audiencia_publica"] },
           { id: "nao_aplica", label: "Não Se Aplica" },
+        ],
+      },
+      {
+        id: "lic.q1_5",
+        number: "1.5",
+        label: "Número do protocolo do processo de licenciamento",
+        type: "text",
+        showIf: { questionId: "lic.q1", anyOf: ["em_andamento"] },
+      },
+      {
+        id: "lic.q1_6",
+        number: "1.6",
+        label: "Órgão licenciador responsável (ex: IBAMA, SEMA/SEMMA do estado/município)",
+        type: "text",
+        showIf: { questionId: "lic.q1", anyOf: ["em_andamento"] },
+      },
+      {
+        id: "lic.q1_7",
+        number: "1.7",
+        label: "Data do protocolo (mês/ano)",
+        type: "text",
+        showIf: { questionId: "lic.q1", anyOf: ["em_andamento"] },
+      },
+      {
+        id: "lic.q1_8",
+        number: "1.8",
+        label: "Em que fase está o processo?",
+        type: "single",
+        showIf: { questionId: "lic.q1", anyOf: ["em_andamento"] },
+        options: [
+          { id: "lp", label: "Licença Prévia (LP)", tags: ["fase_lp"] },
+          { id: "li", label: "Licença de Instalação (LI)", tags: ["fase_li"] },
+          { id: "lo", label: "Licença de Operação (LO)", tags: ["fase_lo"] },
+          { id: "outra", label: "Outra/Não sei" },
         ],
       },
       {
