@@ -16,10 +16,15 @@ relatório do Lovable.
 
 | Severidade original | Total | Corrigidos | Falso positivo | Backlog |
 |---|---|---|---|---|
-| P0 | 7 | 3 (F-015, F-016, F-018) | 3 (F-001, F-002 parcial, F-019) | 1 (F-017) |
-| P1 | 9 | 6 (F-007 a F-012, pré-fix) | 0 | 3 (F-013, F-014, F-020 a F-023) |
-| P2 | 5 | 0 | 0 | 5 |
-| P3 | 4 | 0 | 0 | 4 |
+| P0 | 7 | 3 (F-015, F-016, F-018) | 2 (F-001, F-019) | 2 (F-002, F-017) |
+| P1 | 11 | 6 (F-007 a F-012, pré-fix) | 0 | 5 (F-013, F-020, F-021, F-022, F-023) |
+| P2 | 5 | 0 | 0 | 5 (F-003, F-004, F-014, F-024, F-025) |
+| P3 | 2 | 0 | 0 | 2 (F-005, F-006) |
+| **Total** | **25** | **9** | **2** | **14** |
+
+> Nota: o sumário original da auditoria reporta "24 findings" mas a
+> enumeração detalhada lista 25 (F-001 a F-026 com gap em F-008/F-009 etc.
+> tudo presente). Esta tabela usa a contagem real do detalhe.
 
 ## P0 — detalhe
 
@@ -44,11 +49,12 @@ de antes da policy ser ajustada.
 
 ### F-002 — Statement timeout em queries do dashboard
 
-**Status: em backlog (P0 → reclassificado P1).**
+**Status: backlog (não investigado nesta sessão).**
 
-Não bloqueia funcionalidade crítica. Precisa instrumentação manual nas
-queries do dashboard (PredictiveInsightsWidget, IntegratedReports, ESG
-Dashboard) para identificar a query lenta antes de propor índice/paginação.
+Precisa instrumentação manual das queries do dashboard
+(PredictiveInsightsWidget, IntegratedReports, ESG Dashboard) para
+identificar a query lenta antes de propor índice/paginação. Mantido como
+P0 da auditoria original.
 
 ### F-015 / F-016 / F-018 — RLS cross-tenant
 
@@ -164,33 +170,52 @@ tocado (sweep automático tem risco de regressão):
 })()}
 ```
 
-### F-014 — Edge function `predictive-analytics` empty state
-
-Backlog. Solução é adicionar CTA "cadastrar emissões" no
-`PredictiveInsightsWidget` quando `predictive-analytics` retorna
-"dados insuficientes".
-
 ### F-020 a F-023 — Storage policies e linter
 
-Backlog. Cada um é um PR de RLS/policy isolado.
+Backlog. Cada um é um PR de RLS/policy isolado. F-020 é o linter
+reportando "RLS Disabled in Public" (identificar a tabela no dashboard
+Supabase Linter). F-021, F-022 e F-023 são policies de bucket
+(`documents`, `nc-evidence`, `reports`).
 
-## P2 e P3
+## P2 — detalhe
 
-Em backlog. Resumido:
+Todos backlog:
 
-- F-003: 6 itens de menu redirecionam silenciosamente para `/dashboard`
-  via blocos `!ENABLED_MODULES.X` no `App.tsx` — intencional para
-  `esgGovernance` (DB live=false). Já confirmado visualmente no menu
-  (seção GOVERNANÇA escondida). Manter.
-- F-004: conflito entre `routeModuleMap.ts:16` (`/ativos → esgEnvironmental`)
+- **F-003** — 6 itens de menu redirecionam silenciosamente para
+  `/dashboard` via blocos `!ENABLED_MODULES.X` no `App.tsx` — intencional
+  para `esgGovernance` (DB live=false). Confirmado visualmente: seção
+  GOVERNANÇA escondida no menu para Gabardo. Manter.
+- **F-004** — conflito entre `routeModuleMap.ts:16` (`/ativos → esgEnvironmental`)
   e `enabledModules.ts:97` (`/ativos → dataReports`). Atualmente
   acessível (esgEnvironmental enabled), mas inconsistente. **Mesma classe
   do bug que motivou PR #59** (`/formularios-customizados`).
-- F-005, F-006: drift entre `declaredRoutes.ts` e `App.tsx`,
-  `routeModuleMap` sem cobrir todas as rotas. Operacional, não bloqueia
-  cliente.
-- F-024, F-025, F-026: débito (SECURITY DEFINER, `as any`, queries sem
-  `.eq('company_id', ...)` explícito). Não causa bug observável.
+- **F-014** — Edge function `predictive-analytics` retorna empty state ruim.
+  Solução: adicionar CTA "cadastrar emissões" no `PredictiveInsightsWidget`
+  quando o retorno é "dados insuficientes".
+- **F-024** — ~150 funções `SECURITY DEFINER` executáveis por qualquer
+  signed-in user. Auditar e revogar EXECUTE de quem não precisa.
+- **F-025** — 712 ocorrências de `as any` no codebase. Risco de mascarar
+  bugs de schema. Tipar com `Database['public']['Tables']['…']['Row']`.
+
+## P3 — detalhe
+
+Todos backlog:
+
+- **F-005** — `ROUTE_MODULE_MAP` não cobre todas as rotas protegidas
+  (`/laia`, `/marketplace`, `/intelligence-center`, `/ia-insights`,
+  `/painel-governanca`, `/admin/legislation-watchdog`). RBAC frouxo —
+  ProtectedRoute libera sem checar módulo. Operacional, não bloqueia.
+- **F-006** — drift entre `declaredRoutes.ts` (207 rotas) e `App.tsx`
+  (299 paths). Aba "Rotas mortas" gera falsos positivos/negativos.
+  Regenerar via `python3 scripts/extract-routes.py`.
+
+## Notas sobre F-026 (P2 não listado no detalhe)
+
+F-026 (4 services consultando tabelas sem filtro `.eq('company_id', ...)`
+em `licenseAI.ts:189-192`) foi reclassificado: as tabelas envolvidas
+(`license_ai_analysis`, `license_conditions`, `license_alerts`, `licenses`)
+têm RLS escopada por company. O filtro explícito seria defesa em
+profundidade, mas não há vazamento real. Backlog.
 
 ## PR mergeado durante esta sessão
 
