@@ -15062,6 +15062,7 @@ export type Database = {
           description: string | null
           finalized_at: string | null
           id: string
+          is_legacy: boolean
           revision_number: number
           status: string
           title: string
@@ -15076,6 +15077,7 @@ export type Database = {
           description?: string | null
           finalized_at?: string | null
           id?: string
+          is_legacy?: boolean
           revision_number: number
           status?: string
           title?: string
@@ -15090,6 +15092,7 @@ export type Database = {
           description?: string | null
           finalized_at?: string | null
           id?: string
+          is_legacy?: boolean
           revision_number?: number
           status?: string
           title?: string

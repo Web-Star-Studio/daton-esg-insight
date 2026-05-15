@@ -27,7 +27,6 @@ import {
   Trash2,
   Loader2,
   GitCommit,
-  AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -53,9 +52,10 @@ export function LAIARevisoes() {
   const [finalizeTitle, setFinalizeTitle] = useState("");
   const [finalizeDescription, setFinalizeDescription] = useState("");
 
-  const draftRevision = revisions?.find(r => r.status === 'rascunho');
-  const validatedRevision = revisions?.find(r => r.status === 'validada');
-  const finalizedRevisions = revisions?.filter(r => r.status === 'finalizada') || [];
+  const draftRevision = revisions?.find(r => r.status === 'rascunho' && !r.is_legacy);
+  const validatedRevision = revisions?.find(r => r.status === 'validada' && !r.is_legacy);
+  const finalizedRevisions = revisions?.filter(r => r.status === 'finalizada' && !r.is_legacy) || [];
+  const legacyRevisions = revisions?.filter(r => r.is_legacy) || [];
 
   const pendingRevision = draftRevision || validatedRevision;
 
@@ -329,42 +329,90 @@ export function LAIARevisoes() {
       )}
 
       {/* Legacy Revisions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Histórico Legado (FPLAN-002)
-          </CardTitle>
-          <CardDescription>
-            Revisões anteriores à implementação do sistema digital
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {LEGACY_REVISIONS.map((rev, index) => (
-              <div key={rev.number}>
-                {index > 0 && <Separator className="mb-3" />}
-                <div className="flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs font-bold text-muted-foreground">
-                      {rev.number}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm">{rev.title}</p>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Legado</Badge>
+      {legacyRevisions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Histórico Legado (FPLAN-002)
+            </CardTitle>
+            <CardDescription>
+              Revisões anteriores à implementação do sistema digital
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {legacyRevisions.map((rev, index) => (
+                <div key={rev.id}>
+                  {index > 0 && <Separator className="mb-3" />}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-muted-foreground">
+                          {String(rev.revision_number).padStart(2, '0')}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {editingTitleId === rev.id ? (
+                          <div className="space-y-2">
+                            <Input
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              className="text-sm"
+                            />
+                            <Textarea
+                              value={editDescription}
+                              onChange={(e) => setEditDescription(e.target.value)}
+                              placeholder="Descrição..."
+                              rows={2}
+                              className="text-sm"
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={() => handleSaveTitle(rev.id)} disabled={updateTitleMutation.isPending}>
+                                Salvar
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditingTitleId(null)}>
+                                Cancelar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-medium text-sm">{rev.title}</p>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Legado</Badge>
+                            </div>
+                            {rev.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                {rev.description}
+                              </p>
+                            )}
+                            {rev.finalized_at && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {format(new Date(rev.finalized_at), "dd/MM/yyyy", { locale: ptBR })}
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                    {rev.date && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{rev.date}</p>
+                    {editingTitleId !== rev.id && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 flex-shrink-0"
+                        onClick={() => startEditTitle(rev)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedRevisionId} onOpenChange={(open) => !open && setSelectedRevisionId(null)}>
@@ -381,18 +429,3 @@ export function LAIARevisoes() {
   );
 }
 
-const LEGACY_REVISIONS = [
-  { number: "00", title: "Emissão inicial do documento", date: "25/08/2020" },
-  { number: "01", title: "Alteração item 5 e 5.3", date: "04/12/2020" },
-  { number: "02", title: "Detalhamento controles operacionais", date: "17/12/2020" },
-  { number: "03", title: "Alteração FPLAN-003 para LIRA", date: "18/10/2021" },
-  { number: "04", title: "Inclusão Carregamento e Heliponto (PIR) e alteração Construção Civil (atual) (POA e PIR)", date: "30/05/2022" },
-  { number: "05", title: "Inclusão Museu (PIR) e Posto Abastecimento (POA)", date: "30/08/2022" },
-  { number: "06", title: "Inclusão Espaço Saúde (PIR); Central do Motorista (POA) e Elaboração LAIA SBC e Porto Real", date: "05/09/2023" },
-  { number: "07", title: "Revisão geral - análise crítica do documento", date: "03/10/2023" },
-  { number: "08", title: "Inclusão aspectos: ruído, odor, tonner e possibilidade de incêndio - POA, PIR", date: "23/10/2022" },
-  { number: "09", title: "Revisão Geral e análise crítica de POA e PIR; Elaboração LAIA de Duque de Caxias, Anápolis e São José dos Pinhais", date: "15/04/2024" },
-  { number: "10", title: "Revisão Geral (Queimadas Excessivas)", date: "24/09/2024" },
-  { number: "11", title: "Troca de Classificação dos Resíduos de acordo com NBR 10.004-2024, inclusão de Sala de Descanso em GO-CARREGAMENTO, Inclusão das Unidades ES, IRA e CHUÍ", date: "30/06/2025" },
-  { number: "12", title: "Perspectiva de estágio (ajustes)", date: null },
-];
