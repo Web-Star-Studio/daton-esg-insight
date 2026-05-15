@@ -14,7 +14,7 @@ export const ENABLED_MODULES = {
   financial: false,
   
   /** Módulo Dados e Relatórios */
-  dataReports: false,
+  dataReports: true,
   
   /** ESG Ambiental (categoria dentro do ESG) */
   esgEnvironmental: true,
