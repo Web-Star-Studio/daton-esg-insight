@@ -1,86 +1,80 @@
+# Auditoria Funcional Profunda — Levantamento de Bugs
+
 ## Objetivo
 
-Gerar um **PDF executivo** que o Daton possa entregar ao cliente Gabardo (e usar como template para outros), respondendo:
+Varredura página por página + edge functions + RLS para identificar **bugs funcionais** (rotas quebradas, redirects errados, runtime errors, fluxos que falham). Entrega: relatório markdown navegável + tasks priorizadas no tracker.
 
-1. **Quanto já foi investido** no desenvolvimento do Daton até hoje (em horas × R$50 + tokens de IA consumidos no build).
-2. **Quanto custa manter** mensalmente, quebrado por módulo, somando: tokens de IA em runtime, infra (Supabase/Lovable Cloud), domínio/terceiros e bolsa de manutenção evolutiva.
+## Sinais já conhecidos (baseline)
+
+- `App.tsx` tem **323 `<Route>`** declaradas e **166 lazy imports** — risco de import quebrado.
+- **23 rotas** redirecionam para `/dashboard` (módulos `financial`, `dataReports`, `esgGovernance` parcialmente desativados) — confirmado em App.tsx linhas 444–482, 985.
+- `declaredRoutes.ts` lista 219 rotas — possível drift vs. App.tsx real.
+- `ROUTE_MODULE_MAP` mapeia 30 paths; várias rotas declaradas (ex.: `/laia`, `/marketplace`, `/intelligence-center`, `/ia-insights`, `/painel-governanca`) **não estão mapeadas** → `ProtectedRoute` libera sem checagem de módulo.
+- Conflito detectado: `/ativos` está marcado `esgEnvironmental` em `routeModuleMap` mas redirecionado por `dataReports` em `enabledModules.DISABLED_ROUTES`.
+- Relatório E2E (`reports/e2e/playwright-error-report-2026-02-23.md`) já listou **11 rotas /demo** com erros de runtime (`.map is not a function`, `Invalid time value`, etc.) em 7 arquivos identificados.
+- **712 ocorrências de `as any`** — pontos cegos de tipagem que mascaram bugs.
+- Edge function `predictive-analytics` retorna warning recorrente: "Dados insuficientes: nenhum registro de emissões encontrado" — UX precisa de empty state.
+
+## Escopo da auditoria
+
+### 1. Roteamento e navegação
+- Diff `DECLARED_ROUTES` ↔ `<Route>` reais em `App.tsx` (drift).
+- Listar rotas que renderizam `<Navigate to="/dashboard">` e validar se ainda aparecem no menu / botões / links internos.
+- Identificar rotas no `AppSidebar` que apontam para paths inexistentes em App.tsx.
+- Validar `ROUTE_MODULE_MAP` × `ENABLED_MODULES`: rotas mapeadas para módulo desativado, e rotas de módulos ativos sem mapeamento (gap RBAC).
+- Verificar links internos (`<Link to>`, `navigate(...)`) contra a lista canônica.
+
+### 2. Páginas — varredura runtime
+Para cada página acessível pela `MainLayout`, abrir no preview logado e capturar:
+- erros do console
+- falhas de rede (status >=400)
+- error boundaries visíveis
+
+Aplicar erros conhecidos do relatório E2E como checklist (7 arquivos já mapeados). Páginas prioritárias: `IntelligentAlertsSystem`, `NonConformityTimelineModal`, `EmployeeBenefitsModal`, `SegurancaTrabalho`, `DesenvolvimentoCarreira`, `GestaoRiscos`, `Licenciamento`, `ControleDocumentos`, `Auditoria/SGI`, `LAIA`, `FormDashboardPage`.
+
+### 3. Fluxos críticos (smoke funcional)
+- Auth: login, recuperação de senha, set-password, convite.
+- Onboarding: empresa → filial → usuários → módulos.
+- CRUD por módulo ativo: SGQ (NC, ação corretiva, doc), Fornecedores, Treinamentos, Licenças, Resíduos, Formulários customizados.
+- Upload/anexo (Storage) + preview inline.
+- Notificações realtime (sino + badge).
+- Exportações (PDF/Excel) onde existirem.
+- Multi-tenant: trocar empresa/filial e validar isolamento.
+
+### 4. Backend — Supabase
+- Rodar `supabase--linter` e classificar findings.
+- Rodar `security--run_security_scan`.
+- Inspecionar `postgres_logs` ERROR/WARNING dos últimos 7 dias.
+- Logs de erro recentes das edge functions quentes: `daton-ai-chat`, `custom-forms-management`, `quality-management`, `manage-user`, `predictive-analytics`, `mtr-ocr-processor`.
+- Validar que tabelas críticas têm RLS ativo (regra: `user_roles` é única autoridade).
+
+### 5. Qualidade de dados / runtime defensivo
+- Padrões frágeis: `.map/.filter/.forEach` sem guard, `new Date(x)` sem `parseDateSafe`, `JSON.parse` sem try/catch, `as any` em fronteiras.
+- Uso correto de `parseDateSafe`, `formatDateDisplay`, `formatDateForDB`.
+- Queries Supabase sem filtro `company_id` (regra multi-tenant).
 
 ## Metodologia
 
-### Estimativa de horas já gastas (triangulação)
+1. **Estática** (scripts via `code--exec`): diffs de rotas, grep estruturado, lista de imports lazy quebrados.
+2. **Dinâmica** (browser tool): sweep de cada rota protegida ativa, coletando console + network + DOM. Smoke dos fluxos da seção 3.
+3. **Backend**: linter + security scan + logs (postgres + edge functions).
 
-Três fontes combinadas, média ponderada:
+## Entregáveis
 
-- **A. Contagem de código** — `~477k LOC` em `src/` + `~75 edge functions` + `436 migrations`. Aplicar produtividade ajustada (60–80 LOC/h efetivos para código gerado por IA com revisão humana, considerando refactors e descartes).
-- **B. Histórico de mensagens Lovable** — extrair número de turnos/iterações desta workspace como proxy de esforço de produto (PM + QA + prompt engineering).
-- **C. Complexidade funcional** — pontuar cada módulo por features entregues (CRUDs, integrações, IA, dashboards, fluxos multi-stage) usando benchmarks de mercado (story points → horas).
+1. **Relatório** `docs/audits/auditoria-bugs-2026-05-15.md`:
+   - sumário executivo (contagens por severidade)
+   - seção por área (roteamento, páginas, fluxos, backend, dados)
+   - cada achado: ID, título, severidade, evidência (`arquivo:linha` ou screenshot), reprodução, correção sugerida
+   - anexos: tabelas de drift, redirects, edge functions com erro
+2. **Tasks no tracker** para itens **P0 e P1** com link para a seção do relatório. P2/P3 ficam só no relatório.
 
-A triangulação dá faixa baixa/central/alta para evitar número único frágil.
+## Severidade
 
-### Custo de IA já consumido
+- **P0** — quebra a aplicação (tela em branco, error boundary, fluxo crítico falha, dado vazando entre tenants).
+- **P1** — funcionalidade não opera mas app não cai (botão sem efeito, link morto, CRUD parcial).
+- **P2** — UX degradada (empty state ruim, redirect silencioso para `/dashboard`).
+- **P3** — débito funcional (rota sem uso, item de menu sem destino útil).
 
-- Histórico real da tabela `ai_usage_logs`: hoje acumula `~US$ 3,57` (108 chamadas; Gemini 2.5 Pro domina). Converter a BRL pelo câmbio do dia.
-- Acrescentar estimativa de tokens consumidos **no build via Lovable** (não logados na tabela) — usar média de mercado por LOC gerado.
+## Estimativa
 
-### Custo operacional mensal por módulo
-
-Para cada um dos módulos mapeados abaixo, somar 4 componentes:
-
-```text
-Custo mensal módulo = IA runtime + Infra alocada + Terceiros + Bolsa manutenção
-```
-
-- **IA runtime**: projeção mensal a partir do `ai_usage_logs` (últimos 30/90 dias) atribuído ao módulo via nome da edge function. 19 edge functions chamam IA.
-- **Infra**: rateio do custo Supabase (DB, storage, edge invocations, bandwidth) por % de tabelas/storage do módulo.
-- **Terceiros**: domínio `daton.com.br`, e-mail transacional, ViaCEP (grátis), OCR MTR, Perplexity (legislação).
-- **Manutenção evolutiva**: bolsa sugerida de horas/mês × R$50 por módulo, dimensionada pela criticidade e taxa de mudança.
-
-### Mapa de módulos (capítulos do PDF)
-
-Baseado em `src/components/`, `src/pages/` e edge functions:
-
-| Módulo | Componentes-chave |
-|---|---|
-| SGQ / ISO 9001 | document control, audits, NCs, ações corretivas |
-| LAIA / ISO 14001 | sectors, assessments, revisions |
-| Licenciamento ambiental | licenses, renovações, compliance profiles, legislações |
-| Resíduos & MTR | waste logs, OCR de MTR, fornecedores |
-| Emissões GEE & Água | inventários, monitoramento |
-| Social / RH | employees, training, succession, indicadores |
-| Governança / ESG | materialidade, GRI wizard, ROI ESG |
-| Financeiro | contas a pagar/receber, plano de contas, lançamentos |
-| Inteligência & IA | daton-ai-chat, insights engine, learning engine |
-| Plataforma & Admin | onboarding, RBAC, multi-tenant, platform admin |
-| Infra transversal | auth, notificações, storage, design system |
-
-## Entregável
-
-PDF de ~12–18 páginas em `/mnt/documents/daton-analise-custo-gabardo.pdf` com:
-
-1. **Capa** — Daton, cliente Gabardo, data, escopo do orçamento.
-2. **Sumário executivo** — 1 página: total investido (faixa R$), custo mensal recomendado, ROI vs reconstrução em software house.
-3. **Metodologia** — como calculamos (transparência para o cliente).
-4. **Investimento já realizado** — tabela por módulo (horas estimadas, R$ horas, IA build, total) + gráfico de barras.
-5. **Custo operacional mensal** — tabela por módulo (IA runtime, infra, terceiros, manutenção, total) + gráfico de pizza.
-6. **Detalhamento por módulo** — 1 parágrafo + sub-tabela cada (11 módulos).
-7. **Premissas e limitações** — câmbio USD/BRL, faixa de produtividade, escopo do que não está incluso (treinamento, suporte N1).
-8. **Anexo** — dados brutos: top 10 edge functions por custo de IA, totais de LOC, lista de 75 edge functions.
-
-Identidade visual Daton (Carbon Emerald `#00bf63`, fundo `#0B1210`, Plus Jakarta Sans).
-
-## Detalhes técnicos
-
-- Script Python em `/tmp/gen_cost_report.py` usando ReportLab (Platypus) para gerar o PDF com tabelas, gráficos (matplotlib) e branding.
-- Coletar números via:
-  - `wc -l` por subpasta de `src/components/` e `src/pages/` para LOC por módulo.
-  - `supabase--read_query` em `ai_usage_logs` agrupado por `function_name` (precisa confirmar se a coluna existe; senão usar `metadata`).
-  - Tabela hardcoded de mapeamento `edge_function → módulo` no script.
-- Câmbio USD/BRL: usar valor fixo (ex.: R$5,00) declarado nas premissas — sem dependência de API externa.
-- QA visual obrigatório: converter PDF para imagens com `pdftoppm` e revisar cada página antes de entregar.
-- Versionar como `_v1`, `_v2` se o cliente pedir ajustes.
-
-## Fora de escopo
-
-- Não altera código da aplicação.
-- Não inclui análise de receita/preço de venda ao cliente final (só custo).
-- Não rastreia retroativamente custo de IA do build no Lovable — entra como estimativa declarada.
+~2–3h de execução. Sem alterações de código durante a auditoria — só leitura, navegação e geração do relatório/tasks. Correções entram em PRs subsequentes após sua priorização.
