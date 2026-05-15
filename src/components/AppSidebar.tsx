@@ -11,6 +11,7 @@ import { useBranches } from "@/services/branches"
 import { getBranchDisplayLabel } from "@/utils/branchDisplay"
 import { MigratedBadge } from "@/components/sidebar/MigratedBadge"
 import { DECLARED_ROUTES } from "@/constants/declaredRoutes"
+import { isRouteDisabled } from "@/config/enabledModules"
 import {
   Sidebar,
   SidebarContent,
@@ -421,7 +422,8 @@ export function AppSidebar() {
   const declaredSet = useMemo(() => new Set<string>(DECLARED_ROUTES as readonly string[]), [])
   const isOrphanPath = (path: string) => {
     if (!path || path === '#' || path === '/') return false
-    return !declaredSet.has(path)
+    // Sem rota declarada OU rota apenas redireciona p/ /dashboard (módulo desabilitado)
+    return !declaredSet.has(path) || isRouteDisabled(path)
   }
 
   // Auto-expand category if active page belongs to it
