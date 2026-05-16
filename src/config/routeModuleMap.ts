@@ -13,7 +13,10 @@ export const ROUTE_MODULE_MAP: Record<string, string> = {
   '/metas': 'esgEnvironmental',
   '/biblioteca-fatores': 'esgEnvironmental',
   '/licenciamento': 'esgEnvironmental',
-  '/ativos': 'esgEnvironmental',
+  // /ativos vive na seção DADOS E RELATÓRIOS do menu (ver AppSidebar:357)
+  // e é redirecionado por enabledModules como dataReports. Mapear aqui
+  // para o mesmo módulo evita o conflito F-004 (URL direta bypassava o
+  // gate quando dataReports estava DB-disabled).
 
   // === ESG Governança ===
   '/governanca-esg': 'esgGovernance',
@@ -53,6 +56,7 @@ export const ROUTE_MODULE_MAP: Record<string, string> = {
   // === Dados e Relatórios ===
   '/coleta-dados': 'dataReports',
   '/relatorios': 'dataReports',
+  '/ativos': 'dataReports',
 
   // === Configurações (apenas organizacional — /configuracao é acessível a todos) ===
   '/configuracao-organizacional': 'settings',
