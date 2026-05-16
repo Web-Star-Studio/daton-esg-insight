@@ -18,6 +18,12 @@ import { useQuery } from "@tanstack/react-query";
 import { getLicenseAIStats, getCriticalAlerts, getUpcomingConditions } from "@/services/licenseAI";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseDateSafe } from "@/utils/dateUtils";
+
+const safeFormat = (raw: string | null | undefined, pattern: string, fallback = "—"): string => {
+  const d = parseDateSafe(raw);
+  return d ? format(d, pattern, { locale: ptBR }) : fallback;
+};
 
 interface ComplianceMetric {
   label: string;
@@ -234,7 +240,7 @@ export function ComplianceDashboard() {
                       </div>
                       {alert.due_date && (
                         <Badge variant="destructive" className="ml-2">
-                          {format(new Date(alert.due_date), "dd/MM/yyyy", { locale: ptBR })}
+                          {safeFormat(alert.due_date, "dd/MM/yyyy")}
                         </Badge>
                       )}
                     </div>
@@ -279,7 +285,7 @@ export function ComplianceDashboard() {
                   </div>
                   {condition.due_date && (
                     <Badge variant="outline">
-                      {format(new Date(condition.due_date), "dd/MM", { locale: ptBR })}
+                      {safeFormat(condition.due_date, "dd/MM")}
                     </Badge>
                   )}
                 </div>

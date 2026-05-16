@@ -15,7 +15,13 @@ import { NCPrintView } from "./non-conformity/NCPrintView";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseDateSafe } from "@/utils/dateUtils";
 import { getNCStatusLabel, getNCStatusColor, getNCseravityColor } from "@/utils/ncStatusUtils";
+
+const safeFormat = (raw: string | null | undefined, pattern: string, fallback = "—"): string => {
+  const d = parseDateSafe(raw);
+  return d ? format(d, pattern, { locale: ptBR }) : fallback;
+};
 import { 
   Calendar, 
   Clock, 
@@ -378,7 +384,7 @@ export function NonConformityDetailsModal({
                       <div>
                         <Label>Data de Detecção</Label>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(nonConformity.detected_date), "dd/MM/yyyy", { locale: ptBR })}
+                          {safeFormat(nonConformity.detected_date, "dd/MM/yyyy")}
                         </p>
                       </div>
                       {nonConformity.responsible_user_id && (
@@ -549,7 +555,7 @@ export function NonConformityDetailsModal({
                               </div>
                               <div>
                                 <p className="text-xs text-muted-foreground uppercase">Quando (When)?</p>
-                                <p>{format(new Date(plan.when_deadline), "dd/MM/yyyy", { locale: ptBR })}</p>
+                                <p>{safeFormat(plan.when_deadline, "dd/MM/yyyy", "N/A")}</p>
                               </div>
                             </div>
                           </div>
@@ -595,10 +601,7 @@ export function NonConformityDetailsModal({
                         />
                       ) : (
                         <p className="text-sm">
-                          {nonConformity.due_date 
-                            ? format(new Date(nonConformity.due_date), "dd/MM/yyyy", { locale: ptBR })
-                            : "Não definido"
-                          }
+                          {safeFormat(nonConformity.due_date, "dd/MM/yyyy", "Não definido")}
                         </p>
                       )}
                     </CardContent>
@@ -617,10 +620,7 @@ export function NonConformityDetailsModal({
                         />
                       ) : (
                         <p className="text-sm">
-                          {nonConformity.completion_date 
-                            ? format(new Date(nonConformity.completion_date), "dd/MM/yyyy", { locale: ptBR })
-                            : "Não concluído"
-                          }
+                          {safeFormat(nonConformity.completion_date, "dd/MM/yyyy", "Não concluído")}
                         </p>
                       )}
                     </CardContent>
@@ -657,10 +657,7 @@ export function NonConformityDetailsModal({
                           <div>
                             <Label>Data de Avaliação</Label>
                             <p className="text-sm">
-                              {effectiveness.evaluated_at 
-                                ? format(new Date(effectiveness.evaluated_at), "dd/MM/yyyy", { locale: ptBR })
-                                : "N/A"
-                              }
+                              {safeFormat(effectiveness.evaluated_at, "dd/MM/yyyy", "N/A")}
                             </p>
                           </div>
                         </div>
@@ -707,10 +704,7 @@ export function NonConformityDetailsModal({
                         />
                       ) : (
                         <p className="text-sm">
-                          {nonConformity.effectiveness_date 
-                            ? format(new Date(nonConformity.effectiveness_date), "dd/MM/yyyy", { locale: ptBR })
-                            : "Não avaliado"
-                          }
+                          {safeFormat(nonConformity.effectiveness_date, "dd/MM/yyyy", "Não avaliado")}
                         </p>
                       )}
                     </CardContent>
