@@ -26948,6 +26948,13 @@ export type Database = {
         Returns: Json
       }
       get_nc_dashboard_stats: { Args: { p_company_id: string }; Returns: Json }
+      get_supplier_credentials: {
+        Args: { p_supplier_id: string }
+        Returns: {
+          access_code: string
+          must_change_password: boolean
+        }[]
+      }
       get_user_company_id: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
