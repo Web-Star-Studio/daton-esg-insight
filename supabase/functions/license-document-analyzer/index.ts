@@ -211,10 +211,42 @@ serve(async (req) => {
 
     // Get request data
     const { filePath } = await req.json() as DocumentAnalysisRequest;
-    
+
+    if (!filePath || typeof filePath !== 'string') {
+      return new Response('Invalid file path', { status: 400, headers: corsHeaders });
+    }
+
+    // Path validation: o cliente (src/services/licenses.ts) sempre sobe em
+    // `${companyId}/_temp/...`. Como esta edge function usa service_role
+    // (bypassa RLS), sem validação um usuário autenticado poderia passar
+    // qualquer path e baixar arquivo de outra empresa. Resolvemos o
+    // company_id do user via profiles e exigimos que filePath começe com
+    // `${company_id}/_temp/`.
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile?.company_id) {
+      console.error('Profile lookup failed:', profileError);
+      return new Response('User has no company', { status: 403, headers: corsHeaders });
+    }
+
+    const expectedPrefix = `${profile.company_id}/_temp/`;
+    if (!filePath.startsWith(expectedPrefix)) {
+      console.error(
+        `Path validation failed: user ${user.id} (company ${profile.company_id}) tentou acessar ${filePath}`,
+      );
+      return new Response('Forbidden: file path outside your company', {
+        status: 403,
+        headers: corsHeaders,
+      });
+    }
+
     // Generate unique temp filename
     tempFileName = `temp-analysis-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.pdf`;
-    
+
     console.warn(`Downloading document: ${filePath}`);
 
     // Download PDF from Supabase Storage
