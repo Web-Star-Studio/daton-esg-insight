@@ -355,8 +355,7 @@ export const uploadDocument = async (
   const timestamp = Date.now();
   const randomId = Math.random().toString(36).substring(7);
   const fileName = `${timestamp}-${randomId}.${fileExt}`;
-  // Store without 'documents/' prefix - bucket name is enough
-  const filePath = fileName;
+  const filePath = `${profile.company_id}/general/${fileName}`;
 
   logger.debug(`Storage path: ${filePath}`, 'document');
 
