@@ -12,19 +12,37 @@ backlog. Use como referência ao re-rodar a auditoria — todo finding aqui
 marcado como "resolvido" ou "falso positivo" deve sumir/mudar no próximo
 relatório do Lovable.
 
-## Sumário executivo (atualizado 2026-05-15 23:30Z)
+## Sumário executivo (atualizado 2026-05-16 02:30Z — pós-rodada 2)
 
-| Severidade original | Total | Corrigidos | Falso positivo | Backlog tech-debt |
+A auditoria foi re-executada pelo Lovable em 2026-05-16 01:34Z. Os achados
+da rodada original foram processados em duas ondas:
+
+**Rodada 1** (15/mai 21h-23h): PRs #59-67 — fechou os 4 P0 mais críticos +
+P2/P3 cleanup.
+
+**Rodada 2** (16/mai 01h-02h, após nova execução do Lovable): novos
+findings introduzidos pela auditoria revisada (F-022 reports, F-023
+audit-evidence, F-024 leave_types, F-019 reiterado, 5 functions
+search_path mutable). PRs #68-71 fecharam tudo exceto F-020 documents
+(refactor de 4000+ paths) e F-019 Realtime (refactor para private channels).
+
+### Status final por severidade
+
+| Severidade | Total | Corrigidos | Falso positivo | Backlog tech-debt |
 |---|---|---|---|---|
-| P0 | 7 | 4 (F-015, F-016, F-017, F-018) | 3 (F-001, F-002, F-019) | 0 |
-| P1 | 11 | 7 (F-007 a F-013) | 0 | 4 (F-020, F-021, F-022, F-023) |
-| P2 | 5 | 3 (F-003, F-004, F-014) | 0 | 2 (F-024, F-025) |
+| P0 | 7 | 4 (F-015, F-016, F-017, F-018) | 3 (F-001, F-002, parte de F-019) | 1 (F-019 best-practice) |
+| P1 | 11 | 8 (F-007 a F-013, F-022) | 0 | 3 (F-020, F-021 → F-021, F-023 movidos pra P0 na rodada 2) |
+| P2 | 5 | 3 (F-003, F-004, F-014) | 0 | 2 (F-024 → resolvido na rodada 2, F-025) |
 | P3 | 2 | 2 (F-005, F-006) | 0 | 0 |
-| **Total** | **25** | **16** | **3** | **6** |
 
-> Nota: o sumário original da auditoria reporta "24 findings" mas a
-> enumeração detalhada lista 25 (F-001 a F-026). Esta tabela usa a
-> contagem real do detalhe.
+Achados novos da rodada 2 (re-numerados pelo Lovable; mapeados aqui):
+- F-019 (Realtime) — reiterado, backlog refactor amplo
+- F-020 (documents bucket) — backlog tech-debt
+- F-021 (nc-evidence bucket) — corrigido (PR #71)
+- F-022 (reports bucket) — corrigido (PR #70)
+- F-023 (audit-evidence bucket) — corrigido (PR #69)
+- F-024 (leave_types) — corrigido (PR #68)
+- 5× function_search_path_mutable — corrigido (PR #68)
 
 ### PRs mergeados nesta sessão
 
@@ -38,11 +56,15 @@ relatório do Lovable.
 | #64 | parseDateSafe nos 3 modais críticos (compliance, NC, waste) | F-013 (sample alvo) |
 | #65 | `/ativos` alinhado a dataReports | F-004 |
 | #66 | 7 rotas adicionadas ao ROUTE_MODULE_MAP | F-005 |
+| #67 | Doc atualizado (final rodada 1) | meta |
+| #68 | leave_types cross-tenant + 5 functions search_path | F-024 (rodada 2) + linter |
+| #69 | audit-evidence bucket privatizado + signed URLs | F-023 (rodada 2) |
+| #70 | reports bucket policies scoped por license.company_id | F-022 (rodada 2) |
+| #71 | nc-evidence bucket privatizado + signed URLs | F-021 (rodada 2) |
 
-Também: as migrations dos PRs #60 e #62 foram aplicadas em prod via
-`mcp__supabase__apply_migration` (rodaram às 23:56:02 e 23:56:29 UTC),
-porque o pipeline do Lovable comita SQLs no repo mas não dispara
-`supabase migrate` automaticamente.
+Migrations aplicadas em prod via `mcp__supabase__apply_migration` antes
+de cada merge (pipeline do Lovable comita SQLs no repo mas não dispara
+`supabase migrate` automaticamente).
 
 ## P0 — detalhe
 
@@ -260,20 +282,32 @@ que ambas as tabelas têm policies adequadas (`notifications` ALL com
 
 ## Como re-rodar a auditoria no Lovable
 
-1. Rode o mesmo prompt/skill que gerou `auditoria-bugs-2026-05-15.md`.
-2. Compare os achados com este documento. **Esperado: ≥16 findings somem do relatório.**
-   - **Devem desaparecer (corrigidos):** F-001, F-002, F-003 (intencional), F-004, F-005, F-006, F-007 a F-013, F-014, F-015, F-016, F-017, F-018, F-019, F-020.
-   - **Pode permanecer (decisão arquitetural):** scanner ainda alegará Realtime sem authorization (F-019) porque `realtime.messages` continua sem policy — comentar/justificar.
-   - **Continuam (tech-debt aceito):** F-021, F-022, F-023 (storage refactor), F-024 (SECURITY DEFINER audit), F-025 (`as any` cleanup), F-026 (defesa em profundidade).
-3. Se algum item marcado como **"corrigido"** reaparecer, é regressão — investigar imediatamente. Possíveis causas: Lovable pipeline rodou um `db reset` e perdeu as migrations aplicadas via MCP, refactor não anotado removeu policy/grant, ou drift no app code.
+1. Rode o mesmo prompt/skill que gerou os relatórios.
+2. **Estado esperado pós-rodada 2** (PRs #59-71):
+   - **Saem do relatório (corrigidos):** F-001, F-002, F-003 (intencional), F-004, F-005, F-006, F-007 a F-013, F-014, F-015, F-016, F-017, F-018, F-021, F-022, F-023, F-024 + 5 functions search_path. Bucket `audit-evidence`, `nc-evidence`, `reports` agora privados ou scoped corretamente.
+   - **Permanecem (backlog conhecido):**
+     - **F-019 Realtime** — RLS nas tabelas-fonte protege contra leak de DADOS (postgres_changes filtra rows), mas best-practice é migrar para private channels. Refactor amplo, não-bloqueador.
+     - **F-020 documents bucket** — 4076 objetos em paths livres (`temp/`, `waste-logs/`, etc). Requer data migration + app refactor amplo.
+     - **F-025** (~712 `as any`) e **167 SECURITY DEFINER cleanup** — tech-debt grande.
+     - **F-026** (`.eq('company_id')` defesa em profundidade) — tech-debt menor.
+     - **Auth Leaked Password Protection** — TODO operacional no Supabase Dashboard.
+3. **Falsos positivos esperados no scanner:**
+   - `supplier_management` ainda listado como `EXPOSED_SENSITIVE_DATA` — o scanner não enxerga column-level REVOKE/GRANT (só policies). `SELECT password_hash …` por authenticated retorna `permission denied for column`. **Ignorar.**
+   - 4× `public_bucket_allows_listing` (avatars/form-logos/etc.) — intencional, ignorar.
+4. Se algum item marcado como **"corrigido"** reaparecer, é regressão — investigar imediatamente. Possíveis causas: Lovable pipeline rodou um `db reset` e perdeu as migrations aplicadas via MCP, refactor não anotado removeu policy/grant, ou drift no app code.
 
 ## Tasks abertas que vieram desta auditoria
 
 Backlog tech-debt (cada um vira PR próprio quando priorizado):
 
-- **F-021/F-022/F-023** (storage policies): refactor amplo — data migration de paths para `<company_id>/...`, mudar getPublicUrl → signed URLs (nc-evidence), atualizar policies. Cada bucket separado.
-- **F-024** (SECURITY DEFINER audit): rodar `SELECT proname, prosecdef FROM pg_proc WHERE pronamespace='public'::regnamespace AND prosecdef=true;` e revogar EXECUTE de `public` quando não for serviço.
+- **F-020 documents bucket**: data migration de paths livres (`temp/`, `waste-logs/`, `licenses/`, etc.) → `<company_id>/<resource_type>/<file>`. Atualizar app code que faz upload. Apertar policies. Escopo grande.
+- **F-019 Realtime → private channels**: migrar de `postgres_changes` para Broadcast via DB triggers + policies em `realtime.messages`. Refactor médio-grande.
+- **167 SECURITY DEFINER cleanup**: rodar `SELECT proname, prosecdef FROM pg_proc WHERE pronamespace='public'::regnamespace AND prosecdef=true ORDER BY proname` e revogar EXECUTE de `public/authenticated/anon` quando não for serviço legítimo.
 - **F-025** (`as any` cleanup): focar primeiro nos top services (`sgqIsoDocuments.ts: 54`, `documentCenter.ts: 47`).
-- **F-026** (`.eq('company_id')` explícito em 4 services em `licenseAI.ts`): defensa em profundidade.
+- **F-026** (`.eq('company_id')` explícito em 4 services em `licenseAI.ts`): defesa em profundidade.
+- **Auth Leaked Password Protection**: ativar via Supabase Dashboard → Authentication → Policies (não-SQL).
 
-Resumo: dos 25 findings da auditoria original, **16 corrigidos, 3 falsos positivos, 6 backlog tech-debt**. Nenhum P0 ativo.
+Resumo (pós-rodada 2):
+- Auditoria original: 25 findings → 16 corrigidos rodada 1, 3 falsos positivos
+- Auditoria revisada (16/mai 01:34Z): +6 achados novos → 4 corrigidos (F-021, F-022, F-023, F-024 + 5 functions linter); 2 backlog (F-019 Realtime, F-020 documents)
+- **Total**: ~20 findings corrigidos via 13 PRs (#59-71) + 6 backlog tech-debt. **Nenhum P0 ativo.** Restante é refactor amplo (storage paths, Realtime private channels) e tech-debt de cleanup (`as any`, SECURITY DEFINER).
