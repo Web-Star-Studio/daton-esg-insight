@@ -113,7 +113,7 @@ export async function getRevisions(companyId?: string): Promise<LAIARevision[]> 
 
   // Paginado pra cobrir empresas com histórico extenso de revisões LAIA.
   const revisions = await fetchAllPaginated<any>((from, to) =>
-    (supabase as any)
+    supabase
       .from("laia_revisions")
       .select(`
         *,
@@ -131,7 +131,7 @@ export async function getRevisions(companyId?: string): Promise<LAIARevision[]> 
   if (revisionIds.length > 0) {
     // Paginado: 1 revisão pode ter centenas de mudanças, então N×M passa de 1000.
     const changes = await fetchAllPaginated<{ revision_id: string }>((from, to) =>
-      (supabase as any)
+      supabase
         .from("laia_revision_changes")
         .select("revision_id")
         .in("revision_id", revisionIds)
@@ -153,7 +153,7 @@ export async function getRevisions(companyId?: string): Promise<LAIARevision[]> 
 
 export async function getRevisionById(id: string): Promise<LAIARevision & { changes: LAIARevisionChange[] }> {
   const { data, error } = await supabase
-    .from("laia_revisions" as any)
+    .from("laia_revisions")
     .select(`
       *,
       creator:profiles!laia_revisions_created_by_fkey(full_name),
@@ -165,7 +165,7 @@ export async function getRevisionById(id: string): Promise<LAIARevision & { chan
   if (error) throw error;
 
   const { data: changes, error: changesError } = await supabase
-    .from("laia_revision_changes" as any)
+    .from("laia_revision_changes")
     .select("*")
     .eq("revision_id", id)
     .order("changed_at", { ascending: true });
@@ -234,7 +234,7 @@ export async function getOrCreateDraftRevision(): Promise<LAIARevision> {
 
   // Check for existing draft
   const { data: existing } = await supabase
-    .from("laia_revisions" as any)
+    .from("laia_revisions")
     .select("*")
     .eq("company_id", companyId)
     .eq("status", "rascunho")
@@ -244,7 +244,7 @@ export async function getOrCreateDraftRevision(): Promise<LAIARevision> {
 
   // Get next revision number
   const { data: maxData } = await supabase
-    .from("laia_revisions" as any)
+    .from("laia_revisions")
     .select("revision_number")
     .eq("company_id", companyId)
     .order("revision_number", { ascending: false })
@@ -253,7 +253,7 @@ export async function getOrCreateDraftRevision(): Promise<LAIARevision> {
   const nextNumber = ((maxData as any[])?.[0]?.revision_number || 0) + 1;
 
   const { data, error } = await supabase
-    .from("laia_revisions" as any)
+    .from("laia_revisions")
     .insert({
       company_id: companyId,
       revision_number: nextNumber,
@@ -284,7 +284,7 @@ export async function addChangesToRevision(revisionId: string, changes: ChangeIn
   }));
 
   const { error } = await supabase
-    .from("laia_revision_changes" as any)
+    .from("laia_revision_changes")
     .insert(rows);
 
   if (error) throw error;
@@ -294,7 +294,7 @@ export async function validateRevision(id: string): Promise<void> {
   const userId = await getUserId();
 
   const { error } = await supabase
-    .from("laia_revisions" as any)
+    .from("laia_revisions")
     .update({
       status: 'validada',
       validated_by: userId,
@@ -307,7 +307,7 @@ export async function validateRevision(id: string): Promise<void> {
 
 export async function finalizeRevision(id: string, title: string, description?: string): Promise<void> {
   const { error } = await supabase
-    .from("laia_revisions" as any)
+    .from("laia_revisions")
     .update({
       status: 'finalizada',
       title,
@@ -321,7 +321,7 @@ export async function finalizeRevision(id: string, title: string, description?: 
 
 export async function updateRevisionTitle(id: string, title: string, description?: string): Promise<void> {
   const { error } = await supabase
-    .from("laia_revisions" as any)
+    .from("laia_revisions")
     .update({
       title,
       description: description || null,
@@ -333,7 +333,7 @@ export async function updateRevisionTitle(id: string, title: string, description
 
 export async function deleteRevision(id: string): Promise<void> {
   const { error } = await supabase
-    .from("laia_revisions" as any)
+    .from("laia_revisions")
     .delete()
     .eq("id", id);
 
@@ -344,7 +344,7 @@ export async function getPendingChangesCount(): Promise<number> {
   const companyId = await getUserCompanyId();
 
   const { data: draft } = await supabase
-    .from("laia_revisions" as any)
+    .from("laia_revisions")
     .select("id")
     .eq("company_id", companyId)
     .eq("status", "rascunho")
@@ -353,7 +353,7 @@ export async function getPendingChangesCount(): Promise<number> {
   if (!draft) return 0;
 
   const { data: changes } = await supabase
-    .from("laia_revision_changes" as any)
+    .from("laia_revision_changes")
     .select("id")
     .eq("revision_id", (draft as any).id);
 
