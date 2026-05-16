@@ -183,7 +183,11 @@ export async function getLicenseAIStats(): Promise<LicenseAIStats> {
   // F-026: RLS já protege estas 4 tabelas por company_id, mas adicionamos
   // o filtro explícito como defesa em profundidade — assim se uma policy
   // for amplada acidentalmente no futuro, ainda evitamos vazamento.
-  const { data: companyId } = await supabase.rpc('get_user_company_id');
+  const { data: companyId, error: companyIdError } = await supabase.rpc('get_user_company_id');
+  if (companyIdError) {
+    logger.error('Error fetching user company id', companyIdError, 'compliance');
+    throw companyIdError;
+  }
   if (!companyId) {
     return {
       totalAnalyzed: 0,
