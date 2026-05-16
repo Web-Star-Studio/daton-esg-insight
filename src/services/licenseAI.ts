@@ -180,16 +180,36 @@ export async function resolveAlert(alertId: string): Promise<void> {
 
 // Buscar estatísticas de IA das licenças
 export async function getLicenseAIStats(): Promise<LicenseAIStats> {
+  // F-026: RLS já protege estas 4 tabelas por company_id, mas adicionamos
+  // o filtro explícito como defesa em profundidade — assim se uma policy
+  // for amplada acidentalmente no futuro, ainda evitamos vazamento.
+  const { data: companyId, error: companyIdError } = await supabase.rpc('get_user_company_id');
+  if (companyIdError) {
+    logger.error('Error fetching user company id', companyIdError, 'compliance');
+    throw companyIdError;
+  }
+  if (!companyId) {
+    return {
+      totalAnalyzed: 0,
+      avgConfidenceScore: 0,
+      totalConditions: 0,
+      totalAlerts: 0,
+      criticalAlerts: 0,
+      pendingConditions: 0,
+      complianceScore: 0,
+    };
+  }
+
   const [
     { data: analyses },
     { data: conditions },
     { data: alerts },
     { data: licenses }
   ] = await Promise.all([
-    supabase.from('license_ai_analysis').select('confidence_score'),
-    supabase.from('license_conditions').select('status'),
-    supabase.from('license_alerts').select('severity, is_resolved'),
-    supabase.from('licenses').select('compliance_score')
+    supabase.from('license_ai_analysis').select('confidence_score').eq('company_id', companyId),
+    supabase.from('license_conditions').select('status').eq('company_id', companyId),
+    supabase.from('license_alerts').select('severity, is_resolved').eq('company_id', companyId),
+    supabase.from('licenses').select('compliance_score').eq('company_id', companyId)
   ]);
   const analysesList = Array.isArray(analyses) ? analyses : [];
   const conditionsList = Array.isArray(conditions) ? conditions : [];
