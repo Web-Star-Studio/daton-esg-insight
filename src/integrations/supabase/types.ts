@@ -2191,6 +2191,7 @@ export type Database = {
           created_at: string
           description: string | null
           file_name: string
+          file_path: string | null
           file_size: number | null
           file_type: string | null
           file_url: string
@@ -2204,6 +2205,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           file_name: string
+          file_path?: string | null
           file_size?: number | null
           file_type?: string | null
           file_url: string
@@ -2217,6 +2219,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           file_name?: string
+          file_path?: string | null
           file_size?: number | null
           file_type?: string | null
           file_url?: string
@@ -26904,7 +26907,6 @@ export type Database = {
           user_id: string
         }[]
       }
-      exec_sql: { Args: { query: string }; Returns: Json }
       finalize_audit_planning: { Args: { p_audit_id: string }; Returns: Json }
       get_conversion_factor:
         | {
