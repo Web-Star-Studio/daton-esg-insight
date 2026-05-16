@@ -100,7 +100,7 @@ export const useSystemOptimization = () => {
   // Real-time system health
   useEffect(() => {
     const channel = supabase
-      .channel('system-health')
+      .channel('system-health', { config: { private: true } })
       .on('broadcast', { event: 'health-update' }, (payload) => {
         setMetrics(prev => ({
           ...prev,

@@ -51,7 +51,7 @@ export function useExtractionRealtime({
 
     // Subscribe to approval logs
     const approvalChannel = supabase
-      .channel('extraction-approval-logs')
+      .channel('extraction-approval-logs', { config: { private: true } })
       .on(
         'postgres_changes',
         {
@@ -105,7 +105,7 @@ export function useExtractionRealtime({
 
     // Subscribe to extracted_data_preview updates AND inserts
     const previewChannel = supabase
-      .channel('extraction-preview-updates')
+      .channel('extraction-preview-updates', { config: { private: true } })
       .on(
         'postgres_changes',
         {

@@ -72,7 +72,7 @@ export default function ProcessarLicenca() {
     
     // Real-time subscription for license updates
     const channel = supabase
-      .channel('license-changes')
+      .channel('license-changes', { config: { private: true } })
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

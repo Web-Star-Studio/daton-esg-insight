@@ -307,91 +307,117 @@ class NotificationTriggersService {
     });
   }
 
-  // Automatic monitoring setup
-  setupRealtimeMonitoring() {
-    // Monitor emission data changes
-    supabase
-      .channel('emission-monitoring')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'activity_data' },
-        async (payload) => {
-          if (payload.new) {
-            const activityData = payload.new as any;
-            await this.onEmissionDataAdded(
-              activityData.id,
-              `Atividade ${activityData.id}`,
-              activityData.quantity || 0
-            );
-          }
-        }
-      )
-      .subscribe();
+  // Automatic monitoring setup — retorna função de cleanup que remove os 4
+  // canais. Caller (useNotificationTriggers) deve invocar no unmount; sem
+  // isso, re-mounts duplicam listeners e auth failures somem silenciosamente.
+  setupRealtimeMonitoring(): () => void {
+    const channels: ReturnType<typeof supabase.channel>[] = [];
 
-    // Monitor goal progress updates
-    supabase
-      .channel('goal-monitoring')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'goal_progress_updates' },
-        async (payload) => {
-          if (payload.new) {
-            const update = payload.new as any;
-            // Get goal details
-            const { data: goal } = await supabase
-              .from('goals')
-              .select('name')
-              .eq('id', update.goal_id)
-              .single();
-            
-            if (goal) {
-              await this.onGoalUpdated(
-                update.goal_id,
-                goal.name,
-                update.progress_percentage || 0,
-                0 // We'd need to fetch previous value for accurate change
+    const subscribeWithStatus = (name: string, channel: ReturnType<typeof supabase.channel>) => {
+      channel.subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          logger.error(`Realtime ${name} subscription status: ${status}`, undefined, 'notification');
+        }
+      });
+      channels.push(channel);
+    };
+
+    // Monitor emission data changes
+    subscribeWithStatus(
+      'emission-monitoring',
+      supabase
+        .channel('emission-monitoring', { config: { private: true } })
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'activity_data' },
+          async (payload) => {
+            if (payload.new) {
+              const activityData = payload.new as any;
+              await this.onEmissionDataAdded(
+                activityData.id,
+                `Atividade ${activityData.id}`,
+                activityData.quantity || 0
               );
             }
           }
-        }
-      )
-      .subscribe();
+        )
+    );
+
+    // Monitor goal progress updates
+    subscribeWithStatus(
+      'goal-monitoring',
+      supabase
+        .channel('goal-monitoring', { config: { private: true } })
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'goal_progress_updates' },
+          async (payload) => {
+            if (payload.new) {
+              const update = payload.new as any;
+              const { data: goal } = await supabase
+                .from('goals')
+                .select('name')
+                .eq('id', update.goal_id)
+                .single();
+
+              if (goal) {
+                await this.onGoalUpdated(
+                  update.goal_id,
+                  goal.name,
+                  update.progress_percentage || 0,
+                  0
+                );
+              }
+            }
+          }
+        )
+    );
 
     // Monitor document uploads
-    supabase
-      .channel('document-monitoring')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'documents' },
-        async (payload) => {
-          if (payload.new) {
-            const document = payload.new as any;
-            await this.onDocumentUploaded(
-              document.id,
-              document.file_name,
-              document.file_type
-            );
+    subscribeWithStatus(
+      'document-monitoring',
+      supabase
+        .channel('document-monitoring', { config: { private: true } })
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'documents' },
+          async (payload) => {
+            if (payload.new) {
+              const document = payload.new as any;
+              await this.onDocumentUploaded(
+                document.id,
+                document.file_name,
+                document.file_type
+              );
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+    );
 
     // Monitor audit findings
-    supabase
-      .channel('audit-monitoring')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'audit_findings' },
-        async (payload) => {
-          if (payload.new) {
-            const finding = payload.new as any;
-            await this.onAuditFindingCreated(
-              finding.id,
-              finding.description || 'Nova não-conformidade',
-              finding.severity || 'medium'
-            );
+    subscribeWithStatus(
+      'audit-monitoring',
+      supabase
+        .channel('audit-monitoring', { config: { private: true } })
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'audit_findings' },
+          async (payload) => {
+            if (payload.new) {
+              const finding = payload.new as any;
+              await this.onAuditFindingCreated(
+                finding.id,
+                finding.description || 'Nova não-conformidade',
+                finding.severity || 'medium'
+              );
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+    );
 
     logger.info('Real-time notification monitoring setup complete', 'notification');
+
+    return () => {
+      channels.forEach((channel) => {
+        void supabase.removeChannel(channel);
+      });
+    };
   }
 
   // License expiration checker (to be run periodically)

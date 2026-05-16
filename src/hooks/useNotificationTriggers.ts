@@ -7,11 +7,11 @@ export const useNotificationTriggers = () => {
   // Setup real-time monitoring on component mount
   useEffect(() => {
     console.warn('Setting up notification triggers...');
-    notificationTriggers.setupRealtimeMonitoring();
-    
+    const teardown = notificationTriggers.setupRealtimeMonitoring();
+
     return () => {
       console.warn('Notification triggers cleanup');
-      // Cleanup would be handled by Supabase client
+      teardown();
     };
   }, []);
 

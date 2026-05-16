@@ -53,7 +53,7 @@ export function useDocumentProcessingNotifications() {
 
     // Subscribe to extraction jobs updates
     const jobsChannel = supabase
-      .channel('document-processing-notifications')
+      .channel('document-processing-notifications', { config: { private: true } })
       .on(
         'postgres_changes',
         {
@@ -164,7 +164,7 @@ export function useDocumentProcessingNotifications() {
 
     // Subscribe to extracted data preview insertions (novos dados para revisar)
     const previewChannel = supabase
-      .channel('extraction-preview-notifications')
+      .channel('extraction-preview-notifications', { config: { private: true } })
       .on(
         'postgres_changes',
         {

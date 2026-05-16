@@ -85,7 +85,7 @@ export function AlertsWidget() {
     fetchAlerts();
 
     const channel = supabase
-      .channel('alerts-changes')
+      .channel('alerts-changes', { config: { private: true } })
       .on(
         'postgres_changes',
         {
