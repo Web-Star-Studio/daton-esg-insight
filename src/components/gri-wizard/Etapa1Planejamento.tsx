@@ -130,7 +130,14 @@ export function Etapa1Planejamento({ reportId, reportData, onUpdate, onNext }: E
       return;
     }
 
-    const filePath = `${reportId}/guidelines/${file.name}`;
+    const { data: companyId, error: companyIdError } = await supabase.rpc('get_user_company_id');
+    if (companyIdError || !companyId) {
+      toast.error('Empresa não encontrada');
+      console.error(companyIdError);
+      return;
+    }
+
+    const filePath = `${companyId}/${reportId}/guidelines/${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from('gri-documents')
       .upload(filePath, file, { upsert: true });
@@ -155,9 +162,16 @@ export function Etapa1Planejamento({ reportId, reportData, onUpdate, onNext }: E
   const clearGuidelinesFile = async () => {
     if (!reportId || !guidelinesFile) return;
 
-    const filePath = `${reportId}/guidelines/${guidelinesFile.name}`;
-    await supabase.storage.from('gri-documents').remove([filePath]);
-    
+    const { data: report } = await supabase
+      .from('gri_reports')
+      .select('guidelines_file_path')
+      .eq('id', reportId)
+      .maybeSingle();
+
+    if (report?.guidelines_file_path) {
+      await supabase.storage.from('gri-documents').remove([report.guidelines_file_path]);
+    }
+
     await supabase
       .from('gri_reports')
       .update({ guidelines_file_path: null })
