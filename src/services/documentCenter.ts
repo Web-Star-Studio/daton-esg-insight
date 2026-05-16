@@ -966,14 +966,11 @@ export async function updateDocumentMetadata(documentId: string, payload: Update
 }
 
 export async function replaceDocumentFile(documentId: string, file: File): Promise<void> {
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError || !authData.user) {
-    throw new Error("Usuário não autenticado.");
-  }
+  const { companyId } = await getCompanyContext();
 
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const fileExt = sanitizedName.split(".").pop() || "bin";
-  const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+  const filePath = `${companyId}/general/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage
     .from("documents")

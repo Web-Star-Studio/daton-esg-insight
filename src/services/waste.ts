@@ -451,13 +451,13 @@ export const uploadWasteDocument = async (wasteLogId: string, file: File): Promi
     .eq('id', user.user.id)
     .maybeSingle();
 
-  if (profileError || !profile) {
+  if (profileError || !profile?.company_id) {
     throw new Error('Erro ao obter dados da empresa');
   }
 
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-  const filePath = `waste-logs/${wasteLogId}/${fileName}`;
+  const filePath = `${profile.company_id}/waste-logs/${wasteLogId}/${fileName}`;
 
   // Upload file to Supabase Storage
   const { error: uploadError } = await supabase.storage
