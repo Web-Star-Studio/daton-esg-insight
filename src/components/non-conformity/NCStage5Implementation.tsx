@@ -22,7 +22,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface EvidenceAttachment {
   name: string;
-  url: string;
+  // url: armazenado em attachments antigos (era publicUrl quando o bucket
+  // era public=true). Mantido nullable pra compatibilidade — anchors agora
+  // usam path + createSignedUrl on-click.
+  url?: string | null;
+  path?: string | null;
   size: number;
   type: string;
 }
@@ -87,13 +91,11 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
           continue;
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('nc-evidence')
-          .getPublicUrl(filePath);
-
+        // Bucket é private (migration 20260516050000). Armazena path puro;
+        // download é via createSignedUrl on-click (handleOpenAttachment).
         newAttachments.push({
           name: file.name,
-          url: publicUrl,
+          path: filePath,
           size: file.size,
           type: file.type,
         });
@@ -112,6 +114,27 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
 
   const handleRemoveAttachment = (index: number) => {
     setAttachments(attachments.filter((_, i) => i !== index));
+  };
+
+  const handleOpenAttachment = async (file: EvidenceAttachment) => {
+    // Path canônico: file.path (bucket privado). Fallback: file.url legado
+    // (pode estar quebrado depois da privatização, mas tenta).
+    if (file.path) {
+      const { data, error } = await supabase.storage
+        .from('nc-evidence')
+        .createSignedUrl(file.path, 3600);
+      if (error || !data?.signedUrl) {
+        toast.error(error?.message ?? 'Erro ao gerar link');
+        return;
+      }
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (file.url) {
+      window.open(file.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    toast.error('Arquivo indisponível');
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -419,14 +442,13 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <a 
-                          href={file.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-sm truncate hover:underline text-primary"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAttachment(file)}
+                          className="text-sm truncate hover:underline text-primary text-left bg-transparent border-0 p-0 cursor-pointer"
                         >
                           {file.name}
-                        </a>
+                        </button>
                         <span className="text-xs text-muted-foreground shrink-0">
                           ({formatFileSize(file.size)})
                         </span>
