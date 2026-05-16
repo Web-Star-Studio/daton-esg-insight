@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Activity, RefreshCw, FileCheck, ListTodo, Target, Cloud } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Activity, RefreshCw, FileCheck, ListTodo, Target, Cloud, Plus } from 'lucide-react';
 import { getFullAnalysis, FullAnalysis } from '@/services/predictiveAnalytics';
 import { cn } from '@/lib/utils';
 import { logger } from '@/utils/logger';
@@ -17,6 +18,7 @@ interface PredictiveInsightsWidgetProps {
 }
 
 export function PredictiveInsightsWidget({ embedded = false, className }: PredictiveInsightsWidgetProps) {
+  const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<FullAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,22 +126,34 @@ export function PredictiveInsightsWidget({ embedded = false, className }: Predic
               </p>
             </div>
             {!isAuthError && (
-              <Button
-                onClick={fetchAnalysis}
-                variant="outline"
-                size="sm"
-                disabled={loading}
-                className="flex-shrink-0"
-              >
-                <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
-                Tentar novamente
-              </Button>
+              isInsufficientData ? (
+                <Button
+                  onClick={() => navigate('/inventario-gee')}
+                  variant="default"
+                  size="sm"
+                  className="flex-shrink-0"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar emissões
+                </Button>
+              ) : (
+                <Button
+                  onClick={fetchAnalysis}
+                  variant="outline"
+                  size="sm"
+                  disabled={loading}
+                  className="flex-shrink-0"
+                >
+                  <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+                  Tentar novamente
+                </Button>
+              )
             )}
           </div>
         </div>
       );
     }
-    
+
     return (
       <Card className={cn(floatingCardClass, className)}>
         <CardHeader className="pb-2">
@@ -173,16 +187,28 @@ export function PredictiveInsightsWidget({ embedded = false, className }: Predic
               </p>
             </div>
             {!isAuthError && (
-              <Button 
-                onClick={fetchAnalysis} 
-                variant="outline" 
-                size="sm"
-                disabled={loading}
-                className="flex-shrink-0"
-              >
-                <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
-                Tentar novamente
-              </Button>
+              isInsufficientData ? (
+                <Button
+                  onClick={() => navigate('/inventario-gee')}
+                  variant="default"
+                  size="sm"
+                  className="flex-shrink-0"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar emissões
+                </Button>
+              ) : (
+                <Button
+                  onClick={fetchAnalysis}
+                  variant="outline"
+                  size="sm"
+                  disabled={loading}
+                  className="flex-shrink-0"
+                >
+                  <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+                  Tentar novamente
+                </Button>
+              )
             )}
           </div>
         </CardContent>
@@ -296,11 +322,19 @@ export function PredictiveInsightsWidget({ embedded = false, className }: Predic
           <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
             <div className="flex items-start gap-3">
               <Activity className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-blue-800">Dados insuficientes</p>
                 <p className="text-xs text-blue-600 mt-0.5">
                   Registre 3+ meses de emissões para previsões
                 </p>
+                <Button
+                  onClick={() => navigate('/inventario-gee')}
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 mt-2 text-xs text-blue-700"
+                >
+                  Ir para Inventário GEE →
+                </Button>
               </div>
             </div>
           </div>
