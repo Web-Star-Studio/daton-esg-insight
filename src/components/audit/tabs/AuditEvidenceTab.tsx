@@ -34,24 +34,26 @@ export function AuditEvidenceTab({ auditId }: AuditEvidenceTabProps) {
     mutationFn: async (evidenceId: string) => {
       const evidence = await supabase
         .from('audit_evidence')
-        .select('file_url')
+        .select('file_path, file_url')
         .eq('id', evidenceId)
         .single();
 
-      if (evidence.data?.file_url) {
-        const fileName = evidence.data.file_url.split('/').pop();
-        if (fileName) {
-          await supabase.storage
-            .from('audit-evidence')
-            .remove([`${auditId}/${fileName}`]);
-        }
+      // Path canônico: usar file_path quando presente; fallback p/ extrair
+      // do file_url legado (quando bucket era público).
+      const path =
+        evidence.data?.file_path ??
+        (evidence.data?.file_url
+          ? `${auditId}/${evidence.data.file_url.split('/').pop() ?? ''}`
+          : null);
+      if (path) {
+        await supabase.storage.from('audit-evidence').remove([path]);
       }
 
       const { error } = await supabase
         .from('audit_evidence')
         .delete()
         .eq('id', evidenceId);
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -84,15 +86,13 @@ export function AuditEvidenceTab({ auditId }: AuditEvidenceTabProps) {
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('audit-evidence')
-          .getPublicUrl(filePath);
-
+        // Bucket é private (migration 20260516030000). Armazena o path puro;
+        // o download é via createSignedUrl on-demand.
         const { error: dbError } = await supabase
           .from('audit_evidence')
           .insert({
             audit_id: auditId,
-            file_url: publicUrl,
+            file_path: filePath,
             file_name: file.name,
             file_type: file.type,
             uploaded_by_user_id: user.id,
@@ -121,6 +121,32 @@ export function AuditEvidenceTab({ auditId }: AuditEvidenceTabProps) {
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith('image/')) return <ImageIcon className="h-5 w-5" />;
     return <FileText className="h-5 w-5" />;
+  };
+
+  const handleDownload = async (item: { file_path?: string | null; file_url?: string | null; file_name?: string | null }) => {
+    // Path canônico: file_path (bucket privado). Fallback: file_url legado
+    // (quando o bucket era público). Sem path identificável → mostra erro.
+    const path =
+      item.file_path ??
+      (item.file_url
+        ? `${auditId}/${item.file_url.split('/').pop() ?? ''}`
+        : null);
+    if (!path) {
+      toast({ title: 'Arquivo indisponível', variant: 'destructive' });
+      return;
+    }
+    const { data, error } = await supabase.storage
+      .from('audit-evidence')
+      .createSignedUrl(path, 3600); // 1h de validade
+    if (error || !data?.signedUrl) {
+      toast({
+        title: 'Erro ao gerar link',
+        description: error?.message ?? 'Sem permissão para acessar o arquivo',
+        variant: 'destructive',
+      });
+      return;
+    }
+    window.open(data.signedUrl, '_blank');
   };
 
   return (
@@ -170,7 +196,7 @@ export function AuditEvidenceTab({ auditId }: AuditEvidenceTabProps) {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => window.open(item.file_url, '_blank')}
+                      onClick={() => handleDownload(item)}
                     >
                       <Download className="h-4 w-4" />
                     </Button>
