@@ -143,7 +143,7 @@ export async function getDocumentComplianceBySupplier(
 
   const supplierMap = new Map<string, { total: number; compliant: number }>();
 
-  (evaluations as any[] || []).forEach((ev: any) => {
+  (evaluations ?? []).forEach((ev) => {
     const supplierId = ev.supplier_id;
     
     if (!supplierMap.has(supplierId)) {
@@ -182,7 +182,7 @@ export async function getPerformanceIndicators(
 
   if (error) throw error;
 
-  const evals = data as any[] || [];
+  const evals = data ?? [];
   const totalEvaluated = evals.length;
   
   if (totalEvaluated === 0) {
@@ -216,7 +216,7 @@ export async function getPerformanceEvolution(
       .gte('evaluation_date', start.toISOString())
       .lte('evaluation_date', end.toISOString());
 
-    const evals = data as any[] || [];
+    const evals = data ?? [];
     const count = evals.length;
     
     evolution.push({
@@ -243,7 +243,7 @@ export async function getTopPerformingSuppliers(
 
   const supplierMap = new Map<string, number[]>();
 
-  (data as any[] || []).forEach((ev: any) => {
+  (data ?? []).forEach((ev) => {
     const supplierId = ev.supplier_id;
     if (!supplierMap.has(supplierId)) {
       supplierMap.set(supplierId, []);
@@ -287,31 +287,31 @@ export async function getPortalParticipationIndicators(
     .gte('assigned_at', start.toISOString())
     .lte('assigned_at', end.toISOString());
 
-  const trainingsArr = trainings as any[] || [];
+  const trainingsArr = trainings ?? [];
   const trainingsTotal = trainingsArr.length;
   const trainingsCompleted = trainingsArr.filter(t => t.status === 'completed').length;
 
   // Readings
-  const { data: readings } = await (supabase
-    .from('supplier_reading_confirmations' as any)
+  const { data: readings } = await supabase
+    .from('supplier_reading_confirmations')
     .select('confirmed_at')
     .eq('company_id', companyId)
     .gte('created_at', start.toISOString())
-    .lte('created_at', end.toISOString()) as any);
+    .lte('created_at', end.toISOString());
 
-  const readingsArr = readings as any[] || [];
+  const readingsArr = readings ?? [];
   const readingsTotal = readingsArr.length;
   const readingsConfirmed = readingsArr.filter(r => r.confirmed_at !== null).length;
 
   // Surveys
-  const { data: surveys } = await (supabase
-    .from('supplier_survey_responses' as any)
+  const { data: surveys } = await supabase
+    .from('supplier_survey_responses')
     .select('status')
     .eq('company_id', companyId)
     .gte('created_at', start.toISOString())
-    .lte('created_at', end.toISOString()) as any);
+    .lte('created_at', end.toISOString());
 
-  const surveysArr = surveys as any[] || [];
+  const surveysArr = surveys ?? [];
   const surveysTotal = surveysArr.length;
   const surveysResponded = surveysArr.filter(s => s.status === 'completed').length;
 
