@@ -230,7 +230,7 @@ const getSgqDocumentBranchesMap = async (
 
   // Paginado: N documents × M branches pode passar de 1000 facilmente.
   const data = await fetchAllPaginated<any>((from, to) =>
-    (supabase as any)
+    supabase
       .from("sgq_document_branches")
       .select("sgq_document_id, branch_id, branches:branch_id(name)")
       .in("sgq_document_id", documentIds)
@@ -252,7 +252,7 @@ const getSgqDocumentBranchesMap = async (
 export const getSgqSettings = async (): Promise<SgqDocumentSettings> => {
   const { companyId } = await getCurrentUserAndCompany();
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("sgq_iso_document_settings")
     .select("*")
     .eq("company_id", companyId)
@@ -261,7 +261,7 @@ export const getSgqSettings = async (): Promise<SgqDocumentSettings> => {
   if (error) throw new Error(`Erro ao buscar configurações SGQ: ${error.message}`);
   if (data) return data;
 
-  const { data: inserted, error: insertError } = await (supabase as any)
+  const { data: inserted, error: insertError } = await supabase
     .from("sgq_iso_document_settings")
     .insert({ company_id: companyId, default_expiring_days: 30 })
     .select("*")
@@ -274,7 +274,7 @@ export const getSgqSettings = async (): Promise<SgqDocumentSettings> => {
 export const updateSgqSettings = async (defaultExpiringDays: number): Promise<SgqDocumentSettings> => {
   const { companyId } = await getCurrentUserAndCompany();
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("sgq_iso_document_settings")
     .upsert({
       company_id: companyId,
@@ -340,7 +340,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
     `;
 
   const buildQuery = (select: string) => {
-    let q = (supabase as any)
+    let q = supabase
       .from("sgq_iso_documents")
       .select(select)
       .eq("company_id", companyId)
@@ -357,18 +357,28 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
     docs = fallback.data;
   }
 
-  const documents = (docs || []) as any[];
+  // Tipo permissivo (select dinâmico mistura colunas conhecidas + extended).
+  // Mantém os campos que esta função realmente lê tipados; o resto é unknown
+  // (não any) — fecha o último `as any` deste arquivo sem reescrever o select.
+  type SgqDocumentLite = {
+    id: string;
+    elaborated_by_user_id?: string | null;
+    approved_by_user_id?: string | null;
+    critical_reviewer_user_id?: string | null;
+    [key: string]: unknown;
+  };
+  const documents = (docs ?? []) as SgqDocumentLite[];
   if (documents.length === 0) return [];
 
-  const docIds = documents.map((d: any) => d.id);
+  const docIds = documents.map((d) => d.id);
   const branchesMap = await getSgqDocumentBranchesMap(docIds);
 
   // Fetch employee names for elaborated_by and approved_by
   const userIds = [
     ...new Set([
-      ...documents.map((d: any) => d.elaborated_by_user_id),
-      ...documents.map((d: any) => d.approved_by_user_id),
-      ...documents.map((d: any) => d.critical_reviewer_user_id),
+      ...documents.map((d) => d.elaborated_by_user_id),
+      ...documents.map((d) => d.approved_by_user_id),
+      ...documents.map((d) => d.critical_reviewer_user_id),
     ].filter(Boolean) as string[]),
   ];
   const employeeNameMap = new Map<string, string>();
@@ -386,7 +396,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
   }
 
   // Count pending recipients per document
-  const { data: campaignsData } = await (supabase as any)
+  const { data: campaignsData } = await supabase
     .from("sgq_read_campaigns")
     .select("id, sgq_document_id")
     .in("sgq_document_id", docIds)
@@ -396,7 +406,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
   let pendingByDoc = new Map<string, number>();
 
   if (campaignIds.length > 0) {
-    const { data: recipientsData } = await (supabase as any)
+    const { data: recipientsData } = await supabase
       .from("sgq_read_recipients")
       .select("campaign_id, status")
       .in("campaign_id", campaignIds)
@@ -412,7 +422,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
   }
 
   // Count pending reviews per document
-  const { data: reviewsData } = await (supabase as any)
+  const { data: reviewsData } = await supabase
     .from("sgq_review_requests")
     .select("sgq_document_id")
     .in("sgq_document_id", docIds)
@@ -528,7 +538,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
     responsible_department: payload.responsible_department || null,
   };
 
-  let { data: doc, error: docError } = await (supabase as any)
+  let { data: doc, error: docError } = await supabase
     .from("sgq_iso_documents")
     .insert({
       ...baseInsert,
@@ -540,7 +550,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
 
   if (docError) {
     // Fallback: migration not yet applied, insert without new columns
-    const fallback = await (supabase as any)
+    const fallback = await supabase
       .from("sgq_iso_documents")
       .insert(baseInsert)
       .select("id")
@@ -559,7 +569,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
     });
 
     if (payload.branch_ids && payload.branch_ids.length > 0) {
-      await (supabase as any).from("sgq_document_branches").insert(
+      await supabase.from("sgq_document_branches").insert(
         payload.branch_ids.map((branchId) => ({
           sgq_document_id: doc.id,
           branch_id: branchId,
@@ -568,7 +578,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
     }
 
     // 3. Create version 1
-    const { error: versionError } = await (supabase as any)
+    const { error: versionError } = await supabase
       .from("sgq_document_versions")
       .insert({
         sgq_document_id: doc.id,
@@ -583,7 +593,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
     if (versionError) throw new Error(`Erro ao criar versão inicial: ${versionError.message}`);
 
     // 4. Create read campaign (inactive until approver explicitly approves)
-    const { data: campaign } = await (supabase as any)
+    const { data: campaign } = await supabase
       .from("sgq_read_campaigns")
       .insert({
         sgq_document_id: doc.id,
@@ -602,7 +612,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
         user_id: uid,
         status: "pending",
       }));
-      await (supabase as any).from("sgq_read_recipients").insert(recipients);
+      await supabase.from("sgq_read_recipients").insert(recipients);
     }
 
     // 5. Create references
@@ -612,10 +622,10 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
         referenced_document_id: refId,
         company_id: companyId,
       }));
-      await (supabase as any).from("sgq_document_references").insert(refs);
+      await supabase.from("sgq_document_references").insert(refs);
     }
   } catch (err: any) {
-    await (supabase as any).from("sgq_iso_documents").delete().eq("id", doc.id);
+    await supabase.from("sgq_iso_documents").delete().eq("id", doc.id);
     throw new Error(`Erro ao finalizar criação do documento: ${err?.message || "desconhecido"}. Cadastro desfeito.`);
   }
 
@@ -639,7 +649,7 @@ export const createSgqDocument = async (payload: CreateSgqDocumentPayload): Prom
 export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload): Promise<void> => {
   const { user, companyId } = await getCurrentUserAndCompany();
 
-  const { data: doc } = await (supabase as any)
+  const { data: doc } = await supabase
     .from("sgq_iso_documents")
     .select("current_version_number, title")
     .eq("id", payload.sgq_document_id)
@@ -655,7 +665,7 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
     tags: ["sgq-document"],
   });
 
-  await (supabase as any)
+  await supabase
     .from("sgq_document_versions")
     .insert({
       sgq_document_id: payload.sgq_document_id,
@@ -668,7 +678,7 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
       attachment_document_id: attachment.id,
     });
 
-  await (supabase as any)
+  await supabase
     .from("sgq_iso_documents")
     .update({
       current_version_number: newVersion,
@@ -680,7 +690,7 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
     .eq("id", payload.sgq_document_id);
 
   if (payload.recipient_user_ids && payload.recipient_user_ids.length > 0) {
-    const { data: campaign } = await (supabase as any)
+    const { data: campaign } = await supabase
       .from("sgq_read_campaigns")
       .insert({
         sgq_document_id: payload.sgq_document_id,
@@ -699,7 +709,7 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
         user_id: uid,
         status: "pending",
       }));
-      await (supabase as any).from("sgq_read_recipients").insert(recipients);
+      await supabase.from("sgq_read_recipients").insert(recipients);
       notifyReadCampaignCreated(payload.recipient_user_ids, doc.title, payload.sgq_document_id, newVersion).catch(() => {});
     }
   }
@@ -710,7 +720,7 @@ export const createSgqDocumentVersion = async (payload: CreateSgqVersionPayload)
 export const approveCriticalReview = async (docId: string): Promise<void> => {
   const { user } = await getCurrentUserAndCompany();
 
-  const { data: doc, error: fetchErr } = await (supabase as any)
+  const { data: doc, error: fetchErr } = await supabase
     .from("sgq_iso_documents")
     .select("id, title, critical_reviewer_user_id, critical_review_status, approved_by_user_id, is_approved")
     .eq("id", docId)
@@ -722,7 +732,7 @@ export const approveCriticalReview = async (docId: string): Promise<void> => {
   if (doc.critical_reviewer_user_id !== user.id) throw new Error("Apenas o analista crítico designado pode executar esta etapa");
   if (doc.critical_review_status === "approved") throw new Error("A análise crítica já foi aprovada");
 
-  const { error: updateErr } = await (supabase as any)
+  const { error: updateErr } = await supabase
     .from("sgq_iso_documents")
     .update({ critical_review_status: "approved", updated_at: new Date().toISOString() })
     .eq("id", docId);
@@ -740,7 +750,7 @@ export const approveCriticalReview = async (docId: string): Promise<void> => {
 export const approveInitialDocument = async (docId: string): Promise<void> => {
   const { user, companyId } = await getCurrentUserAndCompany();
 
-  const { data: doc, error: fetchErr } = await (supabase as any)
+  const { data: doc, error: fetchErr } = await supabase
     .from("sgq_iso_documents")
     .select("id, title, approved_by_user_id, critical_reviewer_user_id, critical_review_status, is_approved")
     .eq("id", docId)
@@ -753,7 +763,7 @@ export const approveInitialDocument = async (docId: string): Promise<void> => {
     throw new Error("A análise crítica ainda não foi concluída. Aguarde a aprovação do analista crítico antes de prosseguir");
 
   // 1. Mark document as approved
-  const { error: updateErr } = await (supabase as any)
+  const { error: updateErr } = await supabase
     .from("sgq_iso_documents")
     .update({ is_approved: true, approved_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq("id", docId);
@@ -761,7 +771,7 @@ export const approveInitialDocument = async (docId: string): Promise<void> => {
   if (updateErr) throw new Error(`Erro ao aprovar documento: ${updateErr.message}`);
 
   // 2. Activate the pending read campaign
-  const { data: campaigns } = await (supabase as any)
+  const { data: campaigns } = await supabase
     .from("sgq_read_campaigns")
     .update({ status: "active" })
     .eq("sgq_document_id", docId)
@@ -771,7 +781,7 @@ export const approveInitialDocument = async (docId: string): Promise<void> => {
   // 3. Notify recipients
   if (campaigns && campaigns.length > 0) {
     const campaignIds = campaigns.map((c: any) => c.id);
-    const { data: recipientsData } = await (supabase as any)
+    const { data: recipientsData } = await supabase
       .from("sgq_read_recipients")
       .select("user_id")
       .in("campaign_id", campaignIds);
@@ -796,7 +806,7 @@ export const createReviewRequest = async (payload: CreateReviewRequestPayload): 
     skipAutoProcessing: true,
   });
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("sgq_review_requests")
     .insert({
       sgq_document_id: payload.sgq_document_id,
@@ -811,7 +821,7 @@ export const createReviewRequest = async (payload: CreateReviewRequestPayload): 
   if (error) throw new Error(`Erro ao enviar para revisão: ${error.message}`);
 
   // Get doc title for notification
-  const { data: docData } = await (supabase as any)
+  const { data: docData } = await supabase
     .from("sgq_iso_documents")
     .select("title")
     .eq("id", payload.sgq_document_id)
@@ -825,7 +835,7 @@ export const createReviewRequest = async (payload: CreateReviewRequestPayload): 
 };
 
 export const getPendingReviewRequests = async (docId?: string): Promise<SgqReviewRequestItem[]> => {
-  let query = (supabase as any)
+  let query = supabase
     .from("sgq_review_requests")
     .select(`
       id, sgq_document_id, requested_by_user_id, reviewer_user_id,
@@ -867,7 +877,7 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
   const { user, companyId } = await getCurrentUserAndCompany();
 
   // Get the review request
-  const { data: request, error: fetchErr } = await (supabase as any)
+  const { data: request, error: fetchErr } = await supabase
     .from("sgq_review_requests")
     .select("*, document:sgq_document_id ( current_version_number, title )")
     .eq("id", requestId)
@@ -878,7 +888,7 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
   if (request.reviewer_user_id !== user.id) throw new Error("Apenas o revisor designado pode aprovar");
 
   // 1. Mark as approved
-  const { error: updateErr } = await (supabase as any)
+  const { error: updateErr } = await supabase
     .from("sgq_review_requests")
     .update({
       status: "approved",
@@ -893,7 +903,7 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
   const doc = request.document;
   const newVersion = (doc?.current_version_number || 1) + 1;
 
-  await (supabase as any)
+  await supabase
     .from("sgq_document_versions")
     .insert({
       sgq_document_id: request.sgq_document_id,
@@ -922,7 +932,7 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
   }
 
   // 3. Update main document
-  await (supabase as any)
+  await supabase
     .from("sgq_iso_documents")
     .update({
       current_version_number: newVersion,
@@ -936,7 +946,7 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
   // 4. Create read campaign for existing active campaign recipients
   let campaignRecipientIds: string[] = [];
 
-  const { data: existingCampaigns } = await (supabase as any)
+  const { data: existingCampaigns } = await supabase
     .from("sgq_read_campaigns")
     .select("id")
     .eq("sgq_document_id", request.sgq_document_id)
@@ -945,7 +955,7 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
     .limit(1);
 
   if (existingCampaigns && existingCampaigns.length > 0) {
-    const { data: existingRecipients } = await (supabase as any)
+    const { data: existingRecipients } = await supabase
       .from("sgq_read_recipients")
       .select("user_id")
       .eq("campaign_id", existingCampaigns[0].id);
@@ -953,7 +963,7 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
     campaignRecipientIds = (existingRecipients || []).map((r: any) => r.user_id);
 
     if (campaignRecipientIds.length > 0) {
-      const { data: campaign } = await (supabase as any)
+      const { data: campaign } = await supabase
         .from("sgq_read_campaigns")
         .insert({
           sgq_document_id: request.sgq_document_id,
@@ -972,7 +982,7 @@ export const approveReviewRequest = async (requestId: string, reviewerNotes?: st
           user_id: uid,
           status: "pending",
         }));
-        await (supabase as any).from("sgq_read_recipients").insert(recipients);
+        await supabase.from("sgq_read_recipients").insert(recipients);
       }
     }
   }
@@ -990,13 +1000,13 @@ export const rejectReviewRequest = async (requestId: string, reviewerNotes: stri
   if (!user) throw new Error("Usuário não autenticado");
 
   // Get request details for notification
-  const { data: request } = await (supabase as any)
+  const { data: request } = await supabase
     .from("sgq_review_requests")
     .select("requested_by_user_id, sgq_document_id, document:sgq_document_id ( title )")
     .eq("id", requestId)
     .maybeSingle();
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("sgq_review_requests")
     .update({
       status: "rejected",
@@ -1021,7 +1031,7 @@ export const rejectReviewRequest = async (requestId: string, reviewerNotes: stri
 // ── Versions ──
 
 export const getSgqDocumentVersions = async (docId: string): Promise<SgqVersionItem[]> => {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("sgq_document_versions")
     .select(`
       id, version_number, changes_summary,
@@ -1066,7 +1076,7 @@ export const getSgqDocumentVersions = async (docId: string): Promise<SgqVersionI
 // ── Read Campaigns ──
 
 export const getSgqReadCampaigns = async (docId: string): Promise<SgqReadCampaignItem[]> => {
-  const { data: campaigns, error } = await (supabase as any)
+  const { data: campaigns, error } = await supabase
     .from("sgq_read_campaigns")
     .select("id, version_number, title, status, created_at")
     .eq("sgq_document_id", docId)
@@ -1077,7 +1087,7 @@ export const getSgqReadCampaigns = async (docId: string): Promise<SgqReadCampaig
 
   const campaignIds = campaigns.map((c: any) => c.id);
 
-  const { data: recipientsData } = await (supabase as any)
+  const { data: recipientsData } = await supabase
     .from("sgq_read_recipients")
     .select(`
       id, campaign_id, user_id, status, sent_at, viewed_at, confirmed_at, confirmation_note,
@@ -1113,7 +1123,7 @@ export const getSgqReadCampaigns = async (docId: string): Promise<SgqReadCampaig
 };
 
 export const confirmSgqRead = async (recipientId: string, note?: string): Promise<void> => {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("sgq_read_recipients")
     .update({
       status: "confirmed",
@@ -1128,7 +1138,7 @@ export const confirmSgqRead = async (recipientId: string, note?: string): Promis
 // ── References ──
 
 export const getSgqDocumentReferences = async (docId: string): Promise<Array<{ id: string; referenced_document_id: string; file_name: string; notes: string | null }>> => {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("sgq_document_references")
     .select(`
       id, referenced_document_id, notes,
@@ -1216,21 +1226,21 @@ export const updateSgqDocument = async (id: string, payload: UpdateSgqDocumentPa
     updated_at: new Date().toISOString(),
   };
 
-  let { error } = await (supabase as any)
+  let { error } = await supabase
     .from("sgq_iso_documents")
     .update({ ...baseUpdate, critical_reviewer_user_id: payload.critical_reviewer_user_id || null })
     .eq("id", id);
 
   if (error) {
     // Fallback: migration not yet applied
-    const fallback = await (supabase as any).from("sgq_iso_documents").update(baseUpdate).eq("id", id);
+    const fallback = await supabase.from("sgq_iso_documents").update(baseUpdate).eq("id", id);
     if (fallback.error) throw new Error(`Erro ao atualizar documento: ${fallback.error.message}`);
   }
 
   // Update branches: delete existing and reinsert
-  await (supabase as any).from("sgq_document_branches").delete().eq("sgq_document_id", id);
+  await supabase.from("sgq_document_branches").delete().eq("sgq_document_id", id);
   if (payload.branch_ids && payload.branch_ids.length > 0) {
-    await (supabase as any).from("sgq_document_branches").insert(
+    await supabase.from("sgq_document_branches").insert(
       payload.branch_ids.map((branchId) => ({ sgq_document_id: id, branch_id: branchId })),
     );
   }
@@ -1279,7 +1289,7 @@ export const batchImportDocumentVersions = async (
   const { user, companyId } = await getCurrentUserAndCompany();
 
   // Fetch existing versions (raw) sorted oldest→newest so offset order is preserved
-  const { data: existingRaw } = await (supabase as any)
+  const { data: existingRaw } = await supabase
     .from("sgq_document_versions")
     .select("id, version_number, changes_summary, elaborated_by_user_id, approved_by_user_id, approved_at, attachment_document_id, created_at")
     .eq("sgq_document_id", docId)
@@ -1290,7 +1300,7 @@ export const batchImportDocumentVersions = async (
 
   // Delete all existing versions (we will re-insert with new numbers)
   if (existing.length > 0) {
-    await (supabase as any).from("sgq_document_versions").delete().eq("sgq_document_id", docId);
+    await supabase.from("sgq_document_versions").delete().eq("sgq_document_id", docId);
   }
 
   // Build batch records with original version numbers
@@ -1319,11 +1329,11 @@ export const batchImportDocumentVersions = async (
   }));
 
   const allRecords = [...batchRecords, ...offsetRecords];
-  const { error } = await (supabase as any).from("sgq_document_versions").insert(allRecords);
+  const { error } = await supabase.from("sgq_document_versions").insert(allRecords);
   if (error) throw new Error(`Erro ao importar versões: ${error.message}`);
 
   const finalMax = maxBatch + existing.length;
-  await (supabase as any)
+  await supabase
     .from("sgq_iso_documents")
     .update({ current_version_number: finalMax, updated_at: new Date().toISOString() })
     .eq("id", docId);
