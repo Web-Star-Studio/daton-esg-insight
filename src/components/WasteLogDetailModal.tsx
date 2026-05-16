@@ -6,6 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
+import { parseDateSafe } from "@/utils/dateUtils";
+
+const safeFormat = (raw: string | null | undefined, pattern: string, fallback = "—"): string => {
+  const d = parseDateSafe(raw);
+  return d ? format(d, pattern, { locale: ptBR }) : fallback;
+};
 
 interface WasteLogDetailModalProps {
   open: boolean;
@@ -65,13 +71,13 @@ export function WasteLogDetailModal({ open, onOpenChange, wasteLogId }: WasteLog
                 <div>
                   <p className="text-sm text-muted-foreground">Data de Coleta</p>
                   <p className="font-semibold">
-                    {format(new Date(wasteLog.collection_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    {safeFormat(wasteLog.collection_date, "dd 'de' MMMM 'de' yyyy")}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Criado em</p>
                   <p className="text-sm">
-                    {format(new Date(wasteLog.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    {safeFormat(wasteLog.created_at, "dd/MM/yyyy 'às' HH:mm")}
                   </p>
                 </div>
               </CardContent>
