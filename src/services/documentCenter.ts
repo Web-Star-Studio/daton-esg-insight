@@ -421,7 +421,7 @@ async function getControlProfiles(documentIds: string[]): Promise<Record<string,
 
   // Paginado: 1 perfil por documento, mas com >1000 documentos passa do limite.
   const data = await fetchAllPaginated<DocumentControlProfile>((from, to) =>
-    (supabase as any)
+    supabase
       .from("document_control_profiles")
       .select("*")
       .in("document_id", documentIds)
@@ -483,7 +483,7 @@ async function getLatestExtractions(documentIds: string[]): Promise<Record<strin
   }
 
   const { data: previews, error: previewsError } = await (supabase
-    .from("extracted_data_preview" as any)
+    .from("extracted_data_preview")
     .select("id, job_id, validation_status, target_table, created_at, extracted_fields")
     .in("job_id", jobIds) as any);
 
@@ -508,14 +508,14 @@ async function getLatestExtractions(documentIds: string[]): Promise<Record<strin
 
 async function syncDerivedStatuses(documentIds?: string[]): Promise<void> {
   let readRecipientsQuery = supabase
-    .from("document_read_recipients" as any)
+    .from("document_read_recipients")
     .update({ status: "overdue" })
     .lt("due_at", new Date().toISOString())
     .in("status", ["pending", "viewed"]);
 
   if (documentIds && documentIds.length > 0) {
     const { data: campaigns } = await supabase
-      .from("document_read_campaigns" as any)
+      .from("document_read_campaigns")
       .select("id")
       .in("document_id", documentIds);
 
@@ -528,7 +528,7 @@ async function syncDerivedStatuses(documentIds?: string[]): Promise<void> {
   await readRecipientsQuery;
 
   let requestsQuery = supabase
-    .from("document_requests" as any)
+    .from("document_requests")
     .update({ status: "overdue" })
     .lt("due_at", new Date().toISOString())
     .in("status", ["open", "in_progress"]);
@@ -548,7 +548,7 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
   await syncDerivedStatuses(documentIds);
 
   const { data: campaigns, error: campaignError } = await supabase
-    .from("document_read_campaigns" as any)
+    .from("document_read_campaigns")
     .select("id, document_id")
     .in("document_id", documentIds)
     .eq("status", "active");
@@ -563,7 +563,7 @@ async function getPendingReadMap(documentIds: string[]): Promise<Record<string, 
   }
 
   const { data: recipients, error: recipientsError } = await supabase
-    .from("document_read_recipients" as any)
+    .from("document_read_recipients")
     .select("campaign_id, status")
     .in("campaign_id", campaignIds)
     .in("status", ["pending", "viewed", "overdue"]);
@@ -593,7 +593,7 @@ async function getOpenRequestMap(documentIds: string[]): Promise<Record<string, 
   }
 
   const { data, error } = await supabase
-    .from("document_requests" as any)
+    .from("document_requests")
     .select("target_document_id, status")
     .in("target_document_id", documentIds)
     .in("status", ["open", "in_progress", "overdue"]);
@@ -621,7 +621,7 @@ async function createChangeLog(
   const { userId } = await getCompanyContext();
 
   const { error } = await supabase
-    .from("document_change_log" as any)
+    .from("document_change_log")
     .insert({
       company_id: companyId,
       document_id: documentId,
@@ -641,7 +641,7 @@ async function fetchDocumentRelations(documentId: string): Promise<{
   incoming: DocumentRelation[];
 }> {
   const { data, error } = await supabase
-    .from("document_relations" as any)
+    .from("document_relations")
     .select("*")
     .or(`source_document_id.eq.${documentId},target_document_id.eq.${documentId}`);
 
@@ -683,7 +683,7 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
   await syncDerivedStatuses([documentId]);
 
   const { data: campaigns, error } = await supabase
-    .from("document_read_campaigns" as any)
+    .from("document_read_campaigns")
     .select("*")
     .eq("document_id", documentId)
     .order("created_at", { ascending: false });
@@ -695,7 +695,7 @@ async function fetchReadCampaigns(documentId: string): Promise<DocumentReadCampa
   const campaignIds = ((campaigns || []) as any[]).map((campaign: { id: string }) => campaign.id);
   const { data: recipients, error: recipientsError } = campaignIds.length
     ? await supabase
-        .from("document_read_recipients" as any)
+        .from("document_read_recipients")
         .select("*")
         .in("campaign_id", campaignIds)
         .order("created_at", { ascending: true })
@@ -722,7 +722,7 @@ async function fetchDocumentRequests(documentId: string): Promise<DocumentReques
   await syncDerivedStatuses([documentId]);
 
   const { data, error } = await supabase
-    .from("document_requests" as any)
+    .from("document_requests")
     .select("*")
     .eq("target_document_id", documentId)
     .order("created_at", { ascending: false });
@@ -801,7 +801,7 @@ export async function getDocumentRecord(documentId: string): Promise<DocumentDet
         }
         return trailData || [];
       }),
-      supabase.from("document_change_log" as any).select("*").eq("document_id", documentId).order("created_at", { ascending: false }).then(({ data: changeData, error: changeError }) => {
+      supabase.from("document_change_log").select("*").eq("document_id", documentId).order("created_at", { ascending: false }).then(({ data: changeData, error: changeError }) => {
         if (changeError) {
           throw new Error(`Erro ao carregar timeline documental: ${changeError.message}`);
         }
@@ -899,7 +899,7 @@ export async function createDocumentRecord(payload: CreateDocumentPayload): Prom
 
   if (payload.documentKind === "controlled" && payload.controlProfile) {
     const { error: profileError } = await supabase
-      .from("document_control_profiles" as any)
+      .from("document_control_profiles")
       .upsert({
         document_id: created.id,
         ...payload.controlProfile,
@@ -949,7 +949,7 @@ export async function updateDocumentMetadata(documentId: string, payload: Update
 
   if (payload.controlProfile) {
     const { error } = await supabase
-      .from("document_control_profiles" as any)
+      .from("document_control_profiles")
       .upsert({
         document_id: documentId,
         ...payload.controlProfile,
@@ -1014,7 +1014,7 @@ export async function createReadCampaign(input: {
   const { userId, companyId } = await getCompanyContext();
 
   const { data: campaign, error } = await supabase
-    .from("document_read_campaigns" as any)
+    .from("document_read_campaigns")
     .insert({
       company_id: companyId,
       document_id: input.documentId,
@@ -1031,7 +1031,7 @@ export async function createReadCampaign(input: {
   }
 
   const { error: recipientsError } = await supabase
-    .from("document_read_recipients" as any)
+    .from("document_read_recipients")
     .insert(
       input.recipientIds.map((recipientId) => ({
         campaign_id: (campaign as any).id,
@@ -1065,7 +1065,7 @@ export async function markDocumentViewed(documentId: string): Promise<void> {
   }
 
   const { error } = await supabase
-    .from("document_read_recipients" as any)
+    .from("document_read_recipients")
     .update({
       status: "viewed",
       viewed_at: new Date().toISOString(),
@@ -1080,7 +1080,7 @@ export async function markDocumentViewed(documentId: string): Promise<void> {
 export async function confirmReadRecipient(recipientId: string, note?: string): Promise<void> {
   const { userId } = await getCompanyContext();
   const { error } = await supabase
-    .from("document_read_recipients" as any)
+    .from("document_read_recipients")
     .update({
       status: "confirmed",
       confirmed_at: new Date().toISOString(),
@@ -1106,7 +1106,7 @@ export async function createDocumentRequest(input: {
   const { userId, companyId } = await getCompanyContext();
 
   const { error } = await supabase
-    .from("document_requests" as any)
+    .from("document_requests")
     .insert({
       company_id: companyId,
       title: input.title.trim(),
@@ -1131,7 +1131,7 @@ export async function fulfillDocumentRequest(input: {
   fulfilledVersionId?: string | null;
 }): Promise<void> {
   const { data: request, error: requestError } = await supabase
-    .from("document_requests" as any)
+    .from("document_requests")
     .select("*")
     .eq("id", input.requestId)
     .maybeSingle();
@@ -1141,7 +1141,7 @@ export async function fulfillDocumentRequest(input: {
   }
 
   const { error } = await supabase
-    .from("document_requests" as any)
+    .from("document_requests")
     .update({
       status: "fulfilled",
       fulfilled_document_id: input.fulfilledDocumentId || null,
@@ -1171,7 +1171,7 @@ export async function createDocumentRelation(input: {
   const { userId, companyId } = await getCompanyContext();
 
   const { error } = await supabase
-    .from("document_relations" as any)
+    .from("document_relations")
     .insert({
       company_id: companyId,
       source_document_id: input.sourceDocumentId,
@@ -1196,7 +1196,7 @@ export async function createDocumentRelation(input: {
 
 export async function deleteDocumentRelation(relationId: string): Promise<void> {
   const { data, error } = await supabase
-    .from("document_relations" as any)
+    .from("document_relations")
     .select("*")
     .eq("id", relationId)
     .maybeSingle();
@@ -1206,7 +1206,7 @@ export async function deleteDocumentRelation(relationId: string): Promise<void> 
   }
 
   const { error: deleteError } = await supabase
-    .from("document_relations" as any)
+    .from("document_relations")
     .delete()
     .eq("id", relationId);
 
