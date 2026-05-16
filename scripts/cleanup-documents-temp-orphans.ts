@@ -72,17 +72,33 @@ async function main() {
   }
 
   let deleted = 0;
+  let lastError: unknown = null;
   for (let i = 0; i < paths.length; i += BATCH) {
     const batch = paths.slice(i, i + BATCH);
-    const { error: rmError } = await supabase.storage
+    const { data, error: rmError } = await supabase.storage
       .from(BUCKET)
       .remove(batch);
     if (rmError) {
       console.error(`Batch ${i}-${i + batch.length} failed:`, rmError);
+      lastError = rmError;
       break;
     }
-    deleted += batch.length;
+    // remove() pode retornar `error: null` com `data.length < batch.length`
+    // em caso de falha parcial. Conta só o que efetivamente saiu do bucket.
+    const actuallyRemoved = data?.length ?? 0;
+    deleted += actuallyRemoved;
+    if (actuallyRemoved < batch.length) {
+      console.warn(
+        `Batch ${i}-${i + batch.length}: pedido ${batch.length} deletes, Storage retornou ${actuallyRemoved}. Possível falha parcial — abortando.`,
+      );
+      lastError = new Error("partial-batch-delete");
+      break;
+    }
     console.warn(`Deleted ${deleted}/${total}`);
+  }
+  if (lastError) {
+    console.error(`Aborted. Deleted ${deleted}/${total} before failure.`);
+    process.exit(1);
   }
   console.warn(`Done. Deleted ${deleted} files.`);
 }
