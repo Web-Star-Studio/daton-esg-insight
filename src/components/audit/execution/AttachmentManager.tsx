@@ -29,8 +29,8 @@ export function AttachmentManager({ responseId, auditId, companyId }: Attachment
     try {
       for (const file of Array.from(files)) {
         // Upload to storage
-        const filePath = `audit-attachments/${auditId}/${responseId}/${Date.now()}_${file.name}`;
-        
+        const filePath = `${companyId}/audit-attachments/${auditId}/${responseId}/${Date.now()}_${file.name}`;
+
         const { error: uploadError } = await supabase.storage
           .from('documents')
           .upload(filePath, file);
