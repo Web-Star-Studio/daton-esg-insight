@@ -45,7 +45,7 @@ export const uploadTrainingDocument = async (
   // Generate unique file path
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-  const filePath = `training-documents/${profile.company_id}/${trainingProgramId}/${fileName}`;
+  const filePath = `${profile.company_id}/training-documents/${trainingProgramId}/${fileName}`;
 
   // Upload file to storage
   const { error: uploadError } = await supabase.storage

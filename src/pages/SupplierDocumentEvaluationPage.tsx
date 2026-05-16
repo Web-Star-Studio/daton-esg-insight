@@ -268,7 +268,7 @@ export default function SupplierDocumentEvaluationPage() {
 
         const companyId = supplier.company_id;
         const fileName = `${Date.now()}_${file.name}`;
-        const filePath = `supplier-documents/${companyId}/${supplierId}/${selectedDocId}/${fileName}`;
+        const filePath = `${companyId}/supplier-documents/${supplierId}/${selectedDocId}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from("documents")
