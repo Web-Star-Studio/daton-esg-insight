@@ -62,9 +62,13 @@ export const getMTRDocumentById = async (id: string): Promise<MTRDocument> => {
 
 // Upload MTR document file
 export const uploadMTRFile = async (file: File, wasteLogId: string): Promise<string> => {
+  const { data: companyId, error: companyIdError } = await supabase.rpc('get_user_company_id');
+  if (companyIdError) throw companyIdError;
+  if (!companyId) throw new Error('Usuário sem empresa associada');
+
   const fileExt = file.name.split('.').pop();
   const fileName = `mtr_${wasteLogId}_${Date.now()}.${fileExt}`;
-  const filePath = `mtr-documents/${fileName}`;
+  const filePath = `${companyId}/mtr-documents/${fileName}`;
 
   const { error: uploadError } = await supabase.storage
     .from('documents')

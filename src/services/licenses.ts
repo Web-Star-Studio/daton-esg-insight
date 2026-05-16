@@ -421,11 +421,27 @@ export async function deleteLicense(id: string): Promise<void> {
 // POST /api/v1/licenses/{licenseId}/documents
 export async function uploadLicenseDocument(licenseId: string, file: File): Promise<LicenseDocument> {
   try {
+    // Get current user and company up front so the upload path is tenant-scoped
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileError || !profile?.company_id) {
+      throw new Error('Empresa do usuário não encontrada')
+    }
+
     // Generate unique file name to prevent duplicates
     const fileExt = file.name.split('.').pop()
     const baseName = file.name.replace(`.${fileExt}`, '')
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-    const filePath = `licenses/${licenseId}/${fileName}`
+    const filePath = `${profile.company_id}/licenses/${licenseId}/${fileName}`
 
     // Upload file to Supabase Storage
     const { error: uploadError } = await supabase.storage
@@ -439,23 +455,6 @@ export async function uploadLicenseDocument(licenseId: string, file: File): Prom
       logger.error('Error uploading file', uploadError, 'compliance')
       toast.error('Erro ao fazer upload do arquivo')
       throw uploadError
-    }
-
-    // Get current user and company
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      throw new Error('User not authenticated')
-    }
-
-    // Get user's company ID
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (profileError || !profile?.company_id) {
-      throw new Error('Empresa do usuário não encontrada')
     }
 
     // Check for existing document with same name and generate unique name if needed
