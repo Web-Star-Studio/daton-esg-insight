@@ -585,10 +585,17 @@ export async function getDocumentUrl(filePath: string): Promise<string> {
 // Analyze license document with AI for form auto-fill
 export async function analyzeLicenseDocument(file: File): Promise<DocumentAnalysisResult> {
   try {
+    // F-020: paths antigos em `temp/<file>` ficaram órfãos por anos quando o
+    // analyzer falhava antes do cleanup no finally. Agora prefixamos com
+    // company_id pra permitir políticas tenant-scoped e cleanup periódico.
+    const { data: companyId, error: companyIdError } = await supabase.rpc('get_user_company_id')
+    if (companyIdError) throw companyIdError
+    if (!companyId) throw new Error('Usuário sem empresa associada')
+
     // First upload the file temporarily for analysis
     const fileExt = file.name.split('.').pop()
     const tempFileName = `temp-analysis-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-    const tempFilePath = `temp/${tempFileName}`
+    const tempFilePath = `${companyId}/_temp/${tempFileName}`
 
     // Upload file to temporary location
     const { error: uploadError } = await supabase.storage
