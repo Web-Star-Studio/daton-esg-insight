@@ -25,6 +25,7 @@ export const ROUTE_MODULE_MAP: Record<string, string> = {
   '/gestao-riscos': 'esgGovernance',
   '/gestao-stakeholders': 'esgGovernance',
   '/analise-materialidade': 'esgGovernance',
+  '/painel-governanca': 'esgGovernance', // redirect legado para /governanca-esg
 
   // === ESG Social ===
   '/social-esg': 'esgSocial',
@@ -33,6 +34,10 @@ export const ROUTE_MODULE_MAP: Record<string, string> = {
   '/gestao-esg': 'esgManagement',
   '/relatorios-integrados': 'esgManagement',
   '/planejamento-estrategico': 'esgManagement',
+  '/marketplace': 'esgManagement', // marketplace ESG
+  '/intelligence-center': 'esgManagement',
+  '/ia-insights': 'esgManagement',
+  '/simulador': 'esgManagement', // Simulador Eco Impacto
 
   // === Qualidade (SGQ) ===
   '/sgq-dashboard': 'quality',
@@ -45,6 +50,7 @@ export const ROUTE_MODULE_MAP: Record<string, string> = {
   '/plano-acao-5w2h': 'quality',
   '/mapeamento-processos': 'quality',
   '/base-conhecimento': 'quality',
+  '/laia': 'quality', // vive na seção QUALIDADE no AppSidebar
 
   // === Fornecedores ===
   '/gestao-fornecedores': 'suppliers',
