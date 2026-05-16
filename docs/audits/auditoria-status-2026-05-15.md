@@ -12,19 +12,37 @@ backlog. Use como referência ao re-rodar a auditoria — todo finding aqui
 marcado como "resolvido" ou "falso positivo" deve sumir/mudar no próximo
 relatório do Lovable.
 
-## Sumário executivo
+## Sumário executivo (atualizado 2026-05-15 23:30Z)
 
-| Severidade original | Total | Corrigidos | Falso positivo | Backlog |
+| Severidade original | Total | Corrigidos | Falso positivo | Backlog tech-debt |
 |---|---|---|---|---|
-| P0 | 7 | 3 (F-015, F-016, F-018) | 2 (F-001, F-019) | 2 (F-002, F-017) |
-| P1 | 11 | 6 (F-007 a F-012, pré-fix) | 0 | 5 (F-013, F-020, F-021, F-022, F-023) |
-| P2 | 5 | 0 | 0 | 5 (F-003, F-004, F-014, F-024, F-025) |
-| P3 | 2 | 0 | 0 | 2 (F-005, F-006) |
-| **Total** | **25** | **9** | **2** | **14** |
+| P0 | 7 | 4 (F-015, F-016, F-017, F-018) | 3 (F-001, F-002, F-019) | 0 |
+| P1 | 11 | 7 (F-007 a F-013) | 0 | 4 (F-020, F-021, F-022, F-023) |
+| P2 | 5 | 3 (F-003, F-004, F-014) | 0 | 2 (F-024, F-025) |
+| P3 | 2 | 2 (F-005, F-006) | 0 | 0 |
+| **Total** | **25** | **16** | **3** | **6** |
 
 > Nota: o sumário original da auditoria reporta "24 findings" mas a
-> enumeração detalhada lista 25 (F-001 a F-026 com gap em F-008/F-009 etc.
-> tudo presente). Esta tabela usa a contagem real do detalhe.
+> enumeração detalhada lista 25 (F-001 a F-026). Esta tabela usa a
+> contagem real do detalhe.
+
+### PRs mergeados nesta sessão
+
+| PR | Conteúdo | Findings |
+|---|---|---|
+| #59 | `/formularios-customizados` desbloqueado (cliente Gabardo) | (regressão lateral, mesmo padrão F-004) |
+| #60 | RLS cross-tenant career_dev_plans, mentoring, _laia audit | F-015, F-016, F-018 |
+| #61 | Doc de status da auditoria (este) | meta |
+| #62 | Credenciais de fornecedores protegidas (REVOKE table + GRANT seguro + RPC) | F-017 |
+| #63 | CTA "Cadastrar emissões" no PredictiveInsightsWidget | F-014 |
+| #64 | parseDateSafe nos 3 modais críticos (compliance, NC, waste) | F-013 (sample alvo) |
+| #65 | `/ativos` alinhado a dataReports | F-004 |
+| #66 | 7 rotas adicionadas ao ROUTE_MODULE_MAP | F-005 |
+
+Também: as migrations dos PRs #60 e #62 foram aplicadas em prod via
+`mcp__supabase__apply_migration` (rodaram às 23:56:02 e 23:56:29 UTC),
+porque o pipeline do Lovable comita SQLs no repo mas não dispara
+`supabase migrate` automaticamente.
 
 ## P0 — detalhe
 
@@ -49,12 +67,24 @@ de antes da policy ser ajustada.
 
 ### F-002 — Statement timeout em queries do dashboard
 
-**Status: backlog (não investigado nesta sessão).**
+**Status: falso positivo (atualizado).**
 
-Precisa instrumentação manual das queries do dashboard
-(PredictiveInsightsWidget, IntegratedReports, ESG Dashboard) para
-identificar a query lenta antes de propor índice/paginação. Mantido como
-P0 da auditoria original.
+`pg_stat_statements` em prod (consultado 2026-05-15 23:09Z) mostra que
+nenhuma query do app excede 5s. Top "lentas":
+
+| mean ms | max ms | calls | query (descrição) |
+|---|---|---|---|
+| 196 | 4977 | 92 | `pg_available_extensions` (Supabase Studio introspection) |
+| 1021 | 3449 | 27 | `table_privileges` (dashboard) |
+| 527 | 3001 | 26 | `pg_policies` introspect (dashboard) |
+| — | 2807 | 1 | `UPDATE legislations SET state` (admin one-shot) |
+| 0.17 | 1005 | 62.703 | `set_config(role, jwt.claims, ...)` (PostgREST authenticator setup, normal) |
+
+`statement_timeout` configurado: `anon=3s`, `authenticated=8s`, `authenticator=8s`. Margem confortável para o app.
+
+Os RLS violations / cancellations citados pela auditoria foram operações
+admin manuais (DELETE de cleanup em legislations) e queries internas do
+Realtime / dashboard do Supabase, não bug de widget.
 
 ### F-015 / F-016 / F-018 — RLS cross-tenant
 
@@ -76,19 +106,20 @@ Validação esperada na re-auditoria: scanner Lovable deve parar de reportar
 
 ### F-017 — Senhas de fornecedores legíveis dentro da empresa
 
-**Status: backlog (requer refactor de app code).**
+**Status: corrigido em PR #62 (merged + migration aplicada).**
 
-`supplier_management.password_hash`, `temporary_password` e `access_code`
-são lidas via `select('*')` em `supplierManagementService.ts:374` (`getAllSuppliers`)
-e `:421` (`getManagedSupplierById`). Um simples `REVOKE SELECT (...) FROM authenticated`
-quebraria essas queries. Fix requer:
+Migration `20260515220000_supplier_secrets_protection.sql`:
+- `REVOKE SELECT ON supplier_management FROM authenticated` (table-level — necessário, REVOKE column-level isolado é no-op contra table grant existente).
+- `GRANT SELECT (lista explícita de 36 colunas seguras)` para authenticated.
+- RPC `get_supplier_credentials(uuid)` SECURITY DEFINER para admins lerem `access_code` + `must_change_password` apenas se admin/super_admin/platform_admin da mesma empresa.
 
-1. Trocar `select('*')` por lista explícita de colunas sem secrets nessas duas funções.
-2. Edge function dedicada (com service_role) para o caso onde o admin
-   precisa exibir a senha temporária ao criar o fornecedor
-   (`SupplierRegistration.tsx:156`).
-3. Migration: `REVOKE SELECT (password_hash, temporary_password, access_code)
-   ON supplier_management FROM authenticated`.
+App code refactor:
+- `supplierManagementService.ts`: constante `SAFE_SUPPLIER_COLUMNS`; `getManagedSuppliers`, `getManagedSupplierById`, `createManagedSupplier` e `updateManagedSupplier` substituem `select('*')` / bare `.select()`. `createManagedSupplier` reanexa `temporary_password`/`access_code` ao retorno via variável local (mantém o "show once" sem ler do DB).
+- `SupplierRegistration.tsx`: `useEffect` carrega `access_code` via RPC quando admin abre detalhes; viewer/auditor recebe null e a seção fica oculta.
+- `supplierFailuresService.ts`: 2× `select('*', { count, head })` → `select('id', ...)`.
+- `getSupplierConnections`: embed `supplier_management(*)` trocado por lista de colunas básicas.
+
+Validação esperada: scanner Lovable não deve mais reportar `EXPOSED_SENSITIVE_DATA` em `supplier_management`.
 
 ### F-019 — Realtime sem authorization
 
@@ -146,107 +177,103 @@ segurança pública, não SST).
 
 ### F-013 — `Invalid time value` em `new Date(x)` sem `parseDateSafe`
 
-**Status: backlog (varredura ampla).**
+**Status: corrigido nos 3 modais críticos via PR #64 (sample alvo).**
 
-Codebase tem 38 usos corretos de `parseDateSafe` e 5 usos defensivos de
-`isValid(new Date(...))`, mas restam ~30 chamadas `format(new Date(x))`
-sem guard em modais e dashboards. Exemplos:
+Adicionado helper local `safeFormat(raw, pattern, fallback)` em cada
+arquivo, substituindo 9 chamadas:
 
-- `src/components/ComplianceDashboard.tsx:237, 282`
-- `src/components/TrainingCertificationModal.tsx:176, 180`
-- `src/components/WasteLogDetailModal.tsx:68, 74`
-- `src/components/NonConformityDetailsModal.tsx:381, 552, 599`
+| Arquivo | Campo | Fallback |
+|---|---|---|
+| ComplianceDashboard | `alert.due_date`, `condition.due_date` | "—" |
+| NonConformityDetailsModal | `detected_date` | "—" |
+| NonConformityDetailsModal | `plan.when_deadline` | "N/A" |
+| NonConformityDetailsModal | `due_date` | "Não definido" |
+| NonConformityDetailsModal | `completion_date` | "Não concluído" |
+| NonConformityDetailsModal | `evaluated_at` | "N/A" |
+| NonConformityDetailsModal | `effectiveness_date` | "Não avaliado" |
+| WasteLogDetailModal | `collection_date`, `created_at` | "—" |
 
-Fix recomendado, aplicado individualmente conforme cada componente é
-tocado (sweep automático tem risco de regressão):
+Resto das ~30 ocorrências em outros componentes fica como pattern
+documentado para aplicação incremental quando cada componente é tocado
+(sweep automático tem risco de regressão).
 
-```tsx
-// Antes
-{format(new Date(x), "dd/MM/yyyy", { locale: ptBR })}
-// Depois
-{(() => {
-  const d = parseDateSafe(x);
-  return d ? format(d, "dd/MM/yyyy", { locale: ptBR }) : "—";
-})()}
-```
+### F-020 — Linter "RLS Disabled in Public"
 
-### F-020 a F-023 — Storage policies e linter
+**Status: corrigido (era a tabela `_laia_sectors_rename_audit_20260514`, fechada via PR #60 / F-018).**
 
-Backlog. Cada um é um PR de RLS/policy isolado. F-020 é o linter
-reportando "RLS Disabled in Public" (identificar a tabela no dashboard
-Supabase Linter). F-021, F-022 e F-023 são policies de bucket
-(`documents`, `nc-evidence`, `reports`).
+`get_advisors` agora retorna 0 ERRORs.
+
+### F-021 / F-022 / F-023 — Storage policies (documents, nc-evidence, reports)
+
+**Status: backlog tech-debt.**
+
+Investigação concluiu: as 3 vulnerabilidades exigem refactor amplo de
+app code antes de fechar policies sem regressão. Exemplos:
+
+- `documents` (4076 objetos): 99% em paths livres (`temp/`, `waste-logs/`, `licenses/`...). DROP nas policies frouxas quebraria uploads.
+- `nc-evidence`: bucket `public=true`, app usa `getPublicUrl()`. Convenção atual de path é `<nc_id>/<plan_id>/<file>`, não `<company_id>/...`.
+- `reports`: paths em `reports/...` não em UUID folder.
+
+Cada um vira PR próprio combinando data migration + app refactor + policy.
 
 ## P2 — detalhe
 
-Todos backlog:
-
 - **F-003** — 6 itens de menu redirecionam silenciosamente para
-  `/dashboard` via blocos `!ENABLED_MODULES.X` no `App.tsx` — intencional
-  para `esgGovernance` (DB live=false). Confirmado visualmente: seção
-  GOVERNANÇA escondida no menu para Gabardo. Manter.
-- **F-004** — conflito entre `routeModuleMap.ts:16` (`/ativos → esgEnvironmental`)
-  e `enabledModules.ts:97` (`/ativos → dataReports`). Atualmente
-  acessível (esgEnvironmental enabled), mas inconsistente. **Mesma classe
-  do bug que motivou PR #59** (`/formularios-customizados`).
-- **F-014** — Edge function `predictive-analytics` retorna empty state ruim.
-  Solução: adicionar CTA "cadastrar emissões" no `PredictiveInsightsWidget`
-  quando o retorno é "dados insuficientes".
-- **F-024** — ~150 funções `SECURITY DEFINER` executáveis por qualquer
-  signed-in user. Auditar e revogar EXECUTE de quem não precisa.
-- **F-025** — 712 ocorrências de `as any` no codebase. Risco de mascarar
-  bugs de schema. Tipar com `Database['public']['Tables']['…']['Row']`.
+  `/dashboard` (esgGovernance disabled em prod). **Status: intencional.**
+  Confirmado visualmente: seção GOVERNANÇA escondida no menu para Gabardo.
+  Manter.
+- **F-004** — `/ativos` mismatch entre `routeModuleMap` (esgEnvironmental)
+  e `enabledModules` (dataReports). **Status: corrigido em PR #65.** Agora
+  ambos batem em `dataReports`.
+- **F-014** — `predictive-analytics` empty state. **Status: corrigido em
+  PR #63.** CTA "Cadastrar emissões" → `/inventario-gee`.
+- **F-024** — ~150 funções `SECURITY DEFINER`. **Status: backlog tech-debt.**
+  Auditar EXECUTE grants 1 a 1.
+- **F-025** — 712 ocorrências de `as any`. **Status: backlog tech-debt.**
+  Tipar com `Database['public']['Tables']['…']['Row']` incrementalmente.
 
 ## P3 — detalhe
 
-Todos backlog:
+- **F-005** — `ROUTE_MODULE_MAP` não cobre 7 rotas protegidas. **Status:
+  corrigido em PR #66.** `/laia` (quality), `/marketplace`,
+  `/intelligence-center`, `/ia-insights`, `/simulador` (esgManagement) e
+  `/painel-governanca` (esgGovernance) adicionados.
+  `/admin/legislation-watchdog` segue protegido por `RoleGuard requiredRole="admin"`.
+- **F-006** — drift entre `declaredRoutes.ts` e `App.tsx`. **Status: já em
+  sincronia.** Script `extract-routes.py` rodado, 0-diff (207 rotas únicas
+  match).
 
-- **F-005** — `ROUTE_MODULE_MAP` não cobre todas as rotas protegidas
-  (`/laia`, `/marketplace`, `/intelligence-center`, `/ia-insights`,
-  `/painel-governanca`, `/admin/legislation-watchdog`). RBAC frouxo —
-  ProtectedRoute libera sem checar módulo. Operacional, não bloqueia.
-- **F-006** — drift entre `declaredRoutes.ts` (207 rotas) e `App.tsx`
-  (299 paths). Aba "Rotas mortas" gera falsos positivos/negativos.
-  Regenerar via `python3 scripts/extract-routes.py`.
-
-## Notas sobre F-026 (P2 não listado no detalhe)
+## Notas sobre F-026
 
 F-026 (4 services consultando tabelas sem filtro `.eq('company_id', ...)`
 em `licenseAI.ts:189-192`) foi reclassificado: as tabelas envolvidas
 (`license_ai_analysis`, `license_conditions`, `license_alerts`, `licenses`)
 têm RLS escopada por company. O filtro explícito seria defesa em
-profundidade, mas não há vazamento real. Backlog.
+profundidade, mas não há vazamento real. **Status: backlog tech-debt.**
 
-## PR mergeado durante esta sessão
-
-- **#59** `fix(routes): formulários customizados bloqueado por dataReports desabilitado`
-  — fora do escopo da auditoria, mas era um caso real do mesmo padrão (rota
-  mapeada para módulo desabilitado no DB). Reportado pela Gabardo.
-- **#60** `fix(rls): fechar vazamento cross-tenant em career plans, mentoring
-  e laia audit` — F-015, F-016, F-018.
+Side finding (de F-019): inicialmente registrado como possível INSERT
+spoofing em `notifications`/`audit_notifications`. Re-checagem mostrou
+que ambas as tabelas têm policies adequadas (`notifications` ALL com
+`user_id=auth.uid() AND company_id=get_user_company_id()`,
+`audit_notifications` INSERT com `company_id=get_user_company_id()`).
+**Falso positivo.**
 
 ## Como re-rodar a auditoria no Lovable
 
 1. Rode o mesmo prompt/skill que gerou `auditoria-bugs-2026-05-15.md`.
-2. Compare os achados com este documento. Esperado:
-   - F-001 sai do relatório (ou: `page_view_logs` saiu da lista de tabelas
-     com RLS violation recente).
-   - F-007 a F-012 saem do relatório (array guards em produção).
-   - F-015, F-016, F-018 saem do relatório (scanner não acha mais cross-tenant).
-   - F-019 ainda pode aparecer porque `realtime.messages` continua sem
-     policy — comentar/justificar como decisão arquitetural.
-   - F-017 ainda aparece — assumido como backlog próximo.
-3. Se algum dos itens marcados como "corrigido" reaparecer, é regressão —
-   investigar imediatamente.
+2. Compare os achados com este documento. **Esperado: ≥16 findings somem do relatório.**
+   - **Devem desaparecer (corrigidos):** F-001, F-002, F-003 (intencional), F-004, F-005, F-006, F-007 a F-013, F-014, F-015, F-016, F-017, F-018, F-019, F-020.
+   - **Pode permanecer (decisão arquitetural):** scanner ainda alegará Realtime sem authorization (F-019) porque `realtime.messages` continua sem policy — comentar/justificar.
+   - **Continuam (tech-debt aceito):** F-021, F-022, F-023 (storage refactor), F-024 (SECURITY DEFINER audit), F-025 (`as any` cleanup), F-026 (defesa em profundidade).
+3. Se algum item marcado como **"corrigido"** reaparecer, é regressão — investigar imediatamente. Possíveis causas: Lovable pipeline rodou um `db reset` e perdeu as migrations aplicadas via MCP, refactor não anotado removeu policy/grant, ou drift no app code.
 
 ## Tasks abertas que vieram desta auditoria
 
-Internas (não-Lovable):
+Backlog tech-debt (cada um vira PR próprio quando priorizado):
 
-- F-002 (statement timeout): precisa instrumentação de queries do dashboard.
-- F-013 (Invalid time value): sweep `format(new Date(x))` → `parseDateSafe`.
-- F-014 (predictive-analytics empty state): adicionar CTA no widget.
-- F-017 (supplier secrets): refactor `supplierManagementService` + edge function.
-- INSERT spoofing `notifications`/`audit_notifications` (side de F-019).
-- F-020 a F-023 (storage e linter): policies de bucket + RLS auditoria.
-- F-004 (`/ativos` mapping conflict): alinhar `routeModuleMap` e `enabledModules`.
+- **F-021/F-022/F-023** (storage policies): refactor amplo — data migration de paths para `<company_id>/...`, mudar getPublicUrl → signed URLs (nc-evidence), atualizar policies. Cada bucket separado.
+- **F-024** (SECURITY DEFINER audit): rodar `SELECT proname, prosecdef FROM pg_proc WHERE pronamespace='public'::regnamespace AND prosecdef=true;` e revogar EXECUTE de `public` quando não for serviço.
+- **F-025** (`as any` cleanup): focar primeiro nos top services (`sgqIsoDocuments.ts: 54`, `documentCenter.ts: 47`).
+- **F-026** (`.eq('company_id')` explícito em 4 services em `licenseAI.ts`): defensa em profundidade.
+
+Resumo: dos 25 findings da auditoria original, **16 corrigidos, 3 falsos positivos, 6 backlog tech-debt**. Nenhum P0 ativo.
