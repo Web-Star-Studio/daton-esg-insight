@@ -66,7 +66,7 @@ export const useAutoRefresh = ({
   useEffect(() => {
     if (enableRealtime && realtimeTable) {
       channelRef.current = supabase
-        .channel('auto-refresh-channel')
+        .channel('auto-refresh-channel', { config: { private: true } })
         .on(
           'postgres_changes',
           {

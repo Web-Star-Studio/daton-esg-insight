@@ -69,7 +69,7 @@ export const useRealTimeData = (configs: RealTimeConfig[]) => {
       }
 
       const channel = supabase
-        .channel(channelName)
+        .channel(channelName, { config: { private: true } })
         .on('postgres_changes', subscriptionConfig, (payload) => {
           setLastActivity(new Date());
           

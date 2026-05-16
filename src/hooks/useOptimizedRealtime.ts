@@ -56,7 +56,7 @@ export function useOptimizedRealtime(configs: RealtimeConfig[]) {
       }
 
       const channel = supabase
-        .channel(channelName)
+        .channel(channelName, { config: { private: true } })
         .on('postgres_changes', subscriptionConfig, (payload) => {
           const debounceKey = `${config.table}-${JSON.stringify(config.queryKey)}`;
           const existingTimeout = debounceTimeoutsRef.current.get(debounceKey);

@@ -311,7 +311,7 @@ class NotificationTriggersService {
   setupRealtimeMonitoring() {
     // Monitor emission data changes
     supabase
-      .channel('emission-monitoring')
+      .channel('emission-monitoring', { config: { private: true } })
       .on('postgres_changes', 
         { event: 'INSERT', schema: 'public', table: 'activity_data' },
         async (payload) => {
@@ -329,7 +329,7 @@ class NotificationTriggersService {
 
     // Monitor goal progress updates
     supabase
-      .channel('goal-monitoring')
+      .channel('goal-monitoring', { config: { private: true } })
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'goal_progress_updates' },
         async (payload) => {
@@ -357,7 +357,7 @@ class NotificationTriggersService {
 
     // Monitor document uploads
     supabase
-      .channel('document-monitoring')
+      .channel('document-monitoring', { config: { private: true } })
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'documents' },
         async (payload) => {
@@ -375,7 +375,7 @@ class NotificationTriggersService {
 
     // Monitor audit findings
     supabase
-      .channel('audit-monitoring')
+      .channel('audit-monitoring', { config: { private: true } })
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'audit_findings' },
         async (payload) => {
