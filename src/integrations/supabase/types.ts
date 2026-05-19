@@ -14,6 +14,723 @@ export type Database = {
   }
   public: {
     Tables: {
+      _laia_licenses_purge_audit_20260519_action_history: {
+        Row: {
+          action_target_id: string | null
+          action_target_type: string | null
+          action_type: string | null
+          company_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          license_id: string | null
+          new_values: Json | null
+          old_values: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action_target_id?: string | null
+          action_target_type?: string | null
+          action_type?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          license_id?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action_target_id?: string | null
+          action_target_type?: string | null
+          action_type?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          license_id?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      _laia_licenses_purge_audit_20260519_ai_analysis: {
+        Row: {
+          ai_insights: Json | null
+          ai_model_used: string | null
+          analysis_type: string | null
+          company_id: string | null
+          confidence_score: number | null
+          created_at: string | null
+          id: string | null
+          license_id: string | null
+          processing_time_ms: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_insights?: Json | null
+          ai_model_used?: string | null
+          analysis_type?: string | null
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string | null
+          license_id?: string | null
+          processing_time_ms?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_insights?: Json | null
+          ai_model_used?: string | null
+          analysis_type?: string | null
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string | null
+          license_id?: string | null
+          processing_time_ms?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      _laia_licenses_purge_audit_20260519_alert_comments: {
+        Row: {
+          alert_id: string | null
+          comment_text: string | null
+          company_id: string | null
+          created_at: string | null
+          id: string | null
+          is_internal: boolean | null
+          observation_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          alert_id?: string | null
+          comment_text?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_internal?: boolean | null
+          observation_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          alert_id?: string | null
+          comment_text?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_internal?: boolean | null
+          observation_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      _laia_licenses_purge_audit_20260519_alerts: {
+        Row: {
+          action_required: boolean | null
+          alert_type: string | null
+          assigned_to_user_id: string | null
+          auto_generated: boolean | null
+          category: string | null
+          company_id: string | null
+          created_at: string | null
+          due_date: string | null
+          id: string | null
+          is_resolved: boolean | null
+          license_id: string | null
+          message: string | null
+          metadata: Json | null
+          notification_sent: boolean | null
+          priority: string | null
+          related_observation_id: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          severity: string | null
+          snooze_until: string | null
+          source_condition_id: string | null
+          tags: string[] | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          action_required?: boolean | null
+          alert_type?: string | null
+          assigned_to_user_id?: string | null
+          auto_generated?: boolean | null
+          category?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string | null
+          is_resolved?: boolean | null
+          license_id?: string | null
+          message?: string | null
+          metadata?: Json | null
+          notification_sent?: boolean | null
+          priority?: string | null
+          related_observation_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          severity?: string | null
+          snooze_until?: string | null
+          source_condition_id?: string | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          action_required?: boolean | null
+          alert_type?: string | null
+          assigned_to_user_id?: string | null
+          auto_generated?: boolean | null
+          category?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string | null
+          is_resolved?: boolean | null
+          license_id?: string | null
+          message?: string | null
+          metadata?: Json | null
+          notification_sent?: boolean | null
+          priority?: string | null
+          related_observation_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          severity?: string | null
+          snooze_until?: string | null
+          source_condition_id?: string | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      _laia_licenses_purge_audit_20260519_conditions: {
+        Row: {
+          ai_confidence: number | null
+          ai_extracted: boolean | null
+          approval_date: string | null
+          approved_by_user_id: string | null
+          attachment_urls: Json | null
+          company_id: string | null
+          completion_date: string | null
+          completion_notes: string | null
+          compliance_impact: string | null
+          condition_category: string | null
+          condition_text: string | null
+          created_at: string | null
+          due_date: string | null
+          frequency: Database["public"]["Enums"]["frequency_enum"] | null
+          id: string | null
+          last_notification_sent: string | null
+          license_id: string | null
+          notification_days_before: number | null
+          priority: string | null
+          related_alert_id: string | null
+          related_observation_ids: Json | null
+          requires_approval: boolean | null
+          responsible_user_id: string | null
+          status: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_extracted?: boolean | null
+          approval_date?: string | null
+          approved_by_user_id?: string | null
+          attachment_urls?: Json | null
+          company_id?: string | null
+          completion_date?: string | null
+          completion_notes?: string | null
+          compliance_impact?: string | null
+          condition_category?: string | null
+          condition_text?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          frequency?: Database["public"]["Enums"]["frequency_enum"] | null
+          id?: string | null
+          last_notification_sent?: string | null
+          license_id?: string | null
+          notification_days_before?: number | null
+          priority?: string | null
+          related_alert_id?: string | null
+          related_observation_ids?: Json | null
+          requires_approval?: boolean | null
+          responsible_user_id?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_extracted?: boolean | null
+          approval_date?: string | null
+          approved_by_user_id?: string | null
+          attachment_urls?: Json | null
+          company_id?: string | null
+          completion_date?: string | null
+          completion_notes?: string | null
+          compliance_impact?: string | null
+          condition_category?: string | null
+          condition_text?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          frequency?: Database["public"]["Enums"]["frequency_enum"] | null
+          id?: string | null
+          last_notification_sent?: string | null
+          license_id?: string | null
+          notification_days_before?: number | null
+          priority?: string | null
+          related_alert_id?: string | null
+          related_observation_ids?: Json | null
+          requires_approval?: boolean | null
+          responsible_user_id?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      _laia_licenses_purge_audit_20260519_documents: {
+        Row: {
+          ai_confidence_score: number | null
+          ai_extracted_category: string | null
+          ai_processing_status: string | null
+          approval_status:
+            | Database["public"]["Enums"]["approval_status_enum"]
+            | null
+          code: string | null
+          company_id: string | null
+          controlled_copy: boolean | null
+          distribution_list: Json | null
+          document_level:
+            | Database["public"]["Enums"]["document_level_enum"]
+            | null
+          document_type:
+            | Database["public"]["Enums"]["document_type_enum"]
+            | null
+          effective_date: string | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          file_type: string | null
+          folder_id: string | null
+          id: string | null
+          master_list_included: boolean | null
+          next_review_date: string | null
+          related_id: string | null
+          related_model: string | null
+          requires_approval: boolean | null
+          responsible_department: string | null
+          retention_period: string | null
+          review_frequency:
+            | Database["public"]["Enums"]["review_frequency_enum"]
+            | null
+          tags: string[] | null
+          upload_date: string | null
+          uploader_user_id: string | null
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          ai_extracted_category?: string | null
+          ai_processing_status?: string | null
+          approval_status?:
+            | Database["public"]["Enums"]["approval_status_enum"]
+            | null
+          code?: string | null
+          company_id?: string | null
+          controlled_copy?: boolean | null
+          distribution_list?: Json | null
+          document_level?:
+            | Database["public"]["Enums"]["document_level_enum"]
+            | null
+          document_type?:
+            | Database["public"]["Enums"]["document_type_enum"]
+            | null
+          effective_date?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          folder_id?: string | null
+          id?: string | null
+          master_list_included?: boolean | null
+          next_review_date?: string | null
+          related_id?: string | null
+          related_model?: string | null
+          requires_approval?: boolean | null
+          responsible_department?: string | null
+          retention_period?: string | null
+          review_frequency?:
+            | Database["public"]["Enums"]["review_frequency_enum"]
+            | null
+          tags?: string[] | null
+          upload_date?: string | null
+          uploader_user_id?: string | null
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          ai_extracted_category?: string | null
+          ai_processing_status?: string | null
+          approval_status?:
+            | Database["public"]["Enums"]["approval_status_enum"]
+            | null
+          code?: string | null
+          company_id?: string | null
+          controlled_copy?: boolean | null
+          distribution_list?: Json | null
+          document_level?:
+            | Database["public"]["Enums"]["document_level_enum"]
+            | null
+          document_type?:
+            | Database["public"]["Enums"]["document_type_enum"]
+            | null
+          effective_date?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          folder_id?: string | null
+          id?: string | null
+          master_list_included?: boolean | null
+          next_review_date?: string | null
+          related_id?: string | null
+          related_model?: string | null
+          requires_approval?: boolean | null
+          responsible_department?: string | null
+          retention_period?: string | null
+          review_frequency?:
+            | Database["public"]["Enums"]["review_frequency_enum"]
+            | null
+          tags?: string[] | null
+          upload_date?: string | null
+          uploader_user_id?: string | null
+        }
+        Relationships: []
+      }
+      _laia_licenses_purge_audit_20260519_legislation_links: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          legislation_id: string | null
+          license_id: string | null
+          link_type: string | null
+          notes: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          legislation_id?: string | null
+          license_id?: string | null
+          link_type?: string | null
+          notes?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          legislation_id?: string | null
+          license_id?: string | null
+          link_type?: string | null
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      _laia_licenses_purge_audit_20260519_licenses: {
+        Row: {
+          ai_confidence_score: number | null
+          ai_extracted_data: Json | null
+          ai_last_analysis_at: string | null
+          ai_processing_status: string | null
+          asset_id: string | null
+          branch_id: string | null
+          branch_ids: string[] | null
+          company_id: string | null
+          compliance_score: number | null
+          conditions: string | null
+          created_at: string | null
+          document_identifier_other: string | null
+          document_identifier_type: string | null
+          document_number: string | null
+          expiration_date: string | null
+          external_last_sync_at: string | null
+          external_source_provider: string | null
+          external_source_reference: string | null
+          external_source_url: string | null
+          id: string | null
+          issue_date: string | null
+          issuing_body: string | null
+          name: string | null
+          notes: string | null
+          process_number: string | null
+          renewal_alert_days: number | null
+          renewal_required: boolean | null
+          responsible_user_id: string | null
+          status: Database["public"]["Enums"]["license_status_enum"] | null
+          type: Database["public"]["Enums"]["license_type_enum"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          ai_extracted_data?: Json | null
+          ai_last_analysis_at?: string | null
+          ai_processing_status?: string | null
+          asset_id?: string | null
+          branch_id?: string | null
+          branch_ids?: string[] | null
+          company_id?: string | null
+          compliance_score?: number | null
+          conditions?: string | null
+          created_at?: string | null
+          document_identifier_other?: string | null
+          document_identifier_type?: string | null
+          document_number?: string | null
+          expiration_date?: string | null
+          external_last_sync_at?: string | null
+          external_source_provider?: string | null
+          external_source_reference?: string | null
+          external_source_url?: string | null
+          id?: string | null
+          issue_date?: string | null
+          issuing_body?: string | null
+          name?: string | null
+          notes?: string | null
+          process_number?: string | null
+          renewal_alert_days?: number | null
+          renewal_required?: boolean | null
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["license_status_enum"] | null
+          type?: Database["public"]["Enums"]["license_type_enum"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          ai_extracted_data?: Json | null
+          ai_last_analysis_at?: string | null
+          ai_processing_status?: string | null
+          asset_id?: string | null
+          branch_id?: string | null
+          branch_ids?: string[] | null
+          company_id?: string | null
+          compliance_score?: number | null
+          conditions?: string | null
+          created_at?: string | null
+          document_identifier_other?: string | null
+          document_identifier_type?: string | null
+          document_number?: string | null
+          expiration_date?: string | null
+          external_last_sync_at?: string | null
+          external_source_provider?: string | null
+          external_source_reference?: string | null
+          external_source_url?: string | null
+          id?: string | null
+          issue_date?: string | null
+          issuing_body?: string | null
+          name?: string | null
+          notes?: string | null
+          process_number?: string | null
+          renewal_alert_days?: number | null
+          renewal_required?: boolean | null
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["license_status_enum"] | null
+          type?: Database["public"]["Enums"]["license_type_enum"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      _laia_licenses_purge_audit_20260519_observations: {
+        Row: {
+          archived_at: string | null
+          attachments: Json | null
+          category: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          followup_assigned_to: string | null
+          followup_date: string | null
+          id: string | null
+          is_archived: boolean | null
+          license_id: string | null
+          metadata: Json | null
+          observation_text: string | null
+          observation_type: string | null
+          priority: string | null
+          related_alert_id: string | null
+          related_condition_id: string | null
+          related_document_ids: Json | null
+          requires_followup: boolean | null
+          tags: string[] | null
+          title: string | null
+          updated_at: string | null
+          visibility: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          attachments?: Json | null
+          category?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          followup_assigned_to?: string | null
+          followup_date?: string | null
+          id?: string | null
+          is_archived?: boolean | null
+          license_id?: string | null
+          metadata?: Json | null
+          observation_text?: string | null
+          observation_type?: string | null
+          priority?: string | null
+          related_alert_id?: string | null
+          related_condition_id?: string | null
+          related_document_ids?: Json | null
+          requires_followup?: boolean | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          attachments?: Json | null
+          category?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          followup_assigned_to?: string | null
+          followup_date?: string | null
+          id?: string | null
+          is_archived?: boolean | null
+          license_id?: string | null
+          metadata?: Json | null
+          observation_text?: string | null
+          observation_type?: string | null
+          priority?: string | null
+          related_alert_id?: string | null
+          related_condition_id?: string | null
+          related_document_ids?: Json | null
+          requires_followup?: boolean | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Relationships: []
+      }
+      _laia_licenses_purge_audit_20260519_renewal_schedules: {
+        Row: {
+          assigned_to_user_id: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          expected_completion_date: string | null
+          id: string | null
+          license_id: string | null
+          notification_config: Json | null
+          protocol_deadline: string | null
+          protocol_number: string | null
+          renewed_expiration_date: string | null
+          scheduled_start_date: string | null
+          status:
+            | Database["public"]["Enums"]["license_renewal_status_enum"]
+            | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          expected_completion_date?: string | null
+          id?: string | null
+          license_id?: string | null
+          notification_config?: Json | null
+          protocol_deadline?: string | null
+          protocol_number?: string | null
+          renewed_expiration_date?: string | null
+          scheduled_start_date?: string | null
+          status?:
+            | Database["public"]["Enums"]["license_renewal_status_enum"]
+            | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          expected_completion_date?: string | null
+          id?: string | null
+          license_id?: string | null
+          notification_config?: Json | null
+          protocol_deadline?: string | null
+          protocol_number?: string | null
+          renewed_expiration_date?: string | null
+          scheduled_start_date?: string | null
+          status?:
+            | Database["public"]["Enums"]["license_renewal_status_enum"]
+            | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      _laia_licenses_purge_audit_20260519_report_history: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          file_path_pdf: string | null
+          file_path_xlsx: string | null
+          generated_at: string | null
+          generated_by_user_id: string | null
+          id: string | null
+          license_id: string | null
+          report_config: Json | null
+          report_type: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          file_path_pdf?: string | null
+          file_path_xlsx?: string | null
+          generated_at?: string | null
+          generated_by_user_id?: string | null
+          id?: string | null
+          license_id?: string | null
+          report_config?: Json | null
+          report_type?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          file_path_pdf?: string | null
+          file_path_xlsx?: string | null
+          generated_at?: string | null
+          generated_by_user_id?: string | null
+          id?: string | null
+          license_id?: string | null
+          report_config?: Json | null
+          report_type?: string | null
+        }
+        Relationships: []
+      }
       _laia_sectors_rename_audit_20260514: {
         Row: {
           alternative_activities: Json | null
