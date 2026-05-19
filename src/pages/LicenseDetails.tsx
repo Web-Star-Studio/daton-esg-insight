@@ -187,11 +187,9 @@ const LicenseDetails = () => {
     setDeleting(true);
     try {
       await deleteLicense(id);
-      toast.success('Licença excluída com sucesso');
       navigate('/licenciamento');
     } catch (err) {
       console.error('Delete license error:', err);
-      toast.error('Erro ao excluir a licença');
       setDeleting(false);
     }
   };

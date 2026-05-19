@@ -40,13 +40,10 @@ import {
 import { AIExtractionDashboard } from '@/components/AIExtractionDashboard'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { getLicenses, getLicenseStats, type LicenseListItem } from '@/services/licenses'
-import { supabase } from '@/integrations/supabase/client'
-import { useToast } from '@/hooks/use-toast'
+import { getLicenses, getLicenseStats, deleteLicense, type LicenseListItem } from '@/services/licenses'
 
 export default function Licenciamento() {
   const navigate = useNavigate()
-  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("dashboard")
   const [selectedLicenses, setSelectedLicenses] = useState<string[]>([])
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -141,36 +138,15 @@ export default function Licenciamento() {
   const handleDeleteSelected = async () => {
     setDeleting(true);
     try {
-      const { error: docsError } = await supabase
-        .from('documents')
-        .delete()
-        .in('related_id', selectedLicenses)
-        .eq('related_model', 'licenses');
-
-      if (docsError) throw docsError;
-
-      const { error } = await supabase
-        .from('licenses')
-        .delete()
-        .in('id', selectedLicenses);
-
-      if (error) throw error;
-
-      toast({
-        title: "Licenças excluídas!",
-        description: `${selectedLicenses.length} licença(s) foi(ram) excluída(s) com sucesso.`
-      });
+      for (const licenseId of selectedLicenses) {
+        await deleteLicense(licenseId);
+      }
 
       setSelectedLicenses([]);
       setDeleteDialogOpen(false);
       refetchLicenses();
     } catch (error) {
       console.error('Delete error:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir licenças",
-        description: "Tente novamente"
-      });
     } finally {
       setDeleting(false);
     }
