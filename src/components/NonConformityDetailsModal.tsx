@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { NonConformityTimelineModal } from "./NonConformityTimelineModal";
 import { NCPrintView } from "./non-conformity/NCPrintView";
@@ -17,6 +18,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { parseDateSafe } from "@/utils/dateUtils";
 import { getNCStatusLabel, getNCStatusColor, getNCseravityColor } from "@/utils/ncStatusUtils";
+import { NC_SECTORS } from "@/constants/ncSectors";
 
 const safeFormat = (raw: string | null | undefined, pattern: string, fallback = "—"): string => {
   const d = parseDateSafe(raw);
@@ -86,19 +88,56 @@ export function NonConformityDetailsModal({
       ]);
 
       if (ncResult.error) throw ncResult.error;
-      
+
       const nc = ncResult.data;
       const profiles = profilesResult.data || [];
-      
+
+      // Carrega a branch (unidade) referenciada por organizational_unit_id
+      // para exibir nome/código no card "Informações Básicas".
+      let branch: { id: string; name: string; code: string | null; is_headquarters: boolean | null } | undefined;
+      if (nc.organizational_unit_id) {
+        const { data: branchData } = await supabase
+          .from("branches")
+          .select("id, name, code, is_headquarters")
+          .eq("id", nc.organizational_unit_id)
+          .maybeSingle();
+        branch = branchData || undefined;
+      }
+
       return {
         ...nc,
         responsible: profiles.find(p => p.id === nc.responsible_user_id),
-        approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
+        approved_by: profiles.find(p => p.id === nc.approved_by_user_id),
+        branch
       };
     },
     enabled: open && !!nonConformityId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+  });
+
+  // Branches disponíveis para a company atual (usado nos selects de edição).
+  const { data: branches } = useQuery({
+    queryKey: ["nc-modal-branches"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!profile?.company_id) return [];
+      const { data } = await supabase
+        .from("branches")
+        .select("id, name, code, is_headquarters")
+        .eq("company_id", profile.company_id)
+        .order("is_headquarters", { ascending: false })
+        .order("name", { ascending: true });
+      return data || [];
+    },
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Query das Ações Imediatas
@@ -177,7 +216,8 @@ export function NonConformityDetailsModal({
         'effectiveness_evaluation', 'effectiveness_date', 'responsible_user_id',
         'approved_by_user_id', 'approval_date', 'approval_notes',
         'attachments', 'due_date', 'completion_date', 'recurrence_count',
-        'similar_nc_ids'
+        'similar_nc_ids',
+        'organizational_unit_id', 'sector'
       ];
 
       const sanitizedData = Object.keys(editData)
@@ -380,6 +420,62 @@ export function NonConformityDetailsModal({
                       <div>
                         <Label>Fonte</Label>
                         <p className="text-sm text-muted-foreground">{nonConformity.source}</p>
+                      </div>
+                      <div>
+                        <Label>Unidade</Label>
+                        {isEditing ? (
+                          <Select
+                            value={editData.organizational_unit_id || ""}
+                            onValueChange={(value) =>
+                              setEditData({ ...editData, organizational_unit_id: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a unidade" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {branches?.map((b: any) => (
+                                <SelectItem key={b.id} value={b.id}>
+                                  {b.is_headquarters ? "🏢 " : "🏭 "}
+                                  {b.code ? `${b.code} - ${b.name}` : b.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : nonConformity.branch ? (
+                          <p className="text-sm text-muted-foreground">
+                            {nonConformity.branch.is_headquarters ? "🏢 " : "🏭 "}
+                            {nonConformity.branch.code
+                              ? `${nonConformity.branch.code} - ${nonConformity.branch.name}`
+                              : nonConformity.branch.name}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">Não informada</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Setor</Label>
+                        {isEditing ? (
+                          <Select
+                            value={editData.sector || ""}
+                            onValueChange={(value) =>
+                              setEditData({ ...editData, sector: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o setor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {NC_SECTORS.map((s) => (
+                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            {nonConformity.sector || "Não informado"}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label>Data de Detecção</Label>

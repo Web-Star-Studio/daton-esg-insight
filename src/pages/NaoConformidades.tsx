@@ -18,6 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { NonConformityDetailsModal } from "@/components/NonConformityDetailsModal";
 import { ISOReferencesSelector } from "@/components/non-conformity/ISOReferencesSelector";
+import { NC_SECTORS } from "@/constants/ncSectors";
 import { NonConformitiesAdvancedDashboard } from "@/components/NonConformitiesAdvancedDashboard";
 import { ApprovalWorkflowManager } from "@/components/ApprovalWorkflowManager";
 import { NCAdvancedDashboard } from "@/components/non-conformity";
@@ -96,23 +97,6 @@ export default function NaoConformidades() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Lista fixa de setores
-  const SECTORS = [
-    "Operacional",
-    "Frota", 
-    "Administrativo",
-    "Lavagem",
-    "Abastecimento",
-    "Manutenção",
-    "Logística",
-    "Qualidade",
-    "Segurança",
-    "RH",
-    "Financeiro",
-    "Compras",
-    "TI",
-    "Comercial"
-  ];
 
   // Etapa 3: Função de prefetch
   const prefetchNCDetails = (ncId: string) => {
@@ -280,6 +264,13 @@ export default function NaoConformidades() {
       return;
     }
 
+    // Unidade obrigatória — sem ela, o cliente não consegue rastrear de
+    // qual filial veio a NC (incidente reportado em 2026-05-19).
+    if (!newNCData.organizational_unit_id) {
+      toast.error("Selecione a unidade da não conformidade");
+      return;
+    }
+
     // Se passou nas validações, executa a mutation
     createNCMutation.mutate(newNCData);
   };
@@ -420,7 +411,9 @@ export default function NaoConformidades() {
               {/* Nova linha: Unidade e Setor */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="organizational_unit_id">Unidade</Label>
+                  <Label htmlFor="organizational_unit_id">
+                    Unidade <span className="text-destructive">*</span>
+                  </Label>
                   <Select
                     value={newNCData.organizational_unit_id}
                     onValueChange={(value) => setNewNCData({...newNCData, organizational_unit_id: value})}
@@ -450,7 +443,7 @@ export default function NaoConformidades() {
                       <SelectValue placeholder="Selecione o setor" />
                     </SelectTrigger>
                     <SelectContent>
-                      {SECTORS.map((sector) => (
+                      {NC_SECTORS.map((sector) => (
                         <SelectItem key={sector} value={sector}>
                           {sector}
                         </SelectItem>
@@ -651,6 +644,7 @@ export default function NaoConformidades() {
                   <TableHead>Número</TableHead>
                   <TableHead>Título</TableHead>
                   <TableHead>Categoria</TableHead>
+                  <TableHead>Unidade</TableHead>
                   <TableHead>Severidade</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[180px]">Progresso</TableHead>
@@ -671,6 +665,16 @@ export default function NaoConformidades() {
                       <Badge variant="outline">
                         {nc.category}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(nc as any).branch?.name ? (
+                        <span className="text-sm">
+                          {(nc as any).branch.is_headquarters ? "🏢 " : "🏭 "}
+                          {(nc as any).branch.name}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge className={getSeverityColor(nc.severity)}>

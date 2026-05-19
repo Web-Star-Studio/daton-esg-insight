@@ -23,6 +23,13 @@ export interface NonConformity {
   parent_nc_id?: string;
   organizational_unit_id?: string;
   process_id?: string;
+  sector?: string;
+  branch?: {
+    id: string;
+    name: string;
+    code?: string | null;
+    is_headquarters?: boolean | null;
+  };
   damage_level?: string;
   impact_analysis?: string;
   root_cause_analysis?: string;
@@ -179,9 +186,23 @@ class NonConformityService {
       .select("*")
       .eq('id', id)
       .single();
-    
+
     if (error) throw error;
-    return data as NonConformity;
+
+    // Carrega a branch (unidade) para exibir nome/código no card Localização.
+    // Cliente reportou (2026-05-19) não conseguir identificar de qual filial
+    // é a NC porque a UI mostrava só o UUID em organizational_unit_id.
+    let branch: NonConformity['branch'];
+    if (data.organizational_unit_id) {
+      const { data: branchData } = await supabase
+        .from("branches")
+        .select("id, name, code, is_headquarters")
+        .eq("id", data.organizational_unit_id)
+        .maybeSingle();
+      branch = branchData || undefined;
+    }
+
+    return { ...data, branch } as NonConformity;
   }
 
   async updateNonConformity(id: string, updates: Partial<NonConformity>): Promise<NonConformity> {
