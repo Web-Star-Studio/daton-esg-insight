@@ -12,7 +12,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -471,8 +470,8 @@ export default function Licenciamento() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
+              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+              <Button
                 onClick={handleDeleteSelected}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 disabled={deleting}
@@ -488,7 +487,7 @@ export default function Licenciamento() {
                     Excluir {selectedLicenses.length} Licença(s)
                   </>
                 )}
-              </AlertDialogAction>
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>

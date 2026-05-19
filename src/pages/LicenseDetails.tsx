@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -586,7 +585,7 @@ const LicenseDetails = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               onClick={handleDeleteLicense}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleting}
@@ -602,7 +601,7 @@ const LicenseDetails = () => {
                   Excluir Licença
                 </>
               )}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
