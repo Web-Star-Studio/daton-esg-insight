@@ -95,15 +95,22 @@ Every time you write or modify actual code (not docs-only or config-only changes
 
 ### Fallback quando CodeRabbit não está disponível
 
-Se CodeRabbit estiver indisponível (rate limit excedido, créditos esgotados, conta fora do ar, ou qualquer outro motivo que impeça a revisão automática), use o skill **`/code-review:code-review`** local como substituto:
+Quando o CodeRabbit parar (rate limit excedido — comum após 2-3 commits seguidos em conta Pro, créditos esgotados, conta fora do ar, ou nenhuma atividade em ~10 min sem warning), siga **em sequência**, nunca em paralelo:
 
-- Invoque-o passando o número do PR (ou a branch) como argumento.
-- Trate os achados com o mesmo rigor de uma review CodeRabbit: corrija o que for bloqueante, justifique skips, e só mergee depois.
-- Registre no comentário do PR ou no commit que a revisão foi feita via `/code-review:code-review` para auditoria.
+1. **Próximo recurso: Codex (`chatgpt-codex-connector[bot]`).** Comente `@codex review` no PR:
+   ```bash
+   gh pr comment <num> --body "@codex review"
+   ```
+   Codex normalmente responde em ~2 min. Trate os achados com o mesmo rigor da revisão CodeRabbit.
+2. **Último recurso: skill `/code-review:code-review` local**, se Codex também estiver indisponível. Invoque passando o número do PR (ou a branch) como argumento.
+
+Para cada fallback usado, registre num comentário do PR (ou no commit) quem fez a revisão — `@codex review` ou `/code-review:code-review` — para auditoria.
+
+**Não rode os dois bots em paralelo.** Achados fragmentados dobram o tempo de iteração; CodeRabbit é primário até travar, daí transita-se para Codex.
 
 A regra "código não passa por merge sem revisão" continua valendo — só muda quem executa a revisão.
 
-**Do not skip this workflow.** Código que não passou por revisão (CodeRabbit ou `/code-review:code-review`) não deve ser mergeado.
+**Do not skip this workflow.** Código que não passou por revisão (CodeRabbit, Codex via `@codex review`, ou `/code-review:code-review`) não deve ser mergeado.
 
 ## EAS Workflows
 
