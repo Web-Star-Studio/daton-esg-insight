@@ -22,6 +22,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   ArrowLeft,
   Pencil,
   FileText,
@@ -36,12 +46,13 @@ import {
   Brain,
   AlertTriangle,
   CheckCircle,
-  Eye
+  Eye,
+  RefreshCw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { getLicenseById, getDocumentUrl, type LicenseDetail } from '@/services/licenses';
+import { getLicenseById, getDocumentUrl, deleteLicense, type LicenseDetail } from '@/services/licenses';
 import { getLicenseConditions, getLicenseAlerts, updateConditionStatus, resolveAlert } from '@/services/licenseAI';
 import { LicenseDocumentUploadModal } from '@/components/LicenseDocumentUploadModal';
 import { LicenseQuickActions } from '@/components/license/LicenseQuickActions';
@@ -57,6 +68,8 @@ const LicenseDetails = () => {
   const [showRenewalModal, setShowRenewalModal] = useState(false);
   const [showConditionsModal, setShowConditionsModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: license, isLoading, error, refetch } = useQuery({
     queryKey: ['license-details', id],
@@ -169,6 +182,20 @@ const LicenseDetails = () => {
     }
   };
 
+  const handleDeleteLicense = async () => {
+    if (!id) return;
+    setDeleting(true);
+    try {
+      await deleteLicense(id);
+      toast.success('Licença excluída com sucesso');
+      navigate('/licenciamento');
+    } catch (err) {
+      console.error('Delete license error:', err);
+      toast.error('Erro ao excluir a licença');
+      setDeleting(false);
+    }
+  };
+
   const handleViewDocument = async (filePath: string) => {
     try {
       const url = await getDocumentUrl(filePath);
@@ -254,6 +281,15 @@ const LicenseDetails = () => {
           <Button onClick={() => navigate(`/licenciamento/${id}/editar`)}>
             <Pencil className="h-4 w-4 mr-2" />
             Editar
+          </Button>
+          <Button
+            variant="outline"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setDeleteDialogOpen(true)}
+            disabled={isLoading || !license}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir
           </Button>
         </div>
       </div>
@@ -535,6 +571,43 @@ const LicenseDetails = () => {
           license={license}
         />
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Confirmar Exclusão
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a licença{' '}
+              <strong>{license?.name}</strong>? Esta ação não pode ser desfeita
+              e também removerá todos os documentos, condicionantes, alertas e
+              cronogramas de renovação associados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteLicense}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir Licença
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

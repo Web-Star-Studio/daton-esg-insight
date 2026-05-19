@@ -141,42 +141,26 @@ export default function Licenciamento() {
   const handleDeleteSelected = async () => {
     setDeleting(true);
     try {
-      // Delete documents first
-      for (const licenseId of selectedLicenses) {
-        const { error: docsError } = await supabase
-          .from('documents')
-          .delete()
-          .eq('related_id', licenseId)
-          .eq('related_model', 'license');
-        
-        if (docsError) throw docsError;
+      const { error: docsError } = await supabase
+        .from('documents')
+        .delete()
+        .in('related_id', selectedLicenses)
+        .eq('related_model', 'licenses');
 
-        // Delete license conditions
-        await supabase
-          .from('license_conditions')
-          .delete()
-          .eq('license_id', licenseId);
+      if (docsError) throw docsError;
 
-        // Delete license alerts
-        await supabase
-          .from('license_alerts')
-          .delete()
-          .eq('license_id', licenseId);
-      }
-      
-      // Delete licenses
       const { error } = await supabase
         .from('licenses')
         .delete()
         .in('id', selectedLicenses);
-      
+
       if (error) throw error;
 
       toast({
         title: "Licenças excluídas!",
         description: `${selectedLicenses.length} licença(s) foi(ram) excluída(s) com sucesso.`
       });
-      
+
       setSelectedLicenses([]);
       setDeleteDialogOpen(false);
       refetchLicenses();
@@ -190,6 +174,11 @@ export default function Licenciamento() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const openDeleteDialogForLicense = (licenseId: string) => {
+    setSelectedLicenses([licenseId]);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -382,13 +371,22 @@ export default function Licenciamento() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => navigate(`/licenciamento/${license.id}`)}
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             Ver Detalhes
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label={`Excluir licença ${license.name}`}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => openDeleteDialogForLicense(license.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
