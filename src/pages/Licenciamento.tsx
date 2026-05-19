@@ -12,7 +12,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -40,13 +39,10 @@ import {
 import { AIExtractionDashboard } from '@/components/AIExtractionDashboard'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { getLicenses, getLicenseStats, type LicenseListItem } from '@/services/licenses'
-import { supabase } from '@/integrations/supabase/client'
-import { useToast } from '@/hooks/use-toast'
+import { getLicenses, getLicenseStats, deleteLicense, type LicenseListItem } from '@/services/licenses'
 
 export default function Licenciamento() {
   const navigate = useNavigate()
-  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("dashboard")
   const [selectedLicenses, setSelectedLicenses] = useState<string[]>([])
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -141,55 +137,23 @@ export default function Licenciamento() {
   const handleDeleteSelected = async () => {
     setDeleting(true);
     try {
-      // Delete documents first
       for (const licenseId of selectedLicenses) {
-        const { error: docsError } = await supabase
-          .from('documents')
-          .delete()
-          .eq('related_id', licenseId)
-          .eq('related_model', 'license');
-        
-        if (docsError) throw docsError;
-
-        // Delete license conditions
-        await supabase
-          .from('license_conditions')
-          .delete()
-          .eq('license_id', licenseId);
-
-        // Delete license alerts
-        await supabase
-          .from('license_alerts')
-          .delete()
-          .eq('license_id', licenseId);
+        await deleteLicense(licenseId);
       }
-      
-      // Delete licenses
-      const { error } = await supabase
-        .from('licenses')
-        .delete()
-        .in('id', selectedLicenses);
-      
-      if (error) throw error;
 
-      toast({
-        title: "Licenças excluídas!",
-        description: `${selectedLicenses.length} licença(s) foi(ram) excluída(s) com sucesso.`
-      });
-      
       setSelectedLicenses([]);
       setDeleteDialogOpen(false);
       refetchLicenses();
     } catch (error) {
       console.error('Delete error:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir licenças",
-        description: "Tente novamente"
-      });
     } finally {
       setDeleting(false);
     }
+  };
+
+  const openDeleteDialogForLicense = (licenseId: string) => {
+    setSelectedLicenses([licenseId]);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -382,13 +346,22 @@ export default function Licenciamento() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => navigate(`/licenciamento/${license.id}`)}
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             Ver Detalhes
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label={`Excluir licença ${license.name}`}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => openDeleteDialogForLicense(license.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
@@ -497,8 +470,8 @@ export default function Licenciamento() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
+              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+              <Button
                 onClick={handleDeleteSelected}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 disabled={deleting}
@@ -514,7 +487,7 @@ export default function Licenciamento() {
                     Excluir {selectedLicenses.length} Licença(s)
                   </>
                 )}
-              </AlertDialogAction>
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>

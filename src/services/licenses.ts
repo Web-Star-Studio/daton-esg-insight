@@ -398,8 +398,26 @@ export async function updateLicense(id: string, updates: UpdateLicenseData): Pro
 }
 
 // DELETE /api/v1/licenses/{licenseId}
+//
+// Documentos não têm FK direta para licenses (related_id é polimórfico) e
+// portanto não cascateiam. Diferentes fluxos do app criam attachments tanto
+// como related_model='license' (analyzer/workflow edge functions e
+// ProcessarLicenca) quanto 'licenses' (uploadLicenseDocument). Limpamos os
+// dois antes de remover a licença para não deixar registros órfãos.
 export async function deleteLicense(id: string): Promise<void> {
   try {
+    const { error: docsError } = await supabase
+      .from('documents')
+      .delete()
+      .eq('related_id', id)
+      .in('related_model', ['license', 'licenses'])
+
+    if (docsError) {
+      logger.error('Error deleting license documents', docsError, 'compliance')
+      toast.error('Erro ao excluir documentos da licença')
+      throw docsError
+    }
+
     const { error } = await supabase
       .from('licenses')
       .delete()
