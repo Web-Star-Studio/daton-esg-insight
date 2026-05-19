@@ -651,6 +651,7 @@ export default function NaoConformidades() {
                   <TableHead>Número</TableHead>
                   <TableHead>Título</TableHead>
                   <TableHead>Categoria</TableHead>
+                  <TableHead>Unidade</TableHead>
                   <TableHead>Severidade</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[180px]">Progresso</TableHead>
@@ -671,6 +672,16 @@ export default function NaoConformidades() {
                       <Badge variant="outline">
                         {nc.category}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(nc as any).branch?.name ? (
+                        <span className="text-sm">
+                          {(nc as any).branch.is_headquarters ? "🏢 " : "🏭 "}
+                          {(nc as any).branch.name}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge className={getSeverityColor(nc.severity)}>

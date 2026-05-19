@@ -42,8 +42,17 @@ export interface NonConformity {
   due_date?: string;
   completion_date?: string;
   recurrence_count?: number;
+  organizational_unit_id?: string;
+  process_id?: string;
+  sector?: string;
   responsible?: { full_name: string };
   approved_by?: { full_name: string };
+  branch?: {
+    id: string;
+    name: string;
+    code?: string | null;
+    is_headquarters?: boolean | null;
+  };
 }
 
 export interface CreateNonConformityData {
@@ -96,7 +105,7 @@ class NonConformitiesService {
       ...ncs.map(nc => nc.responsible_user_id).filter(Boolean),
       ...ncs.map(nc => nc.approved_by_user_id).filter(Boolean)
     ])];
-    
+
     let profiles = [];
     if (userIds.length > 0) {
       const { data: profilesData } = await supabase
@@ -105,14 +114,29 @@ class NonConformitiesService {
         .in("id", userIds);
       profiles = profilesData || [];
     }
-    
-    // Map user data to NCs
+
+    // Batch lookup das branches para exibir o nome da unidade na lista/detalhe
+    // — cliente reportou (2026-05-19) não conseguir identificar de qual filial
+    // é cada NC. A coluna organizational_unit_id guarda o id da branch.
+    const branchIds = [
+      ...new Set(ncs.map(nc => nc.organizational_unit_id).filter(Boolean)),
+    ];
+    let branches: Array<{ id: string; name: string; code: string | null; is_headquarters: boolean | null }> = [];
+    if (branchIds.length > 0) {
+      const { data: branchesData } = await supabase
+        .from("branches")
+        .select("id, name, code, is_headquarters")
+        .in("id", branchIds);
+      branches = branchesData || [];
+    }
+
     const enrichedNCs = ncs.map(nc => ({
       ...nc,
       responsible: profiles.find(p => p.id === nc.responsible_user_id),
-      approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
+      approved_by: profiles.find(p => p.id === nc.approved_by_user_id),
+      branch: branches.find(b => b.id === nc.organizational_unit_id),
     }));
-    
+
     return enrichedNCs as any[];
   }
 
@@ -133,7 +157,7 @@ class NonConformitiesService {
     // Get user profiles for responsible and approved_by users
     const userIds = [nc.responsible_user_id, nc.approved_by_user_id].filter(Boolean);
     let profiles = [];
-    
+
     if (userIds.length > 0) {
       const { data: profilesData } = await supabase
         .from("profiles")
@@ -141,14 +165,25 @@ class NonConformitiesService {
         .in("id", userIds);
       profiles = profilesData || [];
     }
-    
-    // Enrich with user data
+
+    // Lookup da branch (unidade) para exibir nome no card Localização
+    let branch: { id: string; name: string; code: string | null; is_headquarters: boolean | null } | undefined;
+    if (nc.organizational_unit_id) {
+      const { data: branchData } = await supabase
+        .from("branches")
+        .select("id, name, code, is_headquarters")
+        .eq("id", nc.organizational_unit_id)
+        .maybeSingle();
+      branch = branchData || undefined;
+    }
+
     const enrichedNC = {
       ...nc,
       responsible: profiles.find(p => p.id === nc.responsible_user_id),
-      approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
+      approved_by: profiles.find(p => p.id === nc.approved_by_user_id),
+      branch,
     };
-    
+
     return enrichedNC as any;
   }
 

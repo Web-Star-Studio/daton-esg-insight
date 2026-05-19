@@ -204,24 +204,37 @@ export function NCStage1Details({ nc, onComplete, isLoading }: NCStage1DetailsPr
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {nc.organizational_unit_id && (
+            {nc.branch && (
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wide">Unidade Organizacional</label>
-                <p className="mt-1 text-sm font-medium">{nc.organizational_unit_id}</p>
+                <label className="text-xs text-muted-foreground uppercase tracking-wide">Unidade</label>
+                <p className="mt-1 text-sm font-medium">
+                  {nc.branch.is_headquarters ? "🏢 " : "🏭 "}
+                  {nc.branch.code ? `${nc.branch.code} - ${nc.branch.name}` : nc.branch.name}
+                </p>
               </div>
             )}
-            
+
+            {nc.sector && (
+              <>
+                {nc.branch && <Separator />}
+                <div>
+                  <label className="text-xs text-muted-foreground uppercase tracking-wide">Setor</label>
+                  <p className="mt-1 text-sm font-medium">{nc.sector}</p>
+                </div>
+              </>
+            )}
+
             {nc.process_id && (
               <>
-                <Separator />
+                {(nc.branch || nc.sector) && <Separator />}
                 <div>
                   <label className="text-xs text-muted-foreground uppercase tracking-wide">Processo</label>
                   <p className="mt-1 text-sm font-medium">{nc.process_id}</p>
                 </div>
               </>
             )}
-            
-            {!nc.organizational_unit_id && !nc.process_id && (
+
+            {!nc.branch && !nc.sector && !nc.process_id && (
               <p className="text-sm text-muted-foreground">Nenhuma localização definida</p>
             )}
           </CardContent>
