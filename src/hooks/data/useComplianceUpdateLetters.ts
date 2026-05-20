@@ -52,6 +52,9 @@ export function useComplianceUpdateLetters(branchId: string | undefined) {
     isGenerating: generate.isPending,
     publish: publish.mutate,
     isPublishing: publish.isPending,
+    // Id da carta sendo publicada agora (null quando ocioso) — permite a
+    // UI mostrar o loading só na linha clicada, não em todas.
+    publishingLetterId: publish.isPending ? publish.variables ?? null : null,
   };
 }
 

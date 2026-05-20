@@ -43,25 +43,13 @@ CREATE POLICY compliance_update_letters_select
     )
   );
 
--- UPDATE direto da tabela passa a ser admin-only — senão um membro comum
--- conseguiria marcar `publish_status='published'` por fora da RPC,
--- furando o gate de validação. O gerador escreve via service role e não
--- é afetado por RLS.
+-- UPDATE direto da tabela é removido por completo: mesmo um admin, via
+-- PostgREST, conseguiria escrever `publish_status`/`published_at`/
+-- `published_by` direto — furando a RPC de publicação e abrindo um
+-- caminho de "despublicar". Toda escrita passa pelo gerador (service
+-- role) ou pela RPC `publish_compliance_update_letter` (SECURITY DEFINER,
+-- ambos não sujeitos a RLS). Nenhum UPDATE direto pelo usuário final.
 DROP POLICY IF EXISTS compliance_update_letters_update ON public.compliance_update_letters;
-CREATE POLICY compliance_update_letters_update
-  ON public.compliance_update_letters FOR UPDATE
-  USING (
-    company_id = (SELECT company_id FROM public.profiles WHERE id = auth.uid())
-    AND EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid()
-        AND company_id = compliance_update_letters.company_id
-        AND role IN ('super_admin','admin','platform_admin')
-    )
-  )
-  WITH CHECK (
-    company_id = (SELECT company_id FROM public.profiles WHERE id = auth.uid())
-  );
 
 -- INSERT direto da tabela é removido: cartas são criadas EXCLUSIVAMENTE
 -- pela edge function `compliance-update-letter-generator` (service role,
@@ -97,16 +85,24 @@ BEGIN
     RAISE EXCEPTION 'apenas admin pode publicar uma carta';
   END IF;
 
-  UPDATE public.compliance_update_letters
-  SET publish_status = 'published',
-      published_at = now(),
-      published_by = auth.uid()
-  WHERE id = p_letter_id
-    AND company_id = v_caller_company
-  RETURNING * INTO v_letter;
+  SELECT * INTO v_letter
+  FROM public.compliance_update_letters
+  WHERE id = p_letter_id AND company_id = v_caller_company
+  FOR UPDATE;
 
   IF v_letter.id IS NULL THEN
     RAISE EXCEPTION 'carta não encontrada nesta empresa';
+  END IF;
+
+  -- Idempotente: republicar não pode reescrever published_at/published_by
+  -- (perderia a trilha de auditoria da publicação original).
+  IF v_letter.publish_status <> 'published' THEN
+    UPDATE public.compliance_update_letters
+    SET publish_status = 'published',
+        published_at = now(),
+        published_by = auth.uid()
+    WHERE id = p_letter_id
+    RETURNING * INTO v_letter;
   END IF;
 
   RETURN v_letter;
@@ -220,16 +216,24 @@ BEGIN
     RAISE EXCEPTION 'apenas admin pode publicar uma run de sugestões';
   END IF;
 
-  UPDATE public.legislation_suggestion_runs
-  SET publish_status = 'published',
-      published_at = now(),
-      published_by = auth.uid()
-  WHERE id = p_run_id
-    AND company_id = v_caller_company
-  RETURNING * INTO v_run;
+  SELECT * INTO v_run
+  FROM public.legislation_suggestion_runs
+  WHERE id = p_run_id AND company_id = v_caller_company
+  FOR UPDATE;
 
   IF v_run.id IS NULL THEN
     RAISE EXCEPTION 'run não encontrada nesta empresa';
+  END IF;
+
+  -- Idempotente: republicar não pode reescrever published_at/published_by
+  -- (perderia a trilha de auditoria da publicação original).
+  IF v_run.publish_status <> 'published' THEN
+    UPDATE public.legislation_suggestion_runs
+    SET publish_status = 'published',
+        published_at = now(),
+        published_by = auth.uid()
+    WHERE id = p_run_id
+    RETURNING * INTO v_run;
   END IF;
 
   RETURN v_run;

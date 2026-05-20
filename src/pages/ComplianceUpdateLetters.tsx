@@ -117,7 +117,7 @@ export default function ComplianceUpdateLetters() {
     generateAsync,
     isGenerating,
     publish,
-    isPublishing,
+    publishingLetterId,
   } = useComplianceUpdateLetters(selectedBranch || undefined);
 
   const { data: detailLetter } = useComplianceUpdateLetter(letterFromUrl || undefined);
@@ -367,10 +367,10 @@ export default function ComplianceUpdateLetters() {
                               <Button
                                 size="sm"
                                 onClick={() => publish(letter.id)}
-                                disabled={isPublishing}
+                                disabled={publishingLetterId === letter.id}
                                 className="gap-1"
                               >
-                                {isPublishing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Globe className="h-3 w-3" />}
+                                {publishingLetterId === letter.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Globe className="h-3 w-3" />}
                                 Publicar
                               </Button>
                             )}
