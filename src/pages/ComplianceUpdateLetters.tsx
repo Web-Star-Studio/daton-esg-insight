@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, FileText, Plus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Loader2, CheckCircle2, AlertCircle, Globe, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,6 +114,8 @@ export default function ComplianceUpdateLetters() {
     isLoading,
     generateAsync,
     isGenerating,
+    publish,
+    isPublishing,
   } = useComplianceUpdateLetters(selectedBranch || undefined);
 
   const { data: detailLetter } = useComplianceUpdateLetter(letterFromUrl || undefined);
@@ -309,7 +311,8 @@ export default function ComplianceUpdateLetters() {
                     <TableHead>Gerada em</TableHead>
                     <TableHead>Gerada por</TableHead>
                     <TableHead>Resumo</TableHead>
-                    <TableHead className="w-[120px]" />
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[200px]" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -334,18 +337,42 @@ export default function ComplianceUpdateLetters() {
                         <TableCell>{letter.generator_name ?? "—"}</TableCell>
                         <TableCell>{total} alterações no mês</TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              const next = new URLSearchParams(searchParams);
-                              next.set("branch", selectedBranch);
-                              next.set("letter", letter.id);
-                              setSearchParams(next, { replace: false });
-                            }}
-                          >
-                            Abrir
-                          </Button>
+                          {letter.publish_status === "published" ? (
+                            <Badge variant="default" className="gap-1">
+                              <Globe className="h-3 w-3" /> Publicada
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="gap-1">
+                              <Lock className="h-3 w-3" /> Rascunho
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const next = new URLSearchParams(searchParams);
+                                next.set("branch", selectedBranch);
+                                next.set("letter", letter.id);
+                                setSearchParams(next, { replace: false });
+                              }}
+                            >
+                              Abrir
+                            </Button>
+                            {letter.publish_status === "draft" && (
+                              <Button
+                                size="sm"
+                                onClick={() => publish(letter.id)}
+                                disabled={isPublishing}
+                                className="gap-1"
+                              >
+                                {isPublishing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Globe className="h-3 w-3" />}
+                                Publicar
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

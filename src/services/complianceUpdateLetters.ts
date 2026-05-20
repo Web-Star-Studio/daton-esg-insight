@@ -63,6 +63,8 @@ export interface LetterContent {
   };
 }
 
+export type LetterPublishStatus = "draft" | "published";
+
 export interface ComplianceUpdateLetter {
   id: string;
   company_id: string;
@@ -72,6 +74,9 @@ export interface ComplianceUpdateLetter {
   generated_by: string | null;
   generator_name?: string | null; // preenchido após join
   content: LetterContent;
+  publish_status: LetterPublishStatus;
+  published_at: string | null;
+  published_by: string | null;
 }
 
 const TABLE = "compliance_update_letters";
@@ -82,7 +87,7 @@ export async function fetchLettersByBranch(branchId: string): Promise<Compliance
   const rows = await fetchAllPaginated<ComplianceUpdateLetter>((from, to) =>
     sb
       .from(TABLE)
-      .select("id, company_id, branch_id, reference_month, generated_at, generated_by, content")
+      .select("id, company_id, branch_id, reference_month, generated_at, generated_by, content, publish_status, published_at, published_by")
       .eq("branch_id", branchId)
       .order("reference_month", { ascending: false })
       .range(from, to),
@@ -239,4 +244,11 @@ export async function generateLetter({
     throw new Error("Resposta inesperada da edge function");
   }
   return data as GenerateLetterResult;
+}
+
+// Publica uma carta (rascunho → publicado). A função SECURITY DEFINER do
+// banco valida que o usuário é admin da empresa.
+export async function publishLetter(id: string): Promise<void> {
+  const { error } = await sb.rpc("publish_compliance_update_letter", { p_letter_id: id });
+  if (error) throw error;
 }

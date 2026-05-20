@@ -535,6 +535,11 @@ async function handle(req: Request): Promise<Response> {
           reference_month: referenceMonthISO,
           content: empty,
           generated_by: userId,
+          // Regerar volta a carta para rascunho — conteúdo novo precisa
+          // de nova validação antes de ser publicado.
+          publish_status: "draft",
+          published_at: null,
+          published_by: null,
         },
         { onConflict: "branch_id,reference_month" },
       )
@@ -919,6 +924,11 @@ async function handle(req: Request): Promise<Response> {
         reference_month: referenceMonthISO,
         content,
         generated_by: userId,
+        // Regerar volta a carta para rascunho — conteúdo novo precisa de
+        // nova validação antes de ser publicado.
+        publish_status: "draft",
+        published_at: null,
+        published_by: null,
       },
       { onConflict: "branch_id,reference_month" },
     )
