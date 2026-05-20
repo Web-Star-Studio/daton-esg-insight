@@ -98,7 +98,15 @@ BEGIN
         THEN ARRAY(SELECT jsonb_array_elements_text(v_item->'lifecycle_stages'))
         ELSE NULL END,
       NULLIF(v_item->>'output_actions', ''),
-      COALESCE(NULLIF(v_item->>'responsible_user_id', '')::uuid, v_user_id),
+      -- Só faz cast quando a string casa com o formato UUID; COALESCE/NULLIF
+      -- não suprimem o erro 22P02 de um cast inválido.
+      COALESCE(
+        CASE
+          WHEN v_item->>'responsible_user_id' ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+          THEN (v_item->>'responsible_user_id')::uuid
+        END,
+        v_user_id
+      ),
       NULLIF(v_item->>'notes', ''),
       'ativo',
       COALESCE((v_item->>'is_vigente')::boolean, true)

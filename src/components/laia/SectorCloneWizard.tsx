@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,6 +97,8 @@ export function SectorCloneWizard({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [drafts, setDrafts] = useState<DraftItem[]>([]);
+  // Descarta respostas de fetches de origem obsoletos (cliques rápidos).
+  const loadRequestId = useRef(0);
 
   const selectedSource = useMemo(
     () => sourceSectors?.find((s) => s.id === sourceSectorId) ?? null,
@@ -106,28 +108,44 @@ export function SectorCloneWizard({
   const handlePickSource = async (sectorId: string) => {
     const sector = sourceSectors?.find((s) => s.id === sectorId);
     if (!sector) return;
-    setSourceSectorId(sectorId);
     setPickerOpen(false);
-    setName(sector.name);
-    setDescription(sector.description ?? "");
+    const requestId = ++loadRequestId.current;
     setLoadingAssessments(true);
     try {
       const assessments = await laiaService.getLAIAAssessments({ sector_id: sectorId });
+      // Ignora respostas que não correspondem à seleção mais recente.
+      if (requestId !== loadRequestId.current) return;
+      // getLAIAAssessments retorna mais recentes primeiro; reordena por
+      // aspect_code para o clone preservar a numeração do setor de origem.
+      const ordered = [...assessments].sort((a, b) =>
+        (a.aspect_code ?? "").localeCompare(b.aspect_code ?? "", undefined, {
+          numeric: true,
+        })
+      );
+      setSourceSectorId(sectorId);
+      setName(sector.name);
+      setDescription(sector.description ?? "");
       setDrafts(
-        assessments.map((a) => ({
+        ordered.map((a) => ({
           key: crypto.randomUUID(),
           data: mapAssessmentToFormData(a, branchId),
         }))
       );
     } catch (error) {
+      if (requestId !== loadRequestId.current) return;
+      setSourceSectorId(null);
+      setName("");
+      setDescription("");
+      setDrafts([]);
       toast({
         title: "Erro ao carregar aspectos do setor",
         description: error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       });
-      setDrafts([]);
     } finally {
-      setLoadingAssessments(false);
+      if (requestId === loadRequestId.current) {
+        setLoadingAssessments(false);
+      }
     }
   };
 

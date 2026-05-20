@@ -181,6 +181,7 @@ export function mapAssessmentToFormData(
     has_lifecycle_control: a.has_lifecycle_control,
     lifecycle_stages: a.lifecycle_stages || [],
     output_actions: a.output_actions || "",
+    responsible_user_id: a.responsible_user_id ?? undefined,
     notes: a.notes || "",
     is_vigente: a.is_vigente ?? true,
   };
