@@ -14,6 +14,14 @@ ALTER TABLE public.compliance_update_letters
   ADD COLUMN IF NOT EXISTS published_by uuid
     REFERENCES public.profiles(id) ON DELETE SET NULL;
 
+-- Backfill: cartas que já existiam antes desta feature já estavam
+-- visíveis para a empresa. Marca todas como 'published' para a nova
+-- policy de SELECT não escondê-las retroativamente de não-admins. Só
+-- cartas geradas a partir de agora nascem como rascunho (DEFAULT 'draft').
+UPDATE public.compliance_update_letters
+  SET publish_status = 'published'
+  WHERE publish_status = 'draft';
+
 -- SELECT: dentro da empresa; rascunho só para quem gerou ou admin da
 -- empresa; carta publicada para todos da empresa.
 DROP POLICY IF EXISTS compliance_update_letters_select ON public.compliance_update_letters;
