@@ -432,7 +432,11 @@ async function handle(req: Request): Promise<Response> {
   // índice parcial único `legislation_suggestion_runs_one_running_per_branch`
   // (INSERT concorrente falha com 23505); a pré-checagem abaixo cobre o
   // caso comum sem custar uma exceção.
-  const STALE_RUN_MS = 15 * 60 * 1000; // run viva além disso = travada
+  // Um run só é tratado como travado MUITO além de qualquer execução
+  // possível: o worker Deno do Supabase tem limite próprio de wall-clock
+  // (poucos minutos) e mata a invocação. Um run 'running' há 30 min não
+  // pode estar vivo — não há risco de matar um job lento de verdade.
+  const STALE_RUN_MS = 30 * 60 * 1000;
   const { data: inflight } = await supabase
     .from("legislation_suggestion_runs")
     .select("id, started_at")
@@ -449,8 +453,9 @@ async function handle(req: Request): Promise<Response> {
         { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    // Run 'running' há mais de 15 min = travada (o agente roda em poucos
-    // minutos). Marca como 'failed' para liberar o slot do índice único.
+    // Run 'running' há mais de 30 min = travada (o worker já foi morto
+    // pelo limite de wall-clock). Marca como 'failed' para liberar o slot
+    // do índice único.
     await supabase
       .from("legislation_suggestion_runs")
       .update({

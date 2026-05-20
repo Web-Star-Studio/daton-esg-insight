@@ -57,15 +57,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS legislation_suggestion_runs_one_running_per_br
 
 ALTER TABLE public.legislation_suggestion_runs ENABLE ROW LEVEL SECURITY;
 
--- SELECT: dentro da empresa. Rascunho aparece só para admin/platform_admin
--- ou para quem disparou a run; uma run publicada aparece para todos da
--- empresa.
+-- SELECT: dentro da empresa. Run EM ANDAMENTO é visível a toda a empresa
+-- (ainda não há resultado a proteger, e isso garante que a deduplicação
+-- server-side devolva um run_id que o caller consiga ler). Já o RESULTADO
+-- (run completed/failed) segue o gate de rascunho: só admin/platform_admin
+-- ou quem disparou a run, até ser publicado.
 CREATE POLICY legislation_suggestion_runs_select
   ON public.legislation_suggestion_runs FOR SELECT
   USING (
     company_id = (SELECT company_id FROM public.profiles WHERE id = auth.uid())
     AND (
-      publish_status = 'published'
+      status = 'running'
+      OR publish_status = 'published'
       OR triggered_by = auth.uid()
       OR EXISTS (
         -- `user_roles` é company-scoped: o papel de admin precisa ser DA
