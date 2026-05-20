@@ -174,6 +174,40 @@ export function useDeleteLAIASector() {
   });
 }
 
+export function useLAIASectorsForClone() {
+  return useQuery({
+    queryKey: ["laia-sectors-for-clone"],
+    queryFn: laiaService.getLAIASectorsForClone,
+  });
+}
+
+export function useCloneLAIASector() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: laiaService.cloneLAIASector,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["laia-sectors"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-sectors-for-clone"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["laia-branch-stats"] });
+      toast({
+        title: "Setor criado",
+        description: "O setor e suas avaliações foram criados com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao criar setor",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 // ============ Assessments ============
 
 export function useLAIAAssessments(filters?: Parameters<typeof laiaService.getLAIAAssessments>[0]) {

@@ -104,6 +104,26 @@ export interface LegislationReference {
   url: string | null;
 }
 
+/** Setor da empresa exibido no seletor de origem do fluxo de clonagem. */
+export interface LAIASectorForClone {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  branch_id: string | null;
+  branch_name: string | null;
+  assessment_count: number;
+}
+
+/** Payload para criar um setor reaproveitando as avaliações de outro. */
+export interface CloneSectorInput {
+  branch_id?: string;
+  code: string;
+  name: string;
+  description?: string;
+  assessments: LAIAAssessmentFormData[];
+}
+
 export interface LegislationSuggestion {
   reference: string;
   url: string | null;
@@ -116,6 +136,54 @@ export function normalizeLegislationUrl(url: string | null | undefined): string 
   const trimmed = url.trim();
   if (!trimmed) return "";
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+/** Converte um assessment persistido nos dados do formulário de edição/rascunho. */
+export function mapAssessmentToFormData(
+  a: LAIAAssessment,
+  branchId: string
+): LAIAAssessmentFormData {
+  // Migrated rows always have legislation_references populated. Fallback to the
+  // deprecated single-reference fields handles any record the backfill missed.
+  let references: LegislationReference[] = Array.isArray(a.legislation_references)
+    ? a.legislation_references
+    : [];
+  if (references.length === 0 && a.legislation_reference?.trim()) {
+    references = [
+      {
+        reference: a.legislation_reference.trim(),
+        url: a.legislation_reference_url?.trim()
+          ? normalizeLegislationUrl(a.legislation_reference_url)
+          : null,
+      },
+    ];
+  }
+
+  return {
+    branch_id: a.branch_id || branchId,
+    sector_id: a.sector_id || "",
+    activity_operation: a.activity_operation,
+    environmental_aspect: a.environmental_aspect,
+    environmental_impact: a.environmental_impact,
+    temporality: a.temporality,
+    operational_situation: a.operational_situation,
+    incidence: a.incidence,
+    impact_class: a.impact_class,
+    scope: a.scope,
+    severity: a.severity,
+    frequency_probability: a.frequency_probability,
+    has_legal_requirements: a.has_legal_requirements,
+    has_stakeholder_demand: a.has_stakeholder_demand,
+    has_strategic_options: a.has_strategic_options,
+    control_types: a.control_types || [],
+    existing_controls: a.existing_controls || "",
+    legislation_references: references,
+    has_lifecycle_control: a.has_lifecycle_control,
+    lifecycle_stages: a.lifecycle_stages || [],
+    output_actions: a.output_actions || "",
+    notes: a.notes || "",
+    is_vigente: a.is_vigente ?? true,
+  };
 }
 
 export interface LAIADashboardStats {

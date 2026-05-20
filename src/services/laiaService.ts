@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { LAIASector, LAIAAssessment, LAIAAssessmentFormData, LAIADashboardStats, LegislationSuggestion } from "@/types/laia";
+import type { LAIASector, LAIAAssessment, LAIAAssessmentFormData, LAIADashboardStats, LegislationSuggestion, LAIASectorForClone, CloneSectorInput } from "@/types/laia";
 import { 
   calculateConsequenceScore, 
   calculateFreqProbScore, 
@@ -99,6 +99,83 @@ export async function deleteLAIASector(id: string): Promise<void> {
     .eq("id", id);
 
   if (error) throw error;
+}
+
+// Setores da empresa inteira (todas as unidades) para o seletor de origem da
+// clonagem, com a contagem de aspectos que será copiada.
+export async function getLAIASectorsForClone(): Promise<LAIASectorForClone[]> {
+  const { data, error } = await supabase.rpc("get_laia_sectors_for_clone" as never);
+
+  if (error) throw error;
+
+  return ((data as unknown as Record<string, unknown>[]) ?? []).map((row) => ({
+    id: row.id as string,
+    code: row.code as string,
+    name: row.name as string,
+    description: (row.description as string) ?? null,
+    branch_id: (row.branch_id as string) ?? null,
+    branch_name: (row.branch_name as string) ?? null,
+    assessment_count: Number(row.assessment_count ?? 0),
+  }));
+}
+
+// Cria um setor reaproveitando as avaliações de outro. Os scores são
+// recalculados aqui (mesma lógica de createLAIAAssessment) e a RPC insere
+// setor + avaliações numa única transação.
+export async function cloneLAIASector(input: CloneSectorInput): Promise<string> {
+  const assessments = input.assessments.map((a) => {
+    const consequence_score = calculateConsequenceScore(a.scope, a.severity);
+    const freq_prob_score = calculateFreqProbScore(a.frequency_probability);
+    const total_score = consequence_score + freq_prob_score;
+    const category = calculateCategory(total_score);
+    const significance = calculateSignificance(
+      category,
+      a.has_legal_requirements,
+      a.has_stakeholder_demand,
+      a.has_strategic_options
+    );
+
+    return {
+      activity_operation: a.activity_operation,
+      environmental_aspect: a.environmental_aspect,
+      environmental_impact: a.environmental_impact,
+      temporality: a.temporality,
+      operational_situation: a.operational_situation,
+      incidence: a.incidence,
+      impact_class: a.impact_class,
+      scope: a.scope,
+      severity: a.severity,
+      consequence_score,
+      frequency_probability: a.frequency_probability,
+      freq_prob_score,
+      total_score,
+      category,
+      has_legal_requirements: a.has_legal_requirements,
+      has_stakeholder_demand: a.has_stakeholder_demand,
+      has_strategic_options: a.has_strategic_options,
+      significance,
+      control_types: a.control_types,
+      existing_controls: a.existing_controls || null,
+      legislation_references: a.legislation_references ?? [],
+      has_lifecycle_control: a.has_lifecycle_control,
+      lifecycle_stages: a.lifecycle_stages,
+      output_actions: a.output_actions || null,
+      responsible_user_id: a.responsible_user_id || null,
+      notes: a.notes || null,
+      is_vigente: a.is_vigente ?? true,
+    };
+  });
+
+  const { data, error } = await supabase.rpc("clone_laia_sector" as never, {
+    p_branch_id: input.branch_id || null,
+    p_code: input.code,
+    p_name: input.name,
+    p_description: input.description || null,
+    p_assessments: assessments,
+  } as never);
+
+  if (error) throw mapSectorWriteError(error);
+  return data as unknown as string;
 }
 
 // ============ Assessments ============

@@ -44,6 +44,7 @@ import {
 import { Plus, Pencil, Trash2, Building2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { LAIASector } from "@/types/laia";
+import { SectorCloneWizard } from "./SectorCloneWizard";
 
 interface LAIASectorManagerProps {
   branchId?: string;
@@ -69,6 +70,7 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
   const [editingSector, setEditingSector] = useState<LAIASector | null>(null);
   const [deletingSector, setDeletingSector] = useState<LAIASector | null>(null);
   const [formData, setFormData] = useState({ code: "", name: "", description: "" });
+  const [createMode, setCreateMode] = useState<"blank" | "clone">("blank");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
@@ -82,6 +84,7 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
 
   const handleOpenCreate = () => {
     setEditingSector(null);
+    setCreateMode("blank");
     setFormData({ code: nextSectorCode, name: "", description: "" });
     setIsDialogOpen(true);
   };
@@ -147,6 +150,9 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
     setSelectedIds(new Set());
     setBulkDeleteOpen(false);
   };
+
+  const showCloneOption = !editingSector && !!branchId;
+  const isCloneMode = showCloneOption && createMode === "clone";
 
   if (isLoading) {
     return (
@@ -292,18 +298,55 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent
+          className={isCloneMode ? "sm:max-w-3xl max-h-[90vh] overflow-y-auto" : undefined}
+        >
           <DialogHeader>
             <DialogTitle>
               {editingSector ? "Editar Setor" : "Novo Setor"}
             </DialogTitle>
             <DialogDescription>
-              {editingSector 
-                ? "Atualize as informações do setor." 
+              {editingSector
+                ? "Atualize as informações do setor."
+                : isCloneMode
+                ? "Reaproveite um setor existente: revise os aspectos e impactos antes de criar."
                 : "Cadastre um novo setor para organizar as avaliações LAIA."}
             </DialogDescription>
           </DialogHeader>
 
+          {showCloneOption && (
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={createMode === "blank" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCreateMode("blank")}
+              >
+                Em branco
+              </Button>
+              <Button
+                type="button"
+                variant={createMode === "clone" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCreateMode("clone")}
+              >
+                Copiar de um setor existente
+              </Button>
+            </div>
+          )}
+
+          {isCloneMode ? (
+            <SectorCloneWizard
+              branchId={branchId!}
+              suggestedCode={nextSectorCode}
+              onCancel={() => setIsDialogOpen(false)}
+              onCreated={(sectorId) => {
+                setIsDialogOpen(false);
+                navigate(`/laia/unidade/${branchId}/setor/${sectorId}`);
+              }}
+            />
+          ) : (
+          <>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="code">Código *</Label>
@@ -354,6 +397,8 @@ export function LAIASectorManager({ branchId }: LAIASectorManagerProps) {
               {editingSector ? "Salvar Alterações" : "Criar Setor"}
             </Button>
           </DialogFooter>
+          </>
+          )}
         </DialogContent>
       </Dialog>
 
