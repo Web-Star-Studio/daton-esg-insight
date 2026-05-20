@@ -493,6 +493,35 @@ async function handle(req: Request): Promise<Response> {
   const profileCompanyId = companyId!;
   const targetBranch = branch!;
 
+  // Gate de publicação: regerar uma carta a reseta para rascunho (conteúdo
+  // novo precisa de nova validação). Isso NÃO pode ser usado por um membro
+  // comum para "despublicar" uma carta já publicada por um admin — então,
+  // se já existe carta PUBLICADA para (unidade, mês), só admin (ou o cron)
+  // pode regerá-la.
+  if (!isCronInternal) {
+    const { data: existingLetter } = await supabase
+      .from("compliance_update_letters")
+      .select("publish_status")
+      .eq("branch_id", targetBranch.id)
+      .eq("reference_month", referenceMonthISO)
+      .maybeSingle();
+    if (existingLetter?.publish_status === "published") {
+      const { data: adminRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("company_id", profileCompanyId)
+        .in("role", ["admin", "platform_admin"])
+        .maybeSingle();
+      if (!adminRole) {
+        return new Response(
+          JSON.stringify({ error: "Esta carta já foi publicada — apenas um admin pode regerá-la." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+  }
+
   // 2. Lista de legislações vinculadas à unidade (carrega o universo onde
   //    aplicaremos os filtros de mudança no mês).
   const { data: linkedRows, error: linkedErr } = await supabase
