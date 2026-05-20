@@ -6,6 +6,7 @@ import {
   fetchLettersByBranch,
   fetchLetterById,
   generateLetter,
+  publishLetter,
 } from "@/services/complianceUpdateLetters";
 
 export function useComplianceUpdateLetters(branchId: string | undefined) {
@@ -29,6 +30,18 @@ export function useComplianceUpdateLetters(branchId: string | undefined) {
     },
   });
 
+  const publish = useMutation({
+    mutationFn: (id: string) => publishLetter(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["compliance-update-letters", branchId] });
+      queryClient.invalidateQueries({ queryKey: ["compliance-update-letter"] });
+      toast.success("Carta publicada — agora visível para toda a empresa.");
+    },
+    onError: (err: Error) => {
+      toast.error(`Falha ao publicar carta: ${err.message}`);
+    },
+  });
+
   return {
     letters: list.data ?? [],
     isLoading: list.isLoading,
@@ -37,6 +50,11 @@ export function useComplianceUpdateLetters(branchId: string | undefined) {
     generate: generate.mutate,
     generateAsync: generate.mutateAsync,
     isGenerating: generate.isPending,
+    publish: publish.mutate,
+    isPublishing: publish.isPending,
+    // Id da carta sendo publicada agora (null quando ocioso) — permite a
+    // UI mostrar o loading só na linha clicada, não em todas.
+    publishingLetterId: publish.isPending ? publish.variables ?? null : null,
   };
 }
 
