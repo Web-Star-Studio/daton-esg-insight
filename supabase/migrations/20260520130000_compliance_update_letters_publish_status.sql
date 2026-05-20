@@ -63,6 +63,13 @@ CREATE POLICY compliance_update_letters_update
     company_id = (SELECT company_id FROM public.profiles WHERE id = auth.uid())
   );
 
+-- INSERT direto da tabela é removido: cartas são criadas EXCLUSIVAMENTE
+-- pela edge function `compliance-update-letter-generator` (service role,
+-- não passa por RLS). Sem isto, a policy antiga permitia qualquer membro
+-- da empresa inserir uma carta via PostgREST já com
+-- `publish_status='published'`, furando o gate de validação.
+DROP POLICY IF EXISTS compliance_update_letters_insert ON public.compliance_update_letters;
+
 -- Publica uma carta: admin/platform_admin da empresa marca como
 -- 'published', liberando para a empresa inteira.
 CREATE OR REPLACE FUNCTION public.publish_compliance_update_letter(p_letter_id uuid)

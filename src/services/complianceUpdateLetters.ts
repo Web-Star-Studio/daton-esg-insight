@@ -111,7 +111,7 @@ export async function fetchLettersByBranch(branchId: string): Promise<Compliance
 export async function fetchLetterById(id: string): Promise<ComplianceUpdateLetter | null> {
   const { data, error } = await sb
     .from(TABLE)
-    .select("id, company_id, branch_id, reference_month, generated_at, generated_by, content")
+    .select("id, company_id, branch_id, reference_month, generated_at, generated_by, content, publish_status, published_at, published_by")
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
