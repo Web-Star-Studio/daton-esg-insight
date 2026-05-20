@@ -23,13 +23,15 @@ export function useSuggestionRun(branchId: string | undefined) {
     queryKey: ["suggestion-run", "latest", branchId],
     queryFn: () => fetchLatestSuggestionRun(branchId!),
     enabled: !!branchId,
-    // Único auto-refresh: polling enquanto a run está 'running'. Com a run
-    // 'completed'/'failed' a página fica 100% estável — nada recarrega
-    // sozinho. Importante para apresentar ao cliente sem a tela se mexer
-    // no meio da explicação (refetch on focus/reconnect desligado).
+    // Único auto-refresh "ativo": polling enquanto a run está 'running'.
+    // Com a run 'completed'/'failed' a página fica estável — nada recarrega
+    // ao trocar de aba/janela (importante para apresentar ao cliente sem a
+    // tela se mexer no meio da explicação).
+    // `refetchOnReconnect` fica LIGADO (default): só dispara em queda real
+    // de rede — não causa piscar numa apresentação — e garante que a tela
+    // se atualize após um blip de conexão.
     refetchInterval: (q) => (q.state.data?.status === "running" ? 4000 : false),
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
     staleTime: 0,
   });
 
@@ -64,9 +66,9 @@ export function useSuggestionRunHistory(branchId: string | undefined) {
     queryKey: ["suggestion-run", "history", branchId],
     queryFn: () => fetchSuggestionRunHistory(branchId!),
     enabled: !!branchId,
-    // Histórico não recarrega sozinho — só via ação explícita / invalidação.
+    // Não recarrega ao trocar de aba/janela; `refetchOnReconnect` fica no
+    // default (liga só em queda de rede).
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
   });
 }
 
@@ -77,7 +79,6 @@ export function useSuggestionRunDetail(runId: string | null | undefined) {
     queryFn: () => fetchSuggestionRun(runId!),
     enabled: !!runId,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
   });
 }
 
