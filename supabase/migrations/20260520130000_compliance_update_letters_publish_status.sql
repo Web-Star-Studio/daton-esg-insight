@@ -109,7 +109,11 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.publish_compliance_update_letter(uuid) FROM PUBLIC;
+-- O Supabase auto-concede EXECUTE a anon/authenticated/service_role via
+-- default privileges, então `REVOKE FROM PUBLIC` sozinho não basta —
+-- revogamos `anon` explicitamente. `authenticated` mantém (a RPC checa
+-- admin internamente; é chamada por admins logados).
+REVOKE ALL ON FUNCTION public.publish_compliance_update_letter(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.publish_compliance_update_letter(uuid) TO authenticated;
 
 -- Persistência atômica da carta gerada. A edge function geradora chama
@@ -165,8 +169,12 @@ BEGIN
 END;
 $$;
 
--- Chamada só pelo gerador (service role). Usuários não invocam direto.
-REVOKE ALL ON FUNCTION public.persist_compliance_update_letter(uuid, uuid, date, jsonb, uuid, boolean) FROM PUBLIC;
+-- Chamada SÓ pelo gerador (service role). Esta função recebe `p_is_admin`
+-- como parâmetro confiável e não faz checagem de empresa do caller — se
+-- exposta a anon/authenticated, permitiria escrita cross-tenant e furar
+-- o gate de publicação. O Supabase auto-concede EXECUTE a anon/
+-- authenticated via default privileges; revogamos os dois explicitamente.
+REVOKE ALL ON FUNCTION public.persist_compliance_update_letter(uuid, uuid, date, jsonb, uuid, boolean) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.persist_compliance_update_letter(uuid, uuid, date, jsonb, uuid, boolean) TO service_role;
 
 -- Consistência de roles: a migration 20260520120000 (legislation_suggestion_runs)
@@ -240,5 +248,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.publish_suggestion_run(uuid) FROM PUBLIC;
+-- `CREATE OR REPLACE` preserva o ACL existente — a versão da migration
+-- 20260520120000 deixou `anon` com EXECUTE (default privileges). Revoga.
+REVOKE ALL ON FUNCTION public.publish_suggestion_run(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.publish_suggestion_run(uuid) TO authenticated;
