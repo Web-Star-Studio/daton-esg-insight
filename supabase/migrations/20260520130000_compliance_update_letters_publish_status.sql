@@ -38,7 +38,7 @@ CREATE POLICY compliance_update_letters_select
         SELECT 1 FROM public.user_roles
         WHERE user_id = auth.uid()
           AND company_id = compliance_update_letters.company_id
-          AND role IN ('admin','platform_admin')
+          AND role IN ('super_admin','admin','platform_admin')
       )
     )
   );
@@ -56,7 +56,7 @@ CREATE POLICY compliance_update_letters_update
       SELECT 1 FROM public.user_roles
       WHERE user_id = auth.uid()
         AND company_id = compliance_update_letters.company_id
-        AND role IN ('admin','platform_admin')
+        AND role IN ('super_admin','admin','platform_admin')
     )
   )
   WITH CHECK (
@@ -90,7 +90,7 @@ BEGIN
     SELECT 1 FROM public.user_roles
     WHERE user_id = auth.uid()
       AND company_id = v_caller_company
-      AND role IN ('admin','platform_admin')
+      AND role IN ('super_admin','admin','platform_admin')
   ) INTO v_is_admin;
 
   IF NOT v_is_admin THEN
@@ -172,3 +172,69 @@ $$;
 -- Chamada só pelo gerador (service role). Usuários não invocam direto.
 REVOKE ALL ON FUNCTION public.persist_compliance_update_letter(uuid, uuid, date, jsonb, uuid, boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.persist_compliance_update_letter(uuid, uuid, date, jsonb, uuid, boolean) TO service_role;
+
+-- Consistência de roles: a migration 20260520120000 (legislation_suggestion_runs)
+-- gateava apenas 'admin'/'platform_admin', deixando de fora 'super_admin' —
+-- o papel de maior privilégio do projeto (ver usePermissions.tsx). Recria o
+-- gate da policy de SELECT e da RPC de publicação de runs incluindo-o.
+DROP POLICY IF EXISTS legislation_suggestion_runs_select ON public.legislation_suggestion_runs;
+CREATE POLICY legislation_suggestion_runs_select
+  ON public.legislation_suggestion_runs FOR SELECT
+  USING (
+    company_id = (SELECT company_id FROM public.profiles WHERE id = auth.uid())
+    AND (
+      status = 'running'
+      OR publish_status = 'published'
+      OR triggered_by = auth.uid()
+      OR EXISTS (
+        SELECT 1 FROM public.user_roles
+        WHERE user_id = auth.uid()
+          AND company_id = legislation_suggestion_runs.company_id
+          AND role IN ('super_admin','admin','platform_admin')
+      )
+    )
+  );
+
+CREATE OR REPLACE FUNCTION public.publish_suggestion_run(p_run_id uuid)
+RETURNS public.legislation_suggestion_runs
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_caller_company uuid;
+  v_is_admin boolean;
+  v_run public.legislation_suggestion_runs;
+BEGIN
+  SELECT company_id INTO v_caller_company
+  FROM public.profiles WHERE id = auth.uid();
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = auth.uid()
+      AND company_id = v_caller_company
+      AND role IN ('super_admin','admin','platform_admin')
+  ) INTO v_is_admin;
+
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'apenas admin pode publicar uma run de sugestões';
+  END IF;
+
+  UPDATE public.legislation_suggestion_runs
+  SET publish_status = 'published',
+      published_at = now(),
+      published_by = auth.uid()
+  WHERE id = p_run_id
+    AND company_id = v_caller_company
+  RETURNING * INTO v_run;
+
+  IF v_run.id IS NULL THEN
+    RAISE EXCEPTION 'run não encontrada nesta empresa';
+  END IF;
+
+  RETURN v_run;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.publish_suggestion_run(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.publish_suggestion_run(uuid) TO authenticated;

@@ -505,7 +505,7 @@ async function handle(req: Request): Promise<Response> {
       .select("role")
       .eq("user_id", userId)
       .eq("company_id", profileCompanyId)
-      .in("role", ["admin", "platform_admin"])
+      .in("role", ["super_admin", "admin", "platform_admin"])
       .maybeSingle();
     isAdmin = !!adminRole;
   }

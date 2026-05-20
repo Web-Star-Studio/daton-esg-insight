@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useBranches } from "@/services/branches";
 import { useCompany } from "@/contexts/CompanyContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { fetchBranchReadiness } from "@/services/complianceUpdateLetters";
 import {
   useComplianceUpdateLetter,
@@ -56,6 +57,7 @@ export default function ComplianceUpdateLetters() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { selectedCompany } = useCompany();
+  const { isAdmin } = usePermissions();
   const { data: branches = [] } = useBranches();
   const { data: readinessMap } = useQuery({
     queryKey: ["compliance-update-letters", "branch-readiness", selectedCompany?.id],
@@ -361,7 +363,7 @@ export default function ComplianceUpdateLetters() {
                             >
                               Abrir
                             </Button>
-                            {letter.publish_status === "draft" && (
+                            {letter.publish_status === "draft" && isAdmin && (
                               <Button
                                 size="sm"
                                 onClick={() => publish(letter.id)}
