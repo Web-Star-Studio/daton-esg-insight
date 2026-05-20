@@ -58,8 +58,13 @@ CREATE POLICY legislation_suggestion_runs_select
       publish_status = 'published'
       OR triggered_by = auth.uid()
       OR EXISTS (
+        -- `user_roles` é company-scoped: o papel de admin precisa ser DA
+        -- empresa dona da row, senão um admin de outra empresa enxergaria
+        -- rascunhos alheios.
         SELECT 1 FROM public.user_roles
-        WHERE user_id = auth.uid() AND role IN ('admin','platform_admin')
+        WHERE user_id = auth.uid()
+          AND company_id = legislation_suggestion_runs.company_id
+          AND role IN ('admin','platform_admin')
       )
     )
   );
@@ -89,9 +94,14 @@ BEGIN
   SELECT company_id INTO v_caller_company
   FROM public.profiles WHERE id = auth.uid();
 
+  -- O papel de admin precisa ser DA empresa do caller — `user_roles` é
+  -- company-scoped, então sem este filtro um admin de outra empresa
+  -- conseguiria publicar runs aqui (escalonamento de privilégio).
   SELECT EXISTS (
     SELECT 1 FROM public.user_roles
-    WHERE user_id = auth.uid() AND role IN ('admin','platform_admin')
+    WHERE user_id = auth.uid()
+      AND company_id = v_caller_company
+      AND role IN ('admin','platform_admin')
   ) INTO v_is_admin;
 
   IF NOT v_is_admin THEN

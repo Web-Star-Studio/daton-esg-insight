@@ -465,7 +465,11 @@ async function handle(req: Request): Promise<Response> {
         expandAi: body.expand_ai === true,
         perplexityApiKey: PERPLEXITY_API_KEY,
       });
-      await supabase
+      // supabase-js não lança em erro de update — checamos `error` à mão.
+      // Se gravar o resultado falhar, jogamos pro catch pra ao menos
+      // marcar a run como 'failed' (senão fica 'running' pra sempre e a
+      // UI faz polling infinito).
+      const { error: updErr } = await supabase
         .from("legislation_suggestion_runs")
         .update({
           status: "completed",
@@ -480,10 +484,13 @@ async function handle(req: Request): Promise<Response> {
           duration_ms: Date.now() - startedMs,
         })
         .eq("id", runId);
+      if (updErr) {
+        throw new Error(`falha ao gravar resultado da run: ${updErr.message}`);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error("[suggestions] run falhou:", runId, message);
-      await supabase
+      const { error: failErr } = await supabase
         .from("legislation_suggestion_runs")
         .update({
           status: "failed",
@@ -492,6 +499,9 @@ async function handle(req: Request): Promise<Response> {
           duration_ms: Date.now() - startedMs,
         })
         .eq("id", runId);
+      if (failErr) {
+        console.error("[suggestions] não conseguiu marcar run como failed:", runId, failErr.message);
+      }
     }
   })();
 

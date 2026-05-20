@@ -302,7 +302,10 @@ export default function LegislationSuggestions() {
   const readiness = selectedBranch ? readinessMap?.get(selectedBranch) : undefined;
   const noProfile = !!readiness && !readiness.profileCompletedAt;
   const runLoading = viewingRunId ? runDetailQuery.isLoading : latestRunQuery.isLoading;
-  const startDisabled = isRunning || startRun.isPending;
+  // Bloqueia disparar nova run se a ÚLTIMA run (não a exibida — que pode
+  // ser uma run antiga do histórico) ainda estiver rodando, senão dá pra
+  // disparar jobs caros em paralelo abrindo uma run completed do histórico.
+  const startDisabled = startRun.isPending || latestRun?.status === "running";
 
   return (
     <TooltipProvider>
