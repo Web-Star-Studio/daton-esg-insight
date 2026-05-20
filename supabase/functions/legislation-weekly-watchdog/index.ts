@@ -18,8 +18,8 @@
 // "norma X foi alterada/revogada?" basic com web search é suficiente.
 //
 // Trigger: manual via JWT de admin (UI), OU server-to-server via caminho
-// cron interno (`cron_internal` + header `x-cron-internal: 1` + Bearer =
-// service role) — para script/cron. Sem cron agendado.
+// cron interno (header `x-cron-internal: 1` + Bearer = service role) —
+// para script/cron. Sem cron agendado.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -140,7 +140,7 @@ async function handle(req: Request): Promise<Response> {
     }
     if (!roleRows || roleRows.length === 0) {
       console.warn(`[watchdog] non-admin attempted access user=${userId}`);
-      return jsonError(403, "Apenas admin/platform_admin podem disparar o watchdog");
+      return jsonError(403, "Apenas admin/platform_admin/super_admin podem disparar o watchdog");
     }
   }
 
