@@ -179,8 +179,11 @@ export default function LegislationSuggestions() {
   const accept = useAcceptSuggestions(selectedBranch || undefined);
 
   const latestRun = latestRunQuery.data ?? null;
-  const activeRun: SuggestionRun | null = viewingRunId ? runDetailQuery.data ?? null : latestRun;
+  // Selecionar a PRÓPRIA última run no histórico não troca para a query
+  // estática (runDetailQuery, sem polling/realtime) — segue na query "ao
+  // vivo", senão a página fica presa em dados 'running' velhos.
   const isViewingHistorical = !!viewingRunId && viewingRunId !== latestRun?.id;
+  const activeRun: SuggestionRun | null = isViewingHistorical ? runDetailQuery.data ?? null : latestRun;
   const isRunning = activeRun?.status === "running";
 
   // Ao trocar a run exibida, limpa seleção/dismiss (snapshot diferente).
@@ -301,7 +304,7 @@ export default function LegislationSuggestions() {
 
   const readiness = selectedBranch ? readinessMap?.get(selectedBranch) : undefined;
   const noProfile = !!readiness && !readiness.profileCompletedAt;
-  const runLoading = viewingRunId ? runDetailQuery.isLoading : latestRunQuery.isLoading;
+  const runLoading = isViewingHistorical ? runDetailQuery.isLoading : latestRunQuery.isLoading;
   // Bloqueia disparar nova run se a ÚLTIMA run (não a exibida — que pode
   // ser uma run antiga do histórico) ainda estiver rodando, senão dá pra
   // disparar jobs caros em paralelo abrindo uma run completed do histórico.

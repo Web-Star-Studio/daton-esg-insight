@@ -426,6 +426,25 @@ async function handle(req: Request): Promise<Response> {
   }
   const responses = (profile?.responses ?? {}) as Record<string, unknown>;
 
+  // Concorrência: no máximo uma busca 'running' por unidade. Sem isto,
+  // duplo-clique, 2 abas ou 2 usuários disparam jobs caros em paralelo —
+  // o bloqueio só na UI não cobre esses casos. Pré-checagem server-side:
+  // se já há run em andamento, devolve ela em vez de criar outra.
+  const { data: inflight } = await supabase
+    .from("legislation_suggestion_runs")
+    .select("id")
+    .eq("branch_id", targetBranch.id)
+    .eq("status", "running")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (inflight) {
+    return new Response(
+      JSON.stringify({ run_id: inflight.id, status: "running", deduplicated: true }),
+      { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   // Registra a run ANTES de computar — assim, mesmo que a compute falhe,
   // existe uma row de auditoria (status vira 'failed' no catch).
   const { data: runRow, error: runErr } = await supabase
