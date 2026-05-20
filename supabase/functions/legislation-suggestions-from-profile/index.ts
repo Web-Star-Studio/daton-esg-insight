@@ -428,21 +428,38 @@ async function handle(req: Request): Promise<Response> {
 
   // Concorrência: no máximo uma busca 'running' por unidade. Sem isto,
   // duplo-clique, 2 abas ou 2 usuários disparam jobs caros em paralelo —
-  // o bloqueio só na UI não cobre esses casos. Pré-checagem server-side:
-  // se já há run em andamento, devolve ela em vez de criar outra.
+  // o bloqueio só na UI não cobre esses casos. A garantia atômica é o
+  // índice parcial único `legislation_suggestion_runs_one_running_per_branch`
+  // (INSERT concorrente falha com 23505); a pré-checagem abaixo cobre o
+  // caso comum sem custar uma exceção.
+  const STALE_RUN_MS = 15 * 60 * 1000; // run viva além disso = travada
   const { data: inflight } = await supabase
     .from("legislation_suggestion_runs")
-    .select("id")
+    .select("id, started_at")
     .eq("branch_id", targetBranch.id)
     .eq("status", "running")
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (inflight) {
-    return new Response(
-      JSON.stringify({ run_id: inflight.id, status: "running", deduplicated: true }),
-      { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    const ageMs = Date.now() - new Date(inflight.started_at as string).getTime();
+    if (ageMs < STALE_RUN_MS) {
+      return new Response(
+        JSON.stringify({ run_id: inflight.id, status: "running", deduplicated: true }),
+        { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    // Run 'running' há mais de 15 min = travada (o agente roda em poucos
+    // minutos). Marca como 'failed' para liberar o slot do índice único.
+    await supabase
+      .from("legislation_suggestion_runs")
+      .update({
+        status: "failed",
+        error_text: "run expirada sem conclusão (provável timeout do worker)",
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", inflight.id)
+      .eq("status", "running");
   }
 
   // Registra a run ANTES de computar — assim, mesmo que a compute falhe,
@@ -460,6 +477,25 @@ async function handle(req: Request): Promise<Response> {
     .select("id")
     .single();
   if (runErr || !runRow) {
+    // 23505 = unique_violation no índice parcial: corrida — outra run
+    // 'running' foi criada entre a pré-checagem e o INSERT. Idempotente:
+    // devolve a run em andamento em vez de erro.
+    if (runErr?.code === "23505") {
+      const { data: raced } = await supabase
+        .from("legislation_suggestion_runs")
+        .select("id")
+        .eq("branch_id", targetBranch.id)
+        .eq("status", "running")
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (raced) {
+        return new Response(
+          JSON.stringify({ run_id: raced.id, status: "running", deduplicated: true }),
+          { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
     console.error("[suggestions] falha ao criar run:", runErr);
     return new Response(
       JSON.stringify({ error: `não foi possível registrar a run: ${runErr?.message ?? "unknown"}` }),

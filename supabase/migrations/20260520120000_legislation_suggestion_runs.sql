@@ -45,6 +45,16 @@ CREATE INDEX IF NOT EXISTS legislation_suggestion_runs_branch_idx
 CREATE INDEX IF NOT EXISTS legislation_suggestion_runs_company_idx
   ON public.legislation_suggestion_runs (company_id, started_at DESC);
 
+-- No máximo uma run 'running' por unidade ao mesmo tempo. Torna a
+-- deduplicação atômica: um INSERT concorrente (duplo-clique, 2 abas, 2
+-- usuários) falha com unique_violation (23505) e a edge function devolve
+-- a run em andamento. Como o índice é parcial, runs completed/failed não
+-- ocupam slot — a unidade fica livre para uma nova busca assim que a
+-- anterior termina.
+CREATE UNIQUE INDEX IF NOT EXISTS legislation_suggestion_runs_one_running_per_branch
+  ON public.legislation_suggestion_runs (branch_id)
+  WHERE status = 'running';
+
 ALTER TABLE public.legislation_suggestion_runs ENABLE ROW LEVEL SECURITY;
 
 -- SELECT: dentro da empresa. Rascunho aparece só para admin/platform_admin
