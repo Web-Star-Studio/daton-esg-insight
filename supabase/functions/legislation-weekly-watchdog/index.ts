@@ -45,12 +45,8 @@ interface RequestBody {
   company_id?: string;
   /** Cap opcional pro número de normas únicas (defesa contra surprise bills). */
   max_unique_normas?: number;
-  /**
-   * Quando true (e com header `x-cron-internal: 1` + Bearer = service role),
-   * pula a checagem de JWT de usuário — caminho server-to-server para
-   * script/cron. Mesmo padrão das outras edge functions de legislação.
-   */
-  cron_internal?: boolean;
+  // O caminho cron interno é decidido pelo header `x-cron-internal: 1` +
+  // Bearer = service role (ver handler) — não depende de campo no body.
 }
 
 interface NormaKey {
@@ -113,19 +109,13 @@ async function handle(req: Request): Promise<Response> {
     auth: { persistSession: false },
   });
 
-  let body: RequestBody;
-  try {
-    body = await req.json() as RequestBody;
-  } catch {
-    body = {};
-  }
-
-  // Caminho cron interno: header `x-cron-internal: 1` + Bearer = service
-  // role + `cron_internal: true`. Permite disparar o watchdog
-  // server-to-server (script/cron) sem JWT de usuário. Mesmo padrão de
-  // `legislation-suggestions-from-profile` / `compliance-update-letter-generator`.
+  // Caminho cron interno: identificado SEM ler o body — header
+  // `x-cron-internal: 1` + Bearer = service role. A posse da service
+  // role É a autorização (só código confiável a tem). Decidir isto antes
+  // do parse evita que um caller não autenticado force o parse de um body
+  // arbitrário (DoS). Permite disparo server-to-server (script/cron).
   const cronInternalHeader = req.headers.get("x-cron-internal") === "1";
-  const isCronInternal = !!body.cron_internal && cronInternalHeader && token === SERVICE_ROLE;
+  const isCronInternal = cronInternalHeader && token === SERVICE_ROLE;
 
   let userId: string | null = null;
   if (!isCronInternal) {
@@ -152,6 +142,15 @@ async function handle(req: Request): Promise<Response> {
       console.warn(`[watchdog] non-admin attempted access user=${userId}`);
       return jsonError(403, "Apenas admin/platform_admin podem disparar o watchdog");
     }
+  }
+
+  // Body parseado só APÓS autenticar (usuário) ou confirmar a service
+  // role — nunca para um caller não autenticado.
+  let body: RequestBody;
+  try {
+    body = await req.json() as RequestBody;
+  } catch {
+    body = {};
   }
 
   const scope: "global" | "company" = body.scope === "company" ? "company" : "global";
