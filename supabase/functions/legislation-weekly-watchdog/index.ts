@@ -17,7 +17,9 @@
 // request fee — ~$0,006/batch vs $0,054/batch sonar-pro. Pra detectar
 // "norma X foi alterada/revogada?" basic com web search é suficiente.
 //
-// Trigger: manual, via JWT de admin. Sem cron (decisão da fase de testes).
+// Trigger: manual via JWT de admin (UI), OU server-to-server via caminho
+// cron interno (`cron_internal` + header `x-cron-internal: 1` + Bearer =
+// service role) — para script/cron. Sem cron agendado.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -43,6 +45,12 @@ interface RequestBody {
   company_id?: string;
   /** Cap opcional pro número de normas únicas (defesa contra surprise bills). */
   max_unique_normas?: number;
+  /**
+   * Quando true (e com header `x-cron-internal: 1` + Bearer = service role),
+   * pula a checagem de JWT de usuário — caminho server-to-server para
+   * script/cron. Mesmo padrão das outras edge functions de legislação.
+   */
+  cron_internal?: boolean;
 }
 
 interface NormaKey {
@@ -105,36 +113,47 @@ async function handle(req: Request): Promise<Response> {
     auth: { persistSession: false },
   });
 
-  const { data: userResp, error: userErr } = await supabase.auth.getUser(token);
-  if (userErr || !userResp?.user) {
-    return jsonError(401, "JWT inválido");
-  }
-  const userId = userResp.user.id;
-
-  // user_roles tem UNIQUE (user_id, company_id) — usuário pode ter role em
-  // múltiplas empresas. Não dá pra .maybeSingle(); checamos se ALGUMA row
-  // confere `admin` ou `platform_admin`.
-  const { data: roleRows, error: rolesErr } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .in("role", ["admin", "platform_admin"])
-    .limit(1);
-  if (rolesErr) {
-    console.warn(`[watchdog] user_roles query failed: ${rolesErr.message}`);
-    return jsonError(500, `Falha verificando role: ${rolesErr.message}`);
-  }
-  if (!roleRows || roleRows.length === 0) {
-    console.warn(`[watchdog] non-admin attempted access user=${userId}`);
-    return jsonError(403, "Apenas admin/platform_admin podem disparar o watchdog");
-  }
-
   let body: RequestBody;
   try {
     body = await req.json() as RequestBody;
   } catch {
     body = {};
   }
+
+  // Caminho cron interno: header `x-cron-internal: 1` + Bearer = service
+  // role + `cron_internal: true`. Permite disparar o watchdog
+  // server-to-server (script/cron) sem JWT de usuário. Mesmo padrão de
+  // `legislation-suggestions-from-profile` / `compliance-update-letter-generator`.
+  const cronInternalHeader = req.headers.get("x-cron-internal") === "1";
+  const isCronInternal = !!body.cron_internal && cronInternalHeader && token === SERVICE_ROLE;
+
+  let userId: string | null = null;
+  if (!isCronInternal) {
+    const { data: userResp, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userResp?.user) {
+      return jsonError(401, "JWT inválido");
+    }
+    userId = userResp.user.id;
+
+    // user_roles tem UNIQUE (user_id, company_id) — usuário pode ter role em
+    // múltiplas empresas. Não dá pra .maybeSingle(); checamos se ALGUMA row
+    // confere admin/platform_admin/super_admin.
+    const { data: roleRows, error: rolesErr } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .in("role", ["super_admin", "admin", "platform_admin"])
+      .limit(1);
+    if (rolesErr) {
+      console.warn(`[watchdog] user_roles query failed: ${rolesErr.message}`);
+      return jsonError(500, `Falha verificando role: ${rolesErr.message}`);
+    }
+    if (!roleRows || roleRows.length === 0) {
+      console.warn(`[watchdog] non-admin attempted access user=${userId}`);
+      return jsonError(403, "Apenas admin/platform_admin podem disparar o watchdog");
+    }
+  }
+
   const scope: "global" | "company" = body.scope === "company" ? "company" : "global";
   if (scope === "company" && !body.company_id) {
     return jsonError(400, "scope=company exige company_id");
