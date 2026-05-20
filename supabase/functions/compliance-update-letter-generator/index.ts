@@ -493,12 +493,23 @@ async function handle(req: Request): Promise<Response> {
   const profileCompanyId = companyId!;
   const targetBranch = branch!;
 
-  // Gate de publicação: regerar uma carta a reseta para rascunho (conteúdo
-  // novo precisa de nova validação). Isso NÃO pode ser usado por um membro
-  // comum para "despublicar" uma carta já publicada por um admin — então,
-  // se já existe carta PUBLICADA para (unidade, mês), só admin (ou o cron)
-  // pode regerá-la.
+  // Gate de publicação. Regerar uma carta a reseta para rascunho (conteúdo
+  // novo precisa de nova validação); isso NÃO pode ser usado por um membro
+  // comum para "despublicar" uma carta publicada por um admin. `isAdmin` é
+  // resolvido aqui e reusado: (a) fast-fail antes do compute caro;
+  // (b) persistência atômica no fim. Cron interno conta como autoritativo.
+  let isAdmin = isCronInternal;
   if (!isCronInternal) {
+    const { data: adminRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("company_id", profileCompanyId)
+      .in("role", ["admin", "platform_admin"])
+      .maybeSingle();
+    isAdmin = !!adminRole;
+  }
+  if (!isAdmin) {
     const { data: existingLetter } = await supabase
       .from("compliance_update_letters")
       .select("publish_status")
@@ -506,20 +517,47 @@ async function handle(req: Request): Promise<Response> {
       .eq("reference_month", referenceMonthISO)
       .maybeSingle();
     if (existingLetter?.publish_status === "published") {
-      const { data: adminRole } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("company_id", profileCompanyId)
-        .in("role", ["admin", "platform_admin"])
-        .maybeSingle();
-      if (!adminRole) {
-        return new Response(
-          JSON.stringify({ error: "Esta carta já foi publicada — apenas um admin pode regerá-la." }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
+      return new Response(
+        JSON.stringify({ error: "Esta carta já foi publicada — apenas um admin pode regerá-la." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
+  }
+
+  // Persistência atômica da carta. Em vez de um upsert direto, chamamos a
+  // RPC `persist_compliance_update_letter`: ela trava a row (FOR UPDATE) e
+  // re-checa o gate de publicação no momento da escrita — fecha a corrida
+  // em que um admin publica a carta durante os 30-60s de compute.
+  async function persistLetter(letterContent: LetterContent): Promise<Response> {
+    const { data: persistedId, error: persistErr } = await supabase.rpc(
+      "persist_compliance_update_letter",
+      {
+        p_company_id: profileCompanyId,
+        p_branch_id: targetBranch.id,
+        p_reference_month: referenceMonthISO,
+        p_content: letterContent,
+        p_generated_by: userId,
+        p_is_admin: isAdmin,
+      },
+    );
+    if (persistErr) {
+      const concurrent = (persistErr.message ?? "").includes("letter_published_concurrently");
+      return new Response(
+        JSON.stringify({
+          error: concurrent
+            ? "A carta foi publicada por um admin durante a geração — regeração cancelada para não sobrescrever a versão publicada."
+            : persistErr.message,
+        }),
+        {
+          status: concurrent ? 409 : 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    return new Response(
+      JSON.stringify({ id: persistedId, content: letterContent }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   // 2. Lista de legislações vinculadas à unidade (carrega o universo onde
@@ -555,35 +593,7 @@ async function handle(req: Request): Promise<Response> {
       sections: { published: [], modified: [], revoked: [], excluded: [], included_by_review: [], external_changes: [] },
       ai_meta: { summary_failed: false, diffs_failed: false },
     };
-    const { data: persisted, error: persistErr } = await supabase
-      .from("compliance_update_letters")
-      .upsert(
-        {
-          company_id: profileCompanyId,
-          branch_id: targetBranch.id,
-          reference_month: referenceMonthISO,
-          content: empty,
-          generated_by: userId,
-          // Regerar volta a carta para rascunho — conteúdo novo precisa
-          // de nova validação antes de ser publicado.
-          publish_status: "draft",
-          published_at: null,
-          published_by: null,
-        },
-        { onConflict: "branch_id,reference_month" },
-      )
-      .select("id")
-      .single();
-    if (persistErr) {
-      return new Response(
-        JSON.stringify({ error: persistErr.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-    return new Response(
-      JSON.stringify({ id: persisted.id, content: empty }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return await persistLetter(empty);
   }
 
   // 3. Histórico do mês — versão leve (sem old_values/new_values). Esses
@@ -944,34 +954,5 @@ async function handle(req: Request): Promise<Response> {
     ai_meta: aiMeta,
   };
 
-  const { data: persisted, error: persistErr } = await supabase
-    .from("compliance_update_letters")
-    .upsert(
-      {
-        company_id: profileCompanyId,
-        branch_id: targetBranch.id,
-        reference_month: referenceMonthISO,
-        content,
-        generated_by: userId,
-        // Regerar volta a carta para rascunho — conteúdo novo precisa de
-        // nova validação antes de ser publicado.
-        publish_status: "draft",
-        published_at: null,
-        published_by: null,
-      },
-      { onConflict: "branch_id,reference_month" },
-    )
-    .select("id")
-    .single();
-  if (persistErr) {
-    return new Response(
-      JSON.stringify({ error: persistErr.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-
-  return new Response(
-    JSON.stringify({ id: persisted.id, content }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-  );
+  return await persistLetter(content);
 }

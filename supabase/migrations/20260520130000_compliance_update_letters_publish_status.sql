@@ -115,3 +115,60 @@ $$;
 
 REVOKE ALL ON FUNCTION public.publish_compliance_update_letter(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.publish_compliance_update_letter(uuid) TO authenticated;
+
+-- Persistência atômica da carta gerada. A edge function geradora chama
+-- esta função em vez de fazer um upsert direto: o SELECT ... FOR UPDATE
+-- trava a row e re-checa o gate de publicação NO MOMENTO da escrita,
+-- fechando a corrida em que um admin publica a carta durante os 30-60s
+-- de geração (o upsert resetava `publish_status` para 'draft' e
+-- sobrescrevia a publicação). `p_is_admin` é resolvido pelo gerador —
+-- o cron interno conta como autoritativo.
+CREATE OR REPLACE FUNCTION public.persist_compliance_update_letter(
+  p_company_id uuid,
+  p_branch_id uuid,
+  p_reference_month date,
+  p_content jsonb,
+  p_generated_by uuid,
+  p_is_admin boolean
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_id uuid;
+  v_existing_status text;
+BEGIN
+  SELECT publish_status INTO v_existing_status
+  FROM public.compliance_update_letters
+  WHERE branch_id = p_branch_id AND reference_month = p_reference_month
+  FOR UPDATE;
+
+  -- Carta já publicada só é regerável por admin (ou cron). O FOR UPDATE
+  -- acima serializa contra um publish concorrente — sem corrida.
+  IF v_existing_status = 'published' AND NOT p_is_admin THEN
+    RAISE EXCEPTION 'letter_published_concurrently';
+  END IF;
+
+  INSERT INTO public.compliance_update_letters
+    (company_id, branch_id, reference_month, content, generated_by,
+     publish_status, published_at, published_by)
+  VALUES
+    (p_company_id, p_branch_id, p_reference_month, p_content, p_generated_by,
+     'draft', NULL, NULL)
+  ON CONFLICT (branch_id, reference_month) DO UPDATE
+  SET content        = EXCLUDED.content,
+      generated_by   = EXCLUDED.generated_by,
+      publish_status = 'draft',
+      published_at   = NULL,
+      published_by   = NULL
+  RETURNING id INTO v_id;
+
+  RETURN v_id;
+END;
+$$;
+
+-- Chamada só pelo gerador (service role). Usuários não invocam direto.
+REVOKE ALL ON FUNCTION public.persist_compliance_update_letter(uuid, uuid, date, jsonb, uuid, boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.persist_compliance_update_letter(uuid, uuid, date, jsonb, uuid, boolean) TO service_role;
