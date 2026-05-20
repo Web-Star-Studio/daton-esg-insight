@@ -6,8 +6,12 @@
 // opcional de IA chama Perplexity Sonar para sugerir normas que podem não
 // estar no catálogo ainda — mesmo padrão do `laia-legislation-suggester`.
 //
-// Sem persistência: sugestões são compute-on-demand. O usuário aceita pela
-// UI, e o aceite vira upsert em `legislation_unit_compliance` (rota separada).
+// Job em background: o disparo cria 1 row em `legislation_suggestion_runs`
+// (status='running'), o trabalho roda via `EdgeRuntime.waitUntil` e a row
+// é atualizada no fim (completed/failed). A função responde 202 com o
+// `run_id` na hora — a UI acompanha o resultado pela tabela (polling +
+// realtime). O aceite das sugestões vira upsert em
+// `legislation_unit_compliance` (rota separada).
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -16,6 +20,11 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { callPerplexityWithRetry } from "../_shared/perplexity-call.ts";
 import { runAgent, type AgentTool } from "../_shared/agent-runtime.ts";
 import { extractFirstJsonObject } from "../_shared/json-utils.ts";
+
+// `EdgeRuntime` existe no runtime Supabase Deno mas não no tipo padrão.
+// Tipamos local pra não depender de @ts-ignore. Em ambiente local (worker
+// Deno de teste) é undefined — caímos pra `await` direto.
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
 
 interface RequestBody {
   branch_id: string;
@@ -47,14 +56,20 @@ interface DiscoveredSuggestion {
   applicability_hint: "real" | "potential";
 }
 
-interface ResponseShape {
+interface BranchInfo {
+  id: string;
+  company_id: string;
+  name: string;
+  state: string | null;
+  city: string | null;
+}
+
+interface ComputeResult {
   matched: MatchedSuggestion[];
   discovered: DiscoveredSuggestion[];
   ai_used: boolean;
   ai_failed: boolean;
   ai_error?: string;
-  branch: { id: string; name: string; state: string | null; city: string | null };
-  profile: { tag_count: number };
 }
 
 // Limite de matched abaixo do qual auto-disparamos a camada IA. Mantido
@@ -395,7 +410,8 @@ async function handle(req: Request): Promise<Response> {
   const targetBranch = branch!;
   const targetCompanyId = companyId!;
 
-  // Profile da unidade. Se vazio ou sem tags → erro semântico claro pra UI.
+  // Profile da unidade. Sem tags → questionário não concluído: erro
+  // semântico para a UI, sem criar run (não há o que registrar).
   const { data: profile } = await supabase
     .from("legislation_compliance_profiles")
     .select("generated_tags, responses, completed_at")
@@ -404,18 +420,119 @@ async function handle(req: Request): Promise<Response> {
   const tags = (profile?.generated_tags ?? []) as string[];
   if (tags.length === 0) {
     return new Response(
-      JSON.stringify({
-        matched: [],
-        discovered: [],
-        ai_used: false,
-        ai_failed: false,
-        branch: { id: targetBranch.id, name: targetBranch.name, state: targetBranch.state, city: targetBranch.city },
-        profile: { tag_count: 0 },
-        error: "questionnaire-not-completed",
-      }),
+      JSON.stringify({ status: "questionnaire-not-completed" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
+  const responses = (profile?.responses ?? {}) as Record<string, unknown>;
+
+  // Registra a run ANTES de computar — assim, mesmo que a compute falhe,
+  // existe uma row de auditoria (status vira 'failed' no catch).
+  const { data: runRow, error: runErr } = await supabase
+    .from("legislation_suggestion_runs")
+    .insert({
+      company_id: targetCompanyId,
+      branch_id: targetBranch.id,
+      triggered_by: userId,
+      status: "running",
+      expand_ai: body.expand_ai === true,
+      tag_count: tags.length,
+    })
+    .select("id")
+    .single();
+  if (runErr || !runRow) {
+    console.error("[suggestions] falha ao criar run:", runErr);
+    return new Response(
+      JSON.stringify({ error: `não foi possível registrar a run: ${runErr?.message ?? "unknown"}` }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const runId = runRow.id as string;
+
+  // Compute em background: a função responde 202 imediatamente e o agente
+  // segue rodando via EdgeRuntime.waitUntil. Mesmo se o cliente fechar a
+  // aba, a run termina e a row é atualizada (completed/failed).
+  const task = (async () => {
+    const startedMs = Date.now();
+    try {
+      const result = await computeSuggestions({
+        supabase,
+        branch: targetBranch,
+        companyId: targetCompanyId,
+        userId,
+        tags,
+        responses,
+        expandAi: body.expand_ai === true,
+        perplexityApiKey: PERPLEXITY_API_KEY,
+      });
+      await supabase
+        .from("legislation_suggestion_runs")
+        .update({
+          status: "completed",
+          matched: result.matched,
+          discovered: result.discovered,
+          matched_count: result.matched.length,
+          discovered_count: result.discovered.length,
+          ai_used: result.ai_used,
+          ai_failed: result.ai_failed,
+          ai_error: result.ai_error ?? null,
+          completed_at: new Date().toISOString(),
+          duration_ms: Date.now() - startedMs,
+        })
+        .eq("id", runId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[suggestions] run falhou:", runId, message);
+      await supabase
+        .from("legislation_suggestion_runs")
+        .update({
+          status: "failed",
+          error_text: message,
+          completed_at: new Date().toISOString(),
+          duration_ms: Date.now() - startedMs,
+        })
+        .eq("id", runId);
+    }
+  })();
+
+  if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+    EdgeRuntime.waitUntil(task);
+  } else {
+    // Ambiente sem EdgeRuntime (worker local/teste): roda síncrono.
+    await task;
+  }
+
+  return new Response(
+    JSON.stringify({ run_id: runId, status: "running" }),
+    { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+}
+
+interface ComputeArgs {
+  supabase: SupabaseClient;
+  branch: BranchInfo;
+  companyId: string;
+  userId: string | null;
+  tags: string[];
+  responses: Record<string, unknown>;
+  expandAi: boolean;
+  perplexityApiKey: string | undefined;
+}
+
+// Núcleo de cálculo das sugestões: camada determinística (overlap SQL de
+// tags + filtro geográfico) + camada IA opcional (agente Perplexity).
+// Lança exceção em erro de query — o caller converte em status='failed'.
+async function computeSuggestions(args: ComputeArgs): Promise<ComputeResult> {
+  const {
+    supabase,
+    branch: targetBranch,
+    companyId: targetCompanyId,
+    userId,
+    tags,
+    responses,
+    expandAi,
+    perplexityApiKey: PERPLEXITY_API_KEY,
+  } = args;
 
   // Camada determinística: overlap de tags + filtro geográfico.
   // `applicability_tags` é JSONB (array de strings). O operador `&&` não
@@ -445,10 +562,7 @@ async function handle(req: Request): Promise<Response> {
   const { data: legRows, error: legErr } = await legQuery;
   if (legErr) {
     console.error("[suggestions] legislations query failed:", legErr);
-    return new Response(
-      JSON.stringify({ error: `legislations query: ${legErr.message}`, code: legErr.code }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    throw new Error(`legislations query: ${legErr.message}`);
   }
 
   // Já vinculadas a esta branch — saem da sugestão.
@@ -500,9 +614,7 @@ async function handle(req: Request): Promise<Response> {
   });
 
   // Camada IA: dispara se cliente pediu OU se matched é raso.
-  const responses = (profile?.responses ?? {}) as Record<string, unknown>;
-
-  const shouldRunAi = (body.expand_ai === true || matched.length < AUTO_AI_THRESHOLD) && !!PERPLEXITY_API_KEY;
+  const shouldRunAi = (expandAi === true || matched.length < AUTO_AI_THRESHOLD) && !!PERPLEXITY_API_KEY;
   let discovered: DiscoveredSuggestion[] = [];
   let aiFailed = false;
   let aiError: string | undefined;
@@ -608,7 +720,7 @@ Sua tarefa: descobrir 3-8 sugestões NOVAS focando em temas/agências que o SQL 
         inputForLog: {
           matched_count: matched.length,
           tag_count: tags.length,
-          expand_ai: body.expand_ai === true,
+          expand_ai: expandAi === true,
         },
       });
 
@@ -652,18 +764,11 @@ Sua tarefa: descobrir 3-8 sugestões NOVAS focando em temas/agências que o SQL 
     }
   }
 
-  const responseBody: ResponseShape = {
+  return {
     matched,
     discovered,
     ai_used: shouldRunAi,
     ai_failed: aiFailed,
     ai_error: aiError,
-    branch: { id: targetBranch.id, name: targetBranch.name, state: targetBranch.state, city: targetBranch.city },
-    profile: { tag_count: tags.length },
   };
-
-  return new Response(
-    JSON.stringify(responseBody),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-  );
 }
