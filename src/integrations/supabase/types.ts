@@ -16543,6 +16543,107 @@ export type Database = {
           },
         ]
       }
+      legislation_suggestion_runs: {
+        Row: {
+          ai_error: string | null
+          ai_failed: boolean
+          ai_used: boolean
+          branch_id: string
+          company_id: string
+          completed_at: string | null
+          discovered: Json
+          discovered_count: number
+          duration_ms: number | null
+          error_text: string | null
+          expand_ai: boolean
+          id: string
+          matched: Json
+          matched_count: number
+          publish_status: string
+          published_at: string | null
+          published_by: string | null
+          started_at: string
+          status: string
+          tag_count: number
+          triggered_by: string | null
+        }
+        Insert: {
+          ai_error?: string | null
+          ai_failed?: boolean
+          ai_used?: boolean
+          branch_id: string
+          company_id: string
+          completed_at?: string | null
+          discovered?: Json
+          discovered_count?: number
+          duration_ms?: number | null
+          error_text?: string | null
+          expand_ai?: boolean
+          id?: string
+          matched?: Json
+          matched_count?: number
+          publish_status?: string
+          published_at?: string | null
+          published_by?: string | null
+          started_at?: string
+          status?: string
+          tag_count?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          ai_error?: string | null
+          ai_failed?: boolean
+          ai_used?: boolean
+          branch_id?: string
+          company_id?: string
+          completed_at?: string | null
+          discovered?: Json
+          discovered_count?: number
+          duration_ms?: number | null
+          error_text?: string | null
+          expand_ai?: boolean
+          id?: string
+          matched?: Json
+          matched_count?: number
+          publish_status?: string
+          published_at?: string | null
+          published_by?: string | null
+          started_at?: string
+          status?: string
+          tag_count?: number
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legislation_suggestion_runs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_suggestion_runs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_suggestion_runs_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_suggestion_runs_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legislation_unit_compliance: {
         Row: {
           action_plan: string | null
@@ -27518,6 +27619,7 @@ export type Database = {
       }
     }
     Functions: {
+      publish_suggestion_run: { Args: { p_run_id: string }; Returns: Json }
       calculate_audit_score: { Args: { p_audit_id: string }; Returns: Json }
       calculate_bsc_objective_progress: {
         Args: { p_objective_id: string }

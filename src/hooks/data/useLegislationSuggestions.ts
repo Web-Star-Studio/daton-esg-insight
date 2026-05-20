@@ -1,29 +1,110 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  SuggestionsResponse,
   acceptSuggestions,
-  fetchSuggestions,
+  fetchLatestSuggestionRun,
+  fetchSuggestionRun,
+  fetchSuggestionRunHistory,
+  publishSuggestionRun,
+  startSuggestionRun,
 } from "@/services/legislationSuggestions";
 
-export function useLegislationSuggestions(branchId: string | undefined, expandAi: boolean = false) {
-  return useQuery<SuggestionsResponse | null>({
-    queryKey: ["legislation-suggestions", branchId, expandAi],
-    queryFn: () => fetchSuggestions(branchId!, { expandAi }),
+// Última run da unidade. Faz polling enquanto status='running' e também
+// assina o Realtime da tabela — polling é o mecanismo confiável, o
+// Realtime só deixa a atualização mais instantânea.
+export function useSuggestionRun(branchId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ["suggestion-run", "latest", branchId],
+    queryFn: () => fetchLatestSuggestionRun(branchId!),
     enabled: !!branchId,
-    // Cada chamada custa ~$0.10 e leva 70-90s. Defaults do React Query
-    // (refetchOnWindowFocus=true, staleTime=0) disparavam refetch toda vez
-    // que o usuário voltava pra aba — visto em prod: 10 runs em 27min.
-    // Suggestions só precisa rebuscar via ação explícita (botão "Refazer
-    // busca IA"), então fixamos cache "estável até trocar query key".
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 30,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    retry: false,
+    refetchInterval: (q) => (q.state.data?.status === "running" ? 4000 : false),
+    staleTime: 0,
+  });
+
+  useEffect(() => {
+    if (!branchId) return;
+    const channel = supabase
+      .channel(`suggestion-runs-${branchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "legislation_suggestion_runs",
+          filter: `branch_id=eq.${branchId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["suggestion-run", "latest", branchId] });
+          queryClient.invalidateQueries({ queryKey: ["suggestion-run", "history", branchId] });
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [branchId, queryClient]);
+
+  return query;
+}
+
+export function useSuggestionRunHistory(branchId: string | undefined) {
+  return useQuery({
+    queryKey: ["suggestion-run", "history", branchId],
+    queryFn: () => fetchSuggestionRunHistory(branchId!),
+    enabled: !!branchId,
+  });
+}
+
+// Detalhe de uma run específica — usado ao abrir um item do histórico.
+export function useSuggestionRunDetail(runId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["suggestion-run", "detail", runId],
+    queryFn: () => fetchSuggestionRun(runId!),
+    enabled: !!runId,
+  });
+}
+
+export function useStartSuggestionRun(branchId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (opts?: { expandAi?: boolean }) => {
+      if (!branchId) throw new Error("branchId ausente");
+      return startSuggestionRun(branchId, opts);
+    },
+    onSuccess: (result) => {
+      if (result.kind === "questionnaire-not-completed") {
+        toast.warning("Unidade sem questionário de compliance concluído — não há tags para gerar sugestões.");
+        return;
+      }
+      toast.success("Busca de sugestões iniciada — roda em background, pode levar 1-2 min.");
+      queryClient.invalidateQueries({ queryKey: ["suggestion-run", "latest", branchId] });
+      queryClient.invalidateQueries({ queryKey: ["suggestion-run", "history", branchId] });
+    },
+    onError: (err: Error) => {
+      toast.error(`Falha ao iniciar busca: ${err.message}`);
+    },
+  });
+}
+
+export function usePublishSuggestionRun() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (runId: string) => publishSuggestionRun(runId),
+    onSuccess: () => {
+      toast.success("Sugestões publicadas — agora visíveis para toda a empresa.");
+      queryClient.invalidateQueries({ queryKey: ["suggestion-run"] });
+    },
+    onError: (err: Error) => {
+      toast.error(`Falha ao publicar: ${err.message}`);
+    },
   });
 }
 
@@ -42,7 +123,6 @@ export function useAcceptSuggestions(branchId: string | undefined) {
       return count;
     },
     onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: ["legislation-suggestions", branchId] });
       queryClient.invalidateQueries({ queryKey: ["legislations"] });
       queryClient.invalidateQueries({ queryKey: ["unit-compliances"] });
       queryClient.invalidateQueries({ queryKey: ["compliance-update-letters", "branch-readiness"] });

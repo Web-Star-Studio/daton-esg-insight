@@ -1,12 +1,33 @@
 // Página "Sugestões de Legislação" — gera, a partir do perfil de compliance
 // da unidade, a lista de normas a popular a LIRA. Camada determinística
 // (overlap de tags + filtro geográfico) + camada IA opcional (Perplexity).
+//
+// A busca roda como job em background: cada disparo cria uma run em
+// `legislation_suggestion_runs`. A página mostra status (início/fim),
+// resultado registrado e histórico por unidade. Runs nascem em rascunho —
+// um admin publica para liberar o resultado à empresa toda.
 
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, Loader2, Plus, RefreshCw, Sparkles, AlertCircle, CheckCircle2, ListChecks, Radar } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Globe,
+  History,
+  ListChecks,
+  Loader2,
+  Lock,
+  Plus,
+  Radar,
+  RefreshCw,
+  Sparkles,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,11 +41,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useBranches } from "@/services/branches";
 import { useCompany } from "@/contexts/CompanyContext";
 import { fetchBranchReadiness } from "@/services/complianceUpdateLetters";
-import { useLegislationSuggestions, useAcceptSuggestions } from "@/hooks/data/useLegislationSuggestions";
+import {
+  useAcceptSuggestions,
+  usePublishSuggestionRun,
+  useStartSuggestionRun,
+  useSuggestionRun,
+  useSuggestionRunDetail,
+  useSuggestionRunHistory,
+} from "@/hooks/data/useLegislationSuggestions";
 import { useMonthlyRadar, useAcceptRadarNovelties } from "@/hooks/data/useLegislationRadar";
 import type { RadarNovelty } from "@/services/legislationRadar";
 import { APPLICABILITY_LABELS, JURISDICTION_LABELS, formatReferenceMonthLabel, siglaForTheme, titleForTheme } from "@/lib/complianceSystems";
-import type { MatchedSuggestion } from "@/services/legislationSuggestions";
+import type { MatchedSuggestion, SuggestionRun, SuggestionRunSummary } from "@/services/legislationSuggestions";
 
 const APPLICABILITY_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   real: "default",
@@ -33,6 +61,24 @@ const APPLICABILITY_VARIANT: Record<string, "default" | "secondary" | "destructi
   na: "outline",
   pending: "outline",
 };
+
+function fmtDateTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function fmtDuration(ms: number | null | undefined): string {
+  if (ms == null) return "—";
+  const secs = Math.round(ms / 1000);
+  if (secs < 60) return `${secs}s`;
+  return `${Math.floor(secs / 60)}min ${secs % 60}s`;
+}
 
 export default function LegislationSuggestions() {
   const navigate = useNavigate();
@@ -70,11 +116,15 @@ export default function LegislationSuggestions() {
   };
 
   const [selectedBranch, setSelectedBranch] = useState<string>(branchFromUrl);
-  const [expandAi, setExpandAi] = useState<boolean>(false);
   const [search, setSearch] = useState<string>("");
   const [applicabilityFilter, setApplicabilityFilter] = useState<"all" | "real" | "potential">("all");
   const [jurisdictionFilter, setJurisdictionFilter] = useState<"all" | "federal" | "estadual" | "municipal" | "nbr" | "internacional">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // IDs aceitos nesta sessão — somem da lista (a run guardada é um snapshot
+  // e não muda; o aceite só some na próxima busca).
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  // Run aberta do histórico; null = exibindo a última run da unidade.
+  const [viewingRunId, setViewingRunId] = useState<string | null>(null);
 
   // Estado do Radar do mês: começa "off" para não disparar Perplexity
   // automaticamente. Mês default = corrente; usuário escolhe via dropdown
@@ -102,6 +152,8 @@ export default function LegislationSuggestions() {
       setSearchParams(next, { replace: true });
     }
     setSelectedIds(new Set()); // limpa seleção ao trocar de unidade
+    setDismissedIds(new Set());
+    setViewingRunId(null);
     // Reset do radar: ao trocar branch, querKey antiga fica enabled=true
     // e dispara novamente o agente Radar pra outra branch sem ação do
     // usuário (gasta ~$0.10 sem necessidade). Volta pra lazy-mode.
@@ -119,11 +171,26 @@ export default function LegislationSuggestions() {
     setRadarOverrides({});
   }, [radarMonth]);
 
-  const { data: response, isLoading, refetch, isFetching } = useLegislationSuggestions(
-    selectedBranch || undefined,
-    expandAi,
-  );
+  const latestRunQuery = useSuggestionRun(selectedBranch || undefined);
+  const historyQuery = useSuggestionRunHistory(selectedBranch || undefined);
+  const runDetailQuery = useSuggestionRunDetail(viewingRunId);
+  const startRun = useStartSuggestionRun(selectedBranch || undefined);
+  const publishRun = usePublishSuggestionRun();
   const accept = useAcceptSuggestions(selectedBranch || undefined);
+
+  const latestRun = latestRunQuery.data ?? null;
+  // Selecionar a PRÓPRIA última run no histórico não troca para a query
+  // estática (runDetailQuery, sem polling/realtime) — segue na query "ao
+  // vivo", senão a página fica presa em dados 'running' velhos.
+  const isViewingHistorical = !!viewingRunId && viewingRunId !== latestRun?.id;
+  const activeRun: SuggestionRun | null = isViewingHistorical ? runDetailQuery.data ?? null : latestRun;
+  const isRunning = activeRun?.status === "running";
+
+  // Ao trocar a run exibida, limpa seleção/dismiss (snapshot diferente).
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setDismissedIds(new Set());
+  }, [activeRun?.id]);
 
   // Radar — query "lazy": só dispara quando radarEnabled = true (ao clicar
   // "Buscar novidades"). Cache de 5min evita refetch acidental.
@@ -168,12 +235,12 @@ export default function LegislationSuggestions() {
     setRadarOverrides({});
   };
 
-  const matched = useMemo(() => response?.matched ?? [], [response]);
-  const discovered = response?.discovered ?? [];
-  const branchInfo = response?.branch;
+  const matched = useMemo(() => activeRun?.matched ?? [], [activeRun]);
+  const discovered = activeRun?.discovered ?? [];
 
   const filteredMatched = useMemo(() => {
     return matched.filter((m) => {
+      if (dismissedIds.has(m.legislation_id)) return false;
       if (applicabilityFilter !== "all" && m.default_applicability !== applicabilityFilter) return false;
       if (jurisdictionFilter !== "all" && m.jurisdiction.toLowerCase() !== jurisdictionFilter) return false;
       if (search) {
@@ -183,7 +250,7 @@ export default function LegislationSuggestions() {
       }
       return true;
     });
-  }, [matched, applicabilityFilter, jurisdictionFilter, search]);
+  }, [matched, dismissedIds, applicabilityFilter, jurisdictionFilter, search]);
 
   const toggleAllVisible = (checked: boolean) => {
     setSelectedIds((prev) => {
@@ -221,10 +288,27 @@ export default function LegislationSuggestions() {
     });
     if (items.length === 0) return;
     await accept.mutateAsync(items);
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      for (const it of items) next.add(it.legislation_id);
+      return next;
+    });
     setSelectedIds(new Set());
   };
 
-  const noProfile = response?.error === "questionnaire-not-completed";
+  const handleStartRun = (expandAi: boolean) => {
+    setViewingRunId(null);
+    setSelectedIds(new Set());
+    startRun.mutate(expandAi ? { expandAi: true } : {});
+  };
+
+  const readiness = selectedBranch ? readinessMap?.get(selectedBranch) : undefined;
+  const noProfile = !!readiness && !readiness.profileCompletedAt;
+  const runLoading = isViewingHistorical ? runDetailQuery.isLoading : latestRunQuery.isLoading;
+  // Bloqueia disparar nova run se a ÚLTIMA run (não a exibida — que pode
+  // ser uma run antiga do histórico) ainda estiver rodando, senão dá pra
+  // disparar jobs caros em paralelo abrindo uma run completed do histórico.
+  const startDisabled = startRun.isPending || latestRun?.status === "running";
 
   return (
     <TooltipProvider>
@@ -250,6 +334,7 @@ export default function LegislationSuggestions() {
           <p className="text-muted-foreground">
             A partir do questionário de compliance da unidade, listamos legislações do catálogo que provavelmente se aplicam
             (overlap de tags + filtro geográfico). Opcionalmente, a IA propõe normas que podem não estar cadastradas ainda.
+            Cada busca fica registrada — você pode revisar o que foi sugerido a qualquer momento.
           </p>
         </div>
 
@@ -265,9 +350,9 @@ export default function LegislationSuggestions() {
               </SelectTrigger>
               <SelectContent>
                 {branchOptions.map((b) => {
-                  const readiness = readinessMap?.get(b.id);
-                  const hasProfile = !!readiness?.profileCompletedAt;
-                  const legCount = readiness?.legislationCount ?? 0;
+                  const r = readinessMap?.get(b.id);
+                  const hasProfile = !!r?.profileCompletedAt;
+                  const legCount = r?.legislationCount ?? 0;
                   return (
                     <SelectItem key={b.id} value={b.id}>
                       <span className="flex items-center gap-2">
@@ -288,11 +373,9 @@ export default function LegislationSuggestions() {
                 })}
               </SelectContent>
             </Select>
-            {selectedBranch && readinessMap && !response && (() => {
-              const r = readinessMap.get(selectedBranch);
-              const hasProfile = !!r?.profileCompletedAt;
-              const legCount = r?.legislationCount ?? 0;
-              if (!hasProfile) {
+            {selectedBranch && readinessMap && !activeRun && !runLoading && (() => {
+              const legCount = readiness?.legislationCount ?? 0;
+              if (noProfile) {
                 return (
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-3 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
@@ -307,13 +390,6 @@ export default function LegislationSuggestions() {
                 </p>
               );
             })()}
-            {response && branchInfo && !noProfile && (
-              <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-green-600" />
-                Perfil com {response.profile.tag_count} tags. {matched.length} legislações casadas no catálogo
-                {response.ai_used ? ` · ${discovered.length} sugeridas pela IA` : ""}.
-              </p>
-            )}
             {noProfile && (
               <Alert className="mt-4">
                 <AlertCircle className="h-4 w-4" />
@@ -328,40 +404,132 @@ export default function LegislationSuggestions() {
                 </AlertDescription>
               </Alert>
             )}
-            {response?.ai_failed && (
-              <Alert className="mt-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  IA indisponível neste momento{response.ai_error ? ` (${response.ai_error})` : ""}. As sugestões do
-                  catálogo continuam aparecendo normalmente.
-                </AlertDescription>
-              </Alert>
-            )}
           </CardContent>
         </Card>
 
-        {/* Loading visível antes do response chegar — a primeira chamada
-            dispara IA automaticamente (quando matched < 20) e leva 70-90s.
-            Sem isso o usuário fica olhando pra tela vazia achando que
-            travou. */}
-        {selectedBranch && !noProfile && !response && isLoading && (
+        {/* Status da busca — quando começou, quando terminou, o que indicou. */}
+        {selectedBranch && !noProfile && (
           <Card>
-            <CardContent className="py-8">
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                <div className="space-y-1">
-                  <p className="font-medium text-foreground">Calculando sugestões para esta unidade…</p>
-                  <p className="text-xs">
-                    Primeiro a camada determinística (overlap SQL de tags) e, se necessário, a IA
-                    via Perplexity. Pode levar até 1-2 minutos na primeira execução.
-                  </p>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Busca de sugestões
+              </CardTitle>
+              <CardDescription>
+                A busca roda em background — você pode fechar a aba e voltar depois; o resultado fica registrado.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {isViewingHistorical && (
+                <Alert>
+                  <History className="h-4 w-4" />
+                  <AlertDescription className="flex items-center justify-between gap-2 flex-wrap">
+                    <span>Você está vendo uma busca do histórico ({fmtDateTime(activeRun?.started_at)}).</span>
+                    <Button variant="outline" size="sm" onClick={() => setViewingRunId(null)}>
+                      Voltar para a última busca
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {runLoading && !activeRun && (
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando última busca…
                 </div>
-              </div>
+              )}
+
+              {!runLoading && !activeRun && (
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-sm text-muted-foreground">
+                    Nenhuma busca de sugestões registrada para esta unidade ainda.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleStartRun(false)} disabled={startDisabled} className="gap-2">
+                      {startRun.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      Gerar sugestões
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {activeRun?.status === "running" && (
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div className="space-y-1">
+                    <p className="font-medium text-foreground">Buscando sugestões…</p>
+                    <p className="text-xs">
+                      Iniciada em {fmtDateTime(activeRun.started_at)} · {Math.max(0, Math.round((Date.now() - new Date(activeRun.started_at).getTime()) / 1000))}s em andamento.
+                      Camada determinística + IA via Perplexity — costuma levar 1-2 min.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {activeRun?.status === "failed" && (
+                <div className="space-y-3">
+                  <Alert variant="destructive">
+                    <XCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      A busca iniciada em {fmtDateTime(activeRun.started_at)} falhou
+                      {activeRun.error_text ? `: ${activeRun.error_text}` : "."}
+                    </AlertDescription>
+                  </Alert>
+                  <Button onClick={() => handleStartRun(false)} disabled={startDisabled} className="gap-2">
+                    {startRun.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    Tentar novamente
+                  </Button>
+                </div>
+              )}
+
+              {activeRun?.status === "completed" && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 flex-wrap text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span>
+                      Concluída em <strong>{fmtDateTime(activeRun.completed_at)}</strong>
+                      {activeRun.duration_ms != null ? ` · durou ${fmtDuration(activeRun.duration_ms)}` : ""}
+                      {" · "}
+                      {activeRun.matched_count} no catálogo
+                      {activeRun.ai_used ? ` · ${activeRun.discovered_count} pela IA` : ""}
+                    </span>
+                    <PublishBadge status={activeRun.publish_status} />
+                  </div>
+                  {activeRun.ai_failed && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        IA indisponível nesta busca{activeRun.ai_error ? ` (${activeRun.ai_error})` : ""}. As sugestões do
+                        catálogo continuam válidas.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  <div className="flex gap-2 flex-wrap">
+                    <Button onClick={() => handleStartRun(false)} disabled={startDisabled} variant="outline" className="gap-2">
+                      {startRun.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      Refazer busca
+                    </Button>
+                    <Button onClick={() => handleStartRun(true)} disabled={startDisabled} variant="outline" className="gap-2">
+                      {startRun.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      Refazer com IA
+                    </Button>
+                    {activeRun.publish_status === "draft" && (
+                      <Button
+                        onClick={() => publishRun.mutate(activeRun.id)}
+                        disabled={publishRun.isPending}
+                        className="gap-2"
+                      >
+                        {publishRun.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+                        Publicar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {!noProfile && response && (
+        {selectedBranch && !noProfile && activeRun && (
           <Tabs defaultValue="catalogo" className="space-y-4">
             <TabsList>
               <TabsTrigger value="catalogo" className="gap-2">
@@ -385,20 +553,14 @@ export default function LegislationSuggestions() {
                   </CardTitle>
                   <CardDescription>Legislações cadastradas que casaram com o perfil da unidade.</CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-2">
-                    {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                    Atualizar
-                  </Button>
-                  <Button
-                    onClick={handleAccept}
-                    disabled={selectedIds.size === 0 || accept.isPending}
-                    className="gap-2"
-                  >
-                    {accept.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                    Aceitar selecionadas ({selectedIds.size})
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleAccept}
+                  disabled={selectedIds.size === 0 || accept.isPending}
+                  className="gap-2"
+                >
+                  {accept.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Aceitar selecionadas ({selectedIds.size})
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-3 mb-4">
@@ -433,10 +595,10 @@ export default function LegislationSuggestions() {
                   </Select>
                 </div>
 
-                {isLoading ? (
+                {isRunning ? (
                   <div className="flex items-center gap-2 text-muted-foreground py-6">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Calculando sugestões…
+                    Buscando sugestões… o resultado aparece aqui ao concluir.
                   </div>
                 ) : filteredMatched.length === 0 ? (
                   <div className="py-6 text-sm text-muted-foreground italic">
@@ -479,35 +641,21 @@ export default function LegislationSuggestions() {
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-                <div>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Sparkles className="h-5 w-5" />
-                    Novas referências (IA)
-                    <span className="text-muted-foreground font-normal text-sm">({discovered.length})</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Normas que a IA acha relevantes mas que talvez ainda não estejam no catálogo. Confira a fonte antes de incluir.
-                  </CardDescription>
-                </div>
-                {/* "Buscar com IA" / "Refazer busca IA": setExpandAi(true)
-                    JÁ muda a queryKey do useLegislationSuggestions → React
-                    Query cria nova query automaticamente. NÃO chamar
-                    refetch() junto (faria 2 fetches paralelos). */}
-                <Button
-                  variant="outline"
-                  onClick={() => setExpandAi(true)}
-                  disabled={isFetching}
-                  className="gap-2"
-                >
-                  {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {response.ai_used ? "Refazer busca IA" : "Buscar com IA"}
-                </Button>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  Novas referências (IA)
+                  <span className="text-muted-foreground font-normal text-sm">({discovered.length})</span>
+                </CardTitle>
+                <CardDescription>
+                  Normas que a IA acha relevantes mas que talvez ainda não estejam no catálogo. Confira a fonte antes de incluir.
+                  Use <strong>Refazer com IA</strong> acima para forçar uma nova busca da IA.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {!response.ai_used ? (
+                {!activeRun.ai_used ? (
                   <p className="text-sm text-muted-foreground italic">
-                    A IA roda automaticamente quando há poucas sugestões do catálogo. Use o botão acima para forçar agora.
+                    A IA roda automaticamente quando há poucas sugestões do catálogo. Use “Refazer com IA” para forçar agora.
                   </p>
                 ) : discovered.length === 0 ? (
                   <p className="text-sm text-muted-foreground italic">
@@ -735,8 +883,88 @@ export default function LegislationSuggestions() {
             </TabsContent>
           </Tabs>
         )}
+
+        {/* Histórico de buscas — clique para revisar o que foi sugerido. */}
+        {selectedBranch && !noProfile && (historyQuery.data?.length ?? 0) > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Histórico de buscas
+              </CardTitle>
+              <CardDescription>Cada busca registrada para esta unidade. Clique para revisar o resultado.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {historyQuery.data?.map((run) => (
+                <RunHistoryRow
+                  key={run.id}
+                  run={run}
+                  isActive={run.id === activeRun?.id}
+                  onClick={() => setViewingRunId(run.id)}
+                />
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </TooltipProvider>
+  );
+}
+
+function PublishBadge({ status }: { status: "draft" | "published" }) {
+  if (status === "published") {
+    return (
+      <Badge variant="default" className="gap-1">
+        <Globe className="h-3 w-3" /> Publicada
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="gap-1">
+      <Lock className="h-3 w-3" /> Rascunho
+    </Badge>
+  );
+}
+
+interface RunHistoryRowProps {
+  run: SuggestionRunSummary;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+function RunHistoryRow({ run, isActive, onClick }: RunHistoryRowProps) {
+  const statusIcon =
+    run.status === "running" ? (
+      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+    ) : run.status === "failed" ? (
+      <XCircle className="h-4 w-4 text-destructive" />
+    ) : (
+      <CheckCircle2 className="h-4 w-4 text-green-600" />
+    );
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full text-left flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${
+        isActive ? "border-primary bg-muted/50" : "border-transparent hover:bg-muted/50"
+      }`}
+    >
+      {statusIcon}
+      <span className="font-medium">{fmtDateTime(run.started_at)}</span>
+      <span className="text-muted-foreground">
+        {run.status === "completed"
+          ? `${run.matched_count} catálogo${run.ai_used ? ` · ${run.discovered_count} IA` : ""}`
+          : run.status === "running"
+            ? "em andamento"
+            : "falhou"}
+      </span>
+      {run.status === "completed" && run.duration_ms != null && (
+        <span className="text-xs text-muted-foreground">{fmtDuration(run.duration_ms)}</span>
+      )}
+      <span className="ml-auto">
+        <PublishBadge status={run.publish_status} />
+      </span>
+    </button>
   );
 }
 
