@@ -456,7 +456,7 @@ async function handle(req: Request): Promise<Response> {
     // Run 'running' há mais de 30 min = travada (o worker já foi morto
     // pelo limite de wall-clock). Marca como 'failed' para liberar o slot
     // do índice único.
-    await supabase
+    const { error: expireErr } = await supabase
       .from("legislation_suggestion_runs")
       .update({
         status: "failed",
@@ -465,6 +465,16 @@ async function handle(req: Request): Promise<Response> {
       })
       .eq("id", inflight.id)
       .eq("status", "running");
+    if (expireErr) {
+      // Sem liberar o slot do índice único, o INSERT abaixo bateria 23505
+      // e o handler devolveria a MESMA run morta como "deduplicada" pra
+      // sempre. Aborta com erro claro em vez de entrar nesse loop.
+      console.error("[suggestions] falha ao expirar run travada:", inflight.id, expireErr.message);
+      return new Response(
+        JSON.stringify({ error: "não foi possível liberar a run anterior travada; tente novamente" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
   }
 
   // Registra a run ANTES de computar — assim, mesmo que a compute falhe,
