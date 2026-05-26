@@ -1060,7 +1060,7 @@ async function handleRetry(supabaseClient: any, licenseId: string) {
     .select('*')
     .eq('related_id', licenseId)
     .eq('related_model', 'license')
-    .order('created_at', { ascending: false })
+    .order('upload_date', { ascending: false })
     .limit(1);
 
   const document = documents?.[0];
