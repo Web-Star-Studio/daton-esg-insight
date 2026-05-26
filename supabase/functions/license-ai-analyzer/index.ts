@@ -388,7 +388,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 
     // Phase 1: Extract license info only (fast)
     console.warn('Phase 1: Extracting basic license info...');
-    const basicInfo = await extractPhase(openAIApiKey, openAIFile.id, 'license_info', 45000);
+    const basicInfo = await extractPhase(openAIApiKey, openAIFile.id, 'license_info', 45000, fileData, file.name, file.type);
     if (basicInfo) {
       extractedData.license_info = basicInfo;
       processingLog.push('Phase 1: License info extracted');
@@ -398,7 +398,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 
     // Phase 2: Extract condicionantes (medium complexity)
     console.warn('Phase 2: Extracting condicionantes...');
-    const condicionantes = await extractPhase(openAIApiKey, openAIFile.id, 'condicionantes', 60000);
+    const condicionantes = await extractPhase(openAIApiKey, openAIFile.id, 'condicionantes', 60000, fileData, file.name, file.type);
     if (condicionantes && Array.isArray(condicionantes)) {
       extractedData.condicionantes = condicionantes;
       processingLog.push(`Phase 2: ${condicionantes.length} condicionantes extracted`);
@@ -409,7 +409,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 
     // Phase 3: Extract alertas (fast)
     console.warn('Phase 3: Extracting alertas...');
-    const alertas = await extractPhase(openAIApiKey, openAIFile.id, 'alertas', 45000);
+    const alertas = await extractPhase(openAIApiKey, openAIFile.id, 'alertas', 45000, fileData, file.name, file.type);
     if (alertas && Array.isArray(alertas)) {
       extractedData.alertas = alertas;
       processingLog.push(`Phase 3: ${alertas.length} alertas extracted`);
@@ -422,6 +422,17 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     const hasBasicInfo = extractedData.license_info && Object.keys(extractedData.license_info).length > 0;
     const hasCondicionantes = extractedData.condicionantes && extractedData.condicionantes.length > 0;
     const hasAlertas = extractedData.alertas && extractedData.alertas.length > 0;
+
+    // Agrega flag de uso de OCR para observabilidade. Se qualquer fase
+    // precisou do fallback de visão, marcamos no JSON principal.
+    const usedOcrFallback =
+      Boolean((extractedData.license_info as any)?._used_ocr_fallback) ||
+      (extractedData.condicionantes ?? []).some((c: any) => c?._used_ocr_fallback) ||
+      (extractedData.alertas ?? []).some((a: any) => a?._used_ocr_fallback);
+    if (usedOcrFallback) {
+      (extractedData as Record<string, unknown>)._used_ocr_fallback = true;
+      processingLog.push('OCR fallback (gpt-4o vision) acionado em ao menos uma fase');
+    }
 
     if (hasBasicInfo && (hasCondicionantes || hasAlertas)) {
       finalStatus = 'completed';
@@ -645,16 +656,10 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
   });
 }
 
-// Extract a specific phase of data with timeout and retry
-async function extractPhase(openAIApiKey: string, fileId: string, phase: 'license_info' | 'condicionantes' | 'alertas', timeoutMs: number): Promise<any> {
-  const maxRetries = 2;
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.warn(`Phase ${phase}, attempt ${attempt}/${maxRetries}`);
-      
-      const phasePrompts = {
-        license_info: `Você é um especialista em licenciamento ambiental brasileiro. O documento pode ser uma licença de qualquer órgão federal, estadual ou municipal (IBAMA, CETESB/SP, FEPAM/RS, IAT/PR, IMA/SC, INEA/RJ, FEAM/MG, IEMA/ES, SEMAD/GO, SEMACE/CE, IAP, fundações como FCAM, secretarias municipais de meio ambiente etc.). Layouts variam bastante — não dependa de rótulos fixos. Extraia as informações básicas independentemente da formatação.
+type LicensePhase = 'license_info' | 'condicionantes' | 'alertas';
+
+const PHASE_PROMPTS: Record<LicensePhase, string> = {
+  license_info: `Você é um especialista em licenciamento ambiental brasileiro. O documento pode ser uma licença de qualquer órgão federal, estadual ou municipal (IBAMA, CETESB/SP, FEPAM/RS, IAT/PR, IMA/SC, INEA/RJ, FEAM/MG, IEMA/ES, SEMAD/GO, SEMACE/CE, IAP, fundações como FCAM, secretarias municipais de meio ambiente etc.). Layouts variam bastante — não dependa de rótulos fixos. Extraia as informações básicas independentemente da formatação.
 
 Categorias possíveis de license_type (escolha a que melhor descreve o documento):
 - "LP"  = Licença Prévia (também chamada de Licença Prévia de Localização)
@@ -728,8 +733,7 @@ Padrões para Dispensa Ambiental / Declaração de Atividade Não Constante:
 - Adicione SEMPRE uma condicionante sintética "Reavaliação ao mudar atividade" com texto: "A presente dispensa/declaração é válida apenas para a atividade descrita; alteração de ramo, escala, área ou endereço exige nova consulta ao órgão ambiental."
 
 Se NÃO encontrar nada relevante, retorne {"condicionantes": []}. RESPONDA APENAS COM JSON.`,
-
-        alertas: `Extraia APENAS alertas críticos deste documento ambiental. Funciona para Licenças (LP/LI/LO/LOC/LAS) e para Dispensa Ambiental (DA). Limite a 5 itens mais relevantes:
+  alertas: `Extraia APENAS alertas críticos deste documento ambiental. Funciona para Licenças (LP/LI/LO/LOC/LAS) e para Dispensa Ambiental (DA). Limite a 5 itens mais relevantes:
 
 {
   "alertas": [
@@ -749,47 +753,174 @@ Para Dispensa Ambiental (quando o documento explicitamente declara dispensa/isen
 - Crie um alerta "Observação" de severidade "alta" lembrando que a dispensa NÃO substitui alvarás/certidões de outras esferas (federal, municipal).
 - Se houver menção a mudança de enquadramento, atividade ou endereço, crie alerta "Descumprimento" severidade "alta" sobre necessidade de nova consulta.
 
-Se NÃO encontrar nada relevante, retorne {"alertas": []}. RESPONDA APENAS COM JSON.`
-      };
+Se NÃO encontrar nada relevante, retorne {"alertas": []}. RESPONDA APENAS COM JSON.`,
+};
 
-      const assistant = await createAssistant(openAIApiKey, phasePrompts[phase]);
-      const thread = await createThread(openAIApiKey, fileId, phasePrompts[phase]);
+// OCR fallback: para PDFs escaneados (sem layer de texto), o file_search
+// do Assistants API não consegue extrair conteúdo. Esta função sobe o PDF
+// novamente como purpose='user_data' e usa chat.completions com gpt-4o
+// (que tem OCR nativo via visão) para tentar a extração.
+async function callVisionWithPdf(
+  openAIApiKey: string,
+  fileBytes: Uint8Array,
+  fileName: string,
+  fileType: string,
+  prompt: string,
+  timeoutMs: number,
+): Promise<string | null> {
+  let uploadedFileId: string | undefined;
+  try {
+    const formData = new FormData();
+    formData.append('file', new Blob([fileBytes], { type: fileType }), fileName);
+    formData.append('purpose', 'user_data');
+
+    const uploadResp = await withTimeout(
+      fetch('https://api.openai.com/v1/files', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${openAIApiKey}` },
+        body: formData,
+      }),
+      30000,
+      'OCR file upload timeout',
+    );
+
+    if (!uploadResp.ok) {
+      console.error('OCR file upload failed:', await uploadResp.text());
+      return null;
+    }
+
+    const uploaded = await uploadResp.json();
+    uploadedFileId = uploaded.id;
+
+    const chatResp = await withTimeout(
+      fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          temperature: 0.1,
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `${prompt}\n\nIMPORTANTE: Este documento pode estar escaneado (somente imagem). Use OCR nativo para ler o conteúdo. RESPONDA APENAS COM JSON VÁLIDO.`,
+              },
+              { type: 'file', file: { file_id: uploadedFileId } },
+            ],
+          }],
+        }),
+      }),
+      timeoutMs,
+      'OCR chat completion timeout',
+    );
+
+    if (!chatResp.ok) {
+      console.error('OCR chat completion failed:', await chatResp.text());
+      return null;
+    }
+
+    const result = await chatResp.json();
+    return result.choices?.[0]?.message?.content ?? null;
+  } catch (error) {
+    console.error('OCR fallback error:', error);
+    return null;
+  } finally {
+    if (uploadedFileId) {
+      try {
+        await fetch(`https://api.openai.com/v1/files/${uploadedFileId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${openAIApiKey}` },
+        });
+      } catch (cleanupErr) {
+        console.warn('OCR file cleanup failed:', cleanupErr);
+      }
+    }
+  }
+}
+
+// Extract a specific phase of data with timeout, retry, and OCR fallback.
+// fileBytes/fileName/fileType são opcionais: se fornecidos, ativam o OCR
+// fallback via gpt-4o vision quando o file_search retorna vazio (PDFs
+// escaneados que não têm camada de texto indexável).
+async function extractPhase(
+  openAIApiKey: string,
+  fileId: string,
+  phase: LicensePhase,
+  timeoutMs: number,
+  fileBytes?: Uint8Array,
+  fileName?: string,
+  fileType?: string,
+): Promise<any> {
+  const maxRetries = 2;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.warn(`Phase ${phase}, attempt ${attempt}/${maxRetries}`);
+
+      const assistant = await createAssistant(openAIApiKey, PHASE_PROMPTS[phase]);
+      const thread = await createThread(openAIApiKey, fileId, PHASE_PROMPTS[phase]);
       const result = await runAssistantWithTimeout(openAIApiKey, assistant.id, thread.id, timeoutMs);
 
-      // Cleanup assistant
       await cleanupResources(openAIApiKey, assistant.id);
 
       if (result && result.trim()) {
         const parsed = extractJsonFromResponse(result);
         const extractedPhaseData = parsed[phase] || parsed;
-        
+
         if (extractedPhaseData && (Array.isArray(extractedPhaseData) ? extractedPhaseData.length > 0 : Object.keys(extractedPhaseData).length > 0)) {
           console.warn(`Phase ${phase} succeeded on attempt ${attempt}`);
           return extractedPhaseData;
         }
       }
-      
+
       if (attempt === maxRetries) {
-        console.warn(`Phase ${phase} failed after ${maxRetries} attempts`);
-        return null;
+        console.warn(`Phase ${phase} file_search returned empty after ${maxRetries} attempts`);
+        break;
       }
-      
-      // Wait before retry
+
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
     } catch (error) {
       console.error(`Phase ${phase} attempt ${attempt} failed:`, error);
-      
-      if (attempt === maxRetries) {
-        console.error(`Phase ${phase} failed after ${maxRetries} attempts:`, error);
-        return null;
-      }
-      
-      // Wait before retry
+      if (attempt === maxRetries) break;
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
   }
-  
+
+  // OCR fallback: file_search falhou — tentar gpt-4o vision se o caller
+  // forneceu o PDF bruto. Documentos escaneados que não têm camada de texto
+  // ficam ilegíveis para file_search; vision com OCR nativo resolve.
+  if (fileBytes && fileName && fileType) {
+    console.warn(`Phase ${phase}: tentando OCR fallback (gpt-4o vision)`);
+    try {
+      const result = await callVisionWithPdf(
+        openAIApiKey,
+        fileBytes,
+        fileName,
+        fileType,
+        PHASE_PROMPTS[phase],
+        timeoutMs,
+      );
+      if (result && result.trim()) {
+        const parsed = extractJsonFromResponse(result);
+        const extractedPhaseData = parsed[phase] || parsed;
+        if (extractedPhaseData && (Array.isArray(extractedPhaseData) ? extractedPhaseData.length > 0 : Object.keys(extractedPhaseData).length > 0)) {
+          console.warn(`Phase ${phase}: OCR fallback succeeded`);
+          // Marca para observabilidade — depois agregamos em ai_extracted_data._used_ocr_fallback
+          if (typeof extractedPhaseData === 'object' && !Array.isArray(extractedPhaseData)) {
+            (extractedPhaseData as Record<string, unknown>)._used_ocr_fallback = true;
+          }
+          return extractedPhaseData;
+        }
+      }
+    } catch (fallbackErr) {
+      console.error(`Phase ${phase}: OCR fallback exception:`, fallbackErr);
+    }
+  }
+
   return null;
 }
 
@@ -1143,13 +1274,13 @@ async function handleRetry(supabaseClient: any, licenseId: string) {
     console.warn('OpenAI file created for retry:', openAIFile.id);
 
     // Phase 1: Extract license info
-    const basicInfo = await extractPhase(openAIApiKey, openAIFile.id, 'license_info', 45000);
+    const basicInfo = await extractPhase(openAIApiKey, openAIFile.id, 'license_info', 45000, uint8Array, document.file_name, document.file_type);
     if (basicInfo) {
       extractedData.license_info = basicInfo;
     }
 
     // Phase 2: Extract condicionantes
-    const condicionantes = await extractPhase(openAIApiKey, openAIFile.id, 'condicionantes', 60000);
+    const condicionantes = await extractPhase(openAIApiKey, openAIFile.id, 'condicionantes', 60000, uint8Array, document.file_name, document.file_type);
     if (condicionantes && Array.isArray(condicionantes)) {
       extractedData.condicionantes = condicionantes;
     } else {
@@ -1157,7 +1288,7 @@ async function handleRetry(supabaseClient: any, licenseId: string) {
     }
 
     // Phase 3: Extract alertas
-    const alertas = await extractPhase(openAIApiKey, openAIFile.id, 'alertas', 45000);
+    const alertas = await extractPhase(openAIApiKey, openAIFile.id, 'alertas', 45000, uint8Array, document.file_name, document.file_type);
     if (alertas && Array.isArray(alertas)) {
       extractedData.alertas = alertas;
     } else {
