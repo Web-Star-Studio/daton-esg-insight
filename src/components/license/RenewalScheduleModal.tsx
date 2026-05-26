@@ -45,7 +45,9 @@ export const RenewalScheduleModal: React.FC<RenewalScheduleModalProps> = ({
   });
 
   useEffect(() => {
-    if (isOpen && license) {
+    // Sem expiration_date (Dispensa Ambiental) não há prazo a sugerir —
+    // calculateRenewalSuggestion produziria datas baseadas em epoch.
+    if (isOpen && license && license.expiration_date) {
       calculateRenewalSuggestion(license.expiration_date).then(setSuggestion);
     }
   }, [isOpen, license]);
