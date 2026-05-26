@@ -893,14 +893,16 @@ async function extractPhase(
   // OCR fallback: file_search falhou — tentar gpt-4o vision se o caller
   // forneceu o PDF bruto. Documentos escaneados que não têm camada de texto
   // ficam ilegíveis para file_search; vision com OCR nativo resolve.
-  if (fileBytes && fileName && fileType) {
+  // file_type pode vir vazio quando o upload original não capturou MIME;
+  // assumimos application/pdf como default seguro.
+  if (fileBytes && fileName) {
     console.warn(`Phase ${phase}: tentando OCR fallback (gpt-4o vision)`);
     try {
       const result = await callVisionWithPdf(
         openAIApiKey,
         fileBytes,
         fileName,
-        fileType,
+        fileType && fileType.trim() ? fileType : 'application/pdf',
         PHASE_PROMPTS[phase],
         timeoutMs,
       );
@@ -1308,6 +1310,17 @@ async function handleRetry(supabaseClient: any, licenseId: string) {
     const hasBasicInfo = extractedData.license_info && Object.keys(extractedData.license_info).length > 0;
     const hasCondicionantes = extractedData.condicionantes && extractedData.condicionantes.length > 0;
     const hasAlertas = extractedData.alertas && extractedData.alertas.length > 0;
+
+    // Mesma agregação do handleUpload: se qualquer fase precisou de OCR,
+    // marcamos no top-level para a observabilidade ficar consistente
+    // entre upload inicial e retry.
+    const retryUsedOcr =
+      Boolean((extractedData.license_info as any)?._used_ocr_fallback) ||
+      (extractedData.condicionantes ?? []).some((c: any) => c?._used_ocr_fallback) ||
+      (extractedData.alertas ?? []).some((a: any) => a?._used_ocr_fallback);
+    if (retryUsedOcr) {
+      extractedData._used_ocr_fallback = true;
+    }
 
     if (hasBasicInfo && (hasCondicionantes || hasAlertas)) {
       finalStatus = 'completed';
