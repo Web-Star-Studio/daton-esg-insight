@@ -49,7 +49,8 @@ export interface LicenseData {
   type: string;
   status: string;
   issue_date?: string;
-  expiration_date: string;
+  // null = sem vencimento (Dispensa Ambiental e documentos análogos).
+  expiration_date: string | null;
   issuing_body: string;
   process_number?: string;
   document_number?: string;
@@ -77,7 +78,8 @@ export interface LicenseListItem {
   name: string;
   type: string;
   issuing_body: string;
-  expiration_date: string;
+  // null = sem vencimento (Dispensa Ambiental e documentos análogos).
+  expiration_date: string | null;
   status: string;
   process_number?: string;
   document_number?: string;
@@ -102,7 +104,8 @@ export interface CreateLicenseData {
   document_identifier_other?: string
   branch_id?: string | null
   issue_date?: Date
-  expiration_date: Date
+  // Dispensa Ambiental (type='DA') não tem vencimento — null/undefined = permanente.
+  expiration_date?: Date | null
   status: string
   conditions?: string
   notes?: string
@@ -121,7 +124,7 @@ export interface UpdateLicenseData {
   document_identifier_other?: string
   branch_id?: string | null
   issue_date?: Date
-  expiration_date?: Date
+  expiration_date?: Date | null
   status?: string
   conditions?: string
   notes?: string
@@ -143,7 +146,8 @@ export interface LicenseDetail {
   type: string;
   status: string;
   issue_date?: string;
-  expiration_date: string;
+  // null = Dispensa Ambiental ou documento sem vencimento.
+  expiration_date: string | null;
   issuing_body: string;
   process_number?: string;
   document_number?: string;
@@ -302,7 +306,7 @@ export async function createLicense(licenseData: CreateLicenseData): Promise<Lic
       ? (licenseData.status as typeof validStatuses[number])
       : 'Ativa';
     
-    const validTypes = ['LP', 'LI', 'LO', 'LAS', 'LOC', 'Outra'] as const;
+    const validTypes = ['LP', 'LI', 'LO', 'LAS', 'LOC', 'DA', 'Outra'] as const;
     const typeValue = validTypes.includes(licenseData.type as typeof validTypes[number])
       ? (licenseData.type as typeof validTypes[number])
       : 'Outra';
@@ -319,7 +323,9 @@ export async function createLicense(licenseData: CreateLicenseData): Promise<Lic
         document_identifier_other: licenseData.document_identifier_other,
         branch_id: licenseData.branch_id,
         issue_date: licenseData.issue_date?.toISOString().split('T')[0],
-        expiration_date: licenseData.expiration_date.toISOString().split('T')[0],
+        expiration_date: licenseData.expiration_date
+          ? licenseData.expiration_date.toISOString().split('T')[0]
+          : null,
         status: statusValue,
         conditions: licenseData.conditions,
         notes: licenseData.notes,
@@ -370,7 +376,11 @@ export async function updateLicense(id: string, updates: UpdateLicenseData): Pro
     if (updates.responsible_user_id !== undefined) updateData.responsible_user_id = updates.responsible_user_id
     if (updates.status) updateData.status = updates.status
     if (updates.issue_date) updateData.issue_date = updates.issue_date.toISOString().split('T')[0]
-    if (updates.expiration_date) updateData.expiration_date = updates.expiration_date.toISOString().split('T')[0]
+    if (updates.expiration_date === null) {
+      updateData.expiration_date = null
+    } else if (updates.expiration_date) {
+      updateData.expiration_date = updates.expiration_date.toISOString().split('T')[0]
+    }
 
     const { data, error } = await supabase
       .from('licenses')
@@ -561,12 +571,20 @@ export async function getLicenseStats(): Promise<LicenseStats> {
     }
 
     licenses.forEach(license => {
-      const expirationDate = new Date(license.expiration_date)
-      
       if (license.status === 'Ativa') {
         stats.active++
       }
-      
+
+      // Licenças sem expiration_date (Dispensa Ambiental e similares) não
+      // entram em "expired" nem "upcoming" — são permanentes até a atividade
+      // mudar.
+      if (!license.expiration_date) {
+        return
+      }
+
+      const expirationDate = new Date(license.expiration_date)
+      if (Number.isNaN(expirationDate.getTime())) return
+
       if (expirationDate < today) {
         stats.expired++
       } else if (expirationDate <= futureDate) {

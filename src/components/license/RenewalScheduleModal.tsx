@@ -45,7 +45,9 @@ export const RenewalScheduleModal: React.FC<RenewalScheduleModalProps> = ({
   });
 
   useEffect(() => {
-    if (isOpen && license) {
+    // Sem expiration_date (Dispensa Ambiental) não há prazo a sugerir —
+    // calculateRenewalSuggestion produziria datas baseadas em epoch.
+    if (isOpen && license && license.expiration_date) {
       calculateRenewalSuggestion(license.expiration_date).then(setSuggestion);
     }
   }, [isOpen, license]);
@@ -176,7 +178,9 @@ export const RenewalScheduleModal: React.FC<RenewalScheduleModalProps> = ({
                 <div>
                   <Label className="text-xs text-muted-foreground">Vencimento</Label>
                   <p className="font-medium">
-                    {format(new Date(license.expiration_date), 'dd/MM/yyyy', { locale: ptBR })}
+                    {license.expiration_date
+                      ? format(new Date(license.expiration_date), 'dd/MM/yyyy', { locale: ptBR })
+                      : 'Sem vencimento'}
                   </p>
                 </div>
                 <div>
@@ -237,11 +241,13 @@ export const RenewalScheduleModal: React.FC<RenewalScheduleModalProps> = ({
                   </Popover>
                 </div>
 
-                <RenewalTimeline
-                  startDate={formData.scheduled_start_date}
-                  protocolDeadline={formData.protocol_deadline}
-                  expirationDate={new Date(license.expiration_date)}
-                />
+                {license.expiration_date && (
+                  <RenewalTimeline
+                    startDate={formData.scheduled_start_date}
+                    protocolDeadline={formData.protocol_deadline}
+                    expirationDate={new Date(license.expiration_date)}
+                  />
+                )}
               </div>
             </div>
           )}

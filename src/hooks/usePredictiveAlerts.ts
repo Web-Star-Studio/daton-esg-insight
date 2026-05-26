@@ -71,6 +71,9 @@ export const usePredictiveAlerts = () => {
       const now = new Date();
 
       for (const license of predictionData.licenses) {
+        // Licenças sem expiration_date (Dispensa Ambiental) ficam de fora
+        // dos alertas preditivos de renovação.
+        if (!license.expiration_date) continue;
         const expirationDate = new Date(license.expiration_date);
         const daysToExpiration = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 

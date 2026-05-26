@@ -263,8 +263,11 @@ const processUserIntent = async (message: string, companyId: string, currentPage
       const { data } = await queryBuilders.licenses(companyId, msg);
       relevantData = { licenses: data };
       
-      const expired = data?.filter(l => new Date(l.expiration_date) < new Date()).length || 0;
+      // Licenças sem expiration_date (Dispensa Ambiental) não são contadas
+      // como vencidas nem próximas do vencimento — são permanentes.
+      const expired = data?.filter(l => l.expiration_date && new Date(l.expiration_date) < new Date()).length || 0;
       const nearExpiry = data?.filter(l => {
+        if (!l.expiration_date) return false;
         const expDate = new Date(l.expiration_date);
         const today = new Date();
         const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -574,6 +577,7 @@ ${marketInfo}`;
       // License expiry warnings
       if ('licenses' in relevantData && relevantData.licenses) {
         const nearExpiry = relevantData.licenses.filter((l: any) => {
+          if (!l.expiration_date) return false;
           const expDate = new Date(l.expiration_date);
           const today = new Date();
           const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);

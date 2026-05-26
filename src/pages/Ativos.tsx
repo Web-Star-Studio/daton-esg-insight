@@ -500,7 +500,9 @@ function AssetDetailsPanel({
                           {license.type} • {license.issuing_body}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Vence em: {new Date(license.expiration_date).toLocaleDateString('pt-BR')}
+                          Vence em: {license.expiration_date
+                            ? new Date(license.expiration_date).toLocaleDateString('pt-BR')
+                            : 'Sem vencimento'}
                         </div>
                       </div>
                       <Badge variant={license.status === 'Ativa' ? 'default' : 'secondary'}>

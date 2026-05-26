@@ -21,22 +21,34 @@ export const LicenseQuickActions: React.FC<LicenseQuickActionsProps> = ({
   onViewConditions,
   onGenerateReport,
 }) => {
-  const daysUntilExpiration = Math.ceil(
-    (new Date(license.expiration_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-  );
+  // Licenças sem expiration_date (Dispensa Ambiental) — daysUntilExpiration
+  // = null sinaliza que o badge de "X dias restantes" não deve aparecer.
+  const daysUntilExpiration = license.expiration_date
+    ? Math.ceil(
+        (new Date(license.expiration_date).getTime() - new Date().getTime()) /
+          (1000 * 60 * 60 * 24),
+      )
+    : null;
+
+  // Dispensa Ambiental e documentos sem vencimento não devem disparar fluxo
+  // de renovação — sem expiration_date, calculateRenewalSuggestion produz
+  // datas baseadas em epoch e agendamentos absurdos.
+  const hasExpiration = !!license.expiration_date
 
   const actions = [
     {
       id: 'schedule',
       title: 'Agendar Renovação',
-      description: 'Configure o processo de renovação',
+      description: hasExpiration
+        ? 'Configure o processo de renovação'
+        : 'Indisponível — documento sem vencimento',
       icon: Calendar,
-      badge: daysUntilExpiration < 120 ? {
+      badge: daysUntilExpiration !== null && daysUntilExpiration < 120 ? {
         text: `${daysUntilExpiration} dias restantes`,
         variant: daysUntilExpiration < 45 ? 'destructive' as const : 'secondary' as const,
       } : undefined,
       onClick: onScheduleRenewal,
-      disabled: license.status === 'Vencida',
+      disabled: license.status === 'Vencida' || !hasExpiration,
       iconColor: 'text-primary',
       bgColor: 'bg-primary/5 hover:bg-primary/10',
     },
