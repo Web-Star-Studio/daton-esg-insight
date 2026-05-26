@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      _audit_nc_unit_backfill_20260519: {
+        Row: {
+          audit_at: string | null
+          id: string
+          nc_number: string | null
+          organizational_unit_id_after: string | null
+          organizational_unit_id_before: string | null
+          rationale: string | null
+          title: string | null
+        }
+        Insert: {
+          audit_at?: string | null
+          id: string
+          nc_number?: string | null
+          organizational_unit_id_after?: string | null
+          organizational_unit_id_before?: string | null
+          rationale?: string | null
+          title?: string | null
+        }
+        Update: {
+          audit_at?: string | null
+          id?: string
+          nc_number?: string | null
+          organizational_unit_id_after?: string | null
+          organizational_unit_id_before?: string | null
+          rationale?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       _laia_licenses_purge_audit_20260519_action_history: {
         Row: {
           action_target_id: string | null
@@ -5842,6 +5872,9 @@ export type Database = {
           generated_at: string
           generated_by: string | null
           id: string
+          publish_status: string
+          published_at: string | null
+          published_by: string | null
           reference_month: string
           updated_at: string
         }
@@ -5852,6 +5885,9 @@ export type Database = {
           generated_at?: string
           generated_by?: string | null
           id?: string
+          publish_status?: string
+          published_at?: string | null
+          published_by?: string | null
           reference_month: string
           updated_at?: string
         }
@@ -5862,6 +5898,9 @@ export type Database = {
           generated_at?: string
           generated_by?: string | null
           id?: string
+          publish_status?: string
+          published_at?: string | null
+          published_by?: string | null
           reference_month?: string
           updated_at?: string
         }
@@ -5883,6 +5922,13 @@ export type Database = {
           {
             foreignKeyName: "compliance_update_letters_generated_by_fkey"
             columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_update_letters_published_by_fkey"
+            columns: ["published_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -16499,50 +16545,6 @@ export type Database = {
           },
         ]
       }
-      legislation_themes: {
-        Row: {
-          code: string | null
-          color: string | null
-          company_id: string
-          created_at: string | null
-          description: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          code?: string | null
-          color?: string | null
-          company_id: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          code?: string | null
-          color?: string | null
-          company_id?: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "legislation_themes_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       legislation_suggestion_runs: {
         Row: {
           ai_error: string | null
@@ -16629,17 +16631,61 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "legislation_suggestion_runs_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "legislation_suggestion_runs_triggered_by_fkey"
             columns: ["triggered_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      legislation_themes: {
+        Row: {
+          code: string | null
+          color: string | null
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          color?: string | null
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          color?: string | null
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
           {
-            foreignKeyName: "legislation_suggestion_runs_published_by_fkey"
-            columns: ["published_by"]
+            foreignKeyName: "legislation_themes_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -27619,7 +27665,6 @@ export type Database = {
       }
     }
     Functions: {
-      publish_suggestion_run: { Args: { p_run_id: string }; Returns: Json }
       calculate_audit_score: { Args: { p_audit_id: string }; Returns: Json }
       calculate_bsc_objective_progress: {
         Args: { p_objective_id: string }
@@ -27847,6 +27892,17 @@ export type Database = {
         Args: { input_text: string; options?: Json }
         Returns: string
       }
+      persist_compliance_update_letter: {
+        Args: {
+          p_branch_id: string
+          p_company_id: string
+          p_content: Json
+          p_generated_by: string
+          p_is_admin: boolean
+          p_reference_month: string
+        }
+        Returns: string
+      }
       policy_exists: {
         Args: { policy_name: string; table_name: string }
         Returns: boolean
@@ -27858,6 +27914,60 @@ export type Database = {
           job_id: string
           retry_attempt: number
         }[]
+      }
+      publish_compliance_update_letter: {
+        Args: { p_letter_id: string }
+        Returns: {
+          branch_id: string
+          company_id: string
+          content: Json
+          generated_at: string
+          generated_by: string | null
+          id: string
+          publish_status: string
+          published_at: string | null
+          published_by: string | null
+          reference_month: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "compliance_update_letters"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      publish_suggestion_run: {
+        Args: { p_run_id: string }
+        Returns: {
+          ai_error: string | null
+          ai_failed: boolean
+          ai_used: boolean
+          branch_id: string
+          company_id: string
+          completed_at: string | null
+          discovered: Json
+          discovered_count: number
+          duration_ms: number | null
+          error_text: string | null
+          expand_ai: boolean
+          id: string
+          matched: Json
+          matched_count: number
+          publish_status: string
+          published_at: string | null
+          published_by: string | null
+          started_at: string
+          status: string
+          tag_count: number
+          triggered_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "legislation_suggestion_runs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       purge_laia_assessments_trash: { Args: never; Returns: number }
       queue_job_for_retry: { Args: { job_id: string }; Returns: boolean }
@@ -27879,6 +27989,8 @@ export type Database = {
           url: string
         }[]
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       uc_code: {
         Args: {
           uc: Database["public"]["Tables"]["legislation_unit_compliance"]["Row"]
