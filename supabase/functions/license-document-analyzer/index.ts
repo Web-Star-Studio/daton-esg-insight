@@ -245,6 +245,96 @@ function parseDate(
   return null;
 }
 
+// withTimeout idêntico ao de license-ai-analyzer — wrapper de fetch com
+// limite de tempo, usado em callVisionWithPdf abaixo.
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+  );
+  return Promise.race([promise, timeout]);
+}
+
+// OCR fallback: sobe o PDF como purpose='user_data' e chama gpt-4o via
+// chat.completions, que tem OCR nativo. Usado quando o file_search do
+// Assistants API retorna conteúdo vazio (PDFs escaneados sem layer texto).
+async function callVisionWithPdf(
+  openAIApiKey: string,
+  fileBytes: Uint8Array,
+  fileName: string,
+  fileType: string,
+  prompt: string,
+  timeoutMs: number,
+): Promise<string | null> {
+  let uploadedFileId: string | undefined;
+  try {
+    const formData = new FormData();
+    formData.append('file', new Blob([fileBytes], { type: fileType }), fileName);
+    formData.append('purpose', 'user_data');
+
+    const uploadResp = await withTimeout(
+      fetch('https://api.openai.com/v1/files', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${openAIApiKey}` },
+        body: formData,
+      }),
+      30000,
+      'OCR file upload timeout',
+    );
+    if (!uploadResp.ok) {
+      console.error('OCR file upload failed:', await uploadResp.text());
+      return null;
+    }
+    const uploaded = await uploadResp.json();
+    uploadedFileId = uploaded.id;
+
+    const chatResp = await withTimeout(
+      fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          temperature: 0.1,
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `${prompt}\n\nIMPORTANTE: Este documento pode estar escaneado. Use OCR nativo. RESPONDA APENAS COM JSON VÁLIDO.`,
+              },
+              { type: 'file', file: { file_id: uploadedFileId } },
+            ],
+          }],
+        }),
+      }),
+      timeoutMs,
+      'OCR chat completion timeout',
+    );
+    if (!chatResp.ok) {
+      console.error('OCR chat completion failed:', await chatResp.text());
+      return null;
+    }
+    const result = await chatResp.json();
+    return result.choices?.[0]?.message?.content ?? null;
+  } catch (error) {
+    console.error('OCR fallback error:', error);
+    return null;
+  } finally {
+    if (uploadedFileId) {
+      try {
+        await fetch(`https://api.openai.com/v1/files/${uploadedFileId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${openAIApiKey}` },
+        });
+      } catch (cleanupErr) {
+        console.warn('OCR file cleanup failed:', cleanupErr);
+      }
+    }
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -509,8 +599,49 @@ serve(async (req) => {
     const aiResponse = assistantMessage.content[0].text.value;
     console.warn(`AI response length: ${aiResponse.length}`);
 
-    // Extract and validate JSON
-    const extractedData = extractJsonFromText(aiResponse);
+    // Extract and validate JSON. Se o parsing falhar (resposta sem JSON
+    // válido — comum quando file_search não acha nada), começamos com
+    // objeto vazio para que a heurística looksEmpty dispare o OCR fallback
+    // em vez de cair no catch externo e perder a chance.
+    let extractedData: any;
+    try {
+      extractedData = extractJsonFromText(aiResponse);
+    } catch (parseErr) {
+      console.warn('AI response JSON parse failed, will try OCR fallback:', parseErr);
+      extractedData = { confidence: 0, _evidence_chars: 0 };
+    }
+    let usedOcrFallback = false;
+
+    // OCR fallback: se file_search retornou confidence=0 e nenhum campo
+    // útil, provavelmente é PDF escaneado. Tenta gpt-4o vision (que tem
+    // OCR nativo) com o mesmo prompt antes de devolver vazio.
+    const looksEmpty = (extractedData.confidence ?? 0) === 0 ||
+      (!extractedData.license_type && !extractedData.license_number && !extractedData.company);
+    if (looksEmpty) {
+      console.warn('file_search empty — tentando OCR fallback (gpt-4o vision)');
+      const fileBytes = new Uint8Array(await (fileData as Blob).arrayBuffer());
+      const visionResult = await callVisionWithPdf(
+        openaiApiKey,
+        fileBytes,
+        tempFileName ?? 'document.pdf',
+        (fileData as Blob).type || 'application/pdf',
+        getEnvironmentalLicensePrompt(),
+        90000,
+      );
+      if (visionResult) {
+        try {
+          const visionParsed = extractJsonFromText(visionResult);
+          if ((visionParsed.confidence ?? 0) > (extractedData.confidence ?? 0)) {
+            extractedData = visionParsed;
+            extractedData._used_ocr_fallback = true;
+            usedOcrFallback = true;
+            console.warn('OCR fallback succeeded');
+          }
+        } catch (parseErr) {
+          console.warn('OCR fallback returned invalid JSON:', parseErr);
+        }
+      }
+    }
     
     // Post-process dates
     if (extractedData.issue_date && !extractedData.issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -557,7 +688,8 @@ serve(async (req) => {
       data: extractedData,
       confidence: confidence,
       processing_time_ms: processingTime,
-      analysis_method: 'openai_files_api'
+      analysis_method: usedOcrFallback ? 'openai_vision_ocr' : 'openai_files_api',
+      used_ocr_fallback: usedOcrFallback,
     };
 
     return new Response(JSON.stringify(response), {
