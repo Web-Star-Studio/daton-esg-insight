@@ -909,8 +909,17 @@ async function extractPhase(
         const extractedPhaseData = parsed[phase] || parsed;
         if (extractedPhaseData && (Array.isArray(extractedPhaseData) ? extractedPhaseData.length > 0 : Object.keys(extractedPhaseData).length > 0)) {
           console.warn(`Phase ${phase}: OCR fallback succeeded`);
-          // Marca para observabilidade — depois agregamos em ai_extracted_data._used_ocr_fallback
-          if (typeof extractedPhaseData === 'object' && !Array.isArray(extractedPhaseData)) {
+          // Marca para observabilidade. Para arrays (condicionantes/alertas)
+          // anotamos cada item, porque o agregador em handleUpload faz
+          // .some(item => item._used_ocr_fallback). Para objetos (license_info)
+          // anotamos o objeto direto.
+          if (Array.isArray(extractedPhaseData)) {
+            for (const item of extractedPhaseData) {
+              if (item && typeof item === 'object') {
+                (item as Record<string, unknown>)._used_ocr_fallback = true;
+              }
+            }
+          } else if (typeof extractedPhaseData === 'object') {
             (extractedPhaseData as Record<string, unknown>)._used_ocr_fallback = true;
           }
           return extractedPhaseData;

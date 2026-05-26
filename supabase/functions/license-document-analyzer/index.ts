@@ -599,8 +599,17 @@ serve(async (req) => {
     const aiResponse = assistantMessage.content[0].text.value;
     console.warn(`AI response length: ${aiResponse.length}`);
 
-    // Extract and validate JSON
-    let extractedData = extractJsonFromText(aiResponse);
+    // Extract and validate JSON. Se o parsing falhar (resposta sem JSON
+    // válido — comum quando file_search não acha nada), começamos com
+    // objeto vazio para que a heurística looksEmpty dispare o OCR fallback
+    // em vez de cair no catch externo e perder a chance.
+    let extractedData: any;
+    try {
+      extractedData = extractJsonFromText(aiResponse);
+    } catch (parseErr) {
+      console.warn('AI response JSON parse failed, will try OCR fallback:', parseErr);
+      extractedData = { confidence: 0, _evidence_chars: 0 };
+    }
     let usedOcrFallback = false;
 
     // OCR fallback: se file_search retornou confidence=0 e nenhum campo
