@@ -342,7 +342,11 @@ export default function Licenciamento() {
                               <span>•</span>
                               <span className="truncate">{license.issuing_body}</span>
                             </div>
-                            <div>Vencimento: {new Date(license.expiration_date).toLocaleDateString('pt-BR')}</div>
+                            <div>
+                              Vencimento: {license.expiration_date
+                                ? new Date(license.expiration_date).toLocaleDateString('pt-BR')
+                                : 'Sem vencimento'}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

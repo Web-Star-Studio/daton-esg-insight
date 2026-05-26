@@ -84,7 +84,7 @@ export const LicenseReconciliationDashboard = ({
     }
 
     if (field === 'tipo') {
-      const validTypes = ['LP', 'LI', 'LO', 'LAS', 'LOC', 'Outra']
+      const validTypes = ['LP', 'LI', 'LO', 'LAS', 'LOC', 'DA', 'Outra']
       if (!validTypes.includes(value)) {
         return 'Tipo de licença não reconhecido'
       }
@@ -315,6 +315,7 @@ export const LicenseReconciliationDashboard = ({
                             <SelectItem value="LO">Licença de Operação (LO)</SelectItem>
                             <SelectItem value="LAS">Licença Ambiental Simplificada (LAS)</SelectItem>
                             <SelectItem value="LOC">Licença de Operação Corretiva (LOC)</SelectItem>
+                            <SelectItem value="DA">Dispensa Ambiental (DA)</SelectItem>
                             <SelectItem value="Outra">Outra</SelectItem>
                           </SelectContent>
                         </Select>

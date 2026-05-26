@@ -46,17 +46,29 @@ interface LicenseCondition {
 
 // Enhanced prompt for environmental license data extraction
 function getEnvironmentalLicensePrompt(): string {
-  return `Você é um agente de extração de dados ambientais. Receberá como entrada o conteúdo integral de um documento de licenciamento (PDF convertido em texto/tabelas). Esse documento pode ser uma Licença de Operação (LO), Licença Prévia (LP), Licença de Instalação (LI) ou outro tipo similar.
+  return `Você é um agente de extração de dados ambientais. Receberá um documento de licenciamento (PDF / texto / tabelas) emitido por qualquer órgão ambiental brasileiro — federal (IBAMA), estadual (CETESB, FEPAM, IAT, IMA, INEA, FEAM, IEMA, SEMAD, IAP, SEMACE etc.), municipal (SEMMA, SMMA, SMAM, fundações como FCAM) ou similar. Layouts variam drasticamente entre órgãos.
+
+Tipos possíveis para license_type (escolha o que melhor descreve o documento):
+- "LP"  = Licença Prévia
+- "LI"  = Licença de Instalação
+- "LO"  = Licença de Operação (variações: "L.O.", "L. O.", "LO Nº", "Licença Ambiental de Operação")
+- "LOC" = Licença de Operação Corretiva
+- "LAS" = Licença Ambiental Simplificada / Única / "Licença Ambiental de Funcionamento" (LAF) municipal
+- "DA"  = Dispensa Ambiental, "Declaração de Atividade Dispensada", "Declaração de Atividade Não Constante", "Certidão de Atividade Não Sujeita a Licenciamento", documentos que declaram "atividade isenta" ou "não sujeita ao licenciamento ambiental"
+- "Outra" = autorização, outorga, certidão genérica
 
 Seu trabalho é extrair apenas informações que estão de fato no documento e devolvê-las em JSON válido conforme o schema fornecido.
 
 Regras obrigatórias:
 - Nunca invente informações. Se um campo não existir, simplesmente não retorne esse campo.
 - Sempre inclua um campo confidence de 0 a 1 e um source_snippet com o trecho textual que comprova cada dado extraído.
-- Datas devem ser padronizadas no formato YYYY-MM-DD.
+- Datas devem ser padronizadas no formato YYYY-MM-DD. Aceite datas em DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY ou por extenso ("28 de junho de 2032") no documento e converta para ISO antes de responder.
+- Quando encontrar "Período de validade: DD/MM/YYYY a DD/MM/YYYY" (FEPAM e outros), use a SEGUNDA data como valid_until.
+- Documentos do tipo "DA" tipicamente NÃO têm valid_until/issue_date de expiração — neste caso, omita o campo (NÃO invente data).
 - CNPJs devem ser formatados com pontuação (99.999.999/9999-99).
 - Coordenadas devem ser numéricas (latitude/longitude).
-- Condicionantes/condições devem vir com código (se existir), texto, categoria resumida e snippet.
+- Condicionantes/condições devem vir com código (se existir), texto, categoria resumida e snippet. Para documentos de Dispensa que não trazem condicionantes explícitas, capture as restrições implícitas (ex.: "não está localizado em APP", "atividade limitada a...") como conditions categorizadas como "Gestão".
+- Normalize "issuer" usando a sigla oficial do órgão emissor quando reconhecível (CETESB, FEPAM, INEA, IAT, IMA, FEAM, FCAM, IBAMA etc.) seguida da UF entre parênteses quando aplicável.
 - Se o documento estiver ilegível ou não houver dados suficientes, retorne apenas: { "confidence": 0.0, "_evidence_chars": 0 }
 
 JSON Schema a seguir:
@@ -156,23 +168,42 @@ function extractJsonFromText(text: string): any {
   }
 }
 
-// Parse date from Brazilian format (DD/MM/YYYY) to ISO format (YYYY-MM-DD)
+// Parse date strings em formatos brasileiros variados para ISO (YYYY-MM-DD).
+// Cobre: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY (FEPAM, CETESB), e datas por
+// extenso em português ("28 de junho de 2032"). Documentos municipais
+// escaneados frequentemente trazem datas com ponto, formato que o parser
+// antigo ignorava.
+const PT_MONTHS: Record<string, number> = {
+  janeiro: 1, fevereiro: 2, marco: 3, abril: 4, maio: 5, junho: 6,
+  julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12,
+};
+
 function parseDate(dateStr: string): string | null {
   if (!dateStr) return null;
-  
-  const patterns = [
-    /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
-    /(\d{1,2})-(\d{1,2})-(\d{4})/
-  ];
-  
-  for (const pattern of patterns) {
-    const match = dateStr.match(pattern);
-    if (match) {
-      const [, day, month, year] = match;
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  const raw = dateStr.trim();
+  if (!raw) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const numeric = raw.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+  if (numeric) {
+    const [, day, month, year] = numeric;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  const ascii = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const written = ascii.match(/(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})/);
+  if (written) {
+    const [, day, mName, year] = written;
+    const month = PT_MONTHS[mName];
+    if (month) {
+      return `${year}-${String(month).padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
   }
-  
+
   return null;
 }
 

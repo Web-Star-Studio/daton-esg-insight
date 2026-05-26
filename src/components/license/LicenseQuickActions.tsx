@@ -21,9 +21,14 @@ export const LicenseQuickActions: React.FC<LicenseQuickActionsProps> = ({
   onViewConditions,
   onGenerateReport,
 }) => {
-  const daysUntilExpiration = Math.ceil(
-    (new Date(license.expiration_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-  );
+  // Licenças sem expiration_date (Dispensa Ambiental) — daysUntilExpiration
+  // = null sinaliza que o badge de "X dias restantes" não deve aparecer.
+  const daysUntilExpiration = license.expiration_date
+    ? Math.ceil(
+        (new Date(license.expiration_date).getTime() - new Date().getTime()) /
+          (1000 * 60 * 60 * 24),
+      )
+    : null;
 
   const actions = [
     {
@@ -31,7 +36,7 @@ export const LicenseQuickActions: React.FC<LicenseQuickActionsProps> = ({
       title: 'Agendar Renovação',
       description: 'Configure o processo de renovação',
       icon: Calendar,
-      badge: daysUntilExpiration < 120 ? {
+      badge: daysUntilExpiration !== null && daysUntilExpiration < 120 ? {
         text: `${daysUntilExpiration} dias restantes`,
         variant: daysUntilExpiration < 45 ? 'destructive' as const : 'secondary' as const,
       } : undefined,

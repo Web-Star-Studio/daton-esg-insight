@@ -234,19 +234,30 @@ export const EMISSION_CATEGORIES = [
 ] as const;
 export type EmissionCategory = typeof EMISSION_CATEGORIES[number];
 
-// Tipos de Licença Ambiental
+// Tipos de Licença Ambiental — alinhado com license_type_enum no Postgres.
+// Mudanças aqui exigem migration correspondente em supabase/migrations.
 export const LICENSE_TYPES = [
   'LP',
   'LI',
   'LO',
-  'LAU',
+  'LOC',
   'LAS',
-  'Autorização',
-  'Outorga',
-  'Outro'
+  'DA',
+  'Outra',
 ] as const;
 export type LicenseType = typeof LICENSE_TYPES[number];
-export const LICENSE_TYPE_DEFAULT: LicenseType = 'Outro';
+export const LICENSE_TYPE_DEFAULT: LicenseType = 'Outra';
+
+// Labels exibidos no UI (Select, badges, filtros).
+export const LICENSE_TYPE_LABELS: Record<LicenseType, string> = {
+  LP: 'Licença Prévia (LP)',
+  LI: 'Licença de Instalação (LI)',
+  LO: 'Licença de Operação (LO)',
+  LOC: 'Licença de Operação Corretiva (LOC)',
+  LAS: 'Licença Ambiental Simplificada (LAS)',
+  DA: 'Dispensa Ambiental (DA)',
+  Outra: 'Outra',
+};
 
 // ============================================
 // TIPOS DE AÇÃO/EVENTO

@@ -22,20 +22,34 @@ import { createLicense, updateLicense, getLicenseById, type CreateLicenseData, t
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
+// Dispensa Ambiental (DA) não tem vencimento — o documento declara que a
+// atividade é dispensada/isenta de licenciamento e só perde validade se a
+// atividade mudar. Permitimos dataVencimento opcional apenas para esse tipo.
 const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   tipo: z.string().min(1, "Tipo é obrigatório"),
   orgaoEmissor: z.string().min(1, "Órgão emissor é obrigatório"),
   numeroProcesso: z.string().min(1, "Número do processo é obrigatório"),
   dataEmissao: z.date({ message: "Data de emissão é obrigatória" }),
-  dataVencimento: z.date({ message: "Data de vencimento é obrigatória" }),
+  dataVencimento: z.date().optional(),
   status: z.string().min(1, "Status é obrigatório"),
   responsavel: z.string().optional(),
   condicionantes: z.string().optional(),
-}).refine((data) => data.dataVencimento > data.dataEmissao, {
-  message: "Data de vencimento deve ser posterior à data de emissão",
-  path: ["dataVencimento"],
 })
+  .refine((data) => data.tipo === "DA" || data.dataVencimento !== undefined, {
+    message: "Data de vencimento é obrigatória para este tipo de licença",
+    path: ["dataVencimento"],
+  })
+  .refine(
+    (data) =>
+      !data.dataVencimento ||
+      !data.dataEmissao ||
+      data.dataVencimento > data.dataEmissao,
+    {
+      message: "Data de vencimento deve ser posterior à data de emissão",
+      path: ["dataVencimento"],
+    },
+  )
 
 const LicenseForm = () => {
   const navigate = useNavigate()
@@ -128,6 +142,8 @@ const LicenseForm = () => {
   }, [license, isEditing, form])
 
   const watchedDates = form.watch(["dataEmissao", "dataVencimento"])
+  const watchedTipo = form.watch("tipo")
+  const isDispensa = watchedTipo === "DA"
   
   const calculatePeriod = () => {
     const [emissao, vencimento] = watchedDates
@@ -320,6 +336,7 @@ const LicenseForm = () => {
                             <SelectItem value="LO">Licença de Operação (LO)</SelectItem>
                             <SelectItem value="LOC">Licença de Operação Corretiva (LOC)</SelectItem>
                             <SelectItem value="LAS">Licença Ambiental Simplificada (LAS)</SelectItem>
+                            <SelectItem value="DA">Dispensa Ambiental (DA)</SelectItem>
                             <SelectItem value="Outra">Outra</SelectItem>
                           </SelectContent>
                         </Select>
@@ -417,7 +434,9 @@ const LicenseForm = () => {
                     name="dataVencimento"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>Data de Vencimento *</FormLabel>
+                        <FormLabel>
+                          Data de Vencimento {isDispensa ? "(opcional)" : "*"}
+                        </FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -432,7 +451,9 @@ const LicenseForm = () => {
                                 {field.value ? (
                                   format(field.value, "dd/MM/yyyy", { locale: ptBR })
                                 ) : (
-                                  <span>Selecione a data</span>
+                                  <span>
+                                    {isDispensa ? "Sem vencimento" : "Selecione a data"}
+                                  </span>
                                 )}
                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                               </Button>
@@ -449,6 +470,12 @@ const LicenseForm = () => {
                             />
                           </PopoverContent>
                         </Popover>
+                        {isDispensa && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Dispensa Ambiental tipicamente não vence. Deixe em branco se a
+                            atividade permanece dispensada de licenciamento.
+                          </p>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}

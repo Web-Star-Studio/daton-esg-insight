@@ -28064,7 +28064,7 @@ export type Database = {
         | "renovado"
         | "indeferido"
       license_status_enum: "Ativa" | "Em Renovação" | "Vencida" | "Suspensa"
-      license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "Outra"
+      license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "DA" | "Outra"
       permission_level_enum: "leitura" | "escrita" | "aprovacao" | "admin"
       report_gri_status_enum:
         | "Rascunho"
@@ -28309,7 +28309,7 @@ export const Constants = {
         "indeferido",
       ],
       license_status_enum: ["Ativa", "Em Renovação", "Vencida", "Suspensa"],
-      license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "Outra"],
+      license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "DA", "Outra"],
       permission_level_enum: ["leitura", "escrita", "aprovacao", "admin"],
       report_gri_status_enum: [
         "Rascunho",

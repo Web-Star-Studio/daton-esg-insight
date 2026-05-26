@@ -109,6 +109,52 @@ function extractJsonFromResponse(content: string): any {
   throw new Error('No valid JSON found in response');
 }
 
+// Parse date strings em formatos variados que a IA pode retornar mesmo
+// instruída a usar ISO. Aceita YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
+// e datas por extenso em português ("28 de junho de 2032"). Retorna null
+// quando não reconhece — preferimos null + needs_review a inventar um valor.
+const PT_MONTHS: Record<string, number> = {
+  janeiro: 1, fevereiro: 2, marco: 3, abril: 4, maio: 5, junho: 6,
+  julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12,
+};
+
+function normalizeDateString(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'string') return null;
+  const raw = value.trim();
+  if (!raw) return null;
+
+  // Já ISO?
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  // DD/MM/YYYY, DD-MM-YYYY ou DD.MM.YYYY
+  const numeric = raw.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+  if (numeric) {
+    const [, d, m, y] = numeric;
+    const day = d.padStart(2, '0');
+    const month = m.padStart(2, '0');
+    return `${y}-${month}-${day}`;
+  }
+
+  // "28 de junho de 2032" (case/acento insensível)
+  const ascii = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const written = ascii.match(/(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})/);
+  if (written) {
+    const [, d, mName, y] = written;
+    const month = PT_MONTHS[mName];
+    if (month) {
+      const day = d.padStart(2, '0');
+      const mm = String(month).padStart(2, '0');
+      return `${y}-${mm}-${day}`;
+    }
+  }
+
+  return null;
+}
+
 // Timeout wrapper for async functions
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
   const timeout = new Promise<never>((_, reject) =>
@@ -243,7 +289,10 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     throw new Error(`Document creation failed: ${docError.message}`);
   }
 
-  // Create license record
+  // Create license record com um placeholder de expiration_date que será
+  // sobrescrito após a análise. Mantemos um valor temporário aqui porque o
+  // status 'Ativa' depende de a função calculate_license_status receber uma
+  // data válida ou NULL — em Postgres NULL agora é tratado como permanente.
   const { data: license, error: licenseError } = await supabaseClient
     .from('licenses')
     .insert({
@@ -253,7 +302,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
       type: 'LO',
       status: 'Ativa',
       issuing_body: 'Analisando...',
-      expiration_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      expiration_date: null,
       ai_processing_status: 'processing',
       ai_confidence_score: 0
     })
@@ -384,9 +433,30 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 
     // Add optional fields only if they exist
     if (licenseInfo.process_number) licenseUpdateData.process_number = licenseInfo.process_number;
-    if (licenseInfo.issue_date) licenseUpdateData.issue_date = licenseInfo.issue_date;
-    if (licenseInfo.expiration_date) licenseUpdateData.expiration_date = licenseInfo.expiration_date;
-    else licenseUpdateData.expiration_date = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const normalizedIssueDate = normalizeDateString(licenseInfo.issue_date);
+    if (normalizedIssueDate) licenseUpdateData.issue_date = normalizedIssueDate;
+
+    const normalizedExpirationDate = normalizeDateString(licenseInfo.expiration_date);
+    const isDispensa = (licenseUpdateData.type as string) === 'DA';
+    if (normalizedExpirationDate) {
+      licenseUpdateData.expiration_date = normalizedExpirationDate;
+    } else if (isDispensa) {
+      // Dispensa Ambiental tipicamente não tem prazo — manter null (coluna
+      // foi tornada nullable em migration dedicada).
+      licenseUpdateData.expiration_date = null;
+    } else {
+      // Sem expiração e não é Dispensa: marcar para revisão humana em vez de
+      // inventar +365d (que disparava alertas falsos). Mantemos NULL e
+      // forçamos status needs_review.
+      licenseUpdateData.expiration_date = null;
+      if (finalStatus === 'completed') {
+        finalStatus = 'needs_review';
+        licenseUpdateData.ai_processing_status = 'needs_review';
+        processingLog.push('Sem expiration_date — needs_review');
+      }
+    }
+
     if (licenseInfo.issuer) licenseUpdateData.issuing_body = licenseInfo.issuer;
     else licenseUpdateData.issuing_body = 'Órgão Ambiental';
 
@@ -547,26 +617,58 @@ async function extractPhase(openAIApiKey: string, fileId: string, phase: 'licens
       console.warn(`Phase ${phase}, attempt ${attempt}/${maxRetries}`);
       
       const phasePrompts = {
-        license_info: `Analise este documento de licença ambiental brasileira e extraia APENAS as informações básicas. Seja conciso e preciso:
+        license_info: `Você é um especialista em licenciamento ambiental brasileiro. O documento pode ser uma licença de qualquer órgão federal, estadual ou municipal (IBAMA, CETESB/SP, FEPAM/RS, IAT/PR, IMA/SC, INEA/RJ, FEAM/MG, IEMA/ES, SEMAD/GO, SEMACE/CE, IAP, fundações como FCAM, secretarias municipais de meio ambiente etc.). Layouts variam bastante — não dependa de rótulos fixos. Extraia as informações básicas independentemente da formatação.
 
+Categorias possíveis de license_type (escolha a que melhor descreve o documento):
+- "LP"  = Licença Prévia (também chamada de Licença Prévia de Localização)
+- "LI"  = Licença de Instalação
+- "LO"  = Licença de Operação (variações: "L.O.", "L. O.", "LO Nº", "Licença de Operação nº", "Licença Ambiental de Operação")
+- "LOC" = Licença de Operação Corretiva
+- "LAS" = Licença Ambiental Simplificada (também: "Licença Ambiental Única", "LAU", "Licença Ambiental de Funcionamento", "LAF")
+- "DA"  = Dispensa Ambiental / Declaração de Dispensa de Licenciamento / Declaração de Atividade Não Constante / Certidão de Atividade Não Sujeita a Licenciamento / atividade "isenta de licenciamento"
+- "Outra" = qualquer outro tipo (autorização, outorga, certidão genérica)
+
+Dicas para detectar Dispensa Ambiental (license_type="DA"):
+- Títulos: "DECLARAÇÃO DE ATIVIDADE DISPENSADA", "Declaração de Atividade Não Constante", "Certidão de Atividade Não Sujeita a Licenciamento", "Dispensa de Licenciamento"
+- Frases-chave: "não está sujeita ao licenciamento ambiental", "atividade isenta", "atividade não constante", "dispensada de licenciamento"
+- Esses documentos geralmente NÃO têm data de vencimento — neste caso, retorne expiration_date como null (não invente data).
+
+Como extrair datas:
+- issue_date: data de emissão/expedição/assinatura do documento.
+- expiration_date: data de validade/vencimento. Padrões a procurar:
+  - "Validade até DD/MM/YYYY", "Válida até DD/MM/YYYY", "Vence em DD/MM/YYYY"
+  - "Período de validade: DD/MM/YYYY a DD/MM/YYYY" (use a SEGUNDA data como expiration_date)
+  - "Venc. DD-MM-YYYY", "VAL. DD.MM.YYYY"
+  - Datas por extenso ("vinte e oito de junho de dois mil e trinta e dois") — converta para YYYY-MM-DD.
+- Sempre retorne datas no formato ISO YYYY-MM-DD. Se a data não estiver no documento, retorne null (NÃO invente).
+
+Como extrair issuer (órgão emissor):
+- Normalize para a sigla oficial quando reconhecível (CETESB, FEPAM, IBAMA, IAT, IMA, INEA, FEAM, SEMAD, IEMA, IAP, FCAM, SEMACE) seguida da UF entre parênteses se aplicável: "CETESB (SP)", "FEPAM (RS)".
+- Para órgãos municipais use "Secretaria Municipal de Meio Ambiente de <Cidade>" ou a sigla local (SEMMA, SMMA, SMAM).
+- Se não estiver explícito, inclua o que o cabeçalho indicar ("Governo do Estado de São Paulo / Secretaria de Meio Ambiente...").
+
+Schema de resposta:
 {
   "license_info": {
-    "license_number": "número da licença",
-    "license_type": "LO|LI|LP|LAI|outro",
-    "issuer": "órgão emissor",
-    "issue_date": "YYYY-MM-DD",
-    "expiration_date": "YYYY-MM-DD", 
-    "company_name": "nome da empresa",
-    "cnpj": "CNPJ da empresa",
-    "process_number": "número do processo",
-    "activity_type": "tipo de atividade",
-    "location": "localização"
+    "license_number": "número/identificação principal do documento",
+    "license_type": "LP|LI|LO|LOC|LAS|DA|Outra",
+    "issuer": "órgão emissor normalizado",
+    "issue_date": "YYYY-MM-DD ou null",
+    "expiration_date": "YYYY-MM-DD ou null",
+    "company_name": "razão social do empreendedor",
+    "cnpj": "CNPJ formatado XX.XXX.XXX/XXXX-XX",
+    "process_number": "número do processo administrativo",
+    "activity_type": "atividade/ramo principal autorizado ou descrito",
+    "location": "endereço/município do empreendimento"
   }
 }
 
-RESPONDA APENAS COM O JSON VÁLIDO, SEM EXPLICAÇÕES.`,
+Regras:
+- NUNCA invente dados. Use null para campos ausentes.
+- NUNCA force expiration_date para licenças sem validade (Dispensa Ambiental tipicamente não tem).
+- RESPONDA APENAS COM O JSON VÁLIDO, SEM EXPLICAÇÕES.`,
 
-        condicionantes: `Extraia APENAS as condicionantes/obrigações desta licença ambiental. Limite a 10 itens mais importantes:
+        condicionantes: `Extraia APENAS as condicionantes/obrigações deste documento ambiental. Funciona tanto para Licenças (LP/LI/LO/LOC/LAS) quanto para Dispensa Ambiental (DA). Limite a 10 itens mais importantes:
 
 {
   "condicionantes": [
@@ -579,9 +681,18 @@ RESPONDA APENAS COM O JSON VÁLIDO, SEM EXPLICAÇÕES.`,
   ]
 }
 
-Procure por palavras: "deverá", "fica obrigado", "é exigido", "deve ser". RESPONDA APENAS COM JSON.`,
+Padrões para Licenças tradicionais:
+- Termos: "deverá", "fica obrigado", "é exigido", "deve ser", "deverá ser apresentado", "compromete-se a"
+- Tipicamente em seções "Condições e Restrições", "Quanto a...", numeradas (1.1, 2.3 etc.).
 
-        alertas: `Extraia APENAS alertas críticos desta licença. Limite a 5 itens mais relevantes:
+Padrões para Dispensa Ambiental / Declaração de Atividade Não Constante:
+- O documento normalmente NÃO traz condicionantes operacionais explícitas.
+- Procure por restrições implícitas que validam a dispensa, ex.: "não haverá supressão de vegetação", "não está localizado em APP/APM", "atividade limitada a X". Cada uma vira uma condicionante de categoria "Gestão" com prioridade "alta" (porque qualquer alteração invalida a dispensa).
+- Adicione SEMPRE uma condicionante sintética "Reavaliação ao mudar atividade" com texto: "A presente dispensa/declaração é válida apenas para a atividade descrita; alteração de ramo, escala, área ou endereço exige nova consulta ao órgão ambiental."
+
+Se NÃO encontrar nada relevante, retorne {"condicionantes": []}. RESPONDA APENAS COM JSON.`,
+
+        alertas: `Extraia APENAS alertas críticos deste documento ambiental. Funciona para Licenças (LP/LI/LO/LOC/LAS) e para Dispensa Ambiental (DA). Limite a 5 itens mais relevantes:
 
 {
   "alertas": [
@@ -594,7 +705,14 @@ Procure por palavras: "deverá", "fica obrigado", "é exigido", "deve ser". RESP
   ]
 }
 
-Procure por: prazos, renovação, advertências, observações. RESPONDA APENAS COM JSON.`
+Para Licenças tradicionais: procure por prazos, próximos vencimentos, exigências de renovação, advertências, observações.
+
+Para Dispensa Ambiental (quando o documento explicitamente declara dispensa/isenção/atividade não constante):
+- NÃO crie alertas de "Vencimento" automáticos — a dispensa não vence.
+- Crie um alerta "Observação" de severidade "alta" lembrando que a dispensa NÃO substitui alvarás/certidões de outras esferas (federal, municipal).
+- Se houver menção a mudança de enquadramento, atividade ou endereço, crie alerta "Descumprimento" severidade "alta" sobre necessidade de nova consulta.
+
+Se NÃO encontrar nada relevante, retorne {"alertas": []}. RESPONDA APENAS COM JSON.`
       };
 
       const assistant = await createAssistant(openAIApiKey, phasePrompts[phase]);
@@ -1053,8 +1171,24 @@ async function handleRetry(supabaseClient: any, licenseId: string) {
   };
 
   if (licenseInfo.process_number) licenseUpdateData.process_number = licenseInfo.process_number;
-  if (licenseInfo.issue_date) licenseUpdateData.issue_date = licenseInfo.issue_date;
-  if (licenseInfo.expiration_date) licenseUpdateData.expiration_date = licenseInfo.expiration_date;
+
+  const retryIssueDate = normalizeDateString(licenseInfo.issue_date);
+  if (retryIssueDate) licenseUpdateData.issue_date = retryIssueDate;
+
+  const retryExpirationDate = normalizeDateString(licenseInfo.expiration_date);
+  const retryIsDispensa = (licenseUpdateData.type as string) === 'DA';
+  if (retryExpirationDate) {
+    licenseUpdateData.expiration_date = retryExpirationDate;
+  } else if (retryIsDispensa) {
+    licenseUpdateData.expiration_date = null;
+  } else {
+    licenseUpdateData.expiration_date = null;
+    if (finalStatus === 'completed') {
+      finalStatus = 'needs_review';
+      licenseUpdateData.ai_processing_status = 'needs_review';
+    }
+  }
+
   if (licenseInfo.issuer) licenseUpdateData.issuing_body = licenseInfo.issuer;
 
   await supabaseClient
