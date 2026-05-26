@@ -124,6 +124,16 @@ export async function generateRenewalWorkflow(
       throw licenseError;
     }
 
+    // Licenças sem vencimento (Dispensa Ambiental) não têm fluxo de
+    // renovação — não há prazo a renovar. Falhamos cedo com mensagem
+    // específica em vez de gerar cronograma a partir do epoch (01/01/1970).
+    if (!license.expiration_date) {
+      return {
+        success: false,
+        error: 'Licença sem data de vencimento (Dispensa Ambiental) não requer renovação',
+      };
+    }
+
     // Calcular datas baseadas no vencimento
     const expirationDate = new Date(license.expiration_date);
     const recommendedStartDate = new Date(expirationDate);

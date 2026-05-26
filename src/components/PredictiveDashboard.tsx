@@ -92,10 +92,14 @@ const getPredictiveInsights = async (): Promise<PredictionItem[]> => {
 
     // Generate license predictions
     licenses?.forEach((license) => {
+      // Licenças sem vencimento (Dispensa Ambiental) não geram previsão de
+      // renovação — não há prazo a antecipar.
+      if (!license.expiration_date) return
+
       const daysUntilExpiration = Math.ceil(
         (new Date(license.expiration_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
       )
-      
+
       if (daysUntilExpiration < 90) {
         predictions.push({
           id: `license-${license.id}`,

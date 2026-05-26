@@ -62,7 +62,7 @@ Seu trabalho é extrair apenas informações que estão de fato no documento e d
 Regras obrigatórias:
 - Nunca invente informações. Se um campo não existir, simplesmente não retorne esse campo.
 - Sempre inclua um campo confidence de 0 a 1 e um source_snippet com o trecho textual que comprova cada dado extraído.
-- Datas devem ser padronizadas no formato YYYY-MM-DD. Aceite datas em DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY ou por extenso ("28 de junho de 2032") no documento e converta para ISO antes de responder.
+- Datas devem ser padronizadas no formato YYYY-MM-DD. Aceite datas em DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY ou com mês por extenso ("28 de junho de 2032") no documento e converta para ISO antes de responder.
 - Quando encontrar "Período de validade: DD/MM/YYYY a DD/MM/YYYY" (FEPAM e outros), use a SEGUNDA data como valid_until.
 - Documentos do tipo "DA" tipicamente NÃO têm valid_until/issue_date de expiração — neste caso, omita o campo (NÃO invente data).
 - CNPJs devem ser formatados com pontuação (99.999.999/9999-99).

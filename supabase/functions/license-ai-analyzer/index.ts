@@ -676,7 +676,7 @@ Como extrair datas:
   - "Validade até DD/MM/YYYY", "Válida até DD/MM/YYYY", "Vence em DD/MM/YYYY"
   - "Período de validade: DD/MM/YYYY a DD/MM/YYYY" (use a SEGUNDA data como expiration_date)
   - "Venc. DD-MM-YYYY", "VAL. DD.MM.YYYY"
-  - Datas por extenso ("vinte e oito de junho de dois mil e trinta e dois") — converta para YYYY-MM-DD.
+  - Datas com mês por extenso ("28 de junho de 2032") — converta para YYYY-MM-DD.
 - Sempre retorne datas no formato ISO YYYY-MM-DD. Se a data não estiver no documento, retorne null (NÃO invente).
 
 Como extrair issuer (órgão emissor):

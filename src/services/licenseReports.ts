@@ -138,7 +138,9 @@ async function generatePDFReport(
       ['Órgão Emissor', license.issuing_body],
       ['Nº Processo', license.process_number || '-'],
       ['Data de Emissão', license.issue_date ? format(new Date(license.issue_date), 'dd/MM/yyyy', { locale: ptBR }) : '-'],
-      ['Data de Vencimento', format(new Date(license.expiration_date), 'dd/MM/yyyy', { locale: ptBR })],
+      ['Data de Vencimento', license.expiration_date
+        ? format(new Date(license.expiration_date), 'dd/MM/yyyy', { locale: ptBR })
+        : 'Sem vencimento'],
       ['Status', license.status],
     ];
 
@@ -244,7 +246,9 @@ async function generateExcelReport(
       ['Órgão Emissor', license.issuing_body],
       ['Nº Processo', license.process_number || '-'],
       ['Data de Emissão', license.issue_date ? format(new Date(license.issue_date), 'dd/MM/yyyy', { locale: ptBR }) : '-'],
-      ['Data de Vencimento', format(new Date(license.expiration_date), 'dd/MM/yyyy', { locale: ptBR })],
+      ['Data de Vencimento', license.expiration_date
+        ? format(new Date(license.expiration_date), 'dd/MM/yyyy', { locale: ptBR })
+        : 'Sem vencimento'],
       ['Status', license.status],
     ];
 
