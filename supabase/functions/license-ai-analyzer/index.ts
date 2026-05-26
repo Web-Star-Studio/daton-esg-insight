@@ -118,22 +118,43 @@ const PT_MONTHS: Record<string, number> = {
   julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12,
 };
 
+function buildIsoDate(year: number, month: number, day: number): string | null {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  // Round-trip via Date para rejeitar combinações inválidas (Feb 30, Abr 31).
+  const d = new Date(Date.UTC(year, month - 1, day));
+  if (
+    d.getUTCFullYear() !== year ||
+    d.getUTCMonth() !== month - 1 ||
+    d.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
 function normalizeDateString(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   if (typeof value !== 'string') return null;
   const raw = value.trim();
   if (!raw) return null;
 
-  // Já ISO?
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  // Já ISO? Valida ainda assim para rejeitar 2025-02-30 etc.
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const [, y, m, d] = iso;
+    return buildIsoDate(parseInt(y, 10), parseInt(m, 10), parseInt(d, 10));
+  }
 
-  // DD/MM/YYYY, DD-MM-YYYY ou DD.MM.YYYY
-  const numeric = raw.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
-  if (numeric) {
-    const [, d, m, y] = numeric;
-    const day = d.padStart(2, '0');
-    const month = m.padStart(2, '0');
-    return `${y}-${month}-${day}`;
+  // Numéricas DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY.
+  // Em ranges ("17/11/2025 à 17/11/2030") usamos a ÚLTIMA ocorrência —
+  // valid_until é sempre a data mais distante em layouts de licença.
+  const numericMatches = [
+    ...raw.matchAll(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/g),
+  ];
+  if (numericMatches.length > 0) {
+    const last = numericMatches[numericMatches.length - 1];
+    const [, d, m, y] = last;
+    return buildIsoDate(parseInt(y, 10), parseInt(m, 10), parseInt(d, 10));
   }
 
   // "28 de junho de 2032" (case/acento insensível)
@@ -141,14 +162,15 @@ function normalizeDateString(value: unknown): string | null {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
-  const written = ascii.match(/(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})/);
-  if (written) {
-    const [, d, mName, y] = written;
+  const writtenMatches = [
+    ...ascii.matchAll(/(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})/g),
+  ];
+  if (writtenMatches.length > 0) {
+    const last = writtenMatches[writtenMatches.length - 1];
+    const [, d, mName, y] = last;
     const month = PT_MONTHS[mName];
     if (month) {
-      const day = d.padStart(2, '0');
-      const mm = String(month).padStart(2, '0');
-      return `${y}-${mm}-${day}`;
+      return buildIsoDate(parseInt(y, 10), month, parseInt(d, 10));
     }
   }
 

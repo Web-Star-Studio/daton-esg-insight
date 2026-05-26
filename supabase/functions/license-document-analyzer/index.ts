@@ -178,29 +178,55 @@ const PT_MONTHS: Record<string, number> = {
   julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12,
 };
 
+function buildIsoDate(year: number, month: number, day: number): string | null {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const d = new Date(Date.UTC(year, month - 1, day));
+  if (
+    d.getUTCFullYear() !== year ||
+    d.getUTCMonth() !== month - 1 ||
+    d.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
 function parseDate(dateStr: string): string | null {
   if (!dateStr) return null;
   const raw = dateStr.trim();
   if (!raw) return null;
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  // J\u00e1 ISO? Valida combina\u00e7\u00f5es inv\u00e1lidas (Feb 30 etc.).
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const [, y, m, d] = iso;
+    return buildIsoDate(parseInt(y, 10), parseInt(m, 10), parseInt(d, 10));
+  }
 
-  const numeric = raw.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
-  if (numeric) {
-    const [, day, month, year] = numeric;
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  // Em ranges ("17/11/2025 a 17/11/2030") usamos a \u00daLTIMA ocorr\u00eancia \u2014
+  // valid_until \u00e9 sempre a data mais distante em layouts de licen\u00e7a.
+  const numericMatches = [
+    ...raw.matchAll(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/g),
+  ];
+  if (numericMatches.length > 0) {
+    const last = numericMatches[numericMatches.length - 1];
+    const [, day, month, year] = last;
+    return buildIsoDate(parseInt(year, 10), parseInt(month, 10), parseInt(day, 10));
   }
 
   const ascii = raw
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
-  const written = ascii.match(/(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})/);
-  if (written) {
-    const [, day, mName, year] = written;
+  const writtenMatches = [
+    ...ascii.matchAll(/(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})/g),
+  ];
+  if (writtenMatches.length > 0) {
+    const last = writtenMatches[writtenMatches.length - 1];
+    const [, day, mName, year] = last;
     const month = PT_MONTHS[mName];
     if (month) {
-      return `${year}-${String(month).padStart(2, '0')}-${day.padStart(2, '0')}`;
+      return buildIsoDate(parseInt(year, 10), month, parseInt(day, 10));
     }
   }
 

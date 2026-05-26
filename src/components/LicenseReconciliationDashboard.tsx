@@ -65,18 +65,23 @@ export const LicenseReconciliationDashboard = ({
       confidence: analysisData.confidence_scores?.[mapping.field] || 0.75,
       isApplied: false,
       isEditing: false,
-      validation: validateField(mapping.field, mapping.extractedValue)
+      validation: validateField(mapping.field, mapping.extractedValue, analysisData.tipo)
     }))
 
     setReconciliationData(reconciliation)
   }, [analysisData, form])
 
-  const validateField = (field: string, value: any): string | undefined => {
-    if (!value || (typeof value === 'string' && !value.trim())) {
+  const validateField = (field: string, value: any, tipo?: string): string | undefined => {
+    // Dispensa Ambiental (DA) não tem vencimento — campo é opcional para
+    // esse tipo, então não exigimos preenchimento.
+    if (field === 'dataVencimento' && tipo === 'DA') {
+      if (!value) return undefined
+    } else if (!value || (typeof value === 'string' && !value.trim())) {
       return 'Campo obrigatório não preenchido'
     }
 
     if (field === 'dataEmissao' || field === 'dataVencimento') {
+      if (!value) return undefined
       const date = new Date(value)
       if (isNaN(date.getTime()) || date.getFullYear() < 1900) {
         return 'Data inválida'

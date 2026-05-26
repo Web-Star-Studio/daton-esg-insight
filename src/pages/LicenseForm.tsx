@@ -178,6 +178,11 @@ const LicenseForm = () => {
     setIsSubmitting(true)
     
     try {
+      // Em DA sem dataVencimento mandamos explicitamente null. O service
+      // distingue null (limpa coluna) de undefined (não toca), então passar
+      // undefined em update manteria a expiration antiga em edições.
+      const expirationPayload: Date | null = values.dataVencimento ?? null
+
       if (isEditing && id) {
         const updateData: UpdateLicenseData = {
           name: values.nome,
@@ -185,7 +190,7 @@ const LicenseForm = () => {
           issuing_body: values.orgaoEmissor,
           process_number: values.numeroProcesso,
           issue_date: values.dataEmissao,
-          expiration_date: values.dataVencimento,
+          expiration_date: expirationPayload,
           status: values.status,
           conditions: values.condicionantes,
         }
@@ -198,7 +203,7 @@ const LicenseForm = () => {
           issuing_body: values.orgaoEmissor,
           process_number: values.numeroProcesso,
           issue_date: values.dataEmissao,
-          expiration_date: values.dataVencimento,
+          expiration_date: expirationPayload,
           status: values.status,
           conditions: values.condicionantes,
         }
