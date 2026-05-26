@@ -191,7 +191,15 @@ function buildIsoDate(year: number, month: number, day: number): string | null {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-function parseDate(dateStr: string): string | null {
+// position controla qual data extrair em strings com range:
+// - 'first' (default) \u2192 in\u00edcio do range (correto para issue_date / valid_from)
+// - 'last'             \u2192 fim do range (correto para valid_until)
+type DatePosition = 'first' | 'last';
+
+function parseDate(
+  dateStr: string,
+  position: DatePosition = 'first',
+): string | null {
   if (!dateStr) return null;
   const raw = dateStr.trim();
   if (!raw) return null;
@@ -203,14 +211,15 @@ function parseDate(dateStr: string): string | null {
     return buildIsoDate(parseInt(y, 10), parseInt(m, 10), parseInt(d, 10));
   }
 
-  // Em ranges ("17/11/2025 a 17/11/2030") usamos a \u00daLTIMA ocorr\u00eancia \u2014
-  // valid_until \u00e9 sempre a data mais distante em layouts de licen\u00e7a.
   const numericMatches = [
     ...raw.matchAll(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/g),
   ];
   if (numericMatches.length > 0) {
-    const last = numericMatches[numericMatches.length - 1];
-    const [, day, month, year] = last;
+    const picked =
+      position === 'last'
+        ? numericMatches[numericMatches.length - 1]
+        : numericMatches[0];
+    const [, day, month, year] = picked;
     return buildIsoDate(parseInt(year, 10), parseInt(month, 10), parseInt(day, 10));
   }
 
@@ -222,8 +231,11 @@ function parseDate(dateStr: string): string | null {
     ...ascii.matchAll(/(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})/g),
   ];
   if (writtenMatches.length > 0) {
-    const last = writtenMatches[writtenMatches.length - 1];
-    const [, day, mName, year] = last;
+    const picked =
+      position === 'last'
+        ? writtenMatches[writtenMatches.length - 1]
+        : writtenMatches[0];
+    const [, day, mName, year] = picked;
     const month = PT_MONTHS[mName];
     if (month) {
       return buildIsoDate(parseInt(year, 10), month, parseInt(day, 10));
@@ -508,7 +520,7 @@ serve(async (req) => {
       extractedData.valid_from = parseDate(extractedData.valid_from);
     }
     if (extractedData.valid_until && !extractedData.valid_until.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      extractedData.valid_until = parseDate(extractedData.valid_until);
+      extractedData.valid_until = parseDate(extractedData.valid_until, 'last');
     }
 
     // Calculate final confidence and processing time

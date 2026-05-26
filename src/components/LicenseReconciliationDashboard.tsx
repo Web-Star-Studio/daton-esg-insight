@@ -113,7 +113,29 @@ export const LicenseReconciliationDashboard = ({
   const handleFieldUpdate = (index: number, newValue: any) => {
     const updated = [...reconciliationData]
     updated[index].extractedValue = newValue
-    updated[index].validation = validateField(updated[index].field, newValue)
+    // tipo precisa ser propagado para validateField liberar dataVencimento
+    // quando DA. O "tipo" pode estar sendo editado nesta chamada (campo
+    // 'tipo') ou já existir no row correspondente.
+    const tipoRow = updated.find((r) => r.field === 'tipo')
+    const tipo =
+      updated[index].field === 'tipo'
+        ? (newValue as string)
+        : (tipoRow?.extractedValue as string | undefined)
+    updated[index].validation = validateField(updated[index].field, newValue, tipo)
+
+    // Quando o usuário muda o tipo, a validação de dataVencimento precisa
+    // ser refeita: LO→DA libera o campo, DA→LO volta a exigir.
+    if (updated[index].field === 'tipo') {
+      const vencIdx = updated.findIndex((r) => r.field === 'dataVencimento')
+      if (vencIdx !== -1) {
+        updated[vencIdx].validation = validateField(
+          'dataVencimento',
+          updated[vencIdx].extractedValue,
+          newValue as string,
+        )
+      }
+    }
+
     setReconciliationData(updated)
   }
 

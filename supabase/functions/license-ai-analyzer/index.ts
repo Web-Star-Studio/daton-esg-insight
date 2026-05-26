@@ -132,7 +132,16 @@ function buildIsoDate(year: number, month: number, day: number): string | null {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-function normalizeDateString(value: unknown): string | null {
+// position controla qual data extrair quando a string contém um range
+// ("17/11/2025 à 17/11/2030"):
+// - 'first' → 2025-11-17 (default; correto para issue_date)
+// - 'last'  → 2030-11-17 (correto para expiration_date / valid_until)
+type DatePosition = 'first' | 'last';
+
+function normalizeDateString(
+  value: unknown,
+  position: DatePosition = 'first',
+): string | null {
   if (value === null || value === undefined) return null;
   if (typeof value !== 'string') return null;
   const raw = value.trim();
@@ -145,15 +154,18 @@ function normalizeDateString(value: unknown): string | null {
     return buildIsoDate(parseInt(y, 10), parseInt(m, 10), parseInt(d, 10));
   }
 
-  // Numéricas DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY.
-  // Em ranges ("17/11/2025 à 17/11/2030") usamos a ÚLTIMA ocorrência —
-  // valid_until é sempre a data mais distante em layouts de licença.
+  // Numéricas DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY. Em ranges, position
+  // escolhe qual ponta: 'first' = início (issue_date),
+  // 'last' = fim (expiration_date).
   const numericMatches = [
     ...raw.matchAll(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/g),
   ];
   if (numericMatches.length > 0) {
-    const last = numericMatches[numericMatches.length - 1];
-    const [, d, m, y] = last;
+    const picked =
+      position === 'last'
+        ? numericMatches[numericMatches.length - 1]
+        : numericMatches[0];
+    const [, d, m, y] = picked;
     return buildIsoDate(parseInt(y, 10), parseInt(m, 10), parseInt(d, 10));
   }
 
@@ -166,8 +178,11 @@ function normalizeDateString(value: unknown): string | null {
     ...ascii.matchAll(/(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})/g),
   ];
   if (writtenMatches.length > 0) {
-    const last = writtenMatches[writtenMatches.length - 1];
-    const [, d, mName, y] = last;
+    const picked =
+      position === 'last'
+        ? writtenMatches[writtenMatches.length - 1]
+        : writtenMatches[0];
+    const [, d, mName, y] = picked;
     const month = PT_MONTHS[mName];
     if (month) {
       return buildIsoDate(parseInt(y, 10), month, parseInt(d, 10));
@@ -459,7 +474,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     const normalizedIssueDate = normalizeDateString(licenseInfo.issue_date);
     if (normalizedIssueDate) licenseUpdateData.issue_date = normalizedIssueDate;
 
-    const normalizedExpirationDate = normalizeDateString(licenseInfo.expiration_date);
+    const normalizedExpirationDate = normalizeDateString(licenseInfo.expiration_date, 'last');
     const isDispensa = (licenseUpdateData.type as string) === 'DA';
     if (normalizedExpirationDate) {
       licenseUpdateData.expiration_date = normalizedExpirationDate;
@@ -1197,7 +1212,7 @@ async function handleRetry(supabaseClient: any, licenseId: string) {
   const retryIssueDate = normalizeDateString(licenseInfo.issue_date);
   if (retryIssueDate) licenseUpdateData.issue_date = retryIssueDate;
 
-  const retryExpirationDate = normalizeDateString(licenseInfo.expiration_date);
+  const retryExpirationDate = normalizeDateString(licenseInfo.expiration_date, 'last');
   const retryIsDispensa = (licenseUpdateData.type as string) === 'DA';
   if (retryExpirationDate) {
     licenseUpdateData.expiration_date = retryExpirationDate;
