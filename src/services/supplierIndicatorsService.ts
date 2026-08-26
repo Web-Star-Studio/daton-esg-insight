@@ -135,7 +135,7 @@ export async function getDocumentComplianceBySupplier(
   const end = period === 'month' ? endOfMonth(date) : endOfYear(date);
 
   const { data: evaluations } = await supabase
-    .from('supplier_document_evaluations')
+    .from('supplier_document_evaluations' as any)
     .select('supplier_id, evaluation_result')
     .eq('company_id', companyId)
     .gte('evaluation_date', start.toISOString())
@@ -292,24 +292,24 @@ export async function getPortalParticipationIndicators(
   const trainingsCompleted = trainingsArr.filter(t => t.status === 'completed').length;
 
   // Readings
-  const { data: readings } = await supabase
-    .from('supplier_reading_confirmations')
+  const { data: readings } = await (supabase
+    .from('supplier_reading_confirmations') as any
     .select('confirmed_at')
     .eq('company_id', companyId)
     .gte('created_at', start.toISOString())
-    .lte('created_at', end.toISOString());
+    .lte('created_at', end.toISOString()));
 
   const readingsArr = readings ?? [];
   const readingsTotal = readingsArr.length;
   const readingsConfirmed = readingsArr.filter(r => r.confirmed_at !== null).length;
 
   // Surveys
-  const { data: surveys } = await supabase
-    .from('supplier_survey_responses')
+  const { data: surveys } = await (supabase
+    .from('supplier_survey_responses') as any
     .select('status')
     .eq('company_id', companyId)
     .gte('created_at', start.toISOString())
-    .lte('created_at', end.toISOString());
+    .lte('created_at', end.toISOString()));
 
   const surveysArr = surveys ?? [];
   const surveysTotal = surveysArr.length;

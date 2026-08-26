@@ -397,7 +397,7 @@ export async function getManagedSuppliers(): Promise<ManagedSupplierWithTypeCoun
   if (!suppliers || suppliers.length === 0) return [];
 
   // Buscar contagem de tipos para cada fornecedor
-  const supplierIds = suppliers.map(s => s.id);
+  const supplierIds = (suppliers as any[]).map(s => s.id);
   const { data: assignments } = await supabase
     .from('supplier_type_assignments')
     .select('supplier_id')
@@ -425,7 +425,7 @@ export async function getManagedSuppliers(): Promise<ManagedSupplierWithTypeCoun
   });
 
   // Adicionar contagem aos fornecedores
-  return suppliers.map(s => ({
+  return (suppliers as any[]).map(s => ({
     ...s,
     type_count: typeCounts[s.id] || 0,
     qualification_status: getQualificationStatusFromEvaluation(latestEvaluationBySupplier.get(s.id))
@@ -440,7 +440,7 @@ export async function getManagedSupplierById(id: string): Promise<ManagedSupplie
     .maybeSingle();
 
   if (error) throw error;
-  return data as ManagedSupplier | null;
+  return data as unknown as ManagedSupplier | null;
 }
 
 /**
@@ -564,20 +564,20 @@ export async function createManagedSupplier(supplierData: CreateSupplierData): P
       company_id: companyId,
       temporary_password: tempPassword,
       access_code: accessCode,
-    })
-    .select(SAFE_SUPPLIER_COLUMNS)
+    } as any)
+    .select(SAFE_SUPPLIER_COLUMNS as any)
     .single();
 
   if (error) throw error;
 
   // Reanexar credenciais ao retorno para a tela poder exibir uma única vez.
-  (data as ManagedSupplier).temporary_password = tempPassword;
-  (data as ManagedSupplier).access_code = accessCode;
+  (data as unknown as ManagedSupplier).temporary_password = tempPassword;
+  (data as unknown as ManagedSupplier).access_code = accessCode;
 
   // Assign types if provided
   if (type_ids && type_ids.length > 0) {
     const assignments = type_ids.map(typeId => ({
-      supplier_id: data.id,
+      supplier_id: (data as unknown as ManagedSupplier).id,
       supplier_type_id: typeId
     }));
 
@@ -596,9 +596,9 @@ export async function updateManagedSupplier(id: string, updates: Partial<Managed
   // Atualizar dados do fornecedor
   const { data, error } = await supabase
     .from('supplier_management')
-    .update(supplierUpdates)
+    .update(supplierUpdates as any)
     .eq('id', id)
-    .select(SAFE_SUPPLIER_COLUMNS)
+    .select(SAFE_SUPPLIER_COLUMNS as any)
     .single();
 
   if (error) throw error;
@@ -624,7 +624,7 @@ export async function updateManagedSupplier(id: string, updates: Partial<Managed
     }
   }
 
-  return data as ManagedSupplier;
+  return data as unknown as ManagedSupplier;
 }
 
 export async function deleteManagedSupplier(id: string): Promise<void> {
