@@ -271,7 +271,7 @@ export async function createLAIAAssessment(formData: LAIAAssessmentFormData): Pr
       notes: formData.notes || null,
       status: 'ativo',
       is_vigente: formData.is_vigente ?? true,
-    })
+    } as any)
     .select(`
       *,
       sector:laia_sectors(id, code, name),
