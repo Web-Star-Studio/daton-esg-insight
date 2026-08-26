@@ -586,7 +586,7 @@ export async function createManagedSupplier(supplierData: CreateSupplierData): P
       .insert(assignments);
   }
 
-  return data as ManagedSupplier;
+  return data as unknown as ManagedSupplier;
 }
 
 export async function updateManagedSupplier(id: string, updates: Partial<ManagedSupplier> & { type_ids?: string[] }): Promise<ManagedSupplier> {
