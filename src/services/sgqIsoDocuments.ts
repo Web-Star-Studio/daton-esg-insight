@@ -367,7 +367,7 @@ export const getSgqDocuments = async (filters?: { search?: string; branch_id?: s
     critical_reviewer_user_id?: string | null;
     [key: string]: unknown;
   };
-  const documents = (docs ?? []) as SgqDocumentLite[];
+  const documents = (docs ?? []) as unknown as SgqDocumentLite[];
   if (documents.length === 0) return [];
 
   const docIds = documents.map((d) => d.id);

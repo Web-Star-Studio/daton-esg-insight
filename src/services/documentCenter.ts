@@ -482,10 +482,10 @@ async function getLatestExtractions(documentIds: string[]): Promise<Record<strin
     return {};
   }
 
-  const { data: previews, error: previewsError } = await (supabase
+  const { data: previews, error: previewsError } = await (supabase as any)
     .from("extracted_data_preview")
     .select("id, job_id, validation_status, target_table, created_at, extracted_fields")
-    .in("job_id", jobIds) as any);
+    .in("job_id", jobIds);
 
   if (previewsError) {
     throw new Error(`Erro ao buscar extrações: ${previewsError.message}`);
@@ -629,7 +629,7 @@ async function createChangeLog(
       summary,
       diff,
       created_by_user_id: userId,
-    });
+    } as any);
 
   if (error) {
     throw new Error(`Erro ao registrar histórico documental: ${error.message}`);

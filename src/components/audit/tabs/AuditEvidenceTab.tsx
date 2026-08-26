@@ -96,7 +96,7 @@ export function AuditEvidenceTab({ auditId }: AuditEvidenceTabProps) {
             file_name: file.name,
             file_type: file.type,
             uploaded_by_user_id: user.id,
-          });
+          } as any);
 
         if (dbError) throw dbError;
       }

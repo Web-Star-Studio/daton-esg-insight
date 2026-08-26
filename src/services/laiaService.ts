@@ -155,7 +155,7 @@ export async function getLAIAAssessments(filters?: {
   const { data, error } = await query;
 
   if (error) throw error;
-  return (data ?? []) as LAIAAssessment[];
+  return (data ?? []) as unknown as LAIAAssessment[];
 }
 
 export async function getLAIAAssessmentById(id: string): Promise<LAIAAssessment | null> {
@@ -174,7 +174,7 @@ export async function getLAIAAssessmentById(id: string): Promise<LAIAAssessment 
     if (error.code === "PGRST116") return null;
     throw error;
   }
-  return data as LAIAAssessment;
+  return data as unknown as LAIAAssessment;
 }
 
 export async function getNextAspectCode(sectorId: string): Promise<string> {
@@ -271,7 +271,7 @@ export async function createLAIAAssessment(formData: LAIAAssessmentFormData): Pr
       notes: formData.notes || null,
       status: 'ativo',
       is_vigente: formData.is_vigente ?? true,
-    })
+    } as any)
     .select(`
       *,
       sector:laia_sectors(id, code, name),
@@ -280,7 +280,7 @@ export async function createLAIAAssessment(formData: LAIAAssessmentFormData): Pr
     .single();
 
   if (error) throw error;
-  return data as LAIAAssessment;
+  return data as unknown as LAIAAssessment;
 }
 
 export async function updateLAIAAssessment(id: string, formData: Partial<LAIAAssessmentFormData>): Promise<LAIAAssessment> {
@@ -337,7 +337,7 @@ export async function updateLAIAAssessment(id: string, formData: Partial<LAIAAss
     .single();
 
   if (error) throw error;
-  return data as LAIAAssessment;
+  return data as unknown as LAIAAssessment;
 }
 
 export async function deleteLAIAAssessment(id: string): Promise<void> {
@@ -449,7 +449,7 @@ export async function getDeletedLAIAAssessments(branchId?: string): Promise<LAIA
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []) as LAIAAssessment[];
+  return (data ?? []) as unknown as LAIAAssessment[];
 }
 
 export async function bulkDeleteLAIASectors(ids: string[]): Promise<void> {

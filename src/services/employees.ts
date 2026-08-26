@@ -29,7 +29,7 @@ export interface Employee {
   branch_id?: string;
   termination_date?: string;
   notes?: string;
-  experience_contract_status?: 'efetivado' | 'nao_renovado' | null;
+  experience_contract_status?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -17694,7 +17694,7 @@ export type Database = {
           document_identifier_other: string | null
           document_identifier_type: string | null
           document_number: string | null
-          expiration_date: string
+          expiration_date: string | null
           external_last_sync_at: string | null
           external_source_provider: string | null
           external_source_reference: string | null
@@ -17727,7 +17727,7 @@ export type Database = {
           document_identifier_other?: string | null
           document_identifier_type?: string | null
           document_number?: string | null
-          expiration_date: string
+          expiration_date?: string | null
           external_last_sync_at?: string | null
           external_source_provider?: string | null
           external_source_reference?: string | null
@@ -17760,7 +17760,7 @@ export type Database = {
           document_identifier_other?: string | null
           document_identifier_type?: string | null
           document_number?: string | null
-          expiration_date?: string
+          expiration_date?: string | null
           external_last_sync_at?: string | null
           external_source_provider?: string | null
           external_source_reference?: string | null
@@ -28064,7 +28064,7 @@ export type Database = {
         | "renovado"
         | "indeferido"
       license_status_enum: "Ativa" | "Em Renovação" | "Vencida" | "Suspensa"
-      license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "DA" | "Outra"
+      license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "Outra" | "DA"
       permission_level_enum: "leitura" | "escrita" | "aprovacao" | "admin"
       report_gri_status_enum:
         | "Rascunho"
@@ -28309,7 +28309,7 @@ export const Constants = {
         "indeferido",
       ],
       license_status_enum: ["Ativa", "Em Renovação", "Vencida", "Suspensa"],
-      license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "DA", "Outra"],
+      license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "Outra", "DA"],
       permission_level_enum: ["leitura", "escrita", "aprovacao", "admin"],
       report_gri_status_enum: [
         "Rascunho",

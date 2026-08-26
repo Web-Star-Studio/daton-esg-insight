@@ -84,7 +84,7 @@ export const upsertComplianceProfile = async (
 
   const { data, error } = await supabase
     .from("legislation_compliance_profiles")
-    .upsert(payload, { onConflict: "branch_id" })
+    .upsert(payload as any, { onConflict: "branch_id" })
     .select()
     .single();
 
@@ -144,7 +144,7 @@ export const upsertCompliancePreResponses = async (
 
   const { data, error } = await supabase
     .from("legislation_compliance_profiles")
-    .upsert(payload, { onConflict: "branch_id" })
+    .upsert(payload as any, { onConflict: "branch_id" })
     .select()
     .single();
 
