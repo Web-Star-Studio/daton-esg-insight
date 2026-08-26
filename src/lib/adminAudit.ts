@@ -107,7 +107,7 @@ const writeAuditLog = async (
           ? navigator.userAgent.slice(0, 500)
           : null,
       request_id: ctx.requestId ?? null,
-    });
+    } as any);
   } catch (err) {
     // Audit nunca pode quebrar o fluxo. Loga warn pra investigação.
     console.warn("[adminAudit] falha ao gravar log:", err);
