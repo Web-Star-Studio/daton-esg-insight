@@ -771,7 +771,7 @@ async function callVisionWithPdf(
   let uploadedFileId: string | undefined;
   try {
     const formData = new FormData();
-    formData.append('file', new Blob([fileBytes], { type: fileType }), fileName);
+    formData.append('file', new Blob([fileBytes.buffer as ArrayBuffer], { type: fileType }), fileName);
     formData.append('purpose', 'user_data');
 
     const uploadResp = await withTimeout(
