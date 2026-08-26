@@ -293,11 +293,11 @@ export async function getPortalParticipationIndicators(
 
   // Readings
   const { data: readings } = await (supabase
-    .from('supplier_reading_confirmations') as any
+    .from('supplier_reading_confirmations') as any)
     .select('confirmed_at')
     .eq('company_id', companyId)
     .gte('created_at', start.toISOString())
-    .lte('created_at', end.toISOString()));
+    .lte('created_at', end.toISOString());
 
   const readingsArr = readings ?? [];
   const readingsTotal = readingsArr.length;
