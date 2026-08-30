@@ -35,13 +35,12 @@ import {
   calculateSignificance,
   getCategoryColor,
   getSignificanceColor,
+  mapAssessmentToFormData,
 } from "@/types/laia";
 import type {
   LAIAAssessmentFormData,
   LAIAAssessment,
-  LegislationReference,
 } from "@/types/laia";
-import { normalizeLegislationUrl } from "@/types/laia";
 import * as laiaService from "@/services/laiaService";
 import {
   ChevronLeft,
@@ -58,52 +57,13 @@ import { LegislationReferencesEditor } from "./LegislationReferencesEditor";
 interface LAIAAssessmentFormProps {
   branchId: string;
   initialData?: LAIAAssessment;
+  /** Modo rascunho: semente do formulário sem buscar um assessment persistido. */
+  initialFormData?: LAIAAssessmentFormData;
+  /** Modo rascunho: recebe o formData em vez de persistir no banco. */
+  onSubmitDraft?: (data: LAIAAssessmentFormData) => void;
+  submitLabel?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
-}
-
-function mapAssessmentToFormData(a: LAIAAssessment, branchId: string): LAIAAssessmentFormData {
-  // Migrated rows always have legislation_references populated. Fallback to the
-  // deprecated single-reference fields handles any record the backfill missed.
-  let references: LegislationReference[] = Array.isArray(a.legislation_references)
-    ? a.legislation_references
-    : [];
-  if (references.length === 0 && a.legislation_reference?.trim()) {
-    references = [
-      {
-        reference: a.legislation_reference.trim(),
-        url: a.legislation_reference_url?.trim()
-          ? normalizeLegislationUrl(a.legislation_reference_url)
-          : null,
-      },
-    ];
-  }
-
-  return {
-    branch_id: a.branch_id || branchId,
-    sector_id: a.sector_id || "",
-    activity_operation: a.activity_operation,
-    environmental_aspect: a.environmental_aspect,
-    environmental_impact: a.environmental_impact,
-    temporality: a.temporality,
-    operational_situation: a.operational_situation,
-    incidence: a.incidence,
-    impact_class: a.impact_class,
-    scope: a.scope,
-    severity: a.severity,
-    frequency_probability: a.frequency_probability,
-    has_legal_requirements: a.has_legal_requirements,
-    has_stakeholder_demand: a.has_stakeholder_demand,
-    has_strategic_options: a.has_strategic_options,
-    control_types: a.control_types || [],
-    existing_controls: a.existing_controls || "",
-    legislation_references: references,
-    has_lifecycle_control: a.has_lifecycle_control,
-    lifecycle_stages: a.lifecycle_stages || [],
-    output_actions: a.output_actions || "",
-    notes: a.notes || "",
-    is_vigente: a.is_vigente ?? true,
-  };
 }
 
 const STEPS = [
@@ -139,10 +99,19 @@ const defaultFormData: LAIAAssessmentFormData = {
   is_vigente: true,
 };
 
-export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel }: LAIAAssessmentFormProps) {
+export function LAIAAssessmentForm({
+  branchId,
+  initialData,
+  initialFormData,
+  onSubmitDraft,
+  submitLabel,
+  onSuccess,
+  onCancel,
+}: LAIAAssessmentFormProps) {
   const { toast } = useToast();
   const { data: sectors } = useLAIASectors(branchId);
   const { data: branches } = useBranches();
+  const isDraftMode = !!onSubmitDraft;
 
   const activeSectorsSorted = useMemo(() => {
     return (sectors ?? [])
@@ -158,6 +127,8 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
   const [formData, setFormData] = useState<LAIAAssessmentFormData>(
     initialData
       ? mapAssessmentToFormData(initialData, branchId)
+      : initialFormData
+      ? { ...initialFormData, branch_id: initialFormData.branch_id ?? branchId }
       : { ...defaultFormData, branch_id: branchId }
   );
 
@@ -226,7 +197,7 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
     switch (currentStep) {
       case 1:
         return (
-          formData.sector_id &&
+          (isDraftMode || !!formData.sector_id) &&
           formData.activity_operation.trim() &&
           formData.environmental_aspect.trim() &&
           formData.environmental_impact.trim()
@@ -271,6 +242,10 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
   ];
 
   const handleSubmit = async () => {
+    if (onSubmitDraft) {
+      onSubmitDraft(formData);
+      return;
+    }
     try {
       if (isEditing && initialData) {
         // Compute diff before saving
@@ -361,7 +336,7 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
             <h3 className="text-lg font-medium">Identificação</h3>
             
             {/* Alert when no sectors are available */}
-            {(!sectors || sectors.filter(s => s.is_active).length === 0) && (
+            {!isDraftMode && (!sectors || sectors.filter(s => s.is_active).length === 0) && (
               <Alert variant="destructive" className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
                 <AlertTitle className="text-amber-800 dark:text-amber-200">
@@ -373,31 +348,33 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
                 </AlertDescription>
               </Alert>
             )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="sector">Setor *</Label>
-              <Select
-                value={formData.sector_id}
-                onValueChange={(v) => updateField("sector_id", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      activeSectorsSorted.length
-                        ? "Selecione o setor"
-                        : "Nenhum setor disponível - cadastre na aba Setores"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeSectorsSorted.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.code} - {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
+            {!isDraftMode && (
+              <div className="space-y-2">
+                <Label htmlFor="sector">Setor *</Label>
+                <Select
+                  value={formData.sector_id}
+                  onValueChange={(v) => updateField("sector_id", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        activeSectorsSorted.length
+                          ? "Selecione o setor"
+                          : "Nenhum setor disponível - cadastre na aba Setores"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeSectorsSorted.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.code} - {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="activity">Atividade/Operação *</Label>
@@ -895,7 +872,7 @@ export function LAIAAssessmentForm({ branchId, initialData, onSuccess, onCancel 
               ) : (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  {isEditing ? "Salvar Alterações" : "Criar Avaliação"}
+                  {submitLabel ?? (isEditing ? "Salvar Alterações" : "Criar Avaliação")}
                 </>
               )}
             </Button>
