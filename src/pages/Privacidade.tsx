@@ -32,9 +32,13 @@ export default function Privacidade() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">1. Introdução</h2>
             <p className="text-muted-foreground">
-              A Daton ("nós", "nosso" ou "empresa") está comprometida em proteger sua privacidade. 
-              Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos 
-              suas informações pessoais quando você usa nossa plataforma de gestão ESG.
+              O Daton é um software desenvolvido e operado pela WEB STAR STUDIO DESENVOLVIMENTO DE
+              SOFTWARE LTDA ("Web Star Studio", "nós"), inscrita sob o CNPJ 57.717.768/0001-06, com sede
+              na Praça do Derby, 149, Empresarial Casa Grande, Derby, 52010-140, Recife – PE
+              (<a href="https://webstar.studio/" target="_blank" rel="noopener noreferrer" className="underline">webstar.studio</a>),
+              que está comprometida com a proteção dos seus dados pessoais. A Web Star Studio é a
+              controladora dos dados tratados na plataforma. Esta Política de Privacidade explica como
+              coletamos, usamos, divulgamos e protegemos suas informações pessoais quando você usa o Daton.
             </p>
           </section>
 
