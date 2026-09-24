@@ -103,7 +103,7 @@ export default function Termos() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">7. Limitação de Responsabilidade</h2>
             <p className="text-muted-foreground">
-              A Daton não será responsável por danos indiretos, incidentais, especiais ou consequenciais 
+              A Web Star Studio não será responsável por danos indiretos, incidentais, especiais ou consequenciais 
               resultantes do uso ou incapacidade de usar nossos serviços, na extensão máxima permitida 
               por lei.
             </p>
