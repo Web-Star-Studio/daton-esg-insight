@@ -143,7 +143,7 @@ export async function getDocumentComplianceBySupplier(
 
   const supplierMap = new Map<string, { total: number; compliant: number }>();
 
-  (evaluations ?? []).forEach((ev) => {
+  ((evaluations ?? []) as any[]).forEach((ev: any) => {
     const supplierId = ev.supplier_id;
     
     if (!supplierMap.has(supplierId)) {
