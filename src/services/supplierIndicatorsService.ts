@@ -143,7 +143,7 @@ export async function getDocumentComplianceBySupplier(
 
   const supplierMap = new Map<string, { total: number; compliant: number }>();
 
-  (evaluations ?? []).forEach((ev) => {
+  ((evaluations ?? []) as any[]).forEach((ev: any) => {
     const supplierId = ev.supplier_id;
     
     if (!supplierMap.has(supplierId)) {
@@ -304,8 +304,8 @@ export async function getPortalParticipationIndicators(
   const readingsConfirmed = readingsArr.filter(r => r.confirmed_at !== null).length;
 
   // Surveys
-  const { data: surveys } = await (supabase
-    .from('supplier_survey_responses') as any
+  const { data: surveys } = await ((supabase as any)
+    .from('supplier_survey_responses')
     .select('status')
     .eq('company_id', companyId)
     .gte('created_at', start.toISOString())
