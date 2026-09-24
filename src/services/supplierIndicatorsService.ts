@@ -304,8 +304,8 @@ export async function getPortalParticipationIndicators(
   const readingsConfirmed = readingsArr.filter(r => r.confirmed_at !== null).length;
 
   // Surveys
-  const { data: surveys } = await (supabase
-    .from('supplier_survey_responses') as any
+  const { data: surveys } = await ((supabase as any)
+    .from('supplier_survey_responses')
     .select('status')
     .eq('company_id', companyId)
     .gte('created_at', start.toISOString())
