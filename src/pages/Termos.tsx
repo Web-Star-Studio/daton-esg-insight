@@ -32,9 +32,13 @@ export default function Termos() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">1. Aceitação dos Termos</h2>
             <p className="text-muted-foreground">
-              Ao acessar ou usar a plataforma Daton, você concorda em cumprir e estar vinculado a estes 
-              Termos de Serviço. Se você não concordar com qualquer parte destes termos, não deve usar 
-              nossa plataforma.
+              O Daton é um software desenvolvido e operado pela WEB STAR STUDIO DESENVOLVIMENTO DE
+              SOFTWARE LTDA ("Web Star Studio", "nós"), inscrita sob o CNPJ 57.717.768/0001-06, com sede
+              na Praça do Derby, 149, Empresarial Casa Grande, Derby, 52010-140, Recife – PE
+              (<a href="https://webstar.studio/" target="_blank" rel="noopener noreferrer" className="underline">webstar.studio</a>).
+              Ao acessar ou usar a plataforma Daton, você concorda em cumprir e estar vinculado a estes
+              Termos de Serviço firmados com a Web Star Studio. Se você não concordar com qualquer parte
+              destes termos, não deve usar nossa plataforma.
             </p>
           </section>
 
@@ -82,7 +86,7 @@ export default function Termos() {
             <h2 className="text-xl font-semibold text-foreground">5. Propriedade Intelectual</h2>
             <p className="text-muted-foreground">
               Todo o conteúdo da plataforma, incluindo software, textos, gráficos e logotipos, é de 
-              propriedade da Daton ou de seus licenciadores e está protegido por leis de propriedade 
+              propriedade da Web Star Studio ou de seus licenciadores e está protegido por leis de propriedade 
               intelectual.
             </p>
           </section>
@@ -99,7 +103,7 @@ export default function Termos() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">7. Limitação de Responsabilidade</h2>
             <p className="text-muted-foreground">
-              A Daton não será responsável por danos indiretos, incidentais, especiais ou consequenciais 
+              A Web Star Studio não será responsável por danos indiretos, incidentais, especiais ou consequenciais 
               resultantes do uso ou incapacidade de usar nossos serviços, na extensão máxima permitida 
               por lei.
             </p>
@@ -118,7 +122,7 @@ export default function Termos() {
             <h2 className="text-xl font-semibold text-foreground">9. Lei Aplicável</h2>
             <p className="text-muted-foreground">
               Estes termos são regidos pelas leis da República Federativa do Brasil. Qualquer disputa 
-              será resolvida no foro da comarca de São Paulo/SP.
+              será resolvida no foro da comarca de Recife/PE.
             </p>
           </section>
 
