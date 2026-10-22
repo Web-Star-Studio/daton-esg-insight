@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { PainelRedirectGuard } from "@/components/PainelRedirectGuard";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ENABLED_MODULES } from "@/config/enabledModules";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -295,6 +296,7 @@ const AppContent = () => {
       <WebVitalsTracker />
       <VersionUpdatePrompt />
       <AuthErrorHandler />
+      <PainelRedirectGuard>
       <RouteValidator>
         <GlobalKeyboardShortcuts />
         <PageTransition>
@@ -1057,6 +1059,7 @@ const AppContent = () => {
           </Routes>
         </PageTransition>
       </RouteValidator>
+      </PainelRedirectGuard>
     </>
   );
 };

@@ -41,10 +41,10 @@ export function HeimdallFooter() {
         {
             title: 'Plataforma',
             links: [
-                { label: 'Dashboard', href: '/dashboard' },
-                { label: 'Monitoramento', href: '/monitoramento-esg' },
-                { label: 'Relatórios', href: '/relatorios-integrados' },
-                { label: 'Compliance', href: '/compliance' },
+                { label: 'Acessar painel', href: 'https://painel.daton.com.br' },
+                { label: 'Ambiental', href: '/ambiental' },
+                { label: 'Social', href: '/social' },
+                { label: 'Governança', href: '/governanca' },
             ],
         },
         {
@@ -191,7 +191,7 @@ export function HeimdallFooter() {
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                                 {col.links.map((link, linkIndex) => (
                                     <li key={linkIndex} style={{ marginBottom: '0.75rem' }}>
-                                        <FooterLink label={link.label} onClick={() => navigate(link.href)} />
+                                        <FooterLink label={link.label} onClick={() => (link.href.startsWith('http') ? (window.location.href = link.href) : navigate(link.href))} />
                                     </li>
                                 ))}
                             </ul>

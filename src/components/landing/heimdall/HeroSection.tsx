@@ -313,7 +313,7 @@ export function HeroSection() {
                     />
 
                     <motion.button
-                        onClick={() => navigate('/auth')}
+                        onClick={() => { window.location.href = 'https://painel.daton.com.br'; }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className="lumine-btn-primary whitespace-nowrap text-[clamp(0.8rem,3.2vw,1rem)] flex-1 justify-center"
