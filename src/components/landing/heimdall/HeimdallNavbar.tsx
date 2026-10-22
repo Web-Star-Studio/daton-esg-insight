@@ -41,8 +41,9 @@ export function HeimdallNavbar() {
                         filter: 'brightness(0) invert(1)',
                     }}
                 />
-
+            </button>
         </header>
+
     );
 }
 
