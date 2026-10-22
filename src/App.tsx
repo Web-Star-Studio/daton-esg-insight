@@ -1059,6 +1059,7 @@ const AppContent = () => {
           </Routes>
         </PageTransition>
       </RouteValidator>
+      </PainelRedirectGuard>
     </>
   );
 };
