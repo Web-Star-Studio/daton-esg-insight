@@ -1,53 +1,40 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-This repository is a Vite + React + TypeScript application with Supabase integration.
+## O que é este repositório
 
-- `src/`: application source code (pages, components, hooks, services, contexts, utils).
-- `public/`: static assets served directly.
-- `supabase/`: Supabase functions and platform-related backend assets.
-- `docs/`: project documentation and audits.
-- `dist/`: build output (generated).
+Este projeto é **apenas a landing page institucional da Daton** (daton.com.br).
+O sistema (v2) é hospedado fora deste projeto, em `https://painel.daton.com.br`.
 
-Keep business logic in `src/services` or domain hooks, UI in `src/components`, and shared app state in `src/contexts`.
+- Qualquer rota fora da lista de páginas institucionais é redirecionada ao
+  painel pelo `PainelRedirectGuard` (config em `src/config/externalApp.ts`).
+- A pasta `supabase/` (migrations, edge functions, tipos do banco) é
+  **mantida intacta**: é a base de dados do sistema antigo e pode ser usada
+  para migrar dados para a v2. Não apagar.
+- Backup completo do sistema antigo (front-end): git history +
+  `daton-sistema-completo-backup-2026-10-22.tar.gz` em Files.
 
-## Build, Test, and Development Commands
-Run commands from the repository root:
+## Estrutura
 
-- `bun install`: install dependencies.
-- `bun run dev`: start local Vite dev server.
-- `bun run build`: production build into `dist/`.
-- `bun run build:dev`: development-mode build.
-- `bun run preview`: preview built app locally.
-- `bun run lint`: run ESLint across the codebase.
+- `src/pages/`: apenas páginas institucionais (LandingPage, Contato, SobreNos,
+  FAQ, Privacidade, Termos, Seguranca, ESGAmbiental/Social/Governanca,
+  Funcionalidades, Documentacao).
+- `src/components/landing/heimdall/`: componentes da landing (navbar, hero,
+  footer, css próprio).
+- `src/components/ui/`: subset do shadcn usado pelas páginas institucionais.
+- `src/config/externalApp.ts`: URL do painel + lista de rotas da LP
+  (`PUBLIC_LP_PATHS`). Ao adicionar uma página institucional nova, incluir
+  o path lá E em `src/App.tsx`.
 
-## Coding Style & Naming Conventions
-- Language: TypeScript (`.ts` / `.tsx`).
-- Indentation: 2 spaces.
-- Prefer double quotes and semicolons for new edits (follow existing file style where needed).
-- Component files: `PascalCase` (e.g., `UserDashboard.tsx`).
-- Utilities/services: `camelCase` or domain-based names (e.g., `notificationService.ts`).
-- Route/page modules: keep naming consistent with existing `src/pages/*` patterns.
+## Comandos
 
-Use ESLint as the quality gate; avoid introducing new warnings when possible.
+- `bun run dev` / `bun run build` / `bun run preview`
+- `bun run lint` — ESLint
+- `bun run test` — Vitest (testes unitários, ex.: `src/config/externalApp.test.ts`)
+- Typecheck: `npx tsgo --noEmit -p tsconfig.app.json`
 
-## Testing Guidelines
-- Test stack available: Vitest + Testing Library (`vitest`, `@testing-library/*`).
-- Place tests near the feature or under a dedicated test folder using `*.test.ts` / `*.test.tsx`.
-- Current repo does not include a configured Playwright E2E workspace.
+## Convenções
 
-When adding behavior, include focused unit/integration tests for critical logic.
-
-## Commit & Pull Request Guidelines
-- Use Conventional Commits: `feat: ...`, `fix: ...`, `refactor: ...`, `docs: ...`, `chore: ...`.
-- Keep commits scoped and atomic.
-- PRs should include:
-  - concise summary and affected areas,
-  - linked issue/ticket (if available),
-  - screenshots/video for UI changes,
-  - confirmation that `bun run lint` and relevant tests pass.
-
-## Security & Configuration Tips
-- Never commit secrets.
-- Keep environment values in `.env`/`.env.example` patterns.
-- Review Supabase changes carefully, especially auth, policies, and edge functions.
+- TypeScript, 2 espaços, double quotes + semicolons.
+- Tema claro forçado (`forcedTheme="light"` no App.tsx) — dark mode desativado.
+- CTAs de acesso ao sistema apontam para `PAINEL_URL` via
+  `window.location.href` (navegação externa), nunca `<Link>`/`<Navigate>`.
