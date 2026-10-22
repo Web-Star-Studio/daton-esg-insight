@@ -42,18 +42,10 @@ export function HeimdallNavbar() {
                     }}
                 />
             </button>
-
-            <a
-                href="https://painel.daton.com.br"
-                className="lumine-btn-primary whitespace-nowrap"
-                style={{ color: '#000000', textDecoration: 'none' }}
-            >
-                Entrar
-            </a>
-
-
         </header>
+
     );
 }
+
 
 export default HeimdallNavbar;
