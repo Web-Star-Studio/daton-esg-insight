@@ -13,8 +13,8 @@ export function PublicFooter() {
             style={{ filter: "brightness(0) invert(1)" }}
           />
           <p className="mt-4 max-w-xl text-sm text-white/75">
-            Plataforma ESG para transformar dados em decisões estratégicas nas
-            frentes Ambiental, Social e Governança.
+            Gestão da qualidade, ESG e compliance para conectar documentos,
+            pessoas, indicadores e ações em um só painel.
           </p>
         </div>
 

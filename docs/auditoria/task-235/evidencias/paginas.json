@@ -1,0 +1,434 @@
+[
+  {
+    "etapa": "antes",
+    "rota": "/",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 4,
+    "links": 6
+  },
+  {
+    "etapa": "antes",
+    "rota": "/funcionalidades",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 39,
+    "links": 15
+  },
+  {
+    "etapa": "antes",
+    "rota": "/ambiental",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 15,
+    "links": 6
+  },
+  {
+    "etapa": "antes",
+    "rota": "/social",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 8,
+    "links": 8
+  },
+  {
+    "etapa": "antes",
+    "rota": "/governanca",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 8,
+    "links": 8
+  },
+  {
+    "etapa": "antes",
+    "rota": "/documentacao",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 28,
+    "links": 7
+  },
+  {
+    "etapa": "antes",
+    "rota": "/faq",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 517,
+    "links": 4
+  },
+  {
+    "etapa": "antes",
+    "rota": "/sobre-nos",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 25,
+    "links": 6
+  },
+  {
+    "etapa": "antes",
+    "rota": "/contato",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 5,
+    "links": 6
+  },
+  {
+    "etapa": "antes",
+    "rota": "/seguranca",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 13,
+    "links": 0
+  },
+  {
+    "etapa": "antes",
+    "rota": "/privacidade",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 12,
+    "links": 7
+  },
+  {
+    "etapa": "antes",
+    "rota": "/termos",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 14,
+    "links": 7
+  },
+  {
+    "etapa": "antes",
+    "rota": "/",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 4,
+    "links": 6
+  },
+  {
+    "etapa": "antes",
+    "rota": "/funcionalidades",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 39,
+    "links": 15
+  },
+  {
+    "etapa": "antes",
+    "rota": "/ambiental",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 15,
+    "links": 6
+  },
+  {
+    "etapa": "antes",
+    "rota": "/social",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 8,
+    "links": 8
+  },
+  {
+    "etapa": "antes",
+    "rota": "/governanca",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 8,
+    "links": 8
+  },
+  {
+    "etapa": "antes",
+    "rota": "/documentacao",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 28,
+    "links": 7
+  },
+  {
+    "etapa": "antes",
+    "rota": "/faq",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 517,
+    "links": 4
+  },
+  {
+    "etapa": "antes",
+    "rota": "/sobre-nos",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 25,
+    "links": 6
+  },
+  {
+    "etapa": "antes",
+    "rota": "/contato",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 5,
+    "links": 6
+  },
+  {
+    "etapa": "antes",
+    "rota": "/seguranca",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 13,
+    "links": 0
+  },
+  {
+    "etapa": "antes",
+    "rota": "/privacidade",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 12,
+    "links": 7
+  },
+  {
+    "etapa": "antes",
+    "rota": "/termos",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 14,
+    "links": 7
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 4,
+    "links": 6
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/funcionalidades",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 39,
+    "links": 15
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/ambiental",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 15,
+    "links": 6
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/social",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 8,
+    "links": 8
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/governanca",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 8,
+    "links": 8
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/documentacao",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 28,
+    "links": 7
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/faq",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 517,
+    "links": 4
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/sobre-nos",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 25,
+    "links": 6
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/contato",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 5,
+    "links": 6
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/seguranca",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 13,
+    "links": 0
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/privacidade",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 12,
+    "links": 7
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/termos",
+    "viewport": "desktop",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 14,
+    "links": 7
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 4,
+    "links": 6
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/funcionalidades",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 39,
+    "links": 15
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/ambiental",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 15,
+    "links": 6
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/social",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 8,
+    "links": 8
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/governanca",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 8,
+    "links": 8
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/documentacao",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 28,
+    "links": 7
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/faq",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 517,
+    "links": 4
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/sobre-nos",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 25,
+    "links": 6
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/contato",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 5,
+    "links": 6
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/seguranca",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 13,
+    "links": 0
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/privacidade",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 12,
+    "links": 7
+  },
+  {
+    "etapa": "depois-masterproduct",
+    "rota": "/termos",
+    "viewport": "mobile",
+    "erros": [],
+    "overflowHorizontal": false,
+    "titulos": 14,
+    "links": 7
+  }
+]

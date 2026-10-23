@@ -10,32 +10,32 @@ export default function Seguranca() {
     {
       icon: Lock,
       title: 'Criptografia de Dados',
-      description: 'Todos os dados são criptografados em trânsito (TLS 1.3) e em repouso (AES-256).'
+      description: 'O acesso ao painel usa HTTPS, e as conexões com o banco de dados usam SSL.'
     },
     {
       icon: Shield,
       title: 'Controle de Acesso',
-      description: 'Sistema de permissões baseado em papéis (RBAC) com autenticação multifator disponível.'
+      description: 'O acesso é validado por organização, papel, módulo e abrangência de filiais.'
     },
     {
       icon: Eye,
-      title: 'Monitoramento Contínuo',
-      description: 'Detecção de ameaças em tempo real e logs de auditoria completos.'
+      title: 'Registros de Segurança',
+      description: 'Eventos de acesso e segurança são registrados. Os históricos de negócio dependem do fluxo e do módulo.'
     },
     {
       icon: Server,
       title: 'Infraestrutura Segura',
-      description: 'Hospedagem em data centers certificados SOC 2 Type II e ISO 27001.'
+      description: 'O sistema usa serviços de nuvem para a API, o banco de dados e o armazenamento de arquivos.'
     },
     {
       icon: Key,
       title: 'Gestão de Credenciais',
-      description: 'Senhas armazenadas com hash bcrypt e políticas de complexidade obrigatórias.'
+      description: 'Senhas são protegidas com hash bcrypt. Cada pessoa acessa o painel com suas próprias credenciais.'
     },
     {
       icon: AlertTriangle,
-      title: 'Resposta a Incidentes',
-      description: 'Plano de resposta a incidentes 24/7 com notificação dentro de 72 horas.'
+      title: 'Bloqueio de Acesso',
+      description: 'A administração pode bloquear contas para impedir novos acessos e preservar os registros existentes.'
     }
   ];
 
@@ -52,7 +52,7 @@ export default function Seguranca() {
           Voltar
         </Button>
 
-        <h1 className="text-3xl font-bold text-foreground mb-4">Segurança e Cookies</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-4">Segurança e Armazenamento</h1>
         <p className="text-muted-foreground mb-8">
           A segurança dos seus dados é nossa prioridade. Conheça as medidas que implementamos.
         </p>
@@ -77,47 +77,47 @@ export default function Seguranca() {
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-8">
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground">Política de Cookies</h2>
+            <h2 className="text-xl font-semibold text-foreground">Armazenamento no Navegador</h2>
             <p className="text-muted-foreground">
-              Utilizamos cookies para melhorar sua experiência na plataforma. Os tipos de cookies que usamos incluem:
+              A landing page institucional e o painel são aplicações distintas. O navegador pode guardar dados necessários ao funcionamento de cada aplicação:
             </p>
-            
+
             <div className="space-y-4">
               <div className="p-4 border border-border rounded-lg">
-                <h3 className="font-semibold text-foreground mb-2">Cookies Essenciais</h3>
+                <h3 className="font-semibold text-foreground mb-2">Sessão no Painel</h3>
                 <p className="text-sm text-muted-foreground">
-                  Necessários para o funcionamento básico da plataforma, como autenticação e preferências de sessão. 
-                  Não podem ser desabilitados.
+                  O painel guarda o token de acesso no armazenamento local do navegador.
+                  A sessão do sistema não é compartilhada automaticamente com esta landing page.
                 </p>
               </div>
 
               <div className="p-4 border border-border rounded-lg">
-                <h3 className="font-semibold text-foreground mb-2">Cookies de Desempenho</h3>
+                <h3 className="font-semibold text-foreground mb-2">Dados de Uso</h3>
                 <p className="text-sm text-muted-foreground">
-                  Coletam informações sobre como você usa a plataforma, ajudando-nos a melhorar a experiência. 
-                  Dados são anonimizados.
+                  O painel registra acessos e operações autenticadas para acompanhar o uso e a segurança.
+                  Isso não equivale a cookies de análise anônima nesta página.
                 </p>
               </div>
 
               <div className="p-4 border border-border rounded-lg">
-                <h3 className="font-semibold text-foreground mb-2">Cookies Funcionais</h3>
+                <h3 className="font-semibold text-foreground mb-2">Preferências Locais</h3>
                 <p className="text-sm text-muted-foreground">
-                  Permitem que a plataforma lembre suas preferências, como idioma e configurações de visualização.
+                  As preferências disponíveis em cada aplicação podem ser mantidas no navegador. Limpar esses dados pode exigir novo acesso ou configuração.
                 </p>
               </div>
             </div>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground">Certificações e Compliance</h2>
+            <h2 className="text-xl font-semibold text-foreground">Controles Aplicados</h2>
             <p className="text-muted-foreground">
-              Nossa plataforma está em conformidade com:
+              Os controles técnicos do sistema incluem:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>LGPD (Lei Geral de Proteção de Dados - Lei 13.709/2018)</li>
-              <li>ISO 27001 - Sistema de Gestão de Segurança da Informação</li>
-              <li>SOC 2 Type II - Controles de Segurança e Disponibilidade</li>
-              <li>OWASP Top 10 - Melhores práticas de segurança web</li>
+              <li>Acesso aos dados limitado à organização e às permissões da pessoa</li>
+              <li>Validação de papéis, módulos e abrangência de filiais no servidor</li>
+              <li>Arquivos protegidos por regras de acesso</li>
+              <li>Senhas protegidas e possibilidade de bloqueio de contas</li>
             </ul>
           </section>
 

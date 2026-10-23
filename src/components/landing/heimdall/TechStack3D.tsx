@@ -14,16 +14,16 @@ export function TechStack3D() {
 
     const sphereData = [
         {
-            title: 'Virtual Intelligence',
-            subtitle: 'AI Engine',
-            description: 'Análise preditiva e recomendações inteligentes com machine learning avançado.',
+            title: 'Assistente Daton AI',
+            subtitle: 'Consulta contextual',
+            description: 'Orientação sobre o produto e consulta, em modo somente leitura, aos dados autorizados.',
             color: '#15c470',
             type: 'wireframe'
         },
         {
-            title: 'Data Core',
-            subtitle: 'Processing Hub',
-            description: 'Processamento em tempo real de milhares de pontos de dados ESG.',
+            title: 'Dados organizados',
+            subtitle: 'Gestão por organização',
+            description: 'Registros, indicadores e evidências dos módulos disponíveis para cada empresa.',
             color: '#C0C0C0',
             type: 'metallic'
         },
@@ -160,7 +160,7 @@ export function TechStack3D() {
                     pointerEvents: 'none'
                 }} />
 
-                {/* Central Orb - Data Core */}
+                {/* Central Orb - Dados organizados */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={isInView ? { opacity: 1, scale: 1 } : {}}
@@ -170,7 +170,7 @@ export function TechStack3D() {
                     <CSSOrb type={sphereData[1].type} color={sphereData[1].color} size={160} />
                 </motion.div>
 
-                {/* Orbiting Orb 1 - Virtual Intelligence */}
+                {/* Orbiting Orb 1 - Assistente Daton AI */}
                 <motion.div
                     animate={isInView ? { rotate: 360 } : {}}
                     transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
