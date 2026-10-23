@@ -26,7 +26,7 @@ export default function Termos() {
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
           <p className="text-muted-foreground">
-            Última atualização: {new Date().toLocaleDateString('pt-BR')}
+            Última atualização: 23/10/2026
           </p>
 
           <section className="space-y-4">
@@ -45,14 +45,13 @@ export default function Termos() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">2. Descrição do Serviço</h2>
             <p className="text-muted-foreground">
-              A Daton fornece uma plataforma de gestão ESG (Environmental, Social and Governance) que 
-              permite às empresas:
+              A Daton fornece uma plataforma de gestão da qualidade, ESG (Environmental, Social and Governance) e compliance que, conforme os módulos habilitados e as permissões, permite às empresas:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Monitorar e gerenciar indicadores de sustentabilidade</li>
-              <li>Gerar relatórios de compliance ambiental e social</li>
+              <li>Organizar registros, documentos e evidências de compliance</li>
               <li>Acompanhar licenciamentos e obrigações regulatórias</li>
-              <li>Gerenciar inventários de emissões de GEE</li>
+              <li>Estruturar inventários de emissões de GEE nos módulos habilitados</li>
               <li>Integrar dados ESG em processos de tomada de decisão</li>
             </ul>
           </section>
@@ -60,7 +59,7 @@ export default function Termos() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">3. Conta de Usuário</h2>
             <p className="text-muted-foreground">
-              Para utilizar nossos serviços, você deve criar uma conta. Você é responsável por:
+              O acesso usa uma conta individual. Novas empresas precisam de um código de acesso gratuito emitido pela equipe Daton; pessoas convidadas acessam pelo convite recebido. Você é responsável por:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Manter a confidencialidade de suas credenciais de acesso</li>

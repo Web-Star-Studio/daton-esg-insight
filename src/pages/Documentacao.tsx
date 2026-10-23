@@ -68,7 +68,7 @@ const Documentacao = () => {
     { id: 'modules', title: 'Módulos', icon: Layers },
     { id: 'benefits', title: 'Benefícios', icon: Target },
     { id: 'security', title: 'Segurança', icon: Shield },
-    { id: 'api', title: 'API & Dev', icon: Cpu },
+    { id: 'api', title: 'Dados & Integrações', icon: Cpu },
     { id: 'faq', title: 'Central de Ajuda', icon: HelpCircle },
   ];
 
@@ -154,7 +154,7 @@ const Documentacao = () => {
               Documentação
             </h1>
             <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              Guia completo de arquitetura, referências de API e manuais de utilização da plataforma ESG mais avançada do mercado.
+              Orientações sobre os recursos atuais do Daton e respostas para as dúvidas mais comuns de uso.
             </p>
           </motion.div>
         </div>
@@ -303,7 +303,7 @@ const Documentacao = () => {
 
             <div className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb]">
               <h4 className="font-bold text-[#1a2421] mb-2">Precisa de ajuda?</h4>
-              <p className="text-sm text-gray-500 mb-4">Nossa equipe de suporte técnico está disponível 24/7.</p>
+              <p className="text-sm text-gray-500 mb-4">Envie dúvidas, problemas ou ideias pelos canais do Daton.</p>
               <Link to="/contato" className="w-full py-2 px-4 bg-white border border-[#e5e7eb] rounded-lg text-sm font-medium text-[#1a2421] hover:bg-[#e5e7eb] transition-colors shadow-sm block text-center">
                 Contatar Suporte
               </Link>
@@ -321,16 +321,16 @@ const Documentacao = () => {
                 <div className="mb-8">
                   <h2 className="text-3xl font-bold text-[#1a2421] mb-4">Visão Geral</h2>
                   <p className="text-lg text-gray-600 leading-relaxed">
-                    Daton é a plataforma ESG (Environmental, Social & Governance) enterprise-grade que unifica a gestão de sustentabilidade.
-                    Projetada para escala, segurança e conformidade automática.
+                    Daton reúne gestão ESG, qualidade e conformidade em um ambiente organizado por empresa, módulos e permissões.
+                    Os recursos visíveis dependem da habilitação da organização e do acesso de cada pessoa.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {[
-                    { icon: Clock, label: "Eficiência", title: "70% menos tempo", desc: "em relatórios e coletas de dados manuais." },
-                    { icon: CheckCircle, label: "Precisão", title: "99.9% Compliance", desc: "com normas locais e globais (GRI, SASB)." },
-                    { icon: Zap, label: "Velocidade", title: "Setup em 15min", desc: "para criar sua primeira conta e dashboard." },
+                    { icon: Clock, label: "Organização", title: "Dados no contexto", desc: "com registros, responsáveis, prazos e evidências vinculados." },
+                    { icon: CheckCircle, label: "Rastreabilidade", title: "Histórico preservado", desc: "nos fluxos que controlam versões e alterações." },
+                    { icon: Zap, label: "Acompanhamento", title: "Pendências visíveis", desc: "conforme módulos, permissões e configurações da empresa." },
                   ].map((item, idx) => (
                     <div key={idx} className="p-6 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb] hover:border-[#15c470]/50 transition-colors">
                       <div className="w-10 h-10 rounded-full bg-white border border-[#e5e7eb] flex items-center justify-center mb-4 text-[#15c470]">
@@ -352,22 +352,22 @@ const Documentacao = () => {
                     {
                       title: "Gestão de Emissões GEE",
                       icon: Globe,
-                      features: ["Escopos 1, 2 e 3 automático", "Biblioteca de fatores DEFRA/IPCC", "Inventário em tempo real"]
+                      features: ["Fontes dos Escopos 1, 2 e 3", "Fatores de emissão versionados", "Cálculos, totais e exportação CSV"]
                     },
                     {
                       title: "Compliance & Licenças",
                       icon: Shield,
-                      features: ["Monitoramento de condicionantes", "Alertas de vencimento", "Rastro de auditoria"]
+                      features: ["Licenças e requisitos", "Condicionantes e obrigações", "Responsáveis, prazos e evidências"]
                     },
                     {
                       title: "Inteligência Artificial",
                       icon: Cpu,
-                      features: ["OCR de faturas de energia", "Predição de riscos climáticos", "Assistente jurídico"]
+                      features: ["Perguntas em linguagem natural", "Consultas somente leitura", "Acesso limitado aos dados autorizados"]
                     },
                     {
                       title: "Supply Chain",
                       icon: Users,
-                      features: ["Homologação de fornecedores", "Scorecard ESG", "Portal do fornecedor"]
+                      features: ["Cadastro e documentação", "Homologação e avaliações", "Planos de ação relacionados"]
                     }
                   ].map((mod, idx) => (
                     <div key={idx} className="group p-8 rounded-2xl border border-[#e5e7eb] bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
@@ -397,9 +397,9 @@ const Documentacao = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#e5e7eb] border border-[#e5e7eb] rounded-2xl overflow-hidden shadow-sm">
                   {[
-                    { title: "Automação", desc: "Coleta automática de dados via APIs e integradores." },
-                    { title: "Auditoria", desc: "Histórico imutável de todas as ações na plataforma." },
-                    { title: "Reporte", desc: "Relatórios prontos para investidores e stakeholders." }
+                    { title: "Importação", desc: "Planilhas com prévia e rejeitos nos destinos habilitados para a empresa." },
+                    { title: "Auditoria", desc: "Documentos, constatações, não conformidades e ações no mesmo fluxo." },
+                    { title: "Relato ESG", desc: "Referenciais livres, respostas e evidências organizados em rascunho." }
                   ].map((item, idx) => (
                     <div key={idx} className="bg-white p-8 hover:bg-gray-50 transition-colors">
                       <h3 className="text-lg font-bold text-[#1a2421] mb-2">{item.title}</h3>
@@ -416,10 +416,10 @@ const Documentacao = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <ul className="space-y-4">
                       {[
-                        "Criptografia AES-256 em repouso",
-                        "TLS 1.3 para dados em trânsito",
-                        "Autenticação Multi-fator (MFA)",
-                        "Backups automáticos diários"
+                        "Senhas protegidas com bcrypt",
+                        "Sessões autenticadas com JWT",
+                        "Acesso por organização, papel e módulo",
+                        "Objetivos operacionais de RPO 24h e RTO 4h"
                       ].map((item, i) => (
                         <li key={i} className="flex items-center gap-3 text-[#1a2421] font-medium">
                           <Shield size={18} className="text-[#15c470]" />
@@ -428,11 +428,11 @@ const Documentacao = () => {
                       ))}
                     </ul>
                     <div className="space-y-4">
-                      <h4 className="font-bold text-[#1a2421]">Certificações & Compliance</h4>
+                      <h4 className="font-bold text-[#1a2421]">Controles de acesso</h4>
                       <div className="flex flex-wrap gap-3">
-                        <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">ISO 27001 Ready</span>
-                        <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">LGPD</span>
-                        <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">SOC 2 Type II</span>
+                        <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">Organização</span>
+                        <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">Papel</span>
+                        <span className="px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-md text-xs font-bold text-gray-600">Módulo e filial</span>
                       </div>
                     </div>
                   </div>
@@ -441,29 +441,24 @@ const Documentacao = () => {
 
               {/* API */}
               <section id="api" className="scroll-mt-32">
-                <h2 className="text-3xl font-bold text-[#1a2421] mb-8">API & Desenvolvedores</h2>
+                <h2 className="text-3xl font-bold text-[#1a2421] mb-8">Dados & Integrações</h2>
                 <div className="prose prose-gray max-w-none">
                   <p className="text-gray-600 mb-6">
-                    A plataforma Daton segue uma abordagem <strong>API-First</strong>. Tudo o que você vê no dashboard está disponível via API.
+                    O Daton ainda não oferece <strong>API pública</strong>, OAuth, webhooks ou conectores prontos. A importação assistida por planilha é liberada por empresa e por destino.
                   </p>
                   <div className="bg-[#1e293b] rounded-xl p-6 overflow-x-auto text-sm">
-                    <code className="text-blue-300">GET</code> <code className="text-gray-300">https://api.daton.app/v1/emissions/summary</code>
+                    <code className="text-blue-300">CSV</code> <code className="text-gray-300">Importação assistida com prévia e rejeitos</code>
                     <pre className="mt-4 text-gray-400 font-mono">
                       {`{
-  "company_id": "acc_123456",
-  "period": "2024-Q1",
-  "total_co2e": 1250.5,
-  "scope_breakdown": {
-    "scope_1": 450.2,
-    "scope_2": 300.0,
-    "scope_3": 500.3
-  }
+  "disponibilidade": "por empresa e destino",
+  "etapas": ["modelo", "prévia", "rejeitos", "confirmação"],
+  "integrações": "em avaliação"
 }`}
                     </pre>
                   </div>
                   <div className="mt-6">
                     <button className="inline-flex items-center gap-2 text-[#15c470] font-bold hover:underline">
-                      Ver Documentação Completa da API <ArrowRight size={16} />
+                      Consulte a Central de Ajuda <ArrowRight size={16} />
                     </button>
                   </div>
                 </div>

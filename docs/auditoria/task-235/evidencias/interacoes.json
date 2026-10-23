@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "checks": [
+    "Menu móvel abre e Soluções navega para /funcionalidades",
+    "Cinco destinos do antigo simulador apontam ao painel",
+    "Busca e accordion da FAQ mostram limite do financeiro",
+    "Estado sem resultados e limpar busca preservados",
+    "Destinos de suporte sem domínios ou telefones de exemplo",
+    "Contato informa explicitamente que formulário não envia"
+  ]
+}

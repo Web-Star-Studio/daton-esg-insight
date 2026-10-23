@@ -20,10 +20,10 @@ export function NewsTicker() {
     const navigate = useNavigate();
 
     const newsItems: NewsItem[] = [
-        { date: 'Dec 2024', title: 'Plataforma Daton lança módulo de IA para análise preditiva de emissões', category: 'Product' },
-        { date: 'Nov 2024', title: 'Parceria estratégica com principais certificadoras ESG do Brasil', category: 'Partnership' },
-        { date: 'Oct 2024', title: 'Novo dashboard de monitoramento em tempo real para gestão de resíduos', category: 'Feature' },
-        { date: 'Sep 2024', title: 'Integração nativa com sistemas ERP e plataformas de compliance', category: 'Integration' },
+        { date: 'Produto', title: 'Daton AI orienta e consulta dados conforme as permissões de acesso', category: 'Inteligência Artificial' },
+        { date: 'Qualidade', title: 'Documentos, auditorias e planos de ação apoiam os fluxos do SGQ', category: 'Gestão' },
+        { date: 'Ambiental', title: 'Registros de resíduos e evidências de destinação nos módulos habilitados', category: 'Operação' },
+        { date: 'Dados', title: 'Importação assistida por planilha para os destinos habilitados', category: 'Importação' },
     ];
 
     const containerVariants = {
@@ -61,7 +61,7 @@ export function NewsTicker() {
                 >
                     <div>
                         <span className="heimdall-label" style={{ display: 'block', marginBottom: '0.5rem' }}>
-                            UPDATES
+                            PRODUTO
                         </span>
                         <h2 className="heimdall-heading-lg">Novidades</h2>
                     </div>

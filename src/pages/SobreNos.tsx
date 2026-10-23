@@ -333,10 +333,10 @@ const SobreNos = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-px bg-[#e5e7eb] border border-[#e5e7eb] rounded-2xl overflow-hidden shadow-sm">
                         {[
-                            { index: "001", title: "Transparência radical", desc: "Dados abertos, rastreabilidade total e auditabilidade em cada processo.", features: ["Auditoria completa de ações", "Rastreabilidade de dados ponta a ponta", "Logs imutáveis de operações"] },
+                            { index: "001", title: "Transparência radical", desc: "Dados organizados, histórico de registros e clareza nos fluxos de gestão.", features: ["Histórico nos fluxos de gestão", "Registros com origem e responsáveis", "Evidências e versões por módulo"] },
                             { index: "002", title: "Impacto mensurável", desc: "Cada funcionalidade existe para gerar resultado concreto — não apenas relatórios.", features: ["KPIs acionáveis e contextuais", "Dashboards com metas tangíveis", "Relatórios orientados a resultado"] },
-                            { index: "003", title: "Simplicidade intencional", desc: "Complexidade nos bastidores, clareza na interface. Tecnologia que qualquer equipe consegue usar.", features: ["Interface intuitiva e acessível", "Onboarding guiado e progressivo", "Automações invisíveis ao usuário"] },
-                            { index: "004", title: "Inovação responsável", desc: "IA e automação a serviço da sustentabilidade, com ética e privacidade como premissa.", features: ["IA explicável e auditável", "Privacidade por design (LGPD)", "Governança ética de algoritmos"] },
+                            { index: "003", title: "Simplicidade intencional", desc: "Complexidade nos bastidores, clareza na interface. Tecnologia que qualquer equipe consegue usar.", features: ["Interface intuitiva e acessível", "Acesso por convite ou código", "Pendências com origem e responsável"] },
+                            { index: "004", title: "Inovação responsável", desc: "IA e automação a serviço da sustentabilidade, com ética e privacidade como premissa.", features: ["IA para consultas autorizadas", "Controle de acesso por empresa", "Respostas da IA sujeitas a revisão"] },
                         ].map((val, idx) => (
                             <motion.div
                                 key={idx}
@@ -370,16 +370,16 @@ const SobreNos = () => {
                         <span className="text-[#15c470] font-mono text-xs uppercase tracking-widest font-bold">O que fazemos</span>
                         <h2 className="text-3xl md:text-4xl font-bold text-[#1a2421] mt-2 mb-6">Uma plataforma, todos os pilares</h2>
                         <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                            O Daton ESG Insight reúne em um único ambiente os módulos necessários para gerenciar o desempenho ambiental, social, de qualidade e de cadeia de fornecedores da sua organização.
+                            O Daton reúne qualidade, pessoas, fornecedores e dados ESG em um único painel. Os recursos disponíveis dependem dos módulos habilitados e das permissões de cada pessoa.
                         </p>
 
                         <div className="space-y-6">
                             {[
                                 { title: "Ambiental", desc: "Inventário de emissões GEE (Escopos 1, 2 e 3), gestão de resíduos, licenciamento ambiental, monitoramento de água e energia.", icon: Globe },
-                                { title: "Social", desc: "Indicadores de diversidade e inclusão, gestão de treinamentos, segurança do trabalho e programas de impacto comunitário.", icon: Users },
+                                { title: "Social", desc: "Colaboradores, cargos, competências, treinamentos, certificados e avaliação de eficácia.", icon: Users },
                                 { title: "Qualidade (SGQ)", desc: "Não conformidades, ações corretivas (5W2H), controle de documentos, gestão de riscos e auditorias internas.", icon: Award },
-                                { title: "Fornecedores", desc: "Homologação, avaliação de desempenho, portal de autoatendimento e monitoramento de riscos ESG na cadeia.", icon: Layers },
-                                { title: "Inteligência e Automação", desc: "Assistente de IA contextual, extração automática de documentos, alertas preditivos e recomendações acionáveis.", icon: Zap }
+                                { title: "Fornecedores", desc: "Homologação, avaliação de desempenho, portal do fornecedor e controle de requisitos documentais.", icon: Layers },
+                                { title: "Inteligência e Automação", desc: "Assistente de IA para orientação e consulta aos dados autorizados, com alterações realizadas nas telas do sistema.", icon: Zap }
                             ].map((item, idx) => (
                                 <div key={idx} className="flex gap-4">
                                     <div className="mt-1 shrink-0">
@@ -414,12 +414,12 @@ const SobreNos = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[
-                         { title: "Tudo em um só lugar", desc: "Chega de planilhas dispersas e sistemas desconectados.", details: "ESG, qualidade, fornecedores, auditorias e indicadores financeiros — tudo em um único login, com dados integrados e rastreáveis." },
-                         { title: "IA que trabalha por você", desc: "Extração automática de documentos e alertas proativos.", details: "Cálculos de emissões, classificação de documentos e sugestões inteligentes para que sua equipe foque no que importa: estratégia." },
-                         { title: "Conformidade sem complicação", desc: "Relatórios GRI, SASB e TCFD gerados automaticamente.", details: "Dados já validados e auditáveis, prontos para envio a reguladores e stakeholders com um clique." },
-                         { title: "Segurança enterprise", desc: "Criptografia AES-256 e isolamento por empresa.", details: "Row Level Security, RBAC granular com quatro níveis de permissão e conformidade total com a LGPD." },
-                         { title: "Suporte humano", desc: "Equipe especializada em ESG e qualidade.", details: "Profissionais que entendem o contexto regulatório brasileiro e acompanham sua jornada de maturidade." },
-                         { title: "Monitoramento em tempo real", desc: "Indicadores e metas atualizados minuto a minuto.", details: "Dashboards dinâmicos com alertas configuráveis, não apenas relatórios no fechamento do mês." },
+                         { title: "Tudo em um só lugar", desc: "Chega de planilhas dispersas e sistemas desconectados.", details: "ESG, qualidade, fornecedores, auditorias e indicadores de desempenho — tudo em um único login, com dados integrados e rastreáveis." },
+                         { title: "IA para apoiar consultas", desc: "Orientação e consulta contextual aos dados do sistema.", details: "O assistente consulta pendências, indicadores e registros permitidos, em modo somente leitura. A equipe revisa as respostas e realiza as ações no sistema." },
+                         { title: "Conformidade sem complicação", desc: "Referenciais, requisitos e evidências organizados por período.", details: "Os recursos ESG permitem registrar respostas e evidências e estruturar relatos de trabalho em rascunho, quando habilitados." },
+                         { title: "Acesso controlado", desc: "Credenciais protegidas e acesso por organização.", details: "O servidor valida organização, papel, módulo e abrangência de acesso para cada operação." },
+                         { title: "Suporte humano", desc: "Converse com a equipe Daton.", details: "Use o canal Feedback no painel para dúvidas, problemas e ideias, ou entre em contato pelo e-mail institucional." },
+                         { title: "Acompanhamento operacional", desc: "Indicadores, metas e pendências por período.", details: "Os painéis apresentam os dados registrados nos módulos e ajudam a acompanhar desvios e próximos passos." },
                     ].map((item, idx) => (
                         <motion.div
                             key={idx}
@@ -469,13 +469,13 @@ const SobreNos = () => {
                     <div>
                         <h2 className="text-3xl font-bold text-[#1a2421] mb-6">Seus dados, sua soberania</h2>
                         <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                            Privacidade não é funcionalidade opcional — é arquitetura. Cada empresa opera em um ambiente logicamente isolado com Row Level Security no nível do banco de dados. Todos os dados são criptografados em trânsito (TLS 1.3) e em repouso (AES-256). Estamos em conformidade com a LGPD e seguimos as melhores práticas de segurança da informação, incluindo logs de auditoria completos e controle de acesso baseado em papéis com quatro níveis de permissão.
+                            O servidor valida o acesso por organização, papel, módulo e abrangência de filiais. Senhas são protegidas com bcrypt e as sessões usam JWT. Documentos, evidências e históricos ficam disponíveis conforme as permissões e os controles de cada fluxo.
                         </p>
                         <div className="flex flex-wrap gap-3">
-                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">AES-256 Encryption</span>
-                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">TLS 1.3</span>
-                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">Row Level Security</span>
-                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">LGPD Compliant</span>
+                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">Senhas protegidas</span>
+                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">Sessões autenticadas</span>
+                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">Acesso por empresa</span>
+                            <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">Papéis e permissões</span>
                         </div>
                     </div>
                 </div>

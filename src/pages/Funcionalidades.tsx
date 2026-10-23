@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import type { MouseEvent } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import datonLogo from "@/assets/daton-logo-header.png";
+import { PAINEL_URL } from "@/config/externalApp";
 
 interface Feature {
   icon: LucideIcon;
@@ -47,78 +49,78 @@ const featureCategories: FeatureCategory[] = [
   {
     category: "ESG & Sustentabilidade",
     description:
-      "Módulos essenciais para gestão ESG completa e sustentabilidade corporativa.",
+      "Recursos para registrar, acompanhar e comprovar a gestão ambiental e ESG.",
     features: [
       {
         icon: BarChart3,
         title: "Gestão de Emissões GEE",
         description:
-          "Monitore e controle emissões com precisão científica e trilha de auditoria.",
+          "Registre atividades e consolide inventários com fatores versionados e rastreabilidade.",
         items: [
-          "Cálculo automático por escopos 1, 2 e 3",
-          "Fatores de emissão atualizados",
-          "Monitoramento em tempo real",
-          "Relatórios de inventário GEE",
+          "Fontes dos escopos 1, 2 e 3",
+          "Fatores de emissão versionados",
+          "Emissões calculadas por atividade",
+          "Totais por escopo e exportação CSV",
         ],
       },
       {
         icon: Shield,
         title: "Licenciamento",
         description:
-          "Conformidade regulatória com acompanhamento inteligente de licenças.",
+          "Organize licenças, condicionantes e obrigações recorrentes por filial.",
         items: [
-          "Controle de prazos e renovações",
-          "Alertas automáticos de vencimento",
-          "Histórico completo de documentos",
-          "Dashboard de conformidade",
+          "Validades e ciclos de renovação",
+          "Condicionantes e evidências",
+          "Obrigações e recorrências",
+          "Anexos e histórico do registro",
         ],
       },
       {
         icon: Recycle,
         title: "Gestão de Resíduos",
         description:
-          "Rastreamento completo de resíduos com foco em economia circular.",
+          "Registre a geração e a destinação de resíduos com seus comprovantes.",
         items: [
-          "Rastreamento por tipo e destino",
-          "Indicadores de circularidade",
-          "Controle de fornecedores",
-          "Relatórios de destinação",
+          "Tipo, quantidade, setor e destino",
+          "Transportador e destinador",
+          "MTR, CDF e anexos",
+          "Custos, receitas e etapas datadas",
         ],
       },
       {
         icon: Leaf,
-        title: "Projetos de Carbono",
+        title: "ESG e Relato",
         description:
-          "Gestão de compensação e créditos de carbono com transparência.",
+          "Estruture temas, respostas e evidências para acompanhar a agenda ESG.",
         items: [
-          "Portfólio de projetos",
-          "Validação de créditos",
-          "ROI ambiental",
-          "Certificações internacionais",
+          "Referenciais configuráveis",
+          "Temas, respostas e indicadores",
+          "Evidências e iniciativas",
+          "ODS e relatos em rascunho",
         ],
       },
       {
         icon: Target,
-        title: "Metas de Sustentabilidade",
+        title: "LAIA e Controles",
         description:
-          "Defina e acompanhe metas ESG com foco em execução e resultado.",
+          "Avalie aspectos e impactos ambientais e acompanhe seus controles.",
         items: [
-          "Metas SMART definidas",
-          "Acompanhamento de progresso",
-          "Alinhamento com ODS",
-          "Relatórios de performance",
+          "Aspectos, impactos e critérios",
+          "Requisitos e controles operacionais",
+          "Planos de ação vinculados",
+          "Monitoramento e correções",
         ],
       },
       {
         icon: Users,
-        title: "Gestão de Stakeholders",
+        title: "Terceiros e Partes Interessadas",
         description:
-          "Relacione-se melhor com partes interessadas em toda a cadeia.",
+          "Mantenha um cadastro compartilhado dos atores externos da operação.",
         items: [
-          "Mapeamento de stakeholders",
-          "Matriz de materialidade",
-          "Planos de engajamento",
-          "Feedback e consultas",
+          "Pessoas físicas e jurídicas",
+          "Papéis e dados de contato",
+          "Vínculo com fornecedores",
+          "Seleção nos módulos habilitados",
         ],
       },
     ],
@@ -132,12 +134,12 @@ const featureCategories: FeatureCategory[] = [
         icon: Award,
         title: "Sistema de Qualidade",
         description:
-          "SGQ completo com conformidade ISO 9001, 14001, 45001 e outras normas.",
+          "Centralize processos, documentos e registros do sistema de gestão.",
         items: [
-          "Gestão de documentos ISO",
-          "Controle de processos",
+          "Documentos e revisões",
+          "Processos do SGQ",
           "Auditorias internas",
-          "Melhoria contínua",
+          "Não conformidades e ações",
         ],
       },
       {
@@ -146,22 +148,22 @@ const featureCategories: FeatureCategory[] = [
         description:
           "Identifique, avalie e trate riscos operacionais e estratégicos.",
         items: [
-          "Matriz de riscos",
-          "Avaliação quantitativa",
+          "Probabilidade e impacto",
+          "Riscos e oportunidades",
           "Planos de tratamento",
-          "Monitoramento contínuo",
+          "Revisão e avaliação de eficácia",
         ],
       },
       {
         icon: CheckCircle2,
         title: "Não Conformidades",
         description:
-          "Controle completo de não conformidades e ações corretivas.",
+          "Registre desvios e acompanhe a tratativa até a avaliação de eficácia.",
         items: [
-          "Registro e classificação",
-          "Workflow de aprovação",
-          "Planos de ação",
-          "Análise de tendências",
+          "Registro, origem e classificação",
+          "Contenção e análise de causa",
+          "Plano de ação vinculado",
+          "Verificação de eficácia",
         ],
       },
       {
@@ -169,21 +171,21 @@ const featureCategories: FeatureCategory[] = [
         title: "Auditorias",
         description: "Planeje e execute auditorias internas com eficiência.",
         items: [
-          "Cronograma de auditorias",
-          "Checklists personalizados",
-          "Relatórios automáticos",
-          "Follow-up de achados",
+          "Planejamento e cronograma",
+          "Checklists e constatações",
+          "Evidências da execução",
+          "Achados e ações vinculadas",
         ],
       },
       {
         icon: Activity,
         title: "Indicadores de Performance",
-        description: "Monitore KPIs de qualidade e desempenho operacional.",
+        description: "Acompanhe metas, resultados e tendências dos indicadores.",
         items: [
-          "Dashboards em tempo real",
-          "Metas e limites de controle",
-          "Alertas automáticos",
-          "Análise estatística",
+          "Metas e tolerâncias",
+          "Semáforos de desempenho",
+          "Séries e tendências",
+          "Lançamentos pendentes",
         ],
       },
     ],
@@ -191,63 +193,63 @@ const featureCategories: FeatureCategory[] = [
   {
     category: "Pessoas & RH",
     description:
-      "Gestão de pessoas e desenvolvimento organizacional de ponta a ponta.",
+      "Estrutura de pessoas, competências e aprendizagem com evidências.",
     features: [
       {
         icon: Users,
-        title: "Gestão de Desempenho",
+        title: "Colaboradores e Competências",
         description:
-          "Avalie e desenvolva colaboradores com ciclos estruturados.",
+          "Relacione pessoas, cargos e competências exigidas pela organização.",
         items: [
-          "Ciclos de avaliação 360°",
-          "Matriz de competências",
-          "PDI personalizado",
-          "Feedback contínuo",
+          "Cadastro e situação do colaborador",
+          "Cargo e filial no histórico",
+          "Competências requeridas",
+          "Lacunas de competência",
         ],
       },
       {
         icon: GraduationCap,
         title: "Treinamentos",
         description:
-          "Capacite sua equipe com trilhas de aprendizado personalizadas.",
+          "Planeje turmas e preserve a evidência de cada conclusão.",
         items: [
-          "Trilhas de desenvolvimento",
-          "Controle de certificações",
-          "ROI de treinamentos",
+          "Catálogo e turmas",
+          "Registro de conclusão",
+          "Certificados por evento",
           "Avaliações de eficácia",
         ],
       },
       {
         icon: TrendingUp,
-        title: "Planos de Carreira",
-        description: "Estruture o crescimento profissional dos colaboradores.",
+        title: "Cargos e Obrigatoriedades",
+        description: "Defina o que cada cargo exige e acompanhe o que falta cumprir.",
         items: [
-          "Mapeamento de carreiras",
-          "Sucessão de cargos",
-          "Gaps de competência",
-          "Planos de desenvolvimento",
+          "Cadastro de cargos",
+          "Competências por cargo",
+          "Treinamentos obrigatórios",
+          "Pendências por colaborador",
         ],
       },
       {
         icon: UserCheck,
-        title: "Recrutamento & Seleção",
-        description: "Gerencie processos seletivos com eficiência e rastreio.",
+        title: "Programa Anual e Indicadores",
+        description: "Organize o programa anual de treinamento e acompanhe seus resultados.",
         items: [
-          "Banco de talentos",
-          "Entrevistas estruturadas",
-          "Avaliação de fit cultural",
-          "Onboarding automatizado",
+          "Programa anual por período",
+          "Treinamentos planejados",
+          "Indicadores de aprendizagem",
+          "Acompanhamento da execução",
         ],
       },
       {
         icon: Clock,
-        title: "Controle de Ponto",
-        description: "Monitore jornada de trabalho e horas extras.",
+        title: "Comunicação e Engajamento",
+        description: "Publique comunicações e acompanhe alcance, ciência e respostas.",
         items: [
-          "Registro biométrico/digital",
-          "Controle de absenteísmo",
-          "Relatórios de produtividade",
-          "Integração com folha",
+          "Campanhas e público por regra",
+          "Programação e publicação",
+          "Confirmação de leitura",
+          "Alcance e consulta de respostas",
         ],
       },
     ],
@@ -255,7 +257,7 @@ const featureCategories: FeatureCategory[] = [
   {
     category: "Dados & Documentos",
     description:
-      "Gestão inteligente de informações e documentos corporativos.",
+      "Informações, documentos e evidências organizados com controle de acesso.",
     features: [
       {
         icon: FileText,
@@ -263,42 +265,42 @@ const featureCategories: FeatureCategory[] = [
         description: "Organize e controle documentos com versionamento.",
         items: [
           "Controle de versões",
-          "Workflow de aprovações",
-          "Pesquisa avançada",
-          "Backup automático",
+          "Revisão e aprovação",
+          "Distribuição controlada",
+          "Registro de ciência",
         ],
       },
       {
         icon: Upload,
-        title: "Formulários Dinâmicos",
-        description: "Crie formulários personalizados para coleta de dados.",
+        title: "Formulários Internos",
+        description: "Crie modelos versionados e preserve a versão respondida.",
         items: [
-          "Designer visual",
-          "Validações automáticas",
-          "Integração com base de dados",
-          "Relatórios customizados",
+          "Construtor de campos e seções",
+          "Regras de obrigatoriedade e exibição",
+          "Respostas e anexos",
+          "Exportação CSV",
         ],
       },
       {
         icon: Brain,
-        title: "IA para Dados",
-        description: "Extraia informações automaticamente de documentos.",
+        title: "Assistente Daton",
+        description: "Consulte dados autorizados e encontre registros em modo somente leitura.",
         items: [
-          "OCR inteligente",
-          "Extração de dados",
-          "Classificação automática",
-          "Insights preditivos",
+          "Panorama de módulos",
+          "Indicadores e pendências",
+          "Listas conforme a tela",
+          "Acesso revalidado por consulta",
         ],
       },
       {
         icon: Clipboard,
         title: "Compliance",
-        description: "Assegure conformidade com regulamentações.",
+        description: "Organize requisitos, legislações e documentos regulatórios.",
         items: [
-          "Checklist de conformidade",
-          "Monitoramento regulatório",
-          "Alertas de mudanças",
-          "Relatórios de auditoria",
+          "Legislações aplicáveis",
+          "Requisitos por filial",
+          "Licenças e prazos",
+          "Anexos e evidências",
         ],
       },
     ],
@@ -306,51 +308,51 @@ const featureCategories: FeatureCategory[] = [
   {
     category: "Estratégia & Governança",
     description:
-      "Ferramentas para gestão estratégica e governança corporativa.",
+      "Planejamento, processos e análise para conduzir o sistema de gestão.",
     features: [
       {
         icon: Target,
-        title: "Balanced Scorecard",
+        title: "Planejamento Estratégico",
         description:
-          "Implemente BSC para alinhamento estratégico organizacional.",
+          "Registre o contexto e converta prioridades em objetivos e planos.",
         items: [
-          "4 perspectivas do BSC",
-          "Mapas estratégicos",
-          "Indicadores balanceados",
-          "Cascateamento de metas",
+          "Contexto e matriz SWOT",
+          "Objetivos estratégicos",
+          "Riscos e oportunidades",
+          "Planos e responsáveis",
         ],
       },
       {
         icon: TrendingUp,
-        title: "OKRs",
-        description: "Gerencie objetivos e resultados-chave da organização.",
+        title: "Indicadores e Metas",
+        description: "Conecte objetivos a indicadores e acompanhe os resultados do período.",
         items: [
-          "Objetivos SMART",
-          "Key Results mensuráveis",
-          "Check-ins regulares",
-          "Alinhamento estratégico",
+          "Indicadores vinculados",
+          "Metas por período",
+          "Resultados e tolerâncias",
+          "Análise de desempenho",
         ],
       },
       {
         icon: Building2,
-        title: "Governança Corporativa",
-        description: "Estruture conselhos e comitês de governança.",
+        title: "Processos e Análise Crítica",
+        description: "Mantenha processos do SGQ e registre a análise crítica da direção.",
         items: [
-          "Gestão de conselhos",
-          "Atas e deliberações",
-          "Políticas corporativas",
-          "Compliance governance",
+          "Cadastro e interação de processos",
+          "Entradas da análise crítica",
+          "Saídas e decisões",
+          "Responsáveis e planos de ação",
         ],
       },
       {
         icon: Briefcase,
-        title: "Gestão de Projetos",
-        description: "Gerencie projetos estratégicos e iniciativas.",
+        title: "Projeto e Desenvolvimento",
+        description: "Conduza projetos conforme o fluxo de projeto e desenvolvimento do SGQ.",
         items: [
-          "Cronogramas detalhados",
-          "Controle de recursos",
-          "Relatórios de progresso",
-          "Gestão de riscos",
+          "Entradas, etapas e saídas",
+          "Revisão, verificação e validação",
+          "Mudanças e histórico",
+          "Responsáveis e prazos",
         ],
       },
     ],
@@ -358,31 +360,31 @@ const featureCategories: FeatureCategory[] = [
 ];
 
 const integrations = [
-  { icon: TrendingUp, title: "ERPs", description: "SAP, Oracle, Dynamics" },
-  { icon: Database, title: "Relatórios", description: "Power BI, Tableau, Excel" },
-  { icon: Zap, title: "APIs", description: "REST APIs e webhooks" },
+  { icon: TrendingUp, title: "Importação por planilha", description: "Destinos habilitados por módulo" },
+  { icon: Database, title: "Exportações", description: "CSV e relatórios disponíveis por módulo" },
+  { icon: Zap, title: "Integrações sob demanda", description: "Avaliação conforme a necessidade da operação" },
 ];
 
 const benefits = [
   {
     icon: Brain,
-    title: "IA Integrada",
-    description: "Insights automáticos e recomendações acionáveis.",
+    title: "Consulta Assistida",
+    description: "Assistente em modo somente leitura, limitado aos acessos da pessoa.",
   },
   {
     icon: Database,
-    title: "Dados Centralizados",
-    description: "Uma fonte de verdade para toda a operação ESG.",
+    title: "Dados Rastreáveis",
+    description: "Histórico, evidências e responsabilidades junto aos registros.",
   },
   {
     icon: FileText,
-    title: "Relatórios Inteligentes",
-    description: "Padrões GRI, SASB e CDP com menor esforço operacional.",
+    title: "Gestão Integrada",
+    description: "Qualidade, pessoas, ambiente e governança no mesmo ambiente.",
   },
   {
     icon: Zap,
-    title: "Implantação Ágil",
-    description: "Conectores e APIs para rápida adoção no ecossistema atual.",
+    title: "Adoção Progressiva",
+    description: "Módulos habilitados conforme o escopo e a maturidade da operação.",
   },
 ];
 
@@ -396,6 +398,11 @@ function HeroStat({ title, subtitle }: { title: string; subtitle: string }) {
 }
 
 const Funcionalidades = () => {
+  const openPanel = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    window.location.href = PAINEL_URL;
+  };
+
   return (
     <div className="min-h-screen bg-[#edf4ef] text-[#12251c]">
       <header className="sticky top-0 z-40 border-b border-[#d4e4da] bg-[#edf4ef]/95 backdrop-blur-lg">
@@ -419,11 +426,11 @@ const Funcionalidades = () => {
             >
               Fazer Login
             </Link>
-            <Link to="/simulador">
+            <a href={PAINEL_URL} onClick={openPanel}>
               <Button className="rounded-xl bg-[#c4fca1] px-4 text-black hover:bg-[#b4ef8f]">
-                Simulador Gratuito
+                Acessar painel
               </Button>
-            </Link>
+            </a>
           </nav>
           <div className="flex items-center gap-3 md:hidden">
             <Link to="/auth">
@@ -431,11 +438,11 @@ const Funcionalidades = () => {
                 Login
               </Button>
             </Link>
-            <Link to="/simulador">
+            <a href={PAINEL_URL} onClick={openPanel}>
               <Button size="sm" className="rounded-xl bg-[#c4fca1] px-3 text-black hover:bg-[#b4ef8f]">
-                Simulador
+                Acessar painel
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </header>
@@ -461,35 +468,35 @@ const Funcionalidades = () => {
                 Plataforma Daton
               </span>
               <h1 className="text-balance text-4xl font-semibold leading-[1.08] text-white md:text-6xl">
-                Funcionalidades completas para gestão ESG de alto desempenho.
+                Gestão integrada com evidências para cada decisão.
               </h1>
               <p className="mt-5 max-w-3xl text-base text-white/90 md:text-xl">
-                Conecte Ambiental, Social e Governança em uma arquitetura única.
-                Execute com dados confiáveis, automação inteligente e decisões
-                orientadas por evidência.
+                Conecte qualidade, pessoas, ambiente e governança em uma única
+                plataforma. Organize responsabilidades, prazos, registros e
+                evidências para conduzir o sistema de gestão.
               </p>
             </motion.div>
 
             <div className="mt-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <HeroStat title="30+" subtitle="módulos integrados" />
-                <HeroStat title="360°" subtitle="visão ESG unificada" />
-                <HeroStat title="24/7" subtitle="monitoramento contínuo" />
+                <HeroStat title="SGQ" subtitle="qualidade e processos" />
+                <HeroStat title="ESG" subtitle="dados e evidências" />
+                <HeroStat title="Perfis" subtitle="acessos por organização" />
               </div>
 
               <div className="inline-flex items-center gap-3 rounded-2xl border border-white/40 bg-black/35 p-2 backdrop-blur-md">
                 <Link to="/contato">
                   <Button className="rounded-xl bg-white/10 text-white hover:bg-white/20">
-                    Solicitar Demo
+                    Solicitar demonstração
                   </Button>
                 </Link>
                 <div className="h-7 w-px bg-white/40" />
-                <Link to="/simulador">
+                <a href={PAINEL_URL} onClick={openPanel}>
                   <Button className="rounded-xl bg-[#c4fca1] text-black hover:bg-[#b4ef8f]">
-                    Simulador
+                    Acessar painel
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                </Link>
+                </a>
               </div>
             </div>
           </div>
@@ -561,8 +568,9 @@ const Funcionalidades = () => {
               Por que escolher o Daton?
             </h3>
             <p className="mt-2 text-[#4d675a]">
-              Mais de 30 módulos integrados em uma plataforma única para acelerar
-              maturidade ESG com controle real da operação.
+              Uma plataforma para organizar o sistema de gestão com dados,
+              responsabilidades e evidências. A disponibilidade varia conforme os
+              módulos habilitados e as permissões de cada pessoa.
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -586,10 +594,11 @@ const Funcionalidades = () => {
 
           <div className="rounded-[1.5rem] border border-[#cfdfd5] bg-white/90 p-6 shadow-[0_12px_35px_rgba(11,31,20,0.08)] md:p-8">
             <h3 className="text-xl font-semibold text-[#11251b] md:text-2xl">
-              Integrações
+              Dados e integrações
             </h3>
             <p className="mt-2 text-sm text-[#4e675b]">
-              Conecte com o ecossistema que sua operação já usa.
+              Importe e exporte dados nos módulos disponíveis e avalie integrações
+              específicas conforme a necessidade.
             </p>
             <div className="mt-5 space-y-3">
               {integrations.map((integration) => {
@@ -629,17 +638,17 @@ const Funcionalidades = () => {
             <div className="flex flex-col gap-3 w-full sm:w-auto sm:flex-row">
               <Link to="/contato">
                 <Button className="w-full sm:w-auto rounded-xl bg-black px-6 text-white hover:bg-black/85">
-                  Agendar demonstração
+                  Conhecer módulos
                 </Button>
               </Link>
-              <Link to="/simulador">
+              <a href={PAINEL_URL} onClick={openPanel}>
                 <Button
                   variant="outline"
                   className="w-full sm:w-auto rounded-xl border-black/35 bg-transparent px-6 text-black hover:bg-black hover:text-white"
                 >
-                  Testar simulador
+                  Acessar painel
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </section>
@@ -650,8 +659,8 @@ const Funcionalidades = () => {
           <div className="col-span-2 md:col-span-2">
             <img src={datonLogo} alt="Daton" className="h-8" />
             <p className="mt-4 max-w-xl text-sm text-[#4d685a]">
-              Plataforma completa para gestão ESG com foco em execução,
-              rastreabilidade e inteligência operacional.
+              Plataforma para gestão integrada com foco em responsabilidades,
+              evidências e rastreabilidade.
             </p>
           </div>
           <div>
@@ -662,9 +671,13 @@ const Funcionalidades = () => {
               <Link to="/funcionalidades" className="block hover:text-[#13271d]">
                 Funcionalidades
               </Link>
-              <Link to="/simulador" className="block hover:text-[#13271d]">
-                Simulador
-              </Link>
+              <a
+                href={PAINEL_URL}
+                onClick={openPanel}
+                className="block hover:text-[#13271d]"
+              >
+                Acessar painel
+              </a>
             </div>
           </div>
           <div>

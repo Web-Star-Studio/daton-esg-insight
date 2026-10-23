@@ -45,7 +45,7 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Ambiental",
     category: "Meio Ambiente / Sustentabilidade / Gestão",
     description:
-      "Monitore emissões, gerencie licenças e acompanhe o consumo de recursos em painéis em tempo real. Automatize cálculos e acelere a conformidade com regulamentações globais.",
+      "Registre emissões, licenças, resíduos e consumo de recursos com rastreabilidade. Os recursos aparecem conforme os módulos habilitados e as permissões da empresa.",
     icon: Leaf,
     image: "/hero-img-01.png",
     color: "#eef9e6",
@@ -59,16 +59,16 @@ const MODULES: ModuleHighlight[] = [
     id: "social",
     index: "002",
     title: "ESG Social",
-    category: "Social / Diversidade / Segurança",
+    category: "Pessoas / Competências / Aprendizagem",
     description:
-      "Acompanhe métricas de diversidade, rotatividade e segurança em um painel consolidado. Gerencie o ciclo de vida completo do colaborador, do recrutamento ao desenvolvimento de carreira.",
+      "Acompanhe colaboradores, cargos, competências e treinamentos. Registre lacunas, turmas, conclusões, certificados e avaliações de eficácia.",
     icon: Users,
     image: esgSocialCardImg,
     color: "#f0fdf4",
     features: [
-      "Dashboard de métricas sociais e diversidade",
-      "LMS integrado para capacitação",
-      "Gestão de segurança do trabalho",
+      "Cadastro de colaboradores e cargos",
+      "Competências e lacunas por cargo",
+      "Turmas, certificados e eficácia",
     ],
   },
   {
@@ -77,12 +77,12 @@ const MODULES: ModuleHighlight[] = [
     title: "Qualidade (SGQ)",
     category: "Gestão / Controle de Processos",
     description:
-      "Registre, analise e trate não conformidades com fluxos estruturados. Controle versões de documentos e conduza auditorias internas com total rastreabilidade.",
+      "Registre, analise e trate não conformidades com fluxos estruturados. Controle versões de documentos e conduza auditorias internas com rastreabilidade dos registros.",
     icon: FileCheck,
     image: esgQualityCardImg,
     color: "#f5f3ff",
     features: [
-      "Gestão completa de não conformidades",
+      "Gestão de não conformidades",
       "Ações corretivas com 5W2H",
       "Controle de documentos",
     ],
@@ -93,14 +93,14 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Governança",
     category: "Governança Corporativa",
     description:
-      "Centralize políticas, auditorias, riscos e compliance para elevar transparência e confiança institucional.",
+      "Organize riscos, auditorias, indicadores, processos e análises críticas com responsáveis, histórico e planos de ação.",
     icon: TrendingUp,
     image: esgSuppliersCardImg,
     color: "#fff7ed",
     features: [
-      "Políticas e compliance corporativo",
-      "Gestão de riscos e auditorias",
-      "Transparência e ética empresarial",
+      "Riscos, oportunidades e planos de ação",
+      "Auditorias e não conformidades",
+      "SWOT, indicadores e processos",
     ],
   },
   {
@@ -109,14 +109,14 @@ const MODULES: ModuleHighlight[] = [
     title: "Inteligência Artificial",
     category: "Tecnologia / Automação",
     description:
-      "Analise dados em tempo real para gerar alertas preditivos, identificar riscos emergentes e sugerir ações de melhoria contínua.",
+      "Consulte, em linguagem natural, dados autorizados da organização. O assistente opera somente para leitura e respeita os acessos de cada pessoa.",
     icon: Brain,
     image: esgAiCardImg,
     color: "#eff6ff",
     features: [
-      "Alertas inteligentes de prazos",
-      "Extração automática de documentos",
-      "Insights contextuais",
+      "Consultas contextuais aos dados do Daton",
+      "Respostas limitadas ao acesso autorizado",
+      "Operação somente para leitura",
     ],
   },
 ];
@@ -141,87 +141,87 @@ const INFRA_MODULES: InfraModuleHighlight[] = [
     id: "ia",
     index: "001",
     title: "Inteligência Artificial",
-    category: "IA Nativa / Contexto / Automação",
+    category: "Assistente / Contexto / Consulta",
     description:
-      "IA nativa em cada camada da plataforma. Não é um chatbot genérico. É inteligência treinada no contexto da sua empresa para prever e agir.",
+      "Assistente contextual para consultar dados autorizados da organização em linguagem natural, sem alterar registros.",
     icon: Brain,
     image: "",
     color: "#eef2ff",
     features: [
-      "Modelos Preditivos e Machine Learning (ML)",
-      "NLP (Processamento de Linguagem Natural)",
-      "Processamento Inteligente de Documentos (IDP)",
-      "Assistente Contextual IA Generativa",
+      "Consulta contextual em linguagem natural",
+      "Acesso limitado aos módulos autorizados",
+      "Ferramentas de dados somente para leitura",
+      "Histórico recente usado como contexto",
     ],
   },
   {
     id: "arquitetura",
     index: "002",
     title: "Arquitetura & Infraestrutura",
-    category: "Cloud-Native / Serverless / Escala",
+    category: "Aplicação Web / API / Dados",
     description:
-      "Construída para escalar com a sua operação. Arquitetura cloud-native com isolamento de dados por empresa e performance otimizada.",
+      "Aplicação web com acesso aos módulos da organização, registros centralizados e permissões para cada pessoa.",
     icon: Server,
     image: "",
     color: "#f8fafc",
     features: [
-      "Infraestrutura Serverless auto-escalável",
-      "Isolamento Multi-Tenant com segurança a nível de linha",
-      "Edge Computing para menor latência",
-      "Cache Inteligente em múltiplas camadas",
+      "Interface web acessível pelo navegador",
+      "API interna com contrato OpenAPI",
+      "Banco de dados PostgreSQL",
+      "Registros vinculados à organização",
     ],
   },
   {
     id: "seguranca",
     index: "003",
     title: "Segurança & Compliance",
-    category: "Cibersegurança / LGPD / Auditoria",
+    category: "Autenticação / Autorização / Rastreabilidade",
     description:
-      "Segurança não é funcionalidade. É fundação. Proteção de dados em conformidade com LGPD e padrões internacionais rigorosos.",
+      "Autenticação e autorização controlam o acesso por organização, papel, módulo e abrangência da pessoa usuária.",
     icon: ShieldCheck,
     image: "",
     color: "#f0f9ff",
     features: [
-      "Criptografia Militar (AES-256 e TLS 1.3)",
-      "Autenticação via JWT com suporte a MFA",
-      "Segurança em Nível de Linha (RLS)",
-      "Compliance Nativo com LGPD",
-      "Auditoria Completa e Rastreabilidade",
+      "Autenticação por senha protegida e JWT",
+      "Papéis e permissões por módulo",
+      "Isolamento de acesso entre organizações",
+      "Abrangência por filial quando aplicável",
+      "Histórico nos registros que o oferecem",
     ],
   },
   {
     id: "integracoes",
     index: "004",
     title: "Integrações & Dados",
-    category: "API First / Conectividade / Ecossistema",
+    category: "Importação / Exportação / Contratos",
     description:
-      "Conectada ao seu ecossistema. Importe, exporte e sincronize dados com as ferramentas que sua equipe já utiliza no dia a dia.",
+      "Importe dados por planilha nos destinos habilitados e exporte informações nos módulos que oferecem essa função.",
     icon: Network,
     image: "",
     color: "#fdf4ff",
     features: [
-      "Importação Flexível (Excel, CSV, PDF, Imagens)",
-      "API RESTful documentada para ERPs e BI",
-      "Exportação Multi-Formato",
-      "Webhooks & Notificações configuráveis",
+      "Importação por planilha com prévia",
+      "Rejeitos identificados antes da confirmação",
+      "Reversão das importações compatíveis",
+      "Exportações disponíveis por módulo",
     ],
   },
   {
     id: "performance",
     index: "005",
-    title: "Performance",
-    category: "Velocidade / Otimização / Uptime",
+    title: "Acesso e Registros",
+    category: "Web / Perfis / Organizações / Histórico",
     description:
-      "Velocidade que acompanha sua operação. Otimizações em cada camada para uma experiência fluida, mesmo com grandes volumes de dados.",
+      "A plataforma organiza o acesso e os registros conforme a empresa, o perfil da pessoa e as capacidades de cada módulo.",
     icon: Zap,
     image: "",
     color: "#fffbeb",
     features: [],
     metrics: [
-      { label: "LCP", value: "< 2.5s", desc: "Carregamento da página principal" },
-      { label: "IA Response", value: "< 5s", desc: "Respostas do assistente inteligente" },
-      { label: "Uptime", value: "99.9%", desc: "Disponibilidade da plataforma" },
-      { label: "Dados", value: "Milhões", desc: "Registros processados simultaneamente" },
+      { label: "Acesso", value: "Web", desc: "Uso pelo navegador" },
+      { label: "Perfis", value: "RBAC", desc: "Acesso autorizado por papel e módulo" },
+      { label: "Dados", value: "Empresa", desc: "Registros vinculados à organização" },
+      { label: "Histórico", value: "Módulo", desc: "Rastreabilidade onde disponível" },
     ],
   },
 ];
@@ -564,8 +564,7 @@ export default function ESGAmbiental() {
                 textAlign: "left",
               }}
             >
-              Tudo o que sua empresa precisa para transformar sustentabilidade
-              em resultado.
+              Gestão integrada para transformar dados da operação em decisões.
             </h1>
             <p
               style={{
@@ -579,9 +578,9 @@ export default function ESGAmbiental() {
                 maxWidth: "720px",
               }}
             >
-              Gerencie indicadores ambientais, sociais, de qualidade e
-              fornecedores em uma única plataforma — com inteligência
-              artificial, automação e conformidade regulatória integradas.
+              Gerencie indicadores ambientais, pessoas, qualidade e
+              fornecedores em uma única plataforma. Os recursos disponíveis
+              variam conforme os módulos habilitados e as permissões da empresa.
             </p>
           </motion.div>
         </div>
@@ -723,7 +722,7 @@ export default function ESGAmbiental() {
             viewport={{ once: true }}
             className="text-3xl md:text-5xl font-bold text-[#1a2421] mb-6 tracking-tight bg-clip-text"
           >
-            Infraestrutura de classe mundial.
+            Tecnologia para organizar acesso, dados e histórico.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -732,7 +731,7 @@ export default function ESGAmbiental() {
             transition={{ delay: 0.1 }}
             className="text-lg md:text-xl text-[#6b7280] max-w-2xl leading-relaxed"
           >
-            Cada componente da plataforma Daton foi desenhado para segurança, escalabilidade e performance. Sem concessões.
+            A Daton reúne aplicação web, API, banco de dados e controles de acesso para sustentar os módulos da operação.
           </motion.p>
         </div>
 
@@ -765,10 +764,10 @@ export default function ESGAmbiental() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 text-center divide-x divide-white/10">
             {[
-              { value: "6+", label: "Frameworks suportados", desc: "GRI, SASB, CDP, TCFD..." },
-              { value: "12+", label: "Módulos integrados", desc: "ESG, SGQ, RH, Financeiro..." },
-              { value: "< 48h", label: "Tempo de implantação", desc: "Do cadastro ao dashboard" },
-              { value: "99.9%", label: "Disponibilidade", desc: "Infraestrutura cloud-native" },
+              { value: "Web", label: "Acesso", desc: "Uso pelo navegador" },
+              { value: "Perfis", label: "Autorização", desc: "Papéis, módulos e abrangência" },
+              { value: "Org.", label: "Dados", desc: "Registros por organização" },
+              { value: "Trilha", label: "Histórico", desc: "Disponível conforme o módulo" },
             ].map((stat, idx) => (
               <div key={idx} className={`px-4 ${idx === 0 ? 'border-none' : ''}`}>
                 <div className="text-4xl md:text-5xl font-bold text-[#c4fca1] mb-2">{stat.value}</div>
