@@ -1,3 +1,5 @@
+> Revisão 2: as mudanças institucionais abaixo permanecem. A reauditoria com MasterProduct e sprints está em [masterproduct.md](masterproduct.md); ela reclassifica capacidades futuras sem validar certificações, números ou garantias institucionais.
+
 # Comparativo institucional e componentes de apoio
 
 Revisão: 23/10/2026. As referências ao sistema atual usam o repositório `Web-Star-Studio/Daton`, commit `1f07bd8046e183139f8189f11c7310c8d9553ce5`. Nenhum dado desse sistema foi alterado.

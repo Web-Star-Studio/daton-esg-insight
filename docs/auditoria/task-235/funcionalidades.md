@@ -2,7 +2,7 @@
 
 Escopo: `src/pages/Funcionalidades.tsx`.
 
-A auditoria comparou as promessas da landing page com o produto Daton v2. A estrutura da página, a ordem das seções, a quantidade de cards, os ícones, as classes e os estilos foram preservados. As mudanças abaixo são exclusivamente de texto, salvo a correção dos links do simulador inexistente para o painel atual.
+A auditoria comparou as promessas da landing page com o código atual, o MasterProduct e as sprints. A [reclassificação de capacidades futuras](masterproduct.md) integra esta revisão 2. A estrutura da página, a ordem das seções, a quantidade de cards, os ícones, as classes e os estilos foram preservados. As mudanças abaixo são exclusivamente de texto, salvo a correção dos links do simulador inexistente para o painel atual.
 
 ## Hero e proposta geral
 
@@ -15,7 +15,7 @@ A auditoria comparou as promessas da landing page com o produto Daton v2. A estr
 
 - **Antes:** misturava capacidades reais com monitoramento em tempo real, fatores sempre atualizados, economia circular, créditos de carbono, ROI ambiental, certificações internacionais, metas ESG e uma gestão genérica de stakeholders.
 - **Depois:** detalha inventário GEE por escopos com fatores versionados, emissões calculadas, totais e CSV; licenças, condicionantes e obrigações; resíduos com transportador, destinador, MTR e CDF; temas, respostas, evidências, iniciativas, ODS e relatos em rascunho; LAIA e controles; e cadastro compartilhado de terceiros e partes interessadas.
-- **Motivo:** créditos, compensação, certificações, metas climáticas e publicação de relatos não existem no escopo atual. Os cards foram mantidos e passaram a mostrar domínios implementados.
+- **Motivo:** créditos certificados e garantias não têm evidência específica. Projetos/compensações separados das emissões constam da direção futura F29, sem versão/task confirmada. Metas reproduzíveis e publicação humana fazem parte da evolução V2.0 (#200/#201 em triagem); os parágrafos existentes agora distinguem esse planejamento da base atual. Os cards foram mantidos.
 - **Evidências:** `docs/architecture/sustainability-reporting.md`, `docs/architecture/sustainability-data.md`, `docs/architecture/external-actors.md` e `docs/architecture/documents-compliance-audits.md`.
 
 ## Qualidade e processos
@@ -29,28 +29,28 @@ A auditoria comparou as promessas da landing page com o produto Daton v2. A estr
 
 - **Antes:** anunciava avaliação 360°, PDI, carreira e sucessão, recrutamento e seleção, banco de talentos, ponto biométrico, absenteísmo, produtividade e integração com folha. O card de treinamentos também prometia trilhas personalizadas e ROI.
 - **Depois:** os cinco slots cobrem colaboradores e competências; treinamentos, turmas, conclusão, certificados e eficácia; cargos e obrigatoriedades; programa anual e indicadores; e comunicação e engajamento.
-- **Motivo:** o Daton v2 registra a estrutura organizacional, exigências do cargo, lacunas, aprendizagem e evidências. Ele não é folha, sistema de ponto, recrutamento ou plataforma de carreira.
+- **Motivo:** o Daton v2 registra a estrutura organizacional, exigências do cargo, lacunas, aprendizagem e evidências. Não substitui folha, ponto ou recrutamento (limite explícito do Master); carreira, sucessão e avaliação 360° continuam sem evidência específica. PDI consta da task #198 em triagem e foi reinserido como planejado V2.0, sem afirmar entrega.
 - **Evidências:** `docs/architecture/people-training-records.md`, `docs/contexto-sistema/01-CONTEXTO-DO-SISTEMA.md`, `lib/authz/src/screens/domains/aprendizagem.ts` e `docs/architecture/communication.md`.
 
 ## Dados, documentos, formulários, IA e compliance
 
 - **Antes:** prometia backup automático, formulários com integração genérica e relatórios customizados, IA com OCR, extração, classificação e predição, além de monitoramento de mudanças legais.
 - **Depois:** informa versões, revisão, aprovação, distribuição e ciência de documentos; modelos de formulário versionados, regras, respostas, anexos e CSV; assistente que consulta somente os dados autorizados e revalida o acesso; e compliance com legislações, requisitos por filial, licenças, prazos, anexos e evidências.
-- **Motivo:** deixar claros os limites do produto. O assistente não extrai documentos nem prevê resultados, formulários não oferecem integrações genéricas, e o sistema não monitora alterações legislativas por conta própria.
+- **Motivo:** deixar claros os limites do produto. Hoje o assistente não extrai documentos nem prevê resultados; a extração assistida com fonte e revisão humana é planejada V3.0 (R12-003), e ações confirmadas estão em triagem (#211). Formulários externos estão previstos F33/V2.0; isso não comprova links públicos genéricos atuais. Monitoramento legislativo e previsões específicas não foram anunciados.
 - **Evidências:** `docs/architecture/internal-forms.md`, `docs/security/daton-ai.md`, `docs/architecture/documents-compliance-audits.md` e fluxos de Documentação do v2.
 
 ## Estratégia e governança
 
 - **Antes:** os cards anunciavam BSC, quatro perspectivas, mapas estratégicos, OKRs, check-ins, conselhos, comitês, atas e deliberações, além de uma gestão genérica de projetos.
 - **Depois:** os mesmos quatro slots apresentam planejamento estratégico com contexto, SWOT, objetivos, riscos e planos; indicadores e metas; processos do SGQ e análise crítica; e Projeto e Desenvolvimento com entradas, etapas, saídas, revisão, verificação, validação, mudanças, responsáveis e prazos.
-- **Motivo:** BSC, OKRs e gestão de conselhos não existem no produto atual. Projeto e Desenvolvimento tem um fluxo específico alinhado ao item 8.3 da ISO 9001.
+- **Motivo:** BSC, OKRs e gestão especializada de conselhos não têm evidência específica no Master. Agenda, atas e decisões integradas são planejadas F31/V2.0 (#202 em triagem), e o parágrafo de Processos e Análise Crítica informa essa evolução. Projeto e Desenvolvimento mantém o fluxo específico do SGQ.
 - **Evidências:** `docs/02-visao-do-produto.md`, `docs/contexto-sistema/01-CONTEXTO-DO-SISTEMA.md`, `docs/architecture/action-plans-and-projects.md` e `artifacts/web/src/data/delivered-features.generated.ts`.
 
 ## Benefícios, dados e integrações
 
 - **Antes:** prometia recomendações automáticas, relatórios GRI/SASB/CDP e conectores prontos para SAP, Oracle, Dynamics, Power BI, Tableau, APIs e webhooks.
-- **Depois:** destaca consulta assistida somente leitura, dados rastreáveis, gestão integrada e adoção progressiva. Os três slots de integração agora informam importação por planilha nos destinos habilitados, exportações disponíveis por módulo e avaliação de integrações sob demanda.
-- **Motivo:** não há conectores genéricos nem templates prontos para esses referenciais no v2. Importação e exportação existem, mas variam por destino e módulo.
+- **Depois:** destaca consulta assistida somente leitura, dados rastreáveis, gestão integrada e adoção progressiva. Os três slots de integração agora informam importação por planilha nos destinos habilitados, exportações disponíveis por módulo e conectores planejados para V2.0, condicionados ao contrato de cada integração. Catálogo de relatórios e BI também aparece como planejado.
+- **Motivo:** importações e saídas por módulo existem. Conectores/webhooks (#205) e catálogo/BI (#203) são planejados V2.0, ambos em triagem, sem marcas, API pública, OAuth ou formatos universais garantidos. Referenciais configuráveis não equivalem a pacotes prontos.
 - **Evidências:** `docs/architecture/data-imports.md`, `docs/architecture/sustainability-reporting.md`, `docs/security/daton-ai.md` e implementações de exportação por domínio.
 
 ## Disponibilidade e acessos

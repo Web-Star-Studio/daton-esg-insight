@@ -45,7 +45,7 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Ambiental",
     category: "Meio Ambiente / Sustentabilidade / Gestão",
     description:
-      "Registre emissões, licenças, resíduos e consumo de recursos com rastreabilidade. Os recursos aparecem conforme os módulos habilitados e as permissões da empresa.",
+      "Registre emissões, licenças, resíduos e recursos nos módulos habilitados. Projetos e compensações, metas reproduzíveis e publicação do relato são evoluções planejadas, ainda indisponíveis.",
     icon: Leaf,
     image: "/hero-img-01.png",
     color: "#eef9e6",
@@ -61,7 +61,7 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Social",
     category: "Pessoas / Competências / Aprendizagem",
     description:
-      "Acompanhe colaboradores, cargos, competências e treinamentos. Registre lacunas, turmas, conclusões, certificados e avaliações de eficácia.",
+      "Acompanhe colaboradores, competências, turmas, certificados e eficácia. Planos de desenvolvimento individuais estão planejados e ainda indisponíveis.",
     icon: Users,
     image: esgSocialCardImg,
     color: "#f0fdf4",
@@ -93,7 +93,7 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Governança",
     category: "Governança Corporativa",
     description:
-      "Organize riscos, auditorias, indicadores, processos e análises críticas com responsáveis, histórico e planos de ação.",
+      "Organize riscos, auditorias, indicadores, processos e análise crítica. Agenda, atas e decisões integradas estão planejadas e ainda indisponíveis.",
     icon: TrendingUp,
     image: esgSuppliersCardImg,
     color: "#fff7ed",
@@ -109,7 +109,7 @@ const MODULES: ModuleHighlight[] = [
     title: "Inteligência Artificial",
     category: "Tecnologia / Automação",
     description:
-      "Consulte, em linguagem natural, dados autorizados da organização. O assistente opera somente para leitura e respeita os acessos de cada pessoa.",
+      "Consulte dados autorizados em linguagem natural, somente para leitura. Extração documental assistida está planejada com revisão humana e ainda indisponível.",
     icon: Brain,
     image: esgAiCardImg,
     color: "#eff6ff",

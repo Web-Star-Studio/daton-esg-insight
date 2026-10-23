@@ -16,7 +16,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Como integrar Daton com sistema ERP?",
-                a: "O Daton ainda não oferece integração pronta com ERP, API pública, OAuth ou webhooks. Quando habilitada para a empresa e para o destino desejado, a importação assistida por planilha permite trazer dados em lotes controlados."
+                a: "O Daton ainda não oferece integração pronta com ERP, API pública, OAuth ou webhooks. Quando habilitada para a empresa e para o destino desejado, a importação assistida por planilha permite trazer dados em lotes controlados. Conectores e webhooks governados estão planejados e ainda indisponíveis, sem compromisso com SAP, TOTVS ou outro fornecedor específico."
             },
             {
                 q: "Como treinar equipe no Daton?",
@@ -36,7 +36,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Como preparar relatório para investidores ESG?",
-                a: "Cadastre um referencial ESG, organize temas, respostas, evidências, indicadores e iniciativas e use o relato em rascunho como base de trabalho. A edição final, as métricas financeiras, o benchmarking e a publicação do relatório são feitos fora do Daton."
+                a: "Hoje, cadastre um referencial ESG, organize temas, respostas, evidências, indicadores e iniciativas e use o relato em rascunho como base de trabalho. A edição final, métricas financeiras, benchmarking e publicação são externos. Consolidação, revisão e publicação governada de relatos estão planejadas e ainda indisponíveis, sem pacote pronto de GRI, CDP, SASB ou TCFD."
             },
             {
                 q: "Como usar Daton para certificações (B Corp, etc)?",
@@ -64,7 +64,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Como usar IA para identificar oportunidades de melhoria?",
-                a: "O Daton AI responde perguntas de consulta sobre dados autorizados da organização usando seis ferramentas de leitura. Ele não detecta anomalias, faz previsões, gera scoring, prioriza por ROI nem cria tarefas; confirme os dados e decida as ações no fluxo do módulo correspondente."
+                a: "Hoje, o Daton AI consulta dados autorizados e os resume em texto; ele não detecta oportunidades, prioriza por ROI nem cria tarefas. Explicações e anomalias em casos delimitados, assim como ações confirmadas pelo chat, fazem parte da evolução planejada e ainda não estão disponíveis."
             },
             {
                 q: "Como calcular pegada de carbono de produtos?",
@@ -80,7 +80,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Como usar Daton em comitês ESG?",
-                a: "Use indicadores, iniciativas, evidências, SWOT, processos e registros de análise crítica para preparar a pauta e acompanhar decisões por meio de planos de ação. O Daton não gera apresentações ou atas automaticamente e não possui gestão específica de conselhos."
+                a: "Hoje, use indicadores, iniciativas, evidências, SWOT, processos e registros de análise crítica para preparar a pauta e acompanhar decisões por meio de planos de ação. O Daton ainda não gera apresentações ou atas automaticamente. Reuniões, atas, decisões e RAC integrados estão planejados e ainda indisponíveis."
             }
         ]
     },
@@ -337,11 +337,11 @@ export const FAQ_categories = [
             },
             {
                 q: "Como registrar projetos de carbono?",
-                a: "O Daton não gerencia créditos, compensações ou projetos de carbono. Iniciativas de redução podem ser acompanhadas como iniciativas, indicadores e planos de ação, sem contabilização de créditos."
+                a: "Hoje, o Daton não gerencia créditos negociáveis, compensações ou projetos de carbono como uma carteira própria. Iniciativas de redução podem ser acompanhadas com indicadores e planos de ação. Projetos e compensações aparecem como direção de evolução futura, ainda sem marco de entrega confirmado e sem afirmar mercado de créditos."
             },
             {
                 q: "Como gerar relatórios de inventário?",
-                a: "O módulo apresenta totais calculados por escopo e permite exportar dados em CSV quando habilitado. A elaboração e validação do relatório formal do inventário são externas ao Daton."
+                a: "Hoje, o módulo apresenta os cálculos e totais disponíveis e permite exportar dados em CSV quando habilitado; o relatório formal continua externo. Cálculos, consolidações e relatórios reproduzíveis de clima estão planejados e ainda indisponíveis."
             }
         ]
     },
@@ -400,19 +400,19 @@ export const FAQ_categories = [
         items: [
             {
                 q: "Como criar metas ESG?",
-                a: "O Daton não possui um cadastro genérico de metas ESG. Use indicadores, iniciativas e planos de ação para registrar objetivos, responsáveis, prazos e acompanhamento nos módulos disponíveis."
+                a: "Hoje, o Daton não possui um cadastro genérico de metas ESG. Use indicadores, iniciativas e planos de ação para registrar objetivos, responsáveis, prazos e acompanhamento nos módulos disponíveis. Cálculos, consolidações e metas reproduzíveis estão planejados e ainda indisponíveis."
             },
             {
                 q: "Como acompanhar progresso de metas?",
-                a: "Acompanhe valores de indicadores, iniciativas e ações relacionadas. O Daton não calcula um percentual universal de progresso ou previsão automática de conclusão."
+                a: "Hoje, acompanhe valores de indicadores, iniciativas e ações relacionadas; o Daton não calcula um percentual universal nem prevê automaticamente a conclusão. Metas e consolidações reproduzíveis estão planejadas e ainda indisponíveis."
             },
             {
                 q: "Quais tipos de metas posso definir?",
-                a: "Não há um módulo único de metas. A organização pode representar seus objetivos com indicadores, iniciativas e planos de ação ambientais, sociais, de governança ou qualidade."
+                a: "Hoje não há um módulo único de metas; a organização representa objetivos com indicadores, iniciativas e planos ambientais, sociais, de governança ou qualidade. Um motor de metas reproduzíveis está planejado e ainda indisponível."
             },
             {
                 q: "Como vincular metas a indicadores?",
-                a: "Não existe vínculo genérico de meta com indicador. Registre o objetivo na iniciativa ou plano correspondente e acompanhe o indicador relacionado conforme o processo definido pela organização."
+                a: "Hoje não existe um vínculo genérico de meta com indicador. Registre o objetivo na iniciativa ou plano correspondente e acompanhe o indicador conforme o processo da organização. O modelo transversal de metas está planejado e ainda indisponível."
             },
             {
                 q: "Como criar metas financeiras ESG?",
@@ -454,7 +454,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Como funciona a extração automática por IA?",
-                a: "O Daton não extrai dados de documentos com IA ou OCR. Anexe o arquivo como evidência e registre ou importe os dados estruturados no módulo aplicável, quando a importação estiver habilitada."
+                a: "O Daton não extrai dados de documentos com IA atualmente. A extração documental assistida, com trecho de origem, confiança, validação e confirmação humana antes de persistir, está planejada e ainda indisponível."
             },
             {
                 q: "Quais formatos de arquivo são aceitos?",
@@ -466,7 +466,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Como funciona a extração IA de notas fiscais?",
-                a: "O Daton não extrai dados de documentos com IA ou OCR. Anexe o arquivo como evidência e registre ou importe os dados estruturados no módulo aplicável, quando a importação estiver habilitada."
+                a: "O Daton não extrai notas fiscais com IA atualmente. A extração documental assistida e confirmada por uma pessoa está planejada e ainda indisponível, sem garantia de suporte específico a nota fiscal, OCR ou precisão."
             },
             {
                 q: "Como funciona a validação automática de dados?",
@@ -479,11 +479,11 @@ export const FAQ_categories = [
         items: [
             {
                 q: "Quais relatórios estão disponíveis?",
-                a: "Cada módulo oferece suas próprias listas, indicadores e exportações. Referenciais ESG são livres e o relato permanece em rascunho; o Daton não entrega relatórios prontos GRI, TCFD, TNFD, IFRS, CDP ou GHG Protocol."
+                a: "Hoje, cada módulo oferece suas próprias listas, indicadores e exportações; referenciais ESG são livres e o relato permanece em rascunho. Um catálogo governado de relatórios, BI e logs está planejado e ainda indisponível, sem garantir GRI, TCFD, TNFD, IFRS ou CDP prontos."
             },
             {
                 q: "Como gerar relatório de sustentabilidade?",
-                a: "O Daton permite cadastrar referenciais ESG livres, organizar temas, respostas, evidências e iniciativas e manter um relato em rascunho. Não há pacote GRI pronto, cálculo automático de indicadores GRI ou publicação final pelo sistema."
+                a: "Hoje, o Daton organiza referenciais ESG livres, temas, respostas, evidências, iniciativas e um relato em rascunho; a revisão e publicação final são externas. Consolidação, revisão e publicação governada estão planejadas e ainda indisponíveis, sem pacote GRI pronto."
             },
             {
                 q: "Quais indicadores GRI são cobertos?",
@@ -491,11 +491,11 @@ export const FAQ_categories = [
             },
             {
                 q: "Em quais formatos posso exportar relatórios?",
-                a: "As exportações dependem de cada módulo e, nos recursos atuais habilitados, são principalmente em CSV. O Daton não gera PDF, Word ou PowerPoint, não agenda envios e não oferece editor de templates de relatório."
+                a: "Hoje, os formatos dependem de cada módulo e as exportações habilitadas são principalmente em CSV. Um catálogo de relatórios e exportações está planejado e ainda indisponível, sem garantia de PDF, Word, PowerPoint, HTML ou iXBRL."
             },
             {
                 q: "Como agendar envio automático de relatórios?",
-                a: "As exportações dependem de cada módulo e, nos recursos atuais habilitados, são principalmente em CSV. O Daton não gera PDF, Word ou PowerPoint, não agenda envios e não oferece editor de templates de relatório."
+                a: "Hoje, o Daton não agenda o envio geral de relatórios. Relatórios programados e distribuição governada estão planejados e ainda indisponíveis."
             }
         ]
     },
@@ -508,7 +508,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Como compartilhar formulários externamente?",
-                a: "Quando Formulários Internos estiver habilitado, administradores criam modelos versionados com campos e regras; as respostas preservam a versão usada e podem ser exportadas em CSV. Não há link público, QR Code ou incorporação externa genérica."
+                a: "Hoje, Formulários Internos não cria link público, QR Code ou iframe genérico. Formulários externos delimitados por processos aprovados estão planejados e ainda indisponíveis."
             },
             {
                 q: "Como analisar respostas de formulários?",
@@ -521,15 +521,15 @@ export const FAQ_categories = [
         items: [
             {
                 q: "Quais integrações estão disponíveis?",
-                a: "O Daton não disponibiliza API pública, OAuth, webhooks ou conectores prontos com ERP, BI, IoT e automação. A importação por planilha existe apenas nos destinos habilitados para cada empresa."
+                a: "Hoje, o Daton não disponibiliza conectores prontos, API pública, OAuth ou webhooks para clientes; a entrada estruturada ocorre por importações habilitadas. Conectores e webhooks governados estão planejados e ainda indisponíveis, sempre dependentes de contrato por sistema."
             },
             {
                 q: "Existe API para integração?",
-                a: "O Daton não disponibiliza API pública, OAuth, webhooks ou conectores prontos com ERP, BI, IoT e automação. A importação por planilha existe apenas nos destinos habilitados para cada empresa."
+                a: "Hoje, o Daton não oferece API pública, OAuth ou documentação de integração para clientes. Conectores, webhooks e rotinas governadas estão planejados e ainda indisponíveis, sem assumir uma API pública."
             },
             {
                 q: "Como automatizar coleta de dados?",
-                a: "O Daton não disponibiliza API pública, OAuth, webhooks ou conectores prontos com ERP, BI, IoT e automação. A importação por planilha existe apenas nos destinos habilitados para cada empresa."
+                a: "Hoje, use importação assistida por planilha apenas nos destinos habilitados; não há coleta automática via ERP, concessionária ou IoT. Conectores governados estão planejados e ainda indisponíveis, sem marcas ou fontes específicas garantidas."
             }
         ]
     },
@@ -563,7 +563,7 @@ export const FAQ_categories = [
         items: [
             {
                 q: "Como usar o Assistente IA?",
-                a: "O Daton AI recebe perguntas em texto e usa seis ferramentas de consulta somente leitura sobre dados autorizados. Ele não altera registros, recebe arquivos, prevê resultados, gera scoring ou cria relatórios finais; revise as respostas antes de decidir."
+                a: "Hoje, faça perguntas em texto; o Daton AI consulta somente os dados autorizados pelas ferramentas disponíveis e não altera registros. Um assistente contextual com fontes e ações confirmadas pelo chat está planejado e ainda indisponível."
             },
             {
                 q: "Que tipos de perguntas a IA responde?",
@@ -642,23 +642,23 @@ export const FAQ_categories = [
         items: [
             {
                 q: "O que é análise preditiva no Daton?",
-                a: "O Daton não oferece análise preditiva. O Daton AI consulta dados autorizados e os resume em texto, sem treinar modelos, projetar séries ou calcular probabilidades."
+                a: "Hoje, o Daton não oferece análise preditiva. Explicações de variações, tendências e anomalias em casos específicos fazem parte da evolução planejada, sempre com fontes e validação; não há compromisso explícito de machine learning ou previsão genérica."
             },
             {
                 q: "Como funciona a previsão de emissões?",
-                a: "O Daton não prevê emissões futuras. O módulo Clima calcula os totais dos dados cadastrados; projeções devem ser feitas externamente com premissas documentadas."
+                a: "Hoje, o Daton não prevê emissões futuras. Mapeamento assistido e detecção de anomalias em clima fazem parte da evolução planejada, sem incluir previsão de emissões; projeções continuam externas até existir escopo e evidência específicos."
             },
             {
                 q: "O que é scoring de risco de conformidade?",
-                a: "Scoring é uma forma de resumir risco segundo critérios definidos. O Daton não calcula score de conformidade por IA; use os status, prazos e evidências registrados para a avaliação responsável."
+                a: "Hoje, o Daton não calcula scoring de conformidade por IA. Explicações e detecção de inconsistências em casos delimitados fazem parte da evolução planejada, sem incluir um score genérico ou uma declaração automática de conformidade."
             },
             {
                 q: "Quantos dados históricos são necessários?",
-                a: "Não há requisito de histórico porque o Daton não executa previsões. Para análises externas, escolha o período conforme o método, a sazonalidade e a qualidade dos dados disponíveis."
+                a: "Não há requisito de histórico para previsão porque o Daton não executa esse recurso hoje. Casos futuros de tendência ou anomalia deverão definir dados suficientes e critérios próprios antes da implementação."
             },
             {
                 q: "Qual a precisão das previsões?",
-                a: "Não há medida de precisão porque o Daton não produz previsões. Resultados de modelos externos devem informar método, dados, erro e limitações."
+                a: "Não há medida de precisão porque o Daton não produz previsões hoje. Casos futuros deverão ser avaliados individualmente; não há promessa de nível de acurácia ou modelo específico."
             }
         ]
     },
@@ -700,7 +700,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Como gerar relatório GRI completo?",
-                a: "O Daton não gera relatório GRI completo. Ele organiza temas, respostas, evidências e um relato em rascunho, que deve ser revisado, diagramado e publicado externamente."
+                a: "Hoje, o Daton não gera relatório GRI completo; ele organiza referenciais livres, respostas, evidências e um relato em rascunho. Consolidação, revisão e publicação governada estão planejadas e ainda indisponíveis, sem pacote GRI garantido."
             },
             {
                 q: "Qual a diferença entre GRI Core e Comprehensive?",

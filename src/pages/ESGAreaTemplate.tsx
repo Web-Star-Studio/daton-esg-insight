@@ -66,7 +66,7 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
     eyebrow: "Social",
     sectionTitle: "Gestão Social orientada a pessoas e desempenho",
     sectionDescription:
-      "Acompanhe pessoas, competências, capacitação e comunicação com registros preservados. Os recursos disponíveis variam conforme os módulos habilitados e as permissões da empresa.",
+      "Acompanhe pessoas, competências, capacitação e comunicação nos módulos habilitados e conforme as permissões. Planos de desenvolvimento individuais estão planejados e ainda indisponíveis.",
     modules: [
       {
         title: "Pessoas e Competências",
@@ -104,7 +104,7 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
     eyebrow: "Governança",
     sectionTitle: "Governança com visibilidade executiva e execução disciplinada",
     sectionDescription:
-      "Conecte planejamento, riscos, indicadores e auditorias com rastreabilidade. Os recursos disponíveis variam conforme os módulos habilitados e as permissões da empresa.",
+      "Conecte planejamento, riscos, indicadores e auditorias nos módulos habilitados e conforme as permissões. Agenda, atas e decisões integradas estão planejadas e ainda indisponíveis.",
     modules: [
       {
         title: "Riscos e Controles",

@@ -444,7 +444,7 @@ const Documentacao = () => {
                 <h2 className="text-3xl font-bold text-[#1a2421] mb-8">Dados & Integrações</h2>
                 <div className="prose prose-gray max-w-none">
                   <p className="text-gray-600 mb-6">
-                    O Daton ainda não oferece <strong>API pública</strong>, OAuth, webhooks ou conectores prontos. A importação assistida por planilha é liberada por empresa e por destino.
+                    Hoje, o Daton não oferece <strong>API pública</strong>, OAuth, webhooks ou conectores prontos. A importação assistida por planilha é liberada por empresa e por destino. Conectores e webhooks governados estão planejados e ainda indisponíveis.
                   </p>
                   <div className="bg-[#1e293b] rounded-xl p-6 overflow-x-auto text-sm">
                     <code className="text-blue-300">CSV</code> <code className="text-gray-300">Importação assistida com prévia e rejeitos</code>
@@ -452,7 +452,7 @@ const Documentacao = () => {
                       {`{
   "disponibilidade": "por empresa e destino",
   "etapas": ["modelo", "prévia", "rejeitos", "confirmação"],
-  "integrações": "em avaliação"
+  "roadmap": "conectores governados planejados; ainda indisponíveis"
 }`}
                     </pre>
                   </div>

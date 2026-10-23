@@ -55,7 +55,7 @@ const featureCategories: FeatureCategory[] = [
         icon: BarChart3,
         title: "Gestão de Emissões GEE",
         description:
-          "Registre atividades e consolide inventários com fatores versionados e rastreabilidade.",
+          "Inventários com fatores versionados. Projetos e compensações separados das emissões são uma evolução planejada, ainda indisponível.",
         items: [
           "Fontes dos escopos 1, 2 e 3",
           "Fatores de emissão versionados",
@@ -91,7 +91,7 @@ const featureCategories: FeatureCategory[] = [
         icon: Leaf,
         title: "ESG e Relato",
         description:
-          "Estruture temas, respostas e evidências para acompanhar a agenda ESG.",
+          "Organize temas, respostas e relatos em rascunho. Revisão e publicação estão planejadas e ainda indisponíveis.",
         items: [
           "Referenciais configuráveis",
           "Temas, respostas e indicadores",
@@ -193,7 +193,7 @@ const featureCategories: FeatureCategory[] = [
   {
     category: "Pessoas & RH",
     description:
-      "Estrutura de pessoas, competências e aprendizagem com evidências.",
+      "Pessoas, competências e aprendizagem com evidências. Planos de desenvolvimento individuais estão planejados e ainda indisponíveis.",
     features: [
       {
         icon: Users,
@@ -284,7 +284,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: Brain,
         title: "Assistente Daton",
-        description: "Consulte dados autorizados e encontre registros em modo somente leitura.",
+        description: "Hoje, consulte dados autorizados em modo somente leitura. Extração documental assistida está planejada e ainda indisponível.",
         items: [
           "Panorama de módulos",
           "Indicadores e pendências",
@@ -325,7 +325,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: TrendingUp,
         title: "Indicadores e Metas",
-        description: "Conecte objetivos a indicadores e acompanhe os resultados do período.",
+        description: "Acompanhe indicadores e metas do período. Cálculos ambientais reproduzíveis estão planejados e ainda indisponíveis.",
         items: [
           "Indicadores vinculados",
           "Metas por período",
@@ -336,7 +336,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: Building2,
         title: "Processos e Análise Crítica",
-        description: "Mantenha processos do SGQ e registre a análise crítica da direção.",
+        description: "Registre processos e análise crítica. Agenda, atas e decisões integradas estão planejadas e ainda indisponíveis.",
         items: [
           "Cadastro e interação de processos",
           "Entradas da análise crítica",
@@ -361,8 +361,8 @@ const featureCategories: FeatureCategory[] = [
 
 const integrations = [
   { icon: TrendingUp, title: "Importação por planilha", description: "Destinos habilitados por módulo" },
-  { icon: Database, title: "Exportações", description: "CSV e relatórios disponíveis por módulo" },
-  { icon: Zap, title: "Integrações sob demanda", description: "Avaliação conforme a necessidade da operação" },
+  { icon: Database, title: "Exportações", description: "Saídas por módulo; catálogo e BI ainda planejados" },
+  { icon: Zap, title: "Conectores planejados", description: "Ainda indisponíveis; dependem de contrato por integração" },
 ];
 
 const benefits = [
@@ -570,7 +570,8 @@ const Funcionalidades = () => {
             <p className="mt-2 text-[#4d675a]">
               Uma plataforma para organizar o sistema de gestão com dados,
               responsabilidades e evidências. A disponibilidade varia conforme os
-              módulos habilitados e as permissões de cada pessoa.
+              módulos habilitados e as permissões de cada pessoa. Capacidades
+              futuras estão identificadas como planejadas, ainda indisponíveis.
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">

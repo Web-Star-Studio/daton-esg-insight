@@ -2,23 +2,29 @@
 
 Revisão de 23/10/2026, preparada para aprovação de merge e publicação manual no Netlify.
 
-A landing `daton.com.br` apresentava capacidades da versão anterior e promessas sem implementação no sistema atual, hospedado em `painel.daton.com.br`. Esta revisão compara o conteúdo institucional com o código do Daton v2 e corrige somente textos, metadados e destinos informacionais incorretos.
+A landing `daton.com.br` apresentava capacidades da versão anterior e promessas sem implementação no sistema atual, hospedado em `painel.daton.com.br`. Esta revisão compara o conteúdo institucional com o código atual, o MasterProduct v0.1 e as sprints V1.0/V2.0. Corrige somente textos, metadados e destinos informacionais incorretos.
 
 - Repositório da landing: `Web-Star-Studio/daton-esg-insight`, base `bc3e42195e0f328026a3e1cb29027b5f339a0eed`.
 - Sistema consultado, somente leitura: `Web-Star-Studio/Daton`, commit `1f07bd8046e183139f8189f11c7310c8d9553ce5`.
 - Branch: `codex/task-235-auditoria-copy-landing`.
 - Nenhuma mudança de schema, API, dados do sistema ou infraestrutura. Não houve merge nem publicação nesta entrega.
 
+## Revisão 2: completude do produto
+
+A primeira passagem considerava o código atual. A pedido da pessoa responsável, a reauditoria incorporou o MasterProduct anexo à sprint V1.0 (id 5), seu recorte executivo, guias de novidades e 43 tasks das sprints V1.0/V2.0. **Ausência atual não significa ausência no produto futuro.** PDI, reuniões/atas, BI/relatórios, conectores, extração assistida, formulários externos, compensações, metas reproduzíveis e publicação ESG têm evolução planejada. Projetos/compensações constam do estado desejado F29, sem versão/task de entrega confirmada. A landing agora informa esse estado nos textos existentes, sem anunciar disponibilidade.
+
+A [matriz MasterProduct e sprints](masterproduct.md) registra referências F/R, versões, parágrafos e status. As 23 tasks V1.0 estão entregues; as 20 da Sprint 2 ainda não tinham merge registrado em 23/10/2026. O nome informal do repositório atual não equivale ao marco futuro V2.0. Esta revisão substitui as conclusões anteriores que confundiam ausência no código com exclusão do produto.
+
 ## O que mudou e por quê
 
 | Página/seção | O que estava anunciado | O que passa a ser informado | Por quê |
 | --- | --- | --- | --- |
 | Início e rodapé | ESG em tempo real, conformidade automatizada, saúde ocupacional | Gestão da qualidade, ESG, pessoas, competências, treinamentos e dados rastreáveis | Representa o produto atual e retira recursos não comprovados |
-| Soluções e Ambiental | Créditos de carbono, frameworks prontos, predição, SLA e métricas promocionais | Inventários GEE, fatores versionados, registros ambientais, evidências e relatos em rascunho | Cálculo de inventário existe; créditos, relatórios finais e garantias de resultado não existem como prometidos |
-| Social e Pessoas | Avaliação 360, PDI, carreira, recrutamento, ponto, folha e SST | Colaboradores, cargos, competências, lacunas, turmas, certificados, eficácia e comunicação | O módulo atual é centrado em pessoas e aprendizagem, sem substituir RH/folha/SST |
-| Qualidade e Governança | Conformidade ISO completa, conselhos, atas, BSC/OKRs, estatística e alertas genéricos | SGQ, documentos, riscos, SWOT, indicadores, auditorias, não conformidades, análise crítica e ações | São os fluxos implementados e verificáveis no código |
-| IA | OCR, extração documental, previsões, scoring e ações automáticas | Orientação e consultas somente leitura aos dados autorizados | A IA atual não recebe arquivos nem altera registros |
-| Integrações | SAP, Oracle, TOTVS, Power BI, API pública, OAuth e webhooks | Importação por planilha nos destinos habilitados, exportações por módulo e avaliação de necessidades | Não há conectores públicos prontos nem sincronização geral |
+| Soluções e Ambiental | Créditos de carbono, frameworks prontos, predição, SLA e métricas promocionais | Inventários GEE, fatores versionados, registros ambientais, evidências e relatos em rascunho | Inventário existe; compensações constam da direção futura; metas reproduzíveis e publicação estão planejadas V2.0. Créditos negociáveis e garantias continuam sem respaldo |
+| Social e Pessoas | Avaliação 360, PDI, carreira, recrutamento, ponto, folha e SST | Colaboradores, cargos, competências, lacunas, turmas, certificados, eficácia e comunicação | Base atual de pessoas e aprendizagem; PDI planejado V2.0. Folha, ponto e recrutamento não são substituídos |
+| Qualidade e Governança | Conformidade ISO completa, conselhos, atas, BSC/OKRs, estatística e alertas genéricos | SGQ, documentos, riscos, SWOT, indicadores, auditorias, não conformidades, análise crítica e ações | Base implementada; agenda, atas e decisões integradas planejadas V2.0. BSC/OKRs e gestão especializada de conselhos sem evidência |
+| IA | OCR, extração documental, previsões, scoring e ações automáticas | Orientação e consultas somente leitura aos dados autorizados | Hoje não recebe arquivos nem altera registros. Extração e especialistas planejados V3.0; ações confirmadas em triagem na Sprint 2 |
+| Integrações | SAP, Oracle, TOTVS, Power BI, API pública, OAuth e webhooks | Importação por planilha nos destinos habilitados, exportações por módulo e avaliação de necessidades | Conectores/webhooks e catálogo de relatórios/BI planejados V2.0, sem API pública ou marcas garantidas |
 | Segurança e Sobre Nós | MFA, RLS, TLS/AES em versões específicas, SOC 2, ISO 27001, LGPD total | Senhas protegidas, JWT, autorização por empresa/papel/módulo/filial e históricos por fluxo | Evita anunciar certificações, protocolos ou garantias não demonstrados |
 | Ajuda/FAQ/Documentação | Fluxos de telas inexistentes, financeiro, vídeos com duração inventada, suporte 24/7 | Orientações reais, limites explícitos, vídeos indisponíveis e canais existentes | Corrige o roteiro operacional e preserva os mesmos temas, IDs e opções |
 | Cadastro e Termos | Cadastro livre e acesso indistinto | Nova empresa com código gratuito emitido pela Daton; acesso por convite e permissões | Reflete a decisão e o fluxo de voucher da v2 |
@@ -28,14 +34,17 @@ A landing `daton.com.br` apresentava capacidades da versão anterior e promessas
 
 A habilitação por empresa e as permissões foram explicitadas em parágrafos já existentes. A auditoria comprova a implementação e suas condições de disponibilidade; não presume que todos os módulos estejam liberados para todas as empresas em produção.
 
+O PDF de aprovação da revisão 2 foi entregue na conversa: 27 páginas, fotos antes/depois, justificativas por seção, mapa dos 24 cards e matriz do MasterProduct nas páginas 21 a 23. Ele substitui a edição baseada somente no código.
+
 ## Comparativos detalhados
 
+- [MasterProduct e sprints: atual, planejado, em revisão, não objetivo ou sem evidência](masterproduct.md).
 - [Funcionalidades: antes, depois, motivo e evidência por grupo](funcionalidades.md).
 - [Ambiental, Social, Governança e Tecnologia](ambiental-social.md).
 - [FAQ e Documentação, incluindo recursos ausentes](ajuda.md).
 - [Trechos literais de páginas institucionais, segurança, contato e metadados](institucional.md).
 
-As referências de evidência desses documentos apontam para arquivos do [repositório do sistema atual](https://github.com/Web-Star-Studio/Daton/tree/1f07bd8046e183139f8189f11c7310c8d9553ce5).
+A matriz de roadmap usa o anexo da sprint e os status do backlog; não reproduz o documento integral. As referências de implementação desses documentos apontam para arquivos do [repositório do sistema atual](https://github.com/Web-Star-Studio/Daton/tree/1f07bd8046e183139f8189f11c7310c8d9553ce5).
 
 ## Preservação do design e da hierarquia
 
@@ -66,7 +75,7 @@ Capturas salvas e examinadas:
 - [Comparativo antes/depois no desktop](evidencias/comparativo-desktop.webp).
 - [Busca da FAQ com explicação do limite financeiro](evidencias/faq-busca-mobile.png).
 
-As capturas completas PNG permanecem localmente em `/tmp/daton-task-235/antes` e `/tmp/daton-task-235/depois`; os comparativos acima fazem parte do PR.
+As capturas completas PNG da proposta final permanecem localmente em `/tmp/daton-task-235/antes` e `/tmp/daton-task-235/depois-masterproduct`; os comparativos acima fazem parte do PR.
 
 Para repetir as capturas com um Playwright disponível no ambiente:
 
