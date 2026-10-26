@@ -1,0 +1,194 @@
+[
+  {
+    "path": "/",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/funcionalidades",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/ambiental",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/social",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/governanca",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/sobre-nos",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/funcionalidades",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/ambiental",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/social",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/governanca",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/sobre-nos",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "antes"
+  },
+  {
+    "path": "/",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/funcionalidades",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/ambiental",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/governanca",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/sobre-nos",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/funcionalidades",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/ambiental",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/governanca",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/sobre-nos",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/social",
+    "viewport": "desktop",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  },
+  {
+    "path": "/social",
+    "viewport": "mobile",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "stage": "depois"
+  }
+]

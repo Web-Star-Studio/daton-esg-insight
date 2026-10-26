@@ -13,8 +13,8 @@ export function PublicFooter() {
             style={{ filter: "brightness(0) invert(1)" }}
           />
           <p className="mt-4 max-w-xl text-sm text-white/75">
-            Gestão integrada para conectar qualidade, pessoas, sustentabilidade
-            e governança com automação, evidências e inteligência.
+            Qualidade, pessoas, sustentabilidade e governança em uma plataforma
+            para simplificar rotinas e transformar planos em ação.
           </p>
         </div>
 

@@ -1,0 +1,53 @@
+{
+  "passed": true,
+  "files": [
+    {
+      "file": "src/components/landing/heimdall/PublicFooter.tsx",
+      "jsxElements": 21,
+      "visualAttributes": 20,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/components/landing/heimdall/esgAreas.ts",
+      "jsxElements": 0,
+      "visualAttributes": 0,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/pages/ESGAmbiental.tsx",
+      "jsxElements": 77,
+      "visualAttributes": 75,
+      "icons": 10,
+      "ids": 10,
+      "differences": []
+    },
+    {
+      "file": "src/pages/ESGAreaTemplate.tsx",
+      "jsxElements": 39,
+      "visualAttributes": 33,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/pages/Funcionalidades.tsx",
+      "jsxElements": 104,
+      "visualAttributes": 93,
+      "icons": 31,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/pages/SobreNos.tsx",
+      "jsxElements": 83,
+      "visualAttributes": 76,
+      "icons": 5,
+      "ids": 0,
+      "differences": []
+    }
+  ]
+}

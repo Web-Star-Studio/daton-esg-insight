@@ -1,5 +1,11 @@
 # Task 235 — Posicionamento comercial pelo MasterProduct
 
+## Rodada de refino comercial para aprovação
+
+A main após o PR 105 está em `9c16b2a8`, com autoria corrigida e CI aprovado. A pedido do usuário, uma nova rodada compara a força comercial da v1 com a redação baseada no MasterProduct. A proposta traz benefícios para os títulos e aproxima a linguagem do cotidiano do gestor, preservando a visão completa do produto e toda a apresentação.
+
+[Parecer e comparativo integral dos 82 trechos](refino-copy/README.md) · [PDF com fotos e justificativas](refino-copy/revisao-copy-comercial.pdf). Branch `codex/task-235-refino-copy`. Esta rodada aguarda aprovação; não houve novo merge ou publicação. As seções abaixo registram a rodada anterior.
+
 Revisão de 26/10/2026. Base da comparação: `3de3f70fe65be07d48088ce6d40c66cef241c097`, a main após o PR 104. Branch: `codex/task-235-promessa-masterproduct`.
 
 ## Direção aprovada

@@ -64,14 +64,14 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
   },
   social: {
     eyebrow: "Social",
-    sectionTitle: "Gestão Social orientada a pessoas e desempenho",
+    sectionTitle: "Desenvolva as competências que sua equipe precisa",
     sectionDescription:
-      "Conecte competências, desenvolvimento, aprendizagem e comunicação para apoiar cada pessoa e fortalecer a organização.",
+      "Identifique o que sua equipe precisa aprender, organize o desenvolvimento e acompanhe os resultados de cada etapa.",
     modules: [
       {
         title: "Pessoas e Competências",
         description:
-          "Identidade funcional, requisitos e desenvolvimento em uma visão integrada.",
+          "Saiba quais competências cada cargo exige e onde investir no desenvolvimento.",
         items: [
           "Matriz de competências por cargo",
           "Lacunas e planos de desenvolvimento",
@@ -102,9 +102,9 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
   },
   governanca: {
     eyebrow: "Governança",
-    sectionTitle: "Governança com visibilidade executiva e execução disciplinada",
+    sectionTitle: "Decisões que saem da reunião e chegam à operação",
     sectionDescription:
-      "Conecte estratégia, riscos, indicadores, reuniões e decisões para transformar análise crítica em ação acompanhada.",
+      "Reúna os indicadores da gestão, defina prioridades e acompanhe as ações com responsáveis e prazos claros.",
     modules: [
       {
         title: "Riscos e Controles",
@@ -119,7 +119,7 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
       {
         title: "Reuniões e Decisões",
         description:
-          "Agendas, pautas, atas e ações ligadas às fontes da gestão.",
+          "Organize pautas e atas e acompanhe os compromissos assumidos em cada reunião.",
         items: [
           "Pautas compostas a partir das fontes",
           "Atas e decisões versionadas",
@@ -129,7 +129,7 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
       {
         title: "Indicadores e RAC",
         description:
-          "Estratégia, desempenho e análise crítica em um ciclo conectado.",
+          "Compare resultados e metas para orientar as próximas decisões da gestão.",
         items: [
           "Análise SWOT e objetivos estratégicos",
           "Indicadores, metas e lançamentos",
