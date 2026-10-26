@@ -451,7 +451,7 @@ const Funcionalidades = () => {
       <main className="mx-auto w-full max-w-7xl space-y-14 px-4 py-8 md:px-8 md:py-10">
         <section className="relative overflow-hidden rounded-[2rem] border border-[#cadacf] bg-[#dbe9e1]">
           <img
-            src="/hero-img-01.png"
+            src="/hero-img-01.webp"
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover"

@@ -47,7 +47,7 @@ const MODULES: ModuleHighlight[] = [
     description:
       "Antecipe riscos ambientais e acompanhe suas metas. Reúna recursos, resíduos, licenças e inventários de emissões para orientar ações e relatos ESG.",
     icon: Leaf,
-    image: "/hero-img-01.png",
+    image: "/hero-img-01.webp",
     color: "#eef9e6",
     features: [
       "Inventário de emissões GEE (Escopos 1, 2, 3)",

@@ -41,7 +41,7 @@ export default function Contato() {
         }}
       >
         <img
-          src="/hero-img-03.png"
+          src="/hero-img-03.webp"
           alt=""
           aria-hidden="true"
           style={{
