@@ -29,35 +29,35 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
     eyebrow: "Ambiental",
     sectionTitle: "Operação Ambiental com controle contínuo",
     sectionDescription:
-      "Registre dados ambientais, evidências e prazos com rastreabilidade. Os recursos disponíveis variam conforme os módulos habilitados e as permissões da empresa.",
+      "Conecte monitoramentos, obrigações, cálculos e evidências para agir no prazo e medir a evolução ambiental da organização.",
     modules: [
       {
         title: "Emissões GEE",
-        description: "Gestão de escopos 1, 2 e 3 com rastreabilidade de cálculo.",
+        description: "Inventários dos escopos 1, 2 e 3 com cálculo reproduzível.",
         items: [
-          "Inventário por filial e fonte de emissão",
-          "Fatores versionados com fonte declarada",
-          "Totais por escopo e exportação em CSV",
+          "Fontes e fatores versionados",
+          "Cálculos e metas por escopo",
+          "Projetos, compensações e relatórios",
         ],
       },
       {
-        title: "Resíduos e Destinação",
+        title: "Recursos e Resíduos",
         description:
-          "Rastreamento ponta a ponta da geração até a destinação final.",
+          "Monitoramento de consumos, geração, movimentação e destinação.",
         items: [
-          "Controle por tipo e classe",
-          "Documentos MTR e CDF",
-          "Histórico de movimentações e destinação",
+          "Água, energia e produtos químicos",
+          "Movimentações, MTR e CDF",
+          "Alertas, ações e relatórios",
         ],
       },
       {
         title: "Licenças e Condicionantes",
         description:
-          "Visibilidade de prazos, renovações e riscos de não conformidade.",
+          "Prazos, renovações e obrigações ambientais sob controle.",
         items: [
-          "Cadastro de licenças e condicionantes",
-          "Prazos e situação de atendimento",
-          "Obrigações recorrentes e evidências",
+          "Licenças, requisitos e condicionantes",
+          "Alertas e responsáveis definidos",
+          "Evidências e histórico rastreável",
         ],
       },
     ],
@@ -66,36 +66,36 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
     eyebrow: "Social",
     sectionTitle: "Gestão Social orientada a pessoas e desempenho",
     sectionDescription:
-      "Acompanhe pessoas, competências, capacitação e comunicação nos módulos habilitados e conforme as permissões. Planos de desenvolvimento individuais estão planejados e ainda indisponíveis.",
+      "Conecte competências, desenvolvimento, aprendizagem e comunicação para apoiar cada pessoa e fortalecer a organização.",
     modules: [
       {
         title: "Pessoas e Competências",
         description:
-          "Cadastros de colaboradores, cargos e competências requeridas.",
+          "Identidade funcional, requisitos e desenvolvimento em uma visão integrada.",
         items: [
-          "Competências exigidas por cargo",
-          "Identificação de lacunas de competência",
-          "Histórico de alterações do colaborador",
+          "Matriz de competências por cargo",
+          "Lacunas e planos de desenvolvimento",
+          "Histórico e evidências da evolução",
         ],
       },
       {
         title: "Treinamentos",
         description:
-          "Planejamento e registro de capacitações com avaliação de eficácia.",
+          "Aprendizagem do planejamento à comprovação de eficácia.",
         items: [
-          "Turmas, participantes e conclusões",
-          "Certificados com dados da conclusão",
-          "Avaliação versionada de eficácia",
+          "Programa, trilhas e turmas",
+          "Presenças, conclusões e certificados",
+          "Validade, eficácia e alertas",
         ],
       },
       {
         title: "Comunicação e Engajamento",
         description:
-          "Campanhas internas para informar, consultar e registrar ciência.",
+          "Comunicações planejadas para públicos internos e externos.",
         items: [
-          "Público definido por regras",
-          "Visualização e ciência registradas",
-          "Consultas identificadas ou anônimas",
+          "Públicos, canais e calendário",
+          "Leitura, participação e ciência",
+          "Resultados por período e público",
         ],
       },
     ],
@@ -104,7 +104,7 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
     eyebrow: "Governança",
     sectionTitle: "Governança com visibilidade executiva e execução disciplinada",
     sectionDescription:
-      "Conecte planejamento, riscos, indicadores e auditorias nos módulos habilitados e conforme as permissões. Agenda, atas e decisões integradas estão planejadas e ainda indisponíveis.",
+      "Conecte estratégia, riscos, indicadores, reuniões e decisões para transformar análise crítica em ação acompanhada.",
     modules: [
       {
         title: "Riscos e Controles",
@@ -117,23 +117,23 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
         ],
       },
       {
-        title: "Auditorias e Conformidade",
+        title: "Reuniões e Decisões",
         description:
-          "Registros de auditoria, constatações e requisitos de conformidade.",
+          "Agendas, pautas, atas e ações ligadas às fontes da gestão.",
         items: [
-          "Programas e registros de auditoria",
-          "Constatações ligadas a não conformidades",
-          "Licenças, requisitos e obrigações",
+          "Pautas compostas a partir das fontes",
+          "Atas e decisões versionadas",
+          "Ações com responsável e prazo",
         ],
       },
       {
-        title: "Planejamento e Indicadores",
+        title: "Indicadores e RAC",
         description:
-          "Acompanhamento da estratégia com SWOT, processos e indicadores.",
+          "Estratégia, desempenho e análise crítica em um ciclo conectado.",
         items: [
           "Análise SWOT e objetivos estratégicos",
           "Indicadores, metas e lançamentos",
-          "Processos e análise crítica",
+          "Relatórios e análise crítica RAC",
         ],
       },
     ],

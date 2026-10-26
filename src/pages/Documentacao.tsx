@@ -154,7 +154,7 @@ const Documentacao = () => {
               Documentação
             </h1>
             <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              Orientações sobre os recursos atuais do Daton e respostas para as dúvidas mais comuns de uso.
+              Conheça a visão completa do Daton para conectar dados, evidências, responsabilidades e decisões em ESG, qualidade e conformidade.
             </p>
           </motion.div>
         </div>
@@ -321,16 +321,16 @@ const Documentacao = () => {
                 <div className="mb-8">
                   <h2 className="text-3xl font-bold text-[#1a2421] mb-4">Visão Geral</h2>
                   <p className="text-lg text-gray-600 leading-relaxed">
-                    Daton reúne gestão ESG, qualidade e conformidade em um ambiente organizado por empresa, módulos e permissões.
-                    Os recursos visíveis dependem da habilitação da organização e do acesso de cada pessoa.
+                    Daton reúne gestão ESG, qualidade e conformidade em uma plataforma governada, com dados rastreáveis, responsabilidades claras e decisões conectadas à execução.
+                    Cada pessoa acessa somente o contexto autorizado para sua organização, papel e unidade.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {[
-                    { icon: Clock, label: "Organização", title: "Dados no contexto", desc: "com registros, responsáveis, prazos e evidências vinculados." },
-                    { icon: CheckCircle, label: "Rastreabilidade", title: "Histórico preservado", desc: "nos fluxos que controlam versões e alterações." },
-                    { icon: Zap, label: "Acompanhamento", title: "Pendências visíveis", desc: "conforme módulos, permissões e configurações da empresa." },
+                    { icon: Clock, label: "Organização", title: "Dados no contexto", desc: "com registros, fontes, responsáveis, prazos e evidências vinculados." },
+                    { icon: CheckCircle, label: "Rastreabilidade", title: "Decisões explicáveis", desc: "com histórico, versões, aprovações e origem preservados." },
+                    { icon: Zap, label: "Acompanhamento", title: "Execução conectada", desc: "com metas, pendências, ações e resultados no mesmo fluxo." },
                   ].map((item, idx) => (
                     <div key={idx} className="p-6 rounded-2xl bg-[#f8fafc] border border-[#e5e7eb] hover:border-[#15c470]/50 transition-colors">
                       <div className="w-10 h-10 rounded-full bg-white border border-[#e5e7eb] flex items-center justify-center mb-4 text-[#15c470]">
@@ -352,22 +352,22 @@ const Documentacao = () => {
                     {
                       title: "Gestão de Emissões GEE",
                       icon: Globe,
-                      features: ["Fontes dos Escopos 1, 2 e 3", "Fatores de emissão versionados", "Cálculos, totais e exportação CSV"]
+                      features: ["Fontes dos Escopos 1, 2 e 3", "Fatores e memória de cálculo versionados", "Consolidação, revisão e relato governado"]
                     },
                     {
                       title: "Compliance & Licenças",
                       icon: Shield,
-                      features: ["Licenças e requisitos", "Condicionantes e obrigações", "Responsáveis, prazos e evidências"]
+                      features: ["Licenças, requisitos e aplicabilidade", "Condicionantes e obrigações", "Pendências, evidências e decisões rastreáveis"]
                     },
                     {
                       title: "Inteligência Artificial",
                       icon: Cpu,
-                      features: ["Perguntas em linguagem natural", "Consultas somente leitura", "Acesso limitado aos dados autorizados"]
+                      features: ["Contexto e respostas com fontes", "Extração e análises assistidas", "Sugestões e ações com confirmação humana"]
                     },
                     {
                       title: "Supply Chain",
                       icon: Users,
-                      features: ["Cadastro e documentação", "Homologação e avaliações", "Planos de ação relacionados"]
+                      features: ["Cadastro, documentos e requisitos", "Homologação, avaliações e formulários", "Pendências e planos de ação relacionados"]
                     }
                   ].map((mod, idx) => (
                     <div key={idx} className="group p-8 rounded-2xl border border-[#e5e7eb] bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
@@ -397,9 +397,9 @@ const Documentacao = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#e5e7eb] border border-[#e5e7eb] rounded-2xl overflow-hidden shadow-sm">
                   {[
-                    { title: "Importação", desc: "Planilhas com prévia e rejeitos nos destinos habilitados para a empresa." },
-                    { title: "Auditoria", desc: "Documentos, constatações, não conformidades e ações no mesmo fluxo." },
-                    { title: "Relato ESG", desc: "Referenciais livres, respostas e evidências organizados em rascunho." }
+                    { title: "Dados confiáveis", desc: "Importações e conectores com validação, linhagem, rejeitos e reconciliação." },
+                    { title: "Auditoria", desc: "Documentos, constatações, não conformidades, decisões e ações no mesmo fluxo." },
+                    { title: "Relato ESG", desc: "Referenciais, indicadores, evidências, revisão e publicação governada." }
                   ].map((item, idx) => (
                     <div key={idx} className="bg-white p-8 hover:bg-gray-50 transition-colors">
                       <h3 className="text-lg font-bold text-[#1a2421] mb-2">{item.title}</h3>
@@ -419,7 +419,7 @@ const Documentacao = () => {
                         "Senhas protegidas com bcrypt",
                         "Sessões autenticadas com JWT",
                         "Acesso por organização, papel e módulo",
-                        "Objetivos operacionais de RPO 24h e RTO 4h"
+                        "Backup e restauração com objetivos de recuperação validados"
                       ].map((item, i) => (
                         <li key={i} className="flex items-center gap-3 text-[#1a2421] font-medium">
                           <Shield size={18} className="text-[#15c470]" />
@@ -444,15 +444,15 @@ const Documentacao = () => {
                 <h2 className="text-3xl font-bold text-[#1a2421] mb-8">Dados & Integrações</h2>
                 <div className="prose prose-gray max-w-none">
                   <p className="text-gray-600 mb-6">
-                    Hoje, o Daton não oferece <strong>API pública</strong>, OAuth, webhooks ou conectores prontos. A importação assistida por planilha é liberada por empresa e por destino. Conectores e webhooks governados estão planejados e ainda indisponíveis.
+                    O Daton combina importações assistidas com <strong>conectores governados</strong>, webhooks e rotinas definidos por contrato. Cada integração declara sistema, campos, fonte, frequência, autoridade, retentativas e reconciliação, sem pressupor API pública, OAuth universal ou marcas específicas.
                   </p>
                   <div className="bg-[#1e293b] rounded-xl p-6 overflow-x-auto text-sm">
                     <code className="text-blue-300">CSV</code> <code className="text-gray-300">Importação assistida com prévia e rejeitos</code>
                     <pre className="mt-4 text-gray-400 font-mono">
                       {`{
-  "disponibilidade": "por empresa e destino",
-  "etapas": ["modelo", "prévia", "rejeitos", "confirmação"],
-  "roadmap": "conectores governados planejados; ainda indisponíveis"
+  "contrato": ["fonte", "campos", "frequência", "autoridade"],
+  "qualidade": ["prévia", "rejeitos", "retentativas", "reconciliação"],
+  "governança": "permissões, idempotência e trilha de execução"
 }`}
                     </pre>
                   </div>

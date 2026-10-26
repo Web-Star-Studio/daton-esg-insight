@@ -20,10 +20,10 @@ export function NewsTicker() {
     const navigate = useNavigate();
 
     const newsItems: NewsItem[] = [
-        { date: 'Produto', title: 'Daton AI orienta e consulta dados conforme as permissões de acesso', category: 'Inteligência Artificial' },
+        { date: 'Produto', title: 'Daton AI conecta contexto, fontes e propostas com supervisão humana', category: 'Inteligência Artificial' },
         { date: 'Qualidade', title: 'Documentos, auditorias e planos de ação apoiam os fluxos do SGQ', category: 'Gestão' },
-        { date: 'Ambiental', title: 'Registros de resíduos e evidências de destinação nos módulos habilitados', category: 'Operação' },
-        { date: 'Dados', title: 'Importação assistida por planilha para os destinos habilitados', category: 'Importação' },
+        { date: 'Ambiental', title: 'Monitoramentos, cálculos e evidências conectam a gestão ambiental', category: 'Operação' },
+        { date: 'Dados', title: 'Importações e conectores unem dados com validação e rastreabilidade', category: 'Importação' },
     ];
 
     const containerVariants = {

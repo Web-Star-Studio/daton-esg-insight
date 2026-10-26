@@ -45,7 +45,7 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Ambiental",
     category: "Meio Ambiente / Sustentabilidade / Gestão",
     description:
-      "Registre emissões, licenças, resíduos e recursos nos módulos habilitados. Projetos e compensações, metas reproduzíveis e publicação do relato são evoluções planejadas, ainda indisponíveis.",
+      "Conecte monitoramentos, licenças, resíduos, inventários de emissões e relatos ESG. Acompanhe cálculos, metas, projetos e compensações com fontes rastreáveis.",
     icon: Leaf,
     image: "/hero-img-01.png",
     color: "#eef9e6",
@@ -61,14 +61,14 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Social",
     category: "Pessoas / Competências / Aprendizagem",
     description:
-      "Acompanhe colaboradores, competências, turmas, certificados e eficácia. Planos de desenvolvimento individuais estão planejados e ainda indisponíveis.",
+      "Conecte colaboradores, competências e planos de desenvolvimento à aprendizagem, às evidências de eficácia e à comunicação com cada público.",
     icon: Users,
     image: esgSocialCardImg,
     color: "#f0fdf4",
     features: [
-      "Cadastro de colaboradores e cargos",
-      "Competências e lacunas por cargo",
-      "Turmas, certificados e eficácia",
+      "Competências, lacunas e PDI",
+      "Programas, turmas e eficácia",
+      "Comunicação e engajamento",
     ],
   },
   {
@@ -93,14 +93,14 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Governança",
     category: "Governança Corporativa",
     description:
-      "Organize riscos, auditorias, indicadores, processos e análise crítica. Agenda, atas e decisões integradas estão planejadas e ainda indisponíveis.",
+      "Conecte estratégia, riscos, indicadores e auditorias às reuniões da gestão. Registre pautas, atas, decisões, ações e análises críticas RAC.",
     icon: TrendingUp,
     image: esgSuppliersCardImg,
     color: "#fff7ed",
     features: [
       "Riscos, oportunidades e planos de ação",
-      "Auditorias e não conformidades",
-      "SWOT, indicadores e processos",
+      "Reuniões, atas e decisões",
+      "Indicadores, relatórios e RAC",
     ],
   },
   {
@@ -109,14 +109,14 @@ const MODULES: ModuleHighlight[] = [
     title: "Inteligência Artificial",
     category: "Tecnologia / Automação",
     description:
-      "Consulte dados autorizados em linguagem natural, somente para leitura. Extração documental assistida está planejada com revisão humana e ainda indisponível.",
+      "Consulte fontes autorizadas, extraia e mapeie informações e receba recomendações. Ações assistidas mostram uma prévia e pedem confirmação humana.",
     icon: Brain,
     image: esgAiCardImg,
     color: "#eff6ff",
     features: [
-      "Consultas contextuais aos dados do Daton",
-      "Respostas limitadas ao acesso autorizado",
-      "Operação somente para leitura",
+      "Respostas com fontes e contexto",
+      "Extração e mapeamento assistidos",
+      "Recomendações com confirmação",
     ],
   },
 ];
@@ -141,87 +141,87 @@ const INFRA_MODULES: InfraModuleHighlight[] = [
     id: "ia",
     index: "001",
     title: "Inteligência Artificial",
-    category: "Assistente / Contexto / Consulta",
+    category: "Assistente / Fontes / Supervisão",
     description:
-      "Assistente contextual para consultar dados autorizados da organização em linguagem natural, sem alterar registros.",
+      "Inteligência contextual para compreender dados, preparar trabalho e propor próximos passos sob as permissões de cada pessoa.",
     icon: Brain,
     image: "",
     color: "#eef2ff",
     features: [
-      "Consulta contextual em linguagem natural",
-      "Acesso limitado aos módulos autorizados",
-      "Ferramentas de dados somente para leitura",
-      "Histórico recente usado como contexto",
+      "Respostas ligadas às fontes consultadas",
+      "Extração e comparação assistidas",
+      "Mapeamento de dados com prévia",
+      "Recomendações e ações confirmadas",
     ],
   },
   {
     id: "arquitetura",
     index: "002",
-    title: "Arquitetura & Infraestrutura",
-    category: "Aplicação Web / API / Dados",
+    title: "Plataforma Integrada",
+    category: "Dados / Fluxos / Relações",
     description:
-      "Aplicação web com acesso aos módulos da organização, registros centralizados e permissões para cada pessoa.",
+      "Uma base conectada para acompanhar contexto, obrigações, decisões, evidências e resultados sem perder a origem.",
     icon: Server,
     image: "",
     color: "#f8fafc",
     features: [
-      "Interface web acessível pelo navegador",
-      "API interna com contrato OpenAPI",
-      "Banco de dados PostgreSQL",
-      "Registros vinculados à organização",
+      "Visão integrada entre os módulos",
+      "Relações sem duplicar a fonte",
+      "Histórico e evidências no centro",
+      "Fluxos do dado à decisão",
     ],
   },
   {
     id: "seguranca",
     index: "003",
-    title: "Segurança & Compliance",
-    category: "Autenticação / Autorização / Rastreabilidade",
+    title: "Acesso e Governança",
+    category: "Permissões / Responsabilidade / Trilha",
     description:
-      "Autenticação e autorização controlam o acesso por organização, papel, módulo e abrangência da pessoa usuária.",
+      "Cada pessoa acessa somente o que precisa, enquanto decisões, alterações e evidências permanecem rastreáveis.",
     icon: ShieldCheck,
     image: "",
     color: "#f0f9ff",
     features: [
-      "Autenticação por senha protegida e JWT",
-      "Papéis e permissões por módulo",
-      "Isolamento de acesso entre organizações",
-      "Abrangência por filial quando aplicável",
-      "Histórico nos registros que o oferecem",
+      "Acesso por papel, módulo e abrangência",
+      "Responsabilidades sem ampliar permissões",
+      "Dados separados por organização",
+      "Arquivos vinculados ao registro correto",
+      "Histórico de decisões e alterações",
     ],
   },
   {
     id: "integracoes",
     index: "004",
-    title: "Integrações & Dados",
-    category: "Importação / Exportação / Contratos",
+    title: "Entrada e Saída de Dados",
+    category: "Mapeamento / Prévia / Reconciliação",
     description:
-      "Importe dados por planilha nos destinos habilitados e exporte informações nos módulos que oferecem essa função.",
+      "Traga dados com mapeamento e prévia, trate inconsistências antes de confirmar e preserve a origem em cada resultado.",
     icon: Network,
     image: "",
     color: "#fdf4ff",
     features: [
-      "Importação por planilha com prévia",
-      "Rejeitos identificados antes da confirmação",
-      "Reversão das importações compatíveis",
-      "Exportações disponíveis por módulo",
+      "Modelos orientados ao destino",
+      "Erros identificados por linha",
+      "Confirmação antes da gravação",
+      "Exportação com fonte e filtros",
     ],
   },
   {
     id: "performance",
     index: "005",
-    title: "Acesso e Registros",
-    category: "Web / Perfis / Organizações / Histórico",
+    title: "Gestão Rastreável",
+    category: "Fonte / Responsável / Prazo / Evidência",
     description:
-      "A plataforma organiza o acesso e os registros conforme a empresa, o perfil da pessoa e as capacidades de cada módulo.",
+      "Cada ciclo de gestão mantém o contexto necessário para entender o que exige ação, por quê e com qual resultado.",
     icon: Zap,
     image: "",
     color: "#fffbeb",
     features: [],
     metrics: [
-      { label: "Acesso", value: "Web", desc: "Uso pelo navegador" },
-      { label: "Perfis", value: "RBAC", desc: "Acesso autorizado por papel e módulo" },
-      { label: "Dados", value: "Empresa", desc: "Registros vinculados à organização" },
-      { label: "Histórico", value: "Módulo", desc: "Rastreabilidade onde disponível" },
+      { label: "Origem", value: "Fonte", desc: "Dado ligado ao registro correto" },
+      { label: "Execução", value: "Dono", desc: "Responsabilidade claramente atribuída" },
+      { label: "Controle", value: "Prazo", desc: "Acompanhamento e alertas" },
+      { label: "Resultado", value: "Prova", desc: "Evidência e histórico preservados" },
     ],
   },
 ];
@@ -564,7 +564,7 @@ export default function ESGAmbiental() {
                 textAlign: "left",
               }}
             >
-              Gestão integrada para transformar dados da operação em decisões.
+              Transforme dados dispersos em gestão conectada e acionável.
             </h1>
             <p
               style={{
@@ -578,9 +578,8 @@ export default function ESGAmbiental() {
                 maxWidth: "720px",
               }}
             >
-              Gerencie indicadores ambientais, pessoas, qualidade e
-              fornecedores em uma única plataforma. Os recursos disponíveis
-              variam conforme os módulos habilitados e as permissões da empresa.
+              Conecte ambiente, pessoas, qualidade e governança com fontes,
+              responsáveis, prazos e evidências — da operação à decisão.
             </p>
           </motion.div>
         </div>
@@ -722,7 +721,7 @@ export default function ESGAmbiental() {
             viewport={{ once: true }}
             className="text-3xl md:text-5xl font-bold text-[#1a2421] mb-6 tracking-tight bg-clip-text"
           >
-            Tecnologia para organizar acesso, dados e histórico.
+            Tecnologia que conecta contexto, decisões e resultados.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -731,7 +730,7 @@ export default function ESGAmbiental() {
             transition={{ delay: 0.1 }}
             className="text-lg md:text-xl text-[#6b7280] max-w-2xl leading-relaxed"
           >
-            A Daton reúne aplicação web, API, banco de dados e controles de acesso para sustentar os módulos da operação.
+            A Daton transforma registros de cada área em fluxos rastreáveis, com acesso governado e inteligência assistida.
           </motion.p>
         </div>
 
@@ -764,10 +763,10 @@ export default function ESGAmbiental() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 text-center divide-x divide-white/10">
             {[
-              { value: "Web", label: "Acesso", desc: "Uso pelo navegador" },
-              { value: "Perfis", label: "Autorização", desc: "Papéis, módulos e abrangência" },
-              { value: "Org.", label: "Dados", desc: "Registros por organização" },
-              { value: "Trilha", label: "Histórico", desc: "Disponível conforme o módulo" },
+              { value: "Fonte", label: "Origem", desc: "Dado ligado ao registro correto" },
+              { value: "Dono", label: "Execução", desc: "Ação claramente atribuída" },
+              { value: "Prazo", label: "Controle", desc: "Alertas e prioridades" },
+              { value: "Prova", label: "Resultado", desc: "Evidência e histórico" },
             ].map((stat, idx) => (
               <div key={idx} className={`px-4 ${idx === 0 ? 'border-none' : ''}`}>
                 <div className="text-4xl md:text-5xl font-bold text-[#c4fca1] mb-2">{stat.value}</div>

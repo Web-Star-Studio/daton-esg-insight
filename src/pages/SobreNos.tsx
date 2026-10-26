@@ -288,7 +288,7 @@ const SobreNos = () => {
                     >
                         <h2 className="text-3xl font-bold text-[#1a2421] mb-6">Nossa Missão</h2>
                         <p className="text-lg text-gray-600 leading-relaxed">
-                            Simplificar a gestão de sustentabilidade corporativa, tornando dados ESG acessíveis, acionáveis e estratégicos para organizações de qualquer porte. Acreditamos que a transparência ambiental, social e de governança não é apenas uma obrigação regulatória — é a base para empresas mais resilientes e competitivas.
+                            Simplificar a gestão integrada, conectando qualidade, pessoas, sustentabilidade e governança. Transformamos dados dispersos em processos com responsáveis, evidências e resultados para que cada decisão tenha fundamento e cada melhoria encontre seu próximo passo.
                         </p>
                     </motion.div>
 
@@ -302,7 +302,7 @@ const SobreNos = () => {
                     >
                         <h2 className="text-3xl font-bold text-[#1a2421] mb-6">Nossa Visão</h2>
                         <p className="text-lg text-gray-600 leading-relaxed">
-                            Ser a plataforma de referência em gestão ESG na América Latina, reconhecida por transformar complexidade regulatória em clareza operacional e por empoderar empresas a alcançar metas de sustentabilidade com inteligência de dados.
+                            Ser a referência em gestão integrada para organizações que querem transformar complexidade em clareza, dados em decisões e compromissos em resultados. Uma plataforma que conecta a operação à estratégia com automação, inteligência e responsabilidade.
                         </p>
                     </motion.div>
                 </div>
@@ -336,7 +336,7 @@ const SobreNos = () => {
                             { index: "001", title: "Transparência radical", desc: "Dados organizados, histórico de registros e clareza nos fluxos de gestão.", features: ["Histórico nos fluxos de gestão", "Registros com origem e responsáveis", "Evidências e versões por módulo"] },
                             { index: "002", title: "Impacto mensurável", desc: "Cada funcionalidade existe para gerar resultado concreto — não apenas relatórios.", features: ["KPIs acionáveis e contextuais", "Dashboards com metas tangíveis", "Relatórios orientados a resultado"] },
                             { index: "003", title: "Simplicidade intencional", desc: "Complexidade nos bastidores, clareza na interface. Tecnologia que qualquer equipe consegue usar.", features: ["Interface intuitiva e acessível", "Acesso por convite ou código", "Pendências com origem e responsável"] },
-                            { index: "004", title: "Inovação responsável", desc: "IA e automação a serviço da sustentabilidade, com ética e privacidade como premissa.", features: ["IA para consultas autorizadas", "Controle de acesso por empresa", "Respostas da IA sujeitas a revisão"] },
+                            { index: "004", title: "Inovação responsável", desc: "IA e automação a serviço da sustentabilidade, com ética e privacidade como premissa.", features: ["IA com fontes e supervisão", "Controle de acesso por empresa", "Propostas e ações com confirmação"] },
                         ].map((val, idx) => (
                             <motion.div
                                 key={idx}
@@ -370,16 +370,16 @@ const SobreNos = () => {
                         <span className="text-[#15c470] font-mono text-xs uppercase tracking-widest font-bold">O que fazemos</span>
                         <h2 className="text-3xl md:text-4xl font-bold text-[#1a2421] mt-2 mb-6">Uma plataforma, todos os pilares</h2>
                         <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                            O Daton reúne qualidade, pessoas, fornecedores e dados ESG em um único painel. Os recursos disponíveis dependem dos módulos habilitados e das permissões de cada pessoa.
+                            O Daton conecta qualidade, pessoas, fornecedores, infraestrutura e sustentabilidade em um ciclo de gestão: organizar dados, executar processos, acompanhar resultados e melhorar com inteligência.
                         </p>
 
                         <div className="space-y-6">
                             {[
                                 { title: "Ambiental", desc: "Inventário de emissões GEE (Escopos 1, 2 e 3), gestão de resíduos, licenciamento ambiental, monitoramento de água e energia.", icon: Globe },
-                                { title: "Social", desc: "Colaboradores, cargos, competências, treinamentos, certificados e avaliação de eficácia.", icon: Users },
+                                { title: "Social", desc: "Competências, planos de desenvolvimento, treinamentos, comunicação e conhecimento para desenvolver pessoas e equipes.", icon: Users },
                                 { title: "Qualidade (SGQ)", desc: "Não conformidades, ações corretivas (5W2H), controle de documentos, gestão de riscos e auditorias internas.", icon: Award },
                                 { title: "Fornecedores", desc: "Homologação, avaliação de desempenho, portal do fornecedor e controle de requisitos documentais.", icon: Layers },
-                                { title: "Inteligência e Automação", desc: "Assistente de IA para orientação e consulta aos dados autorizados, com alterações realizadas nas telas do sistema.", icon: Zap }
+                                { title: "Inteligência e Automação", desc: "IA com fontes, extração assistida, recomendações e ações supervisionadas para transformar informação em próximos passos.", icon: Zap }
                             ].map((item, idx) => (
                                 <div key={idx} className="flex gap-4">
                                     <div className="mt-1 shrink-0">
@@ -415,11 +415,11 @@ const SobreNos = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[
                          { title: "Tudo em um só lugar", desc: "Chega de planilhas dispersas e sistemas desconectados.", details: "ESG, qualidade, fornecedores, auditorias e indicadores de desempenho — tudo em um único login, com dados integrados e rastreáveis." },
-                         { title: "IA para apoiar consultas", desc: "Orientação e consulta contextual aos dados do sistema.", details: "O assistente consulta pendências, indicadores e registros permitidos, em modo somente leitura. A equipe revisa as respostas e realiza as ações no sistema." },
-                         { title: "Conformidade sem complicação", desc: "Referenciais, requisitos e evidências organizados por período.", details: "Os recursos ESG permitem registrar respostas e evidências e estruturar relatos de trabalho em rascunho, quando habilitados." },
+                         { title: "Inteligência para agir melhor", desc: "Contexto, fontes e apoio às decisões.", details: "Converse sobre seus dados, extraia informações de documentos e receba propostas com fontes. A equipe revisa os resultados e confirma as ações autorizadas." },
+                         { title: "Conformidade sem complicação", desc: "Referenciais, requisitos e evidências organizados por período.", details: "Conecte referenciais, requisitos e evidências ao ciclo de coleta, consolidação, revisão e publicação do relato, com validação responsável." },
                          { title: "Acesso controlado", desc: "Credenciais protegidas e acesso por organização.", details: "O servidor valida organização, papel, módulo e abrangência de acesso para cada operação." },
                          { title: "Suporte humano", desc: "Converse com a equipe Daton.", details: "Use o canal Feedback no painel para dúvidas, problemas e ideias, ou entre em contato pelo e-mail institucional." },
-                         { title: "Acompanhamento operacional", desc: "Indicadores, metas e pendências por período.", details: "Os painéis apresentam os dados registrados nos módulos e ajudam a acompanhar desvios e próximos passos." },
+                         { title: "Acompanhamento operacional", desc: "Indicadores, metas e pendências conectados.", details: "Reúna indicadores e relatórios com origem rastreável, acompanhe desvios e conecte análises a responsáveis, decisões e planos de ação." },
                     ].map((item, idx) => (
                         <motion.div
                             key={idx}
@@ -469,7 +469,7 @@ const SobreNos = () => {
                     <div>
                         <h2 className="text-3xl font-bold text-[#1a2421] mb-6">Seus dados, sua soberania</h2>
                         <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                            O servidor valida o acesso por organização, papel, módulo e abrangência de filiais. Senhas são protegidas com bcrypt e as sessões usam JWT. Documentos, evidências e históricos ficam disponíveis conforme as permissões e os controles de cada fluxo.
+                            Sua organização define quem pode consultar, revisar e agir. A proteção dos dados acompanha registros, documentos, relatórios e IA, com permissões, histórico e rastreabilidade para preservar o contexto de cada decisão.
                         </p>
                         <div className="flex flex-wrap gap-3">
                             <span className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-lg text-sm font-bold text-gray-700">Senhas protegidas</span>

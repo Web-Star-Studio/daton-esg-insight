@@ -14,23 +14,23 @@ export function TechStack3D() {
 
     const sphereData = [
         {
-            title: 'Assistente Daton AI',
-            subtitle: 'Consulta contextual',
-            description: 'Orientação sobre o produto e consulta, em modo somente leitura, aos dados autorizados.',
+            title: 'Inteligência assistida',
+            subtitle: 'Fontes e confirmação',
+            description: 'Consulta, extração, mapeamento e recomendações com fontes, limites e validação humana.',
             color: '#15c470',
             type: 'wireframe'
         },
         {
-            title: 'Dados organizados',
-            subtitle: 'Gestão por organização',
-            description: 'Registros, indicadores e evidências dos módulos disponíveis para cada empresa.',
+            title: 'Dados conectados',
+            subtitle: 'Contexto rastreável',
+            description: 'Registros, indicadores e evidências ligados à origem, ao período e à decisão correspondente.',
             color: '#C0C0C0',
             type: 'metallic'
         },
         {
-            title: 'Cloud Platform',
-            subtitle: 'Daton Platform',
-            description: 'Infraestrutura escalável e segura para gestão ESG empresarial.',
+            title: 'Gestão governada',
+            subtitle: 'Acesso e rastreabilidade',
+            description: 'Permissões consistentes, histórico e responsabilidades preservados em cada fluxo de gestão.',
             color: '#15c470',
             type: 'particle'
         },
@@ -130,9 +130,9 @@ export function TechStack3D() {
                     className="heimdall-body"
                     style={{ maxWidth: '600px', margin: '0 auto', fontSize: '1.125rem', lineHeight: 1.6 }}
                 >
-                    Três pilares de inteligência trabalhando em harmonia para transformar dados brutos em{' '}
+                    Três pilares trabalhando em conjunto para transformar contexto em{' '}
                     <span style={{ borderBottom: '2px solid var(--heimdall-accent)', color: 'var(--heimdall-text)', fontWeight: 600 }}>
-                        insights acionáveis.
+                        decisões rastreáveis.
                     </span>
                 </motion.p>
             </div>

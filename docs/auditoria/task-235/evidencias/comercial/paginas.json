@@ -1,0 +1,438 @@
+{
+  "passed": true,
+  "baseline": "3de3f70fe65be07d48088ce6d40c66cef241c097",
+  "captures": [
+    {
+      "stage": "antes",
+      "route": "/",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/funcionalidades",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/funcionalidades",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/ambiental",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/ambiental",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/social",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/social",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/governanca",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/governanca",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/documentacao",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/documentacao",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/faq",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/faq",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/sobre-nos",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/sobre-nos",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/contato",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/contato",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/seguranca",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/seguranca",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/privacidade",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/privacidade",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/termos",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/termos",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/funcionalidades",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/funcionalidades",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/ambiental",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/ambiental",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/social",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/social",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/governanca",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/governanca",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/documentacao",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/documentacao",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/faq",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/faq",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/sobre-nos",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/sobre-nos",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/contato",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/contato",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/seguranca",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/seguranca",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/privacidade",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/privacidade",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "antes",
+      "route": "/termos",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5190/termos",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/documentacao",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/documentacao",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/faq",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/faq",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/sobre-nos",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/sobre-nos",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/contato",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/contato",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/seguranca",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/seguranca",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/privacidade",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/privacidade",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/termos",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/termos",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/documentacao",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/documentacao",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/faq",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/faq",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/sobre-nos",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/sobre-nos",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/contato",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/contato",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/seguranca",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/seguranca",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/privacidade",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/privacidade",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/termos",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/termos",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/funcionalidades",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/funcionalidades",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/ambiental",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/ambiental",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/social",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/social",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/governanca",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/governanca",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/funcionalidades",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/funcionalidades",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/ambiental",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/ambiental",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/social",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/social",
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "stage": "depois",
+      "route": "/governanca",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/governanca",
+      "errors": [],
+      "overflow": false
+    }
+  ]
+}

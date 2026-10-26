@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "node": "22.23.4",
+  "cleanInstall": "npm ci",
+  "typecheck": "app + node + vitest config",
+  "lint": {
+    "errors": 0,
+    "warnings": 4,
+    "scope": "landing src and root TS configurations; archived Supabase unchanged"
+  },
+  "tests": {
+    "files": 1,
+    "passed": 3,
+    "vitest": "3.2.7",
+    "provider": "v8",
+    "providerVersion": "3.2.7"
+  },
+  "coverageFiles": [
+    "coverage-final.json",
+    "lcov.info",
+    "index.html"
+  ],
+  "coverageScope": "all src TypeScript; no minimum percentage introduced",
+  "build": "passed",
+  "faqEntries": 395,
+  "sharedAnswers": 146,
+  "jsxAndVisualAttributes": "unchanged",
+  "diffCheck": "passed with PDF binary attribute",
+  "bun": {
+    "version": "1.4.4",
+    "frozenInstall": "passed",
+    "typecheck": "passed",
+    "coverageTests": 3,
+    "build": "passed",
+    "lockfile": "bun.lock",
+    "removedLegacyLockfile": "bun.lockb",
+    "ci": "build matrix verifies clean npm and Bun installations"
+  }
+}
