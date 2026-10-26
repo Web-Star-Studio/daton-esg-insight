@@ -45,7 +45,7 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Ambiental",
     category: "Meio Ambiente / Sustentabilidade / Gestão",
     description:
-      "Conecte monitoramentos, licenças, resíduos, inventários de emissões e relatos ESG. Acompanhe cálculos, metas, projetos e compensações com fontes rastreáveis.",
+      "Antecipe riscos ambientais e acompanhe suas metas. Reúna recursos, resíduos, licenças e inventários de emissões para orientar ações e relatos ESG.",
     icon: Leaf,
     image: "/hero-img-01.png",
     color: "#eef9e6",
@@ -61,7 +61,7 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Social",
     category: "Pessoas / Competências / Aprendizagem",
     description:
-      "Conecte colaboradores, competências e planos de desenvolvimento à aprendizagem, às evidências de eficácia e à comunicação com cada público.",
+      "Saiba quais competências desenvolver e acompanhe a evolução da equipe. Conecte PDI, treinamentos, avaliação de eficácia e comunicação.",
     icon: Users,
     image: esgSocialCardImg,
     color: "#f0fdf4",
@@ -77,7 +77,7 @@ const MODULES: ModuleHighlight[] = [
     title: "Qualidade (SGQ)",
     category: "Gestão / Controle de Processos",
     description:
-      "Registre, analise e trate não conformidades com fluxos estruturados. Controle versões de documentos e conduza auditorias internas com rastreabilidade dos registros.",
+      "Transforme desvios em melhoria contínua. Investigue causas, acompanhe ações corretivas e prepare auditorias com documentos e evidências organizados.",
     icon: FileCheck,
     image: esgQualityCardImg,
     color: "#f5f3ff",
@@ -93,7 +93,7 @@ const MODULES: ModuleHighlight[] = [
     title: "ESG Governança",
     category: "Governança Corporativa",
     description:
-      "Conecte estratégia, riscos, indicadores e auditorias às reuniões da gestão. Registre pautas, atas, decisões, ações e análises críticas RAC.",
+      "Leve a estratégia para a rotina da gestão. Acompanhe riscos e indicadores e transforme reuniões e análises críticas em decisões e planos de ação.",
     icon: TrendingUp,
     image: esgSuppliersCardImg,
     color: "#fff7ed",
@@ -109,7 +109,7 @@ const MODULES: ModuleHighlight[] = [
     title: "Inteligência Artificial",
     category: "Tecnologia / Automação",
     description:
-      "Consulte fontes autorizadas, extraia e mapeie informações e receba recomendações. Ações assistidas mostram uma prévia e pedem confirmação humana.",
+      "Ganhe tempo para analisar e agir. Consulte seus dados, extraia informações e receba recomendações com fontes. Revise a prévia e confirme as ações.",
     icon: Brain,
     image: esgAiCardImg,
     color: "#eff6ff",
@@ -143,7 +143,7 @@ const INFRA_MODULES: InfraModuleHighlight[] = [
     title: "Inteligência Artificial",
     category: "Assistente / Fontes / Supervisão",
     description:
-      "Inteligência contextual para compreender dados, preparar trabalho e propor próximos passos sob as permissões de cada pessoa.",
+      "Encontre respostas nos seus dados e avance no trabalho com IA. Confira as fontes, revise as propostas e confirme as ações permitidas para você.",
     icon: Brain,
     image: "",
     color: "#eef2ff",
@@ -160,7 +160,7 @@ const INFRA_MODULES: InfraModuleHighlight[] = [
     title: "Plataforma Integrada",
     category: "Dados / Fluxos / Relações",
     description:
-      "Uma base conectada para acompanhar contexto, obrigações, decisões, evidências e resultados sem perder a origem.",
+      "Reúna o que sua equipe precisa para decidir e executar. Acompanhe obrigações, ações e resultados sem perder o histórico das informações.",
     icon: Server,
     image: "",
     color: "#f8fafc",
@@ -177,7 +177,7 @@ const INFRA_MODULES: InfraModuleHighlight[] = [
     title: "Acesso e Governança",
     category: "Permissões / Responsabilidade / Trilha",
     description:
-      "Cada pessoa acessa somente o que precisa, enquanto decisões, alterações e evidências permanecem rastreáveis.",
+      "Compartilhe informações com as pessoas certas. Defina acessos e consulte o histórico de decisões, alterações e evidências.",
     icon: ShieldCheck,
     image: "",
     color: "#f0f9ff",
@@ -195,7 +195,7 @@ const INFRA_MODULES: InfraModuleHighlight[] = [
     title: "Entrada e Saída de Dados",
     category: "Mapeamento / Prévia / Reconciliação",
     description:
-      "Traga dados com mapeamento e prévia, trate inconsistências antes de confirmar e preserve a origem em cada resultado.",
+      "Poupe o trabalho de redigitar dados. Confira a prévia, corrija inconsistências e confirme a importação com a origem preservada.",
     icon: Network,
     image: "",
     color: "#fdf4ff",
@@ -209,10 +209,10 @@ const INFRA_MODULES: InfraModuleHighlight[] = [
   {
     id: "performance",
     index: "005",
-    title: "Gestão Rastreável",
+    title: "Da Decisão à Ação",
     category: "Fonte / Responsável / Prazo / Evidência",
     description:
-      "Cada ciclo de gestão mantém o contexto necessário para entender o que exige ação, por quê e com qual resultado.",
+      "Saiba o que exige atenção, quem cuida de cada ação e qual é o prazo. Acompanhe a execução e veja os resultados com evidências.",
     icon: Zap,
     image: "",
     color: "#fffbeb",
@@ -564,7 +564,7 @@ export default function ESGAmbiental() {
                 textAlign: "left",
               }}
             >
-              Transforme dados dispersos em gestão conectada e acionável.
+              Sua gestão conectada. Sua equipe pronta para agir.
             </h1>
             <p
               style={{
@@ -578,8 +578,8 @@ export default function ESGAmbiental() {
                 maxWidth: "720px",
               }}
             >
-              Conecte ambiente, pessoas, qualidade e governança com fontes,
-              responsáveis, prazos e evidências — da operação à decisão.
+              Reúna ambiente, pessoas, qualidade e governança. Automatize rotinas,
+              acompanhe metas e avance com decisões bem fundamentadas.
             </p>
           </motion.div>
         </div>
@@ -730,7 +730,7 @@ export default function ESGAmbiental() {
             transition={{ delay: 0.1 }}
             className="text-lg md:text-xl text-[#6b7280] max-w-2xl leading-relaxed"
           >
-            A Daton transforma registros de cada área em fluxos rastreáveis, com acesso governado e inteligência assistida.
+            Do controle ambiental ao desenvolvimento das pessoas, conecte as áreas da empresa e transforme informação em próximos passos.
           </motion.p>
         </div>
 

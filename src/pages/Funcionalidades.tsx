@@ -49,13 +49,13 @@ const featureCategories: FeatureCategory[] = [
   {
     category: "ESG & Sustentabilidade",
     description:
-      "Dados, controles e relatos para conduzir a gestão ambiental e ESG com rastreabilidade.",
+      "Antecipe riscos ambientais, acompanhe metas e dê consistência ao seu relato ESG.",
     features: [
       {
         icon: BarChart3,
         title: "Gestão de Emissões GEE",
         description:
-          "Construa inventários reproduzíveis e acompanhe a estratégia climática com fontes rastreáveis.",
+          "Entenda suas emissões e acompanhe metas climáticas com inventários dos escopos 1, 2 e 3.",
         items: [
           "Fontes dos escopos 1, 2 e 3",
           "Cálculos e fatores versionados",
@@ -67,7 +67,7 @@ const featureCategories: FeatureCategory[] = [
         icon: Shield,
         title: "Licenciamento",
         description:
-          "Controle licenças, condicionantes e obrigações recorrentes por filial.",
+          "Antecipe renovações e acompanhe licenças, condicionantes e obrigações de cada filial.",
         items: [
           "Validades e ciclos de renovação",
           "Condicionantes e evidências",
@@ -91,7 +91,7 @@ const featureCategories: FeatureCategory[] = [
         icon: Leaf,
         title: "ESG e Relato",
         description:
-          "Consolide temas, indicadores e evidências em relatos revisados e publicados sob controle.",
+          "Transforme indicadores e evidências em relatos ESG prontos para revisão e publicação.",
         items: [
           "Referenciais configuráveis",
           "Materialidade, temas e respostas",
@@ -103,7 +103,7 @@ const featureCategories: FeatureCategory[] = [
         icon: Target,
         title: "LAIA e Controles",
         description:
-          "Avalie aspectos e impactos e transforme resultados em controles monitorados.",
+          "Identifique impactos ambientais, defina controles e acompanhe as ações de melhoria.",
         items: [
           "Aspectos, impactos e critérios",
           "Requisitos e controles operacionais",
@@ -115,7 +115,7 @@ const featureCategories: FeatureCategory[] = [
         icon: Users,
         title: "Terceiros e Partes Interessadas",
         description:
-          "Mantenha atores externos relacionados aos processos sem duplicar cadastros.",
+          "Reúna terceiros e partes interessadas em um cadastro compartilhado, sem duplicar informações.",
         items: [
           "Pessoas físicas e jurídicas",
           "Papéis e dados de contato",
@@ -128,13 +128,13 @@ const featureCategories: FeatureCategory[] = [
   {
     category: "Qualidade & Processos",
     description:
-      "Processos, riscos e melhoria contínua conectados em um sistema de gestão rastreável.",
+      "Organize o SGQ, trate desvios e acompanhe a melhoria contínua da operação.",
     features: [
       {
         icon: Award,
         title: "Sistema de Qualidade",
         description:
-          "Conecte processos, documentos e registros do sistema de gestão.",
+          "Mantenha processos, documentos e registros do SGQ alinhados no dia a dia.",
         items: [
           "Documentos e revisões",
           "Processos do SGQ",
@@ -158,7 +158,7 @@ const featureCategories: FeatureCategory[] = [
         icon: CheckCircle2,
         title: "Não Conformidades",
         description:
-          "Registre desvios e acompanhe a tratativa até a avaliação de eficácia.",
+          "Transforme desvios em melhorias: investigue causas, execute ações e avalie a eficácia.",
         items: [
           "Registro, origem e classificação",
           "Contenção e análise de causa",
@@ -169,7 +169,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: Search,
         title: "Auditorias",
-        description: "Planeje, execute e acompanhe auditorias com evidências vinculadas.",
+        description: "Prepare e conduza auditorias com evidências organizadas e ações acompanhadas.",
         items: [
           "Planejamento e cronograma",
           "Checklists e constatações",
@@ -180,7 +180,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: Activity,
         title: "Indicadores de Performance",
-        description: "Transforme resultados em acompanhamento gerencial e decisões rastreáveis.",
+        description: "Veja onde agir: acompanhe resultados, identifique desvios e oriente decisões.",
         items: [
           "Metas e tolerâncias",
           "Semáforos de desempenho",
@@ -193,13 +193,13 @@ const featureCategories: FeatureCategory[] = [
   {
     category: "Pessoas & RH",
     description:
-      "Competências, desenvolvimento e aprendizagem conectados às necessidades da organização.",
+      "Desenvolva sua equipe com foco nas competências e nos resultados que a organização precisa.",
     features: [
       {
         icon: Users,
         title: "Competências e PDI",
         description:
-          "Relacione competências e lacunas a planos de desenvolvimento individuais.",
+          "Identifique lacunas de competência e acompanhe a evolução de cada pessoa com PDI.",
         items: [
           "Perfil funcional e histórico",
           "Competências por pessoa e cargo",
@@ -222,7 +222,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: TrendingUp,
         title: "Cargos e Obrigatoriedades",
-        description: "Defina requisitos por cargo e transforme lacunas em obrigações acompanháveis.",
+        description: "Saiba o que cada cargo exige e acompanhe as competências que precisam ser desenvolvidas.",
         items: [
           "Cadastro de cargos",
           "Competências por cargo",
@@ -233,7 +233,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: UserCheck,
         title: "Programa Anual e Indicadores",
-        description: "Planeje o desenvolvimento anual e acompanhe execução, validade e resultados.",
+        description: "Organize o calendário de capacitações e acompanhe execução, validade e resultados.",
         items: [
           "Programa anual por período",
           "Treinamentos do período",
@@ -257,12 +257,12 @@ const featureCategories: FeatureCategory[] = [
   {
     category: "Dados & Documentos",
     description:
-      "Informações e evidências organizadas com versão, origem e histórico.",
+      "Encontre a informação certa e prepare sua equipe para auditorias e decisões.",
     features: [
       {
         icon: FileText,
         title: "Gestão Documental",
-        description: "Controle o ciclo documental preservando versão, decisão e distribuição.",
+        description: "Mantenha sua equipe com a versão certa dos documentos, da aprovação à distribuição.",
         items: [
           "Controle de versões",
           "Revisão e aprovação",
@@ -273,7 +273,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: Upload,
         title: "Formulários Internos",
-        description: "Estruture coletas internas com modelos versionados e respostas rastreáveis.",
+        description: "Padronize a coleta de informações com formulários que preservam versões e respostas.",
         items: [
           "Construtor de campos e seções",
           "Regras de obrigatoriedade e exibição",
@@ -284,7 +284,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: Brain,
         title: "Assistente Daton",
-        description: "Consulte, compreenda e prepare trabalho com IA, fontes visíveis e decisão humana.",
+        description: "Ganhe tempo para analisar: consulte dados, extraia informações e prepare ações com IA, fontes e sua confirmação.",
         items: [
           "Respostas ligadas às fontes",
           "Extração documental assistida",
@@ -295,7 +295,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: Clipboard,
         title: "Compliance",
-        description: "Conecte requisitos e obrigações regulatórias às evidências de atendimento.",
+        description: "Saiba o que precisa ser atendido e organize as evidências de cada obrigação regulatória.",
         items: [
           "Legislações aplicáveis",
           "Requisitos por filial",
@@ -308,13 +308,13 @@ const featureCategories: FeatureCategory[] = [
   {
     category: "Estratégia & Governança",
     description:
-      "Planejamento, análise e decisões conectados aos registros que lhes dão origem.",
+      "Tire os planos do papel e acompanhe como as decisões se tornam ações e resultados.",
     features: [
       {
         icon: Target,
         title: "Planejamento Estratégico",
         description:
-          "Converta contexto e prioridades em objetivos, riscos e planos acompanháveis.",
+          "Transforme prioridades em objetivos claros e planos de ação com responsáveis.",
         items: [
           "Contexto e matriz SWOT",
           "Objetivos estratégicos",
@@ -325,7 +325,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: TrendingUp,
         title: "Indicadores e Metas",
-        description: "Acompanhe metas e resultados com fórmulas, fontes e períodos rastreáveis.",
+        description: "Compare metas e resultados ao longo do tempo e identifique onde concentrar esforços.",
         items: [
           "Indicadores e objetivos vinculados",
           "Metas por período",
@@ -336,7 +336,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: Building2,
         title: "Processos e Análise Crítica",
-        description: "Conduza reuniões e análises críticas com dados consistentes e rastreáveis.",
+        description: "Faça das reuniões um ponto de partida para decisões, ações e melhoria da gestão.",
         items: [
           "Agenda, pauta e participantes",
           "Entradas ligadas aos processos",
@@ -347,7 +347,7 @@ const featureCategories: FeatureCategory[] = [
       {
         icon: Briefcase,
         title: "Projeto e Desenvolvimento",
-        description: "Conduza projetos conforme o fluxo de projeto e desenvolvimento do SGQ.",
+        description: "Acompanhe o projeto do planejamento à validação, com etapas e responsabilidades claras.",
         items: [
           "Entradas, etapas e saídas",
           "Revisão, verificação e validação",
@@ -360,31 +360,31 @@ const featureCategories: FeatureCategory[] = [
 ];
 
 const integrations = [
-  { icon: TrendingUp, title: "Importação e reconciliação", description: "Prévia, validação, confirmação e resultado por destino" },
-  { icon: Database, title: "Relatórios e BI", description: "Métricas, filtros, fontes e atualização identificados" },
-  { icon: Zap, title: "Conectores e sincronização", description: "Sincronização monitorada com autoridade e frequência definidas" },
+  { icon: TrendingUp, title: "Importação de dados", description: "Confira a prévia e corrija inconsistências antes de confirmar" },
+  { icon: Database, title: "Relatórios e BI", description: "Explore indicadores e tendências para orientar suas decisões" },
+  { icon: Zap, title: "Conectores e sincronização", description: "Acompanhe a sincronização conforme as regras de cada integração" },
 ];
 
 const benefits = [
   {
     icon: Brain,
-    title: "Inteligência com Fontes",
-    description: "Respostas, extrações e propostas ligadas aos registros de origem.",
+    title: "IA para avançar no trabalho",
+    description: "Consulte e prepare ações com fontes visíveis e sua confirmação.",
   },
   {
     icon: Database,
-    title: "Dados Rastreáveis",
-    description: "Histórico, versão, evidência e responsabilidade em cada ciclo.",
+    title: "Confiança em cada análise",
+    description: "Confira a origem dos dados, as versões e o histórico das decisões.",
   },
   {
     icon: FileText,
     title: "Gestão Integrada",
-    description: "Qualidade, pessoas, ambiente e governança em relações consistentes.",
+    description: "Aproxime qualidade, pessoas, ambiente e governança em uma só plataforma.",
   },
   {
     icon: Zap,
-    title: "Automação Governada",
-    description: "Fluxos monitorados, decisões confirmadas e ações ligadas à origem.",
+    title: "Rotinas com mais controle",
+    description: "Automatize acompanhamentos e mantenha a equipe no controle das decisões.",
   },
 ];
 
@@ -469,12 +469,12 @@ const Funcionalidades = () => {
                 Plataforma Daton
               </span>
               <h1 className="text-balance text-4xl font-semibold leading-[1.08] text-white md:text-6xl">
-                Gestão integrada para decisões e ações com evidências.
+                Menos informação dispersa. Mais clareza para agir.
               </h1>
               <p className="mt-5 max-w-3xl text-base text-white/90 md:text-xl">
-                Conecte qualidade, pessoas, ambiente e governança em uma única
-                plataforma. Automatize ciclos, acompanhe metas e preserve as
-                fontes, responsabilidades e evidências de cada resultado.
+                Reúna qualidade, pessoas, ambiente e governança em uma só
+                plataforma. Automatize rotinas, antecipe riscos e acompanhe
+                os planos e resultados da sua equipe.
               </p>
             </motion.div>
 
@@ -482,7 +482,7 @@ const Funcionalidades = () => {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <HeroStat title="SGQ" subtitle="qualidade e processos" />
                 <HeroStat title="ESG" subtitle="dados e evidências" />
-                <HeroStat title="BI" subtitle="fontes e tendências" />
+                <HeroStat title="BI" subtitle="análises e tendências" />
               </div>
 
               <div className="inline-flex items-center gap-3 rounded-2xl border border-white/40 bg-black/35 p-2 backdrop-blur-md">
@@ -569,9 +569,9 @@ const Funcionalidades = () => {
               Por que escolher o Daton?
             </h3>
             <p className="mt-2 text-[#4d675a]">
-              Uma plataforma para organizar o sistema de gestão com dados,
-              responsabilidades e evidências. Cada análise preserva a ligação com
-              sua fonte, e cada automação mantém decisões e ações rastreáveis.
+              Sua equipe precisa saber o que exige atenção e qual é o próximo
+              passo. O Daton reúne informações, responsáveis e planos de ação
+              para conectar a análise à execução.
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -598,8 +598,8 @@ const Funcionalidades = () => {
               Dados e integrações
             </h3>
             <p className="mt-2 text-sm text-[#4e675b]">
-              Conecte fontes, valide cargas e acompanhe integrações com contratos
-              claros de autoridade, frequência e reconciliação.
+              Traga os dados dos seus sistemas para a gestão. Valide antes de
+              importar e acompanhe a sincronização conforme as regras de cada integração.
             </p>
             <div className="mt-5 space-y-3">
               {integrations.map((integration) => {
@@ -632,14 +632,14 @@ const Funcionalidades = () => {
                 Pronto para ver isso em ação?
               </h3>
               <p className="mt-2 text-black/75">
-                Solicite uma demonstração e veja como o Daton conecta
-                os ciclos de gestão da sua operação.
+                Converse com a equipe e descubra como o Daton pode
+                simplificar a gestão da sua operação.
               </p>
             </div>
             <div className="flex flex-col gap-3 w-full sm:w-auto sm:flex-row">
               <Link to="/contato">
                 <Button className="w-full sm:w-auto rounded-xl bg-black px-6 text-white hover:bg-black/85">
-                  Conhecer módulos
+                  Falar com a equipe
                 </Button>
               </Link>
               <a href={PAINEL_URL} onClick={openPanel}>
@@ -660,8 +660,8 @@ const Funcionalidades = () => {
           <div className="col-span-2 md:col-span-2">
             <img src={datonLogo} alt="Daton" className="h-8" />
             <p className="mt-4 max-w-xl text-sm text-[#4d685a]">
-              Plataforma de gestão integrada para transformar dados, evidências
-              e responsabilidades em decisões rastreáveis.
+              Qualidade, pessoas, sustentabilidade e governança em uma
+              plataforma para simplificar rotinas e transformar planos em ação.
             </p>
           </div>
           <div>

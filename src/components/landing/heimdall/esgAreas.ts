@@ -18,9 +18,9 @@ export const ESG_AREAS: ESGAreaDefinition[] = [
     href: "/ambiental",
     image: heroImg01,
     headline:
-      "Transforme dados ambientais em controle: monitore recursos, emissões, resíduos, prazos e metas com fontes rastreáveis.",
+      "Gestão ambiental para antecipar riscos e avançar nas metas.",
     subheadline:
-      "Consolide inventários, cálculos, alertas, projetos de compensação e relatos ESG em uma gestão conectada.",
+      "Controle emissões, resíduos, recursos e licenças. Transforme dados em ações e relatos ESG.",
   },
   {
     slug: "social",
@@ -28,9 +28,9 @@ export const ESG_AREAS: ESGAreaDefinition[] = [
     href: "/social",
     image: "/hero-img-02.png",
     headline:
-      "Desenvolva equipes com competências, PDI, aprendizagem e comunicação conectados.",
+      "Desenvolva pessoas e fortaleça o desempenho da sua equipe.",
     subheadline:
-      "Planeje capacitações, acompanhe eficácia e preserve o histórico do desenvolvimento.",
+      "Conecte competências, PDI, treinamentos e comunicação para acompanhar a evolução da equipe.",
   },
   {
     slug: "governanca",
@@ -38,9 +38,9 @@ export const ESG_AREAS: ESGAreaDefinition[] = [
     href: "/governanca",
     image: "/hero-img-03.png",
     headline:
-      "Conecte estratégia, riscos, indicadores, reuniões e decisões em uma gestão rastreável.",
+      "Tire a estratégia do papel e transforme decisões em ação.",
     subheadline:
-      "Reúna pautas, atas e ações em análises críticas com fontes, responsáveis e prazos.",
+      "Antecipe riscos e conecte indicadores, reuniões e planos de ação.",
   },
 ];
 

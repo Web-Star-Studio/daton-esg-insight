@@ -288,7 +288,7 @@ const SobreNos = () => {
                     >
                         <h2 className="text-3xl font-bold text-[#1a2421] mb-6">Nossa Missão</h2>
                         <p className="text-lg text-gray-600 leading-relaxed">
-                            Simplificar a gestão integrada, conectando qualidade, pessoas, sustentabilidade e governança. Transformamos dados dispersos em processos com responsáveis, evidências e resultados para que cada decisão tenha fundamento e cada melhoria encontre seu próximo passo.
+                            Simplificar a gestão para que as equipes dediquem mais tempo a melhorar e menos a reunir informações. Conectamos qualidade, pessoas, sustentabilidade e governança para transformar dados em decisões e planos em ações acompanhadas.
                         </p>
                     </motion.div>
 
@@ -415,11 +415,11 @@ const SobreNos = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[
                          { title: "Tudo em um só lugar", desc: "Chega de planilhas dispersas e sistemas desconectados.", details: "ESG, qualidade, fornecedores, auditorias e indicadores de desempenho — tudo em um único login, com dados integrados e rastreáveis." },
-                         { title: "Inteligência para agir melhor", desc: "Contexto, fontes e apoio às decisões.", details: "Converse sobre seus dados, extraia informações de documentos e receba propostas com fontes. A equipe revisa os resultados e confirma as ações autorizadas." },
-                         { title: "Conformidade sem complicação", desc: "Referenciais, requisitos e evidências organizados por período.", details: "Conecte referenciais, requisitos e evidências ao ciclo de coleta, consolidação, revisão e publicação do relato, com validação responsável." },
-                         { title: "Acesso controlado", desc: "Credenciais protegidas e acesso por organização.", details: "O servidor valida organização, papel, módulo e abrangência de acesso para cada operação." },
+                         { title: "Inteligência para agir melhor", desc: "Encontre respostas e avance com apoio da IA.", details: "Consulte seus dados, extraia informações e receba propostas com fontes. Sua equipe revisa os resultados e confirma as ações autorizadas." },
+                         { title: "Conformidade sem complicação", desc: "Saiba o que atender e prepare-se para demonstrar.", details: "Organize requisitos e evidências, acompanhe obrigações e prepare relatos para revisão e publicação pela equipe responsável." },
+                         { title: "Acesso controlado", desc: "As informações certas para cada pessoa.", details: "Sua organização define quem pode consultar, revisar e agir, respeitando o papel de cada pessoa e os limites de acesso da equipe." },
                          { title: "Suporte humano", desc: "Converse com a equipe Daton.", details: "Use o canal Feedback no painel para dúvidas, problemas e ideias, ou entre em contato pelo e-mail institucional." },
-                         { title: "Acompanhamento operacional", desc: "Indicadores, metas e pendências conectados.", details: "Reúna indicadores e relatórios com origem rastreável, acompanhe desvios e conecte análises a responsáveis, decisões e planos de ação." },
+                         { title: "Clareza para agir", desc: "Veja onde concentrar os esforços da equipe.", details: "Compare indicadores e metas, acompanhe desvios e transforme a análise em planos de ação com responsáveis e prazos." },
                     ].map((item, idx) => (
                         <motion.div
                             key={idx}
