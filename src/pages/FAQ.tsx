@@ -20,6 +20,7 @@ import { FAQSearch } from "@/components/faq/FAQSearch";
 import { FAQSidebar } from "@/components/faq/FAQSidebar";
 import { FAQCategory } from "@/components/faq/FAQCategory";
 import { useFAQSearch } from "@/hooks/useFAQSearch";
+import { buildPainelRedirect } from "@/config/externalApp";
 
 export default function FAQ() {
   const location = useLocation();
@@ -140,7 +141,7 @@ export default function FAQ() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-                <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4" onClick={() => { window.location.href = "https://painel.daton.com.br/app/ajuda"; }}>
+                <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4" onClick={() => { window.location.href = buildPainelRedirect("/app/ajuda"); }}>
                   <MessageCircle className="h-5 w-5" />
                   <div className="text-center">
                     <div className="font-medium">Ajuda no painel</div>

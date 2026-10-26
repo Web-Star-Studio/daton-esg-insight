@@ -7,6 +7,7 @@ Reauditoria em 23/10/2026, incorporando a direção completa de produto à compa
 - MasterProduct: `DATON_Master_Product_and_Delivery_Specification_v0.1.docx`, v0.1 de 05/09/2026, anexo da sprint **V1.0 — Data-Complete Daton** (id 5, chamada de sprint 1 na revisão).
 - SHA-256 do anexo: `457550f1b1f58bd62f05e491b4cc5526ab075e6d5991c4b571141f06d8c5b219`.
 - Recorte executivo e guias de novidades anexos à mesma sprint.
+- Os anexos originais permanecem no backlog autenticado da sprint id 5; o hash acima identifica a versão consultada. A numeração P é um localizador desta extração, não um endereço público. O repositório da landing conserva a síntese e os critérios, sem copiar documentos internos para esse repositório.
 - 43 tasks das sprints V1.0 (23) e Sprint 2 — V2.0 (20), com status, subtasks e registros de merge consultados. As 23 da V1.0 estão entregues; nenhuma das 20 da Sprint 2 tinha merge registrado nesta consulta. `Triagem`, `fazendo` e `revisão` não comprovam entrega.
 - Código do sistema em `1f07bd8046e183139f8189f11c7310c8d9553ce5`, consultado sem alteração.
 

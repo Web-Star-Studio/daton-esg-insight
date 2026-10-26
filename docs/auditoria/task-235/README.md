@@ -1,6 +1,6 @@
 # Task 235 — Auditoria dos textos da landing Daton
 
-Revisão de 23/10/2026, preparada para aprovação de merge e publicação manual no Netlify.
+Revisão de 23/10/2026, preparada para aprovação de merge e publicação manual pelo Lovable.
 
 A landing `daton.com.br` apresentava capacidades da versão anterior e promessas sem implementação no sistema atual, hospedado em `painel.daton.com.br`. Esta revisão compara o conteúdo institucional com o código atual, o MasterProduct v0.1 e as sprints V1.0/V2.0. Corrige somente textos, metadados e destinos informacionais incorretos.
 
@@ -34,7 +34,7 @@ A [matriz MasterProduct e sprints](masterproduct.md) registra referências F/R, 
 
 A habilitação por empresa e as permissões foram explicitadas em parágrafos já existentes. A auditoria comprova a implementação e suas condições de disponibilidade; não presume que todos os módulos estejam liberados para todas as empresas em produção.
 
-O PDF de aprovação da revisão 2 foi entregue na conversa: 27 páginas, fotos antes/depois, justificativas por seção, mapa dos 24 cards e matriz do MasterProduct nas páginas 21 a 23. Ele substitui a edição baseada somente no código.
+A matriz versionada [MasterProduct e sprints](masterproduct.md) e as evidências deste diretório são a referência permanente da auditoria. O PDF de aprovação da revisão 2 foi entregue na conversa: 27 páginas, fotos antes/depois, justificativas por seção, mapa dos 24 cards e matriz do MasterProduct nas páginas 21 a 23. Ele substitui a edição baseada somente no código.
 
 ## Comparativos detalhados
 
@@ -75,7 +75,7 @@ Capturas salvas e examinadas:
 - [Comparativo antes/depois no desktop](evidencias/comparativo-desktop.webp).
 - [Busca da FAQ com explicação do limite financeiro](evidencias/faq-busca-mobile.png).
 
-As capturas completas PNG da proposta final permanecem localmente em `/tmp/daton-task-235/antes` e `/tmp/daton-task-235/depois-masterproduct`; os comparativos acima fazem parte do PR.
+Os comparativos acima são versionados. Os PNGs completos da execução original foram salvos localmente; o comando abaixo reproduz as capturas em `/tmp/daton-task-235-capturas`, sem depender desses arquivos temporários.
 
 Para repetir as capturas com um Playwright disponível no ambiente:
 
@@ -100,4 +100,10 @@ node docs/auditoria/task-235/conferir-estrutura.cjs
 
 ## Próximo passo humano
 
-Revisar os comparativos e o diff, aprovar o merge e publicar no Netlify. O conteúdo proposto está preparado, sem publicação automática por esta task.
+Revisar os comparativos e o diff, aprovar o merge e publicar pelo Lovable. O conteúdo proposto está preparado, sem publicação automática por esta task.
+
+## Conferência antes do merge — 26/10/2026
+
+Corrigidos verbetes com respostas deslocadas, qualificado o controle condicional por filial e retirada a chamada residual de agendamento. Links ao painel preservam cliques com modificadores; o selo 5W2H mantém o valor durante a animação. A publicação será feita pela pessoa responsável no Lovable. O formulário e os CTAs legados documentados continuam com os limites já informados.
+
+Validação complementar: [checks de pré-merge](evidencias/pre-merge.json), [economia circular](evidencias/faq-circular.png), [regimes de competência/caixa](evidencias/faq-regimes.png) e [segurança no celular](evidencias/seguranca-mobile.png). Build, tipos app/Node, 3 testes e lint dos fontes alterados aprovados.

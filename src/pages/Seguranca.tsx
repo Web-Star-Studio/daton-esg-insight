@@ -15,7 +15,7 @@ export default function Seguranca() {
     {
       icon: Shield,
       title: 'Controle de Acesso',
-      description: 'O acesso é validado por organização, papel, módulo e abrangência de filiais.'
+      description: 'O acesso é validado por organização, papel e módulo. A abrangência de filiais é aplicada nos fluxos que possuem esse controle.'
     },
     {
       icon: Eye,

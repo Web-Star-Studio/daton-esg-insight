@@ -175,7 +175,7 @@ function StatCard({ stat, isInView }: { stat: StatItem; isInView: boolean }) {
                     marginBottom: '0.5rem',
                 }}
             >
-                {stat.prefix}{count}{stat.suffix}
+                {stat.prefix}{stat.suffix === 'W2H' ? stat.value : count}{stat.suffix}
             </div>
 
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--heimdall-text)', marginBottom: '0.25rem' }}>

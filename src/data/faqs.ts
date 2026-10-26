@@ -129,7 +129,7 @@ export const FAQ_categories = [
             },
             {
                 q: "O que é Economia Circular?",
-                a: "O Daton AI recebe perguntas em texto e usa seis ferramentas de consulta somente leitura sobre dados autorizados. Ele não altera registros, recebe arquivos, prevê resultados, gera scoring ou cria relatórios finais; revise as respostas antes de decidir."
+                a: "Economia circular busca eliminar desperdícios e poluição, manter produtos e materiais em uso e regenerar sistemas naturais. O Daton registra resíduos e sua destinação, mas não oferece um módulo específico de circularidade."
             },
             {
                 q: "O que é LCA (Life Cycle Assessment)?",
@@ -165,15 +165,15 @@ export const FAQ_categories = [
             },
             {
                 q: "O que é Fluxo de Caixa?",
-                a: "O Daton não possui módulo financeiro, contábil, bancário ou de orçamento. Dados operacionais podem ser exportados dos módulos que oferecem essa opção para análise em um sistema financeiro externo."
+                a: "Fluxo de caixa acompanha entradas e saídas de dinheiro em um período. O Daton não possui módulo financeiro; use as exportações disponíveis como insumos para análise no sistema financeiro da organização."
             },
             {
                 q: "O que é Conciliação Bancária?",
-                a: "O Daton não possui módulo financeiro, contábil, bancário ou de orçamento. Dados operacionais podem ser exportados dos módulos que oferecem essa opção para análise em um sistema financeiro externo."
+                a: "Conciliação bancária compara os registros financeiros da organização com o extrato do banco para identificar diferenças. O Daton não executa essa conciliação; ela deve ser feita no sistema financeiro da organização."
             },
             {
                 q: "O que é Plano de Contas?",
-                a: "O Daton não possui módulo financeiro, contábil, bancário ou de orçamento. Dados operacionais podem ser exportados dos módulos que oferecem essa opção para análise em um sistema financeiro externo."
+                a: "Plano de contas é a estrutura que organiza as contas usadas para classificar os registros contábeis. Sua configuração e manutenção ficam no sistema contábil da organização; o Daton não administra esse cadastro."
             },
             {
                 q: "O que é Centro de Custos?",
@@ -185,7 +185,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Diferença entre Regime de Competência e Regime de Caixa?",
-                a: "O Daton AI recebe perguntas em texto e usa seis ferramentas de consulta somente leitura sobre dados autorizados. Ele não altera registros, recebe arquivos, prevê resultados, gera scoring ou cria relatórios finais; revise as respostas antes de decidir."
+                a: "O regime de competência reconhece receitas e despesas no período em que ocorrem, independentemente do pagamento. O regime de caixa considera o recebimento ou pagamento. Esses controles pertencem ao sistema contábil ou financeiro da organização; o Daton não os executa."
             }
         ]
     },

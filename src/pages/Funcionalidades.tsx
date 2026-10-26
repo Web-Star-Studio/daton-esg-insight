@@ -399,6 +399,7 @@ function HeroStat({ title, subtitle }: { title: string; subtitle: string }) {
 
 const Funcionalidades = () => {
   const openPanel = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     window.location.href = PAINEL_URL;
   };
@@ -632,8 +633,8 @@ const Funcionalidades = () => {
                 Pronto para ver isso em ação?
               </h3>
               <p className="mt-2 text-black/75">
-                Agende uma demonstração personalizada e veja como o Daton adapta
-                os módulos à realidade da sua operação.
+                Solicite uma demonstração por e-mail e conheça
+                os módulos disponíveis para sua operação.
               </p>
             </div>
             <div className="flex flex-col gap-3 w-full sm:w-auto sm:flex-row">

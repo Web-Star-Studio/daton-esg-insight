@@ -68,7 +68,7 @@
     {
       "file": "src/pages/Contato.tsx",
       "jsxElements": 32,
-      "visualAttributes": 32,
+      "visualAttributes": 37,
       "icons": 0,
       "ids": 0,
       "differences": []
@@ -76,7 +76,7 @@
     {
       "file": "src/pages/Documentacao.tsx",
       "jsxElements": 105,
-      "visualAttributes": 97,
+      "visualAttributes": 103,
       "icons": 13,
       "ids": 6,
       "differences": []
