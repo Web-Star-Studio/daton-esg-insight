@@ -25,5 +25,15 @@
   "faqEntries": 395,
   "sharedAnswers": 146,
   "jsxAndVisualAttributes": "unchanged",
-  "diffCheck": "passed with PDF binary attribute"
+  "diffCheck": "passed with PDF binary attribute",
+  "bun": {
+    "version": "1.4.4",
+    "frozenInstall": "passed",
+    "typecheck": "passed",
+    "coverageTests": 3,
+    "build": "passed",
+    "lockfile": "bun.lock",
+    "removedLegacyLockfile": "bun.lockb",
+    "ci": "build matrix verifies clean npm and Bun installations"
+  }
 }

@@ -58,6 +58,8 @@ O PDF versionado registra a revisão comercial anterior a este complemento; as n
 
 Evidências do complemento: [resolução dos itens da revisão](revisao-pre-merge.md), [instalação limpa e verificações locais](evidencias/comercial/ci-local.json), [10 capturas headless do build](evidencias/comercial/pre-merge-visual.json), [desktop](evidencias/comercial/pre-merge-desktop.webp) e [celular](evidencias/comercial/pre-merge-mobile.webp).
 
+O `bun.lock` também foi sincronizado com o manifesto. O binário antigo `bun.lockb` foi retirado para manter um único lockfile do Bun. A instalação congelada, os tipos, os testes com cobertura e o build passaram com Bun 1.4.4; o CI passa a verificar o build em instalações limpas tanto com npm quanto com Bun.
+
 ## Fonte e rastreabilidade
 
 MasterProduct v0.1, de 05/09/2026, anexo da sprint V1.0 — Data-Complete Daton, id 5. SHA-256 do DOCX: `457550f1b1f58bd62f05e491b4cc5526ab075e6d5991c4b571141f06d8c5b219`. Os anexos permanecem no backlog autenticado. Os localizadores P usados nos comparativos correspondem aos parágrafos não vazios da extração da auditoria.

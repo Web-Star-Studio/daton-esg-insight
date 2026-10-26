@@ -27,3 +27,7 @@ Autorização em 26/10/2026: corrigir o CI e concluir o merge. O critério edito
 | Resposta do vídeo precisa indicar disponibilidade | Aplicada nas duas FAQs. Informa que esta página ainda não disponibiliza vídeo e aponta às páginas de soluções e à ajuda. |
 
 Os oito itens foram avaliados individualmente. As correções preservam IDs, perguntas, as 146 respostas comuns idênticas, o catálogo, a hierarquia e o comportamento. O relatório PDF de 22 páginas permanece como retrato da proposta comercial apresentada para aprovação; este complemento registra os refinamentos finais.
+
+## Compatibilidade com Bun
+
+As duas revisões seguintes apontaram o mesmo problema de `bun.lock` desatualizado. O lock textual foi regenerado com Bun 1.4.4 e o antigo `bun.lockb` foi removido, seguindo a migração para um único lock textual. A instalação com `--frozen-lockfile`, o typecheck, os três testes com cobertura e o build foram executados com sucesso. O CI inclui builds separados com npm e Bun, em checkouts limpos, para detectar nova divergência entre os dois fluxos.
