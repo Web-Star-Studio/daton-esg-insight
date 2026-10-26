@@ -10,7 +10,7 @@ import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 import { supabase } from '@/integrations/supabase/client';
 import '@/components/landing/heimdall/heimdall.css';
-import docsHeroImg from '@/assets/docs-hero.png';
+import docsHeroImg from '@/assets/docs-hero.webp';
 
 const Documentacao = () => {
   const navigate = useNavigate();

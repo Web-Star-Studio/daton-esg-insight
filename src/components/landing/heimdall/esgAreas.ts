@@ -1,4 +1,4 @@
-import heroImg01 from '@/assets/hero-floresta.png';
+import heroImg01 from '@/assets/hero-floresta.webp';
 
 export type ESGAreaSlug = "ambiental" | "social" | "governanca";
 
@@ -26,7 +26,7 @@ export const ESG_AREAS: ESGAreaDefinition[] = [
     slug: "social",
     label: "Social",
     href: "/social",
-    image: "/hero-img-02.png",
+    image: "/hero-img-02.webp",
     headline:
       "Desenvolva pessoas e fortaleça o desempenho da sua equipe.",
     subheadline:
@@ -36,7 +36,7 @@ export const ESG_AREAS: ESGAreaDefinition[] = [
     slug: "governanca",
     label: "Governança",
     href: "/governanca",
-    image: "/hero-img-03.png",
+    image: "/hero-img-03.webp",
     headline:
       "Tire a estratégia do papel e transforme decisões em ação.",
     subheadline:

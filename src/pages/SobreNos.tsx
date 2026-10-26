@@ -6,9 +6,9 @@ import {
     FileText, Layers, Award, ArrowRight, Lock, Menu
 } from 'lucide-react';
 import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
-import pilaresImg from '@/assets/pilares-esg.png';
-import soberaniaImg from '@/assets/esg-soberania.png';
-import sobreNosHero from '@/assets/sobre-nos-hero.png';
+import pilaresImg from '@/assets/pilares-esg.webp';
+import soberaniaImg from '@/assets/esg-soberania.webp';
+import sobreNosHero from '@/assets/sobre-nos-hero.webp';
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 import '@/components/landing/heimdall/heimdall.css';
 
