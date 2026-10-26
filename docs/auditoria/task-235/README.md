@@ -24,6 +24,7 @@ Isso não amplia o escopo para hipóteses ou promessas que o próprio Master nã
 
 Detalhamento com antes, depois, motivo e F-ID/localizadores:
 
+- [PDF comercial com fotos de antes/depois e justificativas — 22 páginas](relatorio-comercial-masterproduct.pdf).
 - [Catálogo de funcionalidades](comercial-funcionalidades.md).
 - [Ambiental, Social, Governança e Tecnologia](comercial-ambiental.md).
 - [FAQ e Documentação](comercial-ajuda.md).
@@ -57,7 +58,7 @@ A matriz, os comparativos e as evidências versionados documentam esta decisão 
 
 - [Revisão técnica anterior e validações do PR 104](historico-revisao-tecnica.md).
 - [Matriz anterior de estado atual e roadmap](masterproduct.md).
-- O PR 104 foi mergeado na main em `3de3f70f`. Esta revisão comercial terá **um novo PR**, conforme solicitado, sem merge automático.
+- O PR 104 foi mergeado na main em `3de3f70f`. Esta revisão comercial está no [PR 105](https://github.com/Web-Star-Studio/daton-esg-insight/pull/105), conforme solicitado, sem merge automático.
 
 ## Aprovação e publicação
 
