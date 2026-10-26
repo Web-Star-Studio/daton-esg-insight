@@ -1,4 +1,4 @@
-import heroImg01 from '@/assets/hero-floresta.png';
+import heroImg01 from '@/assets/hero-floresta.webp';
 
 export type ESGAreaSlug = "ambiental" | "social" | "governanca";
 

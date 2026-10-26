@@ -18,11 +18,11 @@ import {
 import { HeimdallNavbar } from "@/components/landing/heimdall/HeimdallNavbar";
 import { PublicFooter } from "@/components/landing/heimdall/PublicFooter";
 import "@/components/landing/heimdall/heimdall.css";
-import esgSocialCardImg from "@/assets/esg-social-card.png";
-import esgQualityCardImg from "@/assets/esg-quality-card.png";
-import esgAmbientalHeroImg from "@/assets/esg-ambiental-hero.png";
-import esgSuppliersCardImg from "@/assets/esg-suppliers-card.png";
-import esgAiCardImg from "@/assets/esg-ai-card.png";
+import esgSocialCardImg from "@/assets/esg-social-card.webp";
+import esgQualityCardImg from "@/assets/esg-quality-card.webp";
+import esgAmbientalHeroImg from "@/assets/esg-ambiental-hero.webp";
+import esgSuppliersCardImg from "@/assets/esg-suppliers-card.webp";
+import esgAiCardImg from "@/assets/esg-ai-card.webp";
 
 // --- DATA ---
 
