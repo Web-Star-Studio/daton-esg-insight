@@ -52,6 +52,13 @@ export function HeroSection() {
     }, [quickMenuOpen]);
 
     useEffect(() => {
+        heroSlides.forEach((slide) => {
+            const img = new Image();
+            img.src = slide.image;
+        });
+    }, [heroSlides]);
+
+    useEffect(() => {
         const intervalId = window.setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
         }, slideDurationMs);
