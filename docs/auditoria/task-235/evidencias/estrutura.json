@@ -1,0 +1,149 @@
+{
+  "passed": true,
+  "files": [
+    {
+      "file": "src/components/landing/heimdall/NewsTicker.tsx",
+      "jsxElements": 20,
+      "visualAttributes": 20,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/components/landing/heimdall/PublicFooter.tsx",
+      "jsxElements": 21,
+      "visualAttributes": 20,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/components/landing/heimdall/StatsGrid.tsx",
+      "jsxElements": 16,
+      "visualAttributes": 17,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/components/landing/heimdall/TechStack3D.tsx",
+      "jsxElements": 36,
+      "visualAttributes": 41,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/components/landing/heimdall/ValueProposition.tsx",
+      "jsxElements": 26,
+      "visualAttributes": 29,
+      "icons": 6,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/components/landing/heimdall/esgAreas.ts",
+      "jsxElements": 0,
+      "visualAttributes": 0,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/data/faqData.ts",
+      "jsxElements": 0,
+      "visualAttributes": 0,
+      "icons": 26,
+      "ids": 270,
+      "differences": []
+    },
+    {
+      "file": "src/data/faqs.ts",
+      "jsxElements": 0,
+      "visualAttributes": 0,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/pages/Contato.tsx",
+      "jsxElements": 32,
+      "visualAttributes": 37,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/pages/Documentacao.tsx",
+      "jsxElements": 105,
+      "visualAttributes": 103,
+      "icons": 13,
+      "ids": 6,
+      "differences": []
+    },
+    {
+      "file": "src/pages/ESGAmbiental.tsx",
+      "jsxElements": 77,
+      "visualAttributes": 75,
+      "icons": 10,
+      "ids": 10,
+      "differences": []
+    },
+    {
+      "file": "src/pages/ESGAreaTemplate.tsx",
+      "jsxElements": 39,
+      "visualAttributes": 33,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/pages/FAQ.tsx",
+      "jsxElements": 59,
+      "visualAttributes": 40,
+      "icons": 1,
+      "ids": 1,
+      "differences": []
+    },
+    {
+      "file": "src/pages/Funcionalidades.tsx",
+      "jsxElements": 104,
+      "visualAttributes": 93,
+      "icons": 31,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/pages/Privacidade.tsx",
+      "jsxElements": 62,
+      "visualAttributes": 37,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/pages/Seguranca.tsx",
+      "jsxElements": 43,
+      "visualAttributes": 35,
+      "icons": 6,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/pages/SobreNos.tsx",
+      "jsxElements": 83,
+      "visualAttributes": 76,
+      "icons": 5,
+      "ids": 0,
+      "differences": []
+    },
+    {
+      "file": "src/pages/Termos.tsx",
+      "jsxElements": 59,
+      "visualAttributes": 42,
+      "icons": 0,
+      "ids": 0,
+      "differences": []
+    }
+  ]
+}

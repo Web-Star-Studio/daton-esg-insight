@@ -26,25 +26,25 @@ const valueItems: ValueItem[] = [
     {
         icon: Zap,
         title: 'Desbloqueie capacidade oculta',
-        description: 'Identifique oportunidades de otimização em seus processos ESG com análise de dados em tempo real.',
+        description: 'Acompanhe indicadores e pendências para identificar oportunidades de melhoria nos processos.',
         image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
     },
     {
         icon: ShieldCheck,
         title: 'Mitigue riscos de compliance',
-        description: 'Sistema de alertas proativos e gestão automatizada de licenças para evitar não-conformidades.',
+        description: 'Acompanhe licenças, renovações e vencimentos por filial, com registros e evidências.',
         image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
     },
     {
         icon: BarChart3,
-        title: 'Relatórios automatizados',
-        description: 'Geração instantânea de relatórios GRI, SASB e TCFD com dados validados e auditáveis.',
+        title: 'Referenciais e evidências ESG',
+        description: 'Organize referenciais, requisitos e evidências em relatos de trabalho em rascunho, quando habilitados.',
         image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
     },
     {
         icon: Leaf,
         title: 'Gestão de emissões GEE',
-        description: 'Cálculo automático de emissões conforme GHG Protocol com fatores de emissão atualizados.',
+        description: 'Estruture inventários por escopo com fontes, fatores versionados e cálculo rastreável, quando habilitados.',
         image: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&q=80',
     },
     {
@@ -56,7 +56,7 @@ const valueItems: ValueItem[] = [
     {
         icon: TrendingUp,
         title: 'Insights com IA',
-        description: 'Algoritmos de machine learning para previsões e recomendações acionáveis.',
+        description: 'Consulte registros, indicadores e pendências autorizados com o assistente, em modo somente leitura.',
         image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&q=80',
     },
 ];

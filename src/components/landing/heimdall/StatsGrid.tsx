@@ -15,12 +15,12 @@ interface StatItem {
 }
 
 const statsData: StatItem[] = [
-    { value: '70', suffix: '%', label: 'Redução de tempo', description: 'Em processos manuais de coleta de dados' },
-    { value: '40', suffix: '+', label: 'Indicadores ESG', description: 'Monitorados automaticamente' },
-    { value: '99', suffix: '.9%', label: 'Precisão', description: 'Nos cálculos de emissões GEE' },
-    { value: '15', label: 'Minutos', description: 'Para configuração inicial' },
-    { value: '24', suffix: '/7', label: 'Monitoramento', description: 'Alertas em tempo real' },
-    { value: '3', suffix: 'x', label: 'Mais rápido', description: 'Geração de relatórios' },
+    { value: '3', suffix: '', label: 'Escopos de emissão', description: 'Inventários GEE nos módulos habilitados' },
+    { value: '17', suffix: '', label: 'ODS como referência', description: 'Leitura de iniciativas ESG por objetivo' },
+    { value: '3', suffix: '', label: 'Tipos de feedback', description: 'Problema, ideia ou dúvida no painel' },
+    { value: '1', label: 'Painel integrado', description: 'Acesso aos módulos da organização' },
+    { value: '5', suffix: 'W2H', label: 'Planos de ação', description: 'Ações com responsáveis e prazos' },
+    { value: '1', suffix: '', label: 'Conta individual', description: 'Permissões definidas para cada pessoa' },
 ];
 
 export function StatsGrid() {
@@ -57,7 +57,7 @@ export function StatsGrid() {
                         className="heimdall-label"
                         style={{ color: 'var(--heimdall-accent)', marginBottom: '1rem', display: 'block' }}
                     >
-                        Resultados comprovados
+                        Capacidades do produto
                     </motion.span>
                     <motion.h2
                         initial={{ opacity: 0, y: 20 }}
@@ -66,7 +66,7 @@ export function StatsGrid() {
                         className="heimdall-heading-lg"
                         style={{ color: 'var(--heimdall-text)', maxWidth: '600px' }}
                     >
-                        Dados que demonstram nosso impacto
+                        Recursos para organizar a gestão
                     </motion.h2>
                 </div>
 
@@ -175,7 +175,7 @@ function StatCard({ stat, isInView }: { stat: StatItem; isInView: boolean }) {
                     marginBottom: '0.5rem',
                 }}
             >
-                {stat.prefix}{count}{stat.suffix}
+                {stat.prefix}{stat.suffix === 'W2H' ? stat.value : count}{stat.suffix}
             </div>
 
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--heimdall-text)', marginBottom: '0.25rem' }}>

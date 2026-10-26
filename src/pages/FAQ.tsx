@@ -20,6 +20,7 @@ import { FAQSearch } from "@/components/faq/FAQSearch";
 import { FAQSidebar } from "@/components/faq/FAQSidebar";
 import { FAQCategory } from "@/components/faq/FAQCategory";
 import { useFAQSearch } from "@/hooks/useFAQSearch";
+import { buildPainelRedirect } from "@/config/externalApp";
 
 export default function FAQ() {
   const location = useLocation();
@@ -140,40 +141,40 @@ export default function FAQ() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-                <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4">
+                <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4" onClick={() => { window.location.href = buildPainelRedirect("/app/ajuda"); }}>
                   <MessageCircle className="h-5 w-5" />
                   <div className="text-center">
-                    <div className="font-medium">Chat ao vivo</div>
-                    <div className="text-xs text-muted-foreground">Seg-Sex, 9h-18h</div>
+                    <div className="font-medium">Ajuda no painel</div>
+                    <div className="text-xs text-muted-foreground">Acesso ao painel</div>
                   </div>
                 </Button>
 
                 <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4" asChild>
-                  <a href="mailto:suporte@plataforma.com">
+                  <a href="mailto:contato@daton.com.br">
                     <Mail className="h-5 w-5" />
                     <div className="text-center">
                       <div className="font-medium">E-mail</div>
-                      <div className="text-xs text-muted-foreground">Resposta em 24h</div>
+                      <div className="text-xs text-muted-foreground">Contato Daton</div>
                     </div>
                   </a>
                 </Button>
 
                 <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4" asChild>
-                  <a href="tel:0800-xxx-xxxx">
+                  <a href="/contato">
                     <Phone className="h-5 w-5" />
                     <div className="text-center">
-                      <div className="font-medium">Telefone</div>
-                      <div className="text-xs text-muted-foreground">0800-XXX-XXXX</div>
+                      <div className="font-medium">Contato</div>
+                      <div className="text-xs text-muted-foreground">Página de contato</div>
                     </div>
                   </a>
                 </Button>
 
                 <Button variant="outline" className="h-auto min-h-[44px] flex-col gap-2 py-4" asChild>
-                  <a href="https://ajuda.plataforma.com" target="_blank" rel="noopener noreferrer">
+                  <a href="/documentacao" target="_blank" rel="noopener noreferrer">
                     <FileText className="h-5 w-5" />
                     <div className="text-center">
                       <div className="font-medium">Documentação</div>
-                      <div className="text-xs text-muted-foreground">Guias completos</div>
+                      <div className="text-xs text-muted-foreground">Orientações</div>
                     </div>
                   </a>
                 </Button>

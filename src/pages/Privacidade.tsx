@@ -26,7 +26,7 @@ export default function Privacidade() {
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
           <p className="text-muted-foreground">
-            Última atualização: {new Date().toLocaleDateString('pt-BR')}
+            Última atualização: 23/10/2026
           </p>
 
           <section className="space-y-4">
@@ -57,8 +57,8 @@ export default function Privacidade() {
             <h2 className="text-xl font-semibold text-foreground">3. Como Usamos seus Dados</h2>
             <p className="text-muted-foreground">Utilizamos seus dados para:</p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>Fornecer e melhorar nossos serviços de gestão ESG</li>
-              <li>Processar relatórios de sustentabilidade e compliance</li>
+              <li>Fornecer e melhorar nossos serviços de qualidade, ESG e compliance</li>
+              <li>Organizar registros, indicadores e evidências dos módulos disponíveis</li>
               <li>Enviar comunicações relevantes sobre a plataforma</li>
               <li>Cumprir obrigações legais e regulatórias</li>
               <li>Garantir a segurança da plataforma</li>
@@ -96,7 +96,7 @@ export default function Privacidade() {
             <h2 className="text-xl font-semibold text-foreground">6. Segurança dos Dados</h2>
             <p className="text-muted-foreground">
               Implementamos medidas técnicas e organizacionais apropriadas para proteger seus dados, 
-              incluindo criptografia, controle de acesso e monitoramento contínuo de segurança.
+              incluindo proteção de credenciais, controle de acesso e registro de eventos de segurança.
             </p>
           </section>
 

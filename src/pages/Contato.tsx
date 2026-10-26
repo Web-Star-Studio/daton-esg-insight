@@ -102,7 +102,7 @@ export default function Contato() {
                 fontWeight: 650,
               }}
             >
-              Vamos construir sua operação ESG com clareza e execução.
+              Vamos conectar qualidade, ESG e compliance na sua operação.
             </motion.h1>
 
             <p
@@ -115,9 +115,8 @@ export default function Contato() {
                 color: "rgba(255,255,255,0.9)",
               }}
             >
-              Agende uma demonstração personalizada e veja como transformar
-              Ambiental, Social e Governança em decisões práticas no dia a dia da
-              sua empresa.
+              Conheça os módulos do Daton e converse sobre as necessidades da
+              sua empresa pelo e-mail contato@daton.com.br.
             </p>
           </div>
 
@@ -127,9 +126,9 @@ export default function Contato() {
             transition={{ duration: 0.4, delay: 0.1 }}
             className="w-full rounded-2xl border border-white/40 bg-black/35 p-5 text-white backdrop-blur-md md:max-w-[39%] md:self-center md:p-6"
           >
-            <h2 className="text-xl font-semibold">Solicite sua demonstração</h2>
+            <h2 className="text-xl font-semibold">Fale com a equipe Daton</h2>
             <p className="mt-1 text-sm text-white/85">
-              Preencha os dados e retornamos em até 24h úteis.
+              Este formulário ainda não envia solicitações. Para solicitar uma demonstração, escreva para contato@daton.com.br.
             </p>
 
             <form
@@ -210,7 +209,7 @@ export default function Contato() {
                 type="submit"
                 className="w-full rounded-xl bg-[#c4fca1] text-black hover:bg-[#b3ef8d] sm:col-span-2"
               >
-                Agendar demonstração
+                Formulário demonstrativo
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </form>

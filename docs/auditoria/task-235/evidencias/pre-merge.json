@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-26",
+  "passed": true,
+  "routes": [
+    {
+      "route": "/funcionalidades",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/funcionalidades",
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/faq",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/faq",
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/seguranca",
+      "viewport": "desktop",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/seguranca",
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/funcionalidades",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/funcionalidades",
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/faq",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/faq",
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/seguranca",
+      "viewport": "mobile",
+      "status": 200,
+      "url": "http://127.0.0.1:5186/seguranca",
+      "overflow": false,
+      "errors": []
+    }
+  ],
+  "interactions": {
+    "passed": true,
+    "checks": [
+      "Cinco verbetes corrigidos e legíveis em 375px",
+      "Ajuda deriva URL do painel",
+      "Ctrl-clique não força navegação na aba atual",
+      "Clique simples mantém navegação externa"
+    ]
+  }
+}

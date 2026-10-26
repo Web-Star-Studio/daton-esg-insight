@@ -29,15 +29,15 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
     eyebrow: "Ambiental",
     sectionTitle: "Operação Ambiental com controle contínuo",
     sectionDescription:
-      "Monitore indicadores críticos, reduza variabilidade dos dados e mantenha conformidade regulatória sem depender de controles manuais.",
+      "Registre dados ambientais, evidências e prazos com rastreabilidade. Os recursos disponíveis variam conforme os módulos habilitados e as permissões da empresa.",
     modules: [
       {
         title: "Emissões GEE",
         description: "Gestão de escopos 1, 2 e 3 com rastreabilidade de cálculo.",
         items: [
-          "Inventário automatizado por unidade",
-          "Fatores de emissão atualizados",
-          "Simulação de cenários de redução",
+          "Inventário por filial e fonte de emissão",
+          "Fatores versionados com fonte declarada",
+          "Totais por escopo e exportação em CSV",
         ],
       },
       {
@@ -46,8 +46,8 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
           "Rastreamento ponta a ponta da geração até a destinação final.",
         items: [
           "Controle por tipo e classe",
-          "Indicadores de circularidade",
-          "Análise de eficiência operacional",
+          "Documentos MTR e CDF",
+          "Histórico de movimentações e destinação",
         ],
       },
       {
@@ -55,9 +55,9 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
         description:
           "Visibilidade de prazos, renovações e riscos de não conformidade.",
         items: [
-          "Alertas proativos de vencimento",
-          "Histórico documental completo",
-          "Dashboard de status regulatório",
+          "Cadastro de licenças e condicionantes",
+          "Prazos e situação de atendimento",
+          "Obrigações recorrentes e evidências",
         ],
       },
     ],
@@ -66,36 +66,36 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
     eyebrow: "Social",
     sectionTitle: "Gestão Social orientada a pessoas e desempenho",
     sectionDescription:
-      "Consolide indicadores de pessoas, segurança e desenvolvimento em uma visão única para priorizar ações com maior impacto.",
+      "Acompanhe pessoas, competências, capacitação e comunicação nos módulos habilitados e conforme as permissões. Planos de desenvolvimento individuais estão planejados e ainda indisponíveis.",
     modules: [
       {
-        title: "Desempenho e Desenvolvimento",
+        title: "Pessoas e Competências",
         description:
-          "Ciclos estruturados de avaliação e evolução de competências.",
+          "Cadastros de colaboradores, cargos e competências requeridas.",
         items: [
-          "Avaliação 360 e feedback contínuo",
-          "Planos de desenvolvimento individual",
-          "Matriz de competências por área",
+          "Competências exigidas por cargo",
+          "Identificação de lacunas de competência",
+          "Histórico de alterações do colaborador",
         ],
       },
       {
         title: "Treinamentos",
         description:
-          "Trilhas de capacitação com monitoramento de eficácia e compliance.",
+          "Planejamento e registro de capacitações com avaliação de eficácia.",
         items: [
-          "Controle de certificados e vencimentos",
-          "Indicadores de conclusão por equipe",
-          "Avaliação de impacto dos treinamentos",
+          "Turmas, participantes e conclusões",
+          "Certificados com dados da conclusão",
+          "Avaliação versionada de eficácia",
         ],
       },
       {
-        title: "Segurança e Engajamento",
+        title: "Comunicação e Engajamento",
         description:
-          "Medição contínua de saúde ocupacional e clima organizacional.",
+          "Campanhas internas para informar, consultar e registrar ciência.",
         items: [
-          "Indicadores de segurança do trabalho",
-          "Monitoramento de absenteísmo",
-          "Acompanhamento de iniciativas sociais",
+          "Público definido por regras",
+          "Visualização e ciência registradas",
+          "Consultas identificadas ou anônimas",
         ],
       },
     ],
@@ -104,36 +104,36 @@ const AREA_CONTENT: Record<ESGAreaSlug, ESGAreaContent> = {
     eyebrow: "Governança",
     sectionTitle: "Governança com visibilidade executiva e execução disciplinada",
     sectionDescription:
-      "Conecte estratégia, risco e compliance para acelerar decisões com transparência e rastreabilidade corporativa.",
+      "Conecte planejamento, riscos, indicadores e auditorias nos módulos habilitados e conforme as permissões. Agenda, atas e decisões integradas estão planejadas e ainda indisponíveis.",
     modules: [
       {
         title: "Riscos e Controles",
         description:
           "Gestão estruturada de riscos operacionais e estratégicos.",
         items: [
-          "Matriz de riscos corporativos",
+          "Cadastro e avaliação de riscos e oportunidades",
           "Planos de tratamento com responsáveis",
-          "Evolução de criticidade por período",
+          "Vínculos com projetos e planos de ação",
         ],
       },
       {
-        title: "Governança Corporativa",
+        title: "Auditorias e Conformidade",
         description:
-          "Centralização de políticas, atas e deliberações em um fluxo único.",
+          "Registros de auditoria, constatações e requisitos de conformidade.",
         items: [
-          "Gestão de conselhos e comitês",
-          "Registro auditável de decisões",
-          "Controle de políticas corporativas",
+          "Programas e registros de auditoria",
+          "Constatações ligadas a não conformidades",
+          "Licenças, requisitos e obrigações",
         ],
       },
       {
-        title: "Estratégia e Performance",
+        title: "Planejamento e Indicadores",
         description:
-          "Acompanhamento de objetivos estratégicos com dados operacionais.",
+          "Acompanhamento da estratégia com SWOT, processos e indicadores.",
         items: [
-          "Mapas estratégicos e OKRs",
-          "Indicadores executivos em tempo real",
-          "Análise de desvios e prioridade de ação",
+          "Análise SWOT e objetivos estratégicos",
+          "Indicadores, metas e lançamentos",
+          "Processos e análise crítica",
         ],
       },
     ],
