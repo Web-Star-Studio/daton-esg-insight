@@ -1,7 +1,9 @@
 # Copy comercial — Ambiental, Social, Governança e Tecnologia
 
-Revisão: 2026-10-26  
-Base: `3de3f70f`  
+Revisão: 2026-10-26
+
+Base: `3de3f70f`
+
 Escopo: `esgAreas.ts`, `ESGAreaTemplate.tsx`, `ESGAmbiental.tsx`, `ValueProposition.tsx` e `TechStack3D.tsx`.
 
 ## Critério editorial

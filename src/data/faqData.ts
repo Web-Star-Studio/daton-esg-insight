@@ -57,7 +57,7 @@ export const faqCategories: FAQCategory[] = [
       {
         id: "uc-8",
         question: "Como monitorar conformidade em tempo real?",
-        answer: "O Daton consolida prazos, pendências, indicadores, evidências e desvios em painéis e relatórios governados. Alertas e análises assistidas destacam situações que merecem atenção, com rastreabilidade até o registro de origem.",
+        answer: "O Daton consolida prazos, pendências, indicadores, evidências e desvios em painéis e relatórios governados. A atualização acompanha os registros e a frequência definida para cada integração. Alertas e análises assistidas destacam situações que merecem atenção, com rastreabilidade até o registro de origem.",
         tags: ["conformidade", "monitoramento", "alertas", "tempo real"]
       },
       {
@@ -301,7 +301,7 @@ export const faqCategories: FAQCategory[] = [
       {
         id: "vid-1",
         question: "Há um vídeo de apresentação da plataforma?",
-        answer: "Consulte a Central de Ajuda e os canais oficiais para verificar os vídeos publicados. A apresentação do produto cobre como o Daton conecta dados, evidências, responsabilidades e decisões em ESG, qualidade e conformidade.",
+        answer: "Esta página ainda não disponibiliza um vídeo de apresentação. Conheça a proposta do Daton nas páginas de soluções e na Central de Ajuda.",
         tags: ["vídeo", "tour", "introdução", "overview"]
       },
       {
@@ -702,7 +702,7 @@ export const faqCategories: FAQCategory[] = [
       {
         id: "metas-smart",
         question: "Como criar metas SMART?",
-        answer: "Estruture metas específicas, mensuráveis, atribuídas, relevantes e temporais, com indicador, linha de base, alvo, responsável e prazo. As validações ajudam a manter os critérios e a rastreabilidade do acompanhamento.",
+        answer: "Estruture metas específicas, mensuráveis, atribuídas, relevantes e temporais, com indicador, linha de base, alvo, responsável e prazo. O registro desses critérios preserva a rastreabilidade do acompanhamento.",
         tags: ["smart", "metas", "metodologia", "planejamento", "objetivos"],
         relatedQuestions: ["criar-metas", "tipos-metas"]
       }
@@ -1110,7 +1110,7 @@ export const faqCategories: FAQCategory[] = [
       {
         id: "backup",
         question: "Qual política de backup?",
-        answer: "A política de continuidade define backups, restauração testada, responsabilidades e objetivos de recuperação aprovados para o ambiente. Periodicidade, retenção e compromissos de serviço seguem a política e o contrato aplicáveis.",
+        answer: "A política de continuidade define backups, restauração, responsabilidades e critérios de recuperação. Periodicidade, retenção, testes e objetivos de recuperação estão sujeitos a definição e validação na política e no contrato aplicáveis ao ambiente.",
         tags: ["backup", "recuperação", "retenção", "dados"],
         relatedQuestions: ["protecao-dados", "exportar-dados"]
       },

@@ -46,7 +46,17 @@ Tipos app/Node, build, os 3 testes existentes e lint dos fontes alterados aprova
 - Comparativos [desktop](evidencias/comercial/comparativo-desktop.webp) e [celular](evidencias/comercial/comparativo-mobile.webp).
 - Exemplos da ajuda: [extração assistida](evidencias/comercial/faq-extracao.png) e [dados financeiros como insumos ESG](evidencias/comercial/faq-financeiro-esg.png).
 
-A barra fixa dos heros Social/Governança já encobre parte do subtítulo em 375 px na base; seu CSS foi preservado. O formulário de contato sem envio, os controles legados e a sessão antiga da Documentação mantêm os limites registrados. O CI herda o script de cobertura ausente; não foi alterado por esta revisão textual.
+A barra fixa dos heros Social/Governança já encobre parte do subtítulo em 375 px na base; seu CSS foi preservado. O formulário de contato sem envio, os controles legados e a sessão antiga da Documentação mantêm os limites registrados. O CI herdava o script de cobertura ausente; a correção complementar foi autorizada antes do merge.
+
+### Complemento autorizado para o merge — 26/10/2026
+
+O CI passa a instalar o provider V8 na mesma versão do Vitest, executar `test:coverage`, publicar relatórios JSON/LCOV/HTML como artefato do GitHub e checar explicitamente os projetos TypeScript da aplicação e das configurações. O lint fica bloqueante para o código ativo da landing e suas configurações; `supabase/` continua como arquivo legado, intacto. O workflow usa Node 22 e libera o build somente depois dessas verificações. A descoberta dos testes fica restrita a `src/`, sem incluir cópias temporárias da auditoria.
+
+Na revisão automática, foram refinados quatro esclarecimentos nas duas bases de FAQ: atualização conforme registros e frequência das integrações, critérios SMART sem validação automática prometida, ausência de vídeo nesta página e objetivos de recuperação sujeitos a definição e validação contratual. Os Termos preservam a descrição comercial, explicitando escopo contratado e permissões de acesso. O inventário continua apresentado conforme a visão do MasterProduct, sem voltar à limitação de implantação atual. Os links do simulador já haviam sido corrigidos no PR 104; este PR preserva os destinos da base `3de3f70f`.
+
+O PDF versionado registra a revisão comercial anterior a este complemento; as novas precisões e a correção do CI ficam documentadas aqui. Design, hierarquia e comportamento continuam preservados.
+
+Evidências do complemento: [resolução dos itens da revisão](revisao-pre-merge.md), [instalação limpa e verificações locais](evidencias/comercial/ci-local.json), [10 capturas headless do build](evidencias/comercial/pre-merge-visual.json), [desktop](evidencias/comercial/pre-merge-desktop.webp) e [celular](evidencias/comercial/pre-merge-mobile.webp).
 
 ## Fonte e rastreabilidade
 

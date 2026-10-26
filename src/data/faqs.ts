@@ -32,7 +32,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Como monitorar conformidade em tempo real?",
-                a: "O Daton consolida prazos, pendências, indicadores, evidências e desvios em painéis e relatórios governados. Alertas e análises assistidas destacam situações que merecem atenção, com rastreabilidade até o registro de origem."
+                a: "O Daton consolida prazos, pendências, indicadores, evidências e desvios em painéis e relatórios governados. A atualização acompanha os registros e a frequência definida para cada integração. Alertas e análises assistidas destacam situações que merecem atenção, com rastreabilidade até o registro de origem."
             },
             {
                 q: "Como preparar relatório para investidores ESG?",
@@ -194,7 +194,7 @@ export const FAQ_categories = [
         items: [
             {
                 q: "Há um vídeo de apresentação da plataforma?",
-                a: "Consulte a Central de Ajuda e os canais oficiais para verificar os vídeos publicados. A apresentação do produto cobre como o Daton conecta dados, evidências, responsabilidades e decisões em ESG, qualidade e conformidade."
+                a: "Esta página ainda não disponibiliza um vídeo de apresentação. Conheça a proposta do Daton nas páginas de soluções e na Central de Ajuda."
             },
             {
                 q: "Há tutorial para o primeiro inventário GEE?",
@@ -428,7 +428,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Como criar metas SMART?",
-                a: "Estruture metas específicas, mensuráveis, atribuídas, relevantes e temporais, com indicador, linha de base, alvo, responsável e prazo. As validações ajudam a manter os critérios e a rastreabilidade do acompanhamento."
+                a: "Estruture metas específicas, mensuráveis, atribuídas, relevantes e temporais, com indicador, linha de base, alvo, responsável e prazo. O registro desses critérios preserva a rastreabilidade do acompanhamento."
             }
         ]
     },
@@ -542,7 +542,7 @@ export const FAQ_categories = [
             },
             {
                 q: "Qual política de backup?",
-                a: "A política de continuidade define backups, restauração testada, responsabilidades e objetivos de recuperação aprovados para o ambiente. Periodicidade, retenção e compromissos de serviço seguem a política e o contrato aplicáveis."
+                a: "A política de continuidade define backups, restauração, responsabilidades e critérios de recuperação. Periodicidade, retenção, testes e objetivos de recuperação estão sujeitos a definição e validação na política e no contrato aplicáveis ao ambiente."
             },
             {
                 q: "Como funciona controle de acesso?",
