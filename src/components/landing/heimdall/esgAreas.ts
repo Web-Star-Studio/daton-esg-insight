@@ -18,9 +18,9 @@ export const ESG_AREAS: ESGAreaDefinition[] = [
     href: "/ambiental",
     image: heroImg01,
     headline:
-      "Gestão Ambiental para registrar emissões, resíduos, recursos e requisitos com rastreabilidade.",
+      "Transforme dados ambientais em controle: monitore recursos, emissões, resíduos, prazos e metas com fontes rastreáveis.",
     subheadline:
-      "Organize inventários, evidências e prazos nos módulos habilitados para sua empresa e seu perfil de acesso.",
+      "Consolide inventários, cálculos, alertas, projetos de compensação e relatos ESG em uma gestão conectada.",
   },
   {
     slug: "social",
@@ -28,9 +28,9 @@ export const ESG_AREAS: ESGAreaDefinition[] = [
     href: "/social",
     image: "/hero-img-02.png",
     headline:
-      "Gestão Social para acompanhar pessoas, competências, treinamentos e comunicação na organização.",
+      "Desenvolva equipes com competências, PDI, aprendizagem e comunicação conectados.",
     subheadline:
-      "Registre lacunas, turmas, certificados, eficácia e campanhas com histórico e acesso autorizado.",
+      "Planeje capacitações, acompanhe eficácia e preserve o histórico do desenvolvimento.",
   },
   {
     slug: "governanca",
@@ -38,9 +38,9 @@ export const ESG_AREAS: ESGAreaDefinition[] = [
     href: "/governanca",
     image: "/hero-img-03.png",
     headline:
-      "Gestão de Governança com controle e rastreabilidade para apoiar decisões corporativas.",
+      "Conecte estratégia, riscos, indicadores, reuniões e decisões em uma gestão rastreável.",
     subheadline:
-      "Organize riscos, auditorias, indicadores, processos e planos de ação conforme os acessos da sua empresa.",
+      "Reúna pautas, atas e ações em análises críticas com fontes, responsáveis e prazos.",
   },
 ];
 

@@ -25,26 +25,26 @@ interface ValueItem {
 const valueItems: ValueItem[] = [
     {
         icon: Zap,
-        title: 'Desbloqueie capacidade oculta',
-        description: 'Acompanhe indicadores e pendências para identificar oportunidades de melhoria nos processos.',
+        title: 'Transforme dados em decisões',
+        description: 'Conecte indicadores, riscos e pendências às fontes, responsáveis e ações que movem a gestão.',
         image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
     },
     {
         icon: ShieldCheck,
-        title: 'Mitigue riscos de compliance',
-        description: 'Acompanhe licenças, renovações e vencimentos por filial, com registros e evidências.',
+        title: 'Antecipe riscos e prazos',
+        description: 'Acompanhe licenças, obrigações, renovações e alertas com responsáveis e evidências.',
         image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
     },
     {
         icon: BarChart3,
-        title: 'Referenciais e evidências ESG',
-        description: 'Organize referenciais, requisitos e evidências em relatos de trabalho em rascunho, quando habilitados.',
+        title: 'Relatos ESG com fontes',
+        description: 'Conecte referenciais escolhidos, indicadores e evidências a relatos com revisão e publicação controladas.',
         image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
     },
     {
         icon: Leaf,
         title: 'Gestão de emissões GEE',
-        description: 'Estruture inventários por escopo com fontes, fatores versionados e cálculo rastreável, quando habilitados.',
+        description: 'Calcule inventários por escopo, acompanhe metas e mantenha emissões brutas separadas das compensações.',
         image: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&q=80',
     },
     {
@@ -55,8 +55,8 @@ const valueItems: ValueItem[] = [
     },
     {
         icon: TrendingUp,
-        title: 'Insights com IA',
-        description: 'Consulte registros, indicadores e pendências autorizados com o assistente, em modo somente leitura.',
+        title: 'Trabalho assistido com IA',
+        description: 'Consulte fontes, extraia e mapeie informações e receba recomendações sujeitas à confirmação humana.',
         image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&q=80',
     },
 ];
@@ -102,9 +102,9 @@ export function ValueProposition() {
                         lineHeight: 1.2,
                     }}
                 >
-                    Uma gestão ESG otimizada não é mais um diferencial:{' '}
+                    Gestão integrada transforma dados dispersos em decisões:{' '}
                     <span style={{ color: 'var(--heimdall-text-secondary)' }}>
-                        É o pré-requisito para o progresso sustentável.
+                        com fonte, responsável, prazo, evidência e resultado.
                     </span>
                 </motion.h2>
 

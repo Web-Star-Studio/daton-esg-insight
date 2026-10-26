@@ -45,13 +45,13 @@ export default function Termos() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">2. Descrição do Serviço</h2>
             <p className="text-muted-foreground">
-              A Daton fornece uma plataforma de gestão da qualidade, ESG (Environmental, Social and Governance) e compliance que, conforme os módulos habilitados e as permissões, permite às empresas:
+              A Daton é uma plataforma de gestão integrada da qualidade, ESG (Environmental, Social and Governance) e compliance destinada a apoiar as empresas em:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Monitorar e gerenciar indicadores de sustentabilidade</li>
               <li>Organizar registros, documentos e evidências de compliance</li>
               <li>Acompanhar licenciamentos e obrigações regulatórias</li>
-              <li>Estruturar inventários de emissões de GEE nos módulos habilitados</li>
+              <li>Estruturar inventários de emissões de GEE com fontes e fatores rastreáveis</li>
               <li>Integrar dados ESG em processos de tomada de decisão</li>
             </ul>
           </section>

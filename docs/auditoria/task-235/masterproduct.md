@@ -1,3 +1,5 @@
+> **Histórico do PR 104.** Este documento registra a análise anterior de implementação e roadmap. O critério comercial vigente foi alterado pela pessoa responsável em 26/10/2026; consulte o [posicionamento pelo MasterProduct](README.md).
+
 # Revisão 2 — MasterProduct e sprints
 
 Reauditoria em 23/10/2026, incorporando a direção completa de produto à comparação com o código. Esta revisão substitui as conclusões da primeira passagem que tratavam a ausência no código atual como ausência no produto futuro.

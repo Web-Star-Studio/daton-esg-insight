@@ -1,3 +1,5 @@
+> **Histórico do PR 104.** Este documento registra a análise anterior de implementação e roadmap. O critério comercial vigente foi alterado pela pessoa responsável em 26/10/2026; consulte o [posicionamento pelo MasterProduct](README.md).
+
 # Auditoria da Central de Ajuda — task 235
 
 ## Escopo e conservação

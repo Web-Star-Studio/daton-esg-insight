@@ -1,109 +1,64 @@
-# Task 235 — Auditoria dos textos da landing Daton
+# Task 235 — Posicionamento comercial pelo MasterProduct
 
-Revisão de 23/10/2026, preparada para aprovação de merge e publicação manual pelo Lovable.
+Revisão de 26/10/2026. Base da comparação: `3de3f70fe65be07d48088ce6d40c66cef241c097`, a main após o PR 104. Branch: `codex/task-235-promessa-masterproduct`.
 
-A landing `daton.com.br` apresentava capacidades da versão anterior e promessas sem implementação no sistema atual, hospedado em `painel.daton.com.br`. Esta revisão compara o conteúdo institucional com o código atual, o MasterProduct v0.1 e as sprints V1.0/V2.0. Corrige somente textos, metadados e destinos informacionais incorretos.
+## Direção aprovada
 
-- Repositório da landing: `Web-Star-Studio/daton-esg-insight`, base `bc3e42195e0f328026a3e1cb29027b5f339a0eed`.
-- Sistema consultado, somente leitura: `Web-Star-Studio/Daton`, commit `1f07bd8046e183139f8189f11c7310c8d9553ce5`.
-- Branch: `codex/task-235-auditoria-copy-landing`.
-- Nenhuma mudança de schema, API, dados do sistema ou infraestrutura. Não houve merge nem publicação nesta entrega.
+A pessoa responsável esclareceu que a landing é **a promessa comercial do produto para o início do marketing**. A fonte editorial passa a ser a visão integral do MasterProduct, e não o inventário de funcionalidades implementadas. Esta decisão substitui o critério comercial das revisões anteriores.
 
-## Revisão 2: completude do produto
+A redação apresenta benefícios e capacidades finais de dados, processos, automação, análise, relato, integrações e IA assistida. Ausência no código atual deixa de vetar uma capacidade assumida pelo documento. Termos internos como V2/V3, sprints, feature flags, “ainda indisponível” e “planejado” saem da oferta.
 
-A primeira passagem considerava o código atual. A pedido da pessoa responsável, a reauditoria incorporou o MasterProduct anexo à sprint V1.0 (id 5), seu recorte executivo, guias de novidades e 43 tasks das sprints V1.0/V2.0. **Ausência atual não significa ausência no produto futuro.** PDI, reuniões/atas, BI/relatórios, conectores, extração assistida, formulários externos, compensações, metas reproduzíveis e publicação ESG têm evolução planejada. Projetos/compensações constam do estado desejado F29, sem versão/task de entrega confirmada. A landing agora informa esse estado nos textos existentes, sem anunciar disponibilidade.
+Isso não amplia o escopo para hipóteses ou promessas que o próprio Master não assume: substituição de ERP/folha/ponto/recrutamento, certificações, pacotes universais de frameworks, marcas de conectores, precisão de previsões, SLA ou declaração automática de conformidade. As confirmações e decisões humanas dos fluxos permanecem como parte da proposta de valor.
 
-A [matriz MasterProduct e sprints](masterproduct.md) registra referências F/R, versões, parágrafos e status. As 23 tasks V1.0 estão entregues; as 20 da Sprint 2 ainda não tinham merge registrado em 23/10/2026. O nome informal do repositório atual não equivale ao marco futuro V2.0. Esta revisão substitui as conclusões anteriores que confundiam ausência no código com exclusão do produto.
+## Comparativos e justificativas
 
-## O que mudou e por quê
+| Recorte | Mudança de posicionamento | Evidência principal |
+| --- | --- | --- |
+| Início e Ambiental | De cadastro condicionado a módulos para monitoramentos, cálculos, alertas, metas e relato conectados | F26/F27/F29/F30/F34 |
+| Pessoas | De competências atuais e PDI indisponível para ciclo de competências, desenvolvimento, aprendizagem e comunicação | F19/F20/F21; P8113 |
+| Governança | De registros atuais para reuniões, atas, decisões, ações, RAC e BI conectados | F06–F09/F15/F31/F32 |
+| IA | De consulta somente leitura para contexto, fontes, extração, mapeamento, propostas e ações confirmadas | F36; DAT-V3-R12-002 a 005 |
+| Dados e integrações | De saídas atuais e conectores indisponíveis para importação, reconciliação, relatórios, BI e sincronização | F32/F34/F35 |
+| Institucional e metadados | De descrição centrada na implementação para gestão integrada, automação e inteligência com evidências | P0307–P0310; F01–F38 |
+| Ajuda e Documentação | De catálogo de limitações para explicação da proposta de produto, mantendo os conceitos e as fronteiras reais | F01–F38 e regras por domínio |
 
-| Página/seção | O que estava anunciado | O que passa a ser informado | Por quê |
-| --- | --- | --- | --- |
-| Início e rodapé | ESG em tempo real, conformidade automatizada, saúde ocupacional | Gestão da qualidade, ESG, pessoas, competências, treinamentos e dados rastreáveis | Representa o produto atual e retira recursos não comprovados |
-| Soluções e Ambiental | Créditos de carbono, frameworks prontos, predição, SLA e métricas promocionais | Inventários GEE, fatores versionados, registros ambientais, evidências e relatos em rascunho | Inventário existe; compensações constam da direção futura; metas reproduzíveis e publicação estão planejadas V2.0. Créditos negociáveis e garantias continuam sem respaldo |
-| Social e Pessoas | Avaliação 360, PDI, carreira, recrutamento, ponto, folha e SST | Colaboradores, cargos, competências, lacunas, turmas, certificados, eficácia e comunicação | Base atual de pessoas e aprendizagem; PDI planejado V2.0. Folha, ponto e recrutamento não são substituídos |
-| Qualidade e Governança | Conformidade ISO completa, conselhos, atas, BSC/OKRs, estatística e alertas genéricos | SGQ, documentos, riscos, SWOT, indicadores, auditorias, não conformidades, análise crítica e ações | Base implementada; agenda, atas e decisões integradas planejadas V2.0. BSC/OKRs e gestão especializada de conselhos sem evidência |
-| IA | OCR, extração documental, previsões, scoring e ações automáticas | Orientação e consultas somente leitura aos dados autorizados | Hoje não recebe arquivos nem altera registros. Extração e especialistas planejados V3.0; ações confirmadas em triagem na Sprint 2 |
-| Integrações | SAP, Oracle, TOTVS, Power BI, API pública, OAuth e webhooks | Importação por planilha nos destinos habilitados, exportações por módulo e avaliação de necessidades | Conectores/webhooks e catálogo de relatórios/BI planejados V2.0, sem API pública ou marcas garantidas |
-| Segurança e Sobre Nós | MFA, RLS, TLS/AES em versões específicas, SOC 2, ISO 27001, LGPD total | Senhas protegidas, JWT, autorização por empresa/papel/módulo/filial e históricos por fluxo | Evita anunciar certificações, protocolos ou garantias não demonstrados |
-| Ajuda/FAQ/Documentação | Fluxos de telas inexistentes, financeiro, vídeos com duração inventada, suporte 24/7 | Orientações reais, limites explícitos, vídeos indisponíveis e canais existentes | Corrige o roteiro operacional e preserva os mesmos temas, IDs e opções |
-| Cadastro e Termos | Cadastro livre e acesso indistinto | Nova empresa com código gratuito emitido pela Daton; acesso por convite e permissões | Reflete a decisão e o fluxo de voucher da v2 |
-| Contato | Agendamento e retorno em 24h por um formulário sem envio | Aviso de formulário demonstrativo e contato institucional por e-mail | O formulário atual não envia nem agenda; sua integração ficou fora desta revisão textual |
-| Privacidade e Termos | Data de atualização mudando a cada visita e descrição apenas ESG | Data fixa desta edição e descrição de qualidade, ESG e compliance conforme módulos | Evita apresentar cada visita como revisão da política; cláusulas jurídicas foram preservadas |
-| Componentes sem montagem atual | Estatísticas de resultado e notícias/parcerias fictícias | Fatos do produto, sem números de desempenho ou eventos inventados | Evita reintroduzir conteúdo antigo em uma futura reutilização; nenhum componente foi inserido na página |
+Detalhamento com antes, depois, motivo e F-ID/localizadores:
 
-A habilitação por empresa e as permissões foram explicitadas em parágrafos já existentes. A auditoria comprova a implementação e suas condições de disponibilidade; não presume que todos os módulos estejam liberados para todas as empresas em produção.
+- [Catálogo de funcionalidades](comercial-funcionalidades.md).
+- [Ambiental, Social, Governança e Tecnologia](comercial-ambiental.md).
+- [FAQ e Documentação](comercial-ajuda.md).
+- [Institucional e critério comercial](comercial-institucional.md).
 
-A matriz versionada [MasterProduct e sprints](masterproduct.md) e as evidências deste diretório são a referência permanente da auditoria. O PDF de aprovação da revisão 2 foi entregue na conversa: 27 páginas, fotos antes/depois, justificativas por seção, mapa dos 24 cards e matriz do MasterProduct nas páginas 21 a 23. Ele substitui a edição baseada somente no código.
+## Preservação do site
 
-## Comparativos detalhados
+A quantidade e a ordem dos elementos, classes, estilos, imagens, ícones, IDs, navegação e comportamento são preservados. O catálogo mantém 5 grupos e 24 cards; as bases de ajuda mantêm 244 + 151 entradas. Textos podem gerar novas quebras de linha, verificadas em navegador headless isolado.
 
-- [MasterProduct e sprints: atual, planejado, em revisão, não objetivo ou sem evidência](masterproduct.md).
-- [Funcionalidades: antes, depois, motivo e evidência por grupo](funcionalidades.md).
-- [Ambiental, Social, Governança e Tecnologia](ambiental-social.md).
-- [FAQ e Documentação, incluindo recursos ausentes](ajuda.md).
-- [Trechos literais de páginas institucionais, segurança, contato e metadados](institucional.md).
+Os limites reais de canais continuam factuais: o formulário de contato sem envio direciona ao e-mail institucional, os controles legados preservam seu comportamento, e as páginas de acesso e privacidade continuam descrevendo os respectivos fluxos. A revisão não implementa funcionalidades no sistema nem publica a landing.
 
-A matriz de roadmap usa o anexo da sprint e os status do backlog; não reproduz o documento integral. As referências de implementação desses documentos apontam para arquivos do [repositório do sistema atual](https://github.com/Web-Star-Studio/Daton/tree/1f07bd8046e183139f8189f11c7310c8d9553ce5).
+## Validação
 
-## Preservação do design e da hierarquia
+Tipos app/Node, build, os 3 testes existentes e lint dos fontes alterados aprovados. A revisão independente não encontrou promessas fora do MasterProduct após os refinamentos. A verificação de estrutura preserva JSX, atributos visuais, ícones e IDs.
 
-Permanecem iguais a ordem dos elementos renderizados, classes, estilos inline, imagens, ícones e IDs dos 18 arquivos TypeScript/TSX alterados. A página Funcionalidades mantém 5 grupos e 24 cards. A FAQ mantém 244 perguntas, a Documentação mantém 151 e as 146 perguntas comuns têm respostas idênticas. Dez títulos de vídeos agora perguntam pela disponibilidade e não anunciam durações fictícias.
+- [Estrutura visual](evidencias/comercial/estrutura.json).
+- [Consistência de 244 + 151 entradas e 146 respostas comuns](evidencias/comercial/faq-consistencia.json).
+- [48 capturas: 12 rotas, dois viewports, antes/depois, HTTP 200 e sem erro/overflow horizontal](evidencias/comercial/paginas.json).
+- Comparativos [desktop](evidencias/comercial/comparativo-desktop.webp) e [celular](evidencias/comercial/comparativo-mobile.webp).
+- Exemplos da ajuda: [extração assistida](evidencias/comercial/faq-extracao.png) e [dados financeiros como insumos ESG](evidencias/comercial/faq-financeiro-esg.png).
 
-Os comprimentos e quebras de linha mudam naturalmente com o novo texto. Textos de cards e botões foram encurtados quando necessário para caber no layout existente, sem alterar fonte, espaçamento ou CSS.
+A barra fixa dos heros Social/Governança já encobre parte do subtítulo em 375 px na base; seu CSS foi preservado. O formulário de contato sem envio, os controles legados e a sessão antiga da Documentação mantêm os limites registrados. O CI herda o script de cobertura ausente; não foi alterado por esta revisão textual.
 
-As exceções informacionais de navegação são explícitas: cinco links que anunciavam simulador passam a acessar o painel por âncoras externas e `window.location.href`, conforme o AGENTS.md; os controles da ajuda deixam de apontar a chat inerte, e-mail/telefone/domínio de exemplo e usam ajuda no painel, e-mail institucional, contato e documentação. A aparência e a quantidade dos controles foram preservadas.
+## Fonte e rastreabilidade
 
-## Validação e evidências
+MasterProduct v0.1, de 05/09/2026, anexo da sprint V1.0 — Data-Complete Daton, id 5. SHA-256 do DOCX: `457550f1b1f58bd62f05e491b4cc5526ab075e6d5991c4b571141f06d8c5b219`. Os anexos permanecem no backlog autenticado. Os localizadores P usados nos comparativos correspondem aos parágrafos não vazios da extração da auditoria.
 
-| Verificação | Resultado |
-| --- | --- |
-| TypeScript do frontend e configuração Node | Aprovado com `tsc --noEmit -p tsconfig.app.json` e `-p tsconfig.node.json` |
-| Testes existentes | 3/3 aprovados em `npm run test` |
-| Build de produção | Aprovado em `npm run build` |
-| ESLint de todos os arquivos TS/TSX alterados | Aprovado |
-| Estrutura visual por AST (normaliza Link como âncora HTML) | [18 arquivos sem diferenças de elementos/atributos visuais](evidencias/estrutura.json) |
-| Consistência das FAQs | [244 + 151 entradas, 146 comuns, zero divergências e IDs preservados](evidencias/faq-consistencia.json) |
-| Navegação e interação | [Menu móvel, acesso ao painel, busca/accordion/estado vazio da FAQ, canais de suporte e aviso do formulário](evidencias/interacoes.json) |
-| Chromium isolado headless | [12 rotas em 1440×1000 e 375×812, antes/depois: zero erros de execução e zero overflow horizontal](evidencias/paginas.json) |
-| Revisão independente | Três achados materiais corrigidos: bloco de segurança antigo, Portal do Fornecedor e linguagem absoluta |
-| Diff | `git diff --check` aprovado |
+A matriz, os comparativos e as evidências versionados documentam esta decisão editorial. O PDF comercial acompanha a revisão para aprovação visual. Os documentos anteriores permanecem como histórico, sem reger esta proposta.
 
-Capturas salvas e examinadas:
+## Histórico
 
-- [Comparativo antes/depois no celular](evidencias/comparativo-mobile.webp).
-- [Comparativo antes/depois no desktop](evidencias/comparativo-desktop.webp).
-- [Busca da FAQ com explicação do limite financeiro](evidencias/faq-busca-mobile.png).
+- [Revisão técnica anterior e validações do PR 104](historico-revisao-tecnica.md).
+- [Matriz anterior de estado atual e roadmap](masterproduct.md).
+- O PR 104 foi mergeado na main em `3de3f70f`. Esta revisão comercial terá **um novo PR**, conforme solicitado, sem merge automático.
 
-Os comparativos acima são versionados. Os PNGs completos da execução original foram salvos localmente; o comando abaixo reproduz as capturas em `/tmp/daton-task-235-capturas`, sem depender desses arquivos temporários.
+## Aprovação e publicação
 
-Para repetir as capturas com um Playwright disponível no ambiente:
-
-```bash
-npm run dev -- --host 127.0.0.1 --port 5186
-# Em outro terminal, com Playwright instalado/disponível:
-node docs/auditoria/task-235/capturar.cjs /tmp/daton-task-235-capturas http://127.0.0.1:5186
-# Se o runtime estiver fora do projeto, informe PLAYWRIGHT_MODULE.
-# Para um Chromium já instalado, informe PLAYWRIGHT_CHROMIUM_EXECUTABLE.
-node docs/auditoria/task-235/conferir-estrutura.cjs
-```
-
-## Limitações preexistentes registradas
-
-- `npm run lint` geral já falha na base por quatro escapes em duas funções legadas de `supabase/functions/`; essa pasta foi preservada conforme o AGENTS.md.
-- O [CI da própria base](https://github.com/Web-Star-Studio/daton-esg-insight/actions/runs/39852202451) já falha no passo `Run tests with coverage`: o workflow chama `npm run test:coverage`, script ausente no `package.json`. A correção do workflow não foi incluída em uma entrega estritamente textual.
-- O formulário de contato não envia solicitações. Agora isso é declarado na própria página, com o e-mail institucional como canal existente.
-- Alguns CTAs dos cards ambientais e da seção técnica de documentação são inertes. A auditoria não implementa novas ações.
-- Documentação ainda condiciona parte do conteúdo à sessão Supabase da v1, diferente da autenticação do painel v2. Seus textos foram corrigidos sem alterar o fluxo.
-- Na publicação consultada, `/funcionalidades` redirecionou para `/ambiental`; as duas páginas foram revisadas. Regras de hospedagem/publicação não foram alteradas.
-- Dados societários, destinatários institucionais e cláusulas jurídicas não foram reinventados nem tratados como certificados pelo código. A aprovação editorial e a publicação permanecem com a pessoa responsável.
-
-## Próximo passo humano
-
-Revisar os comparativos e o diff, aprovar o merge e publicar pelo Lovable. O conteúdo proposto está preparado, sem publicação automática por esta task.
-
-## Conferência antes do merge — 26/10/2026
-
-Corrigidos verbetes com respostas deslocadas, qualificado o controle condicional por filial e retirada a chamada residual de agendamento. Links ao painel preservam cliques com modificadores; o selo 5W2H mantém o valor durante a animação. A publicação será feita pela pessoa responsável no Lovable. O formulário e os CTAs legados documentados continuam com os limites já informados.
-
-Validação complementar: [checks de pré-merge](evidencias/pre-merge.json), [economia circular](evidencias/faq-circular.png), [regimes de competência/caixa](evidencias/faq-regimes.png) e [segurança no celular](evidencias/seguranca-mobile.png). Build, tipos app/Node, 3 testes e lint dos fontes alterados aprovados.
+Revisar os textos comerciais e o PDF, aprovar o novo PR e, após o merge autorizado, publicar manualmente pelo Lovable. Não houve publicação nesta revisão.

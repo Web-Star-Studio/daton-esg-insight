@@ -15,7 +15,7 @@ interface StatItem {
 }
 
 const statsData: StatItem[] = [
-    { value: '3', suffix: '', label: 'Escopos de emissão', description: 'Inventários GEE nos módulos habilitados' },
+    { value: '3', suffix: '', label: 'Escopos de emissão', description: 'Fontes, fatores e cálculos rastreáveis' },
     { value: '17', suffix: '', label: 'ODS como referência', description: 'Leitura de iniciativas ESG por objetivo' },
     { value: '3', suffix: '', label: 'Tipos de feedback', description: 'Problema, ideia ou dúvida no painel' },
     { value: '1', label: 'Painel integrado', description: 'Acesso aos módulos da organização' },
