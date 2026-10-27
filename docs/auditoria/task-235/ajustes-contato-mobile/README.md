@@ -17,9 +17,10 @@ No cenário conservador de imagem branca, considerando a menor opacidade do
 gradiente existente, o contraste calculado é 6,92:1 para o texto digitado e
 5,56:1 para placeholders. As capturas headless também foram inspecionadas.
 
-As menções à Web Star Studio na página, título, consentimento e confirmação
-foram substituídas pela equipe Daton. O destinatário comercial e as políticas
-de privacidade existentes foram preservados.
+A apresentação, o título e a confirmação agora usam equipe Daton. O consentimento
+autoriza o uso dos dados para responder ao pedido comercial e mantém o link à
+Política de Privacidade, onde consta a identidade da controladora. O destinatário
+comercial e a política existente foram preservados.
 
 ## Defeitos corrigidos
 
@@ -38,7 +39,9 @@ de privacidade existentes foram preservados.
 ## Evidências
 
 Os JSONs antes/depois registram apenas geometria e cores, sem dados preenchidos.
-Antes, a largura do documento excedia a tela em 4 px em 320/375/390 px e o campo
+A baseline foi repetida em uma cópia isolada da main `7864257e`, com as mesmas
+rotas, seletores e sete larguras da versão corrigida. Antes, a largura do documento
+excedia a tela em 4 px em 320/375/390/767 px e o campo
 tinha texto e fundo `rgb(255, 255, 255)`. Depois, os sete tamanhos 320, 375, 390,
 767, 768, 1024 e 1440 px passaram: documento e formulário sem rolagem horizontal,
 barra do topo dentro da tela e texto visível em campo translúcido.
