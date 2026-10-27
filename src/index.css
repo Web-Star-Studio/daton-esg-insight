@@ -62,6 +62,13 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
+    --commercial-surface: 0 0% 0% / 0.46;
+    --commercial-text: 0 0% 100%;
+    --commercial-border: 0 0% 100% / 0.45;
+    --commercial-input: 0 0% 100% / 0.12;
+    --commercial-cta: 96 94% 81%;
+    --commercial-cta-text: 0 0% 9%;
+
     /* Sidebar - Verde suave inspirado no design */
     --sidebar-background: 0 0% 100%; /* Fundo branco para o sidebar */
     --sidebar-foreground: 0 0% 9%;
@@ -183,6 +190,13 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
+
+  .commercial-contact-panel { background: hsl(var(--commercial-surface)); color: hsl(var(--commercial-text)); border-color: hsl(var(--commercial-border)); }
+  .commercial-input { background: hsl(var(--commercial-input)); color: hsl(var(--commercial-text)); border-color: hsl(var(--commercial-border)); }
+  .commercial-input::placeholder { color: hsl(var(--commercial-text) / 0.7); }
+  .commercial-input option { background: hsl(var(--background)); color: hsl(var(--foreground)); }
+  .commercial-submit { background: hsl(var(--commercial-cta)); color: hsl(var(--commercial-cta-text)); }
+  .commercial-submit:hover { background: hsl(var(--commercial-cta) / 0.9); }
 
   body {
     @apply bg-background text-foreground font-inter;
