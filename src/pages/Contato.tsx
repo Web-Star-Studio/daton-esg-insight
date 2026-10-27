@@ -1,30 +1,9 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ChevronRight } from "lucide-react";
 import { HeimdallNavbar } from "@/components/landing/heimdall/HeimdallNavbar";
 import { PublicFooter } from "@/components/landing/heimdall/PublicFooter";
+import { CommercialContactForm } from "@/components/landing/CommercialContactForm";
 
 export default function Contato() {
-  const [formData, setFormData] = useState({
-    nome: "",
-    email: "",
-    cargo: "",
-    empresa: "",
-    telefone: "",
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: integrar envio para backend/CRM.
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
   return (
     <div className="min-h-screen bg-[#edf4ef] text-[#11261c]">
       <HeimdallNavbar />
@@ -115,8 +94,8 @@ export default function Contato() {
                 color: "rgba(255,255,255,0.9)",
               }}
             >
-              Conheça os módulos do Daton e converse sobre as necessidades da
-              sua empresa pelo e-mail contato@daton.com.br.
+              Conheça o Daton e converse com a Web Star Studio sobre as
+              necessidades da sua empresa.
             </p>
           </div>
 
@@ -124,95 +103,9 @@ export default function Contato() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="w-full rounded-2xl border border-white/40 bg-black/35 p-5 text-white backdrop-blur-md md:max-w-[39%] md:self-center md:p-6"
+            className="commercial-contact-panel w-full rounded-lg border p-5 backdrop-blur-md md:max-w-[39%] md:self-center md:p-6"
           >
-            <h2 className="text-xl font-semibold">Fale com a equipe Daton</h2>
-            <p className="mt-1 text-sm text-white/85">
-              Este formulário ainda não envia solicitações. Para solicitar uma demonstração, escreva para contato@daton.com.br.
-            </p>
-
-            <form
-              onSubmit={handleSubmit}
-              className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2"
-            >
-              <div className="space-y-2">
-                <Label htmlFor="nome" className="text-white">
-                  Nome completo *
-                </Label>
-                <Input
-                  id="nome"
-                  placeholder="Seu nome"
-                  value={formData.nome}
-                  onChange={(e) => handleInputChange("nome", e.target.value)}
-                  required
-                  className="border-white/45 bg-white/10 text-white placeholder:text-white/65"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">
-                  Email corporativo *
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu.email@empresa.com"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  required
-                  className="border-white/45 bg-white/10 text-white placeholder:text-white/65"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cargo" className="text-white">
-                  Cargo *
-                </Label>
-                <Input
-                  id="cargo"
-                  placeholder="Seu cargo"
-                  value={formData.cargo}
-                  onChange={(e) => handleInputChange("cargo", e.target.value)}
-                  required
-                  className="border-white/45 bg-white/10 text-white placeholder:text-white/65"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="empresa" className="text-white">
-                  Empresa *
-                </Label>
-                <Input
-                  id="empresa"
-                  placeholder="Nome da empresa"
-                  value={formData.empresa}
-                  onChange={(e) => handleInputChange("empresa", e.target.value)}
-                  required
-                  className="border-white/45 bg-white/10 text-white placeholder:text-white/65"
-                />
-              </div>
-
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="telefone" className="text-white">
-                  Telefone para contato (opcional)
-                </Label>
-                <Input
-                  id="telefone"
-                  type="tel"
-                  placeholder="(00) 00000-0000"
-                  value={formData.telefone}
-                  onChange={(e) => handleInputChange("telefone", e.target.value)}
-                  className="border-white/45 bg-white/10 text-white placeholder:text-white/65"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full rounded-xl bg-[#c4fca1] text-black hover:bg-[#b3ef8d] sm:col-span-2"
-              >
-                Formulário demonstrativo
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </form>
+            <CommercialContactForm />
           </motion.div>
         </div>
       </section>

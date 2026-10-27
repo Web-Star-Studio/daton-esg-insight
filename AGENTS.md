@@ -38,3 +38,6 @@ O sistema (v2) é hospedado fora deste projeto, em `https://painel.daton.com.br`
 - Tema claro forçado (`forcedTheme="light"` no App.tsx) — dark mode desativado.
 - CTAs de acesso ao sistema apontam para `PAINEL_URL` via
   `window.location.href` (navegação externa), nunca `<Link>`/`<Navigate>`.
+
+- Commercial contact uses an isolated public `commercial-contact` Edge Function with a server-owned recipient and shared schema validation; it never reads or modifies legacy data or functions.
+- Commercial email uses the linked Resend gateway from server code only; browser success requires provider acceptance, not just form submission.
