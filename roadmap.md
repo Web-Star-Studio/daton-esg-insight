@@ -22,3 +22,4 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 - [ ] Confirmar remetente verificado no Resend: a chave permite enviar, mas não consultar domínios; teste não executado.
 - [ ] Ajustar formulário comercial e envio com validação, confirmação e tratamento de falhas, sem modificar acesso ao demo ou dados legados.
 - [ ] Verificar envio real e recebimento antes de concluir.
+- [ ] Enviar teste identificado para joao@webstar.studio; pedidos comerciais continuam destinados a Felipe.
