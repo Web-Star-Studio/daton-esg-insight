@@ -15,7 +15,7 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 
 ## Pendente (decisão do usuário)
 
-- [ ] Publicar para daton.com.br entrar no ar como LP-only
+- [x] Publicação solicitada para daton.com.br como LP-only (2026-10-27)
 
 ## Contato comercial — 2026-10-27
 - [x] Destinatário confirmado: felipe@webstar.studio; Resend conectado.
@@ -24,4 +24,4 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 - [x] Recebimento confirmado pelo usuário (caixa de João, 2026-10-27). Envio direto a Felipe segue sem teste próprio; pedidos comerciais continuam destinados a ele.
 - [x] Teste identificado para joao@webstar.studio aceito pelo Resend; pedidos comerciais continuam destinados a Felipe.
 - [x] Sete testes passaram; estados de interface testados com respostas simuladas, validação da função real retornou 400 para entrada inválida.
-- [ ] Publicar a página Contato atualizada: depende da autorização do usuário.
+- [x] Publicar a página Contato atualizada: publicação solicitada para daton.com.br.
