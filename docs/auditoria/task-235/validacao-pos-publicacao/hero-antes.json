@@ -1,0 +1,1222 @@
+{
+  "results": [
+    {
+      "width": 320,
+      "height": 812,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 480.484375,
+          "right": 320,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 0.8125,
+          "top": 673.625,
+          "right": 288,
+          "bottom": 730.8125
+        },
+        "pageWidth": 320
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 480.484375,
+          "right": 320,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 0.8125,
+          "top": 528.578125,
+          "right": 288,
+          "bottom": 730.8125
+        },
+        "pageWidth": 320
+      },
+      "escapes": true
+    },
+    {
+      "width": 320,
+      "height": 812,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 320,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 0.8125,
+          "top": 673.625,
+          "right": 288,
+          "bottom": 730.8125
+        },
+        "pageWidth": 320
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 320,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 0.8125,
+          "top": 528.578125,
+          "right": 288,
+          "bottom": 730.8125
+        },
+        "pageWidth": 320
+      },
+      "escapes": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 512.15625,
+          "right": 375,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 55.8125,
+          "top": 673.625,
+          "right": 343,
+          "bottom": 730.8125
+        },
+        "pageWidth": 375
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 512.15625,
+          "right": 375,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 55.8125,
+          "top": 528.578125,
+          "right": 343,
+          "bottom": 730.8125
+        },
+        "pageWidth": 375
+      },
+      "escapes": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 375,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 55.8125,
+          "top": 673.625,
+          "right": 343,
+          "bottom": 730.8125
+        },
+        "pageWidth": 375
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 375,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 55.8125,
+          "top": 528.578125,
+          "right": 343,
+          "bottom": 730.8125
+        },
+        "pageWidth": 375
+      },
+      "escapes": true
+    },
+    {
+      "width": 390,
+      "height": 812,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 512.15625,
+          "right": 390,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 70.8125,
+          "top": 673.625,
+          "right": 358,
+          "bottom": 730.8125
+        },
+        "pageWidth": 390
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 512.15625,
+          "right": 390,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 70.8125,
+          "top": 528.578125,
+          "right": 358,
+          "bottom": 730.8125
+        },
+        "pageWidth": 390
+      },
+      "escapes": true
+    },
+    {
+      "width": 390,
+      "height": 812,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 390,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 70.8125,
+          "top": 673.625,
+          "right": 358,
+          "bottom": 730.8125
+        },
+        "pageWidth": 390
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 390,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 70.8125,
+          "top": 528.578125,
+          "right": 358,
+          "bottom": 730.8125
+        },
+        "pageWidth": 390
+      },
+      "escapes": true
+    },
+    {
+      "width": 767,
+      "height": 812,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 558.328125,
+          "right": 767,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 447.8125,
+          "top": 673.625,
+          "right": 735,
+          "bottom": 730.8125
+        },
+        "pageWidth": 767
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 558.328125,
+          "right": 767,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 447.8125,
+          "top": 528.578125,
+          "right": 735,
+          "bottom": 730.8125
+        },
+        "pageWidth": 767
+      },
+      "escapes": true
+    },
+    {
+      "width": 767,
+      "height": 812,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 580.359375,
+          "right": 767,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 447.8125,
+          "top": 673.625,
+          "right": 735,
+          "bottom": 730.8125
+        },
+        "pageWidth": 767
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 580.359375,
+          "right": 767,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 447.8125,
+          "top": 528.578125,
+          "right": 735,
+          "bottom": 730.8125
+        },
+        "pageWidth": 767
+      },
+      "escapes": true
+    },
+    {
+      "width": 768,
+      "height": 1000,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 727.453125,
+          "right": 768,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 448.8125,
+          "top": 842.8125,
+          "right": 736,
+          "bottom": 900
+        },
+        "pageWidth": 768
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 727.453125,
+          "right": 768,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 448.8125,
+          "top": 697.765625,
+          "right": 736,
+          "bottom": 900
+        },
+        "pageWidth": 768
+      },
+      "escapes": true
+    },
+    {
+      "width": 768,
+      "height": 1000,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 749.484375,
+          "right": 768,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 448.8125,
+          "top": 842.8125,
+          "right": 736,
+          "bottom": 900
+        },
+        "pageWidth": 768
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 749.484375,
+          "right": 768,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 448.8125,
+          "top": 697.765625,
+          "right": 736,
+          "bottom": 900
+        },
+        "pageWidth": 768
+      },
+      "escapes": true
+    },
+    {
+      "width": 1024,
+      "height": 1000,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 40.953125,
+          "top": 703.765625,
+          "right": 780.953125,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 695.859375,
+          "top": 842.8125,
+          "right": 983.046875,
+          "bottom": 900
+        },
+        "pageWidth": 1024
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 40.953125,
+          "top": 703.765625,
+          "right": 780.953125,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 695.859375,
+          "top": 697.765625,
+          "right": 983.046875,
+          "bottom": 900
+        },
+        "pageWidth": 1024
+      },
+      "escapes": true
+    },
+    {
+      "width": 1024,
+      "height": 1000,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 40.953125,
+          "top": 725.796875,
+          "right": 780.953125,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 695.859375,
+          "top": 842.8125,
+          "right": 983.046875,
+          "bottom": 900
+        },
+        "pageWidth": 1024
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 40.953125,
+          "top": 725.796875,
+          "right": 780.953125,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 695.859375,
+          "top": 697.765625,
+          "right": 983.046875,
+          "bottom": 900
+        },
+        "pageWidth": 1024
+      },
+      "escapes": true
+    },
+    {
+      "width": 1280,
+      "height": 1000,
+      "route": "/social",
+      "closed": {
+        "overlap": false,
+        "copy": {
+          "left": 51.1875,
+          "top": 618.65625,
+          "right": 791.1875,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 941.625,
+          "top": 842.8125,
+          "right": 1228.8125,
+          "bottom": 900
+        },
+        "pageWidth": 1280
+      },
+      "opened": {
+        "overlap": false,
+        "copy": {
+          "left": 51.1875,
+          "top": 618.65625,
+          "right": 791.1875,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 941.625,
+          "top": 697.765625,
+          "right": 1228.8125,
+          "bottom": 900
+        },
+        "pageWidth": 1280
+      },
+      "escapes": true
+    },
+    {
+      "width": 1280,
+      "height": 1000,
+      "route": "/governanca",
+      "closed": {
+        "overlap": false,
+        "copy": {
+          "left": 51.1875,
+          "top": 641.84375,
+          "right": 791.1875,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 941.625,
+          "top": 842.8125,
+          "right": 1228.8125,
+          "bottom": 900
+        },
+        "pageWidth": 1280
+      },
+      "opened": {
+        "overlap": false,
+        "copy": {
+          "left": 51.1875,
+          "top": 641.84375,
+          "right": 791.1875,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 941.625,
+          "top": 697.765625,
+          "right": 1228.8125,
+          "bottom": 900
+        },
+        "pageWidth": 1280
+      },
+      "escapes": true
+    },
+    {
+      "width": 1440,
+      "height": 1000,
+      "route": "/social",
+      "closed": {
+        "overlap": false,
+        "copy": {
+          "left": 57.59375,
+          "top": 590.671875,
+          "right": 797.59375,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 1095.21875,
+          "top": 842.8125,
+          "right": 1382.40625,
+          "bottom": 900
+        },
+        "pageWidth": 1440
+      },
+      "opened": {
+        "overlap": false,
+        "copy": {
+          "left": 57.59375,
+          "top": 590.671875,
+          "right": 797.59375,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 1095.21875,
+          "top": 697.765625,
+          "right": 1382.40625,
+          "bottom": 900
+        },
+        "pageWidth": 1440
+      },
+      "escapes": true
+    },
+    {
+      "width": 1440,
+      "height": 1000,
+      "route": "/governanca",
+      "closed": {
+        "overlap": false,
+        "copy": {
+          "left": 57.59375,
+          "top": 616.765625,
+          "right": 797.59375,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 1095.21875,
+          "top": 842.8125,
+          "right": 1382.40625,
+          "bottom": 900
+        },
+        "pageWidth": 1440
+      },
+      "opened": {
+        "overlap": false,
+        "copy": {
+          "left": 57.59375,
+          "top": 616.765625,
+          "right": 797.59375,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 1095.21875,
+          "top": 697.765625,
+          "right": 1382.40625,
+          "bottom": 900
+        },
+        "pageWidth": 1440
+      },
+      "escapes": true
+    },
+    {
+      "width": 667,
+      "height": 375,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 172.546875,
+          "right": 667,
+          "bottom": 337.5
+        },
+        "bar": {
+          "left": 347.8125,
+          "top": 280.3125,
+          "right": 635,
+          "bottom": 337.5
+        },
+        "pageWidth": 667
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 172.546875,
+          "right": 667,
+          "bottom": 337.5
+        },
+        "bar": {
+          "left": 347.8125,
+          "top": 135.265625,
+          "right": 635,
+          "bottom": 337.5
+        },
+        "pageWidth": 667
+      },
+      "escapes": true
+    },
+    {
+      "width": 667,
+      "height": 375,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 194.578125,
+          "right": 667,
+          "bottom": 337.5
+        },
+        "bar": {
+          "left": 347.8125,
+          "top": 280.3125,
+          "right": 635,
+          "bottom": 337.5
+        },
+        "pageWidth": 667
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 194.578125,
+          "right": 667,
+          "bottom": 337.5
+        },
+        "bar": {
+          "left": 347.8125,
+          "top": 135.265625,
+          "right": 635,
+          "bottom": 337.5
+        },
+        "pageWidth": 667
+      },
+      "escapes": true
+    }
+  ],
+  "failures": [
+    {
+      "width": 320,
+      "height": 812,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 480.484375,
+          "right": 320,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 0.8125,
+          "top": 673.625,
+          "right": 288,
+          "bottom": 730.8125
+        },
+        "pageWidth": 320
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 480.484375,
+          "right": 320,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 0.8125,
+          "top": 528.578125,
+          "right": 288,
+          "bottom": 730.8125
+        },
+        "pageWidth": 320
+      },
+      "escapes": true
+    },
+    {
+      "width": 320,
+      "height": 812,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 320,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 0.8125,
+          "top": 673.625,
+          "right": 288,
+          "bottom": 730.8125
+        },
+        "pageWidth": 320
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 320,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 0.8125,
+          "top": 528.578125,
+          "right": 288,
+          "bottom": 730.8125
+        },
+        "pageWidth": 320
+      },
+      "escapes": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 512.15625,
+          "right": 375,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 55.8125,
+          "top": 673.625,
+          "right": 343,
+          "bottom": 730.8125
+        },
+        "pageWidth": 375
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 512.15625,
+          "right": 375,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 55.8125,
+          "top": 528.578125,
+          "right": 343,
+          "bottom": 730.8125
+        },
+        "pageWidth": 375
+      },
+      "escapes": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 375,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 55.8125,
+          "top": 673.625,
+          "right": 343,
+          "bottom": 730.8125
+        },
+        "pageWidth": 375
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 375,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 55.8125,
+          "top": 528.578125,
+          "right": 343,
+          "bottom": 730.8125
+        },
+        "pageWidth": 375
+      },
+      "escapes": true
+    },
+    {
+      "width": 390,
+      "height": 812,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 512.15625,
+          "right": 390,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 70.8125,
+          "top": 673.625,
+          "right": 358,
+          "bottom": 730.8125
+        },
+        "pageWidth": 390
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 512.15625,
+          "right": 390,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 70.8125,
+          "top": 528.578125,
+          "right": 358,
+          "bottom": 730.8125
+        },
+        "pageWidth": 390
+      },
+      "escapes": true
+    },
+    {
+      "width": 390,
+      "height": 812,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 390,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 70.8125,
+          "top": 673.625,
+          "right": 358,
+          "bottom": 730.8125
+        },
+        "pageWidth": 390
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 534.1875,
+          "right": 390,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 70.8125,
+          "top": 528.578125,
+          "right": 358,
+          "bottom": 730.8125
+        },
+        "pageWidth": 390
+      },
+      "escapes": true
+    },
+    {
+      "width": 767,
+      "height": 812,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 558.328125,
+          "right": 767,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 447.8125,
+          "top": 673.625,
+          "right": 735,
+          "bottom": 730.8125
+        },
+        "pageWidth": 767
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 558.328125,
+          "right": 767,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 447.8125,
+          "top": 528.578125,
+          "right": 735,
+          "bottom": 730.8125
+        },
+        "pageWidth": 767
+      },
+      "escapes": true
+    },
+    {
+      "width": 767,
+      "height": 812,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 580.359375,
+          "right": 767,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 447.8125,
+          "top": 673.625,
+          "right": 735,
+          "bottom": 730.8125
+        },
+        "pageWidth": 767
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 580.359375,
+          "right": 767,
+          "bottom": 730.8125
+        },
+        "bar": {
+          "left": 447.8125,
+          "top": 528.578125,
+          "right": 735,
+          "bottom": 730.8125
+        },
+        "pageWidth": 767
+      },
+      "escapes": true
+    },
+    {
+      "width": 768,
+      "height": 1000,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 727.453125,
+          "right": 768,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 448.8125,
+          "top": 842.8125,
+          "right": 736,
+          "bottom": 900
+        },
+        "pageWidth": 768
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 727.453125,
+          "right": 768,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 448.8125,
+          "top": 697.765625,
+          "right": 736,
+          "bottom": 900
+        },
+        "pageWidth": 768
+      },
+      "escapes": true
+    },
+    {
+      "width": 768,
+      "height": 1000,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 749.484375,
+          "right": 768,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 448.8125,
+          "top": 842.8125,
+          "right": 736,
+          "bottom": 900
+        },
+        "pageWidth": 768
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 749.484375,
+          "right": 768,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 448.8125,
+          "top": 697.765625,
+          "right": 736,
+          "bottom": 900
+        },
+        "pageWidth": 768
+      },
+      "escapes": true
+    },
+    {
+      "width": 1024,
+      "height": 1000,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 40.953125,
+          "top": 703.765625,
+          "right": 780.953125,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 695.859375,
+          "top": 842.8125,
+          "right": 983.046875,
+          "bottom": 900
+        },
+        "pageWidth": 1024
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 40.953125,
+          "top": 703.765625,
+          "right": 780.953125,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 695.859375,
+          "top": 697.765625,
+          "right": 983.046875,
+          "bottom": 900
+        },
+        "pageWidth": 1024
+      },
+      "escapes": true
+    },
+    {
+      "width": 1024,
+      "height": 1000,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 40.953125,
+          "top": 725.796875,
+          "right": 780.953125,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 695.859375,
+          "top": 842.8125,
+          "right": 983.046875,
+          "bottom": 900
+        },
+        "pageWidth": 1024
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 40.953125,
+          "top": 725.796875,
+          "right": 780.953125,
+          "bottom": 900
+        },
+        "bar": {
+          "left": 695.859375,
+          "top": 697.765625,
+          "right": 983.046875,
+          "bottom": 900
+        },
+        "pageWidth": 1024
+      },
+      "escapes": true
+    },
+    {
+      "width": 667,
+      "height": 375,
+      "route": "/social",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 172.546875,
+          "right": 667,
+          "bottom": 337.5
+        },
+        "bar": {
+          "left": 347.8125,
+          "top": 280.3125,
+          "right": 635,
+          "bottom": 337.5
+        },
+        "pageWidth": 667
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 172.546875,
+          "right": 667,
+          "bottom": 337.5
+        },
+        "bar": {
+          "left": 347.8125,
+          "top": 135.265625,
+          "right": 635,
+          "bottom": 337.5
+        },
+        "pageWidth": 667
+      },
+      "escapes": true
+    },
+    {
+      "width": 667,
+      "height": 375,
+      "route": "/governanca",
+      "closed": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 194.578125,
+          "right": 667,
+          "bottom": 337.5
+        },
+        "bar": {
+          "left": 347.8125,
+          "top": 280.3125,
+          "right": 635,
+          "bottom": 337.5
+        },
+        "pageWidth": 667
+      },
+      "opened": {
+        "overlap": true,
+        "copy": {
+          "left": 32,
+          "top": 194.578125,
+          "right": 667,
+          "bottom": 337.5
+        },
+        "bar": {
+          "left": 347.8125,
+          "top": 135.265625,
+          "right": 635,
+          "bottom": 337.5
+        },
+        "pageWidth": 667
+      },
+      "escapes": true
+    }
+  ]
+}

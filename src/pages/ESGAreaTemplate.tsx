@@ -186,11 +186,12 @@ export function ESGAreaTemplate({ areaSlug }: ESGAreaTemplateProps) {
       <HeimdallNavbar />
 
       <section
+        className="flex flex-col justify-end gap-6 xl:block"
         style={{
           position: "relative",
           minHeight: "100vh",
           overflow: "hidden",
-          padding: "120px 2rem 80px",
+          padding: "120px max(4vw, 1rem) 10vh",
         }}
       >
         <img
@@ -223,11 +224,8 @@ export function ESGAreaTemplate({ areaSlug }: ESGAreaTemplateProps) {
         />
 
         <div
+          className="relative w-full max-w-[740px] xl:absolute xl:bottom-[10vh] xl:left-[max(4vw,2rem)]"
           style={{
-            position: "absolute",
-            bottom: "10vh",
-            left: "max(4vw, 2rem)",
-            maxWidth: "740px",
             zIndex: 10,
             color: "#ffffff",
             textShadow: "0 4px 20px rgba(0, 0, 0, 0.35)",
@@ -276,10 +274,8 @@ export function ESGAreaTemplate({ areaSlug }: ESGAreaTemplateProps) {
 
         <div
           ref={actionBarRef}
+          className="relative max-w-full xl:absolute xl:bottom-[10vh] xl:right-[max(4vw,2rem)]"
           style={{
-            position: "absolute",
-            bottom: "10vh",
-            right: "max(4vw, 2rem)",
             zIndex: 10,
             display: "flex",
             flexDirection: "column",
