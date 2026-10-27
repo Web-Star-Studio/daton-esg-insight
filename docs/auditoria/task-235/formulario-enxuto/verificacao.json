@@ -1,0 +1,95 @@
+{
+  "checkedAt": "2026-10-27T21:35:02.032Z",
+  "results": [
+    {
+      "viewport": 320,
+      "fields": 5,
+      "requiredFields": 3,
+      "metrics": {
+        "height": 835,
+        "width": 288,
+        "pageWidth": 320,
+        "inputColor": "rgb(255, 255, 255)",
+        "inputBackground": "rgba(255, 255, 255, 0.1)"
+      },
+      "minimalPayloadAccepted": true,
+      "failurePreservesData": true,
+      "retryKeepsId": true,
+      "successAndReset": true,
+      "postsIntercepted": 2,
+      "emailsSent": 0
+    },
+    {
+      "viewport": 375,
+      "fields": 5,
+      "requiredFields": 3,
+      "metrics": {
+        "height": 784.25,
+        "width": 343,
+        "pageWidth": 375,
+        "inputColor": "rgb(255, 255, 255)",
+        "inputBackground": "rgba(255, 255, 255, 0.1)"
+      },
+      "minimalPayloadAccepted": true,
+      "failurePreservesData": true,
+      "retryKeepsId": true,
+      "successAndReset": true,
+      "postsIntercepted": 2,
+      "emailsSent": 0
+    },
+    {
+      "viewport": 768,
+      "fields": 5,
+      "requiredFields": 3,
+      "metrics": {
+        "height": 889.75,
+        "width": 275.546875,
+        "pageWidth": 768,
+        "inputColor": "rgb(255, 255, 255)",
+        "inputBackground": "rgba(255, 255, 255, 0.1)"
+      },
+      "minimalPayloadAccepted": true,
+      "failurePreservesData": true,
+      "retryKeepsId": true,
+      "successAndReset": true,
+      "postsIntercepted": 2,
+      "emailsSent": 0
+    },
+    {
+      "viewport": 1024,
+      "fields": 5,
+      "requiredFields": 3,
+      "metrics": {
+        "height": 608.25,
+        "width": 374.390625,
+        "pageWidth": 1024,
+        "inputColor": "rgb(255, 255, 255)",
+        "inputBackground": "rgba(255, 255, 255, 0.1)"
+      },
+      "minimalPayloadAccepted": true,
+      "failurePreservesData": true,
+      "retryKeepsId": true,
+      "successAndReset": true,
+      "postsIntercepted": 2,
+      "emailsSent": 0
+    },
+    {
+      "viewport": 1440,
+      "fields": 5,
+      "requiredFields": 3,
+      "metrics": {
+        "height": 565.5,
+        "width": 536.625,
+        "pageWidth": 1440,
+        "inputColor": "rgb(255, 255, 255)",
+        "inputBackground": "rgba(255, 255, 255, 0.1)"
+      },
+      "minimalPayloadAccepted": true,
+      "failurePreservesData": true,
+      "retryKeepsId": true,
+      "successAndReset": true,
+      "postsIntercepted": 2,
+      "emailsSent": 0
+    }
+  ]
+}

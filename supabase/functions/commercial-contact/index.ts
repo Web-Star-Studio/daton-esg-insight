@@ -1,6 +1,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@4.6.7";
 import { createContactSchema, COMMERCIAL_RECIPIENT, COMMERCIAL_SENDER } from "./schema.ts";
+import { buildCommercialMessage } from "./message.ts";
 
 const schema = createContactSchema(z);
 const respond = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -27,7 +28,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: COMMERCIAL_SENDER, to: [COMMERCIAL_RECIPIENT], reply_to: data.email,
         subject: "Novo contato comercial — Daton",
-        text: `Contato comercial Daton\n\nNome: ${data.nome}\nEmpresa: ${data.empresa}\nCargo: ${data.cargo}\nE-mail: ${data.email}\nTelefone: ${data.telefone || "Não informado"}\nInteresse: ${data.interesse}\n\nNecessidade:\n${data.mensagem}\n\nAutorização de contato: concedida pelo formulário.\nReferência: ${data.requestId}`,
+        text: buildCommercialMessage(data),
       }),
       signal: AbortSignal.timeout(20000),
     });

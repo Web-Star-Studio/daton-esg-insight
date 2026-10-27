@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-27T21:33:58.074Z",
+  "minimalAccepted": true,
+  "optionalBlankAccepted": true,
+  "legacyAccepted": true,
+  "invalidRejectedBeforeProvider": true,
+  "recipientServerOwned": true,
+  "providerAcceptanceRequired": true,
+  "idempotencyPreserved": true,
+  "providerCallsMocked": 4,
+  "networkRequests": 0,
+  "emailsSent": 0,
+  "sourceSha256": {
+    "index.ts": "cc8fc099eccfca176134058142c224dae5964783c7ee47d1adc9fdcfad655642",
+    "schema.ts": "919317042d225530d365bae027dc008f1a8405d1f5f3b7f698ae014c45157db7",
+    "message.ts": "c1ce74155ac963e91820afa890e757cc5e5f788d116bb90446e384ca8c58d247"
+  }
+}
