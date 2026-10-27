@@ -491,13 +491,13 @@ const Funcionalidades = () => {
                 <HeroStat title="BI" subtitle="análises e tendências" />
               </div>
 
-              <div className="inline-flex items-center gap-3 rounded-2xl border border-white/40 bg-black/35 p-2 backdrop-blur-md">
+              <div className="inline-flex max-w-full flex-col items-stretch gap-3 rounded-2xl border border-white/40 bg-black/35 p-2 backdrop-blur-md sm:flex-row sm:items-center">
                 <Link to="/contato">
                   <Button className="rounded-xl bg-white/10 text-white hover:bg-white/20">
                     Solicitar demonstração
                   </Button>
                 </Link>
-                <div className="h-7 w-px bg-white/40" />
+                <div className="hidden h-7 w-px bg-white/40 sm:block" />
                 <a href={PAINEL_URL} onClick={openPanel}>
                   <Button className="rounded-xl bg-[#c4fca1] text-black hover:bg-[#b4ef8f]">
                     Acessar painel
