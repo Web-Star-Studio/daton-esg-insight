@@ -40,6 +40,7 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 - [ ] Publicar a otimização das imagens (aguarda solicitação do usuário).
 
 ## Verificação do contato e site — 2026-10-27
-- [ ] Corrigir a falha de abertura do contato e verificar envio real no Lovable Cloud.
-- [ ] Verificar demais páginas, imagens e links institucionais.
-- [ ] Resolver erro de dependências na verificação automática sem alterar código legado.
+- [x] Falha publicada reproduzida: configuração Cloud ausente no bundle; configuração atual disponível. Inicialização do contato adiada ao envio, erro tratado e publicação bloqueada quando faltam valores. Envio real pelo formulário aceito (200), teste identificado destinado a Felipe e confirmação visível na prévia.
+- [x] Páginas institucionais verificadas sem erros de execução; documentação sem autenticação local e CTA direto para painel. Todas as fotos decodificadas usando a hospedagem real em 1280px/390px; completadas variantes 1440px já existentes de pilares/soberania. Possível overflow durante animação de Sobre Nós não persistiu na verificação estabilizada.
+- [x] Resolução automática das dependências Deno sem alterar funções legadas; verificação automática passou. Sete testes passaram; lint sem erros, com quatro avisos pré-existentes em UI.
+- [ ] Publicar a correção do contato e as imagens (aguarda solicitação do usuário); site publicado ainda usa a versão quebrada.
