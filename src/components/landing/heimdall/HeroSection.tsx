@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { responsiveImageProps } from "@/config/responsiveImages";
 import { ArrowRight, Menu } from 'lucide-react';
 import { ESG_AREAS } from './esgAreas';
 import './heimdall.css';
@@ -9,6 +10,9 @@ export function HeroSection() {
     const navigate = useNavigate();
     const [quickMenuOpen, setQuickMenuOpen] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [readySlides, setReadySlides] = useState<number[]>([0]);
+    const reduceMotion = useReducedMotion();
+    const heroReadyRef = useRef(false);
     const actionBarRef = useRef<HTMLDivElement>(null);
     const heroSlides = ESG_AREAS;
     const slideDurationMs = 5000;
@@ -51,20 +55,35 @@ export function HeroSection() {
         };
     }, [quickMenuOpen]);
 
-    useEffect(() => {
-        heroSlides.forEach((slide) => {
+    const prepareNextSlides = () => {
+        if (heroReadyRef.current) return;
+        heroReadyRef.current = true;
+        heroSlides.slice(1).forEach((slide, offset) => {
             const img = new Image();
+            img.fetchPriority = "low";
+            const source = responsiveImageProps(slide.image);
+            if (source.srcSet) {
+                img.sizes = source.sizes;
+                img.srcset = source.srcSet;
+            }
             img.src = slide.image;
+            img.decode().then(() => {
+                setReadySlides((ready) => [...ready, offset + 1]);
+            }).catch(() => undefined);
         });
-    }, [heroSlides]);
+    };
 
     useEffect(() => {
+        if (reduceMotion) return;
         const intervalId = window.setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+            setCurrentSlide((prev) => {
+                const next = (prev + 1) % heroSlides.length;
+                return readySlides.includes(next) ? next : prev;
+            });
         }, slideDurationMs);
 
         return () => window.clearInterval(intervalId);
-    }, [heroSlides.length, slideDurationMs]);
+    }, [heroSlides.length, slideDurationMs, readySlides, reduceMotion]);
 
     return (
         <section
@@ -81,16 +100,21 @@ export function HeroSection() {
                 paddingBottom: window.innerWidth < 768 ? 'clamp(10rem, 22vh, 14rem)' : 'clamp(6rem, 12vh, 80px)',
             }}
         >
-            <AnimatePresence mode="sync">
+            <AnimatePresence mode="sync" initial={false}>
                 <motion.img
                     key={heroSlides[currentSlide].image}
                     src={heroSlides[currentSlide].image}
+                    {...responsiveImageProps(heroSlides[currentSlide].image)}
+                    loading="eager"
+                    fetchPriority={currentSlide === 0 ? "high" : "auto"}
+                    decoding="async"
+                    onLoad={prepareNextSlides}
                     alt=""
                     aria-hidden="true"
                     initial={{ opacity: 0, scale: 1.04 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 1.02 }}
-                    transition={{ duration: 1.1, ease: 'easeInOut' }}
+                    transition={{ duration: reduceMotion ? 0 : 0.6, ease: 'easeInOut' }}
                     style={{
                         position: 'absolute',
                         inset: 0,

@@ -41,3 +41,4 @@ O sistema (v2) é hospedado fora deste projeto, em `https://painel.daton.com.br`
 
 - Commercial contact uses an isolated public `commercial-contact` Edge Function with a server-owned recipient and shared schema validation; it never reads or modifies legacy data or functions.
 - Commercial email uses the linked Resend gateway from server code only; browser success requires provider acceptance, not just form submission.
+- Institutional photography uses the shared responsive image registry with original-resolution fallbacks and CDN-hosted smaller variants; prioritize each page's first photo and defer below-fold images to avoid competing downloads.

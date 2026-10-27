@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { HeimdallNavbar } from "@/components/landing/heimdall/HeimdallNavbar";
 import { PublicFooter } from "@/components/landing/heimdall/PublicFooter";
 import { CommercialContactForm } from "@/components/landing/CommercialContactForm";
+import { responsiveImageProps } from "@/config/responsiveImages";
 
 export default function Contato() {
   return (
@@ -21,6 +22,10 @@ export default function Contato() {
       >
         <img
           src="/hero-img-03.webp"
+          {...responsiveImageProps("/hero-img-03.webp")}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           alt=""
           aria-hidden="true"
           style={{

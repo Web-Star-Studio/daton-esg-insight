@@ -11,6 +11,7 @@ import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 import { supabase } from '@/integrations/supabase/client';
 import '@/components/landing/heimdall/heimdall.css';
 import docsHeroImg from '@/assets/docs-hero.webp';
+import { responsiveImageProps } from "@/config/responsiveImages";
 
 const Documentacao = () => {
   const navigate = useNavigate();
@@ -137,6 +138,10 @@ const Documentacao = () => {
         {/* Hero Background Image */}
         <img
           src={docsHeroImg}
+          {...responsiveImageProps(docsHeroImg)}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           alt=""
           aria-hidden="true"
           className="absolute inset-0 z-0 w-full h-full object-cover"

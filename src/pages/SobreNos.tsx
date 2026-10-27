@@ -9,6 +9,7 @@ import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
 import pilaresImg from '@/assets/pilares-esg.webp';
 import soberaniaImg from '@/assets/esg-soberania.webp';
 import sobreNosHero from '@/assets/sobre-nos-hero.webp';
+import { responsiveImageProps } from "@/config/responsiveImages";
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
 import '@/components/landing/heimdall/heimdall.css';
 
@@ -68,6 +69,10 @@ const SobreNos = () => {
                 {/* Background Image */}
                 <img
                     src={sobreNosHero}
+                    {...responsiveImageProps(sobreNosHero)}
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
                     alt="Daton Team"
                     aria-hidden="true"
                     style={{
@@ -398,6 +403,9 @@ const SobreNos = () => {
                     <div className="relative">
                         <img 
                             src={pilaresImg} 
+                            {...responsiveImageProps(pilaresImg, "(min-width: 1024px) 608px, calc(100vw - 32px)")}
+                            loading="lazy"
+                            decoding="async"
                             alt="Pilares ESG - cubos representando os pilares ambiental, social e governança" 
                             className="w-full rounded-3xl object-cover shadow-lg"
                         />
@@ -462,6 +470,9 @@ const SobreNos = () => {
                     <div className="relative">
                         <img 
                             src={soberaniaImg} 
+                            {...responsiveImageProps(soberaniaImg, "(min-width: 768px) 608px, calc(100vw - 32px)")}
+                            loading="lazy"
+                            decoding="async"
                             alt="Profissionais analisando dados ESG em tablet" 
                             className="w-full rounded-3xl object-cover shadow-lg"
                         />

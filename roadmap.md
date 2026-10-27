@@ -31,4 +31,10 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 - [x] Segredos (Resend, Lovable API) disponíveis no novo backend.
 - [x] Edge function `commercial-contact` reimplantada no novo backend (mesma validação compartilhada).
 - [x] Envio end-to-end testado via endpoint real: 200 com confirmação do Resend; e-mail de teste entregue em felipe@webstar.studio.
-- [ ] Publicar novamente para o site no ar usar o novo backend.
+- [x] Publicação do novo backend solicitada no atendimento anterior (2026-10-27).
+
+## Imagens institucionais — 2026-10-27
+- [x] Revisados peso, resolução e carregamento das imagens em todas as páginas institucionais.
+- [x] Criadas versões menores em WebP para telas menores; originais mantidos, imagem de floresta compartilhada, fotos iniciais priorizadas e fotos inferiores carregadas sob demanda. Carousel só troca para fotos decodificadas; ampliação artificial evitada por não recuperar detalhe real.
+- [x] Sete testes passaram; todas as páginas verificadas em 1280px e 390px, incluindo imagens ao rolar Sobre Nós/Ambiental e menu Soluções; sem erros de execução. CDN real usado na verificação porque o servidor local não serve o caminho de assets da hospedagem. Verificação automática final sem erros.
+- [ ] Publicar a otimização das imagens (aguarda solicitação do usuário).

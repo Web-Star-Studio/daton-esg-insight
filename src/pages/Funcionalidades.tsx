@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import datonLogo from "@/assets/daton-logo-header.png";
 import { PAINEL_URL } from "@/config/externalApp";
+import forestImage from "@/assets/hero-floresta.webp";
+import { responsiveImageProps } from "@/config/responsiveImages";
 
 interface Feature {
   icon: LucideIcon;
@@ -451,7 +453,11 @@ const Funcionalidades = () => {
       <main className="mx-auto w-full max-w-7xl space-y-14 px-4 py-8 md:px-8 md:py-10">
         <section className="relative overflow-hidden rounded-[2rem] border border-[#cadacf] bg-[#dbe9e1]">
           <img
-            src="/hero-img-01.webp"
+            src={forestImage}
+            {...responsiveImageProps(forestImage, "(min-width: 1280px) 1216px, (min-width: 768px) calc(100vw - 64px), calc(100vw - 32px)")}
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover"
@@ -460,7 +466,7 @@ const Funcionalidades = () => {
 
           <div className="relative z-10 flex min-h-[66vh] flex-col justify-between p-6 md:p-12">
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45 }}
               className="max-w-4xl"
@@ -485,13 +491,13 @@ const Funcionalidades = () => {
                 <HeroStat title="BI" subtitle="análises e tendências" />
               </div>
 
-              <div className="inline-flex items-center gap-3 rounded-2xl border border-white/40 bg-black/35 p-2 backdrop-blur-md">
+              <div className="inline-flex max-w-full flex-col items-stretch gap-3 rounded-2xl border border-white/40 bg-black/35 p-2 backdrop-blur-md sm:flex-row sm:items-center">
                 <Link to="/contato">
                   <Button className="rounded-xl bg-white/10 text-white hover:bg-white/20">
                     Solicitar demonstração
                   </Button>
                 </Link>
-                <div className="h-7 w-px bg-white/40" />
+                <div className="hidden h-7 w-px bg-white/40 sm:block" />
                 <a href={PAINEL_URL} onClick={openPanel}>
                   <Button className="rounded-xl bg-[#c4fca1] text-black hover:bg-[#b4ef8f]">
                     Acessar painel
