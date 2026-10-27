@@ -91,16 +91,20 @@ docs/
 ## Variáveis de Ambiente
 
 ```env
-# Obrigatório - Supabase
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
-VITE_SUPABASE_PROJECT_ID=your-project-id
-
-# Opcional - IoT
-VITE_IOT_WEBSOCKET_URL=ws://localhost:3001/iot
+# Conexão pública do Lovable Cloud integrado
+VITE_SUPABASE_URL=https://your-lovable-cloud-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_replace_with_public_browser_key
 ```
 
-Ver [.env.example](./.env.example) para mais detalhes.
+A publicação usa os valores públicos do Cloud atual em `.env.production`.
+Para desenvolvimento local, preencha `.env.local` com os valores públicos do
+mesmo Cloud; não é necessário reconectar o antigo Supabase externo.
+`VITE_SUPABASE_PROJECT_ID` não é necessário para o cliente da landing.
+URL e chave informadas pela hospedagem devem ser substituídas juntas.
+Segredos de servidor permanecem no Cloud e nunca devem usar o prefixo `VITE_`.
+
+Ver [.env.example](./.env.example) e o
+[procedimento de publicação](./docs/operations/lovable-cloud-publicacao.md).
 
 ## Licença
 

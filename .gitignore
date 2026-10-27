@@ -29,6 +29,8 @@ coverage/
 .env
 .env.*
 !.env.example
+# Only public browser configuration for the linked Lovable Cloud project.
+!.env.production
 
 #arquivos
 .claude
