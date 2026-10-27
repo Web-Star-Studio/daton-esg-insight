@@ -34,4 +34,22 @@ describe("Lovable Cloud publication from a clean checkout", () => {
     expect(env.VITE_SUPABASE_PUBLISHABLE_KEY).toMatch(/^sb_publishable_/);
     expect(() => configure({ command: "build", mode: "production" })).not.toThrow();
   });
+
+  it.each([
+    ["VITE_SUPABASE_URL", "https://other-cloud.supabase.co"],
+    ["VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_other_cloud"],
+  ])("rejects a hosting override that only provides %s", (key, value) => {
+    vi.stubEnv("VITE_SUPABASE_URL", undefined);
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", undefined);
+    vi.stubEnv(key, value);
+    expect(() => configure({ command: "build", mode: "production" })).toThrow(
+      "hosting overrides must provide VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY together",
+    );
+  });
+
+  it("allows a complete hosting override", () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://other-cloud.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_other_cloud");
+    expect(() => configure({ command: "build", mode: "production" })).not.toThrow();
+  });
 });

@@ -10,6 +10,10 @@ export default defineConfig(({ mode, command }) => {
   // Managed development previews inject Cloud values through their own config.
   // Only publication builds must enforce their availability at config load time.
   if (command === "build" && mode === "production") {
+    const hostingOverrides = required.filter(key => process.env[key] !== undefined);
+    if (hostingOverrides.length > 0 && hostingOverrides.length < required.length) {
+      throw new Error("Lovable Cloud hosting overrides must provide VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY together.");
+    }
     const missing = required.filter(key => !(process.env[key] || env[key])?.trim());
     if (missing.length) {
       throw new Error(`Lovable Cloud configuration missing: ${missing.join(", ")}. Restore the project connection before publishing.`);

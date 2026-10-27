@@ -25,6 +25,8 @@ Segredos de servidor permanecem no Cloud.
 O Vite carrega `.env.production` no build de produção. Variáveis explícitas do
 ambiente de hospedagem continuam tendo prioridade. A checagem em `vite.config.ts`
 permanece: se todas as fontes de configuração estiverem ausentes, o build falha.
+Uma substituição pelo ambiente de hospedagem precisa fornecer URL e chave juntas;
+o build recusa apenas uma delas para não misturar conexões de projetos diferentes.
 O CI deixa de usar placeholders e compila a mesma configuração pública do site.
 
 ## Verificação
