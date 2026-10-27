@@ -32,3 +32,8 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 - [x] Edge function `commercial-contact` reimplantada no novo backend (mesma validação compartilhada).
 - [x] Envio end-to-end testado via endpoint real: 200 com confirmação do Resend; e-mail de teste entregue em felipe@webstar.studio.
 - [ ] Publicar novamente para o site no ar usar o novo backend.
+
+## Imagens institucionais — 2026-10-27
+- [ ] Revisar peso, resolução e carregamento em todas as páginas institucionais.
+- [ ] Otimizar imagens e priorizar as fotos visíveis sem alterar conteúdo ou reduzir resolução original.
+- [ ] Verificar navegação, carregamento e enquadramento em telas grandes e pequenas.
