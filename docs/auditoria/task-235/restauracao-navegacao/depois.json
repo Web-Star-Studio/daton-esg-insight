@@ -1,0 +1,16 @@
+[
+  {
+    "viewport": "desktop",
+    "solutions": "/ambiental",
+    "stackCount": 5,
+    "top": 0,
+    "catalogExists": true
+  },
+  {
+    "viewport": "mobile",
+    "solutions": "/ambiental",
+    "stackCount": 5,
+    "top": 0,
+    "catalogExists": true
+  }
+]

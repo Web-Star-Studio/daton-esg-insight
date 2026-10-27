@@ -22,7 +22,7 @@ const Documentacao = () => {
   const actionBarRef = useRef<HTMLDivElement>(null);
 
   const quickMenuLinks = [
-    { label: 'Soluções', href: '/funcionalidades' },
+    { label: 'Soluções', href: '/ambiental' },
     { label: 'Central de Ajuda', href: '/documentacao' },
     { label: 'Sobre Nós', href: '/sobre-nos' },
     { label: 'Contato', href: '/contato' },

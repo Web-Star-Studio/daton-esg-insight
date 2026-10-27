@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PainelRedirectGuard } from "@/components/PainelRedirectGuard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import LandingPage from "./pages/LandingPage";
 
 // Páginas institucionais (lazy)
@@ -43,6 +44,7 @@ function App() {
           <BrowserRouter>
             <ErrorBoundary>
               <Suspense fallback={PageFallback}>
+                <ScrollToTop />
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/landing" element={<LandingPage />} />
