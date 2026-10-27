@@ -8,7 +8,7 @@ import {
 import { FAQ_categories } from '@/data/faqs';
 import { HeimdallNavbar } from '@/components/landing/heimdall/HeimdallNavbar';
 import { PublicFooter } from '@/components/landing/heimdall/PublicFooter';
-import { supabase } from '@/integrations/supabase/client';
+import { PAINEL_URL } from "@/config/externalApp";
 import '@/components/landing/heimdall/heimdall.css';
 import docsHeroImg from '@/assets/docs-hero.webp';
 import { responsiveImageProps } from "@/config/responsiveImages";
@@ -16,7 +16,8 @@ import { responsiveImageProps } from "@/config/responsiveImages";
 const Documentacao = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('faq');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // The institutional site has no local sign-in; preserve its public FAQ view.
+  const isAuthenticated = false;
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
   const actionBarRef = useRef<HTMLDivElement>(null);
 
@@ -47,22 +48,6 @@ const Documentacao = () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [quickMenuOpen]);
-
-  // Check auth state
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-      if (session) setActiveSection('overview');
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-      if (session) setActiveSection('overview');
-      else setActiveSection('faq');
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const allSections = [
     { id: 'overview', title: 'Visão Geral', icon: FileText },
@@ -252,7 +237,7 @@ const Documentacao = () => {
             <div aria-hidden="true" style={{ width: "1px", height: "28px", background: "rgba(255, 255, 255, 0.28)" }} />
 
             <motion.button
-              onClick={() => navigate("/auth")}
+              onClick={() => { window.location.href = PAINEL_URL; }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="lumine-btn-primary whitespace-nowrap text-[clamp(0.8rem,3.2vw,1rem)] flex-1 justify-center"
