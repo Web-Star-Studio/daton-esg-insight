@@ -38,9 +38,9 @@ O CI deixa de usar placeholders e compila a mesma configuração pública do sit
   `supabase/config.toml` e o carregamento sem injeção pelo processo.
 - Após publicar, conferir o novo bundle no domínio, a abertura de Contato e
   Documentação, Soluções abrindo `/ambiental` e o retorno ao topo.
-- Validar a requisição do formulário com POST interceptado; não reenviar teste
-  comercial à caixa de Felipe. O envio real exclusivo a João já foi realizado
-  e a função temporária foi removida.
+- Validar a requisição do formulário com POST interceptado; não enviar testes
+  comerciais ao destinatário de produção. Para um envio real, usar um destino
+  de teste autorizado e isolado, com remoção dos recursos temporários ao final.
 
 ## Referências
 
