@@ -18,6 +18,7 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 - [ ] Publicar para daton.com.br entrar no ar como LP-only
 
 ## Contato comercial — 2026-10-27
-- [ ] Confirmar e-mail da Web Star destinatário e serviço autorizado para envio automático.
+- [x] Destinatário confirmado: felipe@webstar.studio; Resend conectado.
+- [ ] Confirmar remetente verificado no Resend: a chave permite enviar, mas não consultar domínios; teste não executado.
 - [ ] Ajustar formulário comercial e envio com validação, confirmação e tratamento de falhas, sem modificar acesso ao demo ou dados legados.
 - [ ] Verificar envio real e recebimento antes de concluir.
