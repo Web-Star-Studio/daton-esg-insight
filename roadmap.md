@@ -38,3 +38,8 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 - [x] Criadas versões menores em WebP para telas menores; originais mantidos, imagem de floresta compartilhada, fotos iniciais priorizadas e fotos inferiores carregadas sob demanda. Carousel só troca para fotos decodificadas; ampliação artificial evitada por não recuperar detalhe real.
 - [x] Sete testes passaram; todas as páginas verificadas em 1280px e 390px, incluindo imagens ao rolar Sobre Nós/Ambiental e menu Soluções; sem erros de execução. CDN real usado na verificação porque o servidor local não serve o caminho de assets da hospedagem. Verificação automática final sem erros.
 - [ ] Publicar a otimização das imagens (aguarda solicitação do usuário).
+
+## Verificação do contato e site — 2026-10-27
+- [ ] Corrigir a falha de abertura do contato e verificar envio real no Lovable Cloud.
+- [ ] Verificar demais páginas, imagens e links institucionais.
+- [ ] Resolver erro de dependências na verificação automática sem alterar código legado.
