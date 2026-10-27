@@ -16,3 +16,8 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 ## Pendente (decisão do usuário)
 
 - [ ] Publicar para daton.com.br entrar no ar como LP-only
+
+## Contato comercial — 2026-10-27
+- [ ] Confirmar e-mail da Web Star destinatário e serviço autorizado para envio automático.
+- [ ] Ajustar formulário comercial e envio com validação, confirmação e tratamento de falhas, sem modificar acesso ao demo ou dados legados.
+- [ ] Verificar envio real e recebimento antes de concluir.
