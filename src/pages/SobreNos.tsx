@@ -283,7 +283,7 @@ const SobreNos = () => {
             </section>
 
             {/* --- MISSION & VISION --- */}
-            <section className="py-12 px-4 md:py-24 md:px-6 max-w-7xl mx-auto">
+            <section className="overflow-x-clip py-12 px-4 md:py-24 md:px-6 max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-8 lg:gap-12 items-start">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}

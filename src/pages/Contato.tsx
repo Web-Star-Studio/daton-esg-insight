@@ -99,8 +99,7 @@ export default function Contato() {
                 color: "rgba(255,255,255,0.9)",
               }}
             >
-              Conheça o Daton e converse com a Web Star Studio sobre as
-              necessidades da sua empresa.
+              Converse com a equipe Daton sobre as necessidades da sua empresa.
             </p>
           </div>
 
@@ -108,7 +107,7 @@ export default function Contato() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="commercial-contact-panel w-full rounded-lg border p-5 backdrop-blur-md md:max-w-[39%] md:self-center md:p-6"
+            className="commercial-contact-panel w-full rounded-2xl border p-5 backdrop-blur-md md:max-w-[39%] md:self-center md:p-6"
           >
             <CommercialContactForm />
           </motion.div>

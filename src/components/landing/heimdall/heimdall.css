@@ -421,7 +421,7 @@
 /* ============================================
    RESPONSIVE
    ============================================ */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .heimdall-heading-xl {
     font-size: clamp(2.5rem, 12vw, 4rem);
   }
