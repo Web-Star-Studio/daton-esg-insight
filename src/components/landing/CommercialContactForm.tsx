@@ -5,7 +5,7 @@ import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { createContactSchema } from "../../../supabase/functions/commercial-contact/schema";
 
 const schema = createContactSchema(z);
@@ -34,10 +34,17 @@ export function CommercialContactForm() {
     busy.current = true;
     setStatus("sending"); setFailure("");
     try {
+      // Initialize only when sending so missing hosting configuration cannot crash the page.
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase.functions.invoke("commercial-contact", { body: parsed.data });
-      if (error || data?.success !== true) throw new Error("send_failed");
+      if (error) {
+        const details = error instanceof FunctionsHttpError ? await error.context.text() : error.message;
+        throw new Error(details);
+      }
+      if (data?.success !== true) throw new Error("O envio não foi confirmado pelo serviço.");
       setStatus("sent");
-    } catch {
+    } catch (error) {
+      console.error("commercial-contact failed:", error instanceof Error ? error.message : "Unknown error");
       setFailure("Não foi possível confirmar o envio. Seus dados foram mantidos; tente novamente ou escreva para contato@daton.com.br.");
       setStatus("idle");
     } finally { busy.current = false; }

@@ -41,4 +41,7 @@ O sistema (v2) é hospedado fora deste projeto, em `https://painel.daton.com.br`
 
 - Commercial contact uses an isolated public `commercial-contact` Edge Function with a server-owned recipient and shared schema validation; it never reads or modifies legacy data or functions.
 - Commercial email uses the linked Resend gateway from server code only; browser success requires provider acceptance, not just form submission.
+- Initialize the contact client only on submission and require Cloud environment values at publication builds; missing hosting configuration must not crash institutional pages or silently ship a broken contact form.
+- Documentation preserves its public FAQ view without local authentication; system access goes directly to the external panel because the LP has no user sessions.
+- Deno resolves its versioned npm dependencies automatically through root deno.json so legacy function dependencies remain intact alongside the frontend dependencies.
 - Institutional photography uses the shared responsive image registry with original-resolution fallbacks and CDN-hosted smaller variants; prioritize each page's first photo and defer below-fold images to avoid competing downloads.

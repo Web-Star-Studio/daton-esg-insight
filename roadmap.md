@@ -38,3 +38,9 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 - [x] Criadas versões menores em WebP para telas menores; originais mantidos, imagem de floresta compartilhada, fotos iniciais priorizadas e fotos inferiores carregadas sob demanda. Carousel só troca para fotos decodificadas; ampliação artificial evitada por não recuperar detalhe real.
 - [x] Sete testes passaram; todas as páginas verificadas em 1280px e 390px, incluindo imagens ao rolar Sobre Nós/Ambiental e menu Soluções; sem erros de execução. CDN real usado na verificação porque o servidor local não serve o caminho de assets da hospedagem. Verificação automática final sem erros.
 - [ ] Publicar a otimização das imagens (aguarda solicitação do usuário).
+
+## Verificação do contato e site — 2026-10-27
+- [x] Falha publicada reproduzida: configuração Cloud ausente no bundle; configuração atual disponível. Inicialização do contato adiada ao envio, erro tratado e publicação bloqueada quando faltam valores. Envio real pelo formulário aceito (200), teste identificado destinado a Felipe e confirmação visível na prévia.
+- [x] Páginas institucionais verificadas sem erros de execução; documentação sem autenticação local e CTA direto para painel. Todas as fotos decodificadas usando a hospedagem real em 1280px/390px; completadas variantes 1440px já existentes de pilares/soberania. Possível overflow durante animação de Sobre Nós não persistiu na verificação estabilizada.
+- [x] Resolução automática das dependências Deno sem alterar funções legadas; verificação automática passou. Sete testes passaram; lint sem erros, com quatro avisos pré-existentes em UI.
+- [ ] Publicar a correção do contato e as imagens (aguarda solicitação do usuário); site publicado ainda usa a versão quebrada.

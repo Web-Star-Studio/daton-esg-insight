@@ -17,7 +17,9 @@ import esg_ai_card_1440 from "@/assets/responsive/esg-ai-card-1440.webp.asset.js
 import sobre_nos_hero_960 from "@/assets/responsive/sobre-nos-hero-960.webp.asset.json";
 import sobre_nos_hero_1440 from "@/assets/responsive/sobre-nos-hero-1440.webp.asset.json";
 import pilares_esg_960 from "@/assets/responsive/pilares-esg-960.webp.asset.json";
+import pilares_esg_1440 from "@/assets/responsive/pilares-esg-1440.webp.asset.json";
 import esg_soberania_960 from "@/assets/responsive/esg-soberania-960.webp.asset.json";
+import esg_soberania_1440 from "@/assets/responsive/esg-soberania-1440.webp.asset.json";
 import docs_hero_960 from "@/assets/responsive/docs-hero-960.webp.asset.json";
 import docs_hero_1440 from "@/assets/responsive/docs-hero-1440.webp.asset.json";
 import docs_hero from "@/assets/docs-hero.webp";
@@ -69,7 +71,7 @@ const imageSources: Record<string, ImageSource> = {
     height: 1079,
   },
   [esg_soberania]: {
-    srcSet: `${esg_soberania_960.url} 960w, ${esg_soberania} 1536w`,
+    srcSet: `${esg_soberania_960.url} 960w, ${esg_soberania_1440.url} 1440w, ${esg_soberania} 1536w`,
     width: 1536,
     height: 1536,
   },
@@ -89,7 +91,7 @@ const imageSources: Record<string, ImageSource> = {
     height: 994,
   },
   [pilares_esg]: {
-    srcSet: `${pilares_esg_960.url} 960w, ${pilares_esg} 1459w`,
+    srcSet: `${pilares_esg_960.url} 960w, ${pilares_esg_1440.url} 1440w, ${pilares_esg} 1459w`,
     width: 1459,
     height: 1459,
   },
