@@ -17,7 +17,7 @@ export function HeroSection() {
     const heroSlides = ESG_AREAS;
     const slideDurationMs = 5000;
     const quickMenuLinks = [
-        { label: 'Soluções', href: '/funcionalidades' },
+        { label: 'Soluções', href: '/ambiental' },
         
         { label: 'Central de Ajuda', href: '/documentacao' },
         { label: 'Sobre Nós', href: '/sobre-nos' },

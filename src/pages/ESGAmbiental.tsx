@@ -445,7 +445,7 @@ export default function ESGAmbiental() {
 
   // Menu links synced with Home
   const quickMenuLinks = [
-    { label: 'Soluções', href: '/funcionalidades' },
+    { label: 'Soluções', href: '/ambiental' },
     
     { label: 'Central de Ajuda', href: '/documentacao' },
     { label: 'Sobre Nós', href: '/sobre-nos' },

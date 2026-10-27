@@ -1,0 +1,16 @@
+[
+  {
+    "viewport": "desktop",
+    "solutions": "/funcionalidades",
+    "stackCount": 0,
+    "top": 1330,
+    "catalogExists": true
+  },
+  {
+    "viewport": "mobile",
+    "solutions": "/funcionalidades",
+    "stackCount": 0,
+    "top": 2798,
+    "catalogExists": true
+  }
+]

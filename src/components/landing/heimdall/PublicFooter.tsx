@@ -23,7 +23,7 @@ export function PublicFooter() {
             Plataforma
           </h4>
           <div className="mt-3 space-y-2 text-sm text-white/75">
-            <Link to="/funcionalidades" className="block hover:text-white">
+            <Link to="/ambiental" className="block hover:text-white">
               Soluções
             </Link>
             <Link to="/documentacao" className="block hover:text-white">
