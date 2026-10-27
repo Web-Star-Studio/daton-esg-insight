@@ -8,7 +8,6 @@ import hero_floresta_1440 from "@/assets/responsive/hero-floresta-1440.webp.asse
 import esg_ambiental_hero_960 from "@/assets/responsive/esg-ambiental-hero-960.webp.asset.json";
 import esg_ambiental_hero_1440 from "@/assets/responsive/esg-ambiental-hero-1440.webp.asset.json";
 import esg_social_card_960 from "@/assets/responsive/esg-social-card-960.webp.asset.json";
-import esg_social_card_1440 from "@/assets/responsive/esg-social-card-1440.webp.asset.json";
 import esg_quality_card_960 from "@/assets/responsive/esg-quality-card-960.webp.asset.json";
 import esg_quality_card_1440 from "@/assets/responsive/esg-quality-card-1440.webp.asset.json";
 import esg_suppliers_card_960 from "@/assets/responsive/esg-suppliers-card-960.webp.asset.json";
@@ -18,9 +17,7 @@ import esg_ai_card_1440 from "@/assets/responsive/esg-ai-card-1440.webp.asset.js
 import sobre_nos_hero_960 from "@/assets/responsive/sobre-nos-hero-960.webp.asset.json";
 import sobre_nos_hero_1440 from "@/assets/responsive/sobre-nos-hero-1440.webp.asset.json";
 import pilares_esg_960 from "@/assets/responsive/pilares-esg-960.webp.asset.json";
-import pilares_esg_1440 from "@/assets/responsive/pilares-esg-1440.webp.asset.json";
 import esg_soberania_960 from "@/assets/responsive/esg-soberania-960.webp.asset.json";
-import esg_soberania_1440 from "@/assets/responsive/esg-soberania-1440.webp.asset.json";
 import docs_hero_960 from "@/assets/responsive/docs-hero-960.webp.asset.json";
 import docs_hero_1440 from "@/assets/responsive/docs-hero-1440.webp.asset.json";
 import docs_hero from "@/assets/docs-hero.webp";

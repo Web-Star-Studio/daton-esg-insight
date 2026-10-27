@@ -23,6 +23,8 @@ import esgQualityCardImg from "@/assets/esg-quality-card.webp";
 import esgAmbientalHeroImg from "@/assets/esg-ambiental-hero.webp";
 import esgSuppliersCardImg from "@/assets/esg-suppliers-card.webp";
 import esgAiCardImg from "@/assets/esg-ai-card.webp";
+import forestImage from "@/assets/hero-floresta.webp";
+import { responsiveImageProps } from "@/config/responsiveImages";
 
 // --- DATA ---
 
@@ -47,7 +49,7 @@ const MODULES: ModuleHighlight[] = [
     description:
       "Antecipe riscos ambientais e acompanhe suas metas. Reúna recursos, resíduos, licenças e inventários de emissões para orientar ações e relatos ESG.",
     icon: Leaf,
-    image: "/hero-img-01.webp",
+    image: forestImage,
     color: "#eef9e6",
     features: [
       "Inventário de emissões GEE (Escopos 1, 2, 3)",
@@ -368,6 +370,9 @@ const Card = ({
           <motion.div className="w-full h-full" style={{ scale: imageScale }}>
             <img
               src={module.image}
+              {...responsiveImageProps(module.image, "95vw")}
+              loading="lazy"
+              decoding="async"
               alt={module.title}
               className="w-full h-full object-cover"
             />
@@ -494,6 +499,10 @@ export default function ESGAmbiental() {
       >
         <img
           src={esgAmbientalHeroImg}
+          {...responsiveImageProps(esgAmbientalHeroImg)}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           alt=""
           aria-hidden="true"
           style={{

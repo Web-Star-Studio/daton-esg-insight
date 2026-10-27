@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle2, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeimdallNavbar } from "@/components/landing/heimdall/HeimdallNavbar";
 import { PublicFooter } from "@/components/landing/heimdall/PublicFooter";
+import { responsiveImageProps } from "@/config/responsiveImages";
 import {
   ESG_AREA_LINKS,
   ESGAreaSlug,
@@ -194,6 +195,10 @@ export function ESGAreaTemplate({ areaSlug }: ESGAreaTemplateProps) {
       >
         <img
           src={area.image}
+          {...responsiveImageProps(area.image)}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           alt=""
           aria-hidden="true"
           style={{
