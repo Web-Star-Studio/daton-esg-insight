@@ -1,0 +1,457 @@
+{
+  "checkedAt": "2026-10-27T21:58:31.032Z",
+  "base": "https://daton.com.br",
+  "failures": [],
+  "interaction": [
+    {
+      "viewport": 375,
+      "faqSearch": "7 resultados encontrados",
+      "expandAnswer": true,
+      "emptySearchAndClear": true
+    },
+    {
+      "viewport": 1440,
+      "faqSearch": "7 resultados encontrados",
+      "expandAnswer": true,
+      "emptySearchAndClear": true
+    },
+    {
+      "viewport": 1440,
+      "docsQuestionCount": 151,
+      "docsExpandAndCollapse": true
+    },
+    {
+      "viewport": 375,
+      "docsQuestionCount": 151,
+      "docsExpandAndCollapse": true
+    },
+    {
+      "viewport": 375,
+      "route": "/",
+      "ctaDestination": "https://painel.daton.com.br/",
+      "panelNetworkMocked": true
+    },
+    {
+      "viewport": 1440,
+      "route": "/",
+      "ctaDestination": "https://painel.daton.com.br/",
+      "panelNetworkMocked": true
+    },
+    {
+      "viewport": 375,
+      "route": "/documentacao",
+      "ctaDestination": "https://painel.daton.com.br/",
+      "panelNetworkMocked": true
+    },
+    {
+      "viewport": 1440,
+      "route": "/documentacao",
+      "ctaDestination": "https://painel.daton.com.br/",
+      "panelNetworkMocked": true
+    },
+    {
+      "viewport": 375,
+      "route": "/ambiental",
+      "ctaDestination": "https://painel.daton.com.br/",
+      "panelNetworkMocked": true
+    },
+    {
+      "viewport": 1440,
+      "route": "/ambiental",
+      "ctaDestination": "https://painel.daton.com.br/",
+      "panelNetworkMocked": true
+    },
+    {
+      "viewport": 375,
+      "route": "/auth",
+      "redirect": "https://painel.daton.com.br/",
+      "panelNetworkMocked": true
+    },
+    {
+      "viewport": 1440,
+      "route": "/auth",
+      "redirect": "https://painel.daton.com.br/",
+      "panelNetworkMocked": true
+    },
+    {
+      "viewport": 375,
+      "route": "/app/ajuda?origem=teste#contato",
+      "redirect": "https://painel.daton.com.br/app/ajuda?origem=teste#contato",
+      "panelNetworkMocked": true
+    },
+    {
+      "viewport": 1440,
+      "route": "/app/ajuda?origem=teste#contato",
+      "redirect": "https://painel.daton.com.br/app/ajuda?origem=teste#contato",
+      "panelNetworkMocked": true
+    }
+  ],
+  "blockedPosts": 61,
+  "emailsSent": 0,
+  "pages": [
+    {
+      "route": "/",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Gestão ambiental para antecipar riscos e avançar nas metas."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Gestão ambiental para antecipar riscos e avançar nas metas."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/landing",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Gestão ambiental para antecipar riscos e avançar nas metas."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/landing",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Gestão ambiental para antecipar riscos e avançar nas metas."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/ambiental",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Sua gestão conectada. Sua equipe pronta para agir."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/ambiental",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Sua gestão conectada. Sua equipe pronta para agir."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/social",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Desenvolva pessoas e fortaleça o desempenho da sua equipe."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/social",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Desenvolva pessoas e fortaleça o desempenho da sua equipe."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/governanca",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Tire a estratégia do papel e transforme decisões em ação."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/governanca",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Tire a estratégia do papel e transforme decisões em ação."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/funcionalidades",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Menos informação dispersa. Mais clareza para agir."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/funcionalidades",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Menos informação dispersa. Mais clareza para agir."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/sobre-nos",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Transformamos dados em decisões que movem o futuro."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/sobre-nos",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Transformamos dados em decisões que movem o futuro."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/documentacao",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Documentação"
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/documentacao",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Documentação"
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/faq",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Central de Ajuda"
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/faq",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Central de Ajuda"
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/contato",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Vamos conectar qualidade, ESG e compliance na sua operação."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/contato",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Vamos conectar qualidade, ESG e compliance na sua operação."
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/privacidade",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Política de Privacidade"
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/privacidade",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Política de Privacidade"
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/termos",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Termos de Serviço"
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/termos",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Termos de Serviço"
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/seguranca",
+      "viewport": 1440,
+      "status": 200,
+      "initialWidth": 1440,
+      "width": 1440,
+      "h1": [
+        "Segurança e Armazenamento"
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    },
+    {
+      "route": "/seguranca",
+      "viewport": 375,
+      "status": 200,
+      "initialWidth": 375,
+      "width": 375,
+      "h1": [
+        "Segurança e Armazenamento"
+      ],
+      "brokenImages": [],
+      "errors": [],
+      "badResponses": [],
+      "failedGets": []
+    }
+  ]
+}
