@@ -100,7 +100,7 @@ const imageSources: Record<string, ImageSource> = {
   },
 };
 
-export function responsiveImageProps(src: string, sizes = "100vw") {
+export function responsiveImageProps(src: string, sizes = "100vw"): Partial<ImageSource> & { sizes?: string } {
   const source = imageSources[src];
   return source ? { ...source, sizes } : {};
 }
