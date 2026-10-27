@@ -1,0 +1,47 @@
+[
+  {
+    "viewport": 320,
+    "documentWidth": 324,
+    "heroBar": null,
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgb(255, 255, 255)",
+    "panelBackground": "rgba(0, 0, 0, 0.46)",
+    "formPageWidth": 320
+  },
+  {
+    "viewport": 375,
+    "documentWidth": 379,
+    "heroBar": null,
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgb(255, 255, 255)",
+    "panelBackground": "rgba(0, 0, 0, 0.46)",
+    "formPageWidth": 375
+  },
+  {
+    "viewport": 390,
+    "documentWidth": 394,
+    "heroBar": null,
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgb(255, 255, 255)",
+    "panelBackground": "rgba(0, 0, 0, 0.46)",
+    "formPageWidth": 390
+  },
+  {
+    "viewport": 768,
+    "documentWidth": 768,
+    "heroBar": null,
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgb(255, 255, 255)",
+    "panelBackground": "rgba(0, 0, 0, 0.46)",
+    "formPageWidth": 768
+  },
+  {
+    "viewport": 1440,
+    "documentWidth": 1440,
+    "heroBar": null,
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgb(255, 255, 255)",
+    "panelBackground": "rgba(0, 0, 0, 0.46)",
+    "formPageWidth": 1440
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "viewport": 320,
+    "documentWidth": 320,
+    "heroBar": {
+      "left": 16,
+      "right": 304
+    },
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgba(255, 255, 255, 0.1)",
+    "panelBackground": "rgba(0, 0, 0, 0.6)",
+    "formPageWidth": 320
+  },
+  {
+    "viewport": 375,
+    "documentWidth": 375,
+    "heroBar": {
+      "left": 16,
+      "right": 359
+    },
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgba(255, 255, 255, 0.1)",
+    "panelBackground": "rgba(0, 0, 0, 0.6)",
+    "formPageWidth": 375
+  },
+  {
+    "viewport": 390,
+    "documentWidth": 390,
+    "heroBar": {
+      "left": 16,
+      "right": 374
+    },
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgba(255, 255, 255, 0.1)",
+    "panelBackground": "rgba(0, 0, 0, 0.6)",
+    "formPageWidth": 390
+  },
+  {
+    "viewport": 767,
+    "documentWidth": 767,
+    "heroBar": {
+      "left": 30.671875,
+      "right": 736.328125
+    },
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgba(255, 255, 255, 0.1)",
+    "panelBackground": "rgba(0, 0, 0, 0.6)",
+    "formPageWidth": 767
+  },
+  {
+    "viewport": 768,
+    "documentWidth": 768,
+    "heroBar": {
+      "left": 461.09375,
+      "right": 737.28125
+    },
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgba(255, 255, 255, 0.1)",
+    "panelBackground": "rgba(0, 0, 0, 0.6)",
+    "formPageWidth": 768
+  },
+  {
+    "viewport": 1024,
+    "documentWidth": 1024,
+    "heroBar": {
+      "left": 715.8125,
+      "right": 992
+    },
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgba(255, 255, 255, 0.1)",
+    "panelBackground": "rgba(0, 0, 0, 0.6)",
+    "formPageWidth": 1024
+  },
+  {
+    "viewport": 1440,
+    "documentWidth": 1440,
+    "heroBar": {
+      "left": 1131.8125,
+      "right": 1408
+    },
+    "inputText": "rgb(255, 255, 255)",
+    "inputBackground": "rgba(255, 255, 255, 0.1)",
+    "panelBackground": "rgba(0, 0, 0, 0.6)",
+    "formPageWidth": 1440
+  }
+]
