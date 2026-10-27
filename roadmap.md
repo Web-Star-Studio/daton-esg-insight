@@ -19,7 +19,9 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 
 ## Contato comercial — 2026-10-27
 - [x] Destinatário confirmado: felipe@webstar.studio; Resend conectado.
-- [ ] Confirmar remetente verificado no Resend: a chave permite enviar, mas não consultar domínios; teste não executado.
-- [ ] Ajustar formulário comercial e envio com validação, confirmação e tratamento de falhas, sem modificar acesso ao demo ou dados legados.
-- [ ] Verificar envio real e recebimento antes de concluir.
-- [ ] Enviar teste identificado para joao@webstar.studio; pedidos comerciais continuam destinados a Felipe.
+- [x] Remetente contato@daton.com.br aceito pelo Resend no teste para João.
+- [x] Formulário comercial e função isolada implantados com validação compartilhada, confirmação e tratamento de falhas; demo e dados legados preservados.
+- [ ] Recebimento na caixa e fluxo completo real para Felipe: aguardam confirmação do usuário; teste para Felipe foi recusado e não foi reenviado.
+- [x] Teste identificado para joao@webstar.studio aceito pelo Resend; pedidos comerciais continuam destinados a Felipe.
+- [x] Sete testes passaram; estados de interface testados com respostas simuladas, validação da função real retornou 400 para entrada inválida.
+- [ ] Publicar a página Contato atualizada: depende da autorização do usuário.

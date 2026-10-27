@@ -42,7 +42,7 @@ export function CommercialContactForm() {
       setStatus("idle");
     } finally { busy.current = false; }
   };
-  if (status === "sent") return <div role="status" className="space-y-4 py-6"><CheckCircle2 className="h-9 w-9" /><h2 className="text-xl font-semibold">Pedido enviado</h2><p>A equipe da Web Star Studio recebeu sua solicitação pelo serviço de envio e poderá entrar em contato pelos dados informados.</p><Button variant="secondary" onClick={() => { setStatus("idle"); setFields({ nome: "", email: "", cargo: "", empresa: "", telefone: "", interesse: "", mensagem: "", website: "", consentimento: false }); requestId.current = crypto.randomUUID(); }}>Enviar outro pedido</Button></div>;
+  if (status === "sent") return <div role="status" className="space-y-4 py-6"><CheckCircle2 className="h-9 w-9" /><h2 className="text-xl font-semibold">Pedido enviado</h2><p>Sua solicitação foi aceita pelo serviço de envio para a Web Star Studio. A equipe poderá entrar em contato pelos dados informados.</p><Button variant="secondary" onClick={() => { setStatus("idle"); setFields({ nome: "", email: "", cargo: "", empresa: "", telefone: "", interesse: "", mensagem: "", website: "", consentimento: false }); requestId.current = crypto.randomUUID(); }}>Enviar outro pedido</Button></div>;
   return <>
     <h2 className="text-xl font-semibold">Converse com a Web Star Studio</h2>
     <p className="mt-2 text-sm opacity-90">Conte o que sua empresa precisa para avaliarmos como o Daton pode ajudar.</p>
