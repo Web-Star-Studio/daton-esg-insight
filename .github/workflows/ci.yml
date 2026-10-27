@@ -43,10 +43,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: test
-    # Compile-only jobs do not publish. Real Cloud values are injected by Lovable.
-    env:
-      VITE_SUPABASE_URL: https://ci-build-only.supabase.co
-      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_build_only
+    # Compile the tracked public Lovable Cloud configuration used for publication.
     strategy:
       matrix:
         package-manager: [npm, bun]
