@@ -7,7 +7,9 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
   const required = ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY"] as const;
-  if (command === "build") {
+  // Managed development previews inject Cloud values through their own config.
+  // Only publication builds must enforce their availability at config load time.
+  if (command === "build" && mode === "production") {
     const missing = required.filter(key => !(process.env[key] || env[key])?.trim());
     if (missing.length) {
       throw new Error(`Lovable Cloud configuration missing: ${missing.join(", ")}. Restore the project connection before publishing.`);
