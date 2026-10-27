@@ -25,3 +25,10 @@ Objetivo: este projeto vira apenas a landing page institucional. O sistema vive 
 - [x] Teste identificado para joao@webstar.studio aceito pelo Resend; pedidos comerciais continuam destinados a Felipe.
 - [x] Sete testes passaram; estados de interface testados com respostas simuladas, validação da função real retornou 400 para entrada inválida.
 - [x] Publicar a página Contato atualizada: publicação solicitada para daton.com.br.
+
+## Migração para Lovable Cloud — 2026-10-27
+- [x] Supabase externo desvinculado pelo usuário; Lovable Cloud ativado (banco novo e vazio).
+- [x] Segredos (Resend, Lovable API) disponíveis no novo backend.
+- [x] Edge function `commercial-contact` reimplantada no novo backend (mesma validação compartilhada).
+- [x] Envio end-to-end testado via endpoint real: 200 com confirmação do Resend; e-mail de teste entregue em felipe@webstar.studio.
+- [ ] Publicar novamente para o site no ar usar o novo backend.
